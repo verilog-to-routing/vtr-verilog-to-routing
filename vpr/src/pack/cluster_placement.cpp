@@ -274,6 +274,7 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                             if (it->second->pb_graph_node->hierarchical_type_name() < best->second->pb_graph_node->hierarchical_type_name()) {
                                 update_best = true;
                             }
+                        }
                     }
 
                     if (update_best) {
@@ -282,7 +283,7 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                         best_pb_type_index = i;
                         found_best = true;
                     }
-                    
+
                     ++it;
                 }
             }
