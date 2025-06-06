@@ -423,7 +423,7 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --write_initial_place_file <file>
 
-    Writes out the placement chosen by the initial placement algorithm to the specified file.
+    Writes out the clustered netlist placement chosen by the initial placement algorithm to the specified file, in :ref:`.place file format <vpr_place_file>`.
 
 .. option:: --outfile_prefix <string>
 
