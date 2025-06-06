@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 
-#include "clock_fwd.h"
-
 #include "device_grid.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_clock.h"
@@ -62,14 +60,14 @@ struct SpineTaps {
 
 struct HtreeDrive {
     std::string name;
-    Coordinates offset;
+    t_physical_tile_loc offset;
     int switch_idx = OPEN;
 };
 
 struct HtreeTaps {
     std::string name;
-    Coordinates offset;
-    Coordinates increment;
+    t_physical_tile_loc offset;
+    t_physical_tile_loc increment;
 };
 
 class ClockNetwork {

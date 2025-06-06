@@ -12,7 +12,7 @@ void try_place(const Netlist<>& net_list,
                const t_noc_opts& noc_opts,
                const t_chan_width_dist& chan_width_dist,
                t_det_routing_arch& det_routing_arch,
-               std::vector<t_segment_inf>& segment_inf,
+               const std::vector<t_segment_inf>& segment_inf,
                const std::vector<t_direct_inf>& directs,
                const FlatPlacementInfo& flat_placement_info,
                bool is_flat);

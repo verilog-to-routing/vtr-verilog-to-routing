@@ -3,6 +3,7 @@
 #include "draw_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
+#include "route_common.h"
 
 vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool is_print) {
     VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);

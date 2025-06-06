@@ -46,6 +46,8 @@ class PostClusterDelayCalculator;
 
 #endif /* NO_SERVER */
 
+struct t_rr_node_route_inf;
+
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
  *
@@ -559,6 +561,11 @@ struct RoutingContext : public Context {
 
     /** Is flat routing enabled? */
     bool is_flat;
+
+    /// @brief Post-placement estimate of CHANX routing utilization per (layer, x, y) location.
+    vtr::NdMatrix<double, 3> chanx_util;
+    /// @brief Post-placement estimate of CHANY routing utilization per (layer, x, y) location.
+    vtr::NdMatrix<double, 3> chany_util;
 };
 
 /**

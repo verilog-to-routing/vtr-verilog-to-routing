@@ -26,8 +26,8 @@ bool route(const Netlist<>& net_list,
            ScreenUpdatePriority first_iteration_priority,
            bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     if (net_list.nets().empty()) {
@@ -36,7 +36,7 @@ bool route(const Netlist<>& net_list,
 
     e_graph_type graph_type;
     e_graph_type graph_directionality;
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
@@ -65,7 +65,7 @@ bool route(const Netlist<>& net_list,
     init_draw_coords(width_fac, g_vpr_ctx.placement().blk_loc_registry());
 
     /* Allocate and load additional rr_graph information needed only by the router. */
-    alloc_and_load_rr_node_route_structs();
+    alloc_and_load_rr_node_route_structs(router_opts);
 
     init_route_structs(net_list,
                        router_opts.bb_factor,
