@@ -109,8 +109,7 @@ jobs:
         python-version: 3.12.3
 
     - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
+      # NOTE: We do not need sub-modules. This only verifies the tests, does not run them.
 
     - name: 'Run test suite verification'
       run: |

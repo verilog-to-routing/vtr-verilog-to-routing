@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from typing import List
 from pathlib import Path
 
+
 @dataclass(order=True, frozen=True)
 class TestSuite:
     name: str
@@ -15,7 +16,7 @@ class TestSuite:
 
 
 def parse_test_suite_info(test_suite_info_file: str) -> List[TestSuite]:
-    with open(test_suite_info_file, 'r') as file:
+    with open(test_suite_info_file, "r") as file:
         data = json.load(file)
 
     assert isinstance(data, dict), "Test suite info should be a dictionary"
@@ -27,19 +28,22 @@ def parse_test_suite_info(test_suite_info_file: str) -> List[TestSuite]:
         assert "name" in test_suite, "All test suites must have names"
         assert "ignored_tasks" in test_suite, "All test suite must have an ignored task list"
 
-        test_suites.append(TestSuite(name=test_suite["name"],
-                                     ignored_tasks=test_suite["ignored_tasks"],
-                                     ))
+        test_suites.append(
+            TestSuite(
+                name=test_suite["name"],
+                ignored_tasks=test_suite["ignored_tasks"],
+            )
+        )
 
     return test_suites
 
 
 def parse_task_list(task_list_file: str) -> List[str]:
     tasks = []
-    with open(task_list_file, 'r') as file:
+    with open(task_list_file, "r") as file:
         for line in file:
             line.strip()
-            if line[0] == '#':
+            if line[0] == "#":
                 continue
             split_line = line.split()
             if split_line:
@@ -74,7 +78,9 @@ def verify_test_suite(test_suite: TestSuite, regression_tests_dir: str):
         task_dir = os.path.dirname(config_dir)
         # All tasks in the task list are relative to the parent of the regression
         # tests directory.
-        expected_task_list.append(os.path.relpath(task_dir, os.path.dirname(os.path.dirname(regression_tests_dir))))
+        expected_task_list.append(
+            os.path.relpath(task_dir, os.path.dirname(regression_tests_dir))
+        )
 
     # Parse the task list to get the actual task list
     actual_task_list = parse_task_list(task_list_file)
@@ -86,7 +92,11 @@ def verify_test_suite(test_suite: TestSuite, regression_tests_dir: str):
         if not os.path.exists(ignored_task_path):
             print(f"Ignored task '{ignored_task}' not found in test suite directory")
             sys.exit(1)
-        ignored_tasks.add(os.path.relpath(ignored_task_path, os.path.dirname(os.path.dirname(regression_tests_dir))))
+        ignored_tasks.add(
+            os.path.relpath(
+                ignored_task_path, os.path.dirname(regression_tests_dir)
+            )
+        )
 
     num_failures = 0
     # Check for any missing tasks in the task list
@@ -115,12 +125,12 @@ def verify_test_suites():
     parser.add_argument(
         "-vtr_regression_tests_dir",
         type=str,
-        help="The path to the vtr_flow/tasks/regression_tests directory in VTR."
+        help="The path to the vtr_flow/tasks/regression_tests directory in VTR.",
     )
     parser.add_argument(
         "-test_suite_info",
         type=str,
-        help="Information on the test suite (must be a JSON file)."
+        help="Information on the test suite (must be a JSON file).",
     )
 
     args = parser.parse_args()
