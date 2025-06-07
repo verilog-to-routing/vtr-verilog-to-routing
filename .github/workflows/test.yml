@@ -99,6 +99,25 @@ jobs:
       run: ./dev/${{ matrix.script }}
 
 
+  VerifyTestSuites:
+    runs-on: ubuntu-24.04
+    name: 'Verify Test Suites'
+    steps:
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.12.3
+
+    - uses: actions/checkout@v4
+      # NOTE: We do not need sub-modules. This only verifies the tests, does not run them.
+
+    - name: 'Run test suite verification'
+      run: |
+        ./dev/vtr_test_suite_verifier/verify_test_suites.py \
+            -vtr_regression_tests_dir vtr_flow/tasks/regression_tests \
+            -test_suite_info dev/vtr_test_suite_verifier/test_suites_info.json
+
+
   UnitTests:
     name: 'U: C++ Unit Tests'
     runs-on: ubuntu-24.04
@@ -540,6 +559,7 @@ jobs:
     needs:
       - Build
       - Format
+      - VerifyTestSuites
       - UnitTests
       - BuildVariations
       - Regression
