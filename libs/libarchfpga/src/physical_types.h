@@ -889,6 +889,17 @@ struct t_physical_tile_loc {
     operator bool() const {
         return !(x == OPEN || y == OPEN || layer_num == OPEN);
     }
+
+    /**
+     * @brief Comparison operator for t_physical_tile_loc
+     *
+     * Tiles are ordered first by layer number, then by x, and finally by y.
+     */
+    friend bool operator<(const t_physical_tile_loc& lhs, const t_physical_tile_loc& rhs) {
+        if (lhs.layer_num != rhs.layer_num) return lhs.layer_num < rhs.layer_num;
+        if (lhs.x != rhs.x) return lhs.x < rhs.x;
+        return lhs.y < rhs.y;
+    }
 };
 
 namespace std {

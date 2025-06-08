@@ -110,14 +110,14 @@ public:
     ClusteredNetlist create_clusters(ClusterLegalizer& cluster_legalizer,
                                                         const PartialPlacement& p_placement);
 
-    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> 
+    std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>
         sort_and_group_blocks_by_tile(const PartialPlacement& p_placement);
     
     void reconstruction_cluster_pass(
         ClusterLegalizer& cluster_legalizer,
         const DeviceGrid& device_grid,
         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-        std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
+        std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
         std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks);
 
     void cluster_molecules_in_tile(
@@ -138,7 +138,6 @@ public:
     
     void neighbor_cluster_pass(
                         ClusterLegalizer& cluster_legalizer,
-                        const DeviceGrid& device_grid,
                         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                         std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                         int search_radius);

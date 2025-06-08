@@ -290,7 +290,7 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
 }
 
 // Idea is to get the logical block type of a molecule and implementation is inspired by the create_new_cluster function
-t_logical_block_type_ptr get_molecule_logical_block_type(
+static t_logical_block_type_ptr get_molecule_logical_block_type(
     PackMoleculeId mol_id,
     const Prepacker& prepacker,
     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
@@ -322,7 +322,7 @@ t_logical_block_type_ptr get_molecule_logical_block_type(
     return nullptr;
 }
 
-std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>
+std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>
 BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer pack_reconstruction_timer("Sorting and Grouping Blocks by Tile");
     // Block sorting information. This can be altered easily to try 
@@ -360,7 +360,7 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
               });
 
     // Group the molecules by tile
-    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
+    std::map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
     for (const auto& [mol_id, ext_pins, is_long_chain, tile_loc] : sorted_blocks) {
         tile_blocks[tile_loc].push_back(mol_id);
     }
@@ -379,7 +379,6 @@ void BasicMinDisturbance::cluster_molecules_in_tile(
     std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check)
 {
     for (PackMoleculeId mol_id: tile_molecules) {
-        const auto& mol = prepacker_.get_molecule(mol_id);
         const auto block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
         if (!block_type) {
             VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
@@ -427,7 +426,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
     ClusterLegalizer& cluster_legalizer,
     const DeviceGrid& device_grid,
     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
+    std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks)
 {
     vtr::ScopedStartFinishTimer reconstruction_pass_clustering("Reconstruction Pass Clustering");
@@ -491,7 +490,6 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
 // neighbor clustering function
 void BasicMinDisturbance::neighbor_cluster_pass(
     ClusterLegalizer& cluster_legalizer,
-    const DeviceGrid& device_grid,
     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
     int search_radius)
@@ -600,7 +598,6 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     int NEIGHBOR_SEARCH_RADIUS = 4;
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
     neighbor_cluster_pass(cluster_legalizer,
-                          device_grid,
                           primitive_candidate_block_types,
                           unclustered_blocks,
                           NEIGHBOR_SEARCH_RADIUS);
