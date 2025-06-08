@@ -19,7 +19,7 @@ class APNetlist;
 class AtomNetlist;
 class ClusteredNetlist;
 class DeviceGrid;
-class PartialPlacement;
+struct PartialPlacement;
 class PlaceMacros;
 class PreClusterTimingManager;
 class Prepacker;

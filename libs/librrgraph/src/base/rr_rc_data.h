@@ -1,5 +1,4 @@
-#ifndef _RR_RC_DATA_H_
-#define _RR_RC_DATA_H_
+#pragma once
 
 #include "rr_node_types.h"
 
@@ -12,5 +11,3 @@
  * The returned indicies index into DeviceContext.rr_rc_data.
  */
 short find_create_rr_rc_data(const float R, const float C, std::vector<t_rr_rc_data>& rr_rc_data);
-
-#endif /* _RR_RC_DATA_H_ */

@@ -1,5 +1,4 @@
-#ifndef VTR_DYNAMIC_BITSET
-#define VTR_DYNAMIC_BITSET
+#pragma once
 
 #include <limits>
 #include <vector>
@@ -106,5 +105,3 @@ class dynamic_bitset {
 };
 
 } // namespace vtr
-
-#endif /* VTR_DYNAMIC_BITSET */

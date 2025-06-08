@@ -12,9 +12,12 @@
 #include "atom_netlist.h"
 #include "flat_placement_bins.h"
 #include "flat_placement_mass_calculator.h"
+#include "logic_types.h"
 #include "partial_placement.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "primitive_dim_manager.h"
+#include "primitive_vector.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_vector.h"
@@ -48,10 +51,11 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
                                                          const DeviceGrid& device_grid,
                                                          const std::vector<t_logical_block_type>& logical_block_types,
                                                          const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                         const LogicalModels& models,
                                                          int log_verbosity)
     : ap_netlist_(ap_netlist)
     , bins_(ap_netlist)
-    , mass_calculator_(ap_netlist, prepacker, atom_netlist, logical_block_types, physical_tile_types, log_verbosity)
+    , mass_calculator_(ap_netlist, prepacker, atom_netlist, logical_block_types, physical_tile_types, models, log_verbosity)
     , log_verbosity_(log_verbosity) {
     // Initialize the bin spatial lookup object.
     size_t num_layers, width, height;
@@ -96,12 +100,24 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
         }
     }
 
+    // Get the used primitive dims. This is used to ignore the unused dims during
+    // partial legalization.
+    const PrimitiveDimManager& dim_manager = mass_calculator_.get_dim_manager();
+    for (AtomBlockId blk_id : atom_netlist.blocks()) {
+        LogicalModelId model_id = atom_netlist.block_model(blk_id);
+        PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
+        used_dims_mask_.set_dim_val(dim, 1);
+    }
+
     // Initialize the bin capacities to the mass capacity of the physical tile
     // this bin represents.
     bin_capacity_.resize(bins_.bins().size());
     for (FlatPlacementBinId bin_id : bins_.bins()) {
         size_t physical_tile_type_index = bin_phy_tile_type_idx[bin_id];
         bin_capacity_[bin_id] = mass_calculator_.get_physical_tile_type_capacity(physical_tile_type_index);
+        // Only allocate capacity to dims which are actually used. This prevents
+        // the capacity vectors from getting too large, saving run time.
+        bin_capacity_[bin_id].project(used_dims_mask_);
     }
 
     // Initialize the bin utilizations to be zero (there is nothing in the bin
@@ -306,4 +322,8 @@ void FlatPlacementDensityManager::print_bin_grid() const {
         VTR_LOG("\n");
     }
     VTR_LOG("\n");
+}
+
+void FlatPlacementDensityManager::generate_mass_report() const {
+    mass_calculator_.generate_mass_report(ap_netlist_);
 }

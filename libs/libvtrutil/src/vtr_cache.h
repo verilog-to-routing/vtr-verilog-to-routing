@@ -1,5 +1,4 @@
-#ifndef VTR_CACHE_H_
-#define VTR_CACHE_H_
+#pragma once
 
 #include <memory>
 
@@ -48,5 +47,3 @@ class Cache {
 };
 
 } // namespace vtr
-
-#endif
