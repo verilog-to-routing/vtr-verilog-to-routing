@@ -494,6 +494,8 @@ void BasicMinDisturbance::neighbor_cluster_pass(
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
     int search_radius)
 {
+    std::string timer_label = "Neighbor Pass Clustering with search radius " + std::to_string(search_radius);
+    vtr::ScopedStartFinishTimer neighbor_pass_clustering(timer_label);
     // For each unclustered molecule
     while (!unclustered_blocks.empty()) {
         // Pick the first seed molecule and erase it from unclustered data
@@ -564,6 +566,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     std::unordered_map<std::string, size_t> cluster_type_count_first_pass;
     std::vector<LegalizationClusterId> first_pass_clusters;
     size_t total_atoms_in_first_pass_clusters = 0;
+    size_t total_molecules_in_first_pass_clusters = 0;
     size_t total_clusters_in_first_pass = 0;
     for (LegalizationClusterId cluster_id: cluster_legalizer.clusters()) {
         total_clusters_in_first_pass++;
@@ -571,6 +574,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
         bool block_type_set = false;
         for (PackMoleculeId mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
             // We still need to iterate over the atom ids due to invalid ones.
+            total_molecules_in_first_pass_clusters++;
             for (AtomBlockId atom_id: prepacker_.get_molecule(mol_id).atom_block_ids) {
                 if (atom_id.is_valid()) {
                     total_atoms_in_first_pass_clusters++;
@@ -588,8 +592,10 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
             }
         }
     }
-    float avg_atom_number_in_first_pass = 
+    float avg_atom_number_in_first_pass =
         static_cast<float>(total_atoms_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
+    float avg_mol_number_in_first_pass =
+        static_cast<float>(total_molecules_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
 
     // Set legalization strategy to full and set neigbour search radius.
     // TODO: Neighbor search radius is selected from a small set of values.
@@ -602,14 +608,13 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
                           unclustered_blocks,
                           NEIGHBOR_SEARCH_RADIUS);
 
-    VTR_LOG("After neighbor clustering (with search radius %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());
-
     // Get rid off the invalid cluster ids before reporting.
     cluster_legalizer.compress();
     
     // Neighbor pass clustering statistics collection
     std::unordered_map<std::string, size_t> cluster_type_count_second_pass;
     size_t total_atoms_in_second_pass_clusters = 0;
+    size_t total_molecules_in_second_pass_clusters = 0;
     size_t total_clusters_in_second_pass = 0;
     for (LegalizationClusterId cluster_id: cluster_legalizer.clusters()) {
         if (std::find(first_pass_clusters.begin(), first_pass_clusters.end(), cluster_id) != first_pass_clusters.end())
@@ -617,6 +622,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
         total_clusters_in_second_pass++;
         bool block_type_set = false;
         for (PackMoleculeId mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
+            total_molecules_in_second_pass_clusters++;
             // We still need to iterate over the atom ids due to invalid ones.
             for (AtomBlockId atom_blk_id: prepacker_.get_molecule(mol_id).atom_block_ids) {
                 if (atom_blk_id.is_valid()) {
@@ -634,32 +640,39 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
             }
         }
     }
-    float avg_atom_number_in_neighbour_pass = 
+    float avg_atom_number_in_neighbor_pass =
         static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_clusters_in_second_pass);
+    float avg_mol_number_in_neighbor_pass =
+        static_cast<float>(total_molecules_in_second_pass_clusters) / static_cast<float>(total_clusters_in_second_pass);
     
     // Report clustering summary. If there are any type with non-zero clusters,
     // their individual cluster number will also be printed.
-    VTR_LOG("----------------------------------------------------\n");
-    VTR_LOG("                 Clustering Summary                 \n");
-    VTR_LOG("----------------------------------------------------\n");
-    VTR_LOG("Clusters created (Reconstruction pass)       : %zu\n", total_clusters_in_first_pass);
+    VTR_LOG("-------------------------------------------------------\n");
+    VTR_LOG("                   Clustering Summary                  \n");
+    VTR_LOG("-------------------------------------------------------\n");
+    VTR_LOG("Clusters created (Reconstruction pass)          : %zu\n", total_clusters_in_first_pass);
     for (const auto& [block_name, count] : cluster_type_count_first_pass) {
         VTR_LOG("    %-10s : %zu\n", block_name.c_str(), count);
     }
-    VTR_LOG("Clusters created (Neighbor pass)             : %zu\n", total_clusters_in_second_pass);
+    VTR_LOG("Clusters created (Neighbor pass)                : %zu\n", total_clusters_in_second_pass);
     for (const auto& [block_name, count] : cluster_type_count_second_pass) {
         VTR_LOG("    %-10s : %zu\n", block_name.c_str(), count);
     }
-    VTR_LOG("Total clusters                               : %zu\n", total_clusters_in_first_pass + total_clusters_in_second_pass);
-    VTR_LOG("Avg atoms per cluster (Reconstruction pass)  : %.2f\n", avg_atom_number_in_first_pass);
-    VTR_LOG("Avg atoms per cluster (Neighbor pass)        : %.2f\n", avg_atom_number_in_neighbour_pass);
-    VTR_LOG("Percent of atoms clustered in Neighbor pass  : %.2f%%\n", 
+    VTR_LOG("Total clusters                                  : %zu\n", total_clusters_in_first_pass + total_clusters_in_second_pass);
+    VTR_LOG("Avg atoms per cluster (Reconstruction pass)     : %.2f\n", avg_atom_number_in_first_pass);
+    VTR_LOG("Avg atoms per cluster (Neighbor pass)           : %.2f\n", avg_atom_number_in_neighbor_pass);
+    VTR_LOG("Avg molecules per cluster (Reconstruction pass) : %.2f\n", avg_mol_number_in_first_pass);
+    VTR_LOG("Avg molecules per cluster (Neighbor pass)       : %.2f\n", avg_mol_number_in_neighbor_pass);
+    VTR_LOG("Percent of atoms clustered in Neighbor pass     : %.2f%%\n",
             100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) / 
             static_cast<float>(total_atoms_in_first_pass_clusters + total_atoms_in_second_pass_clusters));
-    VTR_LOG("Percent of clusters created in Neighbor pass : %.2f%%\n",
-            100.0f * static_cast<float>(total_clusters_in_second_pass) / 
+    VTR_LOG("Percent of molecules clustered in Neighbor pass : %.2f%%\n",
+            100.0f * static_cast<float>(total_molecules_in_second_pass_clusters) /
+            static_cast<float>(total_molecules_in_first_pass_clusters + total_molecules_in_second_pass_clusters));
+    VTR_LOG("Percent of clusters created in Neighbor pass    : %.2f%%\n",
+            100.0f * static_cast<float>(total_clusters_in_second_pass) /
             static_cast<float>(total_clusters_in_first_pass + total_clusters_in_second_pass));
-    VTR_LOG("----------------------------------------------------\n\n");
+    VTR_LOG("-------------------------------------------------------\n\n");
     
     // Check and output the clustering.
     cluster_legalizer.compress();
