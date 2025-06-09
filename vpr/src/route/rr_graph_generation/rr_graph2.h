@@ -5,12 +5,9 @@
 #include "build_switchblocks.h"
 #include "rr_graph_type.h"
 #include "rr_graph_fwd.h"
-#include "rr_graph_utils.h"
-#include "rr_graph_view.h"
 #include "rr_graph_builder.h"
 #include "rr_types.h"
 #include "device_grid.h"
-#include "get_parallel_segs.h"
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 

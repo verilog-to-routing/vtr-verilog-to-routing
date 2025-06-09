@@ -1,5 +1,4 @@
-#ifndef CLUSTERED_NETLIST_H
-#define CLUSTERED_NETLIST_H
+#pragma once
 /**
  * @file
  * @brief This file defines the ClusteredNetlist class in the ClusteredContext
@@ -340,5 +339,3 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 
     //Nets
 };
-
-#endif

@@ -1,11 +1,11 @@
-#ifndef _PARALLEL_CONNECTION_ROUTER_H
-#define _PARALLEL_CONNECTION_ROUTER_H
+#pragma once
 
 #include "connection_router.h"
 
 #include "multi_queue_d_ary_heap.h"
 
 #include <atomic>
+#include <barrier>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -47,7 +47,6 @@ class spin_lock_t {
  * condition variable to coordinate thread synchronization.
  */
 class barrier_mutex_t {
-    // FIXME: Try std::barrier (since C++20) to replace this mutex barrier
     std::mutex mutex_;
     std::condition_variable cv_;
     size_t count_;
@@ -60,9 +59,14 @@ class barrier_mutex_t {
      * @param num_threads Number of threads that must call wait() before
      * any thread is allowed to proceed
      */
-    explicit barrier_mutex_t(size_t num_threads)
+    explicit inline barrier_mutex_t(size_t num_threads)
         : count_(num_threads)
         , max_count_(num_threads) {}
+
+    /**
+     * Initialization method goes unused by this barrier implementation.
+     */
+    inline void init() {}
 
     /**
      * @brief Blocks the calling thread until all threads have called wait()
@@ -70,7 +74,7 @@ class barrier_mutex_t {
      * When the specified number of threads have called this method, all
      * threads are unblocked and the barrier is reset for the next use.
      */
-    void wait() {
+    inline void wait() {
         std::unique_lock<std::mutex> lock{mutex_};
         size_t gen = generation_;
         if (--count_ == 0) {
@@ -110,13 +114,13 @@ class barrier_spin_t {
      * @param num_threads Number of threads that must call wait() before
      * any thread is allowed to proceed
      */
-    explicit barrier_spin_t(size_t num_threads) { num_threads_ = num_threads; }
+    explicit inline barrier_spin_t(size_t num_threads) { num_threads_ = num_threads; }
 
     /**
      * @brief Initializes the thread-local sense flag
      * @note Should be called by each thread before first using the barrier.
      */
-    void init() {
+    inline void init() {
         local_sense_ = false;
     }
 
@@ -127,7 +131,7 @@ class barrier_spin_t {
      * to arrive unblocks all waiting threads. This method avoids using locks or
      * condition variables, making it potentially more efficient for short waits.
      */
-    void wait() {
+    inline void wait() {
         bool s = !local_sense_;
         local_sense_ = s;
         size_t num_arrivals = count_.fetch_add(1) + 1;
@@ -141,7 +145,41 @@ class barrier_spin_t {
     }
 };
 
-using barrier_t = barrier_spin_t; // Using the spin-based thread barrier
+/**
+ * @brief Thread barrier implementation using std::barrier
+ *
+ * It ensures all participating threads reach a synchronization point
+ * before any are allowed to proceed further.
+ */
+class standard_barrier_t {
+    /// @brief Internal barrier implementation.
+    std::barrier<> barrier_;
+
+  public:
+    /**
+     * @brief Constructs a barrier for a specific number of threads
+     *
+     *  @param num_threads
+     *      Number of threads that must call wait() before any thread is allowed
+     *      to proceed.
+     */
+    explicit inline standard_barrier_t(size_t num_threads)
+        : barrier_(num_threads) {}
+
+    /**
+     * Initialization method goes unused by this barrier implementation.
+     */
+    inline void init() {}
+
+    /**
+     * @brief Blocks the calling thread until all threads have called wait()
+     */
+    inline void wait() {
+        barrier_.arrive_and_wait();
+    }
+};
+
+using barrier_t = standard_barrier_t; // Using the standard thread barrier
 
 /**
  * @class ParallelConnectionRouter implements the MultiQueue-based parallel connection
@@ -180,13 +218,29 @@ class ParallelConnectionRouter : public ConnectionRouter<MultiQueueDAryHeap<Heap
         this->sub_threads_.resize(multi_queue_num_threads - 1);
         for (int i = 0; i < multi_queue_num_threads - 1; ++i) {
             this->sub_threads_[i] = std::thread(&ParallelConnectionRouter::timing_driven_find_single_shortest_path_from_heap_sub_thread_wrapper, this, i + 1 /*0: main thread*/);
-            this->sub_threads_[i].detach();
         }
     }
 
     ~ParallelConnectionRouter() {
         this->is_router_destroying_ = true; // signal the helper threads to exit
         this->thread_barrier_.wait();       // wait until all threads reach the barrier
+        for (auto& sub_thread : this->sub_threads_) {
+            VTR_ASSERT(sub_thread.joinable());
+            // Wait for all helper threads to terminate
+            //
+            // IMPORTANT: This must be done before the main thread destructs this object,
+            // otherwise, helper threads might have access to polluted data members, leading
+            // to undefined behavior. In some cases, due to timing issues between threads,
+            // for example, after both main and helper threads hit the barrier, the main
+            // thread completes object destruction/cleanup before helper threads can check
+            // `this->is_router_destroying_ == true` in `..._sub_thread_wrapper` function,
+            // helper threads may still see `this->is_router_destroying_` as false and fail
+            // to exit their thread functions. This results in helper threads remaining alive
+            // and accessing invalid memory addresses, leading to segfaults (please refer to
+            // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/3029 for
+            // details).
+            sub_thread.join();
+        }
 
         VTR_LOG("Parallel Connection Router is being destroyed. Time spent on path search: %.3f seconds.\n",
                 std::chrono::duration<float /*convert to seconds by default*/>(this->path_search_cumulative_time).count());
@@ -438,5 +492,3 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(
     int multi_queue_num_threads,
     int multi_queue_num_queues,
     bool multi_queue_direct_draining);
-
-#endif /* _PARALLEL_CONNECTION_ROUTER_H */

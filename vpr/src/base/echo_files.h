@@ -1,5 +1,6 @@
-#ifndef ECHO_FILES_H
-#define ECHO_FILES_H
+#pragma once
+
+#include <string>
 
 #include <string>
 
@@ -99,5 +100,3 @@ void setOutputFileName(enum e_output_files ename, const char* name, const char* 
 char* getOutputFileName(enum e_output_files ename);
 void alloc_and_load_output_file_names(const std::string& default_name);
 void free_output_file_names();
-
-#endif

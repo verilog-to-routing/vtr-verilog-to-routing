@@ -1,10 +1,8 @@
+#include <random>
 #include "catch2/catch_test_macros.hpp"
-#include "catch2/matchers/catch_matchers_all.hpp"
 
 #include "noc_place_utils.h"
-#include "noc_routing.h"
 #include "xy_routing.h"
-#include "bfs_routing.h"
 #include "vtr_math.h"
 
 // test parameters

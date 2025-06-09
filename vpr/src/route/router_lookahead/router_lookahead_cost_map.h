@@ -1,5 +1,4 @@
-#ifndef ROUTER_LOOKAHEAD_COST_MAP_H_
-#define ROUTER_LOOKAHEAD_COST_MAP_H_
+#pragma once
 
 #include <vector>
 #include "router_lookahead_map_utils.h"
@@ -119,5 +118,3 @@ class CostMap {
      */
     void fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty);
 };
-
-#endif

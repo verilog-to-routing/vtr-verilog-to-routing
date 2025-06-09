@@ -1,3 +1,4 @@
+#pragma once
 /*
  * Data types describing the logic (technology-mapped) models that the architecture can implement.
  * Logic models include LUT (.names), flipflop (.latch), inpad, outpad, memory slice, etc.
@@ -9,9 +10,6 @@
  * Updated with the LogicalModels data structure by Alex Singer
  * Date: April, 2025
  */
-
-#ifndef LOGIC_TYPES_H
-#define LOGIC_TYPES_H
 
 #include "vtr_assert.h"
 #include "vtr_list.h"
@@ -96,6 +94,13 @@ class LogicalModels {
     static constexpr const char* MODEL_LATCH = ".latch";
     static constexpr const char* MODEL_INPUT = ".input";
     static constexpr const char* MODEL_OUTPUT = ".output";
+
+    // The IDs of each of the library models. These are known ahead of time,
+    // and making these constexpr can save having to look them up in this class.
+    static constexpr LogicalModelId MODEL_INPUT_ID = LogicalModelId(0);
+    static constexpr LogicalModelId MODEL_OUTPUT_ID = LogicalModelId(1);
+    static constexpr LogicalModelId MODEL_LATCH_ID = LogicalModelId(2);
+    static constexpr LogicalModelId MODEL_NAMES_ID = LogicalModelId(3);
 
     // Iterator for the logical model IDs array.
     typedef typename vtr::vector_map<LogicalModelId, LogicalModelId>::const_iterator model_iterator;
@@ -268,5 +273,3 @@ class LogicalModels {
     /// @brief A lookup between the name of a logical model and its ID.
     std::unordered_map<std::string, LogicalModelId> model_name_to_logical_model_id_;
 };
-
-#endif

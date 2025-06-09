@@ -81,7 +81,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage* power_usage,
 
 /* Clock */
 static void power_usage_clock(t_power_usage* power_usage,
-                              t_clock_arch* clock_arch);
+                              std::vector<t_clock_network>& clock_arch);
 static void power_usage_clock_single(t_power_usage* power_usage,
                                      t_clock_network* clock_inf);
 
@@ -192,8 +192,8 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
         Q_dens = pin_dens(pb, Q_pin, iblk);
         Q_prob = pin_prob(pb, Q_pin, iblk);
 
-        clk_prob = device_ctx.clock_arch->clock_inf[0].prob;
-        clk_dens = device_ctx.clock_arch->clock_inf[0].dens;
+        clk_prob = (*device_ctx.clock_arch)[0].prob;
+        clk_dens = (*device_ctx.clock_arch)[0].dens;
 
         power_usage_ff(&sub_power_usage, power_ctx.arch->FF_size, D_prob, D_dens,
                        Q_prob, Q_dens, clk_prob, clk_dens, power_ctx.solution_inf.T_crit);
@@ -645,8 +645,7 @@ static void power_usage_blocks(t_power_usage* power_usage) {
  * Calculates the total power usage from the clock network
  */
 static void power_usage_clock(t_power_usage* power_usage,
-                              t_clock_arch* clock_arch) {
-    int clock_idx;
+                              std::vector<t_clock_network>& clock_arch) {
     auto& power_ctx = g_vpr_ctx.power();
 
     /* Initialization */
@@ -654,27 +653,25 @@ static void power_usage_clock(t_power_usage* power_usage,
     power_usage->leakage = 0.;
 
     /* if no global clock, then return */
-    if (clock_arch->num_global_clocks == 0) {
+    if (clock_arch.empty()) {
         return;
     }
 
-    for (clock_idx = 0; clock_idx < clock_arch->num_global_clocks;
-         clock_idx++) {
+    for (auto& clock : clock_arch) {
         t_power_usage clock_power;
 
         /* Assume the global clock is active even for combinational circuits */
-        if (clock_arch->num_global_clocks == 1) {
-            if (clock_arch->clock_inf[clock_idx].dens == 0) {
-                clock_arch->clock_inf[clock_idx].dens = 2;
-                clock_arch->clock_inf[clock_idx].prob = 0.5;
+        if (clock_arch.size() == 1) {
+            if (clock.dens == 0) {
+                clock.dens = 2;
+                clock.prob = 0.5;
 
                 // This will need to change for multi-clock
-                clock_arch->clock_inf[clock_idx].period = power_ctx.solution_inf.T_crit;
+                clock.period = power_ctx.solution_inf.T_crit;
             }
         }
         /* find the power dissipated by each clock network */
-        power_usage_clock_single(&clock_power,
-                                 &clock_arch->clock_inf[clock_idx]);
+        power_usage_clock_single(&clock_power, &clock);
         power_add_usage(power_usage, &clock_power);
     }
 
@@ -1737,7 +1734,7 @@ e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, co
     power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTING);
 
     /* Clock  */
-    power_usage_clock(&sub_power_usage, arch->clocks);
+    power_usage_clock(&sub_power_usage, *arch->clocks);
     power_add_usage(&total_power, &sub_power_usage);
     power_component_add_usage(&sub_power_usage, POWER_COMPONENT_CLOCK);
 

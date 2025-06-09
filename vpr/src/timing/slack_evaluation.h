@@ -1,11 +1,11 @@
 #pragma once
 
 #include <map>
-#include <set>
 
 #include "atom_netlist_fwd.h"
 #include "DomainPair.h"
-#include "tatum/timing_analyzers.hpp"
+#include "tatum/analyzers/HoldTimingAnalyzer.hpp"
+#include "tatum/analyzers/SetupTimingAnalyzer.hpp"
 #include "vtr_vector.h"
 
 /*

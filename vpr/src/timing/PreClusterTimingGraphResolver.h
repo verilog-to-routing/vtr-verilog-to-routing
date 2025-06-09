@@ -1,10 +1,11 @@
-#ifndef VPR_PRE_CLUSTER_TIMING_GRAPH_RESOLVER_H_
-#define VPR_PRE_CLUSTER_TIMING_GRAPH_RESOLVER_H_
+#pragma once
 
-#include "tatum/TimingGraphNameResolver.hpp"
-#include "atom_netlist_fwd.h"
 #include "atom_lookup.h"
-#include "AnalysisDelayCalculator.h"
+#include "atom_netlist_fwd.h"
+#include "tatum/TimingGraphNameResolver.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
+
+class LogicalModels;
 
 class LogicalModels;
 
@@ -34,5 +35,3 @@ class PreClusterTimingGraphResolver : public tatum::TimingGraphNameResolver {
     const tatum::DelayCalculator& delay_calc_;
     e_timing_report_detail detail_level_ = e_timing_report_detail::NETLIST;
 };
-
-#endif /* VPR_PRE_CLUSTER_TIMING_GRAPH_RESOLVER_H_ */

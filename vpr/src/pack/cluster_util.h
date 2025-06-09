@@ -1,5 +1,4 @@
-#ifndef CLUSTER_UTIL_H
-#define CLUSTER_UTIL_H
+#pragma once
 
 #include <unordered_set>
 #include <vector>
@@ -91,8 +90,7 @@ void print_pb_type_count(const ClusteredNetlist& clb_nlist);
  * @brief This function identifies the logic block type which is defined by the
  *        block type which has a lut primitive.
  */
-t_logical_block_type_ptr identify_logic_block_type(const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                                   const LogicalModels& models);
+t_logical_block_type_ptr identify_logic_block_type(const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 /*
  * @brief This function returns the pb_type that is similar to Logic Element (LE)
@@ -124,4 +122,3 @@ void print_le_count(int num_logic_le,
 void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
                            const AtomContext& atom_ctx,
                            const ClusteredNetlist& clb_nlist);
-#endif

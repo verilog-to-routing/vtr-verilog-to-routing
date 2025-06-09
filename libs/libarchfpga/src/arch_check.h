@@ -1,5 +1,4 @@
-#ifndef ARCH_CHECK_H
-#define ARCH_CHECK_H
+#pragma once
 
 /**
  *  This file includes all the definitions of functions which purpose is to
@@ -8,12 +7,9 @@
  *  All new functions corresponding to the architecture checking should end up here.
  */
 
-#include "arch_types.h"
-#include "arch_util.h"
-
-#include "physical_types_util.h"
-
-#include "vtr_util.h"
+#include <stdint.h>
+#include "logic_types.h"
+#include "physical_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,6 +71,4 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 void check_models(t_arch* arch);
 #ifdef __cplusplus
 }
-#endif
-
 #endif

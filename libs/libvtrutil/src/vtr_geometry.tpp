@@ -1,3 +1,5 @@
+#include "vtr_assert.h"
+
 namespace vtr {
 /*
  * Point

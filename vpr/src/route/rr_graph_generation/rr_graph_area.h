@@ -1,5 +1,7 @@
-#ifndef RR_GRAPH_AREA_H
-#define RR_GRAPH_AREA_H
+#pragma once
+
+#include <vector>
+#include "physical_types.h"
 
 void count_routing_transistors(enum e_directionality directionality,
                                int num_switch,
@@ -10,5 +12,3 @@ void count_routing_transistors(enum e_directionality directionality,
                                bool is_flat);
 
 float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos);
-
-#endif

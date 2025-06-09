@@ -1,5 +1,4 @@
-#ifndef GET_PARALLEL_SEGS_H
-#define GET_PARALLEL_SEGS_H
+#pragma once
 
 #include "rr_graph_type.h"
 #include "physical_types.h"

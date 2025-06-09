@@ -1125,7 +1125,7 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     // Iterate through all sink blocks and check whether any of them
     // is compatible with the block specified in the pack pattern.
     bool connected_to_latch = false;
-    LogicalModelId latch_model_id = models.get_model_by_name(LogicalModels::MODEL_LATCH);
+    LogicalModelId latch_model_id = LogicalModels::MODEL_LATCH_ID;
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
     for (const auto& sink_pin_id : net_sinks) {
         auto sink_block_id = atom_nlist.pin_block(sink_pin_id);

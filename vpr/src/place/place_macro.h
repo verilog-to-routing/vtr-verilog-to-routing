@@ -1,3 +1,4 @@
+#pragma once
 /****************************************************************************************
  * Y.G.THIEN
  * 29 AUG 2012
@@ -115,9 +116,6 @@
  * A corresponding blif file that uses this direct connection is adder.blif
  *
  ****************************************************************************************/
-
-#ifndef PLACE_MACRO_H
-#define PLACE_MACRO_H
 
 #include <vector>
 
@@ -263,5 +261,3 @@ class PlaceMacros {
     void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs,
                                               const std::vector<t_physical_tile_type>& physical_tile_types);
 };
-
-#endif

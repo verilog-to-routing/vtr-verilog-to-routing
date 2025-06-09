@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
  * @date    March 2025
  * @brief   Declaration of flat placement types used throughout VPR.
  */
-
-#pragma once
 
 #include "atom_netlist.h"
 #include "vtr_assert.h"

@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 #include "alloc_and_load_rr_indexed_data.h"
+#include "get_parallel_segs.h"
 #include "physical_types_util.h"
 #include "rr_rc_data.h"
 #include "vtr_assert.h"

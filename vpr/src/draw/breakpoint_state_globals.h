@@ -1,5 +1,4 @@
-#ifndef BREAKPOINT_STATE_GLOBALS
-#define BREAKPOINT_STATE_GLOBALS
+#pragma once
 
 #include <string>
 #include <vector>
@@ -29,5 +28,3 @@ class BreakpointStateGlobals {
         return &glob_breakpoint_state;
     }
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef RR_GRAPH_H
-#define RR_GRAPH_H
+#pragma once
 
 /* Include track buffers or not. Track buffers isolate the tracks from the
  * input connection block. However, they are difficult to lay out in practice,
@@ -8,9 +7,8 @@
 
 #include "device_grid.h"
 #include "vpr_types.h"
+#include "rr_graph_builder.h"
 #include "rr_graph_type.h"
-#include "describe_rr_node.h"
-#include "clb2clb_directs.h"
 
 /* Warnings about the routing graph that can be returned.
  * This is to avoid output messages during a value sweep */
@@ -90,5 +88,3 @@ bool pins_connected(t_block_loc cluster_loc,
                     t_logical_block_type_ptr logical_block,
                     int from_pin_logical_num,
                     int to_pin_logical_num);
-
-#endif

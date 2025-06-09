@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "vpr_types.h"
@@ -6,6 +5,7 @@
 #include "move_generator.h" // movestats
 #include "net_cost_handler.h"
 #include "manual_move_generator.h"
+#include "vtr_random.h"
 
 #include <optional>
 #include <tuple>

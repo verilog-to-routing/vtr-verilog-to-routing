@@ -7,14 +7,17 @@
 
 #include "flat_placement_mass_calculator.h"
 #include <vector>
+#include "ap_mass_report.h"
 #include "ap_netlist.h"
 #include "atom_netlist.h"
-#include "globals.h"
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "primitive_dim_manager.h"
 #include "primitive_vector.h"
+#include "primitive_vector_fwd.h"
 #include "vtr_log.h"
+#include "vtr_vector.h"
 
 /**
  * @brief Get the scalar mass of the given model (primitive type).
@@ -34,7 +37,8 @@ static float get_model_mass(LogicalModelId model_id) {
 // This method is being forward-declared due to the double recursion below.
 // Eventually this should be made into a non-recursive algorithm for performance,
 // however this is not in a performance critical part of the code.
-static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type);
+static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type,
+                                             const PrimitiveDimManager& dim_manager);
 
 /**
  * @brief Get the amount of primitives this mode can contain.
@@ -42,12 +46,13 @@ static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type);
  * This is part of a double recursion, since a mode contains primitives which
  * themselves have modes.
  */
-static PrimitiveVector calc_mode_capacity(const t_mode& mode) {
+static PrimitiveVector calc_mode_capacity(const t_mode& mode,
+                                          const PrimitiveDimManager& dim_manager) {
     // Accumulate the capacities of all the pbs in this mode.
     PrimitiveVector capacity;
     for (int pb_child_idx = 0; pb_child_idx < mode.num_pb_type_children; pb_child_idx++) {
         const t_pb_type& pb_type = mode.pb_type_children[pb_child_idx];
-        PrimitiveVector pb_capacity = calc_pb_type_capacity(&pb_type);
+        PrimitiveVector pb_capacity = calc_pb_type_capacity(&pb_type, dim_manager);
         // A mode may contain multiple pbs of the same type, multiply the
         // capacity.
         pb_capacity *= pb_type.num_pb;
@@ -62,7 +67,8 @@ static PrimitiveVector calc_mode_capacity(const t_mode& mode) {
  * This is the other part of the double recursion. A pb may have multiple modes.
  * Modes are made of pbs.
  */
-static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type) {
+static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type,
+                                             const PrimitiveDimManager& dim_manager) {
     // Since a pb cannot be multiple modes at the same time, we do not
     // accumulate the capacities of the mode. Instead we need to "mix" the two
     // capacities as if the pb could choose either one.
@@ -71,14 +77,16 @@ static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type) {
     if (pb_type->is_primitive()) {
         LogicalModelId model_id = pb_type->model_id;
         VTR_ASSERT(model_id.is_valid());
-        capacity.add_val_to_dim(get_model_mass(model_id), (size_t)model_id);
+        PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
+        VTR_ASSERT(dim.is_valid());
+        capacity.add_val_to_dim(get_model_mass(model_id), dim);
         return capacity;
     }
     // For now, we simply mix the capacities of modes by taking the max of each
     // dimension of the capcities. This provides an upper-bound on the amount of
     // primitives this pb can contain.
     for (int mode = 0; mode < pb_type->num_modes; mode++) {
-        PrimitiveVector mode_capacity = calc_mode_capacity(pb_type->modes[mode]);
+        PrimitiveVector mode_capacity = calc_mode_capacity(pb_type->modes[mode], dim_manager);
         capacity = PrimitiveVector::max(capacity, mode_capacity);
     }
     return capacity;
@@ -87,13 +95,14 @@ static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type) {
 /**
  * @brief Calculate the cpacity of the given logical block type.
  */
-static PrimitiveVector calc_logical_block_type_capacity(const t_logical_block_type& logical_block_type) {
+static PrimitiveVector calc_logical_block_type_capacity(const t_logical_block_type& logical_block_type,
+                                                        const PrimitiveDimManager& dim_manager) {
     // If this logical block is empty, it cannot contain any primitives.
     if (logical_block_type.is_empty())
         return PrimitiveVector();
     // The primitive capacity of a logical block is the primitive capacity of
     // its root pb.
-    return calc_pb_type_capacity(logical_block_type.pb_type);
+    return calc_pb_type_capacity(logical_block_type.pb_type, dim_manager);
 }
 
 /**
@@ -155,6 +164,7 @@ static PrimitiveVector calc_physical_tile_type_capacity(const t_physical_tile_ty
  * (primitive types) in the architecture.
  */
 static PrimitiveVector calc_block_mass(APBlockId blk_id,
+                                       const PrimitiveDimManager& dim_manager,
                                        const APNetlist& netlist,
                                        const Prepacker& prepacker,
                                        const AtomNetlist& atom_netlist) {
@@ -168,56 +178,42 @@ static PrimitiveVector calc_block_mass(APBlockId blk_id,
             continue;
         LogicalModelId model_id = atom_netlist.block_model(atom_blk_id);
         VTR_ASSERT(model_id.is_valid());
-        mass.add_val_to_dim(get_model_mass(model_id), (size_t)model_id);
+        PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
+        VTR_ASSERT(dim.is_valid());
+        mass.add_val_to_dim(get_model_mass(model_id), dim);
     }
     return mass;
 }
 
 /**
- * @brief Debug printing method to print the capacities of all logical blocks
- *        and physical tile types.
+ * @brief Initialize the dim manager such that every model in the architecture
+ *        has a valid dimension in the primitive vector.
  */
-static void print_capacities(const std::vector<PrimitiveVector>& logical_block_type_capacities,
-                             const std::vector<PrimitiveVector>& physical_tile_type_capacities,
-                             const std::vector<t_logical_block_type>& logical_block_types,
-                             const std::vector<t_physical_tile_type>& physical_tile_types) {
-    // TODO: Pass these into this function.
-    const LogicalModels& models = g_vpr_ctx.device().arch->models;
+static void initialize_dim_manager(PrimitiveDimManager& dim_manager,
+                                   const LogicalModels& models,
+                                   const AtomNetlist& atom_netlist) {
+    // Set the mapping between model IDs and Primitive Vector IDs
 
-    // Print the capacities.
-    VTR_LOG("Logical Block Type Capacities:\n");
-    VTR_LOG("------------------------------\n");
-    VTR_LOG("name\t");
-    for (LogicalModelId model_id : models.all_models()) {
-        VTR_LOG("%s\t", models.get_model(model_id).name);
+    // Count the number of occurences of each model in the netlist.
+    vtr::vector<LogicalModelId, unsigned> num_model_occurence(models.all_models().size(), 0);
+    for (AtomBlockId blk_id : atom_netlist.blocks()) {
+        num_model_occurence[atom_netlist.block_model(blk_id)]++;
     }
-    VTR_LOG("\n");
-    for (const t_logical_block_type& block_type : logical_block_types) {
-        const PrimitiveVector& capacity = logical_block_type_capacities[block_type.index];
-        VTR_LOG("%s\t", block_type.name.c_str());
-        for (LogicalModelId model_id : models.all_models()) {
-            VTR_LOG("%.2f\t", capacity.get_dim_val((size_t)model_id));
-        }
-        VTR_LOG("\n");
+
+    // Create a list of models, sorted by their frequency in the netlist.
+    // By sorting by frequency, we make the early dimensions more common,
+    // which can reduce the overall size of the sparse vector.
+    // NOTE: We use stable sort here to keep the order of models the same
+    //       as what the user provided in the arch file in the event of a tie.
+    std::vector<LogicalModelId> logical_models(models.all_models().begin(), models.all_models().end());
+    std::stable_sort(logical_models.begin(), logical_models.end(), [&](LogicalModelId a, LogicalModelId b) {
+        return num_model_occurence[a] > num_model_occurence[b];
+    });
+
+    // Create a primitive vector dim for each model.
+    for (LogicalModelId model_id : logical_models) {
+        dim_manager.create_dim(model_id, models.model_name(model_id));
     }
-    VTR_LOG("\n");
-    VTR_LOG("Physical Tile Type Capacities:\n");
-    VTR_LOG("------------------------------\n");
-    VTR_LOG("name\t");
-    for (LogicalModelId model_id : models.all_models()) {
-        VTR_LOG("%s\t", models.get_model(model_id).name);
-    }
-    VTR_LOG("\n");
-    for (const t_physical_tile_type& tile_type : physical_tile_types) {
-        const PrimitiveVector& capacity = physical_tile_type_capacities[tile_type.index];
-        VTR_LOG("%s\t", tile_type.name.c_str());
-        for (LogicalModelId model_id : models.all_models()) {
-            VTR_LOG("%.2f\t", capacity.get_dim_val((size_t)model_id));
-        }
-        VTR_LOG("\n");
-    }
-    VTR_LOG("\n");
-    // TODO: Print the masses of each model.
 }
 
 FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_netlist,
@@ -225,15 +221,21 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_net
                                                          const AtomNetlist& atom_netlist,
                                                          const std::vector<t_logical_block_type>& logical_block_types,
                                                          const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                         const LogicalModels& models,
                                                          int log_verbosity)
     : physical_tile_type_capacity_(physical_tile_types.size())
     , logical_block_type_capacity_(logical_block_types.size())
     , block_mass_(ap_netlist.blocks().size())
     , log_verbosity_(log_verbosity) {
 
+    // Initialize the mapping between model IDs and Primitive Vector dims
+    initialize_dim_manager(primitive_dim_manager_,
+                           models,
+                           atom_netlist);
+
     // Precompute the capacity of each logical block type.
     for (const t_logical_block_type& logical_block_type : logical_block_types) {
-        logical_block_type_capacity_[logical_block_type.index] = calc_logical_block_type_capacity(logical_block_type);
+        logical_block_type_capacity_[logical_block_type.index] = calc_logical_block_type_capacity(logical_block_type, primitive_dim_manager_);
     }
 
     // Precompute the capacity of each physical tile type.
@@ -245,17 +247,18 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_net
     VTR_LOGV(log_verbosity_ >= 10, "Pre-computing the block masses...\n");
     for (APBlockId ap_block_id : ap_netlist.blocks()) {
         block_mass_[ap_block_id] = calc_block_mass(ap_block_id,
+                                                   primitive_dim_manager_,
                                                    ap_netlist,
                                                    prepacker,
                                                    atom_netlist);
     }
     VTR_LOGV(log_verbosity_ >= 10, "Finished pre-computing the block masses.\n");
+}
 
-    // Print the precomputed block capacities. This can be helpful for debugging.
-    if (log_verbosity_ > 1) {
-        print_capacities(logical_block_type_capacity_,
-                         physical_tile_type_capacity_,
-                         logical_block_types,
-                         physical_tile_types);
-    }
+void FlatPlacementMassCalculator::generate_mass_report(const APNetlist& ap_netlist) const {
+    generate_ap_mass_report(logical_block_type_capacity_,
+                            physical_tile_type_capacity_,
+                            block_mass_,
+                            primitive_dim_manager_,
+                            ap_netlist);
 }

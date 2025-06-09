@@ -1,9 +1,8 @@
+#include "catch2/matchers/catch_matchers.hpp"
 #include "catch2/catch_test_macros.hpp"
-#include "catch2/matchers/catch_matchers_all.hpp"
 
+#include "globals.h"
 #include "read_xml_noc_traffic_flows_file.h"
-
-#include <random>
 
 namespace {
 

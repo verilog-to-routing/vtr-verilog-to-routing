@@ -1,5 +1,23 @@
-#ifndef _CONNECTION_ROUTER_H
-#define _CONNECTION_ROUTER_H
+#pragma once
+/**
+ * @file
+ * @brief This file defines the ConnectionRouter class.
+ *
+ * Overview
+ * ========
+ * The ConnectionRouter represents the timing-driven connection routers, which
+ * route from some initial set of sources (via the input rt tree) to a particular
+ * sink. VPR supports two timing-driven connection routers, including the serial
+ * connection router and the MultiQueue-based parallel connection router. This
+ * class defines the interface for the two connection routers and encapsulates
+ * the common member variables and helper functions for them.
+ *
+ * @note
+ * When the ConnectionRouter is used, it mutates the provided rr_node_route_inf.
+ * The routed path can be found by tracing from the sink node (which is returned)
+ * through the rr_node_route_inf. See update_traceback as an example of this tracing.
+ *
+ */
 
 /**
  * @file
@@ -23,6 +41,7 @@
 
 #include "connection_router_interface.h"
 #include "globals.h"
+#include "route_path_manager.h"
 #include "rr_graph_storage.h"
 #include "router_lookahead.h"
 #include "route_tree.h"
@@ -356,5 +375,3 @@ class ConnectionRouter : public ConnectionRouterInterface {
 };
 
 #include "connection_router.tpp"
-
-#endif /* _CONNECTION_ROUTER_H */

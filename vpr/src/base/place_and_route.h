@@ -1,5 +1,4 @@
-#ifndef VPR_PLACE_AND_ROUTE_H
-#define VPR_PLACE_AND_ROUTE_H
+#pragma once
 
 #define INFINITE -1
 
@@ -43,5 +42,3 @@ t_chan_width init_chan(int cfactor,
                        e_graph_type graph_directionality);
 
 void post_place_sync();
-
-#endif

@@ -1,5 +1,5 @@
-#ifndef VPR_ROUTER_LOOKAHEAD_H
-#define VPR_ROUTER_LOOKAHEAD_H
+#pragma once
+
 #include <memory>
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -188,5 +188,3 @@ class NoOpLookahead : public RouterLookahead {
         return -1.;
     }
 };
-
-#endif

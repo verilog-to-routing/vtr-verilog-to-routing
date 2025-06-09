@@ -1,5 +1,4 @@
-#ifndef RR_NODE_IMPL_H
-#define RR_NODE_IMPL_H
+#pragma once
 // This file provides the inline proxy implemenation for t_rr_node.
 // See the t_rr_node class comment for additional details.
 
@@ -84,5 +83,3 @@ inline t_edge_size t_rr_node::num_edges() const {
 inline edge_idx_range t_rr_node::edges() const {
     return storage_->edges(id_);
 }
-
-#endif /* _RR_NODE_IMPL_H_ */

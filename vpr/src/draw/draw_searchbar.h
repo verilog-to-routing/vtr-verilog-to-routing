@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_searchbar.h
  * 
@@ -5,48 +6,17 @@
  * and manages the selection/highlighting of currently selected options.
  */
 
-#ifndef DRAW_SEARCHBAR_H
-#define DRAW_SEARCHBAR_H
+#ifndef NO_GRAPHICS
 
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
 #include <cmath>
-#include <algorithm>
-#include <sstream>
-#include <array>
-#include <iostream>
 
-#include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
-#include "vtr_color_map.h"
-#include "vtr_path.h"
-
-#include "vpr_utils.h"
-#include "vpr_error.h"
-
-#include "globals.h"
-
-#include "move_utils.h"
-
-#ifndef NO_GRAPHICS
-
-#include "draw_global.h"
-
-#include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
-#include "draw_color.h"
-#include "search_bar.h"
-#include "draw_debug.h"
-#include "manual_moves.h"
-
-#include "rr_graph.h"
-#include "route_utilization.h"
-#include "place_macro.h"
-#include "buttons.h"
+#include "clustered_netlist_fwd.h"
+#include "ezgl/rectangle.hpp"
+#include "physical_types.h"
+#include "rr_graph_fwd.h"
 
 /* This function computes and returns the boundary coordinates of a channel
  * wire segment. This can be used for drawing a wire or determining if a
@@ -75,4 +45,3 @@ std::set<RRNodeId> draw_expand_non_configurable_rr_nodes(RRNodeId hit_node);
 void deselect_all();
 
 #endif /* NO_GRAPHICS */
-#endif /* DRAW_SEARCHBAR_H */

@@ -1,7 +1,6 @@
 #include <climits>
 #include "arch_types.h"
 #include "rr_graph_storage.h"
-#include "vtr_expr_eval.h"
 #include "vtr_error.h"
 
 #include <algorithm>

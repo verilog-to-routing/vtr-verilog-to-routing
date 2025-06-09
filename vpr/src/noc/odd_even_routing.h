@@ -1,5 +1,4 @@
-#ifndef VTR_ODD_EVEN_ROUTING_H
-#define VTR_ODD_EVEN_ROUTING_H
+#pragma once
 
 #include "turn_model_routing.h"
 
@@ -90,5 +89,3 @@ class OddEvenRouting : public TurnModelRouting {
      */
     vtr::vector<NocRouterId, t_physical_tile_loc> compressed_noc_locs_;
 };
-
-#endif //VTR_ODD_EVEN_ROUTING_H

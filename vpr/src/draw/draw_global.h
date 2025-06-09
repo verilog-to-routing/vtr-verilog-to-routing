@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_global.h
  * This file contains declaration of accessor functions that can be used to
@@ -9,9 +10,6 @@
  * Author: Long Yu (Mike) Wang
  * Date: August 21, 2013
  */
-
-#ifndef DRAW_GLOBAL_H
-#define DRAW_GLOBAL_H
 
 #ifndef NO_GRAPHICS
 
@@ -28,5 +26,3 @@ t_draw_coords* get_draw_coords_vars();
 t_draw_state* get_draw_state_vars();
 
 #endif // NO_GRAPHICS
-
-#endif

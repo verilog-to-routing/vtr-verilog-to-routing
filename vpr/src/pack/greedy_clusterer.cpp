@@ -144,8 +144,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                      pre_cluster_timing_manager_);
 
     // Pick the first seed molecule.
-    PackMoleculeId seed_mol_id = seed_selector.get_next_seed(prepacker,
-                                                             cluster_legalizer);
+    PackMoleculeId seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
 
     /****************************************************************
      * Clustering
@@ -213,8 +212,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                           cluster_legalizer);
 
         // Pick new seed.
-        seed_mol_id = seed_selector.get_next_seed(prepacker,
-                                                  cluster_legalizer);
+        seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
     }
 
     // If this architecture has LE physical block, report its usage.

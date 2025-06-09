@@ -2029,8 +2029,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return e_rr_type::OPIN;
             case uxsd::enum_node_type::IPIN:
                 return e_rr_type::IPIN;
+<<<<<<< HEAD
             case uxsd::enum_node_type::MEDIUM:
                 return e_rr_type::MEDIUM;
+=======
+>>>>>>> c8f1161f8d5f01b5fc08ab219b7af0e79fa10603
             default:
                 report_error(
                     "Invalid node type %d",

@@ -1,7 +1,5 @@
-#ifndef RR_GRAPH_STORAGE
-#define RR_GRAPH_STORAGE
+#pragma once
 
-#include <exception>
 #include <bitset>
 
 #include "vtr_vector.h"
@@ -15,7 +13,6 @@
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
-#include <iostream>
 #include <optional>
 #include <cstdint>
 
@@ -1222,5 +1219,3 @@ class t_rr_graph_view {
     const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx_;
 
 };
-
-#endif /* _RR_GRAPH_STORAGE_ */

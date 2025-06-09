@@ -255,6 +255,14 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             const int root_j,
                             int pin_physical_num);
 
+/**
+ * @brief Returns the RR node ID for the given atom pin ID.
+ * **Warning**: This function should be called only if flat-router is enabled,
+ * since, otherwise, the routing resources inside clusters are not added to the RR graph.
+ * @param atom_pin_id The atom pin ID.
+ */
+RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id);
+
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               t_physical_tile_type_ptr physical_tile,
                               const int layer,

@@ -1,5 +1,4 @@
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_util.h"
 
 #include "vpr_error.h"
@@ -9,7 +8,6 @@
 #include "physical_types_util.h"
 
 #include "describe_rr_node.h"
-#include "rr_graph_utils.h"
 
 /*********************** Subroutines local to this module *******************/
 
