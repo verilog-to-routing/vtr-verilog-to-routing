@@ -425,8 +425,6 @@
               <item translatable="yes">None</item>
               <item translatable="yes">Crit Path Flylines</item>
               <item translatable="yes">Crit Path Flylines Delays</item>
-              <!-- <item translatable="yes">Crit Path Routing</item>
-              <item translatable="yes">Crit Path Routing Delays</item> These two items are generated at runtime -->
             </items>
           </object>
           <packing>
