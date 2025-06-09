@@ -9,7 +9,9 @@ sudo apt-get install -y \
     bison \
     flex \
     python3-dev \
-    python3-venv
+    python3-venv \
+    openssl \
+    libssl-dev
 
 # Packages for more complex features of VTR that most people will use.
 sudo apt-get install -y \
