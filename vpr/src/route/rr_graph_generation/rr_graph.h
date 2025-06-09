@@ -9,6 +9,7 @@
 #include "vpr_types.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_type.h"
+#include "clb2clb_directs.h"
 
 /* Warnings about the routing graph that can be returned.
  * This is to avoid output messages during a value sweep */

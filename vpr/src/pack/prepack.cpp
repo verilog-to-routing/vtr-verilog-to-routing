@@ -71,8 +71,7 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
-                                const AtomNetlist& atom_nlist,
-                                const LogicalModels& models);
+                                const AtomNetlist& atom_nlist);
 
 static void print_pack_molecules(const char* fname,
                                  const std::vector<t_pack_patterns>& list_of_pack_patterns,
@@ -120,8 +119,7 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
 
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
-                                  const AtomNetlist& atom_nlist,
-                                  const LogicalModels& models);
+                                  const AtomNetlist& atom_nlist);
 
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
@@ -833,8 +831,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             PackMoleculeId cur_molecule_id = try_create_molecule(best_pattern,
                                                                  blk_id,
                                                                  atom_molecules_multimap,
-                                                                 atom_nlist,
-                                                                 models);
+                                                                 atom_nlist);
 
             // If the molecule could not be created, move to the next block.
             if (!cur_molecule_id.is_valid())
@@ -943,8 +940,7 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
 PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
                                               AtomBlockId blk_id,
                                               std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
-                                              const AtomNetlist& atom_nlist,
-                                              const LogicalModels& models) {
+                                              const AtomNetlist& atom_nlist) {
     auto pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 
     // Check pack pattern validity
@@ -968,7 +964,7 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
     molecule.root = pack_pattern->root_block->block_id;
     molecule.chain_id = MoleculeChainId::INVALID();
 
-    if (!try_expand_molecule(molecule, blk_id, atom_molecules_multimap, atom_nlist, models)) {
+    if (!try_expand_molecule(molecule, blk_id, atom_molecules_multimap, atom_nlist)) {
         // Failed to create molecule
         return PackMoleculeId::INVALID();
     }
@@ -1012,8 +1008,7 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
-                                const AtomNetlist& atom_nlist,
-                                const LogicalModels& models) {
+                                const AtomNetlist& atom_nlist) {
     // root block of the pack pattern, which is the starting point of this pattern
     const auto pattern_root_block = molecule.pack_pattern->root_block;
     // bool array indicating whether a position in a pack pattern is optional or should
@@ -1070,7 +1065,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
             // this block is the driver of this connection
             if (block_connection->from_block == pattern_block) {
                 // find the block this connection is driving and add it to the queue
-                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist, models);
+                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist);
                 // add this sink block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->to_block, sink_blk_id));
                 // this block is being driven by this connection
@@ -1102,8 +1097,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
  */
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
-                                  const AtomNetlist& atom_nlist,
-                                  const LogicalModels& models) {
+                                  const AtomNetlist& atom_nlist) {
     const t_model_ports* from_port_model = connections.from_pin->port->model_port;
     const int from_pin_number = connections.from_pin->pin_number;
     auto from_port_id = atom_nlist.find_atom_port(block_id, from_port_model);

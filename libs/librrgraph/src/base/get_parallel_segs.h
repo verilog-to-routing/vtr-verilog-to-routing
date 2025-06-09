@@ -19,5 +19,3 @@ std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& s
                                              t_unified_to_parallel_seg_index& seg_index_map,
                                              enum e_parallel_axis parallel_axis,
                                              bool keep_original_index = false);
-
-#endif

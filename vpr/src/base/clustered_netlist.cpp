@@ -60,7 +60,7 @@ ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int log
     return block_logical_pins_[blk][logical_pin_index];
 }
 
-bool ClusteredNetlist::block_contains_primary_input(const ClusterBlockId blk, const LogicalModels& models) const {
+bool ClusteredNetlist::block_contains_primary_input(const ClusterBlockId blk) const {
     const t_pb* pb = block_pb(blk);
     LogicalModelId input_model_id = LogicalModels::MODEL_INPUT_ID;
     const t_pb* primary_input_pb = pb->find_pb_for_model(input_model_id);
@@ -68,7 +68,7 @@ bool ClusteredNetlist::block_contains_primary_input(const ClusterBlockId blk, co
 }
 
 ///@brief Returns true if the specified block contains a primary output (e.g. BLIF .output primitive)
-bool ClusteredNetlist::block_contains_primary_output(const ClusterBlockId blk, const LogicalModels& models) const {
+bool ClusteredNetlist::block_contains_primary_output(const ClusterBlockId blk) const {
     const t_pb* pb = block_pb(blk);
     LogicalModelId output_model_id = LogicalModels::MODEL_OUTPUT_ID;
     const t_pb* primary_output_pb = pb->find_pb_for_model(output_model_id);

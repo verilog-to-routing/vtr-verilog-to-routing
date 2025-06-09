@@ -701,7 +701,7 @@ void absorb_buffer_luts(AtomNetlist& netlist, const LogicalModels& models, int v
     //TODO: absorb inverter LUTs?
 }
 
-bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk, const LogicalModels& models) {
+bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
     if (netlist.block_type(blk) == AtomBlockType::BLOCK) {
         const LogicalModelId names_model = LogicalModels::MODEL_NAMES_ID;
         if (netlist.block_model(blk) != names_model) return false;
