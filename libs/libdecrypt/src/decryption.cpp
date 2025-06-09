@@ -25,9 +25,9 @@ Decryption::Decryption(const std::string& encryptedFile)
  */
 void Decryption::decryptFile() {
 #ifdef PRIVATE_KEY
-    const char* privateKeyString = AY_OBFUSCATE(PRIVATE_KEY);
+    const char* privateKeyString = DECRYPT_OBFUSCATE(PRIVATE_KEY);
 #else
-    const char* privateKeyString = AY_OBFUSCATE(
+    const char* privateKeyString = DECRYPT_OBFUSCATE(
         "-----BEGIN RSA PRIVATE KEY-----\n"
         "dummykey\n"
         "-----END RSA PRIVATE KEY-----\n"); // Replace with your private key string

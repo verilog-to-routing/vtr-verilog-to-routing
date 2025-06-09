@@ -1,18 +1,18 @@
 #pragma once
 
 #ifdef _MSC_VER
-	#define AY_CAT(X,Y) AY_CAT2(X,Y)
-	#define AY_CAT2(X,Y) X##Y
-	#define AY_LINE int(AY_CAT(__LINE__,U))
+	#define ENCRYPT_CAT(X,Y) ENCRYPT_CAT2(X,Y)
+	#define ENCRYPT_CAT2(X,Y) X##Y
+	#define ENCRYPT_LINE int(ENCRYPT_CAT(__LINE__,U))
 #else
-	#define AY_LINE __LINE__
+	#define ENCRYPT_LINE __LINE__
 #endif
 
-#ifndef AY_OBFUSCATE_DEFAULT_KEY
+#ifndef ENCRYPT_OBFUSCATE_DEFAULT_KEY
 	// The default 64 bit key to obfuscate strings with.
-	// This can be user specified by defining AY_OBFUSCATE_DEFAULT_KEY before 
+	// This can be user specified by defining ENCRYPT_OBFUSCATE_DEFAULT_KEY before 
 	// including obfuscate.h
-	#define AY_OBFUSCATE_DEFAULT_KEY libencrypt::generate_key(AY_LINE)
+	#define ENCRYPT_OBFUSCATE_DEFAULT_KEY libencrypt::generate_key(ENCRYPT_LINE)
 #endif
 
 namespace libencrypt
@@ -155,7 +155,7 @@ namespace libencrypt
 
 	// This function exists purely to extract the number of elements 'N' in the
 	// array 'data'
-	template <size_type N, key_type KEY = AY_OBFUSCATE_DEFAULT_KEY>
+	template <size_type N, key_type KEY = ENCRYPT_OBFUSCATE_DEFAULT_KEY>
 	constexpr auto make_obfuscator(const char(&data)[N])
 	{
 		return obfuscator<N, KEY>(data);
@@ -165,13 +165,13 @@ namespace libencrypt
 // Obfuscates the string 'data' at compile-time and returns a reference to a
 // libencrypt::obfuscated_data object with global lifetime that has functions for
 // decrypting the string and is also implicitly convertable to a char*
-#define AY_OBFUSCATE(data) AY_OBFUSCATE_KEY(data, AY_OBFUSCATE_DEFAULT_KEY)
+#define ENCRYPT_OBFUSCATE(data) ENCRYPT_OBFUSCATE_KEY(data, ENCRYPT_OBFUSCATE_DEFAULT_KEY)
 
 // Obfuscates the string 'data' with 'key' at compile-time and returns a
 // reference to a libencrypt::obfuscated_data object with global lifetime that has
 // functions for decrypting the string and is also implicitly convertable to a
 // char*
-#define AY_OBFUSCATE_KEY(data, key) \
+#define ENCRYPT_OBFUSCATE_KEY(data, key) \
 	[]() -> libencrypt::obfuscated_data<sizeof(data)/sizeof(data[0]), key>& { \
 		static_assert(sizeof(decltype(key)) == sizeof(libencrypt::key_type), "key must be a 64 bit unsigned integer"); \
 		static_assert((key) >= (1ull << 56), " must span all 8 bytes"); \

@@ -1,18 +1,18 @@
 #pragma once
 
 #ifdef _MSC_VER
-	#define AY_CAT(X,Y) AY_CAT2(X,Y)
-	#define AY_CAT2(X,Y) X##Y
-	#define AY_LINE int(AY_CAT(__LINE__,U))
+	#define DECRYPT_CAT(X,Y) DECRYPT_CAT2(X,Y)
+	#define DECRYPT_CAT2(X,Y) X##Y
+	#define DECRYPT_LINE int DECRYPT_CAT(__LINE__,U))
 #else
-	#define AY_LINE __LINE__
+	#define DECRYPT_LINE __LINE__
 #endif
 
-#ifndef AY_OBFUSCATE_DEFAULT_KEY
+#ifndef DECRYPT_OBFUSCATE_DEFAULT_KEY
 	// The default 64 bit key to obfuscate strings with.
-	// This can be user specified by defining AY_OBFUSCATE_DEFAULT_KEY before 
+	// This can be user specified by defining DECRYPT_OBFUSCATE_DEFAULT_KEY before 
 	// including obfuscate.h
-	#define AY_OBFUSCATE_DEFAULT_KEY libdecrypt::generate_key(AY_LINE)
+	#define DECRYPT_OBFUSCATE_DEFAULT_KEY libdecrypt::generate_key(DECRYPT_LINE)
 #endif
 
 namespace libdecrypt
@@ -155,7 +155,7 @@ namespace libdecrypt
 
 	// This function exists purely to extract the number of elements 'N' in the
 	// array 'data'
-	template <size_type N, key_type KEY = AY_OBFUSCATE_DEFAULT_KEY>
+	template <size_type N, key_type KEY = DECRYPT_OBFUSCATE_DEFAULT_KEY>
 	constexpr auto make_obfuscator(const char(&data)[N])
 	{
 		return obfuscator<N, KEY>(data);
@@ -165,13 +165,13 @@ namespace libdecrypt
 // Obfuscates the string 'data' at compile-time and returns a reference to a
 // libdecrypt::obfuscated_data object with global lifetime that has functions for
 // decrypting the string and is also implicitly convertable to a char*
-#define AY_OBFUSCATE(data) AY_OBFUSCATE_KEY(data, AY_OBFUSCATE_DEFAULT_KEY)
+#define DECRYPT_OBFUSCATE(data) DECRYPT_OBFUSCATE_KEY(data, DECRYPT_OBFUSCATE_DEFAULT_KEY)
 
 // Obfuscates the string 'data' with 'key' at compile-time and returns a
 // reference to a libdecrypt::obfuscated_data object with global lifetime that has
 // functions for decrypting the string and is also implicitly convertable to a
 // char*
-#define AY_OBFUSCATE_KEY(data, key) \
+#define DECRYPT_OBFUSCATE_KEY(data, key) \
 	[]() -> libdecrypt::obfuscated_data<sizeof(data)/sizeof(data[0]), key>& { \
 		static_assert(sizeof(decltype(key)) == sizeof(libdecrypt::key_type), "key must be a 64 bit unsigned integer"); \
 		static_assert((key) >= (1ull << 56), " must span all 8 bytes"); \
