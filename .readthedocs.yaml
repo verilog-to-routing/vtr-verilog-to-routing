@@ -19,6 +19,9 @@ build:
   tools:
     python: "3.11"
 
+submodules:
+  include: all
+
 python:
   install:
     - requirements: doc/requirements.txt
