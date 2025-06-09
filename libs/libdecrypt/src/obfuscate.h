@@ -12,10 +12,10 @@
 	// The default 64 bit key to obfuscate strings with.
 	// This can be user specified by defining AY_OBFUSCATE_DEFAULT_KEY before 
 	// including obfuscate.h
-	#define AY_OBFUSCATE_DEFAULT_KEY ay::generate_key(AY_LINE)
+	#define AY_OBFUSCATE_DEFAULT_KEY libdecrypt::generate_key(AY_LINE)
 #endif
 
-namespace ay
+namespace libdecrypt
 {
 	using size_type = unsigned long long;
 	using key_type = unsigned long long;
@@ -163,20 +163,20 @@ namespace ay
 }
 
 // Obfuscates the string 'data' at compile-time and returns a reference to a
-// ay::obfuscated_data object with global lifetime that has functions for
+// libdecrypt::obfuscated_data object with global lifetime that has functions for
 // decrypting the string and is also implicitly convertable to a char*
 #define AY_OBFUSCATE(data) AY_OBFUSCATE_KEY(data, AY_OBFUSCATE_DEFAULT_KEY)
 
 // Obfuscates the string 'data' with 'key' at compile-time and returns a
-// reference to a ay::obfuscated_data object with global lifetime that has
+// reference to a libdecrypt::obfuscated_data object with global lifetime that has
 // functions for decrypting the string and is also implicitly convertable to a
 // char*
 #define AY_OBFUSCATE_KEY(data, key) \
-	[]() -> ay::obfuscated_data<sizeof(data)/sizeof(data[0]), key>& { \
-		static_assert(sizeof(decltype(key)) == sizeof(ay::key_type), "key must be a 64 bit unsigned integer"); \
+	[]() -> libdecrypt::obfuscated_data<sizeof(data)/sizeof(data[0]), key>& { \
+		static_assert(sizeof(decltype(key)) == sizeof(libdecrypt::key_type), "key must be a 64 bit unsigned integer"); \
 		static_assert((key) >= (1ull << 56), " must span all 8 bytes"); \
 		constexpr auto n = sizeof(data)/sizeof(data[0]); \
-		constexpr auto obfuscator = ay::make_obfuscator<n, key>(data); \
-		static auto obfuscated_data = ay::obfuscated_data<n, key>(obfuscator); \
+		constexpr auto obfuscator = libdecrypt::make_obfuscator<n, key>(data); \
+		static auto obfuscated_data = libdecrypt::obfuscated_data<n, key>(obfuscator); \
 		return obfuscated_data; \
 	}()
