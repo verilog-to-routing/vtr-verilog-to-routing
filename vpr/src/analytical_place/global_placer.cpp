@@ -21,6 +21,7 @@
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
 #include "globals.h"
+#include "logic_types.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
 #include "physical_types.h"
@@ -38,6 +39,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const DeviceGrid& device_grid,
                                                  const std::vector<t_logical_block_type>& logical_block_types,
                                                  const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                 const LogicalModels& models,
                                                  PreClusterTimingManager& pre_cluster_timing_manager,
                                                  std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                  float ap_timing_tradeoff,
@@ -52,6 +54,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                device_grid,
                                                logical_block_types,
                                                physical_tile_types,
+                                               models,
                                                pre_cluster_timing_manager,
                                                place_delay_model,
                                                ap_timing_tradeoff,
@@ -68,6 +71,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      const DeviceGrid& device_grid,
                                      const std::vector<t_logical_block_type>& logical_block_types,
                                      const std::vector<t_physical_tile_type>& physical_tile_types,
+                                     const LogicalModels& models,
                                      PreClusterTimingManager& pre_cluster_timing_manager,
                                      std::shared_ptr<PlaceDelayModel> place_delay_model,
                                      float ap_timing_tradeoff,
@@ -100,6 +104,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                                                      device_grid,
                                                                      logical_block_types,
                                                                      physical_tile_types,
+                                                                     models,
                                                                      log_verbosity_);
     if (generate_mass_report)
         density_manager_->generate_mass_report();
@@ -110,6 +115,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                                 ap_netlist_,
                                                 density_manager_,
                                                 prepacker,
+                                                models,
                                                 log_verbosity_);
 }
 

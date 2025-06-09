@@ -9,11 +9,12 @@
  */
 
 #include <vector>
-#include <ap_netlist_fwd.h>
+#include "ap_netlist_fwd.h"
+#include "primitive_vector_fwd.h"
 #include "vtr_vector.h"
 
 // Forward declarations
-class PrimitiveVector;
+class PrimitiveDimManager;
 
 /**
  * @brief Generate a mass report for the given AP netlist with the given block
@@ -30,4 +31,5 @@ class PrimitiveVector;
 void generate_ap_mass_report(const std::vector<PrimitiveVector>& logical_block_type_capacities,
                              const std::vector<PrimitiveVector>& physical_tile_type_capacities,
                              const vtr::vector<APBlockId, PrimitiveVector>& block_mass,
+                             const PrimitiveDimManager& dim_manager,
                              const APNetlist& ap_netlist);
