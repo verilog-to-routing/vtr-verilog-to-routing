@@ -1,4 +1,5 @@
 #include <set>
+#include <sstream>
 
 #include "arch_util.h"
 #include "logic_types.h"
