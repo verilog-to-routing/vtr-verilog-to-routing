@@ -42,8 +42,8 @@ loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded w
             auto line = location_data.line(load_result.offset);
             auto col = location_data.col(load_result.offset);
             throw XmlError("Unable to load XML file '" + filename + "', " + msg
-                            + " (line: " + std::to_string(line) + " col: " + std::to_string(col) + ")",
-                        filename.c_str(), line);
+                               + " (line: " + std::to_string(line) + " col: " + std::to_string(col) + ")",
+                           filename.c_str(), line);
         }
         return location_data;
     }
