@@ -1,5 +1,4 @@
-#ifndef ENCRYPTION_H
-#define ENCRYPTION_H
+#pragma once
 
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
@@ -81,5 +80,3 @@ public:
      */
     static bool encryptFile(const std::string& publicKeyFile, std::string& filePath);
 };
-
-#endif // ENCRYPTION_H

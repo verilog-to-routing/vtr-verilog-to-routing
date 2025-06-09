@@ -1,5 +1,4 @@
-#ifndef OBFUSCATE_H
-#define OBFUSCATE_H
+#pragma once
 
 #ifdef _MSC_VER
 	#define AY_CAT(X,Y) AY_CAT2(X,Y)
@@ -181,5 +180,3 @@ namespace ay
 		static auto obfuscated_data = ay::obfuscated_data<n, key>(obfuscator); \
 		return obfuscated_data; \
 	}()
-
-#endif

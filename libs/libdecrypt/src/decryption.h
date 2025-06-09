@@ -1,5 +1,4 @@
-#ifndef DECRYPTION_H
-#define DECRYPTION_H
+#pragma once
 
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
@@ -83,5 +82,3 @@ private:
      */
     static std::string decryptSessionKey(const std::string& encryptedSessionKey, EVP_PKEY* privateKey);
 };
-
-#endif // DECRYPTION_H
