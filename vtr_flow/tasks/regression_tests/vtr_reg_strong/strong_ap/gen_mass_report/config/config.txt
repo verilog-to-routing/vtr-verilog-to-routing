@@ -1,9 +1,9 @@
-############################################
+##############################################
 # Configuration file for running experiments
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/blif/4
+circuits_dir=benchmarks/verilog
 
 # Path to directory of architectures to use
 archs_dir=arch/timing/fixed_size
@@ -25,3 +25,4 @@ pass_requirements_file=pass_requirements_ap.txt
 
 # Script parameters
 script_params_common=-track_memory_usage --analytical_place --route --ap_generate_mass_report on
+
