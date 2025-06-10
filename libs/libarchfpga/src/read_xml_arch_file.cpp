@@ -123,6 +123,11 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                                             T type,
                                             const char* pin_loc_string,
                                             const pugiutil::loc_data& loc_data);
+template<typename T>
+static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
+                                                 T type,
+                                                 const char* pin_loc_string,
+                                                 const pugiutil::loc_data& loc_data);
 
 /* Process XML hierarchy */
 static void ProcessTiles(pugi::xml_node Node,
@@ -703,10 +708,15 @@ static void LoadPinLoc(pugi::xml_node Locations,
                                                                                &sub_tile,
                                                                                token.c_str(),
                                                                                loc_data);
-
+                                /* Get the offset in the capacity range */
+                                auto capacity_range = ProcessInstanceString<t_sub_tile*>(Locations,
+                                                                                         &sub_tile,
+                                                                                         token.c_str(),
+                                                                                         loc_data);
+                                VTR_ASSERT(0 <= capacity_range.first && capacity_range.second < sub_tile_capacity);
                                 for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
                                     VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
-                                    for (int capacity = 0; capacity < sub_tile_capacity; ++capacity) {
+                                    for (int capacity = capacity_range.first; capacity <= capacity_range.second; ++capacity) {
                                         int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
                                         int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
                                         type->pinloc[width][height][side][physical_pin_index] = true;
@@ -736,6 +746,99 @@ static void LoadPinLoc(pugi::xml_node Locations,
     }
 }
 
+/* Parse the string to extract instance range, e.g., io[4:7] -> (4, 7)
+ * If no instance range is explicitly defined, we assume the range of type capacity, i.e., (0, capacity - 1) */
+template<typename T>
+static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
+                                                 T type,
+                                                 const char* pin_loc_string,
+                                                 const pugiutil::loc_data& loc_data) {
+    int num_tokens;
+    auto tokens = GetTokensFromString(pin_loc_string, &num_tokens);
+
+    int token_index = 0;
+    auto token = tokens[token_index];
+
+    if (token.type != TOKEN_STRING || 0 != strcmp(token.data, type->name.c_str())) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "Wrong physical type name of the port: %s\n", pin_loc_string);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    int first_inst = 0;
+    int last_inst = type->capacity.total() - 1;
+
+    /* If there is a dot, such as io.input[0:3], it indicates the full range of the capacity, the default value should be returned */
+    if (token.type == TOKEN_DOT) {
+        freeTokens(tokens, num_tokens);
+        return std::make_pair(first_inst, last_inst);
+    }
+
+    /* If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here. */
+    if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No open square bracket present: %s\n", pin_loc_string);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_INT) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No integer to indicate least significant instance index: %s\n", pin_loc_string);
+    }
+
+    first_inst = vtr::atoi(token.data);
+
+    token_index++;
+    token = tokens[token_index];
+
+    // Single pin is specified
+    if (token.type != TOKEN_COLON) {
+        if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           "No closing bracket: %s\n", pin_loc_string);
+        }
+
+        token_index++;
+
+        if (token_index != num_tokens) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           "instance of pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
+        }
+
+        freeTokens(tokens, num_tokens);
+        return std::make_pair(first_inst, first_inst);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_INT) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No integer to indicate most significant instance index: %s\n", pin_loc_string);
+    }
+
+    last_inst = vtr::atoi(token.data);
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No closed square bracket: %s\n", pin_loc_string);
+    }
+
+    if (first_inst > last_inst) {
+        std::swap(first_inst, last_inst);
+    }
+
+    freeTokens(tokens, num_tokens);
+    return std::make_pair(first_inst, last_inst);
+}
+
 template<typename T>
 static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                                             T type,
@@ -754,6 +857,20 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
 
     token_index++;
     token = tokens[token_index];
+
+    /* If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here. */
+    if (token.type == TOKEN_OPEN_SQUARE_BRACKET) {
+        while (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+            token_index++;
+            token = tokens[token_index];
+            if (token_index == num_tokens) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                               "Found an open '[' but miss close ']' of the port: %s\n", pin_loc_string);
+            }
+        }
+        token_index++;
+        token = tokens[token_index];
+    }
 
     if (token.type != TOKEN_DOT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
@@ -3362,8 +3479,8 @@ static void ProcessPinLocations(pugi::xml_node Locations,
 
         //Verify that all top-level pins have had their locations specified
 
-        //Record all the specified pins
-        std::map<std::string, std::set<int>> port_pins_with_specified_locations;
+        //Record all the specified pins, (capacity, port_name, index)
+        std::map<int, std::map<std::string, std::set<int>>> port_pins_with_specified_locations;
         for (int l = 0; l < num_of_avail_layer; ++l) {
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
@@ -3372,10 +3489,22 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             InstPort inst_port(token);
 
                             //A pin specification should contain only the block name, and not any instance count information
+                            //A pin specification may contain instance count, but should be in the range of capacity
+                            int inst_lsb = 0;
+                            int inst_msb = SubTile->capacity.total() - 1;
                             if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
+                                /* Extract range numbers */
+                                inst_lsb = inst_port.instance_low_index();
+                                inst_msb = inst_port.instance_high_index();
+                                if (inst_lsb > inst_msb) {
+                                    std::swap(inst_lsb, inst_msb);
+                                }
+                                /* Check if we have a valid range */
+                                if (inst_lsb < 0 || inst_msb > SubTile->capacity.total() - 1) {
                                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                               "Pin location specification '%s' should not contain an instance range (should only be the block name)",
-                                               token.c_str());
+                                                   "Pin location specification '%s' contain an out-of-range instance. Expect [%d:%d]",
+                                                   token.c_str(), 0, SubTile->capacity.total() - 1);
+                                }
                             }
 
                             //Check that the block name matches
@@ -3412,9 +3541,11 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             VTR_ASSERT(pin_low_idx >= 0);
                             VTR_ASSERT(pin_high_idx >= 0);
 
-                            for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
-                                //Record that the pin has its location specified
-                                port_pins_with_specified_locations[inst_port.port_name()].insert(ipin);
+                            for (int iinst = inst_lsb + SubTile->capacity.low; iinst <= inst_msb + SubTile->capacity.low; ++iinst) {
+                                for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
+                                    //Record that the pin has it's location specified
+                                    port_pins_with_specified_locations[iinst][inst_port.port_name()].insert(ipin);
+                                }
                             }
                         }
                     }
@@ -3423,13 +3554,15 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         }
 
         //Check for any pins missing location specs
+        for (int iinst = SubTile->capacity.low; iinst < SubTile->capacity.high; ++iinst) {
         for (const auto& port : SubTile->ports) {
             for (int ipin = 0; ipin < port.num_pins; ++ipin) {
-                if (!port_pins_with_specified_locations[port.name].count(ipin)) {
+                    if (!port_pins_with_specified_locations[iinst][port.name].count(ipin)) {
                     //Missing
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                   "Pin '%s.%s[%d]' has no pin location specified (a location is required for pattern=\"custom\")",
-                                   SubTile->name.c_str(), port.name, ipin);
+                                       "Pin '%s[%d].%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
+                                       SubTile->name.c_str(), iinst, port.name, ipin);
+                    }
                 }
             }
         }
