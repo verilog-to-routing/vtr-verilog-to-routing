@@ -3,7 +3,7 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/blif/4
+circuits_dir=benchmarks/verilog
 
 # Path to directory of architectures to use
 archs_dir=arch/timing/fixed_size
