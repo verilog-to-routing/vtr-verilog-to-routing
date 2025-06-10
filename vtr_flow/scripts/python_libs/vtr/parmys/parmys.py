@@ -151,7 +151,8 @@ def run(
             Circuit file to optimize
 
         include_files :
-            List of include files to a benchmark circuit (passed in through run_vtr_flow with -include command)
+            List of include files to a benchmark circuit 
+            (passed in through run_vtr_flow with -include command)
 
         output_netlist :
             File name to output the resulting circuit to
