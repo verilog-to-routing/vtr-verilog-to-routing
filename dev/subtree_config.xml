@@ -25,11 +25,6 @@
         external_url="https://github.com/verilog-to-routing/tatum.git"
         default_external_ref="master"/>
     <subtree
-        name="libezgl"
-        internal_path="libs/EXTERNAL/libezgl"
-        external_url="https://github.com/mariobadr/ezgl.git"
-        default_external_ref="master"/>
-    <subtree
         name="capnproto"
         internal_path="libs/EXTERNAL/capnproto"
         external_url="https://github.com/capnproto/capnproto.git"
