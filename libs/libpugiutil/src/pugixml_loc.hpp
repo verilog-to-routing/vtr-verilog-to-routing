@@ -6,7 +6,6 @@
 
 #include <vector>
 #include "pugixml.hpp"
-#include "decryption.h"
 #include <cstring>
 namespace pugiutil {
 

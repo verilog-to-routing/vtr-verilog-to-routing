@@ -8,6 +8,8 @@ namespace pugiutil {
 //Returns loc_data look-up for xml node line numbers
 loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded with file contents
                   const std::string filename) { //Filename to load from
+#ifdef VTR_ENABLE_ENCRYPTION
+    #include "decryption.h"
     //store the position of last '.' in the file name
     size_t position = filename.find_last_of(".");
     std::string result = "";
@@ -33,20 +35,20 @@ loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded w
         }
         delete[] final;
         return location_data;
-    } else {
-        //auto location_data = loc_data(end_result_fname);
-        auto location_data = loc_data(filename);
-        auto load_result = doc.load_file(filename.c_str());
-        if (!load_result) {
-            std::string msg = load_result.description();
-            auto line = location_data.line(load_result.offset);
-            auto col = location_data.col(load_result.offset);
-            throw XmlError("Unable to load XML file '" + filename + "', " + msg
-                               + " (line: " + std::to_string(line) + " col: " + std::to_string(col) + ")",
-                           filename.c_str(), line);
-        }
-        return location_data;
     }
+#endif
+    //auto location_data = loc_data(end_result_fname);
+    auto location_data = loc_data(filename);
+    auto load_result = doc.load_file(filename.c_str());
+    if (!load_result) {
+        std::string msg = load_result.description();
+        auto line = location_data.line(load_result.offset);
+        auto col = location_data.col(load_result.offset);
+        throw XmlError("Unable to load XML file '" + filename + "', " + msg
+                            + " (line: " + std::to_string(line) + " col: " + std::to_string(col) + ")",
+                        filename.c_str(), line);
+    }
+    return location_data;
 }
 //Gets the first child element of the given name and returns it.
 //

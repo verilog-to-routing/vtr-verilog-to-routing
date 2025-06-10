@@ -1,1 +1,1 @@
-abcd
+# Write your passphrase in the file

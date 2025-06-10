@@ -70,8 +70,6 @@ apt install -y \
   g++-9 \
   gcc-9 \
   wget \
-  openssl \
-  libssl-dev \
   libtbb-dev
 
 # installing the latest version of cmake

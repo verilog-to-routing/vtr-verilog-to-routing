@@ -26,7 +26,6 @@ set_property(CACHE VTR_IPO_BUILD PROPERTY STRINGS auto on off)
 set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticeable run-time overhead, 4: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 
-option(VTR_ENABLE_STRICT_COMPILE "Specifies whether compiler warnings should be treated as errors (e.g. -Werror)" OFF)
 option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
@@ -37,7 +36,12 @@ option(SPEC_CPU "Enable SPEC CPU v8 support" OFF)
 #Allow the user to decide whether to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
+
+# Allow the user to decide whether to compile the capnproto library.
 option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
+
+# Allow the user to decide whether to compile encryption/decryption libraries.
+option(VTR_ENABLE_ENCRYPTION "Enable encryption/decryption support in VPR." OFF)
 
 #Allow the user to decide whether to compile the server module
 option(VPR_USE_SERVER "Specify whether vpr enables the server mode" ON)
