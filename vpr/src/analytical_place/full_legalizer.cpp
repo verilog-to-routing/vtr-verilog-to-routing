@@ -359,10 +359,16 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
                   }
               });
 
-    // Group the molecules by tile
+    // Group the molecules by root tile. Any non-zero offset gets
+    // pulled back to its root.
     std::map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
     for (const auto& [mol_id, ext_pins, is_long_chain, tile_loc] : sorted_blocks) {
-        tile_blocks[tile_loc].push_back(mol_id);
+        int width_offset = device_grid_.get_width_offset(tile_loc);
+        int height_offset = device_grid_.get_height_offset(tile_loc);
+        t_physical_tile_loc root_loc = {tile_loc.x - width_offset,
+                                        tile_loc.y - height_offset,
+                                        tile_loc.layer_num};
+        tile_blocks[root_loc].push_back(mol_id);
     }
 
     return tile_blocks;
@@ -379,13 +385,10 @@ void BasicMinDisturbance::cluster_molecules_in_tile(
     std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check)
 {
     for (PackMoleculeId mol_id: tile_molecules) {
+        // Get the block type for compatibility check.
         const auto block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
         if (!block_type) {
             VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
-        }
-        // Do not create clusters for non-root tiles.
-        if (!(device_grid.get_width_offset(tile_loc) == 0 && device_grid.get_height_offset(tile_loc) == 0)) {
-            continue;
         }
 
         // Try all subtiles in a single loop
