@@ -95,7 +95,7 @@ Will run the VTR flow (default configuration) with Yosys frontend using Parmys p
     # Using the Parmys (Partial Mapper for Yosys) plugin as partial mapper with include files
     ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -include <path/to/include/directory>/*.v*
 
-Will run the VTR flow (default configuration) with Yosys frontend using Parmys plugin as partial mapper. In addition to the main circuit passed in with the architecture, it will also pass in every matching HDL file within the include directory.
+Will run the VTR flow (default configuration) with Yosys frontend using Parmys plugin as partial mapper. In addition to the main circuit passed in with the architecture, it will also pass in every HDL file with the specified file type within the include directory.
 
 Detailed Command-line Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
