@@ -1319,6 +1319,14 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``auto``
 
+.. option:: --ap_high_fanout_threshold <int>
+
+    Defines the threshold for high fanout nets within AP flow.
+
+    Ignores the nets that have higher fanouts than the threshold for the analytical solver.
+
+    **Default:** ``256``
+
 .. option:: --ap_verbosity <int>
 
     Controls the verbosity of the AP flow output.

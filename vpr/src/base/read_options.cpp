@@ -1952,9 +1952,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     ap_grp.add_argument<int>(args.ap_high_fanout_threshold, "--ap_high_fanout_threshold")
         .help(
-            "Ignores the nets with higher fanout number than that threshold.\n"
-            "Higher values lead to higher Global Placement solver time.")
-        .default_value("999999")
+            "Defines the threshold for high fanout nets within AP flow.\n"
+            "Ignores the nets that have higher fanouts than the threshold for the analytical solver.")
+        .default_value("256")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     ap_grp.add_argument(args.appack_max_dist_th, "--appack_max_dist_th")
