@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include <string>
-
 enum e_echo_files {
 
     //Input netlist

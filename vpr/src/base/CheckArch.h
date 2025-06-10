@@ -2,6 +2,4 @@
 
 #include "physical_types.h"
 
-#include "physical_types.h"
-
 void CheckArch(const t_arch& Arch);

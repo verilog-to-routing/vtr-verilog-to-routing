@@ -7,8 +7,6 @@
 
 class LogicalModels;
 
-class LogicalModels;
-
 class PreClusterTimingGraphResolver : public tatum::TimingGraphNameResolver {
   public:
     PreClusterTimingGraphResolver(

@@ -7,6 +7,4 @@
 
 class t_pb_graph_node;
 
-class t_pb_graph_node;
-
 void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node);

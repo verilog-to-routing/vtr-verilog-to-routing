@@ -19,8 +19,6 @@
 
 class LogicalModels;
 
-class LogicalModels;
-
 class PreClusterDelayCalculator : public tatum::DelayCalculator {
   public:
     PreClusterDelayCalculator(const AtomNetlist& netlist,
