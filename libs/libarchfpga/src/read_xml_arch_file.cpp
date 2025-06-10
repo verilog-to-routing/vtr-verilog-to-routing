@@ -3501,7 +3501,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                                 }
                                 /* Check if we have a valid range */
                                 if (inst_lsb < 0 || inst_msb > SubTile->capacity.total() - 1) {
-                                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                                    "Pin location specification '%s' contain an out-of-range instance. Expect [%d:%d]",
                                                    token.c_str(), 0, SubTile->capacity.total() - 1);
                                 }
@@ -3555,11 +3555,11 @@ static void ProcessPinLocations(pugi::xml_node Locations,
 
         //Check for any pins missing location specs
         for (int iinst = SubTile->capacity.low; iinst < SubTile->capacity.high; ++iinst) {
-        for (const auto& port : SubTile->ports) {
-            for (int ipin = 0; ipin < port.num_pins; ++ipin) {
+            for (const auto& port : SubTile->ports) {
+                for (int ipin = 0; ipin < port.num_pins; ++ipin) {
                     if (!port_pins_with_specified_locations[iinst][port.name].count(ipin)) {
-                    //Missing
-                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                        //Missing
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                        "Pin '%s[%d].%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
                                        SubTile->name.c_str(), iinst, port.name, ipin);
                     }
