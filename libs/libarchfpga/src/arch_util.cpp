@@ -872,7 +872,6 @@ void SyncModelsPbTypes_rec(t_arch* arch,
 
         pb_type->model_id = model_match_prim_id;
         vtr::t_linked_vptr* old = model_match_prim.pb_types;
-        model_match_prim.pb_types = (vtr::t_linked_vptr*)vtr::malloc(sizeof(vtr::t_linked_vptr));
         model_match_prim.pb_types = new vtr::t_linked_vptr;
         model_match_prim.pb_types->next = old;
         model_match_prim.pb_types->data_vptr = pb_type;
