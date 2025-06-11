@@ -106,6 +106,7 @@ struct t_options {
     argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
+    argparse::ArgValue<bool> ap_generate_mass_report;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;

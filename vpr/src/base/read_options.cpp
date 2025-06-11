@@ -1983,6 +1983,15 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<bool, ParseOnOff>(args.ap_generate_mass_report, "--ap_generate_mass_report")
+        .help(
+            "Controls whether to generate a report on how the partial legalizer "
+            "within the AP flow calculates the mass of primitives and the "
+            "capacity of tiles on the device. This report is useful when "
+            "debugging the partial legalizer.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& pack_grp = parser.add_argument_group("packing options");
 
     pack_grp.add_argument<bool, ParseOnOff>(args.connection_driven_clustering, "--connection_driven_clustering")

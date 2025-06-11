@@ -20,6 +20,7 @@
  */
 
 #include <string>
+#include "atom_netlist_fwd.h"
 #include "netlist.h"
 #include "ap_netlist_fwd.h"
 #include "prepack.h"
@@ -90,6 +91,20 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
     ///        This method should not be used if the block is moveable.
     const APFixedBlockLoc& block_loc(const APBlockId id) const;
 
+    /*
+     * Pins
+     */
+
+    /// @brief Returns the atom pin that corresponds with the given AP pin.
+    AtomPinId pin_atom_pin(const APPinId id) const;
+
+    /*
+     * Nets
+     */
+
+    /// @brief Returns the atom net that corresponds with the given AP net.
+    AtomNetId net_atom_net(const APNetId id) const;
+
   public: // Public Mutators
     /*
      * Note: all create_*() functions will silently return the appropriate ID
@@ -129,17 +144,19 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
      *  @param port_bit The bit index of the pin in the port
      *  @param net_id   The net the pin drives/sinks
      *  @param pin_type The type of the pin (driver/sink)
+     *  @param atom_pin_id The atom pin that this pin is modeling.
      *  @param is_const Indicates whether the pin holds a constant value (e.g.
      *                  vcc/gnd)
      */
-    APPinId create_pin(const APPortId port_id, BitIndex port_bit, const APNetId net_id, const PinType pin_type, bool is_const = false);
+    APPinId create_pin(const APPortId port_id, BitIndex port_bit, const APNetId net_id, const PinType pin_type, const AtomPinId atom_pin_id, bool is_const = false);
 
     /**
      * @brief Create an empty, or return an existing net in the netlist
      *
      *  @param name The unique name of the net
+     *  @param atom_net_id The atom net that this net is modeling.
      */
-    APNetId create_net(const std::string& name);
+    APNetId create_net(const std::string& name, const AtomNetId atom_net_id);
 
   private: // Private Members
     /*
@@ -186,4 +203,8 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
     /// @brief Location of each block (if fixed).
     ///        NOTE: This vector will likely be quite sparse.
     vtr::vector_map<APBlockId, APFixedBlockLoc> block_locs_;
+    /// @brief Atom pin associated with each AP pin.
+    vtr::vector_map<APPinId, AtomPinId> pin_atom_pin_;
+    /// @brief Atom net associated with each AP net.
+    vtr::vector_map<APNetId, AtomNetId> net_atom_net_;
 };
