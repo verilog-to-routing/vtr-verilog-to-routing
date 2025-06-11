@@ -802,7 +802,7 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
             continue;
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_SAFE_MSG(num_pins > 1, "net must have at least 2 pins");
-        
+
         double net_w = net_weights_[net_id];
 
         // Find the bounding blocks

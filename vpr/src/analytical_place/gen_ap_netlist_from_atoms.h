@@ -12,19 +12,20 @@ class APNetlist;
 class AtomNetlist;
 class Prepacker;
 class UserPlaceConstraints;
-struct t_ap_opts;
 
 /**
  * @brief Use the results from prepacking the atom netlist to generate an APNetlist.
  *
- *  @param atom_netlist The atom netlist for the input design.
- *  @param prepacker    The prepacker, initialized on the provided atom netlist.
- *  @param constraints  The placement constraints on the Atom blocks, provided
- *                      by the user.
+ *  @param atom_netlist          The atom netlist for the input design.
+ *  @param prepacker             The prepacker, initialized on the provided atom netlist.
+ *  @param constraints           The placement constraints on the Atom blocks, provided
+ *                               by the user.
+ *  @param high_fanout_threshold The threshold that nets with higher fanout will
+ *                               be ignored.
  *
  *  @return             An APNetlist object, generated from the prepacker results.
  */
 APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
                                     const UserPlaceConstraints& constraints,
-                                    const t_ap_opts& ap_opts);
+                                    const int& high_fanout_threshold);

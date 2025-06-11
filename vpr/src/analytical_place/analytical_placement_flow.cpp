@@ -180,7 +180,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     APNetlist ap_netlist = gen_ap_netlist_from_atoms(atom_nlist,
                                                      prepacker,
                                                      constraints,
-                                                     ap_opts);
+                                                     ap_opts.ap_high_fanout_threshold);
     print_ap_netlist_stats(ap_netlist);
 
     // Pre-compute the pre-clustering timing delays. This object will be passed

@@ -25,7 +25,7 @@
 APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
                                     const UserPlaceConstraints& constraints,
-                                    const t_ap_opts& ap_opts) {
+                                    const int& high_fanout_threshold) {
     // Create a scoped timer for reading the atom netlist.
     vtr::ScopedStartFinishTimer timer("Read Atom Netlist to AP Netlist");
 
@@ -158,7 +158,7 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
         // If fanout number of the net is higher than the threshold, mark as ignored for AP.
         size_t num_pins = ap_netlist.net_pins(ap_net_id).size();
         VTR_ASSERT_DEBUG(num_pins > 1);
-        if (num_pins - 1 > static_cast<size_t>(ap_opts.ap_high_fanout_threshold)) {
+        if (num_pins - 1 > static_cast<size_t>(high_fanout_threshold)) {
             ap_netlist.set_net_is_ignored(ap_net_id, true);
             continue;
         }
