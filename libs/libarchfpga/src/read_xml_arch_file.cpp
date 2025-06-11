@@ -741,11 +741,10 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                                             T type,
                                             const char* pin_loc_string,
                                             const pugiutil::loc_data& loc_data) {
-    int num_tokens;
-    auto tokens = GetTokensFromString(pin_loc_string, &num_tokens);
+    std::vector<t_token> tokens = GetTokensFromString(pin_loc_string);
 
-    int token_index = 0;
-    auto token = tokens[token_index];
+    size_t token_index = 0;
+    t_token token = tokens[token_index];
 
     if (token.type != e_token_type::STRING || token.data != type->name) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
@@ -780,8 +779,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     token_index++;
 
     // All the pins of the port are taken or the port has a single pin
-    if (token_index == num_tokens) {
-        freeTokens(tokens, num_tokens);
+    if (token_index == tokens.size()) {
         return std::make_pair(abs_first_pin_idx, abs_first_pin_idx + port->num_pins);
     }
 
@@ -814,12 +812,11 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
 
         token_index++;
 
-        if (token_index != num_tokens) {
+        if (token_index != tokens.size()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            "pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
         }
 
-        freeTokens(tokens, num_tokens);
         return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + first_pin + 1);
     }
 
@@ -843,7 +840,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
 
     token_index++;
 
-    if (token_index != num_tokens) {
+    if (token_index != tokens.size()) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
     }
@@ -852,7 +849,6 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
         std::swap(first_pin, last_pin);
     }
 
-    freeTokens(tokens, num_tokens);
     return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + last_pin + 1);
 }
 

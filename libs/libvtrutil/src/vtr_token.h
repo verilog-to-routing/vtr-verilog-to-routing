@@ -6,6 +6,9 @@
  * @brief Tokenizer
  */
 
+#include <vector>
+#include <string>
+
 ///@brief Token types
 enum class e_token_type {
     NULL_TOKEN,
@@ -22,14 +25,14 @@ enum class e_token_type {
 ///@brief Token structure
 struct t_token {
     e_token_type type;
-    char* data;
+    std::string data;
 };
 
-t_token* GetTokensFromString(const char* inString, int* num_tokens);
+/// @brief Returns a token list of the text for a given string.
+std::vector<t_token> GetTokensFromString(const char* inString);
 
-void freeTokens(t_token* tokens, const int num_tokens);
-
-bool checkTokenType(const t_token token, enum e_token_type token_type);
+///@brief Returns true if the token's type equals to token_type
+bool checkTokenType(const t_token& token, e_token_type token_type);
 
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring);
 

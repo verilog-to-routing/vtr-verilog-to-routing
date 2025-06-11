@@ -77,7 +77,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                                       t_pb_graph_node** pb_graph_children_nodes,
                                                       const bool interconnect_error_check,
                                                       const bool is_input_to_interc,
-                                                      const t_token* tokens,
+                                                      const std::vector<t_token>& tokens,
                                                       int* token_index,
                                                       int* num_pins,
                                                       t_pb_graph_pin*** pb_graph_pins);
@@ -916,35 +916,32 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                            int* num_sets,
                                                            const bool is_input_to_interc,
                                                            const bool interconnect_error_check) {
-    t_token* tokens;
-    int num_tokens, curr_set;
-    int i;
+    int curr_set;
     bool in_squig_bracket, success = false;
 
     t_pb_graph_pin*** pb_graph_pins;
 
-    num_tokens = 0;
-    tokens = GetTokensFromString(port_string, &num_tokens);
+    std::vector<t_token> tokens = GetTokensFromString(port_string);
     *num_sets = 0;
     in_squig_bracket = false;
 
-    /* count the number of sets available */
-    for (i = 0; i < num_tokens; i++) {
-        VTR_ASSERT(tokens[i].type != e_token_type::NULL_TOKEN);
-        if (tokens[i].type == e_token_type::OPEN_SQUIG_BRACKET) {
+    // count the number of sets available
+    for (const t_token& token : tokens) {
+        VTR_ASSERT(token.type != e_token_type::NULL_TOKEN);
+        if (token.type == e_token_type::OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "{ inside { in port %s\n", port_string);
             }
             in_squig_bracket = true;
-        } else if (tokens[i].type == e_token_type::CLOSE_SQUIG_BRACKET) {
+        } else if (token.type == e_token_type::CLOSE_SQUIG_BRACKET) {
             if (!in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "No matching '{' for '}' in port %s\n", port_string);
             }
             (*num_sets)++;
             in_squig_bracket = false;
-        } else if (tokens[i].type == e_token_type::DOT) {
+        } else if (token.type == e_token_type::DOT) {
             if (!in_squig_bracket) {
                 (*num_sets)++;
             }
@@ -959,13 +956,13 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
 
     pb_graph_pins = new t_pb_graph_pin**[*num_sets];
     *num_ptrs = new int[*num_sets];
-    for (i = 0; i < *num_sets; i++) {
+    for (int i = 0; i < *num_sets; i++) {
         pb_graph_pins[i] = nullptr;
         (*num_ptrs)[i] = 0;
     }
 
     curr_set = 0;
-    for (i = 0; i < num_tokens; i++) {
+    for (int  i = 0; i < int(tokens.size()); i++) {
         VTR_ASSERT(tokens[i].type != e_token_type::NULL_TOKEN);
         if (tokens[i].type == e_token_type::OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
@@ -1002,7 +999,6 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
         }
     }
     VTR_ASSERT(curr_set == *num_sets);
-    freeTokens(tokens, num_tokens);
     return pb_graph_pins;
 }
 
@@ -1271,7 +1267,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                                       t_pb_graph_node** pb_graph_children_nodes,
                                                       const bool interconnect_error_check,
                                                       const bool is_input_to_interc,
-                                                      const t_token* tokens,
+                                                      const std::vector<t_token>& tokens,
                                                       int* token_index,
                                                       int* num_pins,
                                                       t_pb_graph_pin*** pb_graph_pins) {
@@ -1280,8 +1276,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     int pin_msb, pin_lsb;
     int max_pb_node_array;
     const t_pb_graph_node* pb_node_array;
-    char* port_name;
-    const char* pb_name = tokens[*token_index].data;
+    const char* pb_name = tokens[*token_index].data.c_str();
     t_port* iport;
     int add_or_subtract_pb, add_or_subtract_pin;
     bool found;
@@ -1299,7 +1294,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
     /* parse pb */
     found = false;
-    if (0 == strcmp(pb_graph_parent_node->pb_type->name, tokens[*token_index].data)) {
+    if (pb_graph_parent_node->pb_type->name == tokens[*token_index].data) {
         //Parent pb_type
         pb_node_array = pb_graph_parent_node;
         max_pb_node_array = 1;
@@ -1339,13 +1334,13 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
             if ((pb_lsb != pb_msb)
                 && (pb_lsb != pb_graph_parent_node->placement_index)) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "Incorrect placement index for %s, expected index %d", tokens[0].data,
+                          "Incorrect placement index for %s, expected index %d", tokens[0].data.c_str(),
                           pb_graph_parent_node->placement_index);
             }
 
             if ((pb_lsb != pb_msb)) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "Cannot specify range for a parent pb: '%s'", tokens[0].data);
+                          "Cannot specify range for a parent pb: '%s'", tokens[0].data.c_str());
             }
 
             pb_lsb = pb_msb = 0; /* Internal representation of parent is always 0 */
@@ -1355,7 +1350,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
         if (mode) {
             for (i = 0; i < mode->num_pb_type_children; i++) {
                 VTR_ASSERT(&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);
-                if (0 == strcmp(mode->pb_type_children[i].name, tokens[*token_index].data)) {
+                if (mode->pb_type_children[i].name == tokens[*token_index].data) {
                     pb_node_array = pb_graph_children_nodes[i];
                     max_pb_node_array = mode->pb_type_children[i].num_pb;
                     found = true;
@@ -1428,13 +1423,11 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     if (!is_string && !is_int)
         return false;
 
-    /* parse ports and port pins of pb */
-    port_name = tokens[*token_index].data;
+    // parse ports and port pins of pb
+    const char* port_name = tokens[*token_index].data.c_str();
     (*token_index)++;
 
-    if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
-                                   0)
-        == nullptr) {
+    if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],0) == nullptr) {
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                   "Failed to find port name %s", port_name);
     }

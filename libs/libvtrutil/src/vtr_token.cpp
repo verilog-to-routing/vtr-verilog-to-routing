@@ -13,95 +13,56 @@
 #include "vtr_memory.h"
 
 
-enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
-                                       const char cur);
+static e_token_type GetTokenTypeFromChar(const e_token_type cur_token_type,
+                                         const char cur);
 
-///@brief Returns a token list of the text for a given string.
-t_token* GetTokensFromString(const char* inString, int* num_tokens) {
-    const char* cur;
-    t_token* tokens;
-    int i, in_string_index, prev_in_string_index;
-    bool has_null;
-    enum e_token_type cur_token_type, new_token_type;
 
-    *num_tokens = i = 0;
-    cur_token_type = e_token_type::NULL_TOKEN;
-
+std::vector<t_token> GetTokensFromString(const char* inString) {
     if (inString == nullptr) {
-        return nullptr;
-    };
-
-    cur = inString;
-
-    /* Count number of tokens */
-    while (*cur) {
-        new_token_type = GetTokenTypeFromChar(cur_token_type, *cur);
-        if (new_token_type != cur_token_type) {
-            cur_token_type = new_token_type;
-            if (new_token_type != e_token_type::NULL_TOKEN) {
-                i++;
-            }
-        }
-        ++cur;
-    }
-    *num_tokens = i;
-
-    if (*num_tokens > 0) {
-        tokens = (t_token*)vtr::calloc(*num_tokens + 1, sizeof(t_token));
-    } else {
-        return nullptr;
+        return {};
     }
 
-    /* populate tokens */
-    i = 0;
-    in_string_index = 0;
-    has_null = true;
-    prev_in_string_index = 0;
-    cur_token_type = e_token_type::NULL_TOKEN;
-
-    cur = inString;
+    std::vector<t_token> tokens;
+    const char* cur = inString;
+    const char* token_start = nullptr;
+    e_token_type cur_token_type = e_token_type::NULL_TOKEN;
 
     while (*cur) {
-        new_token_type = GetTokenTypeFromChar(cur_token_type, *cur);
+        e_token_type new_token_type = GetTokenTypeFromChar(cur_token_type, *cur);
+
         if (new_token_type != cur_token_type) {
-            if (!has_null) {
-                tokens[i - 1].data[in_string_index - prev_in_string_index] = '\0'; /* NULL the end of the data string */
-                has_null = true;
+            // End the previous token if it exists
+            if (cur_token_type != e_token_type::NULL_TOKEN && token_start) {
+                tokens.back().data = std::string(token_start, cur); // assign the substring
             }
+
+            // Start a new token if not null
             if (new_token_type != e_token_type::NULL_TOKEN) {
-                tokens[i].type = new_token_type;
-                tokens[i].data = vtr::strdup(inString + in_string_index);
-                prev_in_string_index = in_string_index;
-                has_null = false;
-                i++;
+                t_token token;
+                token.type = new_token_type;
+                // We'll assign token.data when the token ends
+                tokens.push_back(token);
+                token_start = cur;
+            } else {
+                token_start = nullptr;
             }
+
             cur_token_type = new_token_type;
         }
         ++cur;
-        in_string_index++;
     }
 
-    VTR_ASSERT(i == *num_tokens);
+    // Handle the last token if the string ends in a token
+    if (cur_token_type != e_token_type::NULL_TOKEN && token_start) {
+        tokens.back().data = std::string(token_start, cur);
+    }
 
-    tokens[*num_tokens].type = e_token_type::NULL_TOKEN;
-    tokens[*num_tokens].data = nullptr;
-
-    /* Return the list */
     return tokens;
 }
 
-///@brief Free (tokens)
-void freeTokens(t_token* tokens, const int num_tokens) {
-    int i;
-    for (i = 0; i < num_tokens; i++) {
-        free(tokens[i].data);
-    }
-    free(tokens);
-}
-
 ///@brief Returns a token type of the given char
-enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
-                                       const char cur) {
+static e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
+                                         const char cur) {
     if (std::isspace(cur)) {
         return e_token_type::NULL_TOKEN;
     } else {
@@ -125,8 +86,7 @@ enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
     }
 }
 
-///@brief Returns true if the token's type equals to token_type
-bool checkTokenType(const t_token token, enum e_token_type token_type) {
+bool checkTokenType(const t_token& token, e_token_type token_type) {
     if (token.type != token_type) {
         return false;
     }

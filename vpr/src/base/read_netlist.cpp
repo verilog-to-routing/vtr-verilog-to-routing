@@ -282,7 +282,6 @@ static void processComplexBlock(pugi::xml_node clb_block,
                                 int* num_primitives,
                                 const pugiutil::loc_data& loc_data,
                                 ClusteredNetlist* clb_nlist) {
-    int num_tokens = 0;
     const t_pb_type* pb_type = nullptr;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -291,8 +290,8 @@ static void processComplexBlock(pugi::xml_node clb_block,
     //Parse cb attributes
     auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
     auto block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
-    t_token* tokens = GetTokensFromString(block_inst.value(), &num_tokens);
-    if (num_tokens != 4 || tokens[0].type != e_token_type::STRING
+    std::vector<t_token> tokens = GetTokensFromString(block_inst.value());
+    if (tokens.size() != 4 || tokens[0].type != e_token_type::STRING
         || tokens[1].type != e_token_type::OPEN_SQUARE_BRACKET
         || tokens[2].type != e_token_type::INT
         || tokens[3].type != e_token_type::CLOSE_SQUARE_BRACKET) {
@@ -342,8 +341,6 @@ static void processComplexBlock(pugi::xml_node clb_block,
     load_internal_to_block_net_nums(clb_nlist->block_type(index), clb_nlist->block_pb(index)->pb_route);
 
     //clb_nlist->block_pb(index)->pb_route.shrink_to_fit();
-
-    freeTokens(tokens, num_tokens);
 }
 
 /**
@@ -400,9 +397,6 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
     int i, j, pb_index;
     bool found;
     const t_pb_type* pb_type;
-
-    t_token* tokens;
-    int num_tokens;
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
@@ -496,8 +490,8 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
             VTR_ASSERT(strcmp(child.name(), "block") == 0);
 
             auto instance_type = pugiutil::get_attribute(child, "instance", loc_data);
-            tokens = GetTokensFromString(instance_type.value(), &num_tokens);
-            if (num_tokens != 4 || tokens[0].type != e_token_type::STRING
+            std::vector<t_token> tokens = GetTokensFromString(instance_type.value());
+            if (tokens.size() != 4 || tokens[0].type != e_token_type::STRING
                 || tokens[1].type != e_token_type::OPEN_SQUARE_BRACKET
                 || tokens[2].type != e_token_type::INT
                 || tokens[3].type != e_token_type::CLOSE_SQUARE_BRACKET) {
@@ -509,7 +503,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
             found = false;
             pb_index = OPEN;
             for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-                if (strcmp(pb_type->modes[pb->mode].pb_type_children[i].name, tokens[0].data) == 0) {
+                if (pb_type->modes[pb->mode].pb_type_children[i].name == tokens[0].data) {
                     pb_index = vtr::atoi(tokens[2].data);
                     if (pb_index < 0) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
@@ -588,7 +582,6 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
                     processPb(child, index, &pb->child_pbs[i][pb_index], pb_route, num_primitives, loc_data, clb_nlist);
                 }
             }
-            freeTokens(tokens, num_tokens);
         }
     }
 }
