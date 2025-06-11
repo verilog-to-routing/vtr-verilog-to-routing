@@ -388,7 +388,7 @@ void t_rr_graph_storage::assign_first_edges() {
 
 bool t_rr_graph_storage::verify_first_edges() const {
     size_t num_edges = edge_src_node_.size();
-    VTR_ASSERT(node_first_edge_[RRNodeId(node_storage_.size())] == RREdgeId(num_edges));
+    VTR_ASSERT_MSG(node_first_edge_[RRNodeId(node_storage_.size())] == RREdgeId(num_edges), "node first edge is '%lu' while expected edge id is '%lu'\n", size_t(node_first_edge_[RRNodeId(node_storage_.size())]), num_edges);
 
     // Each edge should belong with the edge range defined by
     // [node_first_edge_[src_node], node_first_edge_[src_node+1]).
@@ -571,6 +571,11 @@ t_edge_size t_rr_graph_storage::num_non_configurable_edges(RRNodeId node, const 
     return num_edges(node) - num_configurable_edges(node, rr_switches);
 }
 
+bool t_rr_graph_storage::edge_is_configurable(RREdgeId edge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+  auto iswitch = edge_switch(edge);
+  return rr_switches[RRSwitchId(iswitch)].configurable();
+}
+
 bool t_rr_graph_storage::edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
   auto iswitch = edge_switch(id, iedge);
   return rr_switches[RRSwitchId(iswitch)].configurable();
@@ -664,6 +669,13 @@ void t_rr_graph_storage::set_node_class_num(RRNodeId id, int new_class_num) {
     node_ptc_[id].ptc_.class_num = new_class_num;
 }
 
+void t_rr_graph_storage::set_node_medium_num(RRNodeId id, int new_medium_num) {
+    if (node_type(id) != e_rr_type::MEDIUM) {
+        VTR_LOG_ERROR("Attempted to set RR node 'medium_num' for non-MEDIUM type '%s'\n", node_type_string(id));
+    }
+    node_ptc_[id].ptc_.medium_num = new_medium_num;
+}
+
 int t_rr_graph_storage::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
@@ -701,6 +713,17 @@ static int get_node_class_num(
     return node_ptc[id].ptc_.class_num;
 }
 
+static int get_node_medium_num(
+    vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+    vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
+    RRNodeId id) {
+    auto node_type = node_storage[id].type_;
+    if (node_type != e_rr_type::MEDIUM) {
+        VTR_LOG_ERROR("Attempted to access RR node 'medium_num' for non-MEDIUM type '%s'\n", rr_node_typename[node_type]);
+    }
+    return node_ptc[id].ptc_.medium_num;
+}
+
 int t_rr_graph_storage::node_pin_num(RRNodeId id) const {
     return get_node_pin_num(
         vtr::make_const_array_view_id(node_storage_),
@@ -715,6 +738,12 @@ int t_rr_graph_storage::node_track_num(RRNodeId id) const {
 }
 int t_rr_graph_storage::node_class_num(RRNodeId id) const {
     return get_node_class_num(
+        vtr::make_const_array_view_id(node_storage_),
+        vtr::make_const_array_view_id(node_ptc_),
+        id);
+}
+int t_rr_graph_storage::node_medium_num(RRNodeId id) const {
+    return get_node_medium_num(
         vtr::make_const_array_view_id(node_storage_),
         vtr::make_const_array_view_id(node_ptc_),
         id);
@@ -746,10 +775,20 @@ void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, s
     }
 }
 
+void t_rr_graph_storage::set_node_bend_start(RRNodeId id, size_t bend_start) {
+    auto& node = node_storage_[id];
+    node.node_bend_start_ = bend_start;
+}
+
+void t_rr_graph_storage::set_node_bend_end(RRNodeId id, size_t bend_end) {
+    auto& node = node_storage_[id];
+    node.node_bend_end_ = bend_end;
+}
+
 void t_rr_graph_storage::set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
     auto& node = node_storage_[id];
     if ((size_t)new_cost_index >= std::numeric_limits<decltype(node.cost_index_)>::max()) {
-        VTR_LOG_ERROR("Attempted to set cost_index_ %zu above cost_index storage max value.",
+        VTR_LOG_ERROR("Attempted to set cost_index_ %zu above cost_index storage max value.\n",
                       new_cost_index);
     }
     node.cost_index_ = (size_t)new_cost_index;
@@ -808,6 +847,9 @@ int t_rr_graph_view::node_track_num(RRNodeId id) const {
 }
 int t_rr_graph_view::node_class_num(RRNodeId id) const {
     return get_node_class_num(node_storage_, node_ptc_, id);
+}
+int t_rr_graph_view::node_medium_num(RRNodeId id) const {
+    return get_node_medium_num(node_storage_, node_ptc_, id);
 }
 
 
