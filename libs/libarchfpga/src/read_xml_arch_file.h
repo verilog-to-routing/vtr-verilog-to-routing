@@ -13,10 +13,10 @@ extern "C" {
 
 /* function declarations */
 void xml_read_arch(const char* ArchFile,
-                 const bool timing_enabled,
-                 t_arch* arch,
-                 std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                 std::vector<t_logical_block_type>& LogicalBlockTypes);
+                   const bool timing_enabled,
+                   t_arch* arch,
+                   std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                   std::vector<t_logical_block_type>& LogicalBlockTypes);
 
 #ifdef __cplusplus
 }
