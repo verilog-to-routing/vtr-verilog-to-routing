@@ -4,12 +4,14 @@
  * Tokenizer
  */
 
+#include "vtr_token.h"
+
 #include <cctype>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include "vtr_token.h"
+
 
 enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
                                        const char cur);
@@ -23,7 +25,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
     enum e_token_type cur_token_type, new_token_type;
 
     *num_tokens = i = 0;
-    cur_token_type = TOKEN_NULL;
+    cur_token_type = e_token_type::NULL_TOKEN;
 
     if (inString == nullptr) {
         return nullptr;
@@ -36,7 +38,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
         new_token_type = GetTokenTypeFromChar(cur_token_type, *cur);
         if (new_token_type != cur_token_type) {
             cur_token_type = new_token_type;
-            if (new_token_type != TOKEN_NULL) {
+            if (new_token_type != e_token_type::NULL_TOKEN) {
                 i++;
             }
         }
@@ -55,7 +57,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
     in_string_index = 0;
     has_null = true;
     prev_in_string_index = 0;
-    cur_token_type = TOKEN_NULL;
+    cur_token_type = e_token_type::NULL_TOKEN;
 
     cur = inString;
 
@@ -66,7 +68,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
                 tokens[i - 1].data[in_string_index - prev_in_string_index] = '\0'; /* NULL the end of the data string */
                 has_null = true;
             }
-            if (new_token_type != TOKEN_NULL) {
+            if (new_token_type != e_token_type::NULL_TOKEN) {
                 tokens[i].type = new_token_type;
                 tokens[i].data = vtr::strdup(inString + in_string_index);
                 prev_in_string_index = in_string_index;
@@ -81,7 +83,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
 
     VTR_ASSERT(i == *num_tokens);
 
-    tokens[*num_tokens].type = TOKEN_NULL;
+    tokens[*num_tokens].type = e_token_type::NULL_TOKEN;
     tokens[*num_tokens].data = nullptr;
 
     /* Return the list */
@@ -101,24 +103,24 @@ void freeTokens(t_token* tokens, const int num_tokens) {
 enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
                                        const char cur) {
     if (std::isspace(cur)) {
-        return TOKEN_NULL;
+        return e_token_type::NULL_TOKEN;
     } else {
         if (cur == '[') {
-            return TOKEN_OPEN_SQUARE_BRACKET;
+            return e_token_type::OPEN_SQUARE_BRACKET;
         } else if (cur == ']') {
-            return TOKEN_CLOSE_SQUARE_BRACKET;
+            return e_token_type::CLOSE_SQUARE_BRACKET;
         } else if (cur == '{') {
-            return TOKEN_OPEN_SQUIG_BRACKET;
+            return e_token_type::OPEN_SQUIG_BRACKET;
         } else if (cur == '}') {
-            return TOKEN_CLOSE_SQUIG_BRACKET;
+            return e_token_type::CLOSE_SQUIG_BRACKET;
         } else if (cur == ':') {
-            return TOKEN_COLON;
+            return e_token_type::COLON;
         } else if (cur == '.') {
-            return TOKEN_DOT;
-        } else if (cur >= '0' && cur <= '9' && cur_token_type != TOKEN_STRING) {
-            return TOKEN_INT;
+            return e_token_type::DOT;
+        } else if (cur >= '0' && cur <= '9' && cur_token_type != e_token_type::STRING) {
+            return e_token_type::INT;
         } else {
-            return TOKEN_STRING;
+            return e_token_type::STRING;
         }
     }
 }
@@ -172,8 +174,6 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
     free(copy);
 }
 
-/* Date:July 2nd, 2013													*
- * Author: Daniel Chen													*/
 /** 
  * @brief Checks if the number of entries (separated by whitespace)	matches the the expected number (max_i * max_j)
  *

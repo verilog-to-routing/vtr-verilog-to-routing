@@ -747,7 +747,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     int token_index = 0;
     auto token = tokens[token_index];
 
-    if (token.type != TOKEN_STRING || token.data != type->name) {
+    if (token.type != e_token_type::STRING || token.data != type->name) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "Wrong physical type name of the port: %s\n", pin_loc_string);
     }
@@ -755,7 +755,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     token_index++;
     token = tokens[token_index];
 
-    if (token.type != TOKEN_DOT) {
+    if (token.type != e_token_type::DOT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No dot is present to separate type name and port name: %s\n", pin_loc_string);
     }
@@ -763,7 +763,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     token_index++;
     token = tokens[token_index];
 
-    if (token.type != TOKEN_STRING) {
+    if (token.type != e_token_type::STRING) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No port name is present: %s\n", pin_loc_string);
     }
@@ -787,7 +787,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
 
     token = tokens[token_index];
 
-    if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
+    if (token.type != e_token_type::OPEN_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No open square bracket present: %s\n", pin_loc_string);
     }
@@ -795,7 +795,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     token_index++;
     token = tokens[token_index];
 
-    if (token.type != TOKEN_INT) {
+    if (token.type != e_token_type::INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No integer to indicate least significant pin index: %s\n", pin_loc_string);
     }
@@ -806,8 +806,8 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     token = tokens[token_index];
 
     // Single pin is specified
-    if (token.type != TOKEN_COLON) {
-        if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (token.type != e_token_type::COLON) {
+        if (token.type != e_token_type::CLOSE_SQUARE_BRACKET) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            "No closing bracket: %s\n", pin_loc_string);
         }
@@ -826,7 +826,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     token_index++;
     token = tokens[token_index];
 
-    if (token.type != TOKEN_INT) {
+    if (token.type != e_token_type::INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No integer to indicate most significant pin index: %s\n", pin_loc_string);
     }
@@ -836,7 +836,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     token_index++;
     token = tokens[token_index];
 
-    if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (token.type != e_token_type::CLOSE_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No closed square bracket: %s\n", pin_loc_string);
     }
