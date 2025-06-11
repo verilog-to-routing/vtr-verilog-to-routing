@@ -486,7 +486,6 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->fixed_channel_width = Options.RouteChanWidth;
     RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
 
-
     RouterOpts->read_rr_edge_metadata = Options.read_rr_edge_metadata;
     RouterOpts->reorder_rr_graph_nodes_algorithm = Options.reorder_rr_graph_nodes_algorithm;
     RouterOpts->reorder_rr_graph_nodes_threshold = Options.reorder_rr_graph_nodes_threshold;

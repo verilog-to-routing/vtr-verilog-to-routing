@@ -689,7 +689,7 @@ bool is_binary_param(const std::string& param) {
 }
 
 bool is_real_param(const std::string& param) {
-        /* Must be non-empty */
+    /* Must be non-empty */
     if (param.empty()) {
         return false;
     }
@@ -697,7 +697,7 @@ bool is_real_param(const std::string& param) {
     /* The string must match the regular expression */
     static const std::regex real_number_expr("[+-]?([0-9]*\\.[0-9]+)|([0-9]+\\.[0-9]*)");
     if (!std::regex_match(param, real_number_expr)) {
-            return false;
+        return false;
     }
 
     /* This is a real number param */

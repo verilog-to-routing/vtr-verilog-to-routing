@@ -769,27 +769,27 @@ void create_rr_graph(e_graph_type graph_type,
             free_rr_graph();
             if (e_graph_type::UNIDIR_TILEABLE != graph_type) {
                 build_rr_graph(graph_type,
-                            block_types,
-                            grid,
-                            nodes_per_chan,
-                            det_routing_arch.switch_block_type,
-                            det_routing_arch.Fs,
-                            det_routing_arch.switchblocks,
-                            segment_inf,
-                            det_routing_arch.global_route_switch,
-                            det_routing_arch.wire_to_arch_ipin_switch,
-                            det_routing_arch.wire_to_arch_ipin_switch_between_dice,
-                            router_opts.custom_3d_sb_fanin_fanout,
-                            det_routing_arch.delayless_switch,
-                            det_routing_arch.R_minW_nmos,
-                            det_routing_arch.R_minW_pmos,
-                            router_opts.base_cost_type,
-                            router_opts.clock_modeling,
-                            directs,
-                            &det_routing_arch.wire_to_rr_ipin_switch,
-                            is_flat,
-                            Warnings,
-                            router_opts.route_verbosity);
+                               block_types,
+                               grid,
+                               nodes_per_chan,
+                               det_routing_arch.switch_block_type,
+                               det_routing_arch.Fs,
+                               det_routing_arch.switchblocks,
+                               segment_inf,
+                               det_routing_arch.global_route_switch,
+                               det_routing_arch.wire_to_arch_ipin_switch,
+                               det_routing_arch.wire_to_arch_ipin_switch_between_dice,
+                               router_opts.custom_3d_sb_fanin_fanout,
+                               det_routing_arch.delayless_switch,
+                               det_routing_arch.R_minW_nmos,
+                               det_routing_arch.R_minW_pmos,
+                               router_opts.base_cost_type,
+                               router_opts.clock_modeling,
+                               directs,
+                               &det_routing_arch.wire_to_rr_ipin_switch,
+                               is_flat,
+                               Warnings,
+                               router_opts.route_verbosity);
             } else {
                 /* We do not support dedicated network for clocks in tileable rr_graph generation */
                 VTR_LOG_WARN("Tileable routing resource graph does not support clock modeling yet! Related options are ignored...\n");
@@ -808,12 +808,12 @@ void create_rr_graph(e_graph_type graph_type,
                                                router_opts.base_cost_type,
                                                directs,
                                                &det_routing_arch.wire_to_rr_ipin_switch,
-                                               det_routing_arch.shrink_boundary,                                  /* Shrink to the smallest boundary, no routing wires for empty zone */
-                                               det_routing_arch.perimeter_cb,                                     /* Now I/O or any programmable blocks on perimeter can have full cb access (both cbx and cby) */
-                                               det_routing_arch.through_channel, /* Allow/Prohibit through tracks across multi-height and multi-width grids */
-                                               det_routing_arch.opin2all_sides,                                   /* Allow opin of grid to directly drive routing tracks at all sides of a switch block */
-                                               det_routing_arch.concat_wire,                                      /* Allow end-point tracks to be wired to a starting point track on the opposite in a switch block. It means a wire can be continued in the same direction to another wire */
-                                               det_routing_arch.concat_pass_wire,                                 /* Allow passing tracks to be wired to the routing tracks in the same direction in a switch block. It means that a pass wire can jump in the same direction to another */
+                                               det_routing_arch.shrink_boundary,  /* Shrink to the smallest boundary, no routing wires for empty zone */
+                                               det_routing_arch.perimeter_cb,     /* Now I/O or any programmable blocks on perimeter can have full cb access (both cbx and cby) */
+                                               det_routing_arch.through_channel,  /* Allow/Prohibit through tracks across multi-height and multi-width grids */
+                                               det_routing_arch.opin2all_sides,   /* Allow opin of grid to directly drive routing tracks at all sides of a switch block */
+                                               det_routing_arch.concat_wire,      /* Allow end-point tracks to be wired to a starting point track on the opposite in a switch block. It means a wire can be continued in the same direction to another wire */
+                                               det_routing_arch.concat_pass_wire, /* Allow passing tracks to be wired to the routing tracks in the same direction in a switch block. It means that a pass wire can jump in the same direction to another */
                                                Warnings);
             }
         }
@@ -1861,10 +1861,10 @@ static void remap_rr_node_switch_indices(RRGraphBuilder& rr_graph_builder,
 }
 
 void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
-                               const std::vector<t_segment_inf>& segment_inf_x,
-                               const std::vector<t_segment_inf>& segment_inf_y,
-                               int wire_to_rr_ipin_switch,
-                               enum e_base_cost_type base_cost_type) {
+                        const std::vector<t_segment_inf>& segment_inf_x,
+                        const std::vector<t_segment_inf>& segment_inf_y,
+                        int wire_to_rr_ipin_switch,
+                        enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
@@ -1957,14 +1957,14 @@ static std::vector<t_seg_details> alloc_and_load_global_route_seg_details(const 
 
 /* Calculates the number of track connections from each block pin to each segment type */
 std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
-                                                              const int max_pins,
-                                                              const std::vector<t_segment_inf>& segment_inf,
-                                                              const std::vector<int>& sets_per_seg_type,
-                                                              const t_chan_width* nodes_per_chan,
-                                                              const e_fc_type fc_type,
-                                                              const enum e_directionality directionality,
-                                                              bool* Fc_clipped,
-                                                              bool is_flat) {
+                                                       const int max_pins,
+                                                       const std::vector<t_segment_inf>& segment_inf,
+                                                       const std::vector<int>& sets_per_seg_type,
+                                                       const t_chan_width* nodes_per_chan,
+                                                       const e_fc_type fc_type,
+                                                       const enum e_directionality directionality,
+                                                       bool* Fc_clipped,
+                                                       bool is_flat) {
     //Initialize Fc of all blocks to zero
     auto zeros = vtr::Matrix<int>({size_t(max_pins), segment_inf.size()}, 0);
     std::vector<vtr::Matrix<int>> Fc(types.size(), zeros);
