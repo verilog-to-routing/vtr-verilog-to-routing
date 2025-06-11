@@ -42,6 +42,8 @@
 #include "logic_types.h"
 #include "clock_types.h"
 
+#include "vib_inf.h"
+
 //Forward declarations
 struct t_clock_network;
 struct t_power_arch;
@@ -1815,6 +1817,24 @@ struct t_segment_inf {
     std::vector<bool> sb;
 
     /**
+     *  @brief This segment is bend or not
+     */
+    bool isbend;
+
+    /**
+     *  @brief The bend type of the segment, "-"-0, "U"-1, "D"-2
+     *  For example: bend pattern <- - U ->; corresponding bend: [0,0,1,0]
+     */
+    std::vector<int> bend;
+
+    /**
+     *  @brief Divide the segment into several parts based on bend position.
+     *  For example: length-5 bend segment: <- - U ->;
+     *  Corresponding part_len: [3,2]
+     */
+    std::vector<int> part_len;
+
+    /**
      *  @brief The index of the segment as stored in the appropriate Segs list.
      * Upon loading the architecture, we use this field to keep track of the
      * segment's index in the unified segment_inf vector. This is useful when
@@ -2255,7 +2275,7 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-/*   Detailed routing architecture */
+/* Detailed routing architecture */
 struct t_arch {
     /** Stores unique strings used as key and values in <metadata> tags,
      * i.e. implements a flyweight pattern to save memory.*/
@@ -2265,12 +2285,23 @@ struct t_arch {
     /// Secure hash digest of the architecture file to uniquely identify this architecture
     char* architecture_id;
 
+    /* Xifan Tang: options for tileable routing architectures */
+    bool tileable;
+    bool perimeter_cb;
+    bool shrink_boundary;
+    bool through_channel;
+    bool opin2all_sides;
+    bool concat_wire;
+    bool concat_pass_wire;
+
     t_chan_width_dist Chans;
     enum e_switch_block_type SBType;
+    enum e_switch_block_type SBSubType;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;
     int Fs;
+    int subFs;
     float grid_logic_tile_area;
     std::vector<t_segment_inf> Segments;
 
@@ -2329,8 +2360,13 @@ struct t_arch {
     //If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout;
 
+    std::vector<t_vib_grid_def> vib_grid_layouts;
+
     t_clock_arch_spec clock_arch; // Clock related data types
 
     /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
+
+    // added for vib
+    std::vector<VibInf> vib_infs;
 };
