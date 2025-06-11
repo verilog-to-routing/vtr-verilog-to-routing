@@ -81,16 +81,16 @@ class RRGraphView {
                 const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums);
 
     /* Disable copy constructors and copy assignment operator
-     * This is to avoid accidental copy because it could be an expensive operation considering that the 
+     * This is to avoid accidental copy because it could be an expensive operation considering that the
      * memory footprint of the data structure could ~ Gb
-     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught 
+     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught
      * by compiler
      */
     RRGraphView(const RRGraphView&) = delete;
     void operator=(const RRGraphView&) = delete;
 
     /* -- Accessors -- */
-    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin' 
+    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin'
      * kind of accessors
      */
   public:

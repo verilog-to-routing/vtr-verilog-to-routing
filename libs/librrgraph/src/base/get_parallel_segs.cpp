@@ -9,7 +9,7 @@ std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& s
         if (segment_inf[i].parallel_axis == parallel_axis || segment_inf[i].parallel_axis == BOTH_AXIS) {
             result.push_back(segment_inf[i]);
             if (!keep_original_index) {
-            result[result.size() - 1].seg_index = i;
+                result[result.size() - 1].seg_index = i;
             }
             seg_index_map.insert(std::make_pair(i, std::make_pair(result.size() - 1, parallel_axis)));
         }

@@ -3616,8 +3616,6 @@ inline void load_node(const pugi::xml_node &root, T &out, Context &context, cons
 		switch(in){
 		case gtok_t_node::LOC:
 			{
-				int node_loc_ptc;
-				memset(&node_loc_ptc, 0, sizeof(node_loc_ptc));
 				int node_loc_xhigh;
 				memset(&node_loc_xhigh, 0, sizeof(node_loc_xhigh));
 				int node_loc_xlow;

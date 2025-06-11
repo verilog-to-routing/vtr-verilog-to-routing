@@ -66,13 +66,13 @@ struct alignas(32) t_rr_node_data {
     e_rr_type type_ = e_rr_type::NUM_RR_TYPES;
 
     /* The character is a hex number which is a 4-bit truth table for node sides
-     * The 4-bits in serial represent 4 sides on which a node could appear 
-     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0) 
+     * The 4-bits in serial represent 4 sides on which a node could appear
+     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0)
      *   - When a node appears on a given side, it is set to "1"
      *   - When a node does not appear on a given side, it is set to "0"
      * For example,
-     *   - '1' means '0001' in hex number, which means the node appears on TOP 
-     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides, 
+     *   - '1' means '0001' in hex number, which means the node appears on TOP
+     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides,
      */
     union {
         Direction direction;       //Valid only for CHANX/CHANY
