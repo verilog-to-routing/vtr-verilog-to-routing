@@ -7,6 +7,7 @@
  */
 
 #include <string>
+#include <string_view>
 #include <vector>
 
 ///@brief Token types
@@ -28,9 +29,10 @@ struct t_token {
     std::string data;
 };
 
-std::vector<t_token> GetTokensFromString(const char* inString);
+///@brief Returns a vector of tokens for a given string.
+std::vector<t_token> GetTokensFromString(std::string_view inString);
 
-bool checkTokenType(const t_token token, enum e_token_type token_type);
+bool checkTokenType(const t_token& token, enum e_token_type token_type);
 
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring);
 

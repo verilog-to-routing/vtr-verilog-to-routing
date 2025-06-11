@@ -6,8 +6,6 @@
 
 #include "vtr_token.h"
 
-#include <cstring>
-
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -30,27 +28,24 @@ bool IsWhitespace(char c) {
     }
 }
 
-///@brief Returns a vector of tokens for a given string.
-std::vector<t_token> GetTokensFromString(const char* inString) {
+std::vector<t_token> GetTokensFromString(std::string_view inString) {
     std::vector<t_token> tokens;
 
-    if (inString == nullptr) {
+    if (inString.empty()) {
         return tokens;
     }
 
-    const char* cur = inString;
-    int in_string_index = 0;
-    int prev_in_string_index = 0;
     e_token_type cur_token_type = TOKEN_NULL;
+    size_t in_string_index, prev_in_string_index;
 
-    while (*cur) {
-        e_token_type new_token_type = GetTokenTypeFromChar(cur_token_type, *cur);
+    for (char cur : inString) {
+        e_token_type new_token_type = GetTokenTypeFromChar(cur_token_type, cur);
         if (new_token_type != cur_token_type) {
             if (cur_token_type != TOKEN_NULL) {
                 // Finalize the current token
                 t_token& current_token = tokens.back();
-                current_token.data = std::string(inString + prev_in_string_index,
-                                                 in_string_index - prev_in_string_index);
+                current_token.data = std::string(inString.substr(prev_in_string_index,
+                                                                 in_string_index - prev_in_string_index));
             }
             if (new_token_type != TOKEN_NULL) {
                 // Start a new token
@@ -61,15 +56,14 @@ std::vector<t_token> GetTokensFromString(const char* inString) {
             }
             cur_token_type = new_token_type;
         }
-        ++cur;
         in_string_index++;
     }
 
     // Finalize the last token if it exists
     if (cur_token_type != TOKEN_NULL && !tokens.empty()) {
         t_token& current_token = tokens.back();
-        current_token.data = std::string(inString + prev_in_string_index,
-                                         in_string_index - prev_in_string_index);
+        current_token.data = std::string(inString.substr(prev_in_string_index,
+                                                         in_string_index - prev_in_string_index));
     }
 
     return tokens;
@@ -102,7 +96,7 @@ enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
 }
 
 ///@brief Returns true if the token's type equals to token_type
-bool checkTokenType(const t_token token, enum e_token_type token_type) {
+bool checkTokenType(const t_token& token, enum e_token_type token_type) {
     if (token.type != token_type) {
         return false;
     }
