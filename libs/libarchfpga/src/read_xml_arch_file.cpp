@@ -733,9 +733,15 @@ static void load_pin_loc(pugi::xml_node Locations,
                                                                               sub_tile,
                                                                               token.c_str(),
                                                                               loc_data);
+                                VTR_ASSERT_MSG(capacity_range_low <= capacity_range_high,
+                                               vtr::string_fmt("Capacity range is out of bounds: capacity_range_low: %d, "
+                                                               "capacity_range_high: %d",
+                                                               capacity_range_low,
+                                                               capacity_range_high)
+                                                   .c_str());
                                 VTR_ASSERT_MSG(0 <= capacity_range_low && capacity_range_high < sub_tile_capacity,
-                                               vtr::string_fmt("Capacity range is out of bounds: capacity_range.first: %d, "
-                                                               "capacity_range.second: %d, sub_tile_capacity: %d",
+                                               vtr::string_fmt("Capacity range is out of bounds: capacity_range_low: %d, "
+                                                               "capacity_range_high: %d, sub_tile_capacity: %d",
                                                                capacity_range_low,
                                                                capacity_range_high,
                                                                sub_tile_capacity)
@@ -777,12 +783,12 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
                                                    const char* pin_loc_string,
                                                    const pugiutil::loc_data& loc_data) {
     int num_tokens;
-    auto tokens = get_tokens_from_string(pin_loc_string, &num_tokens);
+    t_token* tokens = get_tokens_from_string(pin_loc_string, &num_tokens);
 
     int token_index = 0;
-    auto token = tokens[token_index];
+    t_token token = tokens[token_index];
 
-    if (token.type != TOKEN_STRING || 0 != strcmp(token.data, sub_tile.name.c_str())) {
+    if (token.type != TOKEN_STRING || std::string(token.data) != sub_tile.name) {
         throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
                              vtr::string_fmt("Wrong physical type name of the port: %s\n", pin_loc_string).c_str(),
                              tokens, num_tokens);
@@ -794,13 +800,13 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
     int first_inst = 0;
     int last_inst = sub_tile.capacity.total() - 1;
 
-    /* If there is a dot, such as io.input[0:3], it indicates the full range of the capacity, the default value should be returned */
+    // If there is a dot, such as io.input[0:3], it indicates the full range of the capacity, the default value should be returned
     if (token.type == TOKEN_DOT) {
         free_tokens(tokens, num_tokens);
         return std::make_pair(first_inst, last_inst);
     }
 
-    /* If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here. */
+    // If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here.
     if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
         throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
                              vtr::string_fmt("No open square bracket present: %s\n", pin_loc_string).c_str(),
@@ -875,7 +881,7 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
                                               const char* pin_loc_string,
                                               const pugiutil::loc_data& loc_data) {
     int num_tokens;
-    auto tokens = get_tokens_from_string(pin_loc_string, &num_tokens);
+    t_token* tokens = get_tokens_from_string(pin_loc_string, &num_tokens);
 
     int token_index = 0;
     auto token = tokens[token_index];
@@ -889,7 +895,7 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
     token_index++;
     token = tokens[token_index];
 
-    /* If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here. */
+    // If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here.
     if (token.type == TOKEN_OPEN_SQUARE_BRACKET) {
         while (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
             token_index++;
@@ -3741,7 +3747,7 @@ static void process_pin_locations(pugi::xml_node Locations,
 
         //Check for any pins missing location specs
         for (int iinst = SubTile->capacity.low; iinst < SubTile->capacity.high; ++iinst) {
-            for (const auto& port : SubTile->ports) {
+            for (const t_physical_tile_port& port : SubTile->ports) {
                 for (int ipin = 0; ipin < port.num_pins; ++ipin) {
                     if (!port_pins_with_specified_locations[iinst][port.name].count(ipin)) {
                         //Missing
