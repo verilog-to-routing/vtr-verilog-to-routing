@@ -49,7 +49,7 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
 
 void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                   std::vector<std::map<int, int>>& switch_fanin_remap,
-                                  const std::map<int, t_arch_switch_inf> arch_sw_inf,
+                                  const std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                   const float R_minW_nmos,
                                   const float R_minW_pmos,
                                   const int wire_to_arch_ipin_switch,

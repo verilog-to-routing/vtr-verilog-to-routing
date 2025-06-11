@@ -41,16 +41,6 @@
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
 
-struct t_clb_to_clb_directs {
-    t_physical_tile_type_ptr from_clb_type;
-    int from_clb_pin_start_index;
-    int from_clb_pin_end_index;
-    t_physical_tile_type_ptr to_clb_type;
-    int to_clb_pin_start_index;
-    int to_clb_pin_end_index;
-    int switch_index; //The switch type used by this direct connection
-};
-
 struct t_pin_loc {
     int pin_index;
     int width_offset;
@@ -1683,12 +1673,12 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
  * Then we create these rr switches and update the switch indices
  * of rr_nodes to index into the rr_switch_inf array. */
 void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
-                                         std::vector<std::map<int, int>>& switch_fanin_remap,
-                                         const std::map<int, t_arch_switch_inf>& arch_sw_inf,
-                                         const float R_minW_nmos,
-                                         const float R_minW_pmos,
-                                         const int wire_to_arch_ipin_switch,
-                                         int* wire_to_rr_ipin_switch) {
+                                  std::vector<std::map<int, int>>& switch_fanin_remap,
+                                  const std::map<int, t_arch_switch_inf>& arch_sw_inf,
+                                  const float R_minW_nmos,
+                                  const float R_minW_pmos,
+                                  const int wire_to_arch_ipin_switch,
+                                  int* wire_to_rr_ipin_switch) {
     /* we will potentially be creating a couple of versions of each arch switch where
      * each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
      * with this expanded list of switches.
