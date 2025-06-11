@@ -12,7 +12,7 @@
 #include "vtr_token.h"
 
 enum e_token_type get_token_type_from_char(const enum e_token_type cur_token_type,
-                                       const char cur);
+                                           const char cur);
 
 bool is_white_space(char c);
 
@@ -114,7 +114,7 @@ void free_tokens(t_token* tokens, const int num_tokens) {
 
 ///@brief Returns a token type of the given char
 enum e_token_type get_token_type_from_char(const enum e_token_type cur_token_type,
-                                       const char cur) {
+                                           const char cur) {
     if (is_white_space(cur)) {
         return TOKEN_NULL;
     } else {

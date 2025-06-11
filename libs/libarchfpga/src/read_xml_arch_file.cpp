@@ -730,9 +730,9 @@ static void load_pin_loc(pugi::xml_node Locations,
                                                                                  loc_data);
                                 // Get the offset in the capacity range
                                 auto [capacity_range_low, capacity_range_high] = process_instance_string(Locations,
-                                                                              sub_tile,
-                                                                              token.c_str(),
-                                                                              loc_data);
+                                                                                                         sub_tile,
+                                                                                                         token.c_str(),
+                                                                                                         loc_data);
                                 VTR_ASSERT_MSG(capacity_range_low <= capacity_range_high,
                                                vtr::string_fmt("Capacity range is out of bounds: capacity_range_low: %d, "
                                                                "capacity_range_high: %d",

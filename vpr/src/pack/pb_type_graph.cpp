@@ -1316,7 +1316,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
             (*token_index)++;
             if (!check_token_type(tokens[*token_index], TOKEN_COLON)) {
                 if (!check_token_type(tokens[*token_index],
-                                    TOKEN_CLOSE_SQUARE_BRACKET)) {
+                                      TOKEN_CLOSE_SQUARE_BRACKET)) {
                     return false; //clb[9abc
                 }
                 pb_lsb = pb_msb;
@@ -1330,7 +1330,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                 VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-significant-bit must be non-negative");
                 (*token_index)++;
                 if (!check_token_type(tokens[*token_index],
-                                    TOKEN_CLOSE_SQUARE_BRACKET)) {
+                                      TOKEN_CLOSE_SQUARE_BRACKET)) {
                     return false; //clb[9:0abc
                 }
                 (*token_index)++;
@@ -1371,7 +1371,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                         (*token_index)++;
                         if (!check_token_type(tokens[*token_index], TOKEN_COLON)) {
                             if (!check_token_type(tokens[*token_index],
-                                                TOKEN_CLOSE_SQUARE_BRACKET)) {
+                                                  TOKEN_CLOSE_SQUARE_BRACKET)) {
                                 return false;
                             }
                             pb_lsb = pb_msb;
@@ -1385,7 +1385,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                             VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-significant-bit must be non-negative");
                             (*token_index)++;
                             if (!check_token_type(tokens[*token_index],
-                                                TOKEN_CLOSE_SQUARE_BRACKET)) {
+                                                  TOKEN_CLOSE_SQUARE_BRACKET)) {
                                 return false;
                             }
                             (*token_index)++;
@@ -1449,7 +1449,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
         (*token_index)++;
         if (!check_token_type(tokens[*token_index], TOKEN_COLON)) {
             if (!check_token_type(tokens[*token_index],
-                                TOKEN_CLOSE_SQUARE_BRACKET)) {
+                                  TOKEN_CLOSE_SQUARE_BRACKET)) {
                 return false;
             }
             pin_lsb = pin_msb;
@@ -1463,7 +1463,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
             VTR_ASSERT_MSG(pin_lsb >= 0, "Pin most-significant-bit must be non-negative");
             (*token_index)++;
             if (!check_token_type(tokens[*token_index],
-                                TOKEN_CLOSE_SQUARE_BRACKET)) {
+                                  TOKEN_CLOSE_SQUARE_BRACKET)) {
                 return false;
             }
             (*token_index)++;
