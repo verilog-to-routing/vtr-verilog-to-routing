@@ -1584,6 +1584,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Show version information then exit")
         .action(argparse::Action::VERSION);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.show_arch_resources, "--show_arch_resources")
+        .help("Show architecture resources then exit")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
     gen_grp.add_argument<std::string>(args.device_layout, "--device")
         .help(
             "Controls which device layout/floorplan is used from the architecture file."
@@ -1976,6 +1981,15 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "values produce more output (useful for debugging the AP "
             "algorithms).")
         .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<bool, ParseOnOff>(args.ap_generate_mass_report, "--ap_generate_mass_report")
+        .help(
+            "Controls whether to generate a report on how the partial legalizer "
+            "within the AP flow calculates the mass of primitives and the "
+            "capacity of tiles on the device. This report is useful when "
+            "debugging the partial legalizer.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& pack_grp = parser.add_argument_group("packing options");

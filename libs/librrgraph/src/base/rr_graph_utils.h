@@ -1,16 +1,16 @@
+#pragma once
 /**
  * @file rr_graph_utils.h
  *
  * @brief This file includes the most-utilized functions that manipulate the RRGraph object.
  */
 
-#ifndef RR_GRAPH_UTILS_H
-#define RR_GRAPH_UTILS_H
-
 /* Include header files which include data structures used by
  * the function declaration
  */
 #include <vector>
+#include "rr_graph_builder.h"
+#include "rr_graph_fwd.h"
 #include "rr_node_types.h"
 #include "rr_graph_obj.h"
 #include "rr_graph_view.h"
@@ -99,4 +99,3 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
  * @return limited_to_opin
  */
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
-#endif

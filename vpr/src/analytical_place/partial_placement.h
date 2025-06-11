@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -9,8 +10,6 @@
  * Placement need not represent a legal placement; however, the placed blocks
  * will always be on the device and will respect fixed block locations.
  */
-
-#pragma once
 
 #include <cmath>
 #include "ap_netlist.h"

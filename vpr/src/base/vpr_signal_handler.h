@@ -1,6 +1,3 @@
-#ifndef SIGNAL_HANLDER_H
-#define SIGNAL_HANLDER_H
+#pragma once
 
 void vpr_install_signal_handler();
-
-#endif

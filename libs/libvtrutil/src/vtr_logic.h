@@ -1,7 +1,6 @@
+#pragma once
 // Put this above guard so that TRUE/FALSE are undef'ed
 // even if this file was already included earlier.
-#ifndef VTR_LOGIC_H
-#define VTR_LOGIC_H
 
 #ifdef FALSE
 #undef FALSE
@@ -34,5 +33,3 @@ enum class LogicValue {
 constexpr std::array<const char*, std::size_t(LogicValue::NUM_LOGIC_VALUE_TYPES)> LOGIC_VALUE_STRING = {{"false", "true", "don't care", "unknown"}};
 
 } // namespace vtr
-
-#endif

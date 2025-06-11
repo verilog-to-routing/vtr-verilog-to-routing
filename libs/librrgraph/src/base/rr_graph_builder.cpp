@@ -5,9 +5,6 @@
 #include "vtr_tokenizer.h"
 #include <queue>
 #include <random>
-//#include <algorithm>
-
-//#include "globals.h"
 
 RRGraphBuilder::RRGraphBuilder() {
     is_edge_dirty_ = true;

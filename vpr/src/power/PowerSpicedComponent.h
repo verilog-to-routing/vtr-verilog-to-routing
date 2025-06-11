@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -14,9 +15,6 @@
  * Field Programmable Technology, 2012.
  *
  ********************************************************************/
-
-#ifndef __POWER_POWERSPICEDCOMPONENT_NMOS_H__
-#define __POWER_POWERSPICEDCOMPONENT_NMOS_H__
 
 #include <vector>
 #include <string>
@@ -85,5 +83,3 @@ class PowerSpicedComponent {
     bool is_done_callibration();
     void print(FILE* fp);
 };
-
-#endif

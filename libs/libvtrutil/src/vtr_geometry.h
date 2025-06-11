@@ -1,13 +1,11 @@
-#ifndef VTR_GEOMETRY_H
-#define VTR_GEOMETRY_H
+#pragma once
+
 #include "vtr_range.h"
-#include "vtr_assert.h"
 
 #include <cstdio> // vtr_geometry.tpp uses printf()
 
 #include <vector>
 #include <tuple>
-#include <limits>
 #include <type_traits>
 
 /**
@@ -339,4 +337,3 @@ class RectUnion {
 } // namespace vtr
 
 #include "vtr_geometry.tpp"
-#endif

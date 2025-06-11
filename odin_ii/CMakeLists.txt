@@ -190,22 +190,5 @@ if (ODIN_USES_IPO)
     set_property(TARGET odin_ii APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
-#add strict odin compiler flags, if set
-if(VTR_ENABLE_STRICT_COMPILE)
-    message(STATUS "odin_ii: building with strict flags")
-
-    set(ODIN_STRICT_COMPILE_FLAGS_TO_CHECK
-        #GCC-like
-        "-Werror"
-        )
-
-    foreach(flag ${ODIN_STRICT_COMPILE_FLAGS_TO_CHECK})
-        message(STATUS "\tAdding CXX flag: ${flag}")
-        target_compile_options(libodin_ii PRIVATE ${flag})
-        target_compile_options(odin_ii PRIVATE ${flag})
-        target_link_libraries(odin_ii ${flag})
-    endforeach()
-endif()
-
 install(TARGETS odin_ii libodin_ii DESTINATION bin)
 install(FILES ${LIB_HEADERS} DESTINATION include/libodin_ii)

@@ -13,6 +13,7 @@
 #include "physical_types.h"
 #include "place_constraints.h"
 #include "place_macro.h"
+#include "rr_graph_utils.h"
 #include "vpr_types.h"
 #include "vtr_memory.h"
 

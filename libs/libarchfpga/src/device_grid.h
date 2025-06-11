@@ -1,5 +1,4 @@
-#ifndef DEVICE_GRID
-#define DEVICE_GRID
+#pragma once
 
 #include <string>
 #include <vector>
@@ -149,5 +148,3 @@ class DeviceGrid {
 
     std::vector<t_logical_block_type_ptr> limiting_resources_;
 };
-
-#endif

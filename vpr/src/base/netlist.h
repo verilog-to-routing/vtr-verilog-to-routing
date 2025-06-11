@@ -1,6 +1,4 @@
-#ifndef NETLIST_H
-#define NETLIST_H
-
+#pragma once
 /**
  * @file
  * @brief This file defines the Netlist class, which stores the connectivity information
@@ -1160,4 +1158,3 @@ class Netlist {
 };
 
 #include "netlist.tpp"
-#endif

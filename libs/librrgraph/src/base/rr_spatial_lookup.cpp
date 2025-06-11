@@ -1,6 +1,8 @@
+#include "rr_graph_fwd.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "rr_spatial_lookup.h"
+#include <set>
 
 RRNodeId RRSpatialLookup::find_node(int layer,
                                     int x,

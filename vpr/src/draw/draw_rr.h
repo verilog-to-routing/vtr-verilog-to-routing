@@ -1,51 +1,21 @@
+#pragma once
 /**
  * @file draw_rr.h
  * 
  * draw_rr.cpp contains all functions that relate to drawing routing resources.
  */
 
-#ifndef DRAW_RR_H
-#define DRAW_RR_H
+#ifndef NO_GRAPHICS
 
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
 #include <cmath>
-#include <algorithm>
-#include <sstream>
-#include <array>
-#include <iostream>
 
-#include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
-#include "vtr_color_map.h"
-#include "vtr_path.h"
+#include "rr_graph_fwd.h"
+#include "rr_node.h"
 
-#include "vpr_utils.h"
-#include "vpr_error.h"
-
-#include "globals.h"
-
-#include "move_utils.h"
-
-#ifndef NO_GRAPHICS
-
-#include "draw_global.h"
-
-#include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
-#include "draw_color.h"
-#include "search_bar.h"
-#include "draw_debug.h"
-#include "manual_moves.h"
-
-#include "rr_graph.h"
-#include "route_utilization.h"
-#include "place_macro.h"
-#include "buttons.h"
 
 /* Draws the routing resources that exist in the FPGA, if the user wants *
  * them drawn. */
@@ -104,4 +74,3 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
  */
 int get_rr_node_transparency(RRNodeId rr_node);
 #endif /* NO_GRAPHICS */
-#endif /* DRAW_RR_H */

@@ -1,5 +1,4 @@
-#ifndef CHECK_RR_GRAPH_H
-#define CHECK_RR_GRAPH_H
+#pragma once
 
 #include "device_grid.h"
 #include "rr_graph_view.h"
@@ -22,5 +21,3 @@ void check_rr_node(const RRGraphView& rr_graph,
                    const enum e_route_type route_type,
                    const int inode,
                    bool is_flat);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef PUGIXML_LOC_H
-#define PUGIXML_LOC_H
+#pragma once
 /*
  * This file contains utilities for the  PUGI XML parser,
  * hanlding the retrieval of line numbers (useful for error messages)
@@ -52,5 +51,3 @@ class loc_data {
     std::vector<std::ptrdiff_t> offsets_;
 };
 } // namespace pugiutil
-
-#endif

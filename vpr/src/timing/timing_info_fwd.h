@@ -1,9 +1,6 @@
-#ifndef VPR_TIMING_INFO_FWD_H
-#define VPR_TIMING_INFO_FWD_H
+#pragma once
 
 class TimingInfo;
 class SetupTimingInfo;
 class HoldTimingInfo;
 class SetupHoldTimingInfo;
-
-#endif

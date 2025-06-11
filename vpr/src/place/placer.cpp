@@ -5,6 +5,7 @@
 #include <optional>
 #include <utility>
 
+#include "echo_files.h"
 #include "flat_placement_types.h"
 #include "blk_loc_registry.h"
 #include "place_macro.h"
@@ -20,6 +21,10 @@
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
 #include "tatum/echo_writer.hpp"
+
+#ifndef NO_GRAPHICS
+#include "draw_global.h"
+#endif // NO_GRAPHICS
 
 Placer::Placer(const Netlist<>& net_list,
                std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,

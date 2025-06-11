@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_color.h
  * 
@@ -5,14 +6,11 @@
  * as well as a global vector of colors shuffled to prevent similar
  * colors from being close together
  */
-#ifndef DRAW_COLOR_H
-#define DRAW_COLOR_H
 
 #ifndef NO_GRAPHICS
 
-#include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
+#include <vector>
+#include "ezgl/color.hpp"
 
 static constexpr ezgl::color blk_BISQUE(0xFF, 0xE4, 0xC4);
 static constexpr ezgl::color blk_LIGHTGREY(0xD3, 0xD3, 0xD3);
@@ -326,5 +324,3 @@ const std::vector<ezgl::color> block_colors{
 };
 
 #endif /* NO_GRAPHICS */
-
-#endif /* DRAW_COLOR_H */

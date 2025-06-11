@@ -15,6 +15,7 @@
 #include "atom_netlist.h"
 #include "atom_netlist_fwd.h"
 #include "concrete_timing_info.h"
+#include "echo_files.h"
 #include "physical_types_util.h"
 #include "prepack.h"
 #include "tatum/TimingReporter.hpp"
@@ -22,6 +23,7 @@
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_time.h"
+#include "vtr_vector.h"
 
 /**
  * Since the parameters of a switch may change as a function of its fanin,
@@ -69,17 +71,21 @@ PreClusterTimingManager::PreClusterTimingManager(bool timing_driven,
     // Start an overall timer for building the pre-cluster timing info.
     vtr::ScopedStartFinishTimer timer("Initializing Pre-Cluster Timing");
 
-    // Approximate the inter-cluster delay
-    // FIXME: This can probably be simplified. It can also be improved using
-    //        AP information.
+    // Approximate the inter-cluster delay. Here, we assign each timing arc
+    // (which is uniquely identified by the sink pin that it passes through) to
+    // be an approximation of the inter-cluster delay.
+    // FIXME: This can probably be simplified. This approximation does not need
+    //        to be that accurate.
+    // TODO: This can be improved using molecule information.
     float inter_cluster_net_delay = approximate_inter_cluster_delay(arch, routing_arch, device_layout);
     VTR_LOG("Using inter-cluster delay: %g\n", inter_cluster_net_delay);
+    timing_arc_delays_.resize(atom_netlist.pins().size(), inter_cluster_net_delay);
 
     // Initialize the timing analyzer
     clustering_delay_calc_ = std::make_shared<PreClusterDelayCalculator>(atom_netlist,
                                                                          atom_lookup,
                                                                          arch.models,
-                                                                         inter_cluster_net_delay,
+                                                                         timing_arc_delays_,
                                                                          prepacker);
     timing_info_ = make_setup_timing_info(clustering_delay_calc_, timing_update_type);
 
@@ -295,4 +301,8 @@ float PreClusterTimingManager::calc_net_setup_criticality(AtomNetId net_id,
     VTR_ASSERT_SAFE_MSG(net_driver_pin_id.is_valid(),
                         "Net has no driver");
     return timing_info_->setup_pin_criticality(net_driver_pin_id);
+}
+
+void PreClusterTimingManager::update_timing_info() {
+    timing_info_->update();
 }

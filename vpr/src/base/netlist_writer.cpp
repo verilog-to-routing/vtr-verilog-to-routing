@@ -2689,22 +2689,8 @@ void add_original_sdc_to_post_implemented_sdc_file(std::ofstream& sdc_os,
  *
  *  @param sdc_os
  *      The file stream to add the propagated clock commands to.
- *  @param clock_modeling
- *      The type of clock modeling used by VPR during the CAD flow.
  */
-void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os,
-                                       e_clock_modeling clock_modeling) {
-
-    // Ideal and routed clocks are handled by the code below. Other clock models
-    // like dedicated routing are not supported yet.
-    // TODO: Supporting dedicated routing should be simple; however it should
-    //       be investigated. Tried quickly but found that the delays produced
-    //       were off by 0.003 ns. Need to investigate why.
-    if (clock_modeling != e_clock_modeling::ROUTED_CLOCK && clock_modeling != e_clock_modeling::IDEAL_CLOCK) {
-        VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                        "Only ideal and routed clock modeling are currentlt "
-                        "supported for post-implementation SDC file generation");
-    }
+void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os) {
 
     // The timing constraints contain information on all the clocks in the circuit
     // (provided by the user-provided SDC file).
@@ -2730,8 +2716,8 @@ void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os,
     sdc_os << "#******************************************************************************#\n";
     sdc_os << "# The following are clock domains in VPR which have delays on their edges.\n";
     sdc_os << "#\n";
-    sdc_os << "# Any non-virtual clock has its delay determined and written out as part of a";
-    sdc_os << "# propagated clock command. If VPR was instructed not to route the clock, this";
+    sdc_os << "# Any non-virtual clock has its delay determined and written out as part of a\n";
+    sdc_os << "# propagated clock command. If VPR was instructed not to route the clock, this\n";
     sdc_os << "# delay will be an underestimate.\n";
     sdc_os << "#\n";
     sdc_os << "# Note: Virtual clocks do not get routed and are treated as ideal.\n";
@@ -2751,18 +2737,15 @@ void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os,
 
 /**
  * @brief Generates a post-implementation SDC file with the given file name
- *        based on the timing info and clock modeling set for VPR.
+ *        based on the timing info used for VPR.
  *
  *  @param sdc_filename
  *      The file name of the SDC file to generate.
  *  @param timing_info
  *      Information on the timing used in the VPR flow.
- *  @param clock_modeling
- *      The type of clock modeling used by VPR during its flow.
  */
 void generate_post_implementation_sdc(const std::string& sdc_filename,
-                                      const t_timing_inf& timing_info,
-                                      e_clock_modeling clock_modeling) {
+                                      const t_timing_inf& timing_info) {
     if (!timing_info.timing_analysis_enabled) {
         VTR_LOG_WARN("Timing analysis is disabled. Post-implementation SDC file "
                      "will not be generated.\n");
@@ -2783,7 +2766,7 @@ void generate_post_implementation_sdc(const std::string& sdc_filename,
     add_original_sdc_to_post_implemented_sdc_file(sdc_os, timing_info);
 
     // Add propagated clocks to SDC file if needed.
-    add_propagated_clocks_to_sdc_file(sdc_os, clock_modeling);
+    add_propagated_clocks_to_sdc_file(sdc_os);
 }
 
 } // namespace
@@ -2797,7 +2780,6 @@ void netlist_writer(const std::string basename,
                     std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
                     const LogicalModels& models,
                     const t_timing_inf& timing_info,
-                    e_clock_modeling clock_modeling,
                     t_analysis_opts opts) {
     std::string verilog_filename = basename + "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
@@ -2822,8 +2804,7 @@ void netlist_writer(const std::string basename,
         VTR_LOG("Writing Implementation SDC    : %s\n", sdc_filename.c_str());
 
         generate_post_implementation_sdc(sdc_filename,
-                                         timing_info,
-                                         clock_modeling);
+                                         timing_info);
     }
 }
 

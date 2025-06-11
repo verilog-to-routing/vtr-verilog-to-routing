@@ -1,5 +1,5 @@
-#ifndef VPR_READ_SDC_H
-#define VPR_READ_SDC_H
+#pragma once
+
 #include <memory>
 
 #include "tatum/TimingConstraintsFwd.hpp"
@@ -16,5 +16,3 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc(const t_timing_inf& timing_in
                                                    const AtomLookup& lookup,
                                                    const LogicalModels& models,
                                                    tatum::TimingGraph& timing_graph);
-
-#endif

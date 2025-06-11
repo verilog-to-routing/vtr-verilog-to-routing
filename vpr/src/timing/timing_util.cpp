@@ -2,12 +2,12 @@
 #include <sstream>
 #include <utility>
 
+#include "tatum/timing_paths.hpp"
 #include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
 
 #include "globals.h"
-#include "timing_fail_error.h"
 #include "timing_info.h"
 #include "timing_util.h"
 

@@ -46,10 +46,6 @@ struct BlifAllocCallback : public blifparse::Callback {
         , blif_format_(blif_format) {
         VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
                    || blif_format_ == e_circuit_format::EBLIF);
-        inpad_model_ = models.get_model_by_name(LogicalModels::MODEL_INPUT);
-        outpad_model_ = models.get_model_by_name(LogicalModels::MODEL_OUTPUT);
-
-        main_netlist_.set_block_types(inpad_model_, outpad_model_);
     }
 
     static constexpr const char* OUTPAD_NAME_PREFIX = "out:";
@@ -69,14 +65,13 @@ struct BlifAllocCallback : public blifparse::Callback {
         //Create a new model, and set it's name
 
         blif_models_.emplace_back(model_name, netlist_id_);
-        blif_models_.back().set_block_types(inpad_model_, outpad_model_);
         blif_models_black_box_.emplace_back(false);
         ended_ = false;
         set_curr_block(AtomBlockId::INVALID()); //This statement doesn't define a block, so mark invalid
     }
 
     void inputs(std::vector<std::string> input_names) override {
-        LogicalModelId blk_model_id = models_.get_model_by_name(LogicalModels::MODEL_INPUT);
+        LogicalModelId blk_model_id = LogicalModels::MODEL_INPUT_ID;
         const t_model& blk_model = models_.get_model(blk_model_id);
 
         VTR_ASSERT_MSG(!blk_model.inputs, "Inpad model has an input port");
@@ -95,7 +90,7 @@ struct BlifAllocCallback : public blifparse::Callback {
     }
 
     void outputs(std::vector<std::string> output_names) override {
-        LogicalModelId blk_model_id = models_.get_model_by_name(LogicalModels::MODEL_OUTPUT);
+        LogicalModelId blk_model_id = LogicalModels::MODEL_OUTPUT_ID;
         const t_model& blk_model = models_.get_model(blk_model_id);
 
         VTR_ASSERT_MSG(!blk_model.outputs, "Outpad model has an output port");
@@ -116,7 +111,7 @@ struct BlifAllocCallback : public blifparse::Callback {
     }
 
     void names(std::vector<std::string> nets, std::vector<std::vector<blifparse::LogicValue>> so_cover) override {
-        LogicalModelId blk_model_id = models_.get_model_by_name(LogicalModels::MODEL_NAMES);
+        LogicalModelId blk_model_id = LogicalModels::MODEL_NAMES_ID;
         const t_model& blk_model = models_.get_model(blk_model_id);
 
         VTR_ASSERT_MSG(nets.size() > 0, "BLIF .names has no connections");
@@ -200,7 +195,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Latch must have a clock\n");
         }
 
-        LogicalModelId blk_model_id = models_.get_model_by_name(LogicalModels::MODEL_LATCH);
+        LogicalModelId blk_model_id = LogicalModels::MODEL_LATCH_ID;
         const t_model& blk_model = models_.get_model(blk_model_id);
 
         VTR_ASSERT_MSG(blk_model.inputs, "Has one input port");
@@ -618,8 +613,6 @@ struct BlifAllocCallback : public blifparse::Callback {
     AtomNetlist& main_netlist_;    ///<User object we fill
     const std::string netlist_id_; ///<Unique identifier based on the contents of the blif file
     const LogicalModels& models_;
-    LogicalModelId inpad_model_;
-    LogicalModelId outpad_model_;
 
     size_t unique_subckt_name_counter_ = 0;
 

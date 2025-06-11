@@ -2,6 +2,7 @@
 
 #include "route_net.h"
 #include "connection_based_routing.h"
+#include "timing_util.h"
 
 bool check_hold(const t_router_opts& router_opts, float worst_neg_slack) {
     if (router_opts.routing_budgets_algorithm != YOYO) {

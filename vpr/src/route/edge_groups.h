@@ -1,5 +1,4 @@
-#ifndef EDGE_GROUPS_H
-#define EDGE_GROUPS_H
+#pragma once
 
 #include <unordered_set>
 #include <unordered_map>
@@ -57,5 +56,3 @@ class EdgeGroups {
     // Order is arbitrary.
     std::vector<std::vector<RRNodeId>> rr_non_config_node_sets_;
 };
-
-#endif

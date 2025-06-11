@@ -1,6 +1,4 @@
-#ifndef RR_GRAPH_VIEW_H
-#define RR_GRAPH_VIEW_H
-
+#pragma once
 /**
  * @file
  * @brief The RRGraphView encapsulates a read-only routing resource graph as most 
@@ -60,9 +58,12 @@
  *   attributes, particularly geometry information (type, x, y, etc.).
  * \endinternal
  */
-#include "rr_graph_builder.h"
+
+#include "metadata_storage.h"
 #include "rr_node.h"
 #include "physical_types.h"
+#include "rr_spatial_lookup.h"
+#include "vtr_geometry.h"
 
 class RRGraphView {
     /* -- Constructors -- */
@@ -695,6 +696,7 @@ class RRGraphView {
      * The main (perhaps only) current use of this metadata is the fasm tool of symbiflow,
      * which needs extra metadata on which programming bits control which switch in order to produce a bitstream.*/
     const MetadataStorage<int>& rr_node_metadata_;
+
     /**
      * @brief  Attributes for each rr_edge
      *
@@ -724,5 +726,3 @@ class RRGraphView {
     /** A list of extra ptc numbers for each routing resource node. See details in RRGraphBuilder class */
     const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums_;
 };
-
-#endif

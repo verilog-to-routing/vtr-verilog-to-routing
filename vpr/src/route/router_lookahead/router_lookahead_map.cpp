@@ -24,6 +24,7 @@
 #include <cmath>
 #include <vector>
 #include "connection_router_interface.h"
+#include "describe_rr_node.h"
 #include "physical_types_util.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -200,7 +201,6 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
     t_physical_tile_type_ptr from_physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(current_node),
                                                                                      rr_graph.node_ylow(current_node),
                                                                                      rr_graph.node_layer(current_node)});
-
     int from_node_ptc_num = rr_graph.node_ptc_num(current_node);
     t_physical_tile_type_ptr to_physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(target_node),
                                                                                    rr_graph.node_ylow(target_node),
@@ -318,6 +318,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         //cost to reach them) in src_opin_delays. Once we know what wire types are
         //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
         //delay to reach the sink.
+
         t_physical_tile_type_ptr from_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
                                                                                      rr_graph.node_ylow(from_node),
                                                                                      from_layer_num});

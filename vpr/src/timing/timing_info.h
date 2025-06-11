@@ -1,11 +1,17 @@
-#ifndef VPR_TIMING_INFO_H
-#define VPR_TIMING_INFO_H
+#pragma once
+
 #include <memory>
 
+#include "atom_netlist_fwd.h"
+#include "tatum/TimingConstraints.hpp"
+#include "tatum/analyzers/HoldTimingAnalyzer.hpp"
+#include "tatum/analyzers/SetupHoldTimingAnalyzer.hpp"
+#include "tatum/analyzers/SetupTimingAnalyzer.hpp"
+#include "tatum/analyzers/TimingAnalyzer.hpp"
+#include "tatum/delay_calc/DelayCalculator.hpp"
+#include "tatum/report/TimingPath.hpp"
 #include "timing_info_fwd.h"
-#include "tatum/analyzer_factory.hpp"
-#include "tatum/timing_paths.hpp"
-#include "timing_util.h"
+#include "vtr_range.h"
 
 //Generic interface which provides functionality to update (but not
 //access) timing information.
@@ -138,5 +144,3 @@ class SetupHoldTimingInfo : public SetupTimingInfo, public HoldTimingInfo {
   public:
     virtual std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> setup_hold_analyzer() const = 0;
 };
-
-#endif

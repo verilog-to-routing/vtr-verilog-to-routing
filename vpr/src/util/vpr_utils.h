@@ -187,9 +187,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
 ///        pb_graph_node.
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
-void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
@@ -254,6 +252,14 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             const int root_i,
                             const int root_j,
                             int pin_physical_num);
+
+/**
+ * @brief Returns the RR node ID for the given atom pin ID.
+ * **Warning**: This function should be called only if flat-router is enabled,
+ * since, otherwise, the routing resources inside clusters are not added to the RR graph.
+ * @param atom_pin_id The atom pin ID.
+ */
+RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id);
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               t_physical_tile_type_ptr physical_tile,

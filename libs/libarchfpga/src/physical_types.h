@@ -1,3 +1,4 @@
+#pragma once
 /*
  * Data types describing the physical components on the FPGA architecture.
  *
@@ -24,8 +25,6 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
-#pragma once
-
 #include <functional>
 #include <utility>
 #include <vector>
@@ -34,12 +33,9 @@
 #include <map>
 #include <unordered_map>
 #include <limits>
-#include <numeric>
-#include <set>
 #include <unordered_set>
 
 #include "vtr_ndmatrix.h"
-#include "vtr_hash.h"
 #include "vtr_bimap.h"
 #include "vtr_string_interning.h"
 
@@ -49,7 +45,6 @@
 #include "vib_inf.h"
 
 //Forward declarations
-struct t_clock_arch;
 struct t_clock_network;
 struct t_power_arch;
 struct t_interconnect_pins;
@@ -168,11 +163,8 @@ enum e_pin_type {
 enum e_interconnect {
     COMPLETE_INTERC = 1,
     DIRECT_INTERC = 2,
-    MUX_INTERC = 3,
-    NUM_INTERC_TYPES /* Invalid type */
+    MUX_INTERC = 3
 };
-/* String version of interconnect types. Use for debugging messages */
-constexpr std::array<const char*, NUM_INTERC_TYPES> INTERCONNECT_TYPE_STRING = {{"unknown", "complete", "direct", "mux"}};
 
 /* Orientations. */
 enum e_side : unsigned char {
@@ -416,12 +408,6 @@ struct t_grid_def {
 
 /************************* POWER ***********************************/
 
-/* Global clock architecture */
-struct t_clock_arch {
-    int num_global_clocks;
-    t_clock_network* clock_inf; /* Details about each clock */
-};
-
 /* Architecture information for a single clock */
 struct t_clock_network {
     bool autosize_buffer; /* autosize clock buffers */
@@ -431,6 +417,15 @@ struct t_clock_network {
     float prob;   /* Static probability of net assigned to this clock */
     float dens;   /* Switching density of net assigned to this clock */
     float period; /* Period of clock */
+
+    t_clock_network() {
+        autosize_buffer = false;
+        buffer_size = 0.0f;
+        C_wire = 0.0f;
+        prob = 0.0f;
+        dens = 0.0f;
+        period = 0.0f;
+    }
 };
 
 /* Power-related architecture information */
@@ -443,12 +438,26 @@ struct t_power_arch {
     float mux_transistor_size;
     float FF_size;
     float LUT_transistor_size;
+
+    t_power_arch() {
+        C_wire_local = 0.0f;
+        logical_effort_factor = 0.0f;
+        local_interc_factor = 0.0f;
+        transistors_per_SRAM_bit = 0.0f;
+        mux_transistor_size = 0.0f;
+        FF_size = 0.0f;
+        LUT_transistor_size = 0.0f;
+    }
 };
 
 /* Power usage for an entity */
 struct t_power_usage {
     float dynamic;
     float leakage;
+    t_power_usage() {
+        dynamic = 0.0f;
+        leakage = 0.0f;
+    }
 };
 
 /*************************************************************************************************/
@@ -543,6 +552,18 @@ struct t_port_power {
     t_port* scaled_by_port;
     int scaled_by_port_pin_idx;
     bool reverse_scaled; /* Scale by (1-prob) */
+
+    t_port_power() {
+        wire_type = (e_power_wire_type)0;
+        wire = {0.0f}; // Default to C = 0.0f
+        buffer_type = (e_power_buffer_type)0;
+        buffer_size = 0.0f;
+        pin_toggle_initialized = false;
+        energy_per_toggle = 0.0f;
+        scaled_by_port = nullptr;
+        scaled_by_port_pin_idx = 0;
+        reverse_scaled = false;
+    }
 };
 
 /**
@@ -690,6 +711,7 @@ struct t_physical_tile_type {
 
     std::unordered_map<int, std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>> on_tile_pin_num_to_pb_pin; // [root_pin_physical_num][logical_block] -> t_pb_graph_pin*
     std::unordered_map<int, t_pb_graph_pin*> pin_num_to_pb_pin;                                                       // [intra_tile_pin_physical_num] -> t_pb_graph_pin
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_to_pin_num;                                                 // [t_pb_graph_pin*] -> intra_tile_pin_physical_num
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -983,6 +1005,9 @@ struct t_logical_block_type {
     // Is this t_logical_block_type empty?
     bool is_empty() const;
 
+    // Returns true if this logical block type is an IO block
+    bool is_io() const;
+
   public:
     /**
      * @brief Returns the logical block port given the port name and the corresponding logical block type
@@ -1069,8 +1094,7 @@ struct t_pb_type {
     t_mode* parent_mode = nullptr;
     int depth = 0; /* depth of pb_type */
 
-    t_pin_to_pin_annotation* annotations = nullptr; /* [0..num_annotations-1] */
-    int num_annotations = 0;
+    std::vector<t_pin_to_pin_annotation> annotations;
 
     int index_in_logical_block = 0; /* assign a unique id to each pb_type in a logical block */
 
@@ -1141,6 +1165,43 @@ struct t_mode {
     t_metadata_dict meta;
 };
 
+/** Info placed between pins in the architecture file (e.g. delay annotations),
+ *
+ * This is later for additional information.
+ *
+ * Data Members:
+ *      annotation_entries: pairs of annotation subtypes and the annotation values
+ *      type: type of annotation
+ *      format: formatting of data
+ *      input_pins: input pins as string affected by annotation
+ *      output_pins: output pins as string affected by annotation
+ *      clock_pin: clock as string affected by annotation
+ */
+struct t_pin_to_pin_annotation {
+
+    std::vector<std::pair<int, std::string>> annotation_entries;
+
+    enum e_pin_to_pin_annotation_type type;
+    enum e_pin_to_pin_annotation_format format;
+
+    char* input_pins;
+    char* output_pins;
+    char* clock;
+
+    int line_num; /* used to report what line number this annotation is found in architecture file */
+
+    t_pin_to_pin_annotation() noexcept {
+        annotation_entries = std::vector<std::pair<int, std::string>>();
+        input_pins = nullptr;
+        output_pins = nullptr;
+        clock = nullptr;
+
+        line_num = 0;
+        type = (e_pin_to_pin_annotation_type)0;
+        format = (e_pin_to_pin_annotation_format)0;
+    }
+};
+
 /** Describes an interconnect edge inside a cluster
  *
  *  This forms part of the t_pb_type hierarchical description of a clustered logic block.
@@ -1152,31 +1213,42 @@ struct t_mode {
  *      input_string: input string verbatim to parse later
  *      output_string: input string output to parse later
  *      annotations: Annotations for delay, power, etc
- *      num_annotations: Total number of annotations
  *      infer_annotations: This interconnect is autogenerated, if true, infer pack_patterns
  *                         such as carry-chains and forced packs based on interconnect linked to it
  *      parent_mode_index: Mode of parent as int
  */
 struct t_interconnect {
     enum e_interconnect type;
-    char* name = nullptr;
+    char* name;
 
-    char* input_string = nullptr;
-    char* output_string = nullptr;
+    char* input_string;
+    char* output_string;
 
-    t_pin_to_pin_annotation* annotations = nullptr; /* [0..num_annotations-1] */
-    int num_annotations = 0;
-    bool infer_annotations = false;
+    std::vector<t_pin_to_pin_annotation> annotations;
+    bool infer_annotations;
 
-    int line_num = 0; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
+    int line_num; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
 
-    int parent_mode_index = 0;
+    int parent_mode_index;
 
     /* Power related members */
-    t_mode* parent_mode = nullptr;
+    t_mode* parent_mode;
 
-    t_interconnect_power* interconnect_power = nullptr;
+    t_interconnect_power* interconnect_power;
     t_metadata_dict meta;
+
+    t_interconnect() {
+        type = (e_interconnect)0;
+        name = nullptr;
+        input_string = nullptr;
+        output_string = nullptr;
+        infer_annotations = false;
+        line_num = 0;
+        parent_mode_index = 0;
+        parent_mode = nullptr;
+        interconnect_power = nullptr;
+        meta = t_metadata_dict();
+    }
 };
 
 /** Describes I/O and clock ports
@@ -1214,6 +1286,22 @@ struct t_port {
     int absolute_first_pin_index;
 
     t_port_power* port_power;
+
+    t_port() {
+        name = nullptr;
+        model_port = nullptr;
+        type = (PORTS)0;
+        is_clock = false;
+        is_non_clock_global = false;
+        num_pins = 0;
+        equivalent = (PortEquivalence)0;
+        parent_pb_type = nullptr;
+        port_class = nullptr;
+        index = 0;
+        port_index_by_type = 0;
+        absolute_first_pin_index = 0;
+        port_power = nullptr;
+    }
 };
 
 struct t_pb_type_power {
@@ -1240,6 +1328,15 @@ struct t_interconnect_power {
     int num_output_ports;
     int num_pins_per_port;
     float transistor_cnt;
+
+    t_interconnect_power() {
+        power_usage = t_power_usage();
+        port_info_initialized = false;
+        num_input_ports = 0;
+        num_output_ports = 0;
+        num_pins_per_port = 0;
+        transistor_cnt = 0.0f;
+    }
 };
 
 struct t_interconnect_pins {
@@ -1251,34 +1348,6 @@ struct t_interconnect_pins {
 
 struct t_mode_power {
     t_power_usage power_usage; /* Power usage of this mode */
-};
-
-/** Info placed between pins in the architecture file (e.g. delay annotations),
- *
- * This is later for additional information.
- *
- * Data Members:
- *      value: value/property pair
- *      prop: value/property pair
- *      type: type of annotation
- *      format: formatting of data
- *      input_pins: input pins as string affected by annotation
- *      output_pins: output pins as string affected by annotation
- *      clock_pin: clock as string affected by annotation
- */
-struct t_pin_to_pin_annotation {
-    char** value; /* [0..num_value_prop_pairs - 1] */
-    int* prop;    /* [0..num_value_prop_pairs - 1] */
-    int num_value_prop_pairs;
-
-    enum e_pin_to_pin_annotation_type type;
-    enum e_pin_to_pin_annotation_format format;
-
-    char* input_pins;
-    char* output_pins;
-    char* clock;
-
-    int line_num; /* used to report what line number this annotation is found in architecture file */
 };
 
 /*************************************************************************************************
@@ -2245,7 +2314,8 @@ struct t_arch {
     LogicalModels models;
 
     t_power_arch* power = nullptr;
-    t_clock_arch* clocks = nullptr;
+
+    std::shared_ptr<std::vector<t_clock_network>> clocks;
 
     //determine which layers in multi-die FPGAs require to build global routing resources
     std::vector<bool> layer_global_routing;

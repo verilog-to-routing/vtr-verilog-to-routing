@@ -1,6 +1,4 @@
-#ifndef VTR_XYROUTING_H
-#define VTR_XYROUTING_H
-
+#pragma once
 /**
  * @file 
  * @brief This file defines the XYRouting class, which represents a direction
@@ -117,5 +115,3 @@ class XYRouting : public TurnModelRouting {
     const std::vector<TurnModelRouting::Direction> down_direction{TurnModelRouting::Direction::DOWN};
     const std::vector<TurnModelRouting::Direction> no_direction{};
 };
-
-#endif

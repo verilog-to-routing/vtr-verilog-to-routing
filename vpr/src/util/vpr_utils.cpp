@@ -40,6 +40,8 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 
 static bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::regex& blif_model_regex);
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
+static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
+static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 
 /******************** Subroutine definitions *********************************/
 
@@ -1031,7 +1033,7 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
 }
 
 /* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
+static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
     t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
 
     t_pb_graph_node* pb_graph_head = type->pb_graph_head;
@@ -1059,7 +1061,7 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_t
 }
 
 /* Free pb_graph_pin lookup array */
-void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
+static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
     if (pb_graph_pin_lookup_from_type == nullptr) {
         return;
     }
@@ -1737,6 +1739,41 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     VTR_ASSERT(class_type == DRIVER || class_type == RECEIVER);
     e_rr_type node_type = (class_type == e_pin_type::DRIVER) ? e_rr_type::SOURCE : e_rr_type::SINK;
     return rr_spatial_lookup.find_node(layer, i, j, node_type, class_physical_num);
+}
+
+RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id) {
+    auto& atom_nlist = g_vpr_ctx.atom().netlist();
+    auto& atom_lookup = g_vpr_ctx.atom().lookup();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    /*
+     * To get the RRNodeId for an atom pin, we need to:
+     * 1. Find the atom block that the pin belongs to
+     * 2. Find the cluster block that the atom block is a part of
+     * 3. Find the physical tile that the cluster block is located on
+     * 4. Find the physical pin number of the atom pin (corresponds to ptc number of the RR node)
+     * 5. Call get_pin_rr_node_id to get the RRNodeId for the pin
+     */
+
+    AtomBlockId atom_blk_id = atom_nlist.pin_block(atom_pin_id);
+    ClusterBlockId clb_blk_id = atom_lookup.atom_clb(atom_blk_id);
+
+    t_pl_loc clb_blk_loc = place_ctx.block_locs()[clb_blk_id].loc;
+
+    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({clb_blk_loc.x, clb_blk_loc.y, clb_blk_loc.layer});
+
+    const t_pb_graph_pin* atom_pb_pin = atom_lookup.atom_pin_pb_graph_pin(atom_pin_id);
+    int pin_physical_num = physical_tile->pb_pin_to_pin_num.at(atom_pb_pin);
+
+    RRNodeId rr_node_id = get_pin_rr_node_id(device_ctx.rr_graph.node_lookup(),
+                                             physical_tile,
+                                             clb_blk_loc.layer,
+                                             clb_blk_loc.x,
+                                             clb_blk_loc.y,
+                                             pin_physical_num);
+
+    return rr_node_id;
 }
 
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {

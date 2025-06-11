@@ -15,7 +15,7 @@ circuit_list_add=s298.blif
 
 # Add architectures to list to sweep
 arch_list_add=k4_N4_tileable_90nm.xml
- 
+
 # Parse info and how to parse
 parse_file=vpr_standard.txt
 

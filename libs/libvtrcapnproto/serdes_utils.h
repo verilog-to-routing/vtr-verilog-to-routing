@@ -1,9 +1,9 @@
-#ifndef SERDES_UTILS_H_
-#define SERDES_UTILS_H_
+#pragma once
 
+#include "capnp/message.h"
+#include <cstdint>
 #include <limits>
 #include <string>
-#include "capnp/serialize.h"
 
 // Platform indepedent way to file message to a file on disk.
 void writeMessageToFile(const std::string& file,
@@ -16,5 +16,3 @@ inline ::capnp::ReaderOptions default_large_capnp_opts() {
     opts.traversalLimitInWords = std::numeric_limits<uint64_t>::max();
     return opts;
 }
-
-#endif /* SERDES_UTILS_H_ */
