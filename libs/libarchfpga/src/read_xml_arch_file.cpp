@@ -122,13 +122,13 @@ static void throw_xml_arch_error(const char* filename,
                                  t_token* tokens, 
                                  int num_tokens);
 
-static void LoadPinLoc(pugi::xml_node Locations,
+static void load_pin_loc(pugi::xml_node Locations,
                        t_physical_tile_type* type,
                        t_pin_locs* pin_locs,
                        const pugiutil::loc_data& loc_data,
                        const int num_of_avail_layer);
 template<typename T>
-static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
+static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
                                             T type,
                                             const char* pin_loc_string,
                                             const pugiutil::loc_data& loc_data);
@@ -136,13 +136,13 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
  * @brief Parse the string to extract instance range, e.g., io[4:7] -> (4, 7)
  * If no instance range is explicitly defined, we assume the range of type capacity, i.e., (0, capacity - 1)
  */
-static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
+static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
                                                  t_sub_tile& sub_tile,
                                                  const char* pin_loc_string,
                                                  const pugiutil::loc_data& loc_data);
 
 /* Process XML hierarchy */
-static void ProcessTiles(pugi::xml_node Node,
+static void process_tiles(pugi::xml_node Node,
                          std::vector<t_physical_tile_type>& PhysicalTileTypes,
                          std::vector<t_logical_block_type>& LogicalBlockTypes,
                          const t_default_fc_spec& arch_def_fc,
@@ -153,44 +153,44 @@ static void ProcessTiles(pugi::xml_node Node,
 // TODO: Remove block_type_contains_blif_model / pb_type_contains_blif_model
 // as part of
 // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
-static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes);
+static void mark_IO_types(std::vector<t_physical_tile_type>& PhysicalTileTypes);
 
-static void ProcessTileProps(pugi::xml_node Node,
+static void process_tile_props(pugi::xml_node Node,
                              t_physical_tile_type* PhysicalTileType,
                              const pugiutil::loc_data& loc_data);
 
-static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
+static t_pin_counts process_sub_tile_ports(pugi::xml_node Parent,
                                         t_sub_tile* SubTile,
                                         const pugiutil::loc_data& loc_data);
 
-static void ProcessTilePort(pugi::xml_node Node,
+static void process_tile_port(pugi::xml_node Node,
                             t_physical_tile_port* port,
                             const pugiutil::loc_data& loc_data);
 
-static void ProcessTileEquivalentSites(pugi::xml_node Parent,
+static void process_tile_equivalent_sites(pugi::xml_node Parent,
                                        t_sub_tile* SubTile,
                                        t_physical_tile_type* PhysicalTileType,
                                        std::vector<t_logical_block_type>& LogicalBlockTypes,
                                        const pugiutil::loc_data& loc_data);
-static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
+static void process_equivalent_site_direct_connection(pugi::xml_node Parent,
                                                   t_sub_tile* SubTile,
                                                   t_physical_tile_type* PhysicalTileType,
                                                   t_logical_block_type* LogicalBlockType,
                                                   const pugiutil::loc_data& loc_data);
-static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
+static void process_equivalent_site_custom_connection(pugi::xml_node Parent,
                                                   t_sub_tile* SubTile,
                                                   t_physical_tile_type* PhysicalTileType,
                                                   t_logical_block_type* LogicalBlockType,
                                                   const std::string& site_name,
                                                   const pugiutil::loc_data& loc_data);
-static void ProcessPinLocations(pugi::xml_node Locations,
+static void process_pin_locations(pugi::xml_node Locations,
                                 t_physical_tile_type* PhysicalTileType,
                                 t_sub_tile* SubTile,
                                 t_pin_locs* pin_locs,
                                 const pugiutil::loc_data& loc_data,
                                 const int num_of_avail_layer);
 
-static void ProcessSubTiles(pugi::xml_node Node,
+static void process_sub_tiles(pugi::xml_node Node,
                             t_physical_tile_type* PhysicalTileType,
                             std::vector<t_logical_block_type>& LogicalBlockTypes,
                             std::vector<t_segment_inf>& segments,
@@ -493,7 +493,7 @@ void XmlReadArch(const char* ArchFile,
 
         /* Process logical block types */
         Next = get_single_child(architecture, "tiles", loc_data);
-        ProcessTiles(Next, PhysicalTileTypes, LogicalBlockTypes, arch_def_fc, *arch, loc_data, num_of_avail_layers);
+        process_tiles(Next, PhysicalTileTypes, LogicalBlockTypes, arch_def_fc, *arch, loc_data, num_of_avail_layers);
 
         /* Link Physical Tiles with Logical Blocks */
         link_physical_logical_types(PhysicalTileTypes, LogicalBlockTypes);
@@ -571,7 +571,7 @@ void XmlReadArch(const char* ArchFile,
         SyncModelsPbTypes(arch, LogicalBlockTypes);
         check_models(arch);
 
-        MarkIoTypes(PhysicalTileTypes);
+        mark_IO_types(PhysicalTileTypes);
     } catch (pugiutil::XmlError& e) {
         throw_xml_arch_error(ArchFile, e.line(), e.what(), nullptr, 0);
     }
@@ -585,7 +585,7 @@ void XmlReadArch(const char* ArchFile,
  *
  */
 
-static void LoadPinLoc(pugi::xml_node Locations,
+static void load_pin_loc(pugi::xml_node Locations,
                        t_physical_tile_type* type,
                        t_pin_locs* pin_locs,
                        const pugiutil::loc_data& loc_data,
@@ -724,12 +724,12 @@ static void LoadPinLoc(pugi::xml_node Locations,
                     for (int height = 0; height < type->height; ++height) {
                         for (e_side side : TOTAL_2D_SIDES) {
                             for (auto token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
-                                auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
+                                auto pin_range = process_pin_string<t_sub_tile*>(Locations,
                                                                                &sub_tile,
                                                                                token.c_str(),
                                                                                loc_data);
                                 /* Get the offset in the capacity range */
-                                auto capacity_range = ProcessInstanceString(Locations,
+                                auto capacity_range = process_instance_string(Locations,
                                                                             sub_tile,
                                                                             token.c_str(),
                                                                             loc_data);
@@ -772,7 +772,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
     }
 }
 
-static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
+static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
                                                  t_sub_tile& sub_tile,
                                                  const char* pin_loc_string,
                                                  const pugiutil::loc_data& loc_data) {
@@ -870,7 +870,7 @@ static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
 }
 
 template<typename T>
-static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
+static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
                                             T type,
                                             const char* pin_loc_string,
                                             const pugiutil::loc_data& loc_data) {
@@ -3096,7 +3096,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
     chan->dc = get_attribute(Node, "dc", loc_data, hasDc).as_float(0);
 }
 
-static void ProcessTiles(pugi::xml_node Node,
+static void process_tiles(pugi::xml_node Node,
                          std::vector<t_physical_tile_type>& PhysicalTileTypes,
                          std::vector<t_logical_block_type>& LogicalBlockTypes,
                          const t_default_fc_spec& arch_def_fc,
@@ -3126,7 +3126,7 @@ static void ProcessTiles(pugi::xml_node Node,
         PhysicalTileType.index = index;
 
         /* Parses the properties fields of the type */
-        ProcessTileProps(CurTileType, &PhysicalTileType, loc_data);
+        process_tile_props(CurTileType, &PhysicalTileType, loc_data);
 
         auto [_, success] = tile_type_descriptors.insert(PhysicalTileType.name);
         if (!success) {
@@ -3150,7 +3150,7 @@ static void ProcessTiles(pugi::xml_node Node,
         pugi::xml_node Cur = get_single_child(CurTileType, "switchblock_locations", loc_data, ReqOpt::OPTIONAL);
         ProcessSwitchblockLocations(Cur, &PhysicalTileType, arch, loc_data);
 
-        ProcessSubTiles(CurTileType, &PhysicalTileType, LogicalBlockTypes, arch.Segments, arch_def_fc, loc_data, num_of_avail_layer);
+        process_sub_tiles(CurTileType, &PhysicalTileType, LogicalBlockTypes, arch.Segments, arch_def_fc, loc_data, num_of_avail_layer);
 
         /* Type fully read */
         ++index;
@@ -3163,7 +3163,7 @@ static void ProcessTiles(pugi::xml_node Node,
     }
 }
 
-static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes) {
+static void mark_IO_types(std::vector<t_physical_tile_type>& PhysicalTileTypes) {
     for (auto& type : PhysicalTileTypes) {
         type.is_input_type = false;
         type.is_output_type = false;
@@ -3186,7 +3186,7 @@ static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes) {
     }
 }
 
-static void ProcessTileProps(pugi::xml_node Node,
+static void process_tile_props(pugi::xml_node Node,
                              t_physical_tile_type* PhysicalTileType,
                              const pugiutil::loc_data& loc_data) {
     expect_only_attributes(Node, {"name", "width", "height", "area"}, loc_data);
@@ -3207,7 +3207,7 @@ static void ProcessTileProps(pugi::xml_node Node,
     }
 }
 
-static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
+static t_pin_counts process_sub_tile_ports(pugi::xml_node Parent,
                                         t_sub_tile* SubTile,
                                         const pugiutil::loc_data& loc_data) {
     pugi::xml_node Cur;
@@ -3232,7 +3232,7 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
             port.index = port_index;
             port.absolute_first_pin_index = absolute_first_pin_index;
             port.port_index_by_type = port_index_by_type;
-            ProcessTilePort(Cur, &port, loc_data);
+            process_tile_port(Cur, &port, loc_data);
 
             //Check port name duplicates
             auto [_, subtile_success] = sub_tile_port_names.insert(port.name);
@@ -3274,7 +3274,7 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
     return pin_counts;
 }
 
-static void ProcessTilePort(pugi::xml_node Node,
+static void process_tile_port(pugi::xml_node Node,
                             t_physical_tile_port* port,
                             const pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "num_pins", "equivalent"};
@@ -3346,7 +3346,7 @@ static void ProcessTilePort(pugi::xml_node Node,
     }
 }
 
-static void ProcessTileEquivalentSites(pugi::xml_node Parent,
+static void process_tile_equivalent_sites(pugi::xml_node Parent,
                                        t_sub_tile* SubTile,
                                        t_physical_tile_type* PhysicalTileType,
                                        std::vector<t_logical_block_type>& LogicalBlockTypes,
@@ -3375,9 +3375,9 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
 
         if (0 == strcmp(pin_mapping, "custom")) {
             // Pin mapping between Tile and Pb Type is user-defined
-            ProcessEquivalentSiteCustomConnection(CurSite, SubTile, PhysicalTileType, LogicalBlockType, Prop, loc_data);
+            process_equivalent_site_custom_connection(CurSite, SubTile, PhysicalTileType, LogicalBlockType, Prop, loc_data);
         } else if (0 == strcmp(pin_mapping, "direct")) {
-            ProcessEquivalentSiteDirectConnection(CurSite, SubTile, PhysicalTileType, LogicalBlockType, loc_data);
+            process_equivalent_site_direct_connection(CurSite, SubTile, PhysicalTileType, LogicalBlockType, loc_data);
         }
 
         if (0 == strcmp(LogicalBlockType->pb_type->name, Prop.c_str())) {
@@ -3390,7 +3390,7 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
     }
 }
 
-static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
+static void process_equivalent_site_direct_connection(pugi::xml_node Parent,
                                                   t_sub_tile* SubTile,
                                                   t_physical_tile_type* PhysicalTileType,
                                                   t_logical_block_type* LogicalBlockType,
@@ -3417,7 +3417,7 @@ static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
     PhysicalTileType->tile_block_pin_directs_map[LogicalBlockType->index][SubTile->index] = directs_map;
 }
 
-static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
+static void process_equivalent_site_custom_connection(pugi::xml_node Parent,
                                                   t_sub_tile* SubTile,
                                                   t_physical_tile_type* PhysicalTileType,
                                                   t_logical_block_type* LogicalBlockType,
@@ -3450,8 +3450,8 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
         // `to` attribute is relative to the logical block pins
         to = std::string(get_attribute(CurDirect, "to", loc_data).value());
 
-        auto from_pins = ProcessPinString<t_sub_tile*>(CurDirect, SubTile, from.c_str(), loc_data);
-        auto to_pins = ProcessPinString<t_logical_block_type_ptr>(CurDirect, LogicalBlockType, to.c_str(), loc_data);
+        auto from_pins = process_pin_string<t_sub_tile*>(CurDirect, SubTile, from.c_str(), loc_data);
+        auto to_pins = process_pin_string<t_logical_block_type_ptr>(CurDirect, LogicalBlockType, to.c_str(), loc_data);
 
         // Checking that the number of pins is exactly the same
         if (from_pins.second - from_pins.first != to_pins.second - to_pins.first) {
@@ -3483,7 +3483,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
     PhysicalTileType->tile_block_pin_directs_map[LogicalBlockType->index][SubTile->index] = directs_map;
 }
 
-static void ProcessPinLocations(pugi::xml_node Locations,
+static void process_pin_locations(pugi::xml_node Locations,
                                 t_physical_tile_type* PhysicalTileType,
                                 t_sub_tile* SubTile,
                                 t_pin_locs* pin_locs,
@@ -3705,7 +3705,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
     }
 }
 
-static void ProcessSubTiles(pugi::xml_node Node,
+static void process_sub_tiles(pugi::xml_node Node,
                             t_physical_tile_type* PhysicalTileType,
                             std::vector<t_logical_block_type>& LogicalBlockTypes,
                             std::vector<t_segment_inf>& segments,
@@ -3766,7 +3766,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
         PhysicalTileType->capacity += capacity;
 
         /* Process sub tile port definitions */
-        const auto pin_counts = ProcessSubTilePorts(CurSubTile, &SubTile, loc_data);
+        const auto pin_counts = process_sub_tile_ports(CurSubTile, &SubTile, loc_data);
 
         /* Map Sub Tile physical pins with the Physical Tile Type physical pins.
          * This takes into account the capacity of each sub tiles to add the correct offset.
@@ -3789,7 +3789,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
         PhysicalTileType->num_drivers += capacity * pin_counts.output;
 
         Cur = get_single_child(CurSubTile, "pinlocations", loc_data, ReqOpt::OPTIONAL);
-        ProcessPinLocations(Cur, PhysicalTileType, &SubTile, &pin_locs, loc_data, num_of_avail_layer);
+        process_pin_locations(Cur, PhysicalTileType, &SubTile, &pin_locs, loc_data, num_of_avail_layer);
 
         /* Load Fc */
         Cur = get_single_child(CurSubTile, "fc", loc_data, ReqOpt::OPTIONAL);
@@ -3797,7 +3797,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
 
         //Load equivalent sites information
         Cur = get_single_child(CurSubTile, "equivalent_sites", loc_data, ReqOpt::REQUIRED);
-        ProcessTileEquivalentSites(Cur, &SubTile, PhysicalTileType, LogicalBlockTypes, loc_data);
+        process_tile_equivalent_sites(Cur, &SubTile, PhysicalTileType, LogicalBlockTypes, loc_data);
 
         PhysicalTileType->sub_tiles.push_back(SubTile);
 
@@ -3811,7 +3811,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
     PhysicalTileType->pinloc.resize({width, height, num_sides}, std::vector<bool>(num_pins, false));
 
     setup_pin_classes(PhysicalTileType);
-    LoadPinLoc(Cur, PhysicalTileType, &pin_locs, loc_data, num_of_avail_layer);
+    load_pin_loc(Cur, PhysicalTileType, &pin_locs, loc_data, num_of_avail_layer);
 }
 
 /* Takes in node pointing to <typelist> and loads all the
