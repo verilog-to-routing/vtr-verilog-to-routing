@@ -5169,4 +5169,5 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
     throw_xml_arch_error(__FILE__, __LINE__,
                          vtr::string_fmt("Could not find type: %s\n", type_name).c_str(),
                          nullptr, 0);
+    return nullptr;
 }
