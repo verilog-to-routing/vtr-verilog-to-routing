@@ -2714,7 +2714,7 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
         if (name == "auto") {
             //We name <auto_layout> as 'auto', so don't allow a user to specify it
             throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
-                                 vtr::string_fmt("The name '%s' is reserved for auto-sized layouts; please choose another name", name).c_str(),
+                                 vtr::string_fmt("The name '%s' is reserved for auto-sized layouts; please choose another name", name.c_str()).c_str(),
                                  nullptr, 0);
         }
         grid_def.name = name;
