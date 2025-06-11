@@ -1440,12 +1440,12 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
                 sync_netlists_to_routing_flat();
             } else {
                 sync_netlists_to_routing(net_list,
-                                        g_vpr_ctx.device(),
-                                        g_vpr_ctx.mutable_atom(),
-                                        g_vpr_ctx.mutable_clustering(),
-                                        g_vpr_ctx.placement(),
-                                        vpr_setup.PackerOpts.pack_verbosity > 2);
-                }
+                                         g_vpr_ctx.device(),
+                                         g_vpr_ctx.mutable_atom(),
+                                         g_vpr_ctx.mutable_clustering(),
+                                         g_vpr_ctx.placement(),
+                                         vpr_setup.PackerOpts.pack_verbosity > 2);
+            }
         } else {
             VTR_LOG_WARN("Synchronization between packing and routing results was not applied due to skip_sync_clustering_and_routing_results being set to true\n");
         }
