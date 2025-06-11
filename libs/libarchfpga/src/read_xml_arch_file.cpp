@@ -1449,7 +1449,8 @@ static void ProcessPb_Type(pugi::xml_node Parent,
                                  vtr::string_fmt("%s primitives must contain exactly one input port and one output port."
                                                  "Found '%d' input port(s) and '%d' output port(s) for '%s'",
                            (pb_type->class_type == LUT_CLASS) ? "LUT" : "Latch",
-                           num_in_ports, num_out_ports, pb_type->name);
+                           num_in_ports, num_out_ports, pb_type->name).c_str(),
+                                 nullptr, 0);
         }
     }
 
