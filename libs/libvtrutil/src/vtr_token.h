@@ -6,6 +6,9 @@
  * @brief Tokenizer
  */
 
+#include <string>
+#include <vector>
+
 ///@brief Token types
 enum e_token_type {
     TOKEN_NULL,
@@ -22,12 +25,10 @@ enum e_token_type {
 ///@brief Token structure
 struct t_token {
     enum e_token_type type;
-    char* data;
+    std::string data;
 };
 
-t_token* GetTokensFromString(const char* inString, int* num_tokens);
-
-void freeTokens(t_token* tokens, const int num_tokens);
+std::vector<t_token> GetTokensFromString(const char* inString);
 
 bool checkTokenType(const t_token token, enum e_token_type token_type);
 
