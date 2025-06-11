@@ -11,13 +11,13 @@
 #include "vtr_memory.h"
 #include "vtr_token.h"
 
-enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
+enum e_token_type get_token_type_from_char(const enum e_token_type cur_token_type,
                                        const char cur);
 
-bool IsWhitespace(char c);
+bool is_white_space(char c);
 
 ///@brief Returns true if character is whatspace between tokens
-bool IsWhitespace(char c) {
+bool is_white_space(char c) {
     switch (c) {
         case ' ':
         case '\t':
@@ -30,7 +30,7 @@ bool IsWhitespace(char c) {
 }
 
 ///@brief Returns a token list of the text for a given string.
-t_token* GetTokensFromString(const char* inString, int* num_tokens) {
+t_token* get_tokens_from_string(const char* inString, int* num_tokens) {
     const char* cur;
     t_token* tokens;
     int i, in_string_index, prev_in_string_index;
@@ -48,7 +48,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
 
     /* Count number of tokens */
     while (*cur) {
-        new_token_type = GetTokenTypeFromChar(cur_token_type, *cur);
+        new_token_type = get_token_type_from_char(cur_token_type, *cur);
         if (new_token_type != cur_token_type) {
             cur_token_type = new_token_type;
             if (new_token_type != TOKEN_NULL) {
@@ -75,7 +75,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
     cur = inString;
 
     while (*cur) {
-        new_token_type = GetTokenTypeFromChar(cur_token_type, *cur);
+        new_token_type = get_token_type_from_char(cur_token_type, *cur);
         if (new_token_type != cur_token_type) {
             if (!has_null) {
                 tokens[i - 1].data[in_string_index - prev_in_string_index] = '\0'; /* NULL the end of the data string */
@@ -104,7 +104,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
 }
 
 ///@brief Free (tokens)
-void freeTokens(t_token* tokens, const int num_tokens) {
+void free_tokens(t_token* tokens, const int num_tokens) {
     int i;
     for (i = 0; i < num_tokens; i++) {
         free(tokens[i].data);
@@ -113,9 +113,9 @@ void freeTokens(t_token* tokens, const int num_tokens) {
 }
 
 ///@brief Returns a token type of the given char
-enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
+enum e_token_type get_token_type_from_char(const enum e_token_type cur_token_type,
                                        const char cur) {
-    if (IsWhitespace(cur)) {
+    if (is_white_space(cur)) {
         return TOKEN_NULL;
     } else {
         if (cur == '[') {
@@ -139,7 +139,7 @@ enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
 }
 
 ///@brief Returns true if the token's type equals to token_type
-bool checkTokenType(const t_token token, enum e_token_type token_type) {
+bool check_token_type(const t_token token, enum e_token_type token_type) {
     if (token.type != token_type) {
         return false;
     }
@@ -160,7 +160,7 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
     cur = copy;
     i = j = 0;
     while (cur != final) {
-        while (IsWhitespace(*cur) && cur != final) {
+        while (is_white_space(*cur) && cur != final) {
             if (j == max_j) {
                 i++;
                 j = 0;
@@ -171,7 +171,7 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
             break;
         }
         cur2 = cur;
-        while (!IsWhitespace(*cur2) && cur2 != final) {
+        while (!is_white_space(*cur2) && cur2 != final) {
             cur2++;
         }
         *cur2 = '\0';
@@ -202,10 +202,10 @@ bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, in
 
     /* First count number of entries in instring */
     while (*cur != '\0') {
-        if (!IsWhitespace(*cur) && !in_str) {
+        if (!is_white_space(*cur) && !in_str) {
             in_str = true;
             entry_count++;
-        } else if (IsWhitespace(*cur)) {
+        } else if (is_white_space(*cur)) {
             in_str = false;
         }
         cur++;

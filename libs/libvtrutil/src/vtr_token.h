@@ -25,11 +25,11 @@ struct t_token {
     char* data;
 };
 
-t_token* GetTokensFromString(const char* inString, int* num_tokens);
+t_token* get_tokens_from_string(const char* inString, int* num_tokens);
 
-void freeTokens(t_token* tokens, const int num_tokens);
+void free_tokens(t_token* tokens, const int num_tokens);
 
-bool checkTokenType(const t_token token, enum e_token_type token_type);
+bool check_token_type(const t_token token, enum e_token_type token_type);
 
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring);
 

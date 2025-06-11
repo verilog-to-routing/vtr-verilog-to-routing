@@ -203,7 +203,7 @@ static void throw_xml_arch_error(const char* filename,
                                  const std::string& err_msg,
                                  t_token* tokens,
                                  int num_tokens) {
-    freeTokens(tokens, num_tokens);
+    free_tokens(tokens, num_tokens);
     archfpga_throw(filename, line, err_msg.c_str());
 }
 
@@ -728,21 +728,21 @@ static void load_pin_loc(pugi::xml_node Locations,
                                                                                  &sub_tile,
                                                                                  token.c_str(),
                                                                                  loc_data);
-                                /* Get the offset in the capacity range */
-                                auto capacity_range = process_instance_string(Locations,
+                                // Get the offset in the capacity range
+                                auto [capacity_range_low, capacity_range_high] = process_instance_string(Locations,
                                                                               sub_tile,
                                                                               token.c_str(),
                                                                               loc_data);
-                                VTR_ASSERT_MSG(0 <= capacity_range.first && capacity_range.second < sub_tile_capacity,
+                                VTR_ASSERT_MSG(0 <= capacity_range_low && capacity_range_high < sub_tile_capacity,
                                                vtr::string_fmt("Capacity range is out of bounds: capacity_range.first: %d, "
                                                                "capacity_range.second: %d, sub_tile_capacity: %d",
-                                                               capacity_range.first,
-                                                               capacity_range.second,
+                                                               capacity_range_low,
+                                                               capacity_range_high,
                                                                sub_tile_capacity)
                                                    .c_str());
                                 for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
                                     VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
-                                    for (int capacity = capacity_range.first; capacity <= capacity_range.second; ++capacity) {
+                                    for (int capacity = capacity_range_low; capacity <= capacity_range_high; ++capacity) {
                                         int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
                                         int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
                                         type->pinloc[width][height][side][physical_pin_index] = true;
@@ -777,7 +777,7 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
                                                    const char* pin_loc_string,
                                                    const pugiutil::loc_data& loc_data) {
     int num_tokens;
-    auto tokens = GetTokensFromString(pin_loc_string, &num_tokens);
+    auto tokens = get_tokens_from_string(pin_loc_string, &num_tokens);
 
     int token_index = 0;
     auto token = tokens[token_index];
@@ -796,7 +796,7 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
 
     /* If there is a dot, such as io.input[0:3], it indicates the full range of the capacity, the default value should be returned */
     if (token.type == TOKEN_DOT) {
-        freeTokens(tokens, num_tokens);
+        free_tokens(tokens, num_tokens);
         return std::make_pair(first_inst, last_inst);
     }
 
@@ -837,7 +837,7 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
                                  tokens, num_tokens);
         }
 
-        freeTokens(tokens, num_tokens);
+        free_tokens(tokens, num_tokens);
         return std::make_pair(first_inst, first_inst);
     }
 
@@ -865,7 +865,7 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
         std::swap(first_inst, last_inst);
     }
 
-    freeTokens(tokens, num_tokens);
+    free_tokens(tokens, num_tokens);
     return std::make_pair(first_inst, last_inst);
 }
 
@@ -875,7 +875,7 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
                                               const char* pin_loc_string,
                                               const pugiutil::loc_data& loc_data) {
     int num_tokens;
-    auto tokens = GetTokensFromString(pin_loc_string, &num_tokens);
+    auto tokens = get_tokens_from_string(pin_loc_string, &num_tokens);
 
     int token_index = 0;
     auto token = tokens[token_index];
@@ -934,7 +934,7 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
 
     // All the pins of the port are taken or the port has a single pin
     if (token_index == num_tokens) {
-        freeTokens(tokens, num_tokens);
+        free_tokens(tokens, num_tokens);
         return std::make_pair(abs_first_pin_idx, abs_first_pin_idx + port->num_pins);
     }
 
@@ -976,7 +976,7 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
                                  tokens, num_tokens);
         }
 
-        freeTokens(tokens, num_tokens);
+        free_tokens(tokens, num_tokens);
         return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + first_pin + 1);
     }
 
@@ -1012,7 +1012,7 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
         std::swap(first_pin, last_pin);
     }
 
-    freeTokens(tokens, num_tokens);
+    free_tokens(tokens, num_tokens);
     return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + last_pin + 1);
 }
 
