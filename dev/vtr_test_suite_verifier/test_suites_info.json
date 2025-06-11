@@ -18,8 +18,6 @@
     {
         "name": "vtr_reg_strong",
         "ignored_tasks": [
-            "strong_ap/gen_mass_report",
-            "strong_cluster_seed_type",
             "strong_router_heap",
             "strong_verify_rr_graph_3d",
             "strong_xilinx_support"
@@ -28,7 +26,6 @@
     {
         "name": "vtr_reg_strong_odin",
         "ignored_tasks": [
-            "strong_pack_modes",
             "strong_xilinx_support",
             "strong_router_heap",
             "strong_cluster_seed_type"
