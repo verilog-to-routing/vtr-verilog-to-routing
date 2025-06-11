@@ -4,7 +4,7 @@
  * Tokenizer
  */
 
-#include <cstring>
+#include <cctype>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -13,21 +13,6 @@
 
 enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
                                        const char cur);
-
-bool IsWhitespace(char c);
-
-///@brief Returns true if character is whatspace between tokens
-bool IsWhitespace(char c) {
-    switch (c) {
-        case ' ':
-        case '\t':
-        case '\r':
-        case '\n':
-            return true;
-        default:
-            return false;
-    }
-}
 
 ///@brief Returns a token list of the text for a given string.
 t_token* GetTokensFromString(const char* inString, int* num_tokens) {
@@ -115,7 +100,7 @@ void freeTokens(t_token* tokens, const int num_tokens) {
 ///@brief Returns a token type of the given char
 enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
                                        const char cur) {
-    if (IsWhitespace(cur)) {
+    if (std::isspace(cur)) {
         return TOKEN_NULL;
     } else {
         if (cur == '[') {
@@ -160,7 +145,7 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
     cur = copy;
     i = j = 0;
     while (cur != final) {
-        while (IsWhitespace(*cur) && cur != final) {
+        while (std::isspace(*cur) && cur != final) {
             if (j == max_j) {
                 i++;
                 j = 0;
@@ -171,7 +156,7 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
             break;
         }
         cur2 = cur;
-        while (!IsWhitespace(*cur2) && cur2 != final) {
+        while (!std::isspace(*cur2) && cur2 != final) {
             cur2++;
         }
         *cur2 = '\0';
@@ -202,10 +187,10 @@ bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, in
 
     /* First count number of entries in instring */
     while (*cur != '\0') {
-        if (!IsWhitespace(*cur) && !in_str) {
+        if (!std::isspace(*cur) && !in_str) {
             in_str = true;
             entry_count++;
-        } else if (IsWhitespace(*cur)) {
+        } else if (std::isspace(*cur)) {
             in_str = false;
         }
         cur++;
