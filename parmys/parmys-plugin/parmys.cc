@@ -962,7 +962,7 @@ struct ParMYSPass : public Pass {
 
             log("Reading FPGA Architecture file\n");
             try {
-                XmlReadArch(arch_file_path.c_str(), false, &Arch, physical_tile_types, logical_block_types);
+                xml_read_arch(arch_file_path.c_str(), false, &Arch, physical_tile_types, logical_block_types);
                 set_physical_lut_size(logical_block_types);
             } catch (vtr::VtrError &vtr_error) {
                 log_error("Parmys Failed to load architecture file: %s with exit code%d at line: %ld\n", vtr_error.what(), ERROR_PARSE_ARCH,

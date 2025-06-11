@@ -12,7 +12,7 @@ extern "C" {
 #define EMPTY_TYPE_INDEX 0
 
 /* function declarations */
-void XmlReadArch(const char* ArchFile,
+void xml_read_arch(const char* ArchFile,
                  const bool timing_enabled,
                  t_arch* arch,
                  std::vector<t_physical_tile_type>& PhysicalTileTypes,

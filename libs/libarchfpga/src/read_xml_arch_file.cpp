@@ -269,7 +269,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
  * @param parent_pb_idx Used to assign unique values to index_in_logical_block field in
  * t_pb_type for all pb_types under a logical block type.
  */
-static void ProcessMode(pugi::xml_node Parent,
+static void process_mode(pugi::xml_node Parent,
                         t_mode* mode,
                         bool timing_enabled,
                         const t_arch& arch,
@@ -285,19 +285,19 @@ static void ProcessMode(pugi::xml_node Parent,
  * @param loc_data Points to the location in the architecture file where the parser is reading.
  * @return A t_metadata_dict that stored parsed (key, value) pairs.
  */
-static t_metadata_dict ProcessMetadata(vtr::string_internment& strings,
+static t_metadata_dict process_meta_data(vtr::string_internment& strings,
                                        pugi::xml_node Parent,
                                        const pugiutil::loc_data& loc_data);
 
-static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
-static void Process_Fc(pugi::xml_node Node,
+static void process_fc_values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
+static void process_fc(pugi::xml_node Node,
                        t_physical_tile_type* PhysicalTileType,
                        t_sub_tile* SubTile,
                        t_pin_counts pin_counts,
                        std::vector<t_segment_inf>& segments,
                        const t_default_fc_spec& arch_def_fc,
                        const pugiutil::loc_data& loc_data);
-static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
+static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 
 /**
  * @brief Processes optional <switchblock_locations> tag under a <tile> tag//
@@ -310,23 +310,23 @@ static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::lo
  * @param arch Used to find switchblock by name
  * @param loc_data Points to the location in the xml file where the parser is reading.
  */
-static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations,
+static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                                         t_physical_tile_type* type,
                                         const t_arch& arch,
                                         const pugiutil::loc_data& loc_data);
 
 static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
-static void ProcessChanWidthDistr(pugi::xml_node Node,
+static void process_chan_width_distr(pugi::xml_node Node,
                                   t_arch* arch,
                                   const pugiutil::loc_data& loc_data);
-static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pugiutil::loc_data& loc_data);
-static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
-static void ProcessModelPorts(pugi::xml_node port_group, t_model& model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
-static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
-static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
-static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
+static void process_chan_width_distr_dir(pugi::xml_node Node, t_chan* chan, const pugiutil::loc_data& loc_data);
+static void process_models(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
+static void process_model_ports(pugi::xml_node port_group, t_model& model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
+static void process_layout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
+static t_grid_def process_grid_layout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
+static void process_block_type_locs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
-static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
+static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
 
 /**
  * @brief Parses <complexblocklist> tag in the architecture file.
@@ -338,54 +338,54 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
  * @param timing_enabled Determines whether timing-aware optimizations are enabled.
  * @param loc_data Points to the location in the xml file where the parser is reading.
  */
-static void ProcessComplexBlocks(pugi::xml_node Node,
+static void process_complex_blocks(pugi::xml_node Node,
                                  std::vector<t_logical_block_type>& LogicalBlockTypes,
                                  const t_arch& arch,
                                  bool timing_enabled,
                                  const pugiutil::loc_data& loc_data);
 
-static std::vector<t_arch_switch_inf> ProcessSwitches(pugi::xml_node Node,
+static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Node,
                                                       const bool timing_enabled,
                                                       const pugiutil::loc_data& loc_data);
 
-static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled, t_arch_switch_inf& arch_switch, const pugiutil::loc_data& loc_data);
+static void process_switch_tdel(pugi::xml_node Node, const bool timing_enabled, t_arch_switch_inf& arch_switch, const pugiutil::loc_data& loc_data);
 
-static std::vector<t_direct_inf> ProcessDirects(pugi::xml_node Parent,
+static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
                                                 const std::vector<t_arch_switch_inf>& switches,
                                                 const pugiutil::loc_data& loc_data);
 
-static void ProcessClockMetalLayers(pugi::xml_node parent,
+static void process_clock_metal_layers(pugi::xml_node parent,
                                     std::unordered_map<std::string, t_metal_layer>& metal_layers,
                                     pugiutil::loc_data& loc_data);
-static void ProcessClockNetworks(pugi::xml_node parent,
+static void process_clock_networks(pugi::xml_node parent,
                                  std::vector<t_clock_network_arch>& clock_networks,
                                  const std::vector<t_arch_switch_inf>& switches,
                                  pugiutil::loc_data& loc_data);
-static void ProcessClockSwitchPoints(pugi::xml_node parent,
+static void process_clock_switch_points(pugi::xml_node parent,
                                      t_clock_network_arch& clock_network,
                                      const std::vector<t_arch_switch_inf>& switches,
                                      pugiutil::loc_data& loc_data);
-static void ProcessClockRouting(pugi::xml_node parent,
+static void process_clock_routing(pugi::xml_node parent,
                                 std::vector<t_clock_connection_arch>& clock_connections,
                                 const std::vector<t_arch_switch_inf>& switches,
                                 pugiutil::loc_data& loc_data);
 
-static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
+static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                                                   const std::vector<t_arch_switch_inf>& switches,
                                                   const bool timing_enabled,
                                                   const bool switchblocklist_required,
                                                   const pugiutil::loc_data& loc_data);
 
-static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data);
-static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list, const pugiutil::loc_data& loc_data);
-static void ProcessPower(pugi::xml_node parent,
+static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data);
+static void process_cb_sb(pugi::xml_node Node, std::vector<bool>& list, const pugiutil::loc_data& loc_data);
+static void process_power(pugi::xml_node parent,
                          t_power_arch* power_arch,
                          const pugiutil::loc_data& loc_data);
 
-static void ProcessClocks(pugi::xml_node Parent, std::vector<t_clock_network>& clocks, const pugiutil::loc_data& loc_data);
+static void process_clocks(pugi::xml_node Parent, std::vector<t_clock_network>& clocks, const pugiutil::loc_data& loc_data);
 
-static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
-static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
+static void process_pb_type_power_est_method(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
+static void process_pb_type_port_power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
 
 std::string inst_port_to_port_name(std::string inst_port);
 
@@ -416,7 +416,7 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types);
  */
 
 /* Loads the given architecture file. */
-void XmlReadArch(const char* ArchFile,
+void xml_read_arch(const char* ArchFile,
                  const bool timing_enabled,
                  t_arch* arch,
                  std::vector<t_physical_tile_type>& PhysicalTileTypes,
@@ -459,20 +459,20 @@ void XmlReadArch(const char* ArchFile,
 
         /* Process models */
         Next = get_single_child(architecture, "models", loc_data);
-        ProcessModels(Next, arch, loc_data);
+        process_models(Next, arch, loc_data);
 
         /* Process layout */
         int num_of_avail_layers = 0;
         Next = get_single_child(architecture, "layout", loc_data);
-        ProcessLayout(Next, arch, loc_data, num_of_avail_layers);
+        process_layout(Next, arch, loc_data, num_of_avail_layers);
 
         /* Process device */
         Next = get_single_child(architecture, "device", loc_data);
-        ProcessDevice(Next, arch, arch_def_fc, loc_data);
+        process_device(Next, arch, arch_def_fc, loc_data);
 
         /* Process switches */
         Next = get_single_child(architecture, "switchlist", loc_data);
-        arch->switches = ProcessSwitches(Next, timing_enabled, loc_data);
+        arch->switches = process_switches(Next, timing_enabled, loc_data);
 
         /* Process switchblocks. This depends on switches */
         bool switchblocklist_required = (arch->SBType == CUSTOM); //require this section only if custom switchblocks are used
@@ -480,16 +480,16 @@ void XmlReadArch(const char* ArchFile,
 
         /* Process segments. This depends on switches */
         Next = get_single_child(architecture, "segmentlist", loc_data);
-        arch->Segments = ProcessSegments(Next, arch->switches, timing_enabled, switchblocklist_required, loc_data);
+        arch->Segments = process_segments(Next, arch->switches, timing_enabled, switchblocklist_required, loc_data);
 
         Next = get_single_child(architecture, "switchblocklist", loc_data, SWITCHBLOCKLIST_REQD);
         if (Next) {
-            ProcessSwitchblocks(Next, arch, loc_data);
+            process_switch_blocks(Next, arch, loc_data);
         }
 
         /* Process logical block types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
-        ProcessComplexBlocks(Next, LogicalBlockTypes, *arch, timing_enabled, loc_data);
+        process_complex_blocks(Next, LogicalBlockTypes, *arch, timing_enabled, loc_data);
 
         /* Process logical block types */
         Next = get_single_child(architecture, "tiles", loc_data);
@@ -501,7 +501,7 @@ void XmlReadArch(const char* ArchFile,
         /* Process directs */
         Next = get_single_child(architecture, "directlist", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
-            arch->directs = ProcessDirects(Next, arch->switches, loc_data);
+            arch->directs = process_directs(Next, arch->switches, loc_data);
         }
 
         /* Process Clock Networks */
@@ -510,14 +510,14 @@ void XmlReadArch(const char* ArchFile,
             std::vector<std::string> expected_children = {"metal_layers", "clock_network", "clock_routing"};
             expect_only_children(Next, expected_children, loc_data);
 
-            ProcessClockMetalLayers(Next, arch->clock_arch.clock_metal_layers, loc_data);
+            process_clock_metal_layers(Next, arch->clock_arch.clock_metal_layers, loc_data);
 
-            ProcessClockNetworks(Next,
+            process_clock_networks(Next,
                                  arch->clock_arch.clock_networks_arch,
                                  arch->switches,
                                  loc_data);
 
-            ProcessClockRouting(Next,
+            process_clock_routing(Next,
                                 arch->clock_arch.clock_connections_arch,
                                 arch->switches,
                                 loc_data);
@@ -537,13 +537,13 @@ void XmlReadArch(const char* ArchFile,
         Next = get_single_child(architecture, "power", loc_data, POWER_REQD);
         if (Next) {
             if (arch->power) {
-                ProcessPower(Next, arch->power, loc_data);
+                process_power(Next, arch->power, loc_data);
             } else {
                 /* This information still needs to be read, even if it is just
                  * thrown away.
                  */
                 t_power_arch* power_arch_fake = new t_power_arch();
-                ProcessPower(Next, power_arch_fake, loc_data);
+                process_power(Next, power_arch_fake, loc_data);
                 delete power_arch_fake;
             }
         }
@@ -552,13 +552,13 @@ void XmlReadArch(const char* ArchFile,
         Next = get_single_child(architecture, "clocks", loc_data, POWER_REQD);
         if (Next) {
             if (arch->clocks) {
-                ProcessClocks(Next, *arch->clocks, loc_data);
+                process_clocks(Next, *arch->clocks, loc_data);
             } else {
                 /* This information still needs to be read, even if it is just
                  * thrown away.
                  */
                 std::vector<t_clock_network> clocks_fake;
-                ProcessClocks(Next, clocks_fake, loc_data);
+                process_clocks(Next, clocks_fake, loc_data);
             }
         }
 
@@ -1306,7 +1306,7 @@ static void ProcessPb_TypePower(pugi::xml_node Parent, t_pb_type* pb_type, const
     }
 }
 
-static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data) {
+static void process_pb_type_power_est_method(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data) {
     pugi::xml_node cur;
     const char* prop;
 
@@ -1456,7 +1456,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
 
     /* Initialize Power Structure */
     pb_type->pb_type_power = new t_pb_type_power();
-    ProcessPb_TypePowerEstMethod(Parent, pb_type, loc_data);
+    process_pb_type_power_est_method(Parent, pb_type, loc_data);
 
     /* process ports */
     int absolute_port_first_pin_index = 0;
@@ -1575,7 +1575,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
             pb_type->modes = new t_mode[pb_type->num_modes];
             pb_type->modes[mode_idx].parent_pb_type = pb_type;
             pb_type->modes[mode_idx].index = mode_idx;
-            ProcessMode(Parent, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx);
+            process_mode(Parent, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx);
             mode_idx++;
         } else {
             pb_type->modes = new t_mode[pb_type->num_modes];
@@ -1588,7 +1588,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
                 if (0 == strcmp(Cur.name(), "mode")) {
                     pb_type->modes[mode_idx].parent_pb_type = pb_type;
                     pb_type->modes[mode_idx].index = mode_idx;
-                    ProcessMode(Cur, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx);
+                    process_mode(Cur, &pb_type->modes[mode_idx], timing_enabled, arch, loc_data, pb_idx);
 
                     auto [_, success] = mode_names.insert(pb_type->modes[mode_idx].name);
                     if (!success) {
@@ -1607,11 +1607,11 @@ static void ProcessPb_Type(pugi::xml_node Parent,
         VTR_ASSERT(mode_idx == pb_type->num_modes);
     }
 
-    pb_type->meta = ProcessMetadata(arch.strings, Parent, loc_data);
+    pb_type->meta = process_meta_data(arch.strings, Parent, loc_data);
     ProcessPb_TypePower(Parent, pb_type, loc_data);
 }
 
-static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data) {
+static void process_pb_type_port_power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data) {
     pugi::xml_node cur;
     const char* prop;
     bool wire_defined = false;
@@ -1859,7 +1859,7 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_esti
                              nullptr, 0);
     }
 
-    ProcessPb_TypePort_Power(Parent, port, power_method, loc_data);
+    process_pb_type_port_power(Parent, port, power_method, loc_data);
 }
 
 static void ProcessInterconnect(vtr::string_internment& strings,
@@ -1907,7 +1907,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
 
             Prop = get_attribute(Cur, "name", loc_data).value();
             mode->interconnect[interconnect_idx].name = vtr::strdup(Prop);
-            mode->interconnect[interconnect_idx].meta = ProcessMetadata(strings, Cur, loc_data);
+            mode->interconnect[interconnect_idx].meta = process_meta_data(strings, Cur, loc_data);
 
             auto [_, success] = interconnect_names.insert(mode->interconnect[interconnect_idx].name);
             if (!success) {
@@ -1953,7 +1953,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
     VTR_ASSERT(interconnect_idx == num_interconnect);
 }
 
-static void ProcessMode(pugi::xml_node Parent,
+static void process_mode(pugi::xml_node Parent,
                         t_mode* mode,
                         const bool timing_enabled,
                         const t_arch& arch,
@@ -2027,14 +2027,14 @@ static void ProcessMode(pugi::xml_node Parent,
     if (!implied_mode) {
         // Implied mode metadata is attached to the pb_type, rather than
         // the t_mode object.
-        mode->meta = ProcessMetadata(arch.strings, Parent, loc_data);
+        mode->meta = process_meta_data(arch.strings, Parent, loc_data);
     }
 
     Cur = get_single_child(Parent, "interconnect", loc_data);
     ProcessInterconnect(arch.strings, Cur, mode, loc_data);
 }
 
-static t_metadata_dict ProcessMetadata(vtr::string_internment& strings,
+static t_metadata_dict process_meta_data(vtr::string_internment& strings,
                                        pugi::xml_node Parent,
                                        const pugiutil::loc_data& loc_data) {
     //	<metadata>
@@ -2056,7 +2056,7 @@ static t_metadata_dict ProcessMetadata(vtr::string_internment& strings,
     return data;
 }
 
-static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data) {
+static void process_fc_values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data) {
     spec.specified = true;
 
     /* Load the default fc_in */
@@ -2076,7 +2076,7 @@ static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec& spec, cons
 
 /* Takes in the node ptr for the 'fc' elements and initializes
  * the appropriate fields of type. */
-static void Process_Fc(pugi::xml_node Node,
+static void process_fc(pugi::xml_node Node,
                        t_physical_tile_type* PhysicalTileType,
                        t_sub_tile* SubTile,
                        t_pin_counts pin_counts,
@@ -2087,10 +2087,10 @@ static void Process_Fc(pugi::xml_node Node,
     t_default_fc_spec def_fc_spec;
     if (Node) {
         /* Load the default Fc values from the node */
-        Process_Fc_Values(Node, def_fc_spec, loc_data);
+        process_fc_values(Node, def_fc_spec, loc_data);
         /* Load any <fc_override/> tags */
         for (auto child_node : Node.children()) {
-            t_fc_override fc_override = Process_Fc_override(child_node, loc_data);
+            t_fc_override fc_override = process_fc_override(child_node, loc_data);
             fc_overrides.push_back(fc_override);
         }
     } else {
@@ -2185,7 +2185,7 @@ static void Process_Fc(pugi::xml_node Node,
     }
 }
 
-static t_fc_override Process_Fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
     if (node.name() != std::string("fc_override")) {
         throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(node),
                              vtr::string_fmt("Unexpeted node of type '%s' (expected optional 'fc_override')",
@@ -2258,7 +2258,7 @@ static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml
     return fc_value_type;
 }
 
-static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations,
+static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                                         t_physical_tile_type* type,
                                         const t_arch& arch,
                                         const pugiutil::loc_data& loc_data) {
@@ -2431,7 +2431,7 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations,
 
 /* Takes in node pointing to <models> and loads all the
  * child type objects.  */
-static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data) {
+static void process_models(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data) {
     pugi::xml_node p;
     /* std::maps for checking duplicates */
     std::map<std::string, int> model_name_map;
@@ -2491,9 +2491,9 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
             std::set<std::string> port_names;
             for (pugi::xml_node port_group : model.children()) {
                 if (port_group.name() == std::string("input_ports")) {
-                    ProcessModelPorts(port_group, new_model, port_names, loc_data);
+                    process_model_ports(port_group, new_model, port_names, loc_data);
                 } else if (port_group.name() == std::string("output_ports")) {
-                    ProcessModelPorts(port_group, new_model, port_names, loc_data);
+                    process_model_ports(port_group, new_model, port_names, loc_data);
                 } else {
                     bad_tag(port_group, loc_data, model, {"input_ports", "output_ports"});
                 }
@@ -2510,7 +2510,7 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
     return;
 }
 
-static void ProcessModelPorts(pugi::xml_node port_group, t_model& model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data) {
+static void process_model_ports(pugi::xml_node port_group, t_model& model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data) {
     for (pugi::xml_attribute attr : port_group.attributes()) {
         bad_attribute(attr, port_group, loc_data);
     }
@@ -2600,7 +2600,7 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model& model, std::se
     }
 }
 
-static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer) {
+static void process_layout(pugi::xml_node layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer) {
     VTR_ASSERT(layout_tag.name() == std::string("layout"));
 
     //Expect no attributes on <layout>
@@ -2634,13 +2634,13 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
 
     for (auto layout_type_tag : layout_tag.children()) {
-        t_grid_def grid_def = ProcessGridLayout(arch->strings, layout_type_tag, loc_data, arch, num_of_avail_layer);
+        t_grid_def grid_def = process_grid_layout(arch->strings, layout_type_tag, loc_data, arch, num_of_avail_layer);
 
         arch->grid_layouts.emplace_back(std::move(grid_def));
     }
 }
 
-static t_grid_def ProcessGridLayout(vtr::string_internment& strings,
+static t_grid_def process_grid_layout(vtr::string_internment& strings,
                                     pugi::xml_node layout_type_tag,
                                     const pugiutil::loc_data& loc_data,
                                     t_arch* arch,
@@ -2700,18 +2700,18 @@ static t_grid_def ProcessGridLayout(vtr::string_internment& strings,
             VTR_ASSERT(die_number >= 0 && die_number < num_of_avail_layer);
             auto insert_res = seen_die_numbers.insert(die_number);
             VTR_ASSERT_MSG(insert_res.second, "Two different layers with a same die number may have been specified in the Architecture file");
-            ProcessBlockTypeLocs(grid_def, die_number, strings, layer_child, loc_data);
+            process_block_type_locs(grid_def, die_number, strings, layer_child, loc_data);
         }
     } else {
         //if only one die is available, then global routing resources must exist in that die
         int die_number = 0;
         arch->layer_global_routing.at(die_number) = true;
-        ProcessBlockTypeLocs(grid_def, die_number, strings, layout_type_tag, loc_data);
+        process_block_type_locs(grid_def, die_number, strings, layout_type_tag, loc_data);
     }
     return grid_def;
 }
 
-static void ProcessBlockTypeLocs(t_grid_def& grid_def,
+static void process_block_type_locs(t_grid_def& grid_def,
                                  int die_number,
                                  vtr::string_internment& strings,
                                  pugi::xml_node layout_block_type_tag,
@@ -2721,7 +2721,7 @@ static void ProcessBlockTypeLocs(t_grid_def& grid_def,
         auto loc_type = loc_spec_tag.name();
         auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
         int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
-        t_metadata_dict meta = ProcessMetadata(strings, loc_spec_tag, loc_data);
+        t_metadata_dict meta = process_meta_data(strings, loc_spec_tag, loc_data);
 
         if (loc_type == std::string("perimeter")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
@@ -2969,7 +2969,7 @@ static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::
 
 /* Takes in node pointing to <device> and loads all the
  * child type objects. */
-static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data) {
+static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data) {
     const char* Prop;
     pugi::xml_node Cur;
     bool custom_switch_block = false;
@@ -3004,7 +3004,7 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
     Cur = get_single_child(Node, "chan_width_distr", loc_data, ReqOpt::OPTIONAL);
     expect_only_attributes(Cur, {}, loc_data);
     if (Cur != nullptr) {
-        ProcessChanWidthDistr(Cur, arch, loc_data);
+        process_chan_width_distr(Cur, arch, loc_data);
     }
 
     //<connection_block> tag
@@ -3042,7 +3042,7 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
     if (Cur) {
         arch_def_fc.specified = true;
         expect_only_attributes(Cur, {"in_type", "in_val", "out_type", "out_val"}, loc_data);
-        Process_Fc_Values(Cur, arch_def_fc, loc_data);
+        process_fc_values(Cur, arch_def_fc, loc_data);
     } else {
         arch_def_fc.specified = false;
     }
@@ -3050,7 +3050,7 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
 
 /* Takes in node pointing to <chan_width_distr> and loads all the
  * child type objects. */
-static void ProcessChanWidthDistr(pugi::xml_node Node,
+static void process_chan_width_distr(pugi::xml_node Node,
                                   t_arch* arch,
                                   const pugiutil::loc_data& loc_data) {
     pugi::xml_node Cur;
@@ -3058,15 +3058,15 @@ static void ProcessChanWidthDistr(pugi::xml_node Node,
     expect_only_children(Node, {"x", "y"}, loc_data);
 
     Cur = get_single_child(Node, "x", loc_data);
-    ProcessChanWidthDistrDir(Cur, &arch->Chans.chan_x_dist, loc_data);
+    process_chan_width_distr_dir(Cur, &arch->Chans.chan_x_dist, loc_data);
 
     Cur = get_single_child(Node, "y", loc_data);
-    ProcessChanWidthDistrDir(Cur, &arch->Chans.chan_y_dist, loc_data);
+    process_chan_width_distr_dir(Cur, &arch->Chans.chan_y_dist, loc_data);
 }
 
 /* Takes in node within <chan_width_distr> and loads all the
  * child type objects. */
-static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pugiutil::loc_data& loc_data) {
+static void process_chan_width_distr_dir(pugi::xml_node Node, t_chan* chan, const pugiutil::loc_data& loc_data) {
     const char* Prop;
 
     ReqOpt hasXpeak, hasWidth, hasDc;
@@ -3148,7 +3148,7 @@ static void process_tiles(pugi::xml_node Node,
 
         //Load switchblock type and location overrides
         pugi::xml_node Cur = get_single_child(CurTileType, "switchblock_locations", loc_data, ReqOpt::OPTIONAL);
-        ProcessSwitchblockLocations(Cur, &PhysicalTileType, arch, loc_data);
+        process_switch_block_locations(Cur, &PhysicalTileType, arch, loc_data);
 
         process_sub_tiles(CurTileType, &PhysicalTileType, LogicalBlockTypes, arch.Segments, arch_def_fc, loc_data, num_of_avail_layer);
 
@@ -3793,7 +3793,7 @@ static void process_sub_tiles(pugi::xml_node Node,
 
         /* Load Fc */
         Cur = get_single_child(CurSubTile, "fc", loc_data, ReqOpt::OPTIONAL);
-        Process_Fc(Cur, PhysicalTileType, &SubTile, pin_counts, segments, arch_def_fc, loc_data);
+        process_fc(Cur, PhysicalTileType, &SubTile, pin_counts, segments, arch_def_fc, loc_data);
 
         //Load equivalent sites information
         Cur = get_single_child(CurSubTile, "equivalent_sites", loc_data, ReqOpt::REQUIRED);
@@ -3816,7 +3816,7 @@ static void process_sub_tiles(pugi::xml_node Node,
 
 /* Takes in node pointing to <typelist> and loads all the
  * child type objects. */
-static void ProcessComplexBlocks(pugi::xml_node Node,
+static void process_complex_blocks(pugi::xml_node Node,
                                  std::vector<t_logical_block_type>& LogicalBlockTypes,
                                  const t_arch& arch,
                                  const bool timing_enabled,
@@ -3876,7 +3876,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
     }
 }
 
-static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
+static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                                                   const std::vector<t_arch_switch_inf>& switches,
                                                   const bool timing_enabled,
                                                   const bool switchblocklist_required,
@@ -4141,7 +4141,7 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
         }
         SubElem = get_single_child(Node, "cb", loc_data, ReqOpt::OPTIONAL);
         if (SubElem) {
-            ProcessCB_SB(SubElem, Segs[i].cb, loc_data);
+            process_cb_sb(SubElem, Segs[i].cb, loc_data);
         }
 
         /* Setup the SB list if they give one, otherwise use full */
@@ -4151,7 +4151,7 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
         }
         SubElem = get_single_child(Node, "sb", loc_data, ReqOpt::OPTIONAL);
         if (SubElem) {
-            ProcessCB_SB(SubElem, Segs[i].sb, loc_data);
+            process_cb_sb(SubElem, Segs[i].sb, loc_data);
         }
 
         /*Store the index of this segment in Segs vector*/
@@ -4206,7 +4206,7 @@ static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, co
 /* Processes the switchblocklist section from the xml architecture file.
  * See vpr/SRC/route/build_switchblocks.c for a detailed description of this
  * switch block format */
-static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data) {
+static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     pugi::xml_node SubElem;
     const char* tmp;
@@ -4324,7 +4324,7 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
     }
 }
 
-static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list, const pugiutil::loc_data& loc_data) {
+static void process_cb_sb(pugi::xml_node Node, std::vector<bool>& list, const pugiutil::loc_data& loc_data) {
     const char* tmp = nullptr;
     int i;
     int len = list.size();
@@ -4387,7 +4387,7 @@ static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list, const pug
     }
 }
 
-static std::vector<t_arch_switch_inf> ProcessSwitches(pugi::xml_node Parent,
+static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Parent,
                                                       const bool timing_enabled,
                                                       const pugiutil::loc_data& loc_data) {
     const char* type_name;
@@ -4519,7 +4519,7 @@ static std::vector<t_arch_switch_inf> ProcessSwitches(pugi::xml_node Parent,
         }
 
         //Load the Tdel (which may be specified with sub-tags)
-        ProcessSwitchTdel(Node, timing_enabled, arch_switch, loc_data);
+        process_switch_tdel(Node, timing_enabled, arch_switch, loc_data);
 
         /* Get next switch element */
         Node = Node.next_sibling(Node.name());
@@ -4537,7 +4537,7 @@ static std::vector<t_arch_switch_inf> ProcessSwitches(pugi::xml_node Parent,
  *
  * are specified as children of the switch node. In this case, Tdel
  * is not included as a property of the switch node (first way). */
-static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled, t_arch_switch_inf& arch_switch, const pugiutil::loc_data& loc_data) {
+static void process_switch_tdel(pugi::xml_node Node, const bool timing_enabled, t_arch_switch_inf& arch_switch, const pugiutil::loc_data& loc_data) {
     /* check if switch node has the Tdel property */
     bool has_Tdel_prop = false;
     float Tdel_prop_value = get_attribute(Node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
@@ -4596,7 +4596,7 @@ static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled, t_
     }
 }
 
-static std::vector<t_direct_inf> ProcessDirects(pugi::xml_node Parent,
+static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
                                                 const std::vector<t_arch_switch_inf>& switches,
                                                 const pugiutil::loc_data& loc_data) {
     /* Count the children and check they are direct connections */
@@ -4674,7 +4674,7 @@ static std::vector<t_direct_inf> ProcessDirects(pugi::xml_node Parent,
     return directs;
 }
 
-static void ProcessClockMetalLayers(pugi::xml_node parent,
+static void process_clock_metal_layers(pugi::xml_node parent,
                                     std::unordered_map<std::string, t_metal_layer>& metal_layers,
                                     pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "Rmetal", "Cmetal"};
@@ -4708,7 +4708,7 @@ static void ProcessClockMetalLayers(pugi::xml_node parent,
     }
 }
 
-static void ProcessClockNetworks(pugi::xml_node parent,
+static void process_clock_networks(pugi::xml_node parent,
                                  std::vector<t_clock_network_arch>& clock_networks,
                                  const std::vector<t_arch_switch_inf>& switches,
                                  pugiutil::loc_data& loc_data) {
@@ -4764,7 +4764,7 @@ static void ProcessClockNetworks(pugi::xml_node parent,
             clock_network.repeat.x = repeatx;
             clock_network.repeat.y = repeaty;
 
-            ProcessClockSwitchPoints(curr_type, clock_network, switches, loc_data);
+            process_clock_switch_points(curr_type, clock_network, switches, loc_data);
         }
 
         // Parse rib
@@ -4802,7 +4802,7 @@ static void ProcessClockNetworks(pugi::xml_node parent,
             clock_network.repeat.x = repeatx;
             clock_network.repeat.y = repeaty;
 
-            ProcessClockSwitchPoints(curr_type, clock_network, switches, loc_data);
+            process_clock_switch_points(curr_type, clock_network, switches, loc_data);
         }
 
         // Currently their is only support for ribs and spines
@@ -4819,7 +4819,7 @@ static void ProcessClockNetworks(pugi::xml_node parent,
     }
 }
 
-static void ProcessClockSwitchPoints(pugi::xml_node parent,
+static void process_clock_switch_points(pugi::xml_node parent,
                                      t_clock_network_arch& clock_network,
                                      const std::vector<t_arch_switch_inf>& switches,
                                      pugiutil::loc_data& loc_data) {
@@ -4903,7 +4903,7 @@ static void ProcessClockSwitchPoints(pugi::xml_node parent,
     }
 }
 
-static void ProcessClockRouting(pugi::xml_node parent,
+static void process_clock_routing(pugi::xml_node parent,
                                 std::vector<t_clock_connection_arch>& clock_connections,
                                 const std::vector<t_arch_switch_inf>& switches,
                                 pugiutil::loc_data& loc_data) {
@@ -4945,7 +4945,7 @@ static void ProcessClockRouting(pugi::xml_node parent,
     }
 }
 
-static void ProcessPower(pugi::xml_node parent,
+static void process_power(pugi::xml_node parent,
                          t_power_arch* power_arch,
                          const pugiutil::loc_data& loc_data) {
     pugi::xml_node Cur;
@@ -5004,7 +5004,7 @@ static void ProcessPower(pugi::xml_node parent,
 }
 
 /* Get the clock architecture */
-static void ProcessClocks(pugi::xml_node Parent, std::vector<t_clock_network>& clocks, const pugiutil::loc_data& loc_data) {
+static void process_clocks(pugi::xml_node Parent, std::vector<t_clock_network>& clocks, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     const char* tmp;
 
