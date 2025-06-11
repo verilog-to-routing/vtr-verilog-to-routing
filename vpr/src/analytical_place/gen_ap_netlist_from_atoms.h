@@ -20,7 +20,7 @@ class UserPlaceConstraints;
  *  @param prepacker             The prepacker, initialized on the provided atom netlist.
  *  @param constraints           The placement constraints on the Atom blocks, provided
  *                               by the user.
- *  @param high_fanout_threshold The threshold that nets with higher fanout will
+ *  @param high_fanout_threshold The threshold above which nets with higher fanout will
  *                               be ignored.
  *
  *  @return             An APNetlist object, generated from the prepacker results.
