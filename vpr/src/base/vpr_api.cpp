@@ -1447,14 +1447,14 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
                                         vpr_setup.PackerOpts.pack_verbosity > 2);
                 }
         } else {
-            VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to users select to skip it\n");
+            VTR_LOG_WARN("Synchronization between packing and routing results was not applied due to skip_sync_clustering_and_routing_results being set to true\n");
         }
 
         std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
         write_packing_results_to_xml(Arch.architecture_id,
                                      post_routing_packing_output_file_name.c_str());
     } else {
-        VTR_LOG_WARN("Synchronization between packing and routing results is not applied due to illegal circuit implementation\n");
+        VTR_LOG_WARN("Synchronization between packing and routing results was not applied due to illegal circuit implementation\n");
     }
     VTR_LOG("\n");
 
