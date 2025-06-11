@@ -1,14 +1,6 @@
 #ifndef SETUPVIBGRID_H
 #define SETUPVIBGRID_H
 
-/**
- * @file
- * @author  Jason Luu
- * @date    October 8, 2008
- *
- * @brief   Initializes and allocates the physical logic block grid for VPR.
- */
-
 #include <vector>
 #include "physical_types.h"
 

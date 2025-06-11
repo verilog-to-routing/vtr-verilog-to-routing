@@ -388,7 +388,10 @@ void t_rr_graph_storage::assign_first_edges() {
 
 bool t_rr_graph_storage::verify_first_edges() const {
     size_t num_edges = edge_src_node_.size();
-    VTR_ASSERT_MSG(node_first_edge_[RRNodeId(node_storage_.size())] == RREdgeId(num_edges), "node first edge is '%lu' while expected edge id is '%lu'\n", size_t(node_first_edge_[RRNodeId(node_storage_.size())]), num_edges);
+    VTR_ASSERT_MSG(node_first_edge_[RRNodeId(node_storage_.size())] == RREdgeId(num_edges), 
+                vtr::string_fmt("node first edge is '%lu' while expected edge id is '%lu'\n", 
+                size_t(node_first_edge_[RRNodeId(node_storage_.size())]), 
+                num_edges).c_str());
 
     // Each edge should belong with the edge range defined by
     // [node_first_edge_[src_node], node_first_edge_[src_node+1]).
