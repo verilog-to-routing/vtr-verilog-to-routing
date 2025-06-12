@@ -1426,7 +1426,8 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
         VTR_LOG("*****************************************************************************************\n");
     }
 
-    /* If routing is successful, apply post-routing annotations
+    /* If routing is successful and users do not force to skip the sync-up, 
+     * - apply post-routing annotations
      * - apply logic block pin fix-up
      *
      * Note:
@@ -1434,22 +1435,26 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
      *     for packer (default verbosity is set to 2 for compact logs)
      */
     if (route_status.success()) {
-        if (is_flat) {
-            sync_netlists_to_routing_flat();
+        if (!analysis_opts.skip_sync_clustering_and_routing_results) {
+            if (is_flat) {
+                sync_netlists_to_routing_flat();
+            } else {
+                sync_netlists_to_routing(net_list,
+                                         g_vpr_ctx.device(),
+                                         g_vpr_ctx.mutable_atom(),
+                                         g_vpr_ctx.mutable_clustering(),
+                                         g_vpr_ctx.placement(),
+                                         vpr_setup.PackerOpts.pack_verbosity > 2);
+            }
         } else {
-            sync_netlists_to_routing(net_list,
-                                     g_vpr_ctx.device(),
-                                     g_vpr_ctx.mutable_atom(),
-                                     g_vpr_ctx.mutable_clustering(),
-                                     g_vpr_ctx.placement(),
-                                     vpr_setup.PackerOpts.pack_verbosity > 2);
+            VTR_LOG_WARN("Synchronization between packing and routing results was not applied due to skip_sync_clustering_and_routing_results being set to true\n");
         }
 
         std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
         write_packing_results_to_xml(Arch.architecture_id,
                                      post_routing_packing_output_file_name.c_str());
     } else {
-        VTR_LOG_WARN("Synchronization between packing and routing results is not applied due to illegal circuit implementation\n");
+        VTR_LOG_WARN("Synchronization between packing and routing results was not applied due to illegal circuit implementation\n");
     }
     VTR_LOG("\n");
 
