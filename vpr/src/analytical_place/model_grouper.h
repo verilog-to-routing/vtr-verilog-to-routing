@@ -60,10 +60,8 @@ class ModelGrouper {
      *  @param prepacker
      *      The prepacker used to create molecules in the flat placement. This
      *      provides the pack patterns for forming the groups.
-     *  @param user_models
-     *      Linked list of user-provided models.
-     *  @param library_models
-     *      Linked list of library models.
+     *  @param models
+     *      The logical models found in the architecture.
      *  @param log_verbosity
      *      The verbosity of log messages in the grouper class.
      */

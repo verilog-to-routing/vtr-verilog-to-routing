@@ -2716,8 +2716,8 @@ void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os) {
     sdc_os << "#******************************************************************************#\n";
     sdc_os << "# The following are clock domains in VPR which have delays on their edges.\n";
     sdc_os << "#\n";
-    sdc_os << "# Any non-virtual clock has its delay determined and written out as part of a";
-    sdc_os << "# propagated clock command. If VPR was instructed not to route the clock, this";
+    sdc_os << "# Any non-virtual clock has its delay determined and written out as part of a\n";
+    sdc_os << "# propagated clock command. If VPR was instructed not to route the clock, this\n";
     sdc_os << "# delay will be an underestimate.\n";
     sdc_os << "#\n";
     sdc_os << "# Note: Virtual clocks do not get routed and are treated as ideal.\n";

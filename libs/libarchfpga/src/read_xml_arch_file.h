@@ -1,7 +1,7 @@
-#ifndef READ_XML_ARCH_FILE_H
-#define READ_XML_ARCH_FILE_H
+#pragma once
 
-#include "arch_types.h"
+#include <vector>
+#include "physical_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,6 +20,4 @@ void XmlReadArch(const char* ArchFile,
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

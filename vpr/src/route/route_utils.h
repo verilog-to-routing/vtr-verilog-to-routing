@@ -157,3 +157,29 @@ void update_draw_pres_fac(const float new_pres_fac);
  * Stops after the specified router iteration or net id is encountered */
 void update_router_info_and_check_bp(bp_router_type type, int net_id);
 #endif
+
+/**
+ * @brief Checks whether a given net has been routed.
+ *
+ * This function determines if the specified net (identified by `net_id`)
+ * has routing information associated with it in the current routing context.
+ *
+ * @param net_id The identifier of the net to check.
+ * @return true if the net is routed; false otherwise.
+ */
+bool is_net_routed(ParentNetId net_id);
+
+/**
+ * @brief Checks whether a given net is fully absorbed within sink nodes.
+ *
+ * This function inspects the route tree of the specified net and determines
+ * whether it is fully absorbed into non-routing resources (i.e., it does not
+ * occupy any routing channels such as CHANX or CHANY).
+ *
+ * A net is considered fully absorbed if all its route tree nodes are of types
+ * other than CHANX or CHANY (e.g., IPIN, SINK, OPIN).
+ *
+ * @param net_id The identifier of the net to be checked.
+ * @return true if the net is fully absorbed (uses no routing channels); false otherwise.
+ */
+bool is_net_fully_absorbed(ParentNetId net_id);

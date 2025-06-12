@@ -538,6 +538,7 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     /* Next free track in each channel segment if routing is GLOBAL */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -547,14 +548,23 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     g->set_color(ezgl::BLACK, ezgl::BLACK.alpha * NET_ALPHA);
 
     /* Now draw each net, one by one.      */
+    if (draw_state->is_flat) {
+        for (AtomNetId net_id : atom_ctx.netlist().nets()) {
+            if (draw_net_type == HIGHLIGHTED
+                && draw_state->net_color[net_id] == ezgl::BLACK)
+                continue;
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (draw_net_type == HIGHLIGHTED
-            && draw_state->net_color[net_id] == ezgl::BLACK)
-            continue;
+            draw_routed_net((ParentNetId&)net_id, g);
+        } /* End for (each net) */
+    } else {
+        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+            if (draw_net_type == HIGHLIGHTED
+                && draw_state->net_color[net_id] == ezgl::BLACK)
+                continue;
 
-        draw_routed_net((ParentNetId&)net_id, g);
-    } /* End for (each net) */
+            draw_routed_net((ParentNetId&)net_id, g);
+        } /* End for (each net) */
+    }
 }
 
 void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {

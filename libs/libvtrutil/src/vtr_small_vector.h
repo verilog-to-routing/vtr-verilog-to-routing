@@ -1,5 +1,5 @@
-#ifndef VTR_SMALL_VECTOR
-#define VTR_SMALL_VECTOR
+#pragma once
+
 #include <memory>
 #include <algorithm>
 #include <limits>
@@ -850,5 +850,3 @@ class small_vector {
 };
 
 } // namespace vtr
-
-#endif
