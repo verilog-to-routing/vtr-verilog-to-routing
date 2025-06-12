@@ -28,4 +28,4 @@ class UserPlaceConstraints;
 APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
                                     const UserPlaceConstraints& constraints,
-                                    const int& high_fanout_threshold);
+                                    int high_fanout_threshold);

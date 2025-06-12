@@ -25,7 +25,7 @@
 APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
                                     const UserPlaceConstraints& constraints,
-                                    const int& high_fanout_threshold) {
+                                    int high_fanout_threshold) {
     // Create a scoped timer for reading the atom netlist.
     vtr::ScopedStartFinishTimer timer("Read Atom Netlist to AP Netlist");
 
