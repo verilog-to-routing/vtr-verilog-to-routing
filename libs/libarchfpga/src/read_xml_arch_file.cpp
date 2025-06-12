@@ -698,7 +698,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
                         for (e_side side : TOTAL_2D_SIDES) {
-                            for (auto token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                            for (const std::string& token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
                                 auto pin_range = ProcessPinString<t_sub_tile*>(Locations,
                                                                                &sub_tile,
                                                                                token.c_str(),
@@ -745,21 +745,21 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
 
     size_t token_index = 0;
 
-    if (tokens[token_index].type != TOKEN_STRING || tokens[token_index].data != type->name) {
+    if (tokens[token_index].type != e_token_type::STRING || tokens[token_index].data != type->name) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "Wrong physical type name of the port: %s\n", pin_loc_string);
     }
 
     token_index++;
 
-    if (tokens[token_index].type != TOKEN_DOT) {
+    if (tokens[token_index].type != e_token_type::DOT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No dot is present to separate type name and port name: %s\n", pin_loc_string);
     }
 
     token_index++;
 
-    if (tokens[token_index].type != TOKEN_STRING) {
+    if (tokens[token_index].type != e_token_type::STRING) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No port name is present: %s\n", pin_loc_string);
     }
@@ -780,14 +780,14 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
         return std::make_pair(abs_first_pin_idx, abs_first_pin_idx + port->num_pins);
     }
 
-    if (tokens[token_index].type != TOKEN_OPEN_SQUARE_BRACKET) {
+    if (tokens[token_index].type != e_token_type::OPEN_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No open square bracket present: %s\n", pin_loc_string);
     }
 
     token_index++;
 
-    if (tokens[token_index].type != TOKEN_INT) {
+    if (tokens[token_index].type != e_token_type::INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No integer to indicate least significant pin index: %s\n", pin_loc_string);
     }
@@ -797,8 +797,8 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     token_index++;
 
     // Single pin is specified
-    if (tokens[token_index].type != TOKEN_COLON) {
-        if (tokens[token_index].type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (tokens[token_index].type != e_token_type::COLON) {
+        if (tokens[token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            "No closing bracket: %s\n", pin_loc_string);
         }
@@ -815,7 +815,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
 
     token_index++;
 
-    if (tokens[token_index].type != TOKEN_INT) {
+    if (tokens[token_index].type != e_token_type::INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No integer to indicate most significant pin index: %s\n", pin_loc_string);
     }
@@ -824,7 +824,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
 
     token_index++;
 
-    if (tokens[token_index].type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (tokens[token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No closed square bracket: %s\n", pin_loc_string);
     }

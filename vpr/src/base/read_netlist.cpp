@@ -291,10 +291,10 @@ static void processComplexBlock(pugi::xml_node clb_block,
     auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
     auto block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
     const Tokens tokens(block_inst.value());
-    if (tokens.size() != 4 || tokens[0].type != TOKEN_STRING
-        || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
-        || tokens[2].type != TOKEN_INT
-        || tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (tokens.size() != 4 || tokens[0].type != e_token_type::STRING
+        || tokens[1].type != e_token_type::OPEN_SQUARE_BRACKET
+        || tokens[2].type != e_token_type::INT
+        || tokens[3].type != e_token_type::CLOSE_SQUARE_BRACKET) {
         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
                   "Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
                   block_inst.value(), clb_block.name());
@@ -491,10 +491,10 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
 
             auto instance_type = pugiutil::get_attribute(child, "instance", loc_data);
             const Tokens tokens(instance_type.value());
-            if (tokens.size() != 4 || tokens[0].type != TOKEN_STRING
-                || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
-                || tokens[2].type != TOKEN_INT
-                || tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
+            if (tokens.size() != 4 || tokens[0].type != e_token_type::STRING
+                || tokens[1].type != e_token_type::OPEN_SQUARE_BRACKET
+                || tokens[2].type != e_token_type::INT
+                || tokens[3].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                 vpr_throw(VPR_ERROR_NET_F, loc_data.filename_c_str(), loc_data.line(child),
                           "Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
                           instance_type.value(), child.name());

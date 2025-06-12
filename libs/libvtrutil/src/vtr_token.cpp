@@ -28,27 +28,27 @@ bool IsWhitespace(char c) {
     }
 }
 
-const t_token Tokens::null_token_{TOKEN_NULL, ""};
+const t_token Tokens::null_token_{e_token_type::NULL_TOKEN, ""};
 
 Tokens::Tokens(std::string_view inString) {
     if (inString.empty()) {
         return;
     }
 
-    e_token_type cur_token_type = TOKEN_NULL;
+    e_token_type cur_token_type = e_token_type::NULL_TOKEN;
     size_t in_string_index = 0;
     size_t prev_in_string_index = 0;
 
     for (char cur : inString) {
         e_token_type new_token_type = GetTokenTypeFromChar(cur_token_type, cur);
         if (new_token_type != cur_token_type) {
-            if (cur_token_type != TOKEN_NULL) {
+            if (cur_token_type != e_token_type::NULL_TOKEN) {
                 // Finalize the current token
                 t_token& current_token = tokens_.back();
                 current_token.data = std::string(inString.substr(prev_in_string_index,
                                                                  in_string_index - prev_in_string_index));
             }
-            if (new_token_type != TOKEN_NULL) {
+            if (new_token_type != e_token_type::NULL_TOKEN) {
                 // Start a new token
                 t_token new_token;
                 new_token.type = new_token_type;
@@ -61,7 +61,7 @@ Tokens::Tokens(std::string_view inString) {
     }
 
     // Finalize the last token if it exists
-    if (cur_token_type != TOKEN_NULL && !tokens_.empty()) {
+    if (cur_token_type != e_token_type::NULL_TOKEN && !tokens_.empty()) {
         t_token& current_token = tokens_.back();
         current_token.data = std::string(inString.substr(prev_in_string_index,
                                                          in_string_index - prev_in_string_index));
@@ -80,24 +80,24 @@ const t_token& Tokens::operator[](size_t idx) const {
 enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
                                        const char cur) {
     if (IsWhitespace(cur)) {
-        return TOKEN_NULL;
+        return e_token_type::NULL_TOKEN;
     } else {
         if (cur == '[') {
-            return TOKEN_OPEN_SQUARE_BRACKET;
+            return e_token_type::OPEN_SQUARE_BRACKET;
         } else if (cur == ']') {
-            return TOKEN_CLOSE_SQUARE_BRACKET;
+            return e_token_type::CLOSE_SQUARE_BRACKET;
         } else if (cur == '{') {
-            return TOKEN_OPEN_SQUIG_BRACKET;
+            return e_token_type::OPEN_SQUIG_BRACKET;
         } else if (cur == '}') {
-            return TOKEN_CLOSE_SQUIG_BRACKET;
+            return e_token_type::CLOSE_SQUIG_BRACKET;
         } else if (cur == ':') {
-            return TOKEN_COLON;
+            return e_token_type::COLON;
         } else if (cur == '.') {
-            return TOKEN_DOT;
-        } else if (cur >= '0' && cur <= '9' && cur_token_type != TOKEN_STRING) {
-            return TOKEN_INT;
+            return e_token_type::DOT;
+        } else if (cur >= '0' && cur <= '9' && cur_token_type != e_token_type::STRING) {
+            return e_token_type::INT;
         } else {
-            return TOKEN_STRING;
+            return e_token_type::STRING;
         }
     }
 }
