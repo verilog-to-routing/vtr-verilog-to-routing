@@ -10,23 +10,10 @@
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
-                                       const char cur);
+#include <cctype>
 
-bool IsWhitespace(char c);
-
-///@brief Returns true if character is whatspace between tokens
-bool IsWhitespace(char c) {
-    switch (c) {
-        case ' ':
-        case '\t':
-        case '\r':
-        case '\n':
-            return true;
-        default:
-            return false;
-    }
-}
+/// @brief Returns a token type of the given char
+static e_token_type get_token_type_from_char( e_token_type cur_token_type, char cur);
 
 const t_token Tokens::null_token_{e_token_type::NULL_TOKEN, ""};
 
@@ -40,7 +27,7 @@ Tokens::Tokens(std::string_view inString) {
     size_t prev_in_string_index = 0;
 
     for (char cur : inString) {
-        e_token_type new_token_type = GetTokenTypeFromChar(cur_token_type, cur);
+        e_token_type new_token_type = get_token_type_from_char(cur_token_type, cur);
         if (new_token_type != cur_token_type) {
             if (cur_token_type != e_token_type::NULL_TOKEN) {
                 // Finalize the current token
@@ -76,10 +63,8 @@ const t_token& Tokens::operator[](size_t idx) const {
     }
 }
 
-///@brief Returns a token type of the given char
-enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
-                                       const char cur) {
-    if (IsWhitespace(cur)) {
+static e_token_type get_token_type_from_char( e_token_type cur_token_type, char cur) {
+    if (std::isspace(cur)) {
         return e_token_type::NULL_TOKEN;
     } else {
         if (cur == '[') {
@@ -102,7 +87,6 @@ enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
     }
 }
 
-///@brief Returns a 2D array representing the atof result of all the input string entries seperated by whitespace
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring) {
     int i, j;
     char *cur, *cur2, *copy, *final;
@@ -116,7 +100,7 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
     cur = copy;
     i = j = 0;
     while (cur != final) {
-        while (IsWhitespace(*cur) && cur != final) {
+        while (std::isspace(*cur) && cur != final) {
             if (j == max_j) {
                 i++;
                 j = 0;
@@ -127,7 +111,7 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
             break;
         }
         cur2 = cur;
-        while (!IsWhitespace(*cur2) && cur2 != final) {
+        while (!std::isspace(*cur2) && cur2 != final) {
             cur2++;
         }
         *cur2 = '\0';
@@ -143,11 +127,6 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
     free(copy);
 }
 
-/** 
- * @brief Checks if the number of entries (separated by whitespace)	matches the the expected number (max_i * max_j)
- *
- * can be used before calling my_atof_2D						
- */
 bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, int* num_entries) {
     /* Check if max_i * max_j matches number of entries in instring */
     const char* cur = instring;
@@ -156,10 +135,10 @@ bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, in
 
     /* First count number of entries in instring */
     while (*cur != '\0') {
-        if (!IsWhitespace(*cur) && !in_str) {
+        if (!std::isspace(*cur) && !in_str) {
             in_str = true;
             entry_count++;
-        } else if (IsWhitespace(*cur)) {
+        } else if (std::isspace(*cur)) {
             in_str = false;
         }
         cur++;

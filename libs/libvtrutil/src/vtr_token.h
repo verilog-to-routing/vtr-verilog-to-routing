@@ -43,6 +43,12 @@ class Tokens {
     std::vector<t_token> tokens_;
 };
 
+/// @brief Returns a 2D array representing the atof result of all the input string entries seperated by whitespace
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring);
 
+/**
+ * @brief Checks if the number of entries (separated by whitespace)	matches the the expected number (max_i * max_j)
+ *
+ * can be used before calling my_atof_2D
+ */
 bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, int* num_entries);
