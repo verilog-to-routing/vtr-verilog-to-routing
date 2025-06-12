@@ -39,9 +39,6 @@
 #include <functional>
 #include <string>
 #include <vector>
-#ifdef _WIN32
-#define _USE_MATH_DEFINES // ensure (non-standard) value of M_PI is brought in from math.h
-#endif
 #include <cfloat>
 #include <cmath>
 #include <algorithm>
