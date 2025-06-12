@@ -1036,7 +1036,6 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
         }
     }
     VTR_ASSERT(curr_set == *num_sets);
-    
     return pb_graph_pins;
 }
 
@@ -1045,6 +1044,10 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
  */
 static void alloc_and_load_complete_interc_edges(t_interconnect* interconnect,
                                                  t_pb_graph_pin*** input_pb_graph_node_pin_ptrs,
+                                                 const int num_input_sets,
+                                                 const int* num_input_ptrs,
+                                                 t_pb_graph_pin*** output_pb_graph_node_pin_ptrs,
+                                                 const int num_output_sets,
                                                  const int* num_output_ptrs) {
     int i_inset, i_outset, i_inpin, i_outpin;
     int in_count, out_count;
