@@ -35,13 +35,13 @@ circuit_list_add=rca_5bit.blif
 arch_list_add=k4_N8_topology-0.85sL2-0.15gL4-on-cb-off-sb_22nm_22nm_nonLR.xml
 
 # Parse info and how to parse
-parse_file=vpr_standard.txt
+parse_file=vpr_fixed_chan_width.txt
 
 # How to parse QoR info
 qor_parse_file=qor_standard.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 #Script parameters
 script_params=-track_memory_usage -check_equivalent -starting_stage abc --gen_post_synthesis_netlist on --sweep_dangling_primary_ios off --sweep_constant_primary_outputs off --route_chan_width 40 --seed 5
