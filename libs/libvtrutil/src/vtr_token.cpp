@@ -36,7 +36,8 @@ std::vector<t_token> GetTokensFromString(std::string_view inString) {
     }
 
     e_token_type cur_token_type = TOKEN_NULL;
-    size_t in_string_index, prev_in_string_index;
+    size_t in_string_index = 0;
+    size_t prev_in_string_index = 0;
 
     for (char cur : inString) {
         e_token_type new_token_type = GetTokenTypeFromChar(cur_token_type, cur);

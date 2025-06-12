@@ -771,7 +771,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     if (port == nullptr) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "Port %s for %s could not be found: %s\n",
-                       type->name.c_str(), token.data,
+                       type->name.c_str(), token.data.c_str(),
                        pin_loc_string);
     }
     int abs_first_pin_idx = port->absolute_first_pin_index;
