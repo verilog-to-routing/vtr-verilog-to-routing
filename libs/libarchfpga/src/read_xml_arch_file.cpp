@@ -704,7 +704,7 @@ static void load_pin_loc(pugi::xml_node Locations,
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
                         for (e_side side : TOTAL_2D_SIDES) {
-                            for (auto token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                            for (const std::string& token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
                                 auto pin_range = process_pin_string<t_sub_tile*>(Locations,
                                                                                  &sub_tile,
                                                                                  token.c_str(),
@@ -763,39 +763,35 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
                                                    t_sub_tile& sub_tile,
                                                    const char* pin_loc_string,
                                                    const pugiutil::loc_data& loc_data) {
-    int num_tokens;
-    t_token* tokens = get_tokens_from_string(pin_loc_string, &num_tokens);
+    Tokens tokens(pin_loc_string);
 
     int token_index = 0;
     t_token token = tokens[token_index];
 
-    if (token.type != TOKEN_STRING || std::string(token.data) != sub_tile.name) {
+    if (token.type != e_token_type::STRING || std::string(token.data) != sub_tile.name) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("Wrong physical type name of the port: %s\n", pin_loc_string).c_str());
     }
 
     token_index++;
-    token = tokens[token_index];
 
     int first_inst = 0;
     int last_inst = sub_tile.capacity.total() - 1;
 
     // If there is a dot, such as io.input[0:3], it indicates the full range of the capacity, the default value should be returned
-    if (token.type == TOKEN_DOT) {
-        free_tokens(tokens, num_tokens);
+    if (token.type == e_token_type::DOT) {
         return std::make_pair(first_inst, last_inst);
     }
 
     // If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here.
-    if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
+    if (token.type != e_token_type::OPEN_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("No open square bracket present: %s\n", pin_loc_string).c_str());
     }
 
     token_index++;
-    token = tokens[token_index];
 
-    if (token.type != TOKEN_INT) {
+    if (tokens[token_index].type != e_token_type::INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("No integer to indicate least significant instance index: %s\n", pin_loc_string).c_str());
     }
@@ -806,27 +802,26 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
     token = tokens[token_index];
 
     // Single pin is specified
-    if (token.type != TOKEN_COLON) {
-        if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (token.type != e_token_type::COLON) {
+        if (token.type != e_token_type::CLOSE_SQUARE_BRACKET) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            vtr::string_fmt("No closing bracket: %s\n", pin_loc_string).c_str());
         }
 
         token_index++;
 
-        if (token_index != num_tokens) {
+        if (token_index != tokens.size()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            vtr::string_fmt("instance of pin location should be completed, but more tokens are present: %s\n", pin_loc_string).c_str());
         }
 
-        free_tokens(tokens, num_tokens);
         return std::make_pair(first_inst, first_inst);
     }
 
     token_index++;
     token = tokens[token_index];
 
-    if (token.type != TOKEN_INT) {
+    if (token.type != e_token_type::INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("No integer to indicate most significant instance index: %s\n", pin_loc_string).c_str());
     }
@@ -836,7 +831,7 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
     token_index++;
     token = tokens[token_index];
 
-    if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (token.type != e_token_type::CLOSE_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("No closed square bracket: %s\n", pin_loc_string).c_str());
     }
@@ -845,7 +840,6 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
         std::swap(first_inst, last_inst);
     }
 
-    free_tokens(tokens, num_tokens);
     return std::make_pair(first_inst, last_inst);
 }
 
@@ -854,13 +848,11 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
                                               T type,
                                               const char* pin_loc_string,
                                               const pugiutil::loc_data& loc_data) {
-    int num_tokens;
-    t_token* tokens = get_tokens_from_string(pin_loc_string, &num_tokens);
+    Tokens tokens(pin_loc_string);
 
-    int token_index = 0;
-    auto token = tokens[token_index];
+    size_t token_index = 0;
 
-    if (token.type != TOKEN_STRING || token.data != type->name) {
+    if (tokens[token_index].type != e_token_type::STRING || tokens[token_index].data != type->name) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("Wrong physical type name of the port: %s\n", pin_loc_string).c_str());
     }
@@ -928,50 +920,46 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
                        vtr::string_fmt("No integer to indicate least significant pin index: %s\n", pin_loc_string).c_str());
     }
 
-    int first_pin = vtr::atoi(token.data);
+    int first_pin = vtr::atoi(tokens[token_index].data);
 
     token_index++;
-    token = tokens[token_index];
 
     // Single pin is specified
-    if (token.type != TOKEN_COLON) {
-        if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (tokens[token_index].type != e_token_type::COLON) {
+        if (tokens[token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            vtr::string_fmt("No closing bracket: %s\n", pin_loc_string).c_str());
         }
 
         token_index++;
 
-        if (token_index != num_tokens) {
+        if (token_index != tokens.size()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            vtr::string_fmt("pin location should be completed, but more tokens are present: %s\n", pin_loc_string).c_str());
         }
 
-        free_tokens(tokens, num_tokens);
         return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + first_pin + 1);
     }
 
     token_index++;
-    token = tokens[token_index];
 
-    if (token.type != TOKEN_INT) {
+    if (tokens[token_index].type != e_token_type::INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("No integer to indicate most significant pin index: %s\n", pin_loc_string).c_str());
     }
 
-    int last_pin = vtr::atoi(token.data);
+    int last_pin = vtr::atoi(tokens[token_index].data);
 
     token_index++;
-    token = tokens[token_index];
 
-    if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (tokens[token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("No closed square bracket: %s\n", pin_loc_string).c_str());
     }
 
     token_index++;
 
-    if (token_index != num_tokens) {
+    if (token_index != tokens.size()) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("pin location should be completed, but more tokens are present: %s\n", pin_loc_string).c_str());
     }
@@ -980,7 +968,6 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
         std::swap(first_pin, last_pin);
     }
 
-    free_tokens(tokens, num_tokens);
     return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + last_pin + 1);
 }
 

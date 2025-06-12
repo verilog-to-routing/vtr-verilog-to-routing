@@ -6,31 +6,49 @@
  * @brief Tokenizer
  */
 
+#include <string>
+#include <string_view>
+#include <vector>
+
 ///@brief Token types
-enum e_token_type {
-    TOKEN_NULL,
-    TOKEN_STRING,
-    TOKEN_INT,
-    TOKEN_OPEN_SQUARE_BRACKET,
-    TOKEN_CLOSE_SQUARE_BRACKET,
-    TOKEN_OPEN_SQUIG_BRACKET,
-    TOKEN_CLOSE_SQUIG_BRACKET,
-    TOKEN_COLON,
-    TOKEN_DOT
+enum class e_token_type {
+    NULL_TOKEN,
+    STRING,
+    INT,
+    OPEN_SQUARE_BRACKET,
+    CLOSE_SQUARE_BRACKET,
+    OPEN_SQUIG_BRACKET,
+    CLOSE_SQUIG_BRACKET,
+    COLON,
+    DOT
 };
 
 ///@brief Token structure
 struct t_token {
-    enum e_token_type type;
-    char* data;
+    e_token_type type;
+    std::string data;
 };
 
-t_token* get_tokens_from_string(const char* inString, int* num_tokens);
+class Tokens {
+  public:
+    /// @brief Creates tokens for a given string
+    Tokens(std::string_view inString);
 
-void free_tokens(t_token* tokens, const int num_tokens);
+    const t_token& operator[](size_t idx) const;
 
-bool check_token_type(const t_token token, enum e_token_type token_type);
+    size_t size() const { return tokens_.size(); }
 
+  private:
+    static const t_token null_token_;
+    std::vector<t_token> tokens_;
+};
+
+/// @brief Returns a 2D array representing the atof result of all the input string entries seperated by whitespace
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring);
 
+/**
+ * @brief Checks if the number of entries (separated by whitespace)	matches the the expected number (max_i * max_j)
+ *
+ * can be used before calling my_atof_2D
+ */
 bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, int* num_entries);

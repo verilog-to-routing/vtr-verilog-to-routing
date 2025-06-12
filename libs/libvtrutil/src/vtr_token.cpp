@@ -4,149 +4,89 @@
  * Tokenizer
  */
 
-#include <cstring>
+#include "vtr_token.h"
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
-#include "vtr_token.h"
 
-enum e_token_type get_token_type_from_char(const enum e_token_type cur_token_type,
-                                           const char cur);
+#include <cctype>
 
-bool is_white_space(char c);
+/// @brief Returns a token type of the given char
+static e_token_type get_token_type_from_char(e_token_type cur_token_type, char cur);
 
-///@brief Returns true if character is whatspace between tokens
-bool is_white_space(char c) {
-    switch (c) {
-        case ' ':
-        case '\t':
-        case '\r':
-        case '\n':
-            return true;
-        default:
-            return false;
+const t_token Tokens::null_token_{e_token_type::NULL_TOKEN, ""};
+
+Tokens::Tokens(std::string_view inString) {
+    if (inString.empty()) {
+        return;
     }
-}
 
-///@brief Returns a token list of the text for a given string.
-t_token* get_tokens_from_string(const char* inString, int* num_tokens) {
-    const char* cur;
-    t_token* tokens;
-    int i, in_string_index, prev_in_string_index;
-    bool has_null;
-    enum e_token_type cur_token_type, new_token_type;
+    e_token_type cur_token_type = e_token_type::NULL_TOKEN;
+    size_t in_string_index = 0;
+    size_t prev_in_string_index = 0;
 
-    *num_tokens = i = 0;
-    cur_token_type = TOKEN_NULL;
-
-    if (inString == nullptr) {
-        return nullptr;
-    };
-
-    cur = inString;
-
-    /* Count number of tokens */
-    while (*cur) {
-        new_token_type = get_token_type_from_char(cur_token_type, *cur);
+    for (char cur : inString) {
+        e_token_type new_token_type = get_token_type_from_char(cur_token_type, cur);
         if (new_token_type != cur_token_type) {
-            cur_token_type = new_token_type;
-            if (new_token_type != TOKEN_NULL) {
-                i++;
+            if (cur_token_type != e_token_type::NULL_TOKEN) {
+                // Finalize the current token
+                t_token& current_token = tokens_.back();
+                current_token.data = inString.substr(prev_in_string_index,
+                                                     in_string_index - prev_in_string_index);
             }
-        }
-        ++cur;
-    }
-    *num_tokens = i;
-
-    if (*num_tokens > 0) {
-        tokens = (t_token*)vtr::calloc(*num_tokens + 1, sizeof(t_token));
-    } else {
-        return nullptr;
-    }
-
-    /* populate tokens */
-    i = 0;
-    in_string_index = 0;
-    has_null = true;
-    prev_in_string_index = 0;
-    cur_token_type = TOKEN_NULL;
-
-    cur = inString;
-
-    while (*cur) {
-        new_token_type = get_token_type_from_char(cur_token_type, *cur);
-        if (new_token_type != cur_token_type) {
-            if (!has_null) {
-                tokens[i - 1].data[in_string_index - prev_in_string_index] = '\0'; /* NULL the end of the data string */
-                has_null = true;
-            }
-            if (new_token_type != TOKEN_NULL) {
-                tokens[i].type = new_token_type;
-                tokens[i].data = vtr::strdup(inString + in_string_index);
+            if (new_token_type != e_token_type::NULL_TOKEN) {
+                // Start a new token
+                t_token new_token;
+                new_token.type = new_token_type;
+                tokens_.push_back(new_token);
                 prev_in_string_index = in_string_index;
-                has_null = false;
-                i++;
             }
             cur_token_type = new_token_type;
         }
-        ++cur;
         in_string_index++;
     }
 
-    VTR_ASSERT(i == *num_tokens);
-
-    tokens[*num_tokens].type = TOKEN_NULL;
-    tokens[*num_tokens].data = nullptr;
-
-    /* Return the list */
-    return tokens;
-}
-
-///@brief Free (tokens)
-void free_tokens(t_token* tokens, const int num_tokens) {
-    int i;
-    for (i = 0; i < num_tokens; i++) {
-        free(tokens[i].data);
+    // Finalize the last token if it exists
+    if (cur_token_type != e_token_type::NULL_TOKEN && !tokens_.empty()) {
+        t_token& current_token = tokens_.back();
+        current_token.data = inString.substr(prev_in_string_index,
+                                             in_string_index - prev_in_string_index);
     }
-    free(tokens);
 }
 
-///@brief Returns a token type of the given char
-enum e_token_type get_token_type_from_char(const enum e_token_type cur_token_type,
-                                           const char cur) {
-    if (is_white_space(cur)) {
-        return TOKEN_NULL;
+const t_token& Tokens::operator[](size_t idx) const {
+    if (idx < tokens_.size()) {
+        return tokens_[idx];
+    } else {
+        return null_token_;
+    }
+}
+
+static e_token_type get_token_type_from_char(e_token_type cur_token_type, char cur) {
+    if (std::isspace(cur)) {
+        return e_token_type::NULL_TOKEN;
     } else {
         if (cur == '[') {
-            return TOKEN_OPEN_SQUARE_BRACKET;
+            return e_token_type::OPEN_SQUARE_BRACKET;
         } else if (cur == ']') {
-            return TOKEN_CLOSE_SQUARE_BRACKET;
+            return e_token_type::CLOSE_SQUARE_BRACKET;
         } else if (cur == '{') {
-            return TOKEN_OPEN_SQUIG_BRACKET;
+            return e_token_type::OPEN_SQUIG_BRACKET;
         } else if (cur == '}') {
-            return TOKEN_CLOSE_SQUIG_BRACKET;
+            return e_token_type::CLOSE_SQUIG_BRACKET;
         } else if (cur == ':') {
-            return TOKEN_COLON;
+            return e_token_type::COLON;
         } else if (cur == '.') {
-            return TOKEN_DOT;
-        } else if (cur >= '0' && cur <= '9' && cur_token_type != TOKEN_STRING) {
-            return TOKEN_INT;
+            return e_token_type::DOT;
+        } else if (cur >= '0' && cur <= '9' && cur_token_type != e_token_type::STRING) {
+            return e_token_type::INT;
         } else {
-            return TOKEN_STRING;
+            return e_token_type::STRING;
         }
     }
 }
 
-///@brief Returns true if the token's type equals to token_type
-bool check_token_type(const t_token token, enum e_token_type token_type) {
-    if (token.type != token_type) {
-        return false;
-    }
-    return true;
-}
-
-///@brief Returns a 2D array representing the atof result of all the input string entries seperated by whitespace
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring) {
     int i, j;
     char *cur, *cur2, *copy, *final;
@@ -160,7 +100,7 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
     cur = copy;
     i = j = 0;
     while (cur != final) {
-        while (is_white_space(*cur) && cur != final) {
+        while (std::isspace(*cur) && cur != final) {
             if (j == max_j) {
                 i++;
                 j = 0;
@@ -171,7 +111,7 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
             break;
         }
         cur2 = cur;
-        while (!is_white_space(*cur2) && cur2 != final) {
+        while (!std::isspace(*cur2) && cur2 != final) {
             cur2++;
         }
         *cur2 = '\0';
@@ -187,13 +127,6 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
     free(copy);
 }
 
-/* Date:July 2nd, 2013													*
- * Author: Daniel Chen													*/
-/** 
- * @brief Checks if the number of entries (separated by whitespace)	matches the the expected number (max_i * max_j)
- *
- * can be used before calling my_atof_2D						
- */
 bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, int* num_entries) {
     /* Check if max_i * max_j matches number of entries in instring */
     const char* cur = instring;
@@ -202,10 +135,10 @@ bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, in
 
     /* First count number of entries in instring */
     while (*cur != '\0') {
-        if (!is_white_space(*cur) && !in_str) {
+        if (!std::isspace(*cur) && !in_str) {
             in_str = true;
             entry_count++;
-        } else if (is_white_space(*cur)) {
+        } else if (std::isspace(*cur)) {
             in_str = false;
         }
         cur++;
