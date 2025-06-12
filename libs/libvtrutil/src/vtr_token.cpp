@@ -13,7 +13,7 @@
 #include <cctype>
 
 /// @brief Returns a token type of the given char
-static e_token_type get_token_type_from_char( e_token_type cur_token_type, char cur);
+static e_token_type get_token_type_from_char(e_token_type cur_token_type, char cur);
 
 const t_token Tokens::null_token_{e_token_type::NULL_TOKEN, ""};
 
@@ -63,7 +63,7 @@ const t_token& Tokens::operator[](size_t idx) const {
     }
 }
 
-static e_token_type get_token_type_from_char( e_token_type cur_token_type, char cur) {
+static e_token_type get_token_type_from_char(e_token_type cur_token_type, char cur) {
     if (std::isspace(cur)) {
         return e_token_type::NULL_TOKEN;
     } else {

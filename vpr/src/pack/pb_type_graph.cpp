@@ -157,7 +157,6 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
 static bool operator<(const t_pb_graph_edge_comparator& edge1,
                       const t_pb_graph_edge_comparator& edge2);
 
-
 /**
  * @brief Checks that all pins in a logically-equivalent input port connect to the exact same pins.
  *
@@ -1352,7 +1351,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                 (*token_index)++;
             } else {
                 (*token_index)++;
-                if (tokens[*token_index].type !=  e_token_type::INT) {
+                if (tokens[*token_index].type != e_token_type::INT) {
                     return false; // clb[9:abc
                 }
                 pb_lsb = vtr::atoi(tokens[*token_index].data);
@@ -1391,13 +1390,13 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
                     if (tokens[*token_index].type == e_token_type::OPEN_SQUARE_BRACKET) {
                         (*token_index)++;
-                        if (tokens[*token_index].type !=  e_token_type::INT) {
+                        if (tokens[*token_index].type != e_token_type::INT) {
                             return false;
                         }
                         pb_msb = vtr::atoi(tokens[*token_index].data);
                         VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-significant-bit must be non-negative");
                         (*token_index)++;
-                        if (tokens[*token_index].type !=  e_token_type::COLON) {
+                        if (tokens[*token_index].type != e_token_type::COLON) {
                             if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                                 return false;
                             }
@@ -1405,7 +1404,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                             (*token_index)++;
                         } else {
                             (*token_index)++;
-                            if (tokens[*token_index].type !=  e_token_type::INT) {
+                            if (tokens[*token_index].type != e_token_type::INT) {
                                 return false;
                             }
                             pb_lsb = vtr::atoi(tokens[*token_index].data);
@@ -1458,20 +1457,20 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     const char* port_name = tokens[*token_index].data.c_str();
     (*token_index)++;
 
-    if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],0) == nullptr) {
+    if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb], 0) == nullptr) {
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                   "Failed to find port name %s", port_name);
     }
 
     if (tokens[*token_index].type == e_token_type::OPEN_SQUARE_BRACKET) {
         (*token_index)++;
-        if (tokens[*token_index].type !=  e_token_type::INT) {
+        if (tokens[*token_index].type != e_token_type::INT) {
             return false;
         }
         pin_msb = vtr::atoi(tokens[*token_index].data);
         VTR_ASSERT_MSG(pin_msb >= 0, "Pin most-significant-bit must be non-negative");
         (*token_index)++;
-        if (tokens[*token_index].type !=  e_token_type::COLON) {
+        if (tokens[*token_index].type != e_token_type::COLON) {
             if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                 return false;
             }
@@ -1479,7 +1478,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
             (*token_index)++;
         } else {
             (*token_index)++;
-            if (tokens[*token_index].type !=  e_token_type::INT) {
+            if (tokens[*token_index].type != e_token_type::INT) {
                 return false;
             }
             pin_lsb = vtr::atoi(tokens[*token_index].data);
