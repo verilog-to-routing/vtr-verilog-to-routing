@@ -257,6 +257,10 @@ void alloc_routing_structs(const t_chan_width& chan_width,
         graph_type = e_graph_type::GLOBAL;
     } else {
         graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        /* Branch on tileable routing */
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
+        }
     }
 
     create_rr_graph(graph_type,

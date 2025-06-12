@@ -40,6 +40,7 @@
 #include "pack.h"
 #include "place.h"
 #include "SetupGrid.h"
+#include "SetupVibGrid.h"
 #include "setup_clocks.h"
 #include "setup_noc.h"
 #include "read_xml_noc_traffic_flows_file.h"
@@ -569,6 +570,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     //Build the device
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
+    if (!Arch.vib_infs.empty()) {
+        device_ctx.vib_grid = create_vib_device_grid(vpr_setup.device_layout, Arch.vib_grid_layouts);
+    }
 
     VTR_ASSERT_MSG(device_ctx.grid.get_num_layers() <= MAX_NUM_LAYERS,
                    "Number of layers should be less than MAX_NUM_LAYERS. "
@@ -1177,6 +1181,9 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
         graph_directionality = e_graph_type::BIDIR;
     } else {
         graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
+        }
         graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
