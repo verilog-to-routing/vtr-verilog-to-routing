@@ -115,6 +115,13 @@ struct t_pin_locs {
 
 /**
  * @brief Throws an error with a message and frees the tokens
+ *
+ * @param filename File name associated with the error
+ * @param line Line number associated with the error
+ * @param err_msg Error message to be displayed
+ * @param tokens If tokens are allocated before calling this function,
+ * they will be freed here. If not, nullptr should be passed.
+ * @param num_tokens Number of tokens to be freed. If not, 0 should be passed.
  */
 static void throw_xml_arch_error(const char* filename,
                                  int line,
@@ -203,6 +210,9 @@ static void throw_xml_arch_error(const char* filename,
                                  const std::string& err_msg,
                                  t_token* tokens,
                                  int num_tokens) {
+    // We need to free the tokens here, otherwise,
+    // archfpga_throw will face issues since memory is
+    // not deallocated properly.
     free_tokens(tokens, num_tokens);
     archfpga_throw(filename, line, err_msg.c_str());
 }
