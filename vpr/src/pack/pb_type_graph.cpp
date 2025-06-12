@@ -1304,29 +1304,27 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
         (*token_index)++;
         if (tokens[*token_index].type == e_token_type::OPEN_SQUARE_BRACKET) {
             (*token_index)++;
-            if (!checkTokenType(tokens[*token_index], e_token_type::INT)) {
+            if (tokens[*token_index].type != e_token_type::INT) {
                 return false; //clb[abc
             }
             pb_msb = vtr::atoi(tokens[*token_index].data);
             VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-significant-bit must be non-negative");
             (*token_index)++;
-            if (!checkTokenType(tokens[*token_index], e_token_type::COLON)) {
-                if (!checkTokenType(tokens[*token_index],
-                                    e_token_type::CLOSE_SQUARE_BRACKET)) {
+            if (tokens[*token_index].type != e_token_type::COLON) {
+                if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                     return false; //clb[9abc
                 }
                 pb_lsb = pb_msb;
                 (*token_index)++;
             } else {
                 (*token_index)++;
-                if (!checkTokenType(tokens[*token_index], e_token_type::INT)) {
+                if (tokens[*token_index].type !=  e_token_type::INT) {
                     return false; //clb[9:abc
                 }
                 pb_lsb = vtr::atoi(tokens[*token_index].data);
                 VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-significant-bit must be non-negative");
                 (*token_index)++;
-                if (!checkTokenType(tokens[*token_index],
-                                    e_token_type::CLOSE_SQUARE_BRACKET)) {
+                if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                     return false; //clb[9:0abc
                 }
                 (*token_index)++;
@@ -1359,29 +1357,27 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
                     if (tokens[*token_index].type == e_token_type::OPEN_SQUARE_BRACKET) {
                         (*token_index)++;
-                        if (!checkTokenType(tokens[*token_index], e_token_type::INT)) {
+                        if (tokens[*token_index].type !=  e_token_type::INT) {
                             return false;
                         }
                         pb_msb = vtr::atoi(tokens[*token_index].data);
                         VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-significant-bit must be non-negative");
                         (*token_index)++;
-                        if (!checkTokenType(tokens[*token_index], e_token_type::COLON)) {
-                            if (!checkTokenType(tokens[*token_index],
-                                                e_token_type::CLOSE_SQUARE_BRACKET)) {
+                        if (tokens[*token_index].type !=  e_token_type::COLON) {
+                            if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                                 return false;
                             }
                             pb_lsb = pb_msb;
                             (*token_index)++;
                         } else {
                             (*token_index)++;
-                            if (!checkTokenType(tokens[*token_index], e_token_type::INT)) {
+                            if (tokens[*token_index].type !=  e_token_type::INT) {
                                 return false;
                             }
                             pb_lsb = vtr::atoi(tokens[*token_index].data);
                             VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-significant-bit must be non-negative");
                             (*token_index)++;
-                            if (!checkTokenType(tokens[*token_index],
-                                                e_token_type::CLOSE_SQUARE_BRACKET)) {
+                            if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                                 return false;
                             }
                             (*token_index)++;
@@ -1413,13 +1409,13 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
     found = false;
 
-    if (!checkTokenType(tokens[*token_index], e_token_type::DOT)) {
+    if (tokens[*token_index].type != e_token_type::DOT) {
         return false; //clb[9:0]123
     }
     (*token_index)++;
 
-    bool is_string = !checkTokenType(tokens[*token_index], e_token_type::STRING);
-    bool is_int = !checkTokenType(tokens[*token_index], e_token_type::INT);
+    bool is_string = tokens[*token_index].type == e_token_type::STRING;
+    bool is_int = tokens[*token_index].type == e_token_type::INT;
 
     if (!is_string && !is_int)
         return false;
@@ -1435,29 +1431,27 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
     if (tokens[*token_index].type == e_token_type::OPEN_SQUARE_BRACKET) {
         (*token_index)++;
-        if (!checkTokenType(tokens[*token_index], e_token_type::INT)) {
+        if (tokens[*token_index].type !=  e_token_type::INT) {
             return false;
         }
         pin_msb = vtr::atoi(tokens[*token_index].data);
         VTR_ASSERT_MSG(pin_msb >= 0, "Pin most-significant-bit must be non-negative");
         (*token_index)++;
-        if (!checkTokenType(tokens[*token_index], e_token_type::COLON)) {
-            if (!checkTokenType(tokens[*token_index],
-                                e_token_type::CLOSE_SQUARE_BRACKET)) {
+        if (tokens[*token_index].type !=  e_token_type::COLON) {
+            if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                 return false;
             }
             pin_lsb = pin_msb;
             (*token_index)++;
         } else {
             (*token_index)++;
-            if (!checkTokenType(tokens[*token_index], e_token_type::INT)) {
+            if (tokens[*token_index].type !=  e_token_type::INT) {
                 return false;
             }
             pin_lsb = vtr::atoi(tokens[*token_index].data);
             VTR_ASSERT_MSG(pin_lsb >= 0, "Pin most-significant-bit must be non-negative");
             (*token_index)++;
-            if (!checkTokenType(tokens[*token_index],
-                                e_token_type::CLOSE_SQUARE_BRACKET)) {
+            if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                 return false;
             }
             (*token_index)++;

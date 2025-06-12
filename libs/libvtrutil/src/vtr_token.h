@@ -43,8 +43,6 @@ class Tokens {
     std::vector<t_token> tokens_;
 };
 
-bool checkTokenType(const t_token& token, enum e_token_type token_type);
-
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring);
 
 bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, int* num_entries);

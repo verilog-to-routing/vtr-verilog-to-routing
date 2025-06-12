@@ -45,8 +45,8 @@ Tokens::Tokens(std::string_view inString) {
             if (cur_token_type != e_token_type::NULL_TOKEN) {
                 // Finalize the current token
                 t_token& current_token = tokens_.back();
-                current_token.data = std::string(inString.substr(prev_in_string_index,
-                                                                 in_string_index - prev_in_string_index));
+                current_token.data = inString.substr(prev_in_string_index,
+                                                     in_string_index - prev_in_string_index);
             }
             if (new_token_type != e_token_type::NULL_TOKEN) {
                 // Start a new token
@@ -63,8 +63,8 @@ Tokens::Tokens(std::string_view inString) {
     // Finalize the last token if it exists
     if (cur_token_type != e_token_type::NULL_TOKEN && !tokens_.empty()) {
         t_token& current_token = tokens_.back();
-        current_token.data = std::string(inString.substr(prev_in_string_index,
-                                                         in_string_index - prev_in_string_index));
+        current_token.data = inString.substr(prev_in_string_index,
+                                             in_string_index - prev_in_string_index);
     }
 }
 
@@ -100,14 +100,6 @@ enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
             return e_token_type::STRING;
         }
     }
-}
-
-///@brief Returns true if the token's type equals to token_type
-bool checkTokenType(const t_token& token, enum e_token_type token_type) {
-    if (token.type != token_type) {
-        return false;
-    }
-    return true;
 }
 
 ///@brief Returns a 2D array representing the atof result of all the input string entries seperated by whitespace
