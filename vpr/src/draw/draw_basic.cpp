@@ -640,12 +640,8 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         RRNodeId prev_node = rr_nodes_to_draw[i - 1];
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
 
-        if (!is_inter_cluster_node(rr_graph, prev_node) || !is_inter_cluster_node(rr_graph, inode)) {
-            continue;
-        }
-
-        auto iedge = find_edge(prev_node, inode);
-        auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
+        bool is_inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
+        bool is_prev_node_inter_cluster = is_inter_cluster_node(rr_graph, prev_node);
 
         int current_node_layer = rr_graph.node_layer(inode);
         int prev_node_layer = rr_graph.node_layer(prev_node);
@@ -657,6 +653,35 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         }
 
         ezgl::color color = draw_state->draw_rr_node[inode].color;
+
+
+        if (!is_inode_inter_cluster && !is_prev_node_inter_cluster) {
+            
+            AtomPinId pin_id1 = get_rr_node_atom_pin_id(inode);
+            AtomPinId pin_id2 = get_rr_node_atom_pin_id(prev_node);
+
+            VTR_ASSERT(pin_id1 != AtomPinId::INVALID() && pin_id2 != AtomPinId::INVALID());
+
+            ezgl::point2d p1 = atom_pin_draw_coord(pin_id1);
+            ezgl::point2d p2 = atom_pin_draw_coord(pin_id2);
+
+            g->set_color(color, edge_visibility.alpha);
+            g->draw_line(p1, p2);
+
+            continue;
+        }
+
+        if (!is_inode_inter_cluster || !is_prev_node_inter_cluster) {
+            continue;
+        }
+
+        auto iedge = find_edge(prev_node, inode);
+        auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
+
+        
+
+        
+
 
         switch (rr_type) {
             case e_rr_type::OPIN: {
