@@ -170,6 +170,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const UserPlaceConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
+    const t_ap_opts& ap_opts = vpr_setup.APOpts;
 
     // Run the prepacker
     const Prepacker prepacker(atom_nlist, device_ctx.arch->models, device_ctx.logical_block_types);
@@ -178,7 +179,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     // prepacker.
     APNetlist ap_netlist = gen_ap_netlist_from_atoms(atom_nlist,
                                                      prepacker,
-                                                     constraints);
+                                                     constraints,
+                                                     ap_opts.ap_high_fanout_threshold);
     print_ap_netlist_stats(ap_netlist);
 
     // Pre-compute the pre-clustering timing delays. This object will be passed
@@ -208,7 +210,6 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     }
 
     // Run the Global Placer.
-    const t_ap_opts& ap_opts = vpr_setup.APOpts;
     PartialPlacement p_placement = run_global_placer(ap_opts,
                                                      atom_nlist,
                                                      ap_netlist,
