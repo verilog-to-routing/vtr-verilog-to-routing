@@ -29,6 +29,7 @@
 #include <limits>
 #include <optional>
 #include <queue>
+#include <vector>
 
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
@@ -1628,27 +1629,20 @@ static void print_ap_initial_placer_status(unsigned iteration,
 }
 
 /**
- * @brief Places all blocks in the clustered netlist as close to the global
- *        placement produced by the AP flow.
- *
- * This function will place clusters in passes. In the first pass, it will try
- * to place clusters exactly where their global placement is (according to the
- * atoms contained in the cluster). In the second pass, all unplaced clusters
- * will try to be placed within 1 tile of where they wanted to be placed.
- * Subsequent passes will then try to place clusters at exponentially farther
- * distances.
+ * @brief Collects unplaced clusters and sorts such that clusters which should
+ *        be placed first appear early in the list.
  *
  * The clusters are sorted based on how many clusters are in the macro that
  * contains this cluster and the standard deviation of the placement of atoms
  * within the cluster. Large macros with low standard deviation will be placed
  * first.
  */
-static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
-                                       BlkLocRegistry& blk_loc_registry,
-                                       const PlaceMacros& place_macros,
-                                       const FlatPlacementInfo& flat_placement_info) {
-    const ClusteredNetlist& cluster_netlist = g_vpr_ctx.clustering().clb_nlist;
-    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
+    BlkLocRegistry& blk_loc_registry,
+    const PlaceMacros& place_macros,
+    const ClusteredNetlist& cluster_netlist,
+    const FlatPlacementInfo& flat_placement_info) {
+
     const auto& cluster_constraints = g_vpr_ctx.floorplanning().cluster_constraints;
 
     // Create a list of clusters to place.
@@ -1727,6 +1721,29 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
         // 2) Higher score clusters are placed first.
         return cluster_score[lhs] > cluster_score[rhs];
     });
+
+    return clusters_to_place;
+}
+
+/**
+ * @brief Tries to place all of the given clusters as closed to their flat
+ *        placement as possible (minimum displacement from flat placement).
+ *
+ * This function will place clusters in passes. In the first pass, it will try
+ * to place clusters exactly where their global placement is (according to the
+ * atoms contained in the cluster). In the second pass, all unplaced clusters
+ * will try to be placed within 1 tile of where they wanted to be placed.
+ * Subsequent passes will then try to place clusters at exponentially farther
+ * distances.
+ */
+static inline void place_blocks_min_displacement(std::vector<ClusterBlockId>& clusters_to_place,
+                                                 enum e_pad_loc_type pad_loc_type,
+                                                 BlkLocRegistry& blk_loc_registry,
+                                                 const PlaceMacros& place_macros,
+                                                 const ClusteredNetlist& cluster_netlist,
+                                                 const FlatPlacementInfo& flat_placement_info) {
+
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
 
     // Compute the max L1 distance on the device. If we cannot find a location
     // to place a cluster within this distance, then no legal location exists.
@@ -1844,11 +1861,124 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
         iter++;
     }
 
+    if (clusters_to_place.size() > 0) {
+        VTR_LOG("Unable to place all clusters.\n");
+        VTR_LOG("Clusters left unplaced:\n");
+        for (ClusterBlockId blk_id : clusters_to_place) {
+            VTR_LOG("\t%s\n", cluster_netlist.block_name(blk_id).c_str());
+        }
+    }
+
     // Check if anything has not been placed, if so just crash for now.
     // TODO: Should fall back on the original initial placer. Unless there is a
     //       bug in the code above, it could be that it is challenging to place
     //       for this circuit.
     VTR_ASSERT(clusters_to_place.size() == 0);
+}
+
+/**
+ * @brief Places all blocks in the clustered netlist as close to the global
+ *        placement produced by the AP flow.
+ *
+ * This function places the blocks in stages. The goal of this stage-based
+ * approach is to place clusters which are challenging to place first. Within
+ * each stage, the clusters are ordered based on heuristics such that the most
+ * impactful clusters get first dibs on placement.
+ */
+static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
+                                       BlkLocRegistry& blk_loc_registry,
+                                       const PlaceMacros& place_macros,
+                                       const FlatPlacementInfo& flat_placement_info) {
+
+    const ClusteredNetlist& cluster_netlist = g_vpr_ctx.clustering().clb_nlist;
+
+    // Get a list of clusters to place, sorted based on different heuristics
+    // to try to give more important clusters first dibs on the placement.
+    std::vector<ClusterBlockId> sorted_cluster_list = get_sorted_clusters_to_place(blk_loc_registry,
+                                                                                   place_macros,
+                                                                                   cluster_netlist,
+                                                                                   flat_placement_info);
+
+    // 1: Get the constrained clusters and place them first. For now, we place
+    //    constrained clusters first to prevent other clusters from taking their
+    //    spot if they are constrained to one and only one site.
+    // TODO: This gives clusters with region constraints VIP access to the
+    //       placement. This may not give the best results. This should be
+    //       investigated more once region constraints are more supported in the
+    //       AP flow.
+    std::vector<ClusterBlockId> constrained_clusters;
+    constrained_clusters.reserve(sorted_cluster_list.size());
+    for (ClusterBlockId blk_id : sorted_cluster_list) {
+        if (is_cluster_constrained(blk_id))
+            constrained_clusters.push_back(blk_id);
+    }
+
+    if (constrained_clusters.size() > 0) {
+        VTR_LOG("Placing constrained clusters...\n");
+        place_blocks_min_displacement(constrained_clusters,
+                                      pad_loc_type,
+                                      blk_loc_registry,
+                                      place_macros,
+                                      cluster_netlist,
+                                      flat_placement_info);
+        VTR_LOG("\n");
+    }
+
+    // 2. Get all of the large macros and place them next. Large macros have a
+    //    hard time finding a place to go since they take up so much space. They
+    //    also can have a larger impact on the quality of the placement, so we
+    //    give them dibs on placement early.
+    std::vector<ClusterBlockId> large_macro_clusters;
+    large_macro_clusters.reserve(sorted_cluster_list.size());
+    for (ClusterBlockId blk_id : sorted_cluster_list) {
+        // If this block has been placed, skip it.
+        if (is_block_placed(blk_id, blk_loc_registry.block_locs()))
+            continue;
+
+        // Get the size of the macro this block is a part of.
+        t_pl_macro pl_macro = get_or_create_macro(blk_id, place_macros);
+        size_t macro_size = pl_macro.members.size();
+        if (macro_size > 1) {
+            // If the size of the macro is larger than 1 (there is more than
+            // one cluster in this macro) add to the list.
+            large_macro_clusters.push_back(blk_id);
+        }
+    }
+
+    if (large_macro_clusters.size() > 0) {
+        VTR_LOG("Placing clusters that are part of larger macros...\n");
+        place_blocks_min_displacement(large_macro_clusters,
+                                      pad_loc_type,
+                                      blk_loc_registry,
+                                      place_macros,
+                                      cluster_netlist,
+                                      flat_placement_info);
+        VTR_LOG("\n");
+    }
+
+    // 3. Place the rest of the clusters. These clusters will be unconstrained
+    //    and be of small size; so they are more free to fill in the gaps left
+    //    behind.
+    std::vector<ClusterBlockId> clusters_to_place;
+    clusters_to_place.reserve(sorted_cluster_list.size());
+    for (ClusterBlockId blk_id : sorted_cluster_list) {
+        // If this block has been placed, skip it.
+        if (is_block_placed(blk_id, blk_loc_registry.block_locs()))
+            continue;
+
+        clusters_to_place.push_back(blk_id);
+    }
+
+    if (clusters_to_place.size() > 0) {
+        VTR_LOG("Placing general clusters...\n");
+        place_blocks_min_displacement(clusters_to_place,
+                                      pad_loc_type,
+                                      blk_loc_registry,
+                                      place_macros,
+                                      cluster_netlist,
+                                      flat_placement_info);
+        VTR_LOG("\n");
+    }
 }
 
 void initial_placement(const t_placer_opts& placer_opts,

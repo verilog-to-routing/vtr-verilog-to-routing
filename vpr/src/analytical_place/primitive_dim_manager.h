@@ -47,17 +47,37 @@ class PrimitiveDimManager {
     }
 
     /**
+     * @brief Create an empty primitive vector dimension with the given name.
+     */
+    inline PrimitiveVectorDim create_empty_dim(const std::string& name) {
+        PrimitiveVectorDim new_dim = static_cast<PrimitiveVectorDim>(dims_.size());
+        dims_.push_back(new_dim);
+        dim_name_.push_back(name);
+        return new_dim;
+    }
+
+    /**
+     * @brief Add the given model ID to the given primitive vector dim.
+     *
+     * It is assumed that the given model is not part of any other dimension.
+     */
+    inline void add_model_to_dim(LogicalModelId model_id, PrimitiveVectorDim dim) {
+        VTR_ASSERT_SAFE_MSG(model_id.is_valid(),
+                            "Cannot add an invalid model to a dim");
+        VTR_ASSERT_SAFE_MSG(dim.is_valid(),
+                            "Cannot add a model to an invalid dim");
+        model_dim_.insert(model_id, dim);
+    }
+
+    /**
      * @brief Create a mapping between the given logical model and a new dimension.
      *
      * The name is used only for printing debug information on this dimension.
      */
-    inline void create_dim(LogicalModelId model_id, const std::string& name) {
-        VTR_ASSERT_SAFE_MSG(model_id.is_valid(),
-                            "Cannot create a dim for an invalid model");
-        PrimitiveVectorDim new_dim = static_cast<PrimitiveVectorDim>(dims_.size());
-        dims_.push_back(new_dim);
-        dim_name_.push_back(name);
-        model_dim_.insert(model_id, new_dim);
+    inline PrimitiveVectorDim create_dim(LogicalModelId model_id, const std::string& name) {
+        PrimitiveVectorDim new_dim = create_empty_dim(name);
+        add_model_to_dim(model_id, new_dim);
+        return new_dim;
     }
 
     /**
