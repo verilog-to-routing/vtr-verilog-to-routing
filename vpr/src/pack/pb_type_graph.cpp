@@ -77,7 +77,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                                       t_pb_graph_node** pb_graph_children_nodes,
                                                       const bool interconnect_error_check,
                                                       const bool is_input_to_interc,
-                                                      const std::vector<t_token>& tokens,
+                                                      const Tokens& tokens,
                                                       int* token_index,
                                                       int* num_pins,
                                                       t_pb_graph_pin*** pb_graph_pins);
@@ -922,27 +922,27 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
     t_pb_graph_pin*** pb_graph_pins;
 
 
-    std::vector<t_token> tokens = GetTokensFromString(port_string);
+    const Tokens tokens(port_string);
     *num_sets = 0;
     in_squig_bracket = false;
 
     /* count the number of sets available */
-    for (const t_token& token : tokens) {
-        VTR_ASSERT(token.type != TOKEN_NULL);
-        if (token.type == TOKEN_OPEN_SQUIG_BRACKET) {
+    for (size_t i = 0; i < tokens.size(); i++) {
+        VTR_ASSERT(tokens[i].type != TOKEN_NULL);
+        if (tokens[i].type == TOKEN_OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "{ inside { in port %s\n", port_string);
             }
             in_squig_bracket = true;
-        } else if (token.type == TOKEN_CLOSE_SQUIG_BRACKET) {
+        } else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
             if (!in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "No matching '{' for '}' in port %s\n", port_string);
             }
             (*num_sets)++;
             in_squig_bracket = false;
-        } else if (token.type == TOKEN_DOT) {
+        } else if (tokens[i].type == TOKEN_DOT) {
             if (!in_squig_bracket) {
                 (*num_sets)++;
             }
@@ -1268,7 +1268,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                                       t_pb_graph_node** pb_graph_children_nodes,
                                                       const bool interconnect_error_check,
                                                       const bool is_input_to_interc,
-                                                      const std::vector<t_token>& tokens,
+                                                      const Tokens& tokens,
                                                       int* token_index,
                                                       int* num_pins,
                                                       t_pb_graph_pin*** pb_graph_pins) {

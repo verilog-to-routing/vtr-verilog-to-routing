@@ -290,7 +290,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
     //Parse cb attributes
     auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
     auto block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
-    std::vector<t_token> tokens = GetTokensFromString(block_inst.value());
+    const Tokens tokens(block_inst.value());
     if (tokens.size() != 4 || tokens[0].type != TOKEN_STRING
         || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
         || tokens[2].type != TOKEN_INT
@@ -490,7 +490,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
             VTR_ASSERT(strcmp(child.name(), "block") == 0);
 
             auto instance_type = pugiutil::get_attribute(child, "instance", loc_data);
-            std::vector<t_token> tokens = GetTokensFromString(instance_type.value());
+            const Tokens tokens(instance_type.value());
             if (tokens.size() != 4 || tokens[0].type != TOKEN_STRING
                 || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
                 || tokens[2].type != TOKEN_INT

@@ -29,8 +29,20 @@ struct t_token {
     std::string data;
 };
 
-///@brief Returns a vector of tokens for a given string.
-std::vector<t_token> GetTokensFromString(std::string_view inString);
+class Tokens {
+  public:
+    /// @brief Creates tokens for a given string
+    Tokens(std::string_view inString);
+
+    const t_token& operator[](size_t idx) const;
+
+    size_t size() const { return tokens_.size(); }
+
+  private:
+    static const t_token null_token_;
+    std::vector<t_token> tokens_;
+};
+
 
 bool checkTokenType(const t_token& token, enum e_token_type token_type);
 

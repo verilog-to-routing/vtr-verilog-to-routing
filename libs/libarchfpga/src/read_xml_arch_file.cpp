@@ -741,37 +741,34 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                                             T type,
                                             const char* pin_loc_string,
                                             const pugiutil::loc_data& loc_data) {
-    std::vector<t_token> tokens = GetTokensFromString(pin_loc_string);
+    Tokens tokens(pin_loc_string);
 
     size_t token_index = 0;
-    t_token& token = tokens[token_index];
 
-    if (token.type != TOKEN_STRING || token.data != type->name) {
+    if (tokens[token_index].type != TOKEN_STRING || tokens[token_index].data != type->name) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "Wrong physical type name of the port: %s\n", pin_loc_string);
     }
 
     token_index++;
-    token = tokens[token_index];
 
-    if (token.type != TOKEN_DOT) {
+    if (tokens[token_index].type != TOKEN_DOT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No dot is present to separate type name and port name: %s\n", pin_loc_string);
     }
 
     token_index++;
-    token = tokens[token_index];
 
-    if (token.type != TOKEN_STRING) {
+    if (tokens[token_index].type != TOKEN_STRING) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No port name is present: %s\n", pin_loc_string);
     }
 
-    auto port = type->get_port(token.data);
+    auto port = type->get_port(tokens[token_index].data);
     if (port == nullptr) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "Port %s for %s could not be found: %s\n",
-                       type->name.c_str(), token.data.c_str(),
+                       type->name.c_str(), tokens[token_index].data.c_str(),
                        pin_loc_string);
     }
     int abs_first_pin_idx = port->absolute_first_pin_index;
@@ -783,29 +780,25 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
         return std::make_pair(abs_first_pin_idx, abs_first_pin_idx + port->num_pins);
     }
 
-    token = tokens[token_index];
-
-    if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
+    if (tokens[token_index].type != TOKEN_OPEN_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No open square bracket present: %s\n", pin_loc_string);
     }
 
     token_index++;
-    token = tokens[token_index];
 
-    if (token.type != TOKEN_INT) {
+    if (tokens[token_index].type != TOKEN_INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No integer to indicate least significant pin index: %s\n", pin_loc_string);
     }
 
-    int first_pin = vtr::atoi(token.data);
+    int first_pin = vtr::atoi(tokens[token_index].data);
 
     token_index++;
-    token = tokens[token_index];
 
     // Single pin is specified
-    if (token.type != TOKEN_COLON) {
-        if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (tokens[token_index].type != TOKEN_COLON) {
+        if (tokens[token_index].type != TOKEN_CLOSE_SQUARE_BRACKET) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            "No closing bracket: %s\n", pin_loc_string);
         }
@@ -821,19 +814,17 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     }
 
     token_index++;
-    token = tokens[token_index];
 
-    if (token.type != TOKEN_INT) {
+    if (tokens[token_index].type != TOKEN_INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No integer to indicate most significant pin index: %s\n", pin_loc_string);
     }
 
-    int last_pin = vtr::atoi(token.data);
+    int last_pin = vtr::atoi(tokens[token_index].data);
 
     token_index++;
-    token = tokens[token_index];
 
-    if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (tokens[token_index].type != TOKEN_CLOSE_SQUARE_BRACKET) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "No closed square bracket: %s\n", pin_loc_string);
     }

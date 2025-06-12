@@ -28,11 +28,11 @@ bool IsWhitespace(char c) {
     }
 }
 
-std::vector<t_token> GetTokensFromString(std::string_view inString) {
-    std::vector<t_token> tokens;
+const t_token Tokens::null_token_{TOKEN_NULL, ""};
 
+Tokens::Tokens(std::string_view inString) {
     if (inString.empty()) {
-        return tokens;
+        return;
     }
 
     e_token_type cur_token_type = TOKEN_NULL;
@@ -44,7 +44,7 @@ std::vector<t_token> GetTokensFromString(std::string_view inString) {
         if (new_token_type != cur_token_type) {
             if (cur_token_type != TOKEN_NULL) {
                 // Finalize the current token
-                t_token& current_token = tokens.back();
+                t_token& current_token = tokens_.back();
                 current_token.data = std::string(inString.substr(prev_in_string_index,
                                                                  in_string_index - prev_in_string_index));
             }
@@ -52,7 +52,7 @@ std::vector<t_token> GetTokensFromString(std::string_view inString) {
                 // Start a new token
                 t_token new_token;
                 new_token.type = new_token_type;
-                tokens.push_back(new_token);
+                tokens_.push_back(new_token);
                 prev_in_string_index = in_string_index;
             }
             cur_token_type = new_token_type;
@@ -61,13 +61,19 @@ std::vector<t_token> GetTokensFromString(std::string_view inString) {
     }
 
     // Finalize the last token if it exists
-    if (cur_token_type != TOKEN_NULL && !tokens.empty()) {
-        t_token& current_token = tokens.back();
+    if (cur_token_type != TOKEN_NULL && !tokens_.empty()) {
+        t_token& current_token = tokens_.back();
         current_token.data = std::string(inString.substr(prev_in_string_index,
                                                          in_string_index - prev_in_string_index));
     }
+}
 
-    return tokens;
+const t_token& Tokens::operator[](size_t idx) const {
+    if (idx < tokens_.size()) {
+        return tokens_[idx];
+    } else {
+        return null_token_;
+    }
 }
 
 ///@brief Returns a token type of the given char
