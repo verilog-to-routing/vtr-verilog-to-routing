@@ -10,8 +10,6 @@
 
 #include "RoutingDelayCalculator.h"
 
-constexpr float CONGESTED_SLOPE_VAL = -0.04;
-
 /** Identifies the two breakpoint types in routing */
 typedef enum router_breakpoint_type {
     BP_ROUTE_ITER,
@@ -105,7 +103,15 @@ bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router
 
 void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info);
 
-void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats, const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info, std::shared_ptr<const SetupHoldTimingInfo> timing_info, float est_success_iteration);
+void print_route_status(int itry,
+                        double elapsed_sec,
+                        float pres_fac,
+                        int num_bb_updated,
+                        const RouterStats& router_stats,
+                        const OveruseInfo& overuse_info,
+                        const WirelengthInfo& wirelength_info,
+                        std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                        float est_success_iteration);
 
 void print_route_status_header();
 

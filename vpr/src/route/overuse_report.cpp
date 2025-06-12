@@ -5,6 +5,7 @@
 #include "physical_types_util.h"
 #include "vpr_utils.h"
 #include "vtr_log.h"
+#include "route_common.h"
 
 /**
  * @brief Definitions of global and helper routines related to printing RR node overuse info.
