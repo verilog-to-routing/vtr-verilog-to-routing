@@ -112,23 +112,6 @@ struct t_pin_locs {
 
 /* Function prototypes */
 /*   Populate data */
-
-/**
- * @brief Throws an error with a message and frees the tokens
- *
- * @param filename File name associated with the error
- * @param line Line number associated with the error
- * @param err_msg Error message to be displayed
- * @param tokens If tokens are allocated before calling this function,
- * they will be freed here. If not, nullptr should be passed.
- * @param num_tokens Number of tokens to be freed. If not, 0 should be passed.
- */
-static void throw_xml_arch_error(const char* filename,
-                                 int line,
-                                 const std::string& err_msg,
-                                 t_token* tokens,
-                                 int num_tokens);
-
 static void load_pin_loc(pugi::xml_node Locations,
                          t_physical_tile_type* type,
                          t_pin_locs* pin_locs,
@@ -205,18 +188,6 @@ static void process_sub_tiles(pugi::xml_node Node,
                               const pugiutil::loc_data& loc_data,
                               int num_of_avail_layer);
 
-static void throw_xml_arch_error(const char* filename,
-                                 int line,
-                                 const std::string& err_msg,
-                                 t_token* tokens,
-                                 int num_tokens) {
-    // We need to free the tokens here, otherwise,
-    // archfpga_throw will face issues since memory is
-    // not deallocated properly.
-    free_tokens(tokens, num_tokens);
-    archfpga_throw(filename, line, err_msg.c_str());
-}
-
 /**
  * @brief Parses a <pb_type> tag and all <mode> and <pb_type> tags under it.
  *
@@ -232,7 +203,7 @@ static void throw_xml_arch_error(const char* filename,
  * @param pb_idx Used to assign unique values to index_in_logical_block field in
  * t_pb_type for all pb_types under a logical block type.
  */
-static void ProcessPb_Type(pugi::xml_node Parent,
+static void process_pb_type(pugi::xml_node Parent,
                            t_pb_type* pb_type,
                            t_mode* mode,
                            bool timing_enabled,
@@ -240,12 +211,12 @@ static void ProcessPb_Type(pugi::xml_node Parent,
                            const pugiutil::loc_data& loc_data,
                            int& pb_idx);
 
-static void ProcessPb_TypePort(pugi::xml_node Parent,
+static void process_pb_type_port(pugi::xml_node Parent,
                                t_port* port,
                                e_power_estimation_method power_method,
                                const bool is_root_pb_type,
                                const pugiutil::loc_data& loc_data);
-static void ProcessPinToPinAnnotations(pugi::xml_node parent,
+static void process_pin_to_pin_annotations(pugi::xml_node parent,
                                        t_pin_to_pin_annotation* annotation,
                                        t_pb_type* parent_pb_type,
                                        const pugiutil::loc_data& loc_data);
@@ -260,7 +231,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
  * @param loc_data Points to the location in the architecture file where
  * the parser is reading.
  */
-static void ProcessInterconnect(vtr::string_internment& strings,
+static void process_interconnect(vtr::string_internment& strings,
                                 pugi::xml_node Parent,
                                 t_mode* mode,
                                 const pugiutil::loc_data& loc_data);
@@ -583,7 +554,7 @@ void xml_read_arch(const char* ArchFile,
 
         mark_IO_types(PhysicalTileTypes);
     } catch (pugiutil::XmlError& e) {
-        throw_xml_arch_error(ArchFile, e.line(), e.what(), nullptr, 0);
+        archfpga_throw(ArchFile, e.line(), e.what());
     }
 }
 
@@ -799,9 +770,8 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
     t_token token = tokens[token_index];
 
     if (token.type != TOKEN_STRING || std::string(token.data) != sub_tile.name) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("Wrong physical type name of the port: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("Wrong physical type name of the port: %s\n", pin_loc_string).c_str());
     }
 
     token_index++;
@@ -818,18 +788,16 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
 
     // If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here.
     if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("No open square bracket present: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                             vtr::string_fmt("No open square bracket present: %s\n", pin_loc_string).c_str());
     }
 
     token_index++;
     token = tokens[token_index];
 
     if (token.type != TOKEN_INT) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("No integer to indicate least significant instance index: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("No integer to indicate least significant instance index: %s\n", pin_loc_string).c_str());
     }
 
     first_inst = vtr::atoi(token.data);
@@ -840,17 +808,15 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
     // Single pin is specified
     if (token.type != TOKEN_COLON) {
         if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                 vtr::string_fmt("No closing bracket: %s\n", pin_loc_string).c_str(),
-                                 tokens, num_tokens);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           vtr::string_fmt("No closing bracket: %s\n", pin_loc_string).c_str());
         }
 
         token_index++;
 
         if (token_index != num_tokens) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                 vtr::string_fmt("instance of pin location should be completed, but more tokens are present: %s\n", pin_loc_string).c_str(),
-                                 tokens, num_tokens);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           vtr::string_fmt("instance of pin location should be completed, but more tokens are present: %s\n", pin_loc_string).c_str());
         }
 
         free_tokens(tokens, num_tokens);
@@ -861,9 +827,8 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
     token = tokens[token_index];
 
     if (token.type != TOKEN_INT) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("No integer to indicate most significant instance index: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("No integer to indicate most significant instance index: %s\n", pin_loc_string).c_str());
     }
 
     last_inst = vtr::atoi(token.data);
@@ -872,9 +837,8 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
     token = tokens[token_index];
 
     if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("No closed square bracket: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("No closed square bracket: %s\n", pin_loc_string).c_str());
     }
 
     if (first_inst > last_inst) {
@@ -897,9 +861,8 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
     auto token = tokens[token_index];
 
     if (token.type != TOKEN_STRING || token.data != type->name) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("Wrong physical type name of the port: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("Wrong physical type name of the port: %s\n", pin_loc_string).c_str());
     }
 
     token_index++;
@@ -911,9 +874,8 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
             token_index++;
             token = tokens[token_index];
             if (token_index == num_tokens) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                     vtr::string_fmt("Found an open '[' but miss close ']' of the port: %s\n", pin_loc_string).c_str(),
-                                     tokens, num_tokens);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                               vtr::string_fmt("Found an open '[' but miss close ']' of the port: %s\n", pin_loc_string).c_str());
             }
         }
         token_index++;
@@ -921,28 +883,25 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
     }
 
     if (token.type != TOKEN_DOT) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("No dot is present to separate type name and port name: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("No dot is present to separate type name and port name: %s\n", pin_loc_string).c_str());
     }
 
     token_index++;
     token = tokens[token_index];
 
     if (token.type != TOKEN_STRING) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("No port name is present: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("No port name is present: %s\n", pin_loc_string).c_str());
     }
 
     auto port = type->get_port(token.data);
     if (port == nullptr) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                              vtr::string_fmt("Port %s for %s could not be found: %s\n",
                                              type->name.c_str(), token.data,
                                              pin_loc_string)
-                                 .c_str(),
-                             tokens, num_tokens);
+                                 .c_str());
     }
     int abs_first_pin_idx = port->absolute_first_pin_index;
 
@@ -957,18 +916,16 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
     token = tokens[token_index];
 
     if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("No open square bracket present: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("No open square bracket present: %s\n", pin_loc_string).c_str());
     }
 
     token_index++;
     token = tokens[token_index];
 
     if (token.type != TOKEN_INT) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("No integer to indicate least significant pin index: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("No integer to indicate least significant pin index: %s\n", pin_loc_string).c_str());
     }
 
     int first_pin = vtr::atoi(token.data);
@@ -979,17 +936,15 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
     // Single pin is specified
     if (token.type != TOKEN_COLON) {
         if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                 vtr::string_fmt("No closing bracket: %s\n", pin_loc_string).c_str(),
-                                 tokens, num_tokens);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           vtr::string_fmt("No closing bracket: %s\n", pin_loc_string).c_str());
         }
 
         token_index++;
 
         if (token_index != num_tokens) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                 vtr::string_fmt("pin location should be completed, but more tokens are present: %s\n", pin_loc_string).c_str(),
-                                 tokens, num_tokens);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                 vtr::string_fmt("pin location should be completed, but more tokens are present: %s\n", pin_loc_string).c_str());
         }
 
         free_tokens(tokens, num_tokens);
@@ -1000,9 +955,8 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
     token = tokens[token_index];
 
     if (token.type != TOKEN_INT) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("No integer to indicate most significant pin index: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("No integer to indicate most significant pin index: %s\n", pin_loc_string).c_str());
     }
 
     int last_pin = vtr::atoi(token.data);
@@ -1011,17 +965,15 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
     token = tokens[token_index];
 
     if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("No closed square bracket: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("No closed square bracket: %s\n", pin_loc_string).c_str());
     }
 
     token_index++;
 
     if (token_index != num_tokens) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                             vtr::string_fmt("pin location should be completed, but more tokens are present: %s\n", pin_loc_string).c_str(),
-                             tokens, num_tokens);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       vtr::string_fmt("pin location should be completed, but more tokens are present: %s\n", pin_loc_string).c_str());
     }
 
     if (first_pin > last_pin) {
@@ -1032,7 +984,7 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
     return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + last_pin + 1);
 }
 
-static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
+static void process_pin_to_pin_annotations(pugi::xml_node Parent,
                                        t_pin_to_pin_annotation* annotation,
                                        t_pb_type* parent_pb_type,
                                        const pugiutil::loc_data& loc_data) {
@@ -1160,11 +1112,10 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         }
 
         if (!found_min_max_attrib) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                 vtr::string_fmt("Failed to find either 'max' or 'min' attribute required for <%s> in <%s>",
-                                                 Parent.name(), Parent.parent().name())
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                           vtr::string_fmt("Failed to find either 'max' or 'min' attribute required for <%s> in <%s>",
+                                           Parent.name(), Parent.parent().name())
+                               .c_str());
         }
 
         Prop = get_attribute(Parent, "port", loc_data).value();
@@ -1204,13 +1155,12 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->output_pins = vtr::strdup(Prop);
 
     } else {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                             vtr::string_fmt("Unknown port type %s in %s in %s",
-                                             Parent.name(),
-                                             Parent.parent().name(),
-                                             Parent.parent().parent().name())
-                                 .c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                       vtr::string_fmt("Unknown port type %s in %s in %s",
+                                       Parent.name(),
+                                       Parent.parent().name(),
+                                       Parent.parent().parent().name())
+                           .c_str());
     }
     VTR_ASSERT(i == static_cast<int>(annotation->annotation_entries.size()));
 }
@@ -1227,26 +1177,23 @@ static void ProcessPb_TypePowerPinToggle(pugi::xml_node parent, t_pb_type* pb_ty
 
         port = findPortByName(prop, pb_type, &high, &low);
         if (!port) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
-                                 vtr::string_fmt("Could not find port '%s' needed for energy per toggle.",
-                                                 prop)
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                           vtr::string_fmt("Could not find port '%s' needed for energy per toggle.",
+                                           prop)
+                               .c_str());
         }
         if (high != port->num_pins - 1 || low != 0) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
-                                 vtr::string_fmt("Pin-toggle does not support pin indices (%s)",
-                                                 prop)
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                           vtr::string_fmt("Pin-toggle does not support pin indices (%s)",
+                                           prop)
+                               .c_str());
         }
 
         if (port->port_power->pin_toggle_initialized) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                                  vtr::string_fmt("Duplicate pin-toggle energy for port '%s'",
                                                  port->name)
-                                     .c_str(),
-                                 nullptr, 0);
+                                     .c_str());
         }
         port->port_power->pin_toggle_initialized = true;
 
@@ -1269,11 +1216,10 @@ static void ProcessPb_TypePowerPinToggle(pugi::xml_node parent, t_pb_type* pb_ty
             port->port_power->scaled_by_port = findPortByName(prop, pb_type,
                                                               &high, &low);
             if (high != low) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
-                                     vtr::string_fmt("Pin-toggle 'scaled_by_static_prob' must be a single pin (%s)",
-                                                     prop)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                               vtr::string_fmt("Pin-toggle 'scaled_by_static_prob' must be a single pin (%s)",
+                                               prop)
+                                   .c_str());
             }
             port->port_power->scaled_by_port_pin_idx = high;
             port->port_power->reverse_scaled = reverse_scaled;
@@ -1366,16 +1312,15 @@ static void process_pb_type_power_est_method(pugi::xml_node Parent, t_pb_type* p
     } else if (strcmp(prop, "sum-of-children") == 0) {
         pb_type->pb_type_power->estimation_method = POWER_METHOD_SUM_OF_CHILDREN;
     } else {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
-                             vtr::string_fmt("Invalid power estimation method for pb_type '%s'",
-                                             pb_type->name)
-                                 .c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                       vtr::string_fmt("Invalid power estimation method for pb_type '%s'",
+                                       pb_type->name)
+                           .c_str());
     }
 }
 
 /* Takes in a pb_type, allocates and loads data for it and recurses downwards */
-static void ProcessPb_Type(pugi::xml_node Parent,
+static void process_pb_type(pugi::xml_node Parent,
                            t_pb_type* pb_type,
                            t_mode* mode,
                            const bool timing_enabled,
@@ -1443,11 +1388,10 @@ static void ProcessPb_Type(pugi::xml_node Parent,
         } else if (0 == strcmp(class_name, PB_TYPE_CLASS_STRING[MEMORY_CLASS])) {
             pb_type->class_type = MEMORY_CLASS;
         } else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                 vtr::string_fmt("Unknown class '%s' in pb_type '%s'\n",
-                                                 class_name, pb_type->name)
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                           vtr::string_fmt("Unknown class '%s' in pb_type '%s'\n",
+                                           class_name, pb_type->name)
+                               .c_str());
         }
         free(class_name);
     }
@@ -1470,13 +1414,12 @@ static void ProcessPb_Type(pugi::xml_node Parent,
     /* Enforce VPR's definition of LUT/FF by checking number of ports */
     if (pb_type->class_type == LUT_CLASS || pb_type->class_type == LATCH_CLASS) {
         if (num_in_ports != 1 || num_out_ports != 1) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                 vtr::string_fmt("%s primitives must contain exactly one input port and one output port."
-                                                 "Found '%d' input port(s) and '%d' output port(s) for '%s'",
-                                                 (pb_type->class_type == LUT_CLASS) ? "LUT" : "Latch",
-                                                 num_in_ports, num_out_ports, pb_type->name)
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                           vtr::string_fmt("%s primitives must contain exactly one input port and one output port."
+                                           "Found '%d' input port(s) and '%d' output port(s) for '%s'",
+                                           (pb_type->class_type == LUT_CLASS) ? "LUT" : "Latch",
+                                           num_in_ports, num_out_ports, pb_type->name)
+                               .c_str());
         }
     }
 
@@ -1499,7 +1442,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
             pb_type->ports[port_idx].parent_pb_type = pb_type;
             pb_type->ports[port_idx].index = port_idx;
             pb_type->ports[port_idx].port_index_by_type = port_index_by_type;
-            ProcessPb_TypePort(Cur, &pb_type->ports[port_idx],
+            process_pb_type_port(Cur, &pb_type->ports[port_idx],
                                pb_type->pb_type_power->estimation_method, is_root_pb_type, loc_data);
 
             pb_type->ports[port_idx].absolute_first_pin_index = absolute_port_first_pin_index;
@@ -1508,11 +1451,10 @@ static void ProcessPb_Type(pugi::xml_node Parent,
             //Check port name duplicates
             auto [_, success] = pb_port_names.insert(pb_type->ports[port_idx].name);
             if (!success) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                                     vtr::string_fmt("Duplicate port names in pb_type '%s': port '%s'\n",
-                                                     pb_type->name, pb_type->ports[port_idx].name)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                               vtr::string_fmt("Duplicate port names in pb_type '%s': port '%s'\n",
+                                               pb_type->name, pb_type->ports[port_idx].name)
+                                   .c_str());
             }
 
             /* get next iteration */
@@ -1547,7 +1489,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
         std::string msg = e.what();
         msg += ". <max_internal_delay> has been replaced with <delay_constant>/<delay_matrix> between sequential primitive ports.";
         msg += " Please upgrade your architecture file.";
-        throw_xml_arch_error(e.filename().c_str(), e.line(), msg.c_str(), nullptr, 0);
+        archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
     }
 
     pb_type->annotations.clear();
@@ -1566,7 +1508,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
             Cur = get_first_child(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
 
             while (Cur) {
-                ProcessPinToPinAnnotations(Cur, &pb_type->annotations[annotation_idx], pb_type, loc_data);
+                process_pin_to_pin_annotations(Cur, &pb_type->annotations[annotation_idx], pb_type, loc_data);
 
                 /* get next iteration */
                 annotation_idx++;
@@ -1619,11 +1561,10 @@ static void ProcessPb_Type(pugi::xml_node Parent,
 
                     auto [_, success] = mode_names.insert(pb_type->modes[mode_idx].name);
                     if (!success) {
-                        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                                             vtr::string_fmt("Duplicate mode name: '%s' in pb_type '%s'.\n",
-                                                             pb_type->modes[mode_idx].name, pb_type->name)
-                                                 .c_str(),
-                                             nullptr, 0);
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                                       vtr::string_fmt("Duplicate mode name: '%s' in pb_type '%s'.\n",
+                                                       pb_type->modes[mode_idx].name, pb_type->name)
+                                           .c_str());
                     }
 
                     /* get next iteration */
@@ -1665,11 +1606,10 @@ static void process_pb_type_port_power(pugi::xml_node Parent, t_port* port, e_po
         if (prop) {
             if (!(power_method == POWER_METHOD_AUTO_SIZES
                   || power_method == POWER_METHOD_SPECIFY_SIZES)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
-                                     vtr::string_fmt("Wire capacitance defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
-                                                     port->name, port->parent_pb_type->name)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                               vtr::string_fmt("Wire capacitance defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
+                                               port->name, port->parent_pb_type->name)
+                                   .c_str());
             } else {
                 wire_defined = true;
                 port->port_power->wire_type = POWER_WIRE_TYPE_C;
@@ -1682,17 +1622,15 @@ static void process_pb_type_port_power(pugi::xml_node Parent, t_port* port, e_po
         if (prop) {
             if (!(power_method == POWER_METHOD_AUTO_SIZES
                   || power_method == POWER_METHOD_SPECIFY_SIZES)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
-                                     vtr::string_fmt("Wire length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
-                                                     port->name, port->parent_pb_type->name)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                               vtr::string_fmt("Wire length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
+                                               port->name, port->parent_pb_type->name)
+                                   .c_str());
             } else if (wire_defined) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                                      vtr::string_fmt("Multiple wire properties defined for port '%s', pb_type '%s'.",
                                                      port->name, port->parent_pb_type->name)
-                                         .c_str(),
-                                     nullptr, 0);
+                                         .c_str());
             } else if (strcmp(prop, "auto") == 0) {
                 wire_defined = true;
                 port->port_power->wire_type = POWER_WIRE_TYPE_AUTO;
@@ -1708,17 +1646,15 @@ static void process_pb_type_port_power(pugi::xml_node Parent, t_port* port, e_po
         if (prop) {
             if (!(power_method == POWER_METHOD_AUTO_SIZES
                   || power_method == POWER_METHOD_SPECIFY_SIZES)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                                      vtr::string_fmt("Wire relative length defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
                                                      port->name, port->parent_pb_type->name)
-                                         .c_str(),
-                                     nullptr, 0);
+                                         .c_str());
             } else if (wire_defined) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
-                                     vtr::string_fmt("Multiple wire properties defined for port '%s', pb_type '%s'.",
-                                                     port->name, port->parent_pb_type->name)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                               vtr::string_fmt("Multiple wire properties defined for port '%s', pb_type '%s'.",
+                                               port->name, port->parent_pb_type->name)
+                                   .c_str());
             } else {
                 wire_defined = true;
                 port->port_power->wire_type = POWER_WIRE_TYPE_RELATIVE_LENGTH;
@@ -1731,11 +1667,10 @@ static void process_pb_type_port_power(pugi::xml_node Parent, t_port* port, e_po
         if (prop) {
             if (!(power_method == POWER_METHOD_AUTO_SIZES
                   || power_method == POWER_METHOD_SPECIFY_SIZES)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(cur),
-                                     vtr::string_fmt("Buffer size defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
-                                                     port->name, port->parent_pb_type->name)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                               vtr::string_fmt("Buffer size defined for port '%s'.  This is an invalid option for the parent pb_type '%s' power estimation method.",
+                                               port->name, port->parent_pb_type->name)
+                                   .c_str());
             } else if (strcmp(prop, "auto") == 0) {
                 port->port_power->buffer_type = POWER_BUFFER_TYPE_AUTO;
             } else {
@@ -1746,7 +1681,7 @@ static void process_pb_type_port_power(pugi::xml_node Parent, t_port* port, e_po
     }
 }
 
-static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const bool is_root_pb_type, const pugiutil::loc_data& loc_data) {
+static void process_pb_type_port(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const bool is_root_pb_type, const pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "num_pins", "port_class"};
     if (is_root_pb_type) {
         expected_attributes.emplace_back("equivalent");
@@ -1775,14 +1710,12 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_esti
             if (Parent.name() == "output"s) {
                 port->equivalent = PortEquivalence::INSTANCE;
             } else {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                     vtr::string_fmt("Invalid pin equivalence '%s' for %s port.", Prop, Parent.name()).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               vtr::string_fmt("Invalid pin equivalence '%s' for %s port.", Prop, Parent.name()).c_str());
             }
         } else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                 vtr::string_fmt("Invalid pin equivalence '%s'.", Prop).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                           vtr::string_fmt("Invalid pin equivalence '%s'.", Prop).c_str());
         }
     }
     port->num_pins = get_attribute(Parent, "num_pins", loc_data).as_int(0);
@@ -1791,9 +1724,8 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_esti
                                     .as_bool(false);
 
     if (port->num_pins <= 0) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                             vtr::string_fmt("Invalid number of pins %d for %s port.", port->num_pins, Parent.name()).c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                       vtr::string_fmt("Invalid number of pins %d for %s port.", port->num_pins, Parent.name()).c_str());
     }
 
     if (0 == strcmp(Parent.name(), "input")) {
@@ -1803,28 +1735,22 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_esti
         /* Check if LUT/FF port class is lut_in/D */
         if (port->parent_pb_type->class_type == LUT_CLASS) {
             if ((!port->port_class) || strcmp("lut_in", port->port_class)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                     vtr::string_fmt("Inputs to LUT primitives must have a port class named "
-                                                     "as \"lut_in\".")
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               vtr::string_fmt("Inputs to LUT primitives must have a port class named "
+                                               "as \"lut_in\".").c_str());
             }
         } else if (port->parent_pb_type->class_type == LATCH_CLASS) {
             if ((!port->port_class) || strcmp("D", port->port_class)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                     vtr::string_fmt("Input to flipflop primitives must have a port class named "
-                                                     "as \"D\".")
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               vtr::string_fmt("Input to flipflop primitives must have a port class named "
+                                               "as \"D\".").c_str());
             }
             /* Only allow one input pin for FF's */
             if (port->num_pins != 1) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                     vtr::string_fmt("Input port of flipflop primitives must have exactly one pin. "
-                                                     "Found %d.",
-                                                     port->num_pins)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               vtr::string_fmt("Input port of flipflop primitives must have exactly one pin. "
+                                               "Found %d.",
+                                               port->num_pins).c_str());
             }
         }
 
@@ -1835,78 +1761,64 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_esti
         /* Check if LUT/FF port class is lut_out/Q */
         if (port->parent_pb_type->class_type == LUT_CLASS) {
             if ((!port->port_class) || strcmp("lut_out", port->port_class)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                     vtr::string_fmt("Output to LUT primitives must have a port class named "
-                                                     "as \"lut_in\".")
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               vtr::string_fmt("Output to LUT primitives must have a port class named "
+                                               "as \"lut_in\".").c_str());
             }
             /* Only allow one output pin for LUT's */
             if (port->num_pins != 1) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                                      vtr::string_fmt("Output port of LUT primitives must have exactly one pin. "
                                                      "Found %d.",
                                                      port->num_pins)
-                                         .c_str(),
-                                     nullptr, 0);
+                                         .c_str());
             }
         } else if (port->parent_pb_type->class_type == LATCH_CLASS) {
             if ((!port->port_class) || strcmp("Q", port->port_class)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                     vtr::string_fmt("Output to flipflop primitives must have a port class named "
-                                                     "as \"D\".")
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               vtr::string_fmt("Output to flipflop primitives must have a port class named "
+                                               "as \"D\".").c_str());
             }
             /* Only allow one output pin for FF's */
             if (port->num_pins != 1) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                     vtr::string_fmt("Output port of flipflop primitives must have exactly one pin. "
-                                                     "Found %d.",
-                                                     port->num_pins)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               vtr::string_fmt("Output port of flipflop primitives must have exactly one pin. "
+                                               "Found %d.",
+                                               port->num_pins).c_str());
             }
         }
     } else if (0 == strcmp(Parent.name(), "clock")) {
         port->type = IN_PORT;
         port->is_clock = true;
         if (port->is_non_clock_global == true) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                 vtr::string_fmt("Port %s cannot be both a clock and a non-clock simultaneously\n",
-                                                 Parent.name())
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                           vtr::string_fmt("Port %s cannot be both a clock and a non-clock simultaneously\n",
+                                           Parent.name()).c_str());
         }
 
         if (port->parent_pb_type->class_type == LATCH_CLASS) {
             if ((!port->port_class) || strcmp("clock", port->port_class)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                     vtr::string_fmt("Clock to flipflop primitives must have a port class named "
-                                                     "as \"clock\".")
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               vtr::string_fmt("Clock to flipflop primitives must have a port class named "
+                                               "as \"clock\".").c_str());
             }
             /* Only allow one output pin for FF's */
             if (port->num_pins != 1) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                     vtr::string_fmt("Clock port of flipflop primitives must have exactly one pin. "
-                                                     "Found %d.",
-                                                     port->num_pins)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               vtr::string_fmt("Clock port of flipflop primitives must have exactly one pin. "
+                                               "Found %d.",
+                                               port->num_pins).c_str());
             }
         }
     } else {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                             vtr::string_fmt("Unknown port type %s", Parent.name()).c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                       vtr::string_fmt("Unknown port type %s", Parent.name()).c_str());
     }
 
     process_pb_type_port_power(Parent, port, power_method, loc_data);
 }
 
-static void ProcessInterconnect(vtr::string_internment& strings,
+static void process_interconnect(vtr::string_internment& strings,
                                 pugi::xml_node Parent,
                                 t_mode* mode,
                                 const pugiutil::loc_data& loc_data) {
@@ -1955,11 +1867,10 @@ static void ProcessInterconnect(vtr::string_internment& strings,
 
             auto [_, success] = interconnect_names.insert(mode->interconnect[interconnect_idx].name);
             if (!success) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                                     vtr::string_fmt("Duplicate interconnect name: '%s' in mode: '%s'.\n",
-                                                     mode->interconnect[interconnect_idx].name, mode->name)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                               vtr::string_fmt("Duplicate interconnect name: '%s' in mode: '%s'.\n",
+                                               mode->interconnect[interconnect_idx].name, mode->name)
+                                   .c_str());
             }
 
             /* Process delay and capacitance annotations */
@@ -1975,7 +1886,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
                 pugi::xml_node Cur2 = get_first_child(Cur, annot_child_name, loc_data, ReqOpt::OPTIONAL);
 
                 while (Cur2 != nullptr) {
-                    ProcessPinToPinAnnotations(Cur2,
+                    process_pin_to_pin_annotations(Cur2,
                                                &(mode->interconnect[interconnect_idx].annotations[annotation_idx]), nullptr, loc_data);
 
                     /* get next iteration */
@@ -2047,15 +1958,14 @@ static void process_mode(pugi::xml_node Parent,
         while (Cur != nullptr) {
             if (0 == strcmp(Cur.name(), "pb_type")) {
                 parent_pb_idx++;
-                ProcessPb_Type(Cur, &mode->pb_type_children[pb_type_child_idx], mode, timing_enabled, arch, loc_data, parent_pb_idx);
+                process_pb_type(Cur, &mode->pb_type_children[pb_type_child_idx], mode, timing_enabled, arch, loc_data, parent_pb_idx);
 
                 auto [_, success] = pb_type_names.insert(mode->pb_type_children[pb_type_child_idx].name);
                 if (!success) {
-                    throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                                         vtr::string_fmt("Duplicate pb_type name: '%s' in mode: '%s'.\n",
-                                                         mode->pb_type_children[pb_type_child_idx].name, mode->name)
-                                             .c_str(),
-                                         nullptr, 0);
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                                   vtr::string_fmt("Duplicate pb_type name: '%s' in mode: '%s'.\n",
+                                                   mode->pb_type_children[pb_type_child_idx].name, mode->name)
+                                       .c_str());
                 }
 
                 /* get next iteration */
@@ -2077,7 +1987,7 @@ static void process_mode(pugi::xml_node Parent,
     }
 
     Cur = get_single_child(Parent, "interconnect", loc_data);
-    ProcessInterconnect(arch.strings, Cur, mode, loc_data);
+    process_interconnect(arch.strings, Cur, mode, loc_data);
 }
 
 static t_metadata_dict process_meta_data(vtr::string_internment& strings,
@@ -2142,9 +2052,8 @@ static void process_fc(pugi::xml_node Node,
     } else {
         /* Use the default value, if available */
         if (!arch_def_fc.specified) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                 vtr::string_fmt("<sub_tile> is missing child <fc>, and no <default_fc> specified in architecture\n").c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           vtr::string_fmt("<sub_tile> is missing child <fc>, and no <default_fc> specified in architecture\n").c_str());
         }
         def_fc_spec = arch_def_fc;
     }
@@ -2233,11 +2142,10 @@ static void process_fc(pugi::xml_node Node,
 
 static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
     if (node.name() != std::string("fc_override")) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(node),
-                             vtr::string_fmt("Unexpeted node of type '%s' (expected optional 'fc_override')",
-                                             node.name())
-                                 .c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                       vtr::string_fmt("Unexpeted node of type '%s' (expected optional 'fc_override')",
+                                       node.name())
+                           .c_str());
     }
 
     t_fc_override fc_override;
@@ -2261,28 +2169,24 @@ static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::lo
             fc_override.fc_value = vtr::atof(attrib.value());
             seen_fc_value = true;
         } else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(node),
-                                 vtr::string_fmt("Unexpected attribute '%s'", attrib.name()).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                           vtr::string_fmt("Unexpected attribute '%s'", attrib.name()).c_str());
         }
     }
 
     if (!seen_fc_type) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(node),
-                             vtr::string_fmt("Missing expected attribute 'fc_type'").c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                       vtr::string_fmt("Missing expected attribute 'fc_type'").c_str());
     }
 
     if (!seen_fc_value) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(node),
-                             vtr::string_fmt("Missing expected attribute 'fc_value'").c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                       vtr::string_fmt("Missing expected attribute 'fc_value'").c_str());
     }
 
     if (!seen_port_or_seg) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(node),
-                             vtr::string_fmt("Missing expected attribute(s) 'port_name' and/or 'segment_name'").c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                       vtr::string_fmt("Missing expected attribute(s) 'port_name' and/or 'segment_name'").c_str());
     }
 
     return fc_override;
@@ -2296,11 +2200,10 @@ static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml
     } else if (str == "abs") {
         fc_value_type = e_fc_value_type::ABSOLUTE;
     } else {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(node),
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                              vtr::string_fmt("Invalid fc_type '%s'. Must be 'abs' or 'frac'.\n",
                                              str.c_str())
-                                 .c_str(),
-                             nullptr, 0);
+                                 .c_str());
     }
 
     return fc_value_type;
@@ -2353,11 +2256,10 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
             } else if (sb_type_str == "full") {
                 sb_type = e_sb_type::FULL;
             } else {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(sb_loc),
-                                     vtr::string_fmt("Invalid <sb_loc> 'type' attribute '%s'\n",
-                                                     sb_type_str.c_str())
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
+                               vtr::string_fmt("Invalid <sb_loc> 'type' attribute '%s'\n",
+                                               sb_type_str.c_str())
+                                   .c_str());
             }
 
             //Determine the switch type
@@ -2370,41 +2272,37 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                 sb_switch_override = find_switch_by_name(arch.switches, sb_switch_override_str);
 
                 if (sb_switch_override == OPEN) {
-                    throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
-                                         vtr::string_fmt("Invalid <sb_loc> 'switch_override' attribute '%s' (no matching switch named '%s' found)\n",
-                                                         sb_switch_override_str.c_str(), sb_switch_override_str.c_str())
-                                             .c_str(),
-                                         nullptr, 0);
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
+                                   vtr::string_fmt("Invalid <sb_loc> 'switch_override' attribute '%s' (no matching switch named '%s' found)\n",
+                                                   sb_switch_override_str.c_str(), sb_switch_override_str.c_str())
+                                       .c_str());
                 }
             }
 
             //Get the horizontal offset
             size_t xoffset = get_attribute(sb_loc, "xoffset", loc_data, ReqOpt::OPTIONAL).as_uint(0);
             if (xoffset > width - 1) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(sb_loc),
-                                     vtr::string_fmt("Invalid <sb_loc> 'xoffset' attribute '%zu' (must be in range [%d,%d])\n",
-                                                     xoffset, 0, width - 1)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
+                               vtr::string_fmt("Invalid <sb_loc> 'xoffset' attribute '%zu' (must be in range [%d,%d])\n",
+                                               xoffset, 0, width - 1)
+                                   .c_str());
             }
 
             //Get the vertical offset
             size_t yoffset = get_attribute(sb_loc, "yoffset", loc_data, ReqOpt::OPTIONAL).as_uint(0);
             if (yoffset > height - 1) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(sb_loc),
-                                     vtr::string_fmt("Invalid <sb_loc> 'yoffset' attribute '%zu' (must be in range [%d,%d])\n",
-                                                     yoffset, 0, height - 1)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
+                               vtr::string_fmt("Invalid <sb_loc> 'yoffset' attribute '%zu' (must be in range [%d,%d])\n",
+                                               yoffset, 0, height - 1)
+                                   .c_str());
             }
 
             //Check if this location has already been set
             if (assigned_locs[xoffset][yoffset]) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(sb_loc),
-                                     vtr::string_fmt("Duplicate <sb_loc> specifications at xoffset=%zu yoffset=%zu\n",
-                                                     xoffset, yoffset)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sb_loc),
+                               vtr::string_fmt("Duplicate <sb_loc> specifications at xoffset=%zu yoffset=%zu\n",
+                                               xoffset, yoffset)
+                                   .c_str());
             }
 
             //Set the custom sb location and type
@@ -2427,11 +2325,10 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
             internal_switch = find_switch_by_name(arch.switches, internal_switch_name);
 
             if (internal_switch == OPEN) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
-                                     vtr::string_fmt("Invalid <switchblock_locations> 'internal_switch' attribute '%s' (no matching switch named '%s' found)\n",
-                                                     internal_switch_name.c_str(), internal_switch_name.c_str())
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
+                               vtr::string_fmt("Invalid <switchblock_locations> 'internal_switch' attribute '%s' (no matching switch named '%s' found)\n",
+                                               internal_switch_name.c_str(), internal_switch_name.c_str())
+                                   .c_str());
             }
         }
 
@@ -2457,11 +2354,10 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
             external_type = e_sb_type::NONE;
 
         } else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
-                                 vtr::string_fmt("Invalid <switchblock_locations> 'pattern' attribute '%s'\n",
-                                                 pattern.c_str())
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
+                           vtr::string_fmt("Invalid <switchblock_locations> 'pattern' attribute '%s'\n",
+                                           pattern.c_str())
+                               .c_str());
         }
 
         //Fill in all locations (sets internal)
@@ -2510,9 +2406,8 @@ static void process_models(pugi::xml_node Node, t_arch* arch, const pugiutil::lo
                     } else if (std::strcmp(model_type_str, "false") == 0) {
                         new_model_never_prune = false;
                     } else {
-                        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(model),
-                                             vtr::string_fmt("Unsupported never prune attribute value.").c_str(),
-                                             nullptr, 0);
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
+                                       vtr::string_fmt("Unsupported never prune attribute value.").c_str());
                     }
                 } else if (attr.name() == std::string("name")) {
                     if (new_model_name.empty()) {
@@ -2520,9 +2415,8 @@ static void process_models(pugi::xml_node Node, t_arch* arch, const pugiutil::lo
                         new_model_name = attr.value();
                     } else {
                         //Duplicate name
-                        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(model),
-                                             vtr::string_fmt("Duplicate 'name' attribute on <model> tag.").c_str(),
-                                             nullptr, 0);
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
+                                       vtr::string_fmt("Duplicate 'name' attribute on <model> tag.").c_str());
                     }
                 } else {
                     bad_attribute(attr, model, loc_data);
@@ -2532,9 +2426,8 @@ static void process_models(pugi::xml_node Node, t_arch* arch, const pugiutil::lo
             /* Try insert new model, check if already exist at the same time */
             auto ret_map_name = model_name_map.insert(std::pair<std::string, int>(new_model_name, 0));
             if (!ret_map_name.second) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(model),
-                                     vtr::string_fmt("Duplicate model name: '%s'.\n", new_model_name.c_str()).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
+                               vtr::string_fmt("Duplicate model name: '%s'.\n", new_model_name.c_str()).c_str());
             }
 
             // Create the model in the model storage class
@@ -2618,27 +2511,23 @@ static void process_model_ports(pugi::xml_node port_group, t_model& model, std::
 
         //Sanity checks
         if (model_port->is_clock == true && model_port->is_non_clock_global == true) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(port),
-                                 vtr::string_fmt("Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                           vtr::string_fmt("Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name).c_str());
         }
 
         if (model_port->name == nullptr) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(port),
-                                 vtr::string_fmt("Model port is missing a name").c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                           vtr::string_fmt("Model port is missing a name").c_str());
         }
 
         if (port_names.count(model_port->name)) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(port),
-                                 vtr::string_fmt("Duplicate model port named '%s'", model_port->name).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                           vtr::string_fmt("Duplicate model port named '%s'", model_port->name).c_str());
         }
 
         if (dir == OUT_PORT && !model_port->combinational_sink_ports.empty()) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(port),
-                                 vtr::string_fmt("Model output ports can not have combinational sink ports").c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                           vtr::string_fmt("Model output ports can not have combinational sink ports").c_str());
         }
 
         //Add the port
@@ -2670,21 +2559,18 @@ static void process_layout(pugi::xml_node layout_tag, t_arch* arch, const pugiut
         } else if (layout_type_tag.name() == std::string("fixed_layout")) {
             ++fixed_layout_cnt;
         } else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
-                                 vtr::string_fmt("Unexpected tag type '<%s>', expected '<auto_layout>' or '<fixed_layout>'", layout_type_tag.name()).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                           vtr::string_fmt("Unexpected tag type '<%s>', expected '<auto_layout>' or '<fixed_layout>'", layout_type_tag.name()).c_str());
         }
     }
 
     if (auto_layout_cnt == 0 && fixed_layout_cnt == 0) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(layout_tag),
-                             vtr::string_fmt("Expected either an <auto_layout> or <fixed_layout> tag").c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_tag),
+                             vtr::string_fmt("Expected either an <auto_layout> or <fixed_layout> tag").c_str());
     }
     if (auto_layout_cnt > 1) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(layout_tag),
-                             vtr::string_fmt("Expected at most one <auto_layout> tag").c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_tag),
+                       vtr::string_fmt("Expected at most one <auto_layout> tag").c_str());
     }
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
 
@@ -2723,18 +2609,16 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
 
         if (name == "auto") {
             //We name <auto_layout> as 'auto', so don't allow a user to specify it
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
-                                 vtr::string_fmt("The name '%s' is reserved for auto-sized layouts; please choose another name", name.c_str()).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                           vtr::string_fmt("The name '%s' is reserved for auto-sized layouts; please choose another name", name.c_str()).c_str());
         }
         grid_def.name = name;
 
     } else {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
-                             vtr::string_fmt("Unexpected tag '<%s>'. Expected '<auto_layout>' or '<fixed_layout>'.",
-                                             layout_type_tag.name())
-                                 .c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                       vtr::string_fmt("Unexpected tag '<%s>'. Expected '<auto_layout>' or '<fixed_layout>'.",
+                                       layout_type_tag.name())
+                           .c_str());
     }
 
     grid_def.layers.resize(num_of_avail_layer);
@@ -2997,9 +2881,8 @@ static void process_block_type_locs(t_grid_def& grid_def,
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(region));
         } else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
-                                 vtr::string_fmt("Unrecognized grid location specification type '%s'\n", loc_type).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
+                           vtr::string_fmt("Unrecognized grid location specification type '%s'\n", loc_type).c_str());
         }
     }
 }
@@ -3038,7 +2921,7 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
         std::string msg = e.what();
         msg += ". <timing> has been replaced with the <switch_block> tag.";
         msg += " Please upgrade your architecture file.";
-        throw_xml_arch_error(e.filename().c_str(), e.line(), msg.c_str(), nullptr, 0);
+        archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
     }
 
     expect_only_children(Node, {"sizing", "area", "chan_width_distr", "switch_block", "connection_block", "default_fc"}, loc_data);
@@ -3086,9 +2969,8 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
         arch->SBType = CUSTOM;
         custom_switch_block = true;
     } else {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                             vtr::string_fmt("Unknown property %s for switch block type x\n", Prop).c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                       vtr::string_fmt("Unknown property %s for switch block type x\n", Prop).c_str());
     }
 
     ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);
@@ -3141,9 +3023,8 @@ static void process_chan_width_distr_dir(pugi::xml_node Node, t_chan* chan, cons
         hasXpeak = hasDc = ReqOpt::REQUIRED;
         chan->type = DELTA;
     } else {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                             vtr::string_fmt("Unknown property %s for chan_width_distr x\n", Prop).c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       vtr::string_fmt("Unknown property %s for chan_width_distr x\n", Prop).c_str());
     }
 
     chan->peak = get_attribute(Node, "peak", loc_data).as_float(ARCH_FPGA_UNDEFINED_VAL);
@@ -3186,9 +3067,8 @@ static void process_tiles(pugi::xml_node Node,
 
         auto [_, success] = tile_type_descriptors.insert(PhysicalTileType.name);
         if (!success) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(CurTileType),
-                                 vtr::string_fmt("Duplicate tile descriptor name: '%s'.\n", PhysicalTileType.name.c_str()).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurTileType),
+                           vtr::string_fmt("Duplicate tile descriptor name: '%s'.\n", PhysicalTileType.name.c_str()).c_str());
         }
 
         //Warn that gridlocations is no longer supported
@@ -3199,7 +3079,7 @@ static void process_tiles(pugi::xml_node Node,
             std::string msg = e.what();
             msg += ". <gridlocations> has been replaced by the <auto_layout> and <device_layout> tags in the <layout> section.";
             msg += " Please upgrade your architecture file.";
-            throw_xml_arch_error(e.filename().c_str(), e.line(), msg.c_str(), nullptr, 0);
+            archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
         }
 
         //Load switchblock type and location overrides
@@ -3257,9 +3137,8 @@ static void process_tile_props(pugi::xml_node Node,
     PhysicalTileType->area = get_attribute(Node, "area", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
 
     if (atof(Prop) < 0) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                             vtr::string_fmt("Area for type %s must be non-negative\n", PhysicalTileType->name.c_str()).c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       vtr::string_fmt("Area for type %s must be non-negative\n", PhysicalTileType->name.c_str()).c_str());
     }
 }
 
@@ -3293,11 +3172,10 @@ static t_pin_counts process_sub_tile_ports(pugi::xml_node Parent,
             //Check port name duplicates
             auto [_, subtile_success] = sub_tile_port_names.insert(port.name);
             if (!subtile_success) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                                     vtr::string_fmt("Duplicate port names in subtile '%s': port '%s'\n",
-                                                     SubTile->name.c_str(), port.name)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                               vtr::string_fmt("Duplicate port names in subtile '%s': port '%s'\n",
+                                               SubTile->name.c_str(), port.name)
+                                   .c_str());
             }
 
             //Push port
@@ -3356,14 +3234,12 @@ static void process_tile_port(pugi::xml_node Node,
             if (Node.name() == "output"s) {
                 port->equivalent = PortEquivalence::INSTANCE;
             } else {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                     vtr::string_fmt("Invalid pin equivalence '%s' for %s port.", Prop, Node.name()).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                               vtr::string_fmt("Invalid pin equivalence '%s' for %s port.", Prop, Node.name()).c_str());
             }
         } else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                 vtr::string_fmt("Invalid pin equivalence '%s'.", Prop).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           vtr::string_fmt("Invalid pin equivalence '%s'.", Prop).c_str());
         }
     }
     port->num_pins = get_attribute(Node, "num_pins", loc_data).as_int(0);
@@ -3372,9 +3248,8 @@ static void process_tile_port(pugi::xml_node Node,
                                     .as_bool(false);
 
     if (port->num_pins <= 0) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                             vtr::string_fmt("Invalid number of pins %d for %s port.", port->num_pins, Node.name()).c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       vtr::string_fmt("Invalid number of pins %d for %s port.", port->num_pins, Node.name()).c_str());
     }
 
     if (0 == strcmp(Node.name(), "input")) {
@@ -3390,17 +3265,15 @@ static void process_tile_port(pugi::xml_node Node,
         port->is_clock = true;
 
         if (port->is_non_clock_global) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                 vtr::string_fmt("Port %s cannot be both a clock and a non-clock simultaneously\n",
-                                                 Node.name())
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           vtr::string_fmt("Port %s cannot be both a clock and a non-clock simultaneously\n",
+                                           Node.name())
+                               .c_str());
         }
 
     } else {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                             vtr::string_fmt("Unknown port type %s", Node.name()).c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                             vtr::string_fmt("Unknown port type %s", Node.name()).c_str());
     }
 }
 
@@ -3414,9 +3287,8 @@ static void process_tile_equivalent_sites(pugi::xml_node Parent,
     expect_only_children(Parent, {"site"}, loc_data);
 
     if (count_children(Parent, "site", loc_data) < 1) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                             vtr::string_fmt("There are no sites corresponding to this tile: %s.\n", SubTile->name.c_str()).c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                       vtr::string_fmt("There are no sites corresponding to this tile: %s.\n", SubTile->name.c_str()).c_str());
     }
 
     CurSite = Parent.first_child();
@@ -3456,12 +3328,11 @@ static void process_equivalent_site_direct_connection(pugi::xml_node Parent,
     int num_pins = (int)SubTile->sub_tile_to_tile_pin_indices.size() / SubTile->capacity.total();
 
     if (num_pins != LogicalBlockType->pb_type->num_pins) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                             vtr::string_fmt("Pin definition differ between site %s and tile %s. User-defined pin mapping is required.\n",
-                                             LogicalBlockType->pb_type->name,
-                                             SubTile->name.c_str())
-                                 .c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                       vtr::string_fmt("Pin definition differ between site %s and tile %s. User-defined pin mapping is required.\n",
+                                       LogicalBlockType->pb_type->name,
+                                       SubTile->name.c_str())
+                           .c_str());
     }
 
     vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
@@ -3487,11 +3358,10 @@ static void process_equivalent_site_custom_connection(pugi::xml_node Parent,
     expect_only_children(Parent, {"direct"}, loc_data);
 
     if (count_children(Parent, "direct", loc_data) < 1) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                             vtr::string_fmt("There are no direct pin mappings between site %s and tile %s.\n",
-                                             site_name.c_str(), SubTile->name.c_str())
-                                 .c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                       vtr::string_fmt("There are no direct pin mappings between site %s and tile %s.\n",
+                                       site_name.c_str(), SubTile->name.c_str())
+                           .c_str());
     }
 
     vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
@@ -3515,12 +3385,11 @@ static void process_equivalent_site_custom_connection(pugi::xml_node Parent,
 
         // Checking that the number of pins is exactly the same
         if (from_pins.second - from_pins.first != to_pins.second - to_pins.first) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                 vtr::string_fmt("The number of pins specified in the direct pin mapping is "
-                                                 "not equivalent for Physical Tile %s and Logical Block %s.\n",
-                                                 SubTile->name.c_str(), LogicalBlockType->name.c_str())
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                           vtr::string_fmt("The number of pins specified in the direct pin mapping is "
+                                           "not equivalent for Physical Tile %s and Logical Block %s.\n",
+                                           SubTile->name.c_str(), LogicalBlockType->name.c_str())
+                               .c_str());
         }
 
         int num_pins = from_pins.second - from_pins.first;
@@ -3530,12 +3399,11 @@ static void process_equivalent_site_custom_connection(pugi::xml_node Parent,
 
             auto result = directs_map.insert(logical_pin, physical_pin);
             if (!result.second) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Parent),
-                                     vtr::string_fmt("Duplicate logical pin (%d) to physical pin (%d) mappings found for "
-                                                     "Physical Tile %s and Logical Block %s.\n",
-                                                     logical_pin.pin, physical_pin.pin, SubTile->name.c_str(), LogicalBlockType->name.c_str())
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                               vtr::string_fmt("Duplicate logical pin (%d) to physical pin (%d) mappings found for "
+                                               "Physical Tile %s and Logical Block %s.\n",
+                                               logical_pin.pin, physical_pin.pin, SubTile->name.c_str(), LogicalBlockType->name.c_str())
+                                   .c_str());
             }
         }
 
@@ -3568,9 +3436,8 @@ static void process_pin_locations(pugi::xml_node Locations,
         } else if (strcmp(Prop, "custom") == 0) {
             distribution = e_pin_location_distr::CUSTOM;
         } else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                 vtr::string_fmt("%s is an invalid pin location pattern.\n", Prop).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                 vtr::string_fmt("%s is an invalid pin location pattern.\n", Prop).c_str());
         }
     } else {
         distribution = e_pin_location_distr::SPREAD;
@@ -3579,12 +3446,11 @@ static void process_pin_locations(pugi::xml_node Locations,
 
     if (pin_locs->is_distribution_set()) {
         if (pin_locs->distribution != distribution) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                 vtr::string_fmt("Sub Tile %s has a different pin location pattern (%s) with respect "
-                                                 "to the sibling sub tiles",
-                                                 SubTile->name.c_str(), Prop)
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           vtr::string_fmt("Sub Tile %s has a different pin location pattern (%s) with respect "
+                                           "to the sibling sub tiles",
+                                           SubTile->name.c_str(), Prop)
+                               .c_str());
         }
     } else {
         pin_locs->distribution = distribution;
@@ -3621,42 +3487,37 @@ static void process_pin_locations(pugi::xml_node Locations,
             } else if (0 == strcmp(Prop, "bottom")) {
                 side = BOTTOM;
             } else {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                                     vtr::string_fmt("'%s' is not a valid side.\n", Prop).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                               vtr::string_fmt("'%s' is not a valid side.\n", Prop).c_str());
             }
 
             if ((x_offset < 0) || (x_offset >= PhysicalTileType->width)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                                     vtr::string_fmt("'%d' is an invalid horizontal offset for type '%s' (must be within [0, %d]).\n",
-                                                     x_offset, PhysicalTileType->name.c_str(), PhysicalTileType->width - 1)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                               vtr::string_fmt("'%d' is an invalid horizontal offset for type '%s' (must be within [0, %d]).\n",
+                                               x_offset, PhysicalTileType->name.c_str(), PhysicalTileType->width - 1)
+                                   .c_str());
             }
             if ((y_offset < 0) || (y_offset >= PhysicalTileType->height)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                      vtr::string_fmt("'%d' is an invalid vertical offset for type '%s' (must be within [0, %d]).\n",
                                                      y_offset, PhysicalTileType->name.c_str(), PhysicalTileType->height - 1)
-                                         .c_str(),
-                                     nullptr, 0);
+                                         .c_str());
             }
 
             if ((layer_offset < 0) || layer_offset >= num_of_avail_layer) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                                     vtr::string_fmt("'%d' is an invalid layer offset for type '%s' (must be within [0, num_avail_layer-1]).\n",
-                                                     y_offset, PhysicalTileType->name.c_str(), PhysicalTileType->height - 1)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                               vtr::string_fmt("'%d' is an invalid layer offset for type '%s' (must be within [0, num_avail_layer-1]).\n",
+                                               y_offset, PhysicalTileType->name.c_str(), PhysicalTileType->height - 1)
+                                   .c_str());
             }
 
             //Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
             auto side_offset = std::make_tuple(side, x_offset, y_offset, layer_offset);
             if (seen_sides.count(side_offset)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                                     vtr::string_fmt("Duplicate pin location side/offset specification."
-                                                     " Only a single <loc> per side/xoffset/yoffset/layer_offset is permitted.\n")
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                               vtr::string_fmt("Duplicate pin location side/offset specification."
+                                               " Only a single <loc> per side/xoffset/yoffset/layer_offset is permitted.\n")
+                                   .c_str());
             }
             seen_sides.insert(side_offset);
 
@@ -3697,21 +3558,19 @@ static void process_pin_locations(pugi::xml_node Locations,
                                 }
                                 /* Check if we have a valid range */
                                 if (inst_lsb < 0 || inst_msb > SubTile->capacity.total() - 1) {
-                                    throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                                         vtr::string_fmt("Pin location specification '%s' contain an out-of-range instance. Expect [%d:%d]",
-                                                                         token.c_str(), 0, SubTile->capacity.total() - 1)
-                                                             .c_str(),
-                                                         nullptr, 0);
+                                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                                   vtr::string_fmt("Pin location specification '%s' contain an out-of-range instance. Expect [%d:%d]",
+                                                                   token.c_str(), 0, SubTile->capacity.total() - 1)
+                                                       .c_str());
                                 }
                             }
 
                             //Check that the block name matches
                             if (inst_port.instance_name() != SubTile->name) {
-                                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                                     vtr::string_fmt("Mismatched sub tile name in pin location specification (expected '%s' was '%s')",
-                                                                     SubTile->name.c_str(), inst_port.instance_name().c_str())
-                                                         .c_str(),
-                                                     nullptr, 0);
+                                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                               vtr::string_fmt("Mismatched sub tile name in pin location specification (expected '%s' was '%s')",
+                                                               SubTile->name.c_str(), inst_port.instance_name().c_str())
+                                                   .c_str());
                             }
 
                             int pin_low_idx = inst_port.port_low_index();
@@ -3733,11 +3592,10 @@ static void process_pin_locations(pugi::xml_node Locations,
                                     pin_low_idx = 0;
                                     pin_high_idx = port->num_pins - 1;
                                 } else {
-                                    throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                                         vtr::string_fmt("Failed to find port named '%s' on block '%s'",
-                                                                         inst_port.port_name().c_str(), SubTile->name.c_str())
-                                                             .c_str(),
-                                                         nullptr, 0);
+                                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                                   vtr::string_fmt("Failed to find port named '%s' on block '%s'",
+                                                                   inst_port.port_name().c_str(), SubTile->name.c_str())
+                                                       .c_str());
                                 }
                             }
                             VTR_ASSERT(pin_low_idx >= 0);
@@ -3761,11 +3619,10 @@ static void process_pin_locations(pugi::xml_node Locations,
                 for (int ipin = 0; ipin < port.num_pins; ++ipin) {
                     if (!port_pins_with_specified_locations[iinst][port.name].count(ipin)) {
                         //Missing
-                        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Locations),
-                                             vtr::string_fmt("Pin '%s[%d].%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
-                                                             SubTile->name.c_str(), iinst, port.name, ipin)
-                                                 .c_str(),
-                                             nullptr, 0);
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                       vtr::string_fmt("Pin '%s[%d].%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
+                                                       SubTile->name.c_str(), iinst, port.name, ipin)
+                                           .c_str());
                     }
                 }
             }
@@ -3795,12 +3652,11 @@ static void process_sub_tiles(pugi::xml_node Node,
     pin_locs.assignments.resize({num_sub_tiles, width, height, (unsigned long int)num_of_avail_layer, num_sides});
 
     if (num_sub_tiles == 0) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                             vtr::string_fmt("No sub tile found for the Physical Tile %s.\n"
-                                             "At least one sub tile is needed to correctly describe the Physical Tile.\n",
-                                             PhysicalTileType->name.c_str())
-                                 .c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       vtr::string_fmt("No sub tile found for the Physical Tile %s.\n"
+                                       "At least one sub tile is needed to correctly describe the Physical Tile.\n",
+                                       PhysicalTileType->name.c_str())
+                           .c_str());
     }
 
     // used to find duplicate subtile names
@@ -3824,11 +3680,10 @@ static void process_sub_tiles(pugi::xml_node Node,
         //Check Sub Tile name duplicates
         auto [_, success] = sub_tile_names.insert(name);
         if (!success) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Cur),
-                                 vtr::string_fmt("Duplicate Sub Tile names in tile '%s': Sub Tile'%s'\n",
-                                                 PhysicalTileType->name.c_str(), name)
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                           vtr::string_fmt("Duplicate Sub Tile names in tile '%s': Sub Tile'%s'\n",
+                                           PhysicalTileType->name.c_str(), name)
+                               .c_str());
         }
 
         SubTile.name = name;
@@ -3926,15 +3781,14 @@ static void process_complex_blocks(pugi::xml_node Node,
 
         auto [_, success] = pb_type_descriptors.insert(LogicalBlockType.name);
         if (!success) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(CurBlockType),
-                                 vtr::string_fmt("Duplicate pb_type descriptor name: '%s'.\n", LogicalBlockType.name.c_str()).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurBlockType),
+                           vtr::string_fmt("Duplicate pb_type descriptor name: '%s'.\n", LogicalBlockType.name.c_str()).c_str());
         }
 
         /* Load pb_type info to assign to the Logical Block Type */
         LogicalBlockType.pb_type = new t_pb_type;
         LogicalBlockType.pb_type->name = vtr::strdup(LogicalBlockType.name.c_str());
-        ProcessPb_Type(CurBlockType, LogicalBlockType.pb_type, nullptr, timing_enabled, arch, loc_data, pb_type_idx);
+        process_pb_type(CurBlockType, LogicalBlockType.pb_type, nullptr, timing_enabled, arch, loc_data, pb_type_idx);
 
         LogicalBlockType.index = index;
 
@@ -3984,9 +3838,8 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
         } else {
             /* if swich block is "custom", then you have to provide a name for segment */
             if (switchblocklist_required) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                     vtr::string_fmt("No name specified for the segment #%d.\n", i).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                               vtr::string_fmt("No name specified for the segment #%d.\n", i).c_str());
             }
             /* set name to default: "unnamed_segment_<segment_index>" */
             std::stringstream ss;
@@ -4033,9 +3886,8 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                 Segs[i].parallel_axis = Y_AXIS;
                 y_axis_seg_found = true;
             } else {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                     vtr::string_fmt("Unsopported parralel axis type: %s\n", tmp).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                               vtr::string_fmt("Unsopported parralel axis type: %s\n", tmp).c_str());
             }
         } else {
             x_axis_seg_found = true;
@@ -4050,9 +3902,8 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             if (it != RES_TYPE_STRING.end()) {
                 Segs[i].res_type = static_cast<SegResType>(std::distance(RES_TYPE_STRING.begin(), it));
             } else {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                     vtr::string_fmt("Unsopported segment res_type: %s\n", tmp).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                               vtr::string_fmt("Unsopported segment res_type: %s\n", tmp).c_str());
             }
         }
 
@@ -4093,9 +3944,8 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
         }
 
         else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                 vtr::string_fmt("Invalid switch type '%s'.\n", tmp).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           vtr::string_fmt("Invalid switch type '%s'.\n", tmp).c_str());
         }
 
         //Verify only expected sub-tags are found
@@ -4108,9 +3958,8 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             /* Match names */
             int switch_idx = find_switch_by_name(switches, tmp);
             if (switch_idx < 0) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                     vtr::string_fmt("'%s' is not a valid mux name.\n", tmp).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                               vtr::string_fmt("'%s' is not a valid mux name.\n", tmp).c_str());
             }
             Segs[i].arch_inter_die_switch = switch_idx;
         }
@@ -4126,9 +3975,8 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                 /* Match names */
                 int switch_idx = find_switch_by_name(switches, tmp);
                 if (switch_idx < 0) {
-                    throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                         vtr::string_fmt("'%s' is not a valid mux name.\n", tmp).c_str(),
-                                         nullptr, 0);
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                         vtr::string_fmt("'%s' is not a valid mux name.\n", tmp).c_str());
                 }
 
                 /* Unidir muxes must have the same switch
@@ -4140,16 +3988,14 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                 SubElem = get_single_child(Node, "mux_inc", loc_data, ReqOpt::OPTIONAL);
                 tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
                 if (!tmp) {
-                    throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                         vtr::string_fmt("if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified").c_str(),
-                                         nullptr, 0);
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                   vtr::string_fmt("if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified").c_str());
                 } else {
                     /* Match names */
                     int switch_idx = find_switch_by_name(switches, tmp);
                     if (switch_idx < 0) {
-                        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                             vtr::string_fmt("'%s' is not a valid mux name.\n", tmp).c_str(),
-                                             nullptr, 0);
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                       vtr::string_fmt("'%s' is not a valid mux name.\n", tmp).c_str());
                     }
 
                     /* Unidir muxes must have the same switch
@@ -4162,16 +4008,14 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                 SubElem = get_single_child(Node, "mux_dec", loc_data, ReqOpt::OPTIONAL);
                 tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
                 if (!tmp) {
-                    throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                         vtr::string_fmt("if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified").c_str(),
-                                         nullptr, 0);
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                   vtr::string_fmt("if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified").c_str());
                 } else {
                     /* Match names */
                     int switch_idx = find_switch_by_name(switches, tmp);
                     if (switch_idx < 0) {
-                        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                             vtr::string_fmt("'%s' is not a valid mux name.\n", tmp).c_str(),
-                                             nullptr, 0);
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                       vtr::string_fmt("'%s' is not a valid mux name.\n", tmp).c_str());
                     }
 
                     /* Unidir muxes must have the same switch
@@ -4189,9 +4033,8 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             /* Match names */
             int switch_idx = find_switch_by_name(switches, tmp);
             if (switch_idx < 0) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                     vtr::string_fmt("'%s' is not a valid wire_switch name.\n", tmp).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                     vtr::string_fmt("'%s' is not a valid wire_switch name.\n", tmp).c_str());
             }
             Segs[i].arch_wire_switch = switch_idx;
             SubElem = get_single_child(Node, "opin_switch", loc_data);
@@ -4200,9 +4043,8 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             /* Match names */
             switch_idx = find_switch_by_name(switches, tmp);
             if (switch_idx < 0) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                     vtr::string_fmt("'%s' is not a valid opin_switch name.\n", tmp).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                                     vtr::string_fmt("'%s' is not a valid opin_switch name.\n", tmp).c_str());
             }
             Segs[i].arch_opin_switch = switch_idx;
         }
@@ -4235,9 +4077,8 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
     /*We need at least one type of segment that applies to each of x- and y-directed wiring.*/
 
     if (!x_axis_seg_found || !y_axis_seg_found) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                             vtr::string_fmt("Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.").c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                             vtr::string_fmt("Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.").c_str());
     }
 
     return Segs;
@@ -4316,9 +4157,8 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             } else if (0 == strcmp(tmp, "unidir")) {
                 sb.directionality = UNI_DIRECTIONAL;
             } else {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                     vtr::string_fmt("Unsopported switchblock type: %s\n", tmp).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                               vtr::string_fmt("Unsopported switchblock type: %s\n", tmp).c_str());
             }
         }
 
@@ -4339,18 +4179,16 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             } else if (strcmp(tmp, "XY_SPECIFIED") == 0) {
                 sb.location = e_sb_location::E_XY_SPECIFIED;
             } else {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                     vtr::string_fmt("unrecognized switchblock location: %s\n", tmp).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                               vtr::string_fmt("unrecognized switchblock location: %s\n", tmp).c_str());
             }
         }
 
         /* get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED*/
         if (sb.location == e_sb_location::E_XY_SPECIFIED) {
             if (arch->device_layout == "auto") {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                     vtr::string_fmt("Specifying SB locations for auto layout devices are not supported yet!\n").c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                               vtr::string_fmt("Specifying SB locations for auto layout devices are not supported yet!\n").c_str());
             }
             expect_only_attributes(SubElem,
                                    {"x", "y", "type",
@@ -4367,9 +4205,8 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
 
             //check if the absolute value is within the device grid width and height
             if (sb.x >= grid_width || sb.y >= grid_height) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                     vtr::string_fmt("Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                               vtr::string_fmt("Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height).c_str());
             }
 
             /* if the the switchblock exact location is not specified and a region is specified within the architecture file,
@@ -4418,11 +4255,10 @@ static void process_cb_sb(pugi::xml_node Node, std::vector<bool>& list, const pu
                 case 'T':
                 case '1':
                     if (i >= len) {
-                        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                             vtr::string_fmt("CB or SB depopulation is too long (%d). It should be %d symbols for CBs and %d symbols for SBs.\n",
-                                                             i, len - 1, len)
-                                                 .c_str(),
-                                             nullptr, 0);
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                                       vtr::string_fmt("CB or SB depopulation is too long (%d). It should be %d symbols for CBs and %d symbols for SBs.\n",
+                                                       i, len - 1, len)
+                                           .c_str());
                     }
                     list[i] = true;
                     ++i;
@@ -4430,37 +4266,33 @@ static void process_cb_sb(pugi::xml_node Node, std::vector<bool>& list, const pu
                 case 'F':
                 case '0':
                     if (i >= len) {
-                        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                             vtr::string_fmt("CB or SB depopulation is too long (%d). It should be %d symbols for CBs and %d symbols for SBs.\n",
-                                                             i, len - 1, len)
-                                                 .c_str(),
-                                             nullptr, 0);
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                                       vtr::string_fmt("CB or SB depopulation is too long (%d). It should be %d symbols for CBs and %d symbols for SBs.\n",
+                                                       i, len - 1, len)
+                                           .c_str());
                     }
                     list[i] = false;
                     ++i;
                     break;
                 default:
-                    throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                         vtr::string_fmt("Invalid character %c in CB or SB depopulation list.\n",
-                                                         *tmp)
-                                             .c_str(),
-                                         nullptr, 0);
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                                   vtr::string_fmt("Invalid character %c in CB or SB depopulation list.\n",
+                                                   *tmp)
+                                       .c_str());
             }
             ++tmp;
         }
         if (i < len) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                 vtr::string_fmt("CB or SB depopulation is too short (%d). It should be %d symbols for CBs and %d symbols for SBs.\n",
-                                                 i, len - 1, len)
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           vtr::string_fmt("CB or SB depopulation is too short (%d). It should be %d symbols for CBs and %d symbols for SBs.\n",
+                                           i, len - 1, len)
+                               .c_str());
         }
     }
 
     else {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                             vtr::string_fmt("'%s' is not a valid type for specifying cb and sb depopulation.\n", tmp).c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       vtr::string_fmt("'%s' is not a valid type for specifying cb and sb depopulation.\n", tmp).c_str());
     }
 }
 
@@ -4491,11 +4323,10 @@ static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Parent,
 
         /* Check if the switch has conflicts with any reserved names */
         if (0 == strcmp(switch_name, VPR_DELAYLESS_SWITCH_NAME)) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                 vtr::string_fmt("Switch name '%s' is a reserved name for VPR internal usage! Please use another  name.\n",
-                                                 switch_name)
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           vtr::string_fmt("Switch name '%s' is a reserved name for VPR internal usage! Please use another  name.\n",
+                                           switch_name)
+                               .c_str());
         }
 
         type_name = get_attribute(Node, "type", loc_data).value();
@@ -4503,11 +4334,10 @@ static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Parent,
         /* Check for switch name collisions */
         for (int j = 0; j < i; ++j) {
             if (0 == strcmp(switches[j].name.c_str(), switch_name)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                                      vtr::string_fmt("Two switches with the same name '%s' were found.\n",
                                                      switch_name)
-                                         .c_str(),
-                                     nullptr, 0);
+                                         .c_str());
             }
         }
         arch_switch.name = std::string(switch_name);
@@ -4537,9 +4367,8 @@ static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Parent,
             type = SwitchType::SHORT;
             expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel"}, " with type "s + type_name + "'"s, loc_data);
         } else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                 vtr::string_fmt("Invalid switch type '%s'.\n", type_name).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           vtr::string_fmt("Invalid switch type '%s'.\n", type_name).c_str());
         }
         arch_switch.set_type(type);
 
@@ -4633,9 +4462,8 @@ static void process_switch_tdel(pugi::xml_node Node, const bool timing_enabled, 
 
     /* delay should not be specified as a Tdel property AND a Tdel child */
     if (has_Tdel_prop && has_Tdel_children) {
-        throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                             vtr::string_fmt("Switch delay should be specified as EITHER a Tdel property OR as a child of the switch node, not both").c_str(),
-                             nullptr, 0);
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       vtr::string_fmt("Switch delay should be specified as EITHER a Tdel property OR as a child of the switch node, not both").c_str());
     }
 
     /* get pointer to the switch's Tdel map, then read-in delay data into this map */
@@ -4653,9 +4481,8 @@ static void process_switch_tdel(pugi::xml_node Node, const bool timing_enabled, 
             float Tdel_value = get_attribute(Tdel_child, "delay", loc_data).as_float(0.);
 
             if (seen_fanins.count(num_inputs)) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Tdel_child),
-                                     vtr::string_fmt("Tdel node specified num_inputs (%d) that has already been specified by another Tdel node", num_inputs).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Tdel_child),
+                               vtr::string_fmt("Tdel node specified num_inputs (%d) that has already been specified by another Tdel node", num_inputs).c_str());
             } else {
                 arch_switch.set_Tdel(num_inputs, Tdel_value);
                 seen_fanins.insert(num_inputs);
@@ -4665,9 +4492,8 @@ static void process_switch_tdel(pugi::xml_node Node, const bool timing_enabled, 
     } else {
         /* No delay info specified for switch */
         if (timing_enabled) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                 vtr::string_fmt("Switch should contain intrinsic delay information if timing is enabled").c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           vtr::string_fmt("Switch should contain intrinsic delay information if timing is enabled").c_str());
         } else {
             /* set a default value */
             arch_switch.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
@@ -4692,11 +4518,10 @@ static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
         /* Check for direct name collisions */
         for (int j = 0; j < i; ++j) {
             if (directs[j].name == direct_name) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                     vtr::string_fmt("Two directs with the same name '%s' were found.\n",
-                                                     direct_name)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                               vtr::string_fmt("Two directs with the same name '%s' were found.\n",
+                                               direct_name)
+                                   .c_str());
             }
         }
         directs[i].name = direct_name;
@@ -4707,11 +4532,10 @@ static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
 
         /* Check that to_pin and the from_pin are not the same */
         if (0 == strcmp(to_pin_name, from_pin_name)) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                 vtr::string_fmt("The source pin and sink pin are the same: %s.\n",
-                                                 to_pin_name)
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           vtr::string_fmt("The source pin and sink pin are the same: %s.\n",
+                                           to_pin_name)
+                               .c_str());
         }
         directs[i].from_pin = from_pin_name;
         directs[i].to_pin = to_pin_name;
@@ -4731,11 +4555,10 @@ static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
             //Look-up the user defined switch
             int switch_idx = find_switch_by_name(switches, switch_name);
             if (switch_idx < 0) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(Node),
-                                     vtr::string_fmt("Could not find switch named '%s' in switch list.\n",
-                                                     switch_name)
-                                         .c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                               vtr::string_fmt("Could not find switch named '%s' in switch list.\n",
+                                               switch_name)
+                                   .c_str());
             }
             directs[i].switch_type = switch_idx; //Save the correct switch index
         } else {
@@ -4779,11 +4602,10 @@ static void process_clock_metal_layers(pugi::xml_node parent,
         // Insert metal layer into map
         auto itter = metal_layers.find(name);
         if (itter != metal_layers.end()) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(curr_layer),
-                                 vtr::string_fmt("Two metal layers with the same name '%s' were found.\n",
-                                                 name.c_str())
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_layer),
+                           vtr::string_fmt("Two metal layers with the same name '%s' were found.\n",
+                                           name.c_str())
+                               .c_str());
         }
         metal_layers.insert({name, metal_layer});
 
@@ -4890,12 +4712,11 @@ static void process_clock_networks(pugi::xml_node parent,
 
         // Currently their is only support for ribs and spines
         if (!is_supported_clock_type) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(curr_type),
-                                 vtr::string_fmt("Found no supported clock network type for '%s' clock network.\n"
-                                                 "Currently there is only support for rib and spine networks.\n",
-                                                 name.c_str())
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_type),
+                           vtr::string_fmt("Found no supported clock network type for '%s' clock network.\n"
+                                           "Currently there is only support for rib and spine networks.\n",
+                                           name.c_str())
+                               .c_str());
         }
 
         clock_networks.push_back(clock_network);
@@ -4943,9 +4764,8 @@ static void process_clock_switch_points(pugi::xml_node parent,
             const char* switch_name = get_attribute(curr_switch, "switch_name", loc_data).value();
             int switch_idx = find_switch_by_name(switches, switch_name);
             if (switch_idx < 0) {
-                throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(curr_switch),
-                                     vtr::string_fmt("'%s' is not a valid switch name.\n", switch_name).c_str(),
-                                     nullptr, 0);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
+                               vtr::string_fmt("'%s' is not a valid switch name.\n", switch_name).c_str());
             }
 
             drive.name = name;
@@ -4976,12 +4796,11 @@ static void process_clock_switch_points(pugi::xml_node parent,
             clock_network.tap = tap;
 
         } else {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(curr_switch),
-                                 vtr::string_fmt("Found unsupported switch type for '%s' clock network.\n"
-                                                 "Currently there is only support for drive and tap switch types.\n",
-                                                 clock_network.name.c_str())
-                                     .c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_switch),
+                           vtr::string_fmt("Found unsupported switch type for '%s' clock network.\n"
+                                           "Currently there is only support for drive and tap switch types.\n",
+                                           clock_network.name.c_str())
+                               .c_str());
         }
 
         curr_switch = curr_switch.next_sibling(curr_switch.name());
@@ -5012,9 +4831,8 @@ static void process_clock_routing(pugi::xml_node parent,
 
         int switch_idx = find_switch_by_name(switches, switch_name);
         if (switch_idx < 0) {
-            throw_xml_arch_error(loc_data.filename_c_str(), loc_data.line(curr_connection),
-                                 vtr::string_fmt("'%s' is not a valid switch name.\n", switch_name).c_str(),
-                                 nullptr, 0);
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(curr_connection),
+                           vtr::string_fmt("'%s' is not a valid switch name.\n", switch_name).c_str());
         }
 
         clock_connection.from = from;
@@ -5161,9 +4979,8 @@ static e_side string_to_side(const std::string& side_str) {
     } else if (side_str == "bottom") {
         side = BOTTOM;
     } else {
-        throw_xml_arch_error(__FILE__, __LINE__,
-                             vtr::string_fmt("Invalid side specification").c_str(),
-                             nullptr, 0);
+        archfpga_throw(__FILE__, __LINE__,
+                       vtr::string_fmt("Invalid side specification").c_str());
     }
     return side;
 }
@@ -5176,8 +4993,7 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
         }
     }
 
-    throw_xml_arch_error(__FILE__, __LINE__,
-                         vtr::string_fmt("Could not find type: %s\n", type_name).c_str(),
-                         nullptr, 0);
+    archfpga_throw(__FILE__, __LINE__,
+                   vtr::string_fmt("Could not find type: %s\n", type_name).c_str());
     return nullptr;
 }
