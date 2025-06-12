@@ -891,7 +891,7 @@ static std::pair<int, int> process_pin_string(pugi::xml_node Locations,
     if (port == nullptr) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("Port %s for %s could not be found: %s\n",
-                                       type->name.c_str(), token.data,
+                                       type->name.c_str(), token.data.c_str(),
                                        pin_loc_string)
                            .c_str());
     }
