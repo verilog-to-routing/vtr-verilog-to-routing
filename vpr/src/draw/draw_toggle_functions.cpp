@@ -18,11 +18,6 @@
 #include <X11/keysym.h>
 #endif
 
-//The arrow head position for turning/straight-thru connections in a switch box
-constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
-constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
-constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
-
 /**
  * @brief toggles net drawing status based on status of combo box
  * updates draw_state->show_nets

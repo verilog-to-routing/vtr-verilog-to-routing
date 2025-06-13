@@ -326,7 +326,7 @@ int main(int argc, char* argv[])
     //        required when decomposing INOUT pins into input and output pins
 	cout << "\n>> Parsing architecture file " << arch_file << endl ;
     try {
-        XmlReadArch( arch_file.c_str(), false, &arch, physical_tile_types, logical_block_types);	//Architecture (XML) Parser call
+        xml_read_arch( arch_file.c_str(), false, &arch, physical_tile_types, logical_block_types);	//Architecture (XML) Parser call
     } catch (const vtr::VtrError& e) {
         cout << "Error at line " << e.line() << " in " << e.filename() << ": " << e.what() << endl;
         exit(1);

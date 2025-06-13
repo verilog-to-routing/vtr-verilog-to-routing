@@ -250,23 +250,6 @@ ClusteredNetlist read_netlist(const char* net_file,
 
     VTR_LOG("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
-    size_t num_pb_route_used = 0;
-    size_t num_pb_route_alloc = 0;
-    size_t num_pb_pins = 0;
-    for (auto clb : clb_nlist.blocks()) {
-        t_pb* pb = clb_nlist.block_pb(clb);
-
-        for (int ipin = 0; ipin < pb->pb_graph_node->total_pb_pins; ++ipin) {
-            if (pb->pb_route.count(ipin)) {
-                ++num_pb_route_alloc;
-                if (pb->pb_route[ipin].atom_net_id) {
-                    ++num_pb_route_used;
-                }
-            }
-            ++num_pb_pins;
-        }
-    }
-
     return clb_nlist;
 }
 
