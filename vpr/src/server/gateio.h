@@ -1,5 +1,4 @@
-#ifndef GATEIO_H
-#define GATEIO_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -227,5 +226,3 @@ class GateIO {
 } // namespace server
 
 #endif /* NO_SERVER */
-
-#endif /* GATEIO_H */

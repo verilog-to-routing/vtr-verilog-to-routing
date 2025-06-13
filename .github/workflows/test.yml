@@ -99,7 +99,26 @@ jobs:
       run: ./dev/${{ matrix.script }}
 
 
-  UniTests:
+  VerifyTestSuites:
+    runs-on: ubuntu-24.04
+    name: 'Verify Test Suites'
+    steps:
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.12.3
+
+    - uses: actions/checkout@v4
+      # NOTE: We do not need sub-modules. This only verifies the tests, does not run them.
+
+    - name: 'Run test suite verification'
+      run: |
+        ./dev/vtr_test_suite_verifier/verify_test_suites.py \
+            -vtr_regression_tests_dir vtr_flow/tasks/regression_tests \
+            -test_suite_info dev/vtr_test_suite_verifier/test_suites_info.json
+
+
+  UnitTests:
     name: 'U: C++ Unit Tests'
     runs-on: ubuntu-24.04
     steps:
@@ -125,6 +144,92 @@ jobs:
       run: ./.github/scripts/unittest.sh
 
 
+  # This test builds different variations of VTR (with different CMake Params)
+  # and ensures that they can run the basic regression tests. This also ensures
+  # that these build variations are warning clean.
+  BuildVariations:
+    runs-on: ubuntu-24.04
+    name: 'B: Build Variations'
+    env:
+      # For the CI, we want all build variations to be warning clean.
+      # NOTE: Need to turn IPO off due to false warnings being produced.
+      COMMON_CMAKE_PARAMS: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off'
+    steps:
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.12.3
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: 'Get number of CPU cores'
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: 'Install dependencies'
+      run: ./.github/scripts/install_dependencies.sh
+
+    - name: 'ccache'
+      uses: hendrikmuhs/ccache-action@v1.2
+
+    - name: 'Test with VTR_ASSERT_LEVEL 4'
+      if: success() || failure()
+      env:
+        CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVTR_ASSERT_LEVEL=4"
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+      run: |
+        rm -f build/CMakeCache.txt
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make -j${{ steps.cpu-cores.outputs.count}}
+        ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: 'Test with NO_GRAPHICS'
+      if: success() || failure()
+      env:
+        CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVPR_USE_EZGL=off"
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+      run: |
+        rm -f build/CMakeCache.txt
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make -j${{ steps.cpu-cores.outputs.count}}
+        ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: 'Test with NO_SERVER'
+      if: success() || failure()
+      env:
+        CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVPR_USE_SERVER=off"
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+      run: |
+        rm -f build/CMakeCache.txt
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make -j${{ steps.cpu-cores.outputs.count}}
+        ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: 'Test with CAPNPROTO disabled'
+      if: success() || failure()
+      env:
+        CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVTR_ENABLE_CAPNPROTO=off"
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+      run: |
+        rm -f build/CMakeCache.txt
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make -j${{ steps.cpu-cores.outputs.count}}
+        ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: 'Test with serial VPR_EXECUTION_ENGINE'
+      if: success() || failure()
+      env:
+        CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVPR_EXECUTION_ENGINE=serial -DTATUM_EXECUTION_ENGINE=serial"
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+      run: |
+        rm -f build/CMakeCache.txt
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make -j${{ steps.cpu-cores.outputs.count}}
+        ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
+
   Regression:
     runs-on: ubuntu-24.04
     strategy:
@@ -138,39 +243,9 @@ jobs:
             extra_pkgs: ""
           },
           {
-            name: 'Basic with highest assertion level',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=4 -DWITH_BLIFEXPLORER=on',
-            suite: 'vtr_reg_basic',
-            extra_pkgs: ""
-          },
-          {
             name: 'Basic_odin',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
             suite: 'vtr_reg_basic_odin',
-            extra_pkgs: ""
-          },
-          {
-            name: 'Basic with NO_GRAPHICS',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=off',
-            suite: 'vtr_reg_basic',
-            extra_pkgs: ""
-          },
-          {
-            name: 'Basic with NO_SERVER',
-            params: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_USE_EZGL=on -DVPR_USE_SERVER=off',
-            suite: 'vtr_reg_basic',
-            extra_pkgs: ""
-          },
-          {
-            name: 'Basic with CAPNPROTO disabled',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
-            suite: 'vtr_reg_basic',
-            extra_pkgs: ""
-          },
-          {
-            name: 'Basic with serial VPR_EXECUTION_ENGINE',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_EXECUTION_ENGINE=serial -DTATUM_EXECUTION_ENGINE=serial',
-            suite: 'vtr_reg_basic',
             extra_pkgs: ""
           },
           {
@@ -484,7 +559,9 @@ jobs:
     needs:
       - Build
       - Format
-      - UniTests
+      - VerifyTestSuites
+      - UnitTests
+      - BuildVariations
       - Regression
       - Sanitized
       - Parmys

@@ -1,5 +1,5 @@
-#ifndef VPR_CONTEXT_H
-#define VPR_CONTEXT_H
+#pragma once
+
 #include <unordered_map>
 #include <memory>
 #include <vector>
@@ -268,7 +268,7 @@ struct DeviceContext : public Context {
     /*******************************************************************
      * Clock Network
      ********************************************************************/
-    t_clock_arch* clock_arch;
+    std::shared_ptr<std::vector<t_clock_network>> clock_arch;
 
     /// @brief Name of rrgraph file read (if any).
     ///        Used to determine if the specified rr-graph file is already loaded,
@@ -847,5 +847,3 @@ class VprContext : public Context {
 
     PackingMultithreadingContext packing_multithreading_;
 };
-
-#endif

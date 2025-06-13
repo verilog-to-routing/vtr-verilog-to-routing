@@ -24,6 +24,7 @@
 #include <cmath>
 #include <vector>
 #include "connection_router_interface.h"
+#include "describe_rr_node.h"
 #include "physical_types_util.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"

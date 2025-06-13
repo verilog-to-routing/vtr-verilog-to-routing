@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @brief This is a core file that defines the major data types used by VPR
@@ -20,8 +21,6 @@
  * t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA architecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
  * The t_pb hierarchy follows what is described by t_pb_graph_node
  */
-
-#pragma once
 
 #include <vector>
 #include <set>
@@ -412,6 +411,13 @@ struct t_net_power {
 /**
  * @brief Stores a 3D bounding box in terms of the minimum and
  *        maximum coordinates: x, y, layer
+ * 
+ * @var xmin: The minimum x-coordinate of the bounding box
+ * @var xmax: The maximum x-coordinate of the bounding box
+ * @var ymin: The minimum y-coordinate of the bounding box
+ * @var ymax: The maximum y-coordinate of the bounding box
+ * @var layer_min: The minimum layer of the bounding box
+ * @var layer_max: The maximum layer of the bounding box
  */
 struct t_bb {
     t_bb() = default;
@@ -1104,6 +1110,8 @@ struct t_placer_opts {
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
+ *   @param generate_mass_report
+ *              Whether to generate a mass report during global placement or not.
  */
 struct t_ap_opts {
     e_stage_action doAP;
@@ -1123,6 +1131,8 @@ struct t_ap_opts {
     unsigned num_threads;
 
     int log_verbosity;
+
+    bool generate_mass_report;
 };
 
 /******************************************************************

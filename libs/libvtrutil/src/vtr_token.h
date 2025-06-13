@@ -1,12 +1,10 @@
+#pragma once
 /**
  * @file
  * @author Jason Luu
  * @Date July 22, 2009
  * @brief Tokenizer
  */
-
-#ifndef TOKEN_H
-#define TOKEN_H
 
 ///@brief Token types
 enum e_token_type {
@@ -36,5 +34,3 @@ bool checkTokenType(const t_token token, enum e_token_type token_type);
 void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring);
 
 bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, int* num_entries);
-
-#endif

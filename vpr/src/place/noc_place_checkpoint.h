@@ -1,5 +1,4 @@
-#ifndef VTR_ROUTERPLACEMENTCHECKPOINT_H
-#define VTR_ROUTERPLACEMENTCHECKPOINT_H
+#pragma once
 
 /**
  * @brief NoC router placement checkpoint
@@ -73,5 +72,3 @@ class NoCPlacementCheckpoint {
     bool valid_ = false;
     double cost_;
 };
-
-#endif //VTR_ROUTERPLACEMENTCHECKPOINT_H

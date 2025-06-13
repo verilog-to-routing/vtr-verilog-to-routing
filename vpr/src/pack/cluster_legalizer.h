@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -9,8 +10,6 @@
  * designed to be self-contained to the point that it is able to be called
  * externally to the Packer in VPR.
  */
-
-#pragma once
 
 #include <vector>
 #include "atom_netlist_fwd.h"

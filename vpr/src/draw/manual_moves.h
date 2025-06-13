@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file manual_moves.h
  * 
@@ -6,8 +7,6 @@
  * 
  * Author: Paula Perdomo
  */
-
-#pragma once
 
 /** This file contains all functions for manual moves **/
 #ifndef NO_GRAPHICS

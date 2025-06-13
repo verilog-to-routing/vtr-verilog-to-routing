@@ -1,5 +1,5 @@
-#ifndef ATOM_NETLIST_UTILS_H
-#define ATOM_NETLIST_UTILS_H
+#pragma once
+
 #include <cstdio>
 #include <set>
 #include "atom_netlist.h"
@@ -122,4 +122,3 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
 
 ///@brief Prints out information about netlist clocks
 void print_netlist_clock_info(const AtomNetlist& netlist, const LogicalModels& models);
-#endif

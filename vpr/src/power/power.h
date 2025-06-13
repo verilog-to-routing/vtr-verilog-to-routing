@@ -1,5 +1,4 @@
 #pragma once
-
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *

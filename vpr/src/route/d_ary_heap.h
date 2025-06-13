@@ -1,5 +1,4 @@
-#ifndef _VTR_D_ARY_HEAP_H
-#define _VTR_D_ARY_HEAP_H
+#pragma once
 
 #include <vector>
 
@@ -72,5 +71,3 @@ class DAryHeap : public HeapInterface {
 
 using BinaryHeap = DAryHeap<2>;
 using FourAryHeap = DAryHeap<4>;
-
-#endif /* _VTR_D_ARY_HEAP_H */

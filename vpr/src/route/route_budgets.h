@@ -1,12 +1,12 @@
+#pragma once
 /*Defines the route_budgets class that contains the minimum, maximum,
  * target, upper bound, and lower bound budgets. These information are
  * used by the router to optimize for hold time. */
-#ifndef ROUTE_BUDGETS_H
-#define ROUTE_BUDGETS_H
 
 #include <vector>
 #include <queue>
 #include "RoutingDelayCalculator.h"
+#include "clustered_netlist_utils.h"
 #include "timing_info.h"
 
 enum analysis_type {
@@ -139,5 +139,3 @@ class route_budgets {
     std::map<ParentNetId, bool> should_reroute_for_hold;
     std::map<ParentNetId, int> hold_fac;
 };
-
-#endif /* ROUTE_BUDGETS_H */

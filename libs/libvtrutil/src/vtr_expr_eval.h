@@ -1,11 +1,9 @@
-#ifndef EXPR_EVAL_H
-#define EXPR_EVAL_H
-#include <map>
+#pragma once
+
 #include <string>
 #include <vector>
 #include <stack>
 #include <cstring>
-#include <iostream>
 
 #include "vtr_util.h"
 #include "vtr_error.h"
@@ -230,5 +228,3 @@ class FormulaParser {
 };
 
 } // namespace vtr
-
-#endif

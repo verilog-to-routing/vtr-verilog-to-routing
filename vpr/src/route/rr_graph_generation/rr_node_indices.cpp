@@ -4,6 +4,7 @@
 #include "describe_rr_node.h"
 #include "globals.h"
 #include "physical_types_util.h"
+#include "rr_graph2.h"
 #include "vpr_utils.h"
 
 /**

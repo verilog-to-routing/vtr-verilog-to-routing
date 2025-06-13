@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -11,8 +12,6 @@
  * Since these methods should be completely independent of the place flow, it
  * makes sense that they are in their own file.
  */
-
-#pragma once
 
 #include "vtr_vector.h"
 

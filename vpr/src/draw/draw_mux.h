@@ -1,9 +1,9 @@
+#pragma once
 /**
  * @file draw_mux.h
  * 
  * This file contains all functions related to drawing muxes
  */
-#pragma once
 
 #ifndef NO_GRAPHICS
 

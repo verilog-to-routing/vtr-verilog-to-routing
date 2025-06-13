@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_basic.h
  * 
@@ -5,8 +6,6 @@
  * that aren't RR nodes or muxes (they have their own file).
  * All functions in this file contain the prefix draw_.
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

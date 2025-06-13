@@ -1,5 +1,4 @@
-#ifndef ANNOTATE_ROUTING_H
-#define ANNOTATE_ROUTING_H
+#pragma once
 
 #include "clustered_netlist_fwd.h"
 #include "rr_graph_fwd.h"
@@ -20,5 +19,3 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContex
                                                           const DeviceContext& device_ctx,
                                                           const AtomContext& atom_ctx,
                                                           const bool& verbose);
-
-#endif

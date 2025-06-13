@@ -1,6 +1,4 @@
-#ifndef BFS_ROUTING
-#define BFS_ROUTING
-
+#pragma once
 /**
  * @file 
  * @brief This file defines the BFSRouting class.
@@ -86,5 +84,3 @@ class BFSRouting : public NocRouting {
                         const NocStorage& noc_model,
                         const std::unordered_map<NocRouterId, NocLinkId>& router_parent_link);
 };
-
-#endif

@@ -1,5 +1,5 @@
-#ifndef SETUPVPR_H
-#define SETUPVPR_H
+#pragma once
+
 #include <vector>
 #include "read_options.h"
 #include "physical_types.h"
@@ -28,4 +28,3 @@ void SetupVPR(const t_options* Options,
               std::string* GraphicsCommands,
               t_power_opts* PowerOpts,
               t_vpr_setup* vpr_setup);
-#endif

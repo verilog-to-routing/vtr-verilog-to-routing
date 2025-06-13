@@ -149,7 +149,7 @@ static void show_circuit_stats(const AtomNetlist& netlist, const LogicalModels& 
     // Count the block statistics
     std::map<std::string, size_t> block_type_counts;
     std::map<std::string, size_t> lut_size_counts;
-    LogicalModelId names_model_id = models.get_model_by_name(LogicalModels::MODEL_NAMES);
+    LogicalModelId names_model_id = LogicalModels::MODEL_NAMES_ID;
     for (auto blk_id : netlist.blocks()) {
         // For each model, count the number of occurrences in the netlist.
         LogicalModelId blk_model_id = netlist.block_model(blk_id);

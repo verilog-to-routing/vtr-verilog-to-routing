@@ -1,9 +1,8 @@
-#ifndef ROUTER_LOOKAHEAD_SAMPLING_H
-#define ROUTER_LOOKAHEAD_SAMPLING_H
+#pragma once
 
 #include <vector>
+#include "rr_graph_fwd.h"
 #include "vtr_geometry.h"
-#include "globals.h"
 
 // a sample point for a segment type, contains all segments at the VPR location
 struct SamplePoint {
@@ -31,5 +30,3 @@ struct SampleRegion {
 };
 
 std::vector<SampleRegion> find_sample_regions(int num_segments);
-
-#endif

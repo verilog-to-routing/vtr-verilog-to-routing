@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -14,8 +15,6 @@
  * Field Programmable Technology, 2012.
  *
  ********************************************************************/
-
-#pragma once
 
 #include <vector>
 #include <string>

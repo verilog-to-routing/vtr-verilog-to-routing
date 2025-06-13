@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_noc.h
  * @brief This is the draw_noc header file. This file provides utilities
@@ -20,8 +21,6 @@
  * 
  * Author: Srivatsan Srinivasan
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

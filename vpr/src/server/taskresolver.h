@@ -1,5 +1,4 @@
-#ifndef TASKRESOLVER_H
-#define TASKRESOLVER_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -75,5 +74,3 @@ class TaskResolver {
 } // namespace server
 
 #endif /* NO_SERVER */
-
-#endif /* TASKRESOLVER_H */

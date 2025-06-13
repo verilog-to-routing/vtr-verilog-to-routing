@@ -1,5 +1,4 @@
-#ifndef LOGIC_VEC_H
-#define LOGIC_VEC_H
+#pragma once
 
 #include <vector>
 #include <ostream>
@@ -45,5 +44,3 @@ class LogicVec {
   private:
     std::vector<vtr::LogicValue> values_; ///<The logic values
 };
-
-#endif

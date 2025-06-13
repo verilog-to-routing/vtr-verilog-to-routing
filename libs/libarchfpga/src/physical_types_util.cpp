@@ -1,10 +1,7 @@
-#include <set>
+#include <numeric>
 #include "vtr_assert.h"
-#include "vtr_memory.h"
 #include "vtr_util.h"
 
-#include "arch_types.h"
-#include "arch_util.h"
 #include "arch_error.h"
 
 #include "physical_types_util.h"

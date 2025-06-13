@@ -416,9 +416,14 @@ Use the options below to override this default naming behaviour.
 .. option:: --write_placement_delay_lookup <file>
 
     Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``.
+
+.. option:: --read_initial_place_file <file>
+
+    Reads in the initial cluster-level placement (in :ref:`.place file format <vpr_place_file>`) from the specified file and uses it as the starting point for annealing improvement, instead of generating an initial placement internally.
+
 .. option:: --write_initial_place_file <file>
 
-    Writes out the the placement chosen by the initial placement algorithm to the specified file.
+    Writes out the clustered netlist placement chosen by the initial placement algorithm to the specified file, in :ref:`.place file format <vpr_place_file>`.
 
 .. option:: --outfile_prefix <string>
 
@@ -838,9 +843,9 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     Controls how the placer handles blocks (of any type) during placement.
 
-    * ``<file.place>``: A path to a file listing the desired location of blocks in the netlist.
+    * ``<file.place>``: A path to a file listing the desired location of clustered blocks in the netlist.
 
-    This place location file is in the same format as a :ref:`normal placement file <vpr_place_file>`, but does not require the first two lines which are normally at the top     of a placement file that specify the netlist file, netlist ID, and array size.
+    This place location file is in the same format as a :ref:`.place file <vpr_place_file>`, but does not require the first two lines which are normally at the top     of a placement file that specify the netlist file, netlist ID, and array size.
 
     **Default:** ````.
 
@@ -1335,6 +1340,15 @@ Analytical Placement is generally split into three stages:
     * ``20 <= verbosity`` Print very detailed messages on intra-stage algorithms.
 
     **Default:** ``1``
+
+.. option:: --ap_generate_mass_report {on | off}
+
+    Controls whether to generate a report on how the partial legalizer
+    within the AP flow calculates the mass of primitives and the
+    capacity of tiles on the device. This report is useful when
+    debugging the partial legalizer.
+
+    **Default:** ``off``
 
 
 .. _router_options:

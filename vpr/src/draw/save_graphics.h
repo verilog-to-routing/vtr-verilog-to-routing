@@ -1,10 +1,9 @@
+#pragma once
 /**
  * @file save_graphics.h
  * 
  * Manages saving of graphics in different file formats
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 
