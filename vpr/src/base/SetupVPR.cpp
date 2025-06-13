@@ -159,11 +159,11 @@ void SetupVPR(const t_options* options,
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
         switch (options->arch_format) {
             case e_arch_format::VTR:
-                XmlReadArch(options->ArchFile.value().c_str(),
-                            timingenabled,
-                            arch,
-                            device_ctx.physical_tile_types,
-                            device_ctx.logical_block_types);
+                xml_read_arch(options->ArchFile.value().c_str(),
+                              timingenabled,
+                              arch,
+                              device_ctx.physical_tile_types,
+                              device_ctx.logical_block_types);
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");
