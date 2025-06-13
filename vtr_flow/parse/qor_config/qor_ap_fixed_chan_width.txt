@@ -2,11 +2,18 @@
 # channel width.
 
 vpr_status;output.txt;vpr_status=(.*)
-crit_path_delay;vpr.out;Critical path: (.*) ns
 post_gp_hpwl;vpr.out;\s*Placement HPWL: (.*)
 post_fl_hpwl;vpr.out;Initial placement BB estimate of wirelength: (.*)
 post_dp_hpwl;vpr.out;BB estimate of min-dist \(placement\) wire length: (.*)
 total_wirelength;vpr.out;\s*Total wirelength: (\d+)
+post_gp_cpd;vpr.out;\s*Placement estimated CPD: (.*) ns
+post_fl_cpd;vpr.out;Initial placement estimated Critical Path Delay \(CPD\): (.*) ns
+post_dp_cpd;vpr.out;Placement estimated critical path delay \(least slack\): (.*) ns
+crit_path_delay;vpr.out;Critical path: (.*) ns
+post_gp_sTNS;vpr.out;\s*Placement estimated sTNS: (.*) ns
+post_fl_sTNS;vpr.out;Initial placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
+post_dp_sTNS;vpr.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
+final_sTNS;vpr.out;Final setup Total Negative Slack \(sTNS\): (.*) ns
 post_gp_overfilled_bins;vpr.out;\s*Number of overfilled bins: (\d+)
 post_gp_avg_overfill;vpr.out;\s*Average overfill magnitude: (.*)
 post_gp_num_misplaced_blocks;vpr.out;\s*Number of blocks in an incompatible bin: (\d+)
