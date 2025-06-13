@@ -1099,8 +1099,11 @@ struct ParMYSPass : public Pass {
 
         log("Updating the Design\n");
         Pass::call(design, "delete");
-
+	    std::vector<RTLIL::Module*> modules_to_remove;
         for (auto module : design->modules()) {
+            modules_to_remove.push_back(module);
+        }
+        for (auto module : modules_to_remove) {
             design->remove(module);
         }
 
