@@ -133,4 +133,4 @@ jobs:
       with:
         name: nightly_tests_golden
         path: |
-          vtr_flow/**/vtr_reg_nightly*/**/config.txt
+          vtr_flow/**/vtr_reg_nightly*/**/golden_results.txt
