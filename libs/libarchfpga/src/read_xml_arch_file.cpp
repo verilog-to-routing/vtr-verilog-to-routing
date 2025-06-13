@@ -774,6 +774,7 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
     }
 
     token_index++;
+    token = tokens[token_index];
 
     int first_inst = 0;
     int last_inst = sub_tile.capacity.total() - 1;
@@ -790,6 +791,7 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
     }
 
     token_index++;
+    token = tokens[token_index];
 
     if (tokens[token_index].type != e_token_type::INT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
