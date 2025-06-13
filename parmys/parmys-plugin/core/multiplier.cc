@@ -935,7 +935,7 @@ void init_multiplier_adder(nnode_t *node, nnode_t *parent, int a, int b)
  *-----------------------------------------------------------------------*/
 void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *netlist)
 {
-    nnode_t *a0b0, *a0b1, *a1b0, *a1b1, *addsmall, *addbig;
+    nnode_t *a0b0, *a0b1, *a1b0, *a1b1, *addsmall, *addsmall2, *addbig;
     int size;
 
     /* Check for a legitimate split */
@@ -974,50 +974,127 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
     init_split_multiplier(node, a1b0, a0, a1, 0, b0, a1b1, a0b0);
     mult_list = insert_in_vptr_list(mult_list, a1b0);
 
-    /* New node for the initial add */
-    addsmall = allocate_nnode(node->loc);
-    addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
-    strcpy(addsmall->name, node->name);
-    strcat(addsmall->name, "-add0");
-    // this addition will have a carry out in the worst case, add to input pins and connect then to gnd
-    init_multiplier_adder(addsmall, a1b0, a1b0->num_output_pins + 1, a0b1->num_output_pins + 1);
+    // using the balenced addition method only works if a0 and b0 are the same size
+    // (i.e. if the input ports on the hardware multiplier are equal)
+    if (b0 == a0) {
+        /* New node for the initial add */
+        addsmall = allocate_nnode(node->loc);
+        addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
+        strcpy(addsmall->name, node->name);
+        strcat(addsmall->name, "-add0");
+        // this addition will have a carry out in the worst case, add to input pins and connect then to gnd
+        init_multiplier_adder(addsmall, a1b0, a1b0->num_output_pins + 1, a0b1->num_output_pins + 1);
 
-    /* New node for the BIG add */
-    addbig = allocate_nnode(node->loc);
-    addbig->name = (char *)vtr::malloc(strlen(node->name) + 6);
-    strcpy(addbig->name, node->name);
-    strcat(addbig->name, "-add1");
-    init_multiplier_adder(addbig, addsmall, addsmall->num_output_pins, a0b0->num_output_pins - b0 + a1b1->num_output_pins);
+        // connect inputs to port a of addsmall
+        for (int i = 0; i < a1b0->num_output_pins; i++)
+            connect_nodes(a1b0, i, addsmall, i);
 
-    // connect inputs to port a of addsmall
-    for (int i = 0; i < a1b0->num_output_pins; i++)
-        connect_nodes(a1b0, i, addsmall, i);
-    add_input_pin_to_node(addsmall, get_zero_pin(netlist), a1b0->num_output_pins);
-    // connect inputs to port b of addsmall
-    for (int i = 0; i < a0b1->num_output_pins; i++)
-        connect_nodes(a0b1, i, addsmall, i + addsmall->input_port_sizes[0]);
-    add_input_pin_to_node(addsmall, get_zero_pin(netlist), a0b1->num_output_pins + addsmall->input_port_sizes[0]);
+        add_input_pin_to_node(addsmall, get_zero_pin(netlist), a1b0->num_output_pins);
+        // connect inputs to port b of addsmall
+        for (int i = 0; i < a0b1->num_output_pins; i++)
+            connect_nodes(a0b1, i, addsmall, i + addsmall->input_port_sizes[0]);
+        add_input_pin_to_node(addsmall, get_zero_pin(netlist), a0b1->num_output_pins + addsmall->input_port_sizes[0]);
 
-    // connect inputs to port a of addbig
-    size = addsmall->num_output_pins;
-    for (int i = 0; i < size; i++)
-        connect_nodes(addsmall, i, addbig, i);
+        /* New node for the BIG add */
+        addbig = allocate_nnode(node->loc);
+        addbig->name = (char *)vtr::malloc(strlen(node->name) + 6);
+        strcpy(addbig->name, node->name);
+        strcat(addbig->name, "-add1");
+        init_multiplier_adder(addbig, addsmall, addsmall->num_output_pins, a0b0->num_output_pins - b0 + a1b1->num_output_pins);
 
-    // connect inputs to port b of addbig
-    for (int i = b0; i < a0b0->output_port_sizes[0]; i++)
-        connect_nodes(a0b0, i, addbig, i - b0 + size);
-    size = size + a0b0->output_port_sizes[0] - b0;
-    for (int i = 0; i < a1b1->output_port_sizes[0]; i++)
-        connect_nodes(a1b1, i, addbig, i + size);
+        // connect inputs to port a of addbig
+        size = addsmall->num_output_pins;
+        for (int i = 0; i < size; i++)
+            connect_nodes(addsmall, i, addbig, i);
 
-    // remap the multiplier outputs coming directly from a0b0
-    for (int i = 0; i < b0; i++) {
-        remap_pin_to_new_node(node->output_pins[i], a0b0, i);
-    }
+        // connect inputs to port b of addbig
+        for (int i = b0; i < a0b0->output_port_sizes[0]; i++)
+            connect_nodes(a0b0, i, addbig, i - b0 + size);
+        size = size + a0b0->output_port_sizes[0] - b0;
+        for (int i = 0; i < a1b1->output_port_sizes[0]; i++)
+            connect_nodes(a1b1, i, addbig, i + size);
 
-    // remap the multiplier outputs coming from addbig
-    for (int i = 0; i < addbig->num_output_pins; i++) {
-        remap_pin_to_new_node(node->output_pins[i + b0], addbig, i);
+        // remap the multiplier outputs coming directly from a0b0
+        for (int i = 0; i < b0; i++) {
+            remap_pin_to_new_node(node->output_pins[i], a0b0, i);
+        }
+
+        // remap the multiplier outputs coming from addbig
+        for (int i = 0; i < addbig->num_output_pins; i++) {
+            remap_pin_to_new_node(node->output_pins[i + b0], addbig, i);
+        }
+    } else {
+
+        /* New node for the initial add */
+        addsmall = allocate_nnode(node->loc);
+        addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
+        strcpy(addsmall->name, node->name);
+        strcat(addsmall->name, "-add0");
+        // All additions in this version have the posibility of a carry out in the worst case
+        init_multiplier_adder(addsmall, a1b0, a1b0->num_output_pins + a0 + 1, a0b1->num_output_pins + b0 + 1);
+        // A0 and B0 are our hardware multiplier sizes
+
+        int max = a0b1->num_output_pins;
+        if (a1b0->num_output_pins > max) {
+            max = a1b0->num_output_pins;
+        }
+
+        // right shift
+        for (int i = 0; i < a0; i++)
+            add_input_pin_to_node(addsmall, get_zero_pin(netlist), i);
+
+        // connect inputs to port a of addsmall
+        for (int i = 0; i < a1b0->num_output_pins; i++)
+            connect_nodes(a1b0, i, addsmall, i + a0);
+
+        add_input_pin_to_node(addsmall, get_zero_pin(netlist), a1b0->num_output_pins); // for carry
+        // right shift
+        for (int i = 0; i < b0; i++)
+            add_input_pin_to_node(addsmall, get_zero_pin(netlist), i + addsmall->input_port_sizes[0]);
+        // connect inputs to port b of addsmall
+        for (int i = 0; i < max; i++)
+            connect_nodes(a0b1, i, addsmall, i + addsmall->input_port_sizes[0] + b0);
+        add_input_pin_to_node(addsmall, get_zero_pin(netlist), a0b1->num_output_pins + addsmall->input_port_sizes[0]);
+
+        addsmall2 = allocate_nnode(node->loc);
+        addsmall2->name = (char *)vtr::malloc(strlen(node->name) + 6);
+        strcpy(addsmall2->name, node->name);
+        strcat(addsmall2->name, "-add1");
+        // this addition can have a carry in the worst case.
+        init_multiplier_adder(addsmall2, a0b0, a0b0->num_output_pins + 1, addsmall->num_output_pins + 1);
+
+        for (int i = 0; i < a0b0->num_output_pins; i++)
+            connect_nodes(a0b0, i, addsmall2, i);
+
+        add_input_pin_to_node(addsmall2, get_zero_pin(netlist), a0b0->num_output_pins);
+
+        for (int i = 0; i < addsmall->num_output_pins; i++)
+            connect_nodes(addsmall, i, addsmall2, i + addsmall2->input_port_sizes[0]);
+        add_input_pin_to_node(addsmall2, get_zero_pin(netlist), addsmall->num_output_pins + addsmall2->input_port_sizes[0]);
+
+        addbig = allocate_nnode(node->loc);
+        addbig->name = (char *)vtr::malloc(strlen(node->name) + 6);
+        strcpy(addbig->name, node->name);
+        strcat(addbig->name, "-add2");
+        init_multiplier_adder(addbig, addsmall2, addsmall2->num_output_pins + 1, a1b1->num_output_pins + a0b0->num_output_pins + 1);
+
+        for (int i = 0; i < addsmall2->num_output_pins; i++)
+            connect_nodes(addsmall2, i, addbig, i);
+        add_input_pin_to_node(addbig, get_zero_pin(netlist), addsmall2->num_output_pins);
+
+        for (int i = 0; i < a0b0->num_output_pins; i++)
+            add_input_pin_to_node(addbig, get_zero_pin(netlist), i + addsmall2->num_output_pins);
+
+        for (int i = 0; i < a1b1->num_output_pins; i++)
+            connect_nodes(a1b1, i, addbig, i + addbig->input_port_sizes[0] + a0b0->num_output_pins);
+        add_input_pin_to_node(addbig, get_zero_pin(netlist), a1b1->num_output_pins + addbig->input_port_sizes[0]);
+
+        max = a0;
+        if (b0 > a0)
+            max = b0;
+        for (int i = 0; i < addbig->num_output_pins; i++) {
+            remap_pin_to_new_node(node->output_pins[i], addbig, i);
+        }
     }
 
     // CLEAN UP
@@ -1058,7 +1135,6 @@ void split_multiplier_a(nnode_t *node, int a0, int a1, int b)
     strcat(a0b->name, "-0");
     init_split_multiplier(node, a0b, 0, a0, 0, b, nullptr, nullptr);
     mult_list = insert_in_vptr_list(mult_list, a0b);
-
     /* New node for a1b multiply */
     a1b = allocate_nnode(node->loc);
     a1b->name = (char *)vtr::malloc(strlen(node->name) + 3);
@@ -1182,7 +1258,6 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
 
     oassert(node->type == MULTIPLY);
     oassert(hard_multipliers != NULL);
-
     sizea = node->input_port_sizes[0];
     sizeb = node->input_port_sizes[1];
     sizeout = node->output_port_sizes[0];
@@ -1197,6 +1272,13 @@ void pad_multiplier(nnode_t *node, netlist_t *netlist)
     }
     diffa = ina - sizea;
     diffb = inb - sizeb;
+    // input multiplier size on middle range of unequal Hard Block size(ex; mul_size>18 && mul_size<25)
+    if (diffb < 0) {
+        std::swap(ina, inb);
+        diffa = ina - sizea;
+        diffb = inb - sizeb;
+    }
+
     diffout = hard_multipliers->outputs->size - sizeout;
 
     if (configuration.split_hard_multiplier == 1) {
@@ -1279,11 +1361,10 @@ void iterate_multipliers(netlist_t *netlist)
     int mula, mulb;
     int a0, a1, b0, b1;
     nnode_t *node;
-
     /* Can only perform the optimisation if hard multipliers exist! */
     if (hard_multipliers == NULL)
         return;
-
+    // std::cin.get();
     sizea = hard_multipliers->inputs->size;
     sizeb = hard_multipliers->inputs->next->size;
     if (sizea < sizeb) {
@@ -1311,7 +1392,6 @@ void iterate_multipliers(netlist_t *netlist)
             sizea = sizeb;
             sizeb = swap;
         }
-
         /* Do I need to split the multiplier on both inputs? */
         if ((mula > sizea) && (mulb > sizeb)) {
             a0 = sizea;
