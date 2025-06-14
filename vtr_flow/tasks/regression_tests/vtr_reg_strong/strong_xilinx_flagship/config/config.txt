@@ -1,4 +1,11 @@
-arch_list_add=simple-7series.xml
+circuits_dir=benchmarks/verilog
+
+archs_dir=arch/xilinx
+
+arch_list_add=7series_BRAM_DSP_carry.xml
+
+# Add circuits to list to sweep
+circuit_list_add=stereovision3.v
 
 
 # Parse info and how to parse
