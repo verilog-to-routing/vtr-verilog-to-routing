@@ -175,14 +175,6 @@ add_executable(vpr ${EXEC_SOURCES})
 target_link_libraries(vpr libvpr)
 
 
-#Suppress IPO link warnings if IPO is enabled
-get_target_property(VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
-if (VPR_USES_IPO)
-    set_property(TARGET vpr APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
-endif()
-
-
-
 #
 # Profile Guilded Optimization Configuration
 #
@@ -302,12 +294,6 @@ add_executable(test_vpr ${TEST_SOURCES})
 target_link_libraries(test_vpr
                         Catch2::Catch2WithMain
                         libvpr)
-
-#Suppress IPO link warnings if IPO is enabled
-get_target_property(TEST_VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
-if (TEST_VPR_USES_IPO)
-    set_property(TARGET test_vpr APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
-endif()
 
 add_test(NAME test_vpr
     COMMAND test_vpr --colour-mode ansi

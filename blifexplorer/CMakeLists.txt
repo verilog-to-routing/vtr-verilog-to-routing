@@ -56,13 +56,6 @@ else()
                             ${CMAKE_DL_LIBS}
     )
 
-    #Supress IPO link warnings if IPO is enabled
-    get_target_property(TEST_BLIFEXPLORER_USES_IPO blifexplorer INTERPROCEDURAL_OPTIMIZATION)
-    if (TEST_BLIFEXPLORER_USES_IPO)
-        set_property(TARGET blifexplorer APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
-    endif()
-
-
     install(TARGETS blifexplorer DESTINATION bin)
 
 endif()
