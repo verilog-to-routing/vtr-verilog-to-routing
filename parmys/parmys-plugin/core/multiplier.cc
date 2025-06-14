@@ -1024,74 +1024,96 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
             remap_pin_to_new_node(node->output_pins[i + b0], addbig, i);
         }
     } else {
+        /* Expounding upon the description for the method in this function.a0
+        if we have two numbers A and B and we have a hardware multiplier of size a0xb0,
+        we can split them into two parts:
+        A = A1 << a0 + A0
+        B = B1 << b0 + B0
+        where A1 and B1 are the high bits of A and B, and A0 and B0 are the low bits.
+        The multiplication of A and B can be expressed as:
+        A * B = (A1 << a0 + A0) * (B1 << b0 + B0)
+              = {A1 * B1 << (a0 + b0)} + {(A1 * B0) << a0 + (A0 * B1) << b0} + {A0 * B0}
+        we define split the editions up like so:
+        addsmall = (A1 * B0) << a0 + (A0 * B1) << b0
+        addsmall2 = (A1 * B1 << (a0 + b0)) + (A0 * B0) // Will not have carry
+        addbig = addsmall + addsmall2
 
-        /* New node for the initial add */
+        */
+        /////////////// Addsmall /////////////////////
         addsmall = allocate_nnode(node->loc);
         addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
         strcpy(addsmall->name, node->name);
         strcat(addsmall->name, "-add0");
-        // All additions in this version have the posibility of a carry out in the worst case
-        init_multiplier_adder(addsmall, a1b0, a1b0->num_output_pins + a0 + 1, a0b1->num_output_pins + b0 + 1);
-        // A0 and B0 are our hardware multiplier sizes
+        init_multiplier_adder(addsmall, a1b0, a1b0->num_output_pins + a0, a0b1->num_output_pins + b0);
 
-        int max = a0b1->num_output_pins;
-        if (a1b0->num_output_pins > max) {
-            max = a1b0->num_output_pins;
+        // The first a0 pins of addsmall input connecting to a1b0 are connected to zero
+        for (int i = 0; i < a0; i++) {
+            add_input_pin_to_node(addsmall, get_zero_pin(netlist), i);
         }
 
-        // right shift
-        for (int i = 0; i < a0; i++)
-            add_input_pin_to_node(addsmall, get_zero_pin(netlist), i);
-
         // connect inputs to port a of addsmall
-        for (int i = 0; i < a1b0->num_output_pins; i++)
+        for (int i = 0; i < a1b0->num_output_pins; i++) {
             connect_nodes(a1b0, i, addsmall, i + a0);
+        }
 
-        add_input_pin_to_node(addsmall, get_zero_pin(netlist), a1b0->num_output_pins); // for carry
-        // right shift
-        for (int i = 0; i < b0; i++)
+        // add zero pin for carry
+        // add_input_pin_to_node(addsmall, get_zero_pin(netlist), a1b0->num_output_pins + a0);
+
+        // The first b0 pins of addsmall input connecting to a0b1 are connected to zero
+        for (int i = 0; i < b0; i++) {
             add_input_pin_to_node(addsmall, get_zero_pin(netlist), i + addsmall->input_port_sizes[0]);
-        // connect inputs to port b of addsmall
-        for (int i = 0; i < max; i++)
-            connect_nodes(a0b1, i, addsmall, i + addsmall->input_port_sizes[0] + b0);
-        add_input_pin_to_node(addsmall, get_zero_pin(netlist), a0b1->num_output_pins + addsmall->input_port_sizes[0]);
+        }
 
+        // connect inputs to port b of addsmall
+        for (int i = 0; i < a0b1->num_output_pins; i++) {
+            connect_nodes(a0b1, i, addsmall, i + addsmall->input_port_sizes[0] + b0);
+        }
+
+        // add zero pin for carry
+        // add_input_pin_to_node(addsmall, get_zero_pin(netlist), a0b1->num_output_pins + addsmall->input_port_sizes[0] + b0);
+
+        /////////////// Addsmall2 /////////////////////
         addsmall2 = allocate_nnode(node->loc);
         addsmall2->name = (char *)vtr::malloc(strlen(node->name) + 6);
         strcpy(addsmall2->name, node->name);
         strcat(addsmall2->name, "-add1");
-        // this addition can have a carry in the worst case.
-        init_multiplier_adder(addsmall2, a0b0, a0b0->num_output_pins + 1, addsmall->num_output_pins + 1);
+        init_multiplier_adder(addsmall2, a1b1, a1b1->num_output_pins + a0 + b0, a0b0->num_output_pins);
 
-        for (int i = 0; i < a0b0->num_output_pins; i++)
-            connect_nodes(a0b0, i, addsmall2, i);
+        // connect first a0+ b0 pins of addsmall2 to zero
+        for (int i = 0; i < a0 + b0; i++) {
+            add_input_pin_to_node(addsmall2, get_zero_pin(netlist), i);
+        }
 
-        add_input_pin_to_node(addsmall2, get_zero_pin(netlist), a0b0->num_output_pins);
+        // connect inputs to port a of addsmall2
+        for (int i = 0; i < a1b1->num_output_pins; i++) {
+            connect_nodes(a1b1, i, addsmall2, i + a0 + b0);
+        }
 
-        for (int i = 0; i < addsmall->num_output_pins; i++)
-            connect_nodes(addsmall, i, addsmall2, i + addsmall2->input_port_sizes[0]);
-        add_input_pin_to_node(addsmall2, get_zero_pin(netlist), addsmall->num_output_pins + addsmall2->input_port_sizes[0]);
+        // connect inputs to port b of addsmall2
+        for (int i = 0; i < a0b0->output_port_sizes[0]; i++) {
+            connect_nodes(a0b0, i, addsmall2, i + addsmall2->input_port_sizes[0]);
+        }
 
+        /////////////// Addbig /////////////////////
         addbig = allocate_nnode(node->loc);
         addbig->name = (char *)vtr::malloc(strlen(node->name) + 6);
         strcpy(addbig->name, node->name);
         strcat(addbig->name, "-add2");
-        init_multiplier_adder(addbig, addsmall2, addsmall2->num_output_pins + 1, a1b1->num_output_pins + a0b0->num_output_pins + 1);
+        init_multiplier_adder(addbig, addsmall, addsmall->num_output_pins, addsmall2->num_output_pins);
 
-        for (int i = 0; i < addsmall2->num_output_pins; i++)
-            connect_nodes(addsmall2, i, addbig, i);
-        add_input_pin_to_node(addbig, get_zero_pin(netlist), addsmall2->num_output_pins);
+        // connect inputs to port a of addbig
+        for (int i = 0; i < addsmall->num_output_pins; i++) {
+            connect_nodes(addsmall, i, addbig, i);
+        }
+        // add_input_pin_to_node(addbig, get_zero_pin(netlist), addsmall->num_output_pins);
 
-        for (int i = 0; i < a0b0->num_output_pins; i++)
-            add_input_pin_to_node(addbig, get_zero_pin(netlist), i + addsmall2->num_output_pins);
+        // connect inputs to port b of addbig
+        for (int i = 0; i < addsmall2->num_output_pins; i++) {
+            connect_nodes(addsmall2, i, addbig, i + addbig->input_port_sizes[0]);
+        }
+        // add_input_pin_to_node(addbig, get_zero_pin(netlist), addsmall2->num_output_pins + addbig->input_port_sizes[0]);
 
-        for (int i = 0; i < a1b1->num_output_pins; i++)
-            connect_nodes(a1b1, i, addbig, i + addbig->input_port_sizes[0] + a0b0->num_output_pins);
-        add_input_pin_to_node(addbig, get_zero_pin(netlist), a1b1->num_output_pins + addbig->input_port_sizes[0]);
-
-        max = a0;
-        if (b0 > a0)
-            max = b0;
+        // remap the multiplier outputs coming directly from a0b0
         for (int i = 0; i < addbig->num_output_pins; i++) {
             remap_pin_to_new_node(node->output_pins[i], addbig, i);
         }
