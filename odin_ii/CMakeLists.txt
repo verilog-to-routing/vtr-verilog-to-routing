@@ -184,11 +184,5 @@ foreach(ODIN_LINK_FLAG ${ODIN_EXTRA_LINK_FLAGS})
         target_link_libraries(odin_ii ${ODIN_LINK_FLAG})
 endforeach()
 
-#Supress IPO link warnings if IPO is enabled
-get_target_property(ODIN_USES_IPO odin_ii INTERPROCEDURAL_OPTIMIZATION)
-if (ODIN_USES_IPO)
-    set_property(TARGET odin_ii APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
-endif()
-
 install(TARGETS odin_ii libodin_ii DESTINATION bin)
 install(FILES ${LIB_HEADERS} DESTINATION include/libodin_ii)
