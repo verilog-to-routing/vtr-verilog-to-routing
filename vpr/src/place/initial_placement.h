@@ -149,8 +149,7 @@ void initial_placement(const t_placer_opts& placer_opts,
                        const PlaceMacros& place_macros,
                        std::optional<NocCostHandler>& noc_cost_handler,
                        const FlatPlacementInfo& flat_placement_info,
-                       vtr::RngContainer& rng,
-                       std::vector<ClusterBlockId>& reconstruction_pass_clusters);
+                       vtr::RngContainer& rng);
 
 /**
  * @brief Looks for a valid placement location for block.

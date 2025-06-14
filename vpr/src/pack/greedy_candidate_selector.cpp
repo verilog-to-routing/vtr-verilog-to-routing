@@ -962,21 +962,17 @@ static void add_molecule_to_pb_stats_candidates(PackMoleculeId molecule_id,
     // see if the molecule is too far away from the position of the cluster.
     // If so, do not add it to the list of candidates.
     if (appack_ctx.appack_options.use_appack) {
-        // If this cluster is a memory block, do not drop candidates based on
-        // distance. Was found to create too many RAM blocks.
-        if (!cluster_gain_stats.is_memory) {
-            // Get the max dist for this block type.
-            float max_dist = appack_ctx.max_distance_threshold_manager.get_max_dist_threshold(*cluster_type);
+        // Get the max dist for this block type.
+        float max_dist = appack_ctx.max_distance_threshold_manager.get_max_dist_threshold(*cluster_type);
 
-            // If the distance from the cluster to the candidate is too large,
-            // do not add this molecule to the list of candidates.
-            const t_flat_pl_loc mol_loc = get_molecule_pos(molecule_id,
-                                                           prepacker,
-                                                           appack_ctx);
-            float dist = get_manhattan_distance(mol_loc, cluster_gain_stats.flat_cluster_position);
-            if (dist > max_dist)
-                return;
-        }
+        // If the distance from the cluster to the candidate is too large,
+        // do not add this molecule to the list of candidates.
+        const t_flat_pl_loc mol_loc = get_molecule_pos(molecule_id,
+                                                       prepacker,
+                                                       appack_ctx);
+        float dist = get_manhattan_distance(mol_loc, cluster_gain_stats.flat_cluster_position);
+        if (dist > max_dist)
+            return;
     }
 
     int num_molecule_failures = 0;

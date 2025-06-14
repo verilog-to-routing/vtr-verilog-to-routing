@@ -730,6 +730,10 @@ void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist) {
     // Run the initial placer on the clusters created by the packer, using the
     // flat placement information from the global placer to guide where to place
     // the clusters.
+    // TODO: Currently, the way initial placer sort the blocks to place is aligned
+    //       how reconstruction pass clusters created, so there is no need to explicitely
+    //       prioritize these clusters. However, if it changes in time, the atoms clustered
+    //       in neighbor pass and atoms misplaced might not match exactly.
     initial_placement(vpr_setup_.PlacerOpts,
                       vpr_setup_.PlacerOpts.constraints_file.c_str(),
                       vpr_setup_.NocOpts,
@@ -737,8 +741,7 @@ void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist) {
                       *g_vpr_ctx.placement().place_macros,
                       noc_cost_handler,
                       g_vpr_ctx.atom().flat_placement_info(),
-                      rng,
-                      reconstruction_pass_clusters);
+                      rng);
 
     // Log some information on how good the reconstruction was.
     log_flat_placement_reconstruction_info(g_vpr_ctx.atom().flat_placement_info(),
@@ -1105,8 +1108,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
                       *g_vpr_ctx.placement().place_macros,
                       noc_cost_handler,
                       flat_placement_info,
-                      rng,
-                      reconstruction_pass_clusters);
+                      rng);
 
     // Log some information on how good the reconstruction was.
     log_flat_placement_reconstruction_info(flat_placement_info,
