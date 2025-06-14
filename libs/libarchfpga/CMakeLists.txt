@@ -53,27 +53,9 @@ endif()
 
 target_compile_definitions(libarchfpga PUBLIC ${INTERCHANGE_SCHEMA_HEADERS})
 
-# Supress IPO link warnings if IPO is enabled
-get_target_property(LIBARCHFPGA_USES_IPO libarchfpga INTERPROCEDURAL_OPTIMIZATION)
-if(LIBARCHFPGA_USES_IPO)
-    # LibArchFPGA uses ints in many of its data structures instead of size_t for
-    # the size of arrays which are used to allocate arrays. At link-time, this
-    # causes many false allocation warnings when IPO is enabled.
-    # In order to suppress these warnings, we must make this PUBLIC so that not
-    # only we suppress the warning for libarchfpga, but also anything else that
-    # links with it.
-    target_link_options(libarchfpga PUBLIC -Wno-alloc-size-larger-than)
-endif()
-
 #Create the test executable
 add_executable(read_arch ${READ_ARCH_EXEC_SRC})
 target_link_libraries(read_arch libarchfpga)
-
-#Supress IPO link warnings if IPO is enabled
-get_target_property(READ_ARCH_USES_IPO read_arch INTERPROCEDURAL_OPTIMIZATION)
-if(READ_ARCH_USES_IPO)
-    set_property(TARGET read_arch APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
-endif()
 
 install(TARGETS libarchfpga DESTINATION bin)
 install(FILES ${LIB_HEADERS} DESTINATION include/libarchfpga)
