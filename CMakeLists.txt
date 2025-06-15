@@ -231,7 +231,7 @@ endforeach()
 # When IPO is turned on, it sometimes leads to false positives for warnings
 # since it checks for warnings after some of the source files have been compiled.
 # We globally suppress these warnings here. Any CMake executable which is added
-# after this line.
+# after this line will have these warnings suppressed at link time.
 if (CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     message(STATUS "IPO: Suppressing known VTR warnings.")
     add_link_options(-Wno-alloc-size-larger-than  # libarchfpga allocates C-style arrays using integers.
