@@ -15,13 +15,13 @@ circuit_list_add=neuron_stratixiv_arch_timing.blif
 arch_list_add=stratixiv_arch_neuron.timing.xml
 
 # Parse info and how to parse
-parse_file=vpr_standard.txt
+parse_file=vpr_fixed_chan_width.txt
 
 # How to parse QoR info
 qor_parse_file=qor_standard.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 # Script parameters
 script_params_common =-starting_stage vpr --route_chan_width 300 --max_router_iterations 400 --router_lookahead map --initial_pres_fac 1.0 --router_profiler_astar_fac 1.5 --seed 3 --device neuron 
