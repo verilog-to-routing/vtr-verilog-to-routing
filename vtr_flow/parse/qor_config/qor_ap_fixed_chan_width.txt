@@ -32,14 +32,9 @@ route_runtime;vpr.out;Routing took (.*) seconds
 total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 num_lab;vpr.out;Netlist LAB blocks:\s*(\d+)
-first_pass_time;vpr.out;First pass in pack reconstruction took (.*?) \(sec\)
-first_neighbour_pass_time;vpr.out;First neighbour pass in pack reconstruction took (.*?) \(sec\)
-second_neighbour_pass_time;vpr.out;Second neighbour pass in pack reconstruction took (.*?) \(sec\)
-pseudo_placement_remaining_time;vpr.out;Pseudo placement of remaining clusters in pack reconstruction took (.*?) \(sec\)
-actual_placement_time;vpr.out;Actual Place Clusters took (.*) seconds
 ap_fl_max_rss;vpr.out;AP Full Legalizer took .*max_rss (.*?) MiB
 total_max_rss;vpr.out;The entire flow of VPR took .*max_rss (.*?) MiB
 num_total_clusters;vpr.out;^\s*Total\s+clusters\s*:\s*(\d+)
-percent_atoms_in_neigh_pass;vpr.out;\*\*\* Percent of atoms clustered in neighbour pass: ([\d.]+)
-verify_cluster_atom_metric;vpr.out;\*\*\* \(1\)x\(2\) = ([\d.]+)
-percent_clusters_in_neigh_pass;vpr.out;\*\*\* Percent of clusters created in neighbour pass: ([\d.]+)
+pct_atoms_neighbor;vpr.out;^\s*Percent\s+of\s+atoms\s+clustered\s+in\s+Neighbor\s+pass\s*:\s*([\d.]+)%
+pct_molecules_neighbor;vpr.out;^\s*Percent\s+of\s+molecules\s+clustered\s+in\s+Neighbor\s+pass\s*:\s*([\d.]+)%
+pct_clusters_neighbor;vpr.out;^\s*Percent\s+of\s+clusters\s+created\s+in\s+Neighbor\s+pass\s*:\s*([\d.]+)%
