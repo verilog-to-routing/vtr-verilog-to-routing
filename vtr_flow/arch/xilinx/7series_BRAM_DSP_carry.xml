@@ -349,6 +349,379 @@
       <col type="EMPTY" startx="6" repeatx="11" starty="1" priority="19" />
     </auto_layout>
 
+    <!-- The following are layouts designed to simulate the Artix-7 device family's
+         resource utilization. It likely does not model the layout of the devices
+         faithfully. The auto format was used to generate a grid with enough CLB
+         slices (two slices per CLB tile), then any extra DSP, BRAM, or IO tiles were
+         dropped out evenly across the chip. Note that each DSP tile contains two
+         dsp slices, each BRAM tile contains 1 BRAM36 (or two BRAM16s), and each
+         IO tile contains 8 user I/Os. Resource values were obtained from the
+         "7 Series FPGAs Data Sheet: Overview" document.
+
+            Alex Singer
+            June 2025
+    -->
+
+    <!-- Artix-7 12k Logic Cell device.
+                    Data sheet     |   Actual
+                - 2,000 CLB slices | 950 CLB tiles
+                - 40 DSP slices    | 20 DSP tiles
+                - 20 BRAM blocks   | 20 BRAM tiles
+                - 150 IOs          | 19 IO tiles
+    -->
+    <fixed_layout name="XC7A12T-like" width="37" height="37">
+      <!-- 150 IOs (or around 19 tiles). Distribute them evenly around the border (5ish per side) -->
+      <perimeter type="EMPTY" priority="99" />
+      <corners type="EMPTY" priority="101" />
+      <col type="io" startx="0" starty="1" incry="8" priority="100" />
+      <col type="io" startx="36" starty="1" incry="8" priority="100" />
+      <row type="io" startx="1" starty="0" incrx="8" priority="100" />
+      <row type="io" startx="1" starty="36" incrx="9" priority="100" />
+
+      <!--Fill
+        with 'CLB'-->
+      <fill type="CLB" priority="10" />
+
+      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
+        other. The actual repeatx for each of these block types is slightly different from the bellow due
+        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
+        bellow are the average spacing between DSP and BRAM columns.-->
+      <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
+      <!-- Remove 3 DSPs from one column, 2 from all others each column to bring the total number of DSP slices to 20 -->
+      <col type="EMPTY" startx="10" starty="1" incry="35" priority="21" />
+      <col type="EMPTY" startx="21" starty="1" incry="17" priority="21" />
+      <col type="EMPTY" startx="32" starty="1" incry="35" priority="21" />
+
+      <col type="BRAM" startx="6" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="6" repeatx="11" starty="1" priority="19" />
+      <!-- Remove 3 BRAMs from one column, 2 from all others to bring the total number of BRAM36s to 20 -->
+      <col type="EMPTY" startx="6" starty="1" incry="35" priority="21" />
+      <col type="EMPTY" startx="17" starty="1" incry="17" priority="21" />
+      <col type="EMPTY" startx="28" starty="1" incry="35" priority="21" />
+    </fixed_layout>
+
+    <!-- Artix-7 15k Logic Cell device.
+                    Data sheet     |   Actual
+                - 2,600 CLB slices | 1,320 CLB tiles
+                - 45 DSP slices    | 22 DSP tiles
+                - 25 BRAM blocks   | 25 BRAM tiles
+                - 250 IOs          | 32 IO tiles
+    -->
+    <fixed_layout name="XC7A15T-like" width="42" height="42">
+      <!-- 250 IOs (or around 32 tiles). Distribute them evenly around the border (8 per side) -->
+      <perimeter type="EMPTY" priority="99" />
+      <corners type="EMPTY" priority="101" />
+      <col type="io" startx="0" starty="1" incry="5" priority="100" />
+      <col type="io" startx="41" starty="1" incry="5" priority="100" />
+      <row type="io" startx="1" starty="0" incrx="5" priority="100" />
+      <row type="io" startx="1" starty="41" incrx="5" priority="100" />
+
+      <!--Fill
+        with 'CLB'-->
+      <fill type="CLB" priority="10" />
+
+      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
+        other. The actual repeatx for each of these block types is slightly different from the bellow due
+        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
+        bellow are the average spacing between DSP and BRAM columns.-->
+      <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
+      <!-- Remove 6 DSPs from each column to bring the total number of DSP slices to 44 -->
+      <col type="EMPTY" startx="10" starty="1" incry="16" priority="21" />
+      <col type="EMPTY" startx="21" starty="1" incry="20" priority="21" />
+      <col type="EMPTY" startx="32" starty="1" incry="16" priority="21" />
+
+      <col type="BRAM" startx="6" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="6" repeatx="11" starty="1" priority="19" />
+      <!-- Remove 3 BRAMs from the first column, 4 from all others to bring the total number of BRAM36s to 25 -->
+      <col type="EMPTY" startx="6" starty="1" incry="19" priority="21" />
+      <col type="EMPTY" startx="17" starty="1" incry="12" priority="21" />
+      <col type="EMPTY" startx="28" starty="1" incry="12" priority="21" />
+      <col type="EMPTY" startx="39" starty="1" incry="12" priority="21" />
+    </fixed_layout>
+
+    <!-- Artix-7 25k Logic Cell device.
+                    Data sheet     |   Actual
+                - 3,650 CLB slices | 1,833 CLB tiles
+                - 80 DSP slices    | 40 DSP tiles
+                - 45 BRAM blocks   | 44 BRAM tiles
+                - 150 IOs          | 19 IO tiles
+    -->
+    <fixed_layout name="XC7A25T-like" width="49" height="49">
+      <!-- 150 IOs (or around 19 tiles). Distribute them evenly around the border (5ish per side) -->
+      <perimeter type="EMPTY" priority="99" />
+      <corners type="EMPTY" priority="101" />
+      <col type="io" startx="0" starty="1" incry="11" priority="100" />
+      <col type="io" startx="48" starty="1" incry="11" priority="100" />
+      <row type="io" startx="1" starty="0" incrx="11" priority="100" />
+      <row type="io" startx="1" starty="48" incrx="12" priority="100" />
+
+      <!--Fill
+        with 'CLB'-->
+      <fill type="CLB" priority="10" />
+
+      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
+        other. The actual repeatx for each of these block types is slightly different from the bellow due
+        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
+        bellow are the average spacing between DSP and BRAM columns.-->
+      <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
+      <!-- Remove 2 DSPs from each column to bring the total number of DSP slices to 40 -->
+      <col type="EMPTY" startx="10" starty="1" incry="45" priority="21" />
+      <col type="EMPTY" startx="21" starty="1" incry="45" priority="21" />
+      <col type="EMPTY" startx="32" starty="1" incry="45" priority="21" />
+      <col type="EMPTY" startx="43" starty="1" incry="45" priority="21" />
+
+      <col type="BRAM" startx="6" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="6" repeatx="11" starty="1" priority="19" />
+    </fixed_layout>
+
+    <!-- Artix-7 35k Logic Cell device.
+                    Data sheet     |   Actual
+                - 5,200 CLB slices | 2,570 CLB tiles
+                - 90 DSP slices    | 45 DSP tiles
+                - 50 BRAM blocks   | 50 BRAM tiles
+                - 250 IOs          | 31 IO tiles
+    -->
+    <fixed_layout name="XC7A35T-like" width="58" height="58">
+      <!-- 250 IOs (or around 31 tiles). Distribute them evenly around the border (8ish per side) -->
+      <perimeter type="EMPTY" priority="99" />
+      <corners type="EMPTY" priority="101" />
+      <col type="io" startx="0" starty="1" incry="7" priority="100" />
+      <col type="io" startx="57" starty="1" incry="7" priority="100" />
+      <row type="io" startx="1" starty="0" incrx="7" priority="100" />
+      <row type="io" startx="1" starty="57" incrx="8" priority="100" />
+
+      <!--Fill
+        with 'CLB'-->
+      <fill type="CLB" priority="10" />
+
+      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
+        other. The actual repeatx for each of these block types is slightly different from the bellow due
+        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
+        bellow are the average spacing between DSP and BRAM columns.-->
+      <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
+      <!-- Remove 6 DSPs from each column to bring the total number of DSP slices to 90 -->
+      <col type="EMPTY" startx="10" starty="1" incry="12" priority="21" />
+      <col type="EMPTY" startx="21" starty="1" incry="12" priority="21" />
+      <col type="EMPTY" startx="32" starty="1" incry="12" priority="21" />
+      <col type="EMPTY" startx="43" starty="1" incry="12" priority="21" />
+      <col type="EMPTY" startx="54" starty="1" incry="12" priority="21" />
+
+      <col type="BRAM" startx="6" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="6" repeatx="11" starty="1" priority="19" />
+      <!-- Remove 5 BRAMs from each column to bring the total number of BRAM36s to 50 -->
+      <col type="EMPTY" startx="6" starty="1" incry="14" priority="21" />
+      <col type="EMPTY" startx="17" starty="1" incry="14" priority="21" />
+      <col type="EMPTY" startx="28" starty="1" incry="14" priority="21" />
+      <col type="EMPTY" startx="39" starty="1" incry="14" priority="21" />
+      <col type="EMPTY" startx="50" starty="1" incry="14" priority="21" />
+    </fixed_layout>
+
+    <!-- Artix-7 50k Logic Cell device.
+                    Data sheet     |   Actual
+                - 8,150 CLB slices | 4,060 CLB tiles
+                - 120 DSP slices   | 60 DSP tiles
+                - 75 BRAM blocks   | 75 BRAM tiles
+                - 250 IOs          | 31 IO tiles
+    -->
+    <fixed_layout name="XC7A50T-like" width="72" height="72">
+      <!-- 250 IOs (or around 31 tiles). Distribute them evenly around the border (8ish per side) -->
+      <perimeter type="EMPTY" priority="99" />
+      <corners type="EMPTY" priority="101" />
+      <col type="io" startx="0" starty="1" incry="9" priority="100" />
+      <col type="io" startx="71" starty="1" incry="9" priority="100" />
+      <row type="io" startx="1" starty="0" incrx="9" priority="100" />
+      <row type="io" startx="1" starty="71" incrx="10" priority="100" />
+
+      <!--Fill
+        with 'CLB'-->
+      <fill type="CLB" priority="10" />
+
+      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
+        other. The actual repeatx for each of these block types is slightly different from the bellow due
+        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
+        bellow are the average spacing between DSP and BRAM columns.-->
+      <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
+      <!-- Remove 8 DSPs from each column to bring the total number of DSP slices to 120 -->
+      <col type="EMPTY" startx="10" starty="1" incry="10" priority="21" />
+      <col type="EMPTY" startx="21" starty="1" incry="10" priority="21" />
+      <col type="EMPTY" startx="32" starty="1" incry="10" priority="21" />
+      <col type="EMPTY" startx="43" starty="1" incry="10" priority="21" />
+      <col type="EMPTY" startx="54" starty="1" incry="10" priority="21" />
+      <col type="EMPTY" startx="65" starty="1" incry="10" priority="21" />
+
+      <col type="BRAM" startx="6" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="6" repeatx="11" starty="1" priority="19" />
+      <!-- Remove 5 BRAMs from half of the columns and 6 from the other half to bring the total number of BRAM36s to 75 -->
+      <col type="EMPTY" startx="6" starty="1" incry="17" priority="21" />
+      <col type="EMPTY" startx="17" starty="1" incry="17" priority="21" />
+      <col type="EMPTY" startx="28" starty="1" incry="17" priority="21" />
+      <col type="EMPTY" startx="39" starty="1" incry="14" priority="21" />
+      <col type="EMPTY" startx="50" starty="1" incry="14" priority="21" />
+      <col type="EMPTY" startx="61" starty="1" incry="14" priority="21" />
+    </fixed_layout>
+
+    <!-- Artix-7 75k Logic Cell device.
+                    Data sheet      |   Actual
+                - 11,800 CLB slices | 5,950 CLB tiles
+                - 180 DSP slices    | 90 DSP tiles
+                - 105 BRAM blocks   | 105 BRAM tiles
+                - 300 IOs           | 38 IO tiles
+    -->
+    <fixed_layout name="XC7A75T-like" width="87" height="87">
+      <!-- 300 IOs (or around 38 tiles). Distribute them evenly around the border (9ish per side) -->
+      <perimeter type="EMPTY" priority="99" />
+      <corners type="EMPTY" priority="101" />
+      <col type="io" startx="0" starty="1" incry="9" priority="100" />
+      <col type="io" startx="86" starty="1" incry="9" priority="100" />
+      <row type="io" startx="1" starty="0" incrx="10" priority="100" />
+      <row type="io" startx="1" starty="86" incrx="10" priority="100" />
+
+      <!--Fill
+        with 'CLB'-->
+      <fill type="CLB" priority="10" />
+
+      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
+        other. The actual repeatx for each of these block types is slightly different from the bellow due
+        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
+        bellow are the average spacing between DSP and BRAM columns.-->
+      <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
+      <!-- Remove DSPs -->
+      <col type="EMPTY" startx="10" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="21" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="32" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="43" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="54" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="65" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="76" starty="1" incry="10" priority="21" />
+
+      <col type="BRAM" startx="6" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="6" repeatx="11" starty="1" priority="19" />
+      <!-- Remove BRAMs -->
+      <col type="EMPTY" startx="6" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="17" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="28" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="39" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="50" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="61" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="72" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="83" starty="1" incry="13" priority="21" />
+    </fixed_layout>
+
+    <!-- Artix-7 100k Logic Cell device.
+                    Data sheet      |   Actual
+                - 15,850 CLB slices | 7,840 CLB tiles
+                - 240 DSP slices    | 120 DSP tiles
+                - 135 BRAM blocks   | 135 BRAM tiles
+                - 300 IOs           | 38 IO tiles
+    -->
+    <fixed_layout name="XC7A100T-like" width="100" height="100">
+      <!-- 300 IOs (or around 38 tiles). Distribute them evenly around the border (9ish per side) -->
+      <perimeter type="EMPTY" priority="99" />
+      <corners type="EMPTY" priority="101" />
+      <col type="io" startx="0" starty="1" incry="10" priority="100" />
+      <col type="io" startx="99" starty="1" incry="10" priority="100" />
+      <row type="io" startx="1" starty="0" incrx="12" priority="100" />
+      <row type="io" startx="1" starty="99" incrx="12" priority="100" />
+
+      <!--Fill
+        with 'CLB'-->
+      <fill type="CLB" priority="10" />
+
+      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
+        other. The actual repeatx for each of these block types is slightly different from the bellow due
+        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
+        bellow are the average spacing between DSP and BRAM columns.-->
+      <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
+      <!-- Remove DSPs -->
+      <col type="EMPTY" startx="10" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="21" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="32" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="43" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="54" starty="1" incry="8" priority="21" />
+      <col type="EMPTY" startx="65" starty="1" incry="8" priority="21" />
+      <col type="EMPTY" startx="76" starty="1" incry="8" priority="21" />
+      <col type="EMPTY" startx="87" starty="1" incry="8" priority="21" />
+      <col type="EMPTY" startx="98" starty="1" incry="8" priority="21" />
+
+      <col type="BRAM" startx="6" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="6" repeatx="11" starty="1" priority="19" />
+      <!-- Remove BRAMs -->
+      <col type="EMPTY" startx="6" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="17" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="28" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="39" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="50" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="61" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="72" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="83" starty="1" incry="11" priority="21" />
+      <col type="EMPTY" startx="94" starty="1" incry="11" priority="21" />
+    </fixed_layout>
+
+    <!-- Artix-7 200k Logic Cell device.
+                    Data sheet      |   Actual
+                - 33,650 CLB slices | 16.731 CLB tiles
+                - 740 DSP slices    | 370 DSP tiles
+                - 365 BRAM blocks   | 365 BRAM tiles
+                - 500 IOs           | 63 IO tiles
+    -->
+    <fixed_layout name="XC7A200T-like" width="145" height="145">
+      <!-- 500 IOs (or around 63 tiles). Distribute them evenly around the border (9ish per side) -->
+      <perimeter type="EMPTY" priority="99" />
+      <corners type="EMPTY" priority="101" />
+      <col type="io" startx="0" starty="1" incry="9" priority="100" />
+      <col type="io" startx="144" starty="1" incry="9" priority="100" />
+      <row type="io" startx="1" starty="0" incrx="9" priority="100" />
+      <row type="io" startx="1" starty="144" incrx="10" priority="100" />
+
+      <!--Fill
+        with 'CLB'-->
+      <fill type="CLB" priority="10" />
+
+      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
+        other. The actual repeatx for each of these block types is slightly different from the bellow due
+        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
+        bellow are the average spacing between DSP and BRAM columns.-->
+      <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
+      <!-- Remove DSPs -->
+      <col type="EMPTY" startx="10" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="21" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="32" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="43" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="54" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="65" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="76" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="87" starty="1" incry="24" priority="21" />
+      <col type="EMPTY" startx="98" starty="1" incry="24" priority="21" />
+      <col type="EMPTY" startx="109" starty="1" incry="24" priority="21" />
+      <col type="EMPTY" startx="120" starty="1" incry="24" priority="21" />
+      <col type="EMPTY" startx="131" starty="1" incry="24" priority="21" />
+      <col type="EMPTY" startx="142" starty="1" incry="24" priority="21" />
+
+      <col type="BRAM" startx="6" starty="1" repeatx="11" priority="20" />
+      <col type="EMPTY" startx="6" repeatx="11" starty="1" priority="19" />
+      <!-- Remove BRAMs -->
+      <col type="EMPTY" startx="6" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="17" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="28" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="39" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="50" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="61" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="72" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="83" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="94" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="105" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="116" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="127" starty="1" incry="21" priority="21" />
+      <col type="EMPTY" startx="138" starty="1" incry="24" priority="21" />
+    </fixed_layout>
   </layout>
   <device>
     <!-- The  values bellow (sizing and area) are pulled from the k6_N10_40nm arch. -->
