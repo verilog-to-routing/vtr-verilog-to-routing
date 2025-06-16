@@ -340,11 +340,8 @@ class PerPrimitiveDimPrefixSum2D {
     vtr::vector<PrimitiveVectorDim, vtr::PrefixSum2D<float>> dim_prefix_sum_;
 };
 
-/// @brief Tag for the PrimitiveGroupId
-struct primitive_group_id_tag;
-
 /// @brief A unique ID of a group of primitive dims created by the PrimitiveDimGrouper class.
-typedef vtr::StrongId<primitive_group_id_tag, size_t> PrimitiveGroupId;
+typedef vtr::StrongId<struct primitive_group_id_tag, size_t> PrimitiveGroupId;
 
 /**
  * @brief A manager class for grouping together dimensions of the primitive
