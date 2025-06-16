@@ -432,6 +432,11 @@ struct t_draw_coords {
      */
     ezgl::rectangle get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode);
 
+    /**
+     * @brief returns a 2D point for the absolute location of the given pb_graph_pin
+     */
+    ezgl::point2d get_absolute_pin_location(const ClusterBlockId clb_index, const t_pb_graph_pin* pb_graph_pin);
+
     ///@brief Returns bounding box for CLB of given idx/type
     ezgl::rectangle get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_logical_block_type_ptr type);
 

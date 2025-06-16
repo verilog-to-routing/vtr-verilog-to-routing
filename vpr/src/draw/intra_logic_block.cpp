@@ -38,7 +38,7 @@
 
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height);
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
-static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height);
+static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_block, int num_columns, int num_rows, float parent_width, float parent_height, float* blk_width, float* blk_height);
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
@@ -237,11 +237,25 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
             /* Find the number of instances for each child pb_type. */
             int num_pb = mode.pb_type_children[j].num_pb;
 
+            int num_blocks = num_pb * num_children;
+
+            // determine an optimal number of columns (calculates central factor)
+            int num_columns = 1;
+            for(int k = 1; k * k <= num_blocks; ++k) {
+                if(num_blocks % k == 0) {
+                    num_columns = k;
+                }
+            }
+            int num_rows = num_blocks / num_columns;
+
             for (int k = 0; k < num_pb; ++k) {
+
+                int num_block = j * num_pb + k;
+
                 /* Compute bound box for block. Don't call if pb_type is root-level pb. */
                 draw_internal_calc_coords(type_descrip_index,
                                           &pb_graph_node->child_pb_graph_nodes[i][j][k],
-                                          num_children, j, num_pb, k,
+                                          num_block, num_columns, num_rows,
                                           parent_width, parent_height,
                                           &blk_width, &blk_height);
 
@@ -258,51 +272,36 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
  * are relative to the left and bottom corner of the parent block.
  */
 static void
-draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
+draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_block, int num_columns, int num_rows, float parent_width, float parent_height, float* blk_width, float* blk_height) {
 
     // get the bbox for this pb type
     ezgl::rectangle& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
 
     const float FRACTION_PARENT_PADDING_X = 0.01;
+    const float FRACTION_PARENT_PADDING_Y = 0.01;
 
-    const float NORMAL_FRACTION_PARENT_HEIGHT = 0.90;
-    float capacity_divisor = 1;
-    const float FRACTION_PARENT_PADDING_BOTTOM = 0.01;
-
-    const float FRACTION_CHILD_MARGIN_X = 0.025;
-    const float FRACTION_CHILD_MARGIN_Y = 0.04;
-
-    int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
-    // TODO: this is a hack - should be fixed for the layer_num
-    const auto& type = device_ctx.grid.get_physical_type({1, 0, 0});
-    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && grid_blocks.get_usage({1, 0, 0}) != 0
-        && type_descrip_index == type->index) {
-        // that should test for io blocks, and setting capacity_divisor > 1
-        // will squish every thing down
-        capacity_divisor = capacity - 1;
-    }
+    const float FRACTION_CHILD_MARGIN_X = 0.01;
+    const float FRACTION_CHILD_MARGIN_Y = 0.01;
 
     /* Draw all child-level blocks in just most of the space inside their parent block. */
     float parent_drawing_width = parent_width * (1 - FRACTION_PARENT_PADDING_X * 2);
-    float parent_drawing_height = parent_height * (NORMAL_FRACTION_PARENT_HEIGHT / capacity_divisor);
+    float parent_drawing_height = parent_height * (1 - FRACTION_PARENT_PADDING_Y * 2);
 
     /* The left and bottom corner (inside the parent block) of the space to draw
      * child blocks.
      */
     float sub_tile_x = parent_width * FRACTION_PARENT_PADDING_X;
-    float sub_tile_y = parent_height * FRACTION_PARENT_PADDING_BOTTOM;
+    float sub_tile_y = parent_height * FRACTION_PARENT_PADDING_Y;
 
-    /* Divide parent_drawing_width by the number of child types. */
-    float child_width = parent_drawing_width / num_pb_types;
-    /* Divide parent_drawing_height by the number of instances of the pb_type. */
-    float child_height = parent_drawing_height / num_pb;
+    int x_index = num_block % num_columns;
+    int y_index = num_block / num_columns;
+
+    float child_width = parent_drawing_width / num_columns;
+    float child_height = parent_drawing_height / num_rows;
 
     /* The starting point to draw the physical block. */
-    double left = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
-    double bot = child_height * pb_index + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_height;
+    double left = child_width * x_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
+    double bot = child_height * y_index + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_height;
 
     /* Leave some space between different pb_types. */
     child_width *= 1 - FRACTION_CHILD_MARGIN_X * 2;

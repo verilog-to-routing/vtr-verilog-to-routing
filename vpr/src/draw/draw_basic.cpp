@@ -632,6 +632,11 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             for (int j = 1; j < height - 1; j++)
                 chany_track[i][j] = (-1);
     }
+    // VTR_LOG("Start");
+    // for (RRNodeId inode : rr_nodes_to_draw) {
+    //     VTR_LOG( "%d\n", rr_graph.node_type(inode));
+    // }
+    // VTR_LOG("End");
 
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
         RRNodeId inode = rr_nodes_to_draw[i];
@@ -655,18 +660,26 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         ezgl::color color = draw_state->draw_rr_node[inode].color;
 
 
+
+
+        if (rr_graph.node_type(inode) == e_rr_type::SINK || rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(prev_node) == e_rr_type::SINK || rr_graph.node_type(prev_node) == e_rr_type::SOURCE) {
+            continue;
+        }
+
         if (!is_inode_inter_cluster && !is_prev_node_inter_cluster) {
-            
-            AtomPinId pin_id1 = get_rr_node_atom_pin_id(inode);
-            AtomPinId pin_id2 = get_rr_node_atom_pin_id(prev_node);
 
-            VTR_ASSERT(pin_id1 != AtomPinId::INVALID() && pin_id2 != AtomPinId::INVALID());
 
-            ezgl::point2d p1 = atom_pin_draw_coord(pin_id1);
-            ezgl::point2d p2 = atom_pin_draw_coord(pin_id2);
 
-            g->set_color(color, edge_visibility.alpha);
-            g->draw_line(p1, p2);
+            // AtomPinId pin_id1 = get_rr_node_atom_pin_id(inode);
+            // AtomPinId pin_id2 = get_rr_node_atom_pin_id(prev_node);
+
+            // VTR_ASSERT(pin_id1 != AtomPinId::INVALID() && pin_id2 != AtomPinId::INVALID());
+
+            // ezgl::point2d p1 = atom_pin_draw_coord(pin_id1);
+            // ezgl::point2d p2 = atom_pin_draw_coord(pin_id2);
+
+            // g->set_color(color, edge_visibility.alpha);
+            // g->draw_line(p1, p2);
 
             continue;
         }
@@ -677,11 +690,6 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         auto iedge = find_edge(prev_node, inode);
         auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
-
-        
-
-        
-
 
         switch (rr_type) {
             case e_rr_type::OPIN: {
