@@ -83,8 +83,8 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
 }
 
 static size_t estimate_num_mux_rr_nodes(const DeviceGrid& grids,
-                                           const VibDeviceGrid& vib_grid,
-                                           const size_t& layer) {
+                                        const VibDeviceGrid& vib_grid,
+                                        const size_t& layer) {
     size_t num_grid_rr_nodes = 0;
 
     VTR_ASSERT(grids.width() == vib_grid.width() && grids.height() == vib_grid.height());
@@ -682,11 +682,11 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
 }
 
 static void load_one_grid_mux_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
-                                                  vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                                  std::vector<t_rr_rc_data>& rr_rc_data,
-                                                  const size_t& layer,
-                                                  const vtr::Point<size_t>& grid_coordinate,
-                                                  const VibDeviceGrid& vib_grid) {
+                                               vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                               std::vector<t_rr_rc_data>& rr_rc_data,
+                                               const size_t& layer,
+                                               const vtr::Point<size_t>& grid_coordinate,
+                                               const VibDeviceGrid& vib_grid) {
 
     const VibInf* vib = vib_grid.get_vib(layer, grid_coordinate.x(), grid_coordinate.y());
     size_t num_mux_nodes = vib->get_first_stages().size();
@@ -810,10 +810,10 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                 rr_graph_builder.node_lookup().reserve_nodes(layer, ix, iy, e_rr_type::MUX, vib_grid.num_mux_nodes(layer, ix, iy), TOTAL_2D_SIDES[0]);
 
                 load_one_grid_mux_nodes_basic_info(rr_graph_builder,
-                                                      rr_node_driver_switches,
-                                                      rr_rc_data,
-                                                      layer, grid_coordinate,
-                                                      vib_grid);
+                                                   rr_node_driver_switches,
+                                                   rr_rc_data,
+                                                   layer, grid_coordinate,
+                                                   vib_grid);
             }
         }
     }
