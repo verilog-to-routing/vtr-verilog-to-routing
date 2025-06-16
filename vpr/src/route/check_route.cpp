@@ -357,7 +357,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
         case e_rr_type::OPIN:
             from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
-            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::MEDIUM) {
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::MUX) {
                 num_adj += 1; //adjacent
             } else if (is_flat) {
                 VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN); // If pin is located inside a cluster
@@ -432,7 +432,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 }
             } else if (to_type == e_rr_type::CHANY) {
                 num_adj += chanx_chany_adjacent(from_node, to_node);
-            } else if (to_type == e_rr_type::MEDIUM) {
+            } else if (to_type == e_rr_type::MUX) {
                 num_adj += 1;
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -466,7 +466,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 }
             } else if (to_type == e_rr_type::CHANX) {
                 num_adj += chanx_chany_adjacent(to_node, from_node);
-            } else if (to_type == e_rr_type::MEDIUM) {
+            } else if (to_type == e_rr_type::MUX) {
                 num_adj += 1;
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -474,9 +474,9 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             }
             break;
 
-        case e_rr_type::MEDIUM:
+        case e_rr_type::MUX:
             //from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
-            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::MEDIUM) {
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::MUX) {
                 num_adj += 1; //adjacent
             } else if (is_flat) {
                 VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN); // If pin is located inside a cluster

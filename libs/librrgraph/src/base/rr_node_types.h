@@ -29,15 +29,15 @@ enum class e_rr_type : unsigned char {
     OPIN,       ///<Output pin of a block
     CHANX,      ///<x-directed routing wire, or an x-directed segment of a channel for global routing
     CHANY,      ///<y-directed routing wire, or a y-directed segment of a channel for global routing
-    MEDIUM,     ///<medium node for tileable routing resource graph
+    MUX,        ///<mux node used for two-stage mux in switch block. This node type is currently only used in tileable RR Graph.
     NUM_RR_TYPES
 };
 
 /// Used to iterate for different e_rr_type values in range-based for loops.
 constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_rr_type::SOURCE, e_rr_type::SINK, e_rr_type::IPIN,
-                                                                      e_rr_type::OPIN, e_rr_type::CHANX, e_rr_type::CHANY, e_rr_type::MEDIUM}};
+                                                                      e_rr_type::OPIN, e_rr_type::CHANX, e_rr_type::CHANY, e_rr_type::MUX}};
 
-constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename {"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "MEDIUM"};
+constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename {"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "MUX"};
 
 /**
  * @enum Direction

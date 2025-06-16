@@ -376,7 +376,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
         from_rr_type = rr_graph.node_type(from_rr_node);
 
         switch (from_rr_type) {
-            case e_rr_type::MEDIUM:
+            case e_rr_type::MUX:
             case e_rr_type::CHANX:
             case e_rr_type::CHANY:
                 num_edges = rr_graph.num_edges(RRNodeId(from_node));
@@ -392,7 +392,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                     }
 
                     switch (to_rr_type) {
-                        case e_rr_type::MEDIUM:
+                        case e_rr_type::MUX:
                         case e_rr_type::CHANX:
                         case e_rr_type::CHANY:
                             if (!chan_node_switch_done[size_t(to_node)]) {

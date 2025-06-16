@@ -82,7 +82,7 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
     return num_grid_rr_nodes;
 }
 
-static size_t estimate_num_medium_rr_nodes(const DeviceGrid& grids,
+static size_t estimate_num_mux_rr_nodes(const DeviceGrid& grids,
                                            const VibDeviceGrid& vib_grid,
                                            const size_t& layer) {
     size_t num_grid_rr_nodes = 0;
@@ -381,9 +381,9 @@ static vtr::vector<e_rr_type, size_t> estimate_num_rr_nodes(const DeviceGrid& gr
      * 1 Find number of rr nodes related to grids
      */
     if (!vib_grid.is_empty())
-        num_rr_nodes_per_type[e_rr_type::MEDIUM] = estimate_num_medium_rr_nodes(grids, vib_grid, layer);
+        num_rr_nodes_per_type[e_rr_type::MUX] = estimate_num_mux_rr_nodes(grids, vib_grid, layer);
     else
-        num_rr_nodes_per_type[e_rr_type::MEDIUM] = 0;
+        num_rr_nodes_per_type[e_rr_type::MUX] = 0;
 
     num_rr_nodes_per_type[e_rr_type::OPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, e_rr_type::OPIN, perimeter_cb);
     num_rr_nodes_per_type[e_rr_type::IPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, e_rr_type::IPIN, perimeter_cb);
@@ -681,7 +681,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     } /* End of class enumeration */
 }
 
-static void load_one_grid_medium_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
+static void load_one_grid_mux_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                   vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                                   std::vector<t_rr_rc_data>& rr_rc_data,
                                                   const size_t& layer,
@@ -689,23 +689,23 @@ static void load_one_grid_medium_nodes_basic_info(RRGraphBuilder& rr_graph_build
                                                   const VibDeviceGrid& vib_grid) {
 
     const VibInf* vib = vib_grid.get_vib(layer, grid_coordinate.x(), grid_coordinate.y());
-    size_t num_medium_nodes = vib->get_first_stages().size();
-    for (size_t i_medium = 0; i_medium < num_medium_nodes; i_medium++) {
+    size_t num_mux_nodes = vib->get_first_stages().size();
+    for (size_t i_mux = 0; i_mux < num_mux_nodes; i_mux++) {
         /* Create a new node and fill information */
-        RRNodeId node = rr_graph_builder.create_node(layer, grid_coordinate.x(), grid_coordinate.y(), e_rr_type::MEDIUM, i_medium, TOTAL_2D_SIDES[0]);
+        RRNodeId node = rr_graph_builder.create_node(layer, grid_coordinate.x(), grid_coordinate.y(), e_rr_type::MUX, i_mux, TOTAL_2D_SIDES[0]);
         /* node bounding box */
         rr_graph_builder.set_node_coordinates(node, grid_coordinate.x(),
                                               grid_coordinate.y(),
                                               grid_coordinate.x(),
                                               grid_coordinate.y());
         //rr_graph_builder.add_node_side(node, SIDES[0]);
-        rr_graph_builder.set_node_medium_num(node, i_medium);
+        rr_graph_builder.set_node_mux_num(node, i_mux);
 
         rr_graph_builder.set_node_capacity(node, 1);
         rr_graph_builder.set_node_layer(node, layer);
 
-        /* cost index is a FIXED value for MEDIUM */
-        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(MEDIUM_COST_INDEX));
+        /* cost index is a FIXED value for MUX */
+        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(MUX_COST_INDEX));
 
         /* Switch info */
         rr_node_driver_switches[node] = RRSwitchId(vib->get_switch_idx());
@@ -798,7 +798,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
     }
 
     if (!vib_grid.is_empty()) {
-        /* Create medium nodes */
+        /* Create MUX nodes */
         VTR_ASSERT(grids.width() == vib_grid.width() && grids.height() == vib_grid.height());
         for (size_t iy = 0; iy < grids.height(); ++iy) {
             for (size_t ix = 0; ix < grids.width(); ++ix) {
@@ -807,9 +807,9 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                 VTR_ASSERT(vib_grid.vib_pbtype_name(layer, ix, iy) == grids.get_physical_type(tile_loc)->name);
                 vtr::Point<size_t> grid_coordinate(ix, iy);
 
-                rr_graph_builder.node_lookup().reserve_nodes(layer, ix, iy, e_rr_type::MEDIUM, vib_grid.num_medium_nodes(layer, ix, iy), TOTAL_2D_SIDES[0]);
+                rr_graph_builder.node_lookup().reserve_nodes(layer, ix, iy, e_rr_type::MUX, vib_grid.num_mux_nodes(layer, ix, iy), TOTAL_2D_SIDES[0]);
 
-                load_one_grid_medium_nodes_basic_info(rr_graph_builder,
+                load_one_grid_mux_nodes_basic_info(rr_graph_builder,
                                                       rr_node_driver_switches,
                                                       rr_rc_data,
                                                       layer, grid_coordinate,

@@ -270,7 +270,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                                   || (rr_graph.node_yhigh(rr_node) == int(grid.height()) - 2));
                 bool is_wire = (rr_graph.node_type(rr_node) == e_rr_type::CHANX
                                 || rr_graph.node_type(rr_node) == e_rr_type::CHANY
-                                || rr_graph.node_type(rr_node) == e_rr_type::MEDIUM);
+                                || rr_graph.node_type(rr_node) == e_rr_type::MUX);
 
                 if (!is_chain && !is_fringe && !is_wire) {
                     if (rr_graph.node_type(rr_node) == e_rr_type::IPIN || rr_graph.node_type(rr_node) == e_rr_type::OPIN) {
@@ -413,7 +413,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
         }
-        case e_rr_type::MEDIUM:
+        case e_rr_type::MUX:
         case e_rr_type::IPIN:
         case e_rr_type::OPIN:
             if (type == nullptr) {
@@ -457,9 +457,9 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     int class_max_ptc = get_tile_class_max_ptc(type, is_flat);
     int pin_max_ptc = get_tile_pin_max_ptc(type, is_flat);
-    int medium_max_ptc = -1;
+    int mux_max_ptc = -1;
     if (vib_type) {
-        medium_max_ptc = (int)vib_type->get_first_stages().size();
+        mux_max_ptc = (int)vib_type->get_first_stages().size();
     }
     e_pin_type class_type = OPEN;
     int class_num_pins = -1;
@@ -478,9 +478,9 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
-        case e_rr_type::MEDIUM:
-            VTR_ASSERT(medium_max_ptc >= 0);
-            if (ptc_num >= medium_max_ptc) {
+        case e_rr_type::MUX:
+            VTR_ASSERT(mux_max_ptc >= 0);
+            if (ptc_num >= mux_max_ptc) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }

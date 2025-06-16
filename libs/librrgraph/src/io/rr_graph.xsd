@@ -233,7 +233,7 @@
       <xs:enumeration value="SINK"/>
       <xs:enumeration value="OPIN"/>
       <xs:enumeration value="IPIN"/>
-      <xs:enumeration value="MEDIUM"/>
+      <xs:enumeration value="MUX"/>
     </xs:restriction>
   </xs:simpleType>
 

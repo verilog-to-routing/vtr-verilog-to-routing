@@ -672,11 +672,11 @@ void t_rr_graph_storage::set_node_class_num(RRNodeId id, int new_class_num) {
     node_ptc_[id].ptc_.class_num = new_class_num;
 }
 
-void t_rr_graph_storage::set_node_medium_num(RRNodeId id, int new_medium_num) {
-    if (node_type(id) != e_rr_type::MEDIUM) {
-        VTR_LOG_ERROR("Attempted to set RR node 'medium_num' for non-MEDIUM type '%s'\n", node_type_string(id));
+void t_rr_graph_storage::set_node_mux_num(RRNodeId id, int new_mux_num) {
+    if (node_type(id) != e_rr_type::MUX) {
+        VTR_LOG_ERROR("Attempted to set RR node 'mux_num' for non-MUX type '%s'\n", node_type_string(id));
     }
-    node_ptc_[id].ptc_.medium_num = new_medium_num;
+    node_ptc_[id].ptc_.mux_num = new_mux_num;
 }
 
 int t_rr_graph_storage::node_ptc_num(RRNodeId id) const {
@@ -716,15 +716,15 @@ static int get_node_class_num(
     return node_ptc[id].ptc_.class_num;
 }
 
-static int get_node_medium_num(
+static int get_node_mux_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
     auto node_type = node_storage[id].type_;
-    if (node_type != e_rr_type::MEDIUM) {
-        VTR_LOG_ERROR("Attempted to access RR node 'medium_num' for non-MEDIUM type '%s'\n", rr_node_typename[node_type]);
+    if (node_type != e_rr_type::MUX) {
+        VTR_LOG_ERROR("Attempted to access RR node 'mux_num' for non-MUX type '%s'\n", rr_node_typename[node_type]);
     }
-    return node_ptc[id].ptc_.medium_num;
+    return node_ptc[id].ptc_.mux_num;
 }
 
 int t_rr_graph_storage::node_pin_num(RRNodeId id) const {
@@ -745,8 +745,8 @@ int t_rr_graph_storage::node_class_num(RRNodeId id) const {
         vtr::make_const_array_view_id(node_ptc_),
         id);
 }
-int t_rr_graph_storage::node_medium_num(RRNodeId id) const {
-    return get_node_medium_num(
+int t_rr_graph_storage::node_mux_num(RRNodeId id) const {
+    return get_node_mux_num(
         vtr::make_const_array_view_id(node_storage_),
         vtr::make_const_array_view_id(node_ptc_),
         id);
@@ -851,8 +851,8 @@ int t_rr_graph_view::node_track_num(RRNodeId id) const {
 int t_rr_graph_view::node_class_num(RRNodeId id) const {
     return get_node_class_num(node_storage_, node_ptc_, id);
 }
-int t_rr_graph_view::node_medium_num(RRNodeId id) const {
-    return get_node_medium_num(node_storage_, node_ptc_, id);
+int t_rr_graph_view::node_mux_num(RRNodeId id) const {
+    return get_node_mux_num(node_storage_, node_ptc_, id);
 }
 
 

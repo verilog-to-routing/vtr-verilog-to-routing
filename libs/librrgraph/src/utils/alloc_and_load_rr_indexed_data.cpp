@@ -348,7 +348,7 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 
     rr_indexed_data[RRIndexedDataId(SOURCE_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost = 0.;
-    rr_indexed_data[RRIndexedDataId(MEDIUM_COST_INDEX)].base_cost = delay_normalization_fac;
+    rr_indexed_data[RRIndexedDataId(MUX_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(OPIN_COST_INDEX)].base_cost = delay_normalization_fac;
     // The IPIN_COST_INDEX base cost is changed from 0.95 to 0.875 so it is perfectly representable in binary format (this change is made for SPEC benchmark).
     // This number is perfectly representable in a binary mantissa (without round-off) so we can get the same routing result on different platforms.
@@ -744,8 +744,8 @@ static void print_rr_index_info(const vtr::vector<RRIndexedDataId, t_rr_indexed_
             string_stream << cost_index << " SOURCE";
         } else if (cost_index == SINK_COST_INDEX) {
             string_stream << cost_index << " SINK";
-        } else if (cost_index == MEDIUM_COST_INDEX) {
-            string_stream << cost_index << " MEDIUM";
+        } else if (cost_index == MUX_COST_INDEX) {
+            string_stream << cost_index << " MUX";
         } else if (cost_index == OPIN_COST_INDEX) {
             string_stream << cost_index << " OPIN";
         } else if (cost_index == IPIN_COST_INDEX) {

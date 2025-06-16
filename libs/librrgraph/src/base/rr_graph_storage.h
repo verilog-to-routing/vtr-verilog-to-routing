@@ -99,7 +99,7 @@ struct t_rr_node_ptc_data {
         int pin_num;
         int track_num;
         int class_num;
-        int medium_num;
+        int mux_num;
     } ptc_;
 };
 
@@ -231,7 +231,7 @@ class t_rr_graph_storage {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
-    int node_medium_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_mux_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /** @brief Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
     t_edge_size fan_in(RRNodeId id) const {
@@ -639,7 +639,7 @@ class t_rr_graph_storage {
     void set_node_pin_num(RRNodeId id, int);   //Same as set_ptc_num() by checks type() is consistent
     void set_node_track_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
-    void set_node_medium_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
+    void set_node_mux_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
     void set_node_type(RRNodeId id, e_rr_type new_type);
     void set_node_name(RRNodeId id, const std::string& new_name);
@@ -1045,7 +1045,7 @@ class t_rr_graph_view {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
-    int node_medium_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_mux_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /**
     * @brief Retrieve the fan-in for a given RRNodeId.

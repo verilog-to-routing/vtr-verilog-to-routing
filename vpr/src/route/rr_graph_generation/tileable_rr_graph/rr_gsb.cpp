@@ -28,7 +28,7 @@ RRGSB::RRGSB() {
 
     opin_node_.clear();
 
-    medium_node_.clear();
+    mux_node_.clear();
     for (size_t icb_type = 0; icb_type < 2; icb_type++) {
         for (size_t iside = 0; iside < NUM_2D_SIDES; iside++) {
             cb_opin_node_[icb_type][iside].clear();
@@ -312,16 +312,16 @@ RRNodeId RRGSB::get_cb_opin_node(const e_rr_type& cb_type, const e_side& side, c
     return cb_opin_node_[icb_type][side_manager.to_size_t()][node_id];
 }
 
-/* Get the number of MEDIUM rr_nodes */
-size_t RRGSB::get_num_medium_nodes() const {
-    VTR_ASSERT(!medium_node_.empty());
-    return medium_node_.size();
+/* Get the number of MUX rr_nodes */
+size_t RRGSB::get_num_mux_nodes() const {
+    VTR_ASSERT(!mux_node_.empty());
+    return mux_node_.size();
 }
 
 /* get a rr_node at a given ptc number */
-RRNodeId RRGSB::get_medium_node(const size_t& ptc) const {
-    VTR_ASSERT(!medium_node_.empty() && medium_node_.size() > ptc);
-    return medium_node_[ptc];
+RRNodeId RRGSB::get_mux_node(const size_t& ptc) const {
+    VTR_ASSERT(!mux_node_.empty() && mux_node_.size() > ptc);
+    return mux_node_[ptc];
 }
 
 /* Get the node index of a routing track of a connection block, return -1 if not found */
@@ -467,9 +467,9 @@ bool RRGSB::is_ipin_node(const RRNodeId& node) const {
     return false;
 }
 
-bool RRGSB::is_medium_node(const RRNodeId& node) const {
-    for (auto medium_node : medium_node_) {
-        if (node == medium_node) {
+bool RRGSB::is_mux_node(const RRNodeId& node) const {
+    for (auto mux_node : mux_node_) {
+        if (node == mux_node) {
             return true;
         }
     }
@@ -827,10 +827,10 @@ void RRGSB::add_opin_node(const RRNodeId& node, const e_side& node_side) {
     opin_node_[size_t(node_side)].push_back(node);
 }
 
-/* Add a node to the medium_node_ */
-void RRGSB::add_medium_node(const RRNodeId& medium_node) {
+/* Add a node to the mux_node_ */
+void RRGSB::add_mux_node(const RRNodeId& mux_node) {
     /* push pack the dedicated element in the vector */
-    medium_node_.push_back(medium_node);
+    mux_node_.push_back(mux_node);
 }
 
 void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,

@@ -248,9 +248,9 @@ class RRGraphBuilder {
         node_storage_.set_node_class_num(id, new_class_num);
     }
 
-    /** @brief set_node_medium_num() is designed for routing medium nodes */
-    inline void set_node_medium_num(RRNodeId id, int new_class_num) {
-        node_storage_.set_node_medium_num(id, new_class_num);
+    /** @brief set_node_mux_num() is designed for routing mux nodes */
+    inline void set_node_mux_num(RRNodeId id, int new_class_num) {
+        node_storage_.set_node_mux_num(id, new_class_num);
     }
 
     /** @brief Add a list of ptc number in string (split by comma) to a given node. This function is used by rr graph reader only. Not suggested for internal builder!!! */

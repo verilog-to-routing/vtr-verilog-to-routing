@@ -117,11 +117,11 @@ class RRGSB {
     /* get a rr_node at a given side and track_id for a connection block */
     RRNodeId get_cb_opin_node(const e_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
 
-    /* Get the number of MEDIUM rr_nodes */
-    size_t get_num_medium_nodes() const;
+    /* Get the number of MUX rr_nodes */
+    size_t get_num_mux_nodes() const;
 
     /* get a rr_node at a given ptc number */
-    RRNodeId get_medium_node(const size_t& ptc) const;
+    RRNodeId get_mux_node(const size_t& ptc) const;
 
     int get_cb_chan_node_index(const e_rr_type& cb_type, const RRNodeId& node) const;
 
@@ -138,7 +138,7 @@ class RRGSB {
 
     bool is_opin_node(const RRNodeId& node) const;
     bool is_ipin_node(const RRNodeId& node) const;
-    bool is_medium_node(const RRNodeId& node) const;
+    bool is_mux_node(const RRNodeId& node) const;
     bool is_chan_node(const RRNodeId& node) const;
 
   public: /* Accessors: to identify mirrors */
@@ -197,8 +197,8 @@ class RRGSB {
     void add_opin_node(const RRNodeId& node,
                        const e_side& node_side);
 
-    /* Add a node to the medium_node_ */
-    void add_medium_node(const RRNodeId& medium_node);
+    /* Add a node to the mux_node_ */
+    void add_mux_node(const RRNodeId& mux_node);
 
     /* Sort all the incoming edges for routing channel rr_node */
     void sort_chan_node_in_edges(const RRGraphView& rr_graph);
@@ -285,9 +285,9 @@ class RRGSB {
      */
     std::array<std::array<std::vector<RRNodeId>, NUM_2D_SIDES>, 2> cb_opin_node_;
 
-    /* Medium Nodes Data */
-    std::vector<RRNodeId> medium_node_;
-    std::map<RRNodeId, std::string> medium_node_name_map_;
+    /* MUX Nodes Data */
+    std::vector<RRNodeId> mux_node_;
+    std::map<RRNodeId, std::string> mux_node_name_map_;
 };
 
 #endif

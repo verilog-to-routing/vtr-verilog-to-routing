@@ -1649,7 +1649,7 @@ bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
 
     if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
         return true;
-    } else if (node_type == e_rr_type::MEDIUM) { // This function will check all types of nodes. MEDIUM is added for avoiding errors.
+    } else if (node_type == e_rr_type::MUX) { // This function will check all types of nodes. MUX is added for avoiding errors.
         VTR_ASSERT(vib != nullptr);
         return (node_ptc < (int)vib->get_first_stages().size());
     } else {
@@ -1666,7 +1666,7 @@ bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id) {
     auto node_type = rr_graph_view.node_type(node_id);
-    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::MEDIUM) {
+    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::MUX) {
         return true;
     } else {
         int x_low = rr_graph_view.node_xlow(node_id);

@@ -119,13 +119,13 @@ std::vector<t_second_stage_mux_inf> VibInf::get_second_stages() const {
     return second_stages_;
 }
 
-size_t VibInf::medium_mux_index_by_name(const std::string& name) const {
-    for (size_t i_medium = 0; i_medium < first_stages_.size(); ++i_medium) {
-        if (name == first_stages_[i_medium].mux_name) {
-            return i_medium;
+size_t VibInf::mux_index_by_name(const std::string& name) const {
+    for (size_t i_mux = 0; i_mux < first_stages_.size(); ++i_mux) {
+        if (name == first_stages_[i_mux].mux_name) {
+            return i_mux;
         }
     }
-    VTR_LOG_ERROR("No medium mux named %s!", name.c_str());
+    VTR_LOG_ERROR("No mux named %s!", name.c_str());
 
     return size_t(-1);
 }

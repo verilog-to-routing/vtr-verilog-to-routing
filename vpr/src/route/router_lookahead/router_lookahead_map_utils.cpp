@@ -1035,7 +1035,7 @@ static void dijkstra_flood_to_wires(int itile,
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].congestion = curr.congestion;
             }
 
-        } else if (curr_rr_type == e_rr_type::SOURCE || curr_rr_type == e_rr_type::OPIN || curr_rr_type == e_rr_type::IPIN || curr_rr_type == e_rr_type::MEDIUM) {
+        } else if (curr_rr_type == e_rr_type::SOURCE || curr_rr_type == e_rr_type::OPIN || curr_rr_type == e_rr_type::IPIN || curr_rr_type == e_rr_type::MUX) {
             //We allow expansion through SOURCE/OPIN/IPIN types
             auto cost_index = rr_graph.node_cost_index(curr.node);
             float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost

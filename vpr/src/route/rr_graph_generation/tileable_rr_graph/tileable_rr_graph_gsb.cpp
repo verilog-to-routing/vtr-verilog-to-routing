@@ -1144,30 +1144,30 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         temp_ipin_rr_nodes.clear();
     }
 
-    /* Find all MEDIUM rr_nodes */
-    std::vector<RRNodeId> medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x(), gsb_coordinate.y(), e_rr_type::MEDIUM);
-    for (auto medium_rr_node : medium_rr_nodes) {
-        rr_gsb.add_medium_node(medium_rr_node);
+    /* Find all MUX rr_nodes */
+    std::vector<RRNodeId> mux_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x(), gsb_coordinate.y(), e_rr_type::MUX);
+    for (auto mux_rr_node : mux_rr_nodes) {
+        rr_gsb.add_mux_node(mux_rr_node);
     }
-    /* For TOP and RIGHT borders, we need to add extra medium nodes. */
+    /* For TOP and RIGHT borders, we need to add extra mux nodes. */
     if (gsb_coordinate.y() == grids.height() - 2) {
-        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x(), gsb_coordinate.y() + 1, e_rr_type::MEDIUM);
-        for (auto medium_rr_node : extra_medium_rr_nodes) {
-            rr_gsb.add_medium_node(medium_rr_node);
+        std::vector<RRNodeId> extra_mux_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x(), gsb_coordinate.y() + 1, e_rr_type::MUX);
+        for (auto mux_rr_node : extra_mux_rr_nodes) {
+            rr_gsb.add_mux_node(mux_rr_node);
         }
     }
 
     if (gsb_coordinate.x() == grids.width() - 2) {
-        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x() + 1, gsb_coordinate.y(), e_rr_type::MEDIUM);
-        for (auto medium_rr_node : extra_medium_rr_nodes) {
-            rr_gsb.add_medium_node(medium_rr_node);
+        std::vector<RRNodeId> extra_mux_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x() + 1, gsb_coordinate.y(), e_rr_type::MUX);
+        for (auto mux_rr_node : extra_mux_rr_nodes) {
+            rr_gsb.add_mux_node(mux_rr_node);
         }
     }
 
     if ((gsb_coordinate.x() == grids.width() - 2) && (gsb_coordinate.y() == grids.height() - 2)) {
-        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x() + 1, gsb_coordinate.y() + 1, e_rr_type::MEDIUM);
-        for (auto medium_rr_node : extra_medium_rr_nodes) {
-            rr_gsb.add_medium_node(medium_rr_node);
+        std::vector<RRNodeId> extra_mux_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x() + 1, gsb_coordinate.y() + 1, e_rr_type::MUX);
+        for (auto mux_rr_node : extra_mux_rr_nodes) {
+            rr_gsb.add_mux_node(mux_rr_node);
         }
     }
 
@@ -1806,9 +1806,9 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     const std::vector<t_first_stage_mux_inf> first_stages = vib->get_first_stages();
     for (size_t i_first_stage = 0; i_first_stage < first_stages.size(); i_first_stage++) {
         std::vector<t_from_or_to_inf> froms = first_stages[i_first_stage].froms;
-        RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MEDIUM, i_first_stage);
+        RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MUX, i_first_stage);
         VTR_ASSERT(to_node.is_valid());
-        VTR_ASSERT(rr_gsb.is_medium_node(to_node));
+        VTR_ASSERT(rr_gsb.is_mux_node(to_node));
         for (auto from : froms) {
             RRNodeId from_node;
             if (from.from_type == PB) {
@@ -1884,11 +1884,11 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
 
             } else if (from.from_type == MUX) {
-                size_t from_mux_index = vib->medium_mux_index_by_name(from.type_name);
-                from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MEDIUM, from_mux_index);
-                if (!rr_gsb.is_medium_node(from_node)) {
+                size_t from_mux_index = vib->mux_index_by_name(from.type_name);
+                from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MUX, from_mux_index);
+                if (!rr_gsb.is_mux_node(from_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                   "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                   "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                     exit(1);
                 }
             } else {
@@ -1939,7 +1939,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!rr_gsb.is_ipin_node(to_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                   "Medium node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                   "MUX node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
                     exit(1);
                 }
             } else if (to.from_type == SEGMENT) {
@@ -1989,7 +1989,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     VTR_ASSERT(OUT_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
                     if (!rr_gsb.is_chan_node(to_node)) {
                         VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                       "Medium node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                       "MUX node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
                         exit(1);
                     }
                 }
@@ -2026,7 +2026,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!rr_gsb.is_opin_node(from_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                   "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                   "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                     exit(1);
                 }
             } else if (from.from_type == SEGMENT) {
@@ -2073,17 +2073,17 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
                     if (!rr_gsb.is_chan_node(from_node)) {
                         VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                       "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                       "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                         exit(1);
                     }
                 }
 
             } else if (from.from_type == MUX) {
-                size_t from_mux_index = vib->medium_mux_index_by_name(from.type_name);
-                from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MEDIUM, from_mux_index);
-                if (!rr_gsb.is_medium_node(from_node)) {
+                size_t from_mux_index = vib->mux_index_by_name(from.type_name);
+                from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MUX, from_mux_index);
+                if (!rr_gsb.is_mux_node(from_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                   "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                   "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                     exit(1);
                 }
             } else {

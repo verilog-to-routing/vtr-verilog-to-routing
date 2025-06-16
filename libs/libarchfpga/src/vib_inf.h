@@ -151,7 +151,7 @@ class VibInf {
     std::vector<t_seg_group> get_seg_groups() const;
     std::vector<t_first_stage_mux_inf> get_first_stages() const;
     std::vector<t_second_stage_mux_inf> get_second_stages() const;
-    size_t medium_mux_index_by_name(const std::string& name) const;
+    size_t mux_index_by_name(const std::string& name) const;
 
   private:
     std::string name_;        /* vib name */
@@ -252,12 +252,12 @@ class VibDeviceGrid {
         return vib_grid_[layer][x][y];
     }
 
-    size_t num_medium_nodes(size_t layer, size_t x, size_t y) const {
+    size_t num_mux_nodes(size_t layer, size_t x, size_t y) const {
         return vib_grid_[layer][x][y]->get_first_stages().size();
     }
 
-    std::string medium_node_name(size_t layer, size_t x, size_t y, size_t medium_index) const {
-        return vib_grid_[layer][x][y]->get_first_stages()[medium_index].mux_name;
+    std::string mux_node_name(size_t layer, size_t x, size_t y, size_t mux_index) const {
+        return vib_grid_[layer][x][y]->get_first_stages()[mux_index].mux_name;
     }
 
     std::string vib_pbtype_name(size_t layer, size_t x, size_t y) const {
