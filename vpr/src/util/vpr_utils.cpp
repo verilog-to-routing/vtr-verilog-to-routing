@@ -1642,27 +1642,6 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
     return primitives;
 }
 
-bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
-                           const VibInf* vib,
-                           e_rr_type node_type,
-                           int node_ptc) {
-
-    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
-        return true;
-    } else if (node_type == e_rr_type::MUX) { // This function will check all types of nodes. MUX is added for avoiding errors.
-        VTR_ASSERT(vib != nullptr);
-        return (node_ptc < (int)vib->get_first_stages().size());
-    } else {
-        VTR_ASSERT(node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN || node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
-        if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
-            return is_pin_on_tile(physical_tile, node_ptc);
-        } else {
-            VTR_ASSERT(node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
-            return is_class_on_tile(physical_tile, node_ptc);
-        }
-    }
-}
-
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id) {
     auto node_type = rr_graph_view.node_type(node_id);

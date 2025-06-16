@@ -417,24 +417,10 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         break;
                     }
 
-                    //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x(), sample_loc.y());
                     const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num, sample_loc.x, sample_loc.y, rr_type);
                     for (RRNodeId node_id : rr_nodes_at_loc) {
                         int ptc = rr_graph.node_ptc_num(node_id);
-                        const VibInf* vib;
-                        if (!device_ctx.arch->vib_infs.empty()) {
-                            vib = device_ctx.vib_grid.get_vib(sample_loc.layer_num, sample_loc.x, sample_loc.y);
-                        } else {
-                            vib = nullptr;
-                        }
-                        //const t_vib_inf* vib = device_ctx.vib_grid[sample_loc.layer_num][sample_loc.x][sample_loc.y];
-                        // For the time being, we decide to not let the lookahead explore the node inside the clusters
-
-                        if (!is_inter_cluster_node(&device_ctx.physical_tile_types[itile],
-                                                   vib,
-                                                   rr_type,
-                                                   ptc)) {
-
+                        if (!is_inter_cluster_node(rr_graph, node_id)) {
                             continue;
                         }
 
@@ -1046,22 +1032,7 @@ static void dijkstra_flood_to_wires(int itile,
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-
-                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(next_node),
-                                                                                            rr_graph.node_ylow(next_node),
-                                                                                            rr_graph.node_layer(next_node)});
-                const VibInf* vib;
-                if (!device_ctx.arch->vib_infs.empty()) {
-                    vib = device_ctx.vib_grid.get_vib(rr_graph.node_layer(next_node), rr_graph.node_xlow(next_node), rr_graph.node_ylow(next_node));
-                } else {
-                    vib = nullptr;
-                }
-                //const t_vib_inf* vib = device_ctx.vib_grid[rr_graph.node_layer(next_node)][rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)];
-                if (!is_inter_cluster_node(physical_type,
-                                           vib,
-                                           rr_graph.node_type(next_node),
-                                           rr_graph.node_ptc_num(next_node))) {
-
+                if (!is_inter_cluster_node(rr_graph, next_node)) {
                     // Don't go inside the clusters
                     continue;
                 }
@@ -1415,22 +1386,9 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
 
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
-        // For the time being, we decide to not let the lookahead explore the node inside the clusters
-        t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(child_node),
-                                                                                    rr_graph.node_ylow(child_node),
-                                                                                    rr_graph.node_layer(child_node)});
-        const VibInf* vib;
-        if (!device_ctx.arch->vib_infs.empty()) {
-            vib = device_ctx.vib_grid.get_vib(rr_graph.node_layer(child_node), rr_graph.node_xlow(child_node), rr_graph.node_ylow(child_node));
-        } else {
-            vib = nullptr;
-        }
-
-        if (!is_inter_cluster_node(physical_type,
-                                   vib,
-                                   rr_graph.node_type(child_node),
-                                   rr_graph.node_ptc_num(child_node))) {
-
+        // Don't expand the nodes inside the clusters since the intra-cluster lookahead
+        // is computed separately.
+        if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
         }
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
