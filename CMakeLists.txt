@@ -227,18 +227,17 @@ foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     endif()
 endforeach()
 
-#Suppress IPO link warnings
-set(IPO_LINK_WARN_SUPRESS_FLAGS " ")
-set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK
-    "-Wno-null-dereference"
-    )
-foreach(flag ${IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK})
-    CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
-    if(CXX_COMPILER_SUPPORTS_${flag})
-        #Flag supported, so enable it
-        set(IPO_LINK_WARN_SUPRESS_FLAGS "${IPO_LINK_WARN_SUPRESS_FLAGS} ${flag}")
-    endif()
-endforeach()
+# Suppress IPO link warnings.
+# When IPO is turned on, it sometimes leads to false positives for warnings
+# since it checks for warnings after some of the source files have been compiled.
+# We globally suppress these warnings here. Any CMake executable which is added
+# after this line will have these warnings suppressed at link time.
+if (CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+    message(STATUS "IPO: Suppressing known VTR warnings.")
+    add_link_options(-Wno-alloc-size-larger-than  # libarchfpga allocates C-style arrays using integers.
+                     -Wno-stringop-overflow       # EXTERNAL/capnproto has some string overflow warnings.
+                     )
+endif()
 
 #
 # Sanitizer flags
