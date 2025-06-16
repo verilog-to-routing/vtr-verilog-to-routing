@@ -1024,27 +1024,28 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
             remap_pin_to_new_node(node->output_pins[i + b0], addbig, i);
         }
     } else {
-        /* Expounding upon the description for the method in this function.a0
+        /* Expounding upon the description for the method in this function.
         if we have two numbers A and B and we have a hardware multiplier of size a0xb0,
         we can split them into two parts:
         A = A1 << a0 + A0
         B = B1 << b0 + B0
         where A1 and B1 are the high bits of A and B, and A0 and B0 are the low bits.
+        Note that len(A0) = a0 and len(B0) = b0 by definition.
         The multiplication of A and B can be expressed as:
         A * B = (A1 << a0 + A0) * (B1 << b0 + B0)
               = {A1 * B1 << (a0 + b0)} + {(A1 * B0) << a0 + (A0 * B1) << b0} + {A0 * B0}
         we define split the editions up like so:
-        addsmall = (A1 * B0) << a0 + (A0 * B1) << b0
+        addsmall = (A1 * B0) << a0 + (A0 * B1) << b0 // can have carry
         addsmall2 = (A1 * B1 << (a0 + b0)) + (A0 * B0) // Will not have carry
         addbig = addsmall + addsmall2
-
+        This is a slightly modified version of the Karatsuba algorithm.
         */
         /////////////// Addsmall /////////////////////
         addsmall = allocate_nnode(node->loc);
         addsmall->name = (char *)vtr::malloc(strlen(node->name) + 6);
         strcpy(addsmall->name, node->name);
         strcat(addsmall->name, "-add0");
-        init_multiplier_adder(addsmall, a1b0, a1b0->num_output_pins + a0, a0b1->num_output_pins + b0);
+        init_multiplier_adder(addsmall, a1b0, a1b0->num_output_pins + a0 + 1, a0b1->num_output_pins + b0 + 1);
 
         // The first a0 pins of addsmall input connecting to a1b0 are connected to zero
         for (int i = 0; i < a0; i++) {
@@ -1057,7 +1058,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
         }
 
         // add zero pin for carry
-        // add_input_pin_to_node(addsmall, get_zero_pin(netlist), a1b0->num_output_pins + a0);
+        add_input_pin_to_node(addsmall, get_zero_pin(netlist), a1b0->num_output_pins + a0);
 
         // The first b0 pins of addsmall input connecting to a0b1 are connected to zero
         for (int i = 0; i < b0; i++) {
@@ -1070,7 +1071,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
         }
 
         // add zero pin for carry
-        // add_input_pin_to_node(addsmall, get_zero_pin(netlist), a0b1->num_output_pins + addsmall->input_port_sizes[0] + b0);
+        add_input_pin_to_node(addsmall, get_zero_pin(netlist), a0b1->num_output_pins + addsmall->input_port_sizes[0] + b0);
 
         /////////////// Addsmall2 /////////////////////
         addsmall2 = allocate_nnode(node->loc);
@@ -1100,6 +1101,9 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
         strcpy(addbig->name, node->name);
         strcat(addbig->name, "-add2");
         init_multiplier_adder(addbig, addsmall, addsmall->num_output_pins, addsmall2->num_output_pins);
+        // Here the final addition can have a carry out in the worst case, however,
+        // our final product will always only be the length of the longest input port so regardless of the carry the
+        // final adds carry will always drop out.
 
         // connect inputs to port a of addbig
         for (int i = 0; i < addsmall->num_output_pins; i++) {
@@ -1111,7 +1115,7 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
         for (int i = 0; i < addsmall2->num_output_pins; i++) {
             connect_nodes(addsmall2, i, addbig, i + addbig->input_port_sizes[0]);
         }
-        // add_input_pin_to_node(addbig, get_zero_pin(netlist), addsmall2->num_output_pins + addbig->input_port_sizes[0]);
+        // add_input_pin_to_node(addbig, get_zero_pin(netlist), addbig->input_port_sizes[0] + addsmall->num_output_pins);
 
         // remap the multiplier outputs coming directly from a0b0
         for (int i = 0; i < addbig->num_output_pins; i++) {
