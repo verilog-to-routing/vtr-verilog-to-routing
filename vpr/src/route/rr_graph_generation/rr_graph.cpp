@@ -1064,10 +1064,10 @@ static void build_rr_graph(e_graph_type graph_type,
                            const int route_verbosity) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
-    /* Reset warning flag */
+    // Reset warning flag
     *Warnings = RR_GRAPH_NO_WARN;
 
-    /* Decode the graph_type */
+    // Decode the graph_type
     bool is_global_graph = (e_graph_type::GLOBAL == graph_type);
     bool use_full_seg_groups = (e_graph_type::UNIDIR_TILEABLE == graph_type);
     enum e_directionality directionality = (e_graph_type::BIDIR == graph_type) ? BI_DIRECTIONAL : UNI_DIRECTIONAL;
@@ -1103,7 +1103,7 @@ static void build_rr_graph(e_graph_type graph_type,
     std::vector<t_seg_details> seg_details_y;
 
     if (is_global_graph) {
-        /* Sets up a single unit length segment type for global routing. */
+        // Sets up a single unit length segment type for global routing.
         seg_details_x = alloc_and_load_global_route_seg_details(global_route_switch);
         seg_details_y = alloc_and_load_global_route_seg_details(global_route_switch);
 
@@ -1117,7 +1117,7 @@ static void build_rr_graph(e_graph_type graph_type,
 
         size_t max_dim = std::max(grid.width(), grid.height()) - 2; //-2 for no perim channels
 
-        /*Get x & y segments separately*/
+        // Get x & y segments separately
         seg_details_x = alloc_and_load_seg_details(&max_chan_width_x,
                                                    max_dim, segment_inf_x,
                                                    use_full_seg_groups, directionality);
@@ -1142,7 +1142,7 @@ static void build_rr_graph(e_graph_type graph_type,
         //}
     }
 
-    /*map the internal segment indices of the networks*/
+    // Map the internal segment indices of the networks
     if (clock_modeling == DEDICATED_NETWORK) {
         ClockRRGraphBuilder::map_relative_seg_indices(segment_index_map);
     }
@@ -1164,13 +1164,13 @@ static void build_rr_graph(e_graph_type graph_type,
     /* END CHAN_DETAILS */
 
     /* START FC */
-    /* Determine the actual value of Fc */
-    std::vector<vtr::Matrix<int>> Fc_in;  /* [0..device_ctx.num_block_types-1][0..num_pins-1][0..num_segments-1] */
-    std::vector<vtr::Matrix<int>> Fc_out; /* [0..device_ctx.num_block_types-1][0..num_pins-1][0..num_segments-1] */
+    // Determine the actual value of Fc
+    std::vector<vtr::Matrix<int>> Fc_in;  // [0..device_ctx.num_block_types-1][0..num_pins-1][0..num_segments-1]
+    std::vector<vtr::Matrix<int>> Fc_out; // [0..device_ctx.num_block_types-1][0..num_pins-1][0..num_segments-1]
 
-    /* get maximum number of pins across all blocks */
+    // Get maximum number of pins across all blocks
     int max_pins = types[0].num_pins;
-    for (const auto& type : types) {
+    for (const t_physical_tile_type& type : types) {
         if (is_empty_type(&type)) {
             continue;
         }
@@ -1180,7 +1180,7 @@ static void build_rr_graph(e_graph_type graph_type,
         }
     }
 
-    /* get the number of 'sets' for each segment type -- unidirectional architectures have two tracks in a set, bidirectional have one */
+    // Get the number of 'sets' for each segment type -- unidirectional architectures have two tracks in a set, bidirectional have one
     int total_sets = max_chan_width;
     int total_sets_x = max_chan_width_x;
     int total_sets_y = max_chan_width_y;
@@ -1196,7 +1196,7 @@ static void build_rr_graph(e_graph_type graph_type,
     std::vector<int> sets_per_seg_type = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
 
     if (is_global_graph) {
-        //All pins can connect during global routing
+        // All pins can connect during global routing
         auto ones = vtr::Matrix<int>({size_t(max_pins), segment_inf.size()}, 1);
         Fc_in = std::vector<vtr::Matrix<int>>(types.size(), ones);
         Fc_out = std::vector<vtr::Matrix<int>>(types.size(), ones);
@@ -1289,7 +1289,7 @@ static void build_rr_graph(e_graph_type graph_type,
     //is deterministic -- always producing the same RR graph.
     constexpr unsigned SWITCHPOINT_RNG_SEED = 1;
     vtr::RngContainer switchpoint_rng(SWITCHPOINT_RNG_SEED);
-    const auto inter_cluster_prog_rr = device_ctx.inter_cluster_prog_routing_resources;
+    const std::vector<bool>& inter_cluster_prog_rr = device_ctx.inter_cluster_prog_routing_resources;
 
     if (is_global_graph) {
         switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, SUBSET, 3);
@@ -1888,11 +1888,11 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
                                                                    const std::vector<vtr::Matrix<int>>& Fc_out,
                                                                    const enum e_directionality directionality) {
     std::vector<std::vector<bool>> result(L_num_types);
-    for (auto& seg_type_bools : result) {
+    for (std::vector<bool>& seg_type_bools : result) {
         seg_type_bools.resize(num_seg_types, false);
     }
 
-    /* factor to account for unidir vs bidir */
+    // factor to account for unidir vs bidir
     int fac = 1;
     if (directionality == UNI_DIRECTIONAL) {
         fac = 2;
@@ -1915,15 +1915,13 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
                 }
 
                 if ((Fc_in[itype][0][iseg] <= tracks_in_seg_type - 2)
-                    && (fabs(Fc_ratio - vtr::nint(Fc_ratio))
-                        < (0.5 / (float)tracks_in_seg_type))) {
+                    && (fabs(Fc_ratio - vtr::nint(Fc_ratio)) < (0.5 / (float)tracks_in_seg_type))) {
                     result[itype][iseg] = true;
                 }
             }
         }
     } else {
-        /* Unidirectional routing uses mux balancing patterns and
-         * thus shouldn't need perturbation. */
+        // Unidirectional routing uses mux balancing patterns and thus shouldn't need perturbation.
         VTR_ASSERT(UNI_DIRECTIONAL == directionality);
         for (int itype = 0; itype < L_num_types; ++itype) {
             for (int iseg = 0; iseg < num_seg_types; ++iseg) {
@@ -1968,13 +1966,13 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                                                               const enum e_directionality directionality,
                                                               bool* Fc_clipped,
                                                               bool is_flat) {
-    //Initialize Fc of all blocks to zero
+    // Initialize Fc of all blocks to zero
     auto zeros = vtr::Matrix<int>({size_t(max_pins), segment_inf.size()}, 0);
     std::vector<vtr::Matrix<int>> Fc(types.size(), zeros);
 
     *Fc_clipped = false;
 
-    /* Unidir tracks formed in pairs, otherwise no effect. */
+    // Unidir tracks formed in pairs, otherwise no effect.
     int fac = 1;
     if (UNI_DIRECTIONAL == directionality) {
         fac = 2;
@@ -1982,7 +1980,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
 
     VTR_ASSERT((nodes_per_chan->x_max % fac) == 0 && (nodes_per_chan->y_max % fac) == 0);
 
-    for (const t_physical_tile_type& type : types) { //Skip EMPTY
+    for (const t_physical_tile_type& type : types) { // Skip EMPTY
         int itype = type.index;
 
         for (const t_fc_specification& fc_spec : type.fc_specs) {
@@ -1993,12 +1991,12 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
             int iseg = fc_spec.seg_index;
 
             if (fc_spec.fc_value == 0) {
-                /* Special case indicating that this pin does not connect to general-purpose routing */
+                // Special case indicating that this pin does not connect to general-purpose routing
                 for (int ipin : fc_spec.pins) {
                     Fc[itype][ipin][iseg] = 0;
                 }
             } else {
-                /* General case indicating that this pin connects to general-purpose routing */
+                // General case indicating that this pin connects to general-purpose routing
 
                 //Calculate how many connections there should be across all the pins in this fc_spec
                 int total_connections = 0;
@@ -2026,23 +2024,23 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                     total_connections = vtr::nint(fc_spec.fc_value) * fc_spec.pins.size();
                 }
 
-                //Ensure that there are at least fac connections, this ensures that low Fc ports
-                //targeting small sets of segs get connection(s), even if flt_total_connections < fac.
+                // Ensure that there are at least fac connections, this ensures that low Fc ports
+                // targeting small sets of segs get connection(s), even if flt_total_connections < fac.
                 total_connections = std::max(total_connections, fac);
 
-                //Ensure total evenly divides fac by adding the remainder
+                // Ensure total evenly divides fac by adding the remainder
                 total_connections += (total_connections % fac);
 
                 VTR_ASSERT(total_connections > 0);
                 VTR_ASSERT(total_connections % fac == 0);
 
-                //We walk through all the pins this fc_spec applies to, adding fac connections
-                //to each pin, until we run out of connections. This should distribute the connections
-                //as evenly as possible (if total_connections % pins.size() != 0, there will be
-                //some inevitable imbalance).
+                // We walk through all the pins this fc_spec applies to, adding fac connections
+                // to each pin, until we run out of connections. This should distribute the connections
+                // as evenly as possible (if total_connections % pins.size() != 0, there will be
+                // some inevitable imbalance).
                 int connections_remaining = total_connections;
                 while (connections_remaining != 0) {
-                    //Add one set of connections to each pin
+                    // Add one set of connections to each pin
                     for (int ipin : fc_spec.pins) {
                         if (connections_remaining >= fac) {
                             Fc[itype][ipin][iseg] += fac;
@@ -2055,8 +2053,8 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                 }
 
                 for (int ipin : fc_spec.pins) {
-                    //It is possible that we may want more connections that wires of this type exist;
-                    //clip to the maximum number of wires
+                    // It is possible that we may want more connections that wires of this type exist;
+                    // clip to the maximum number of wires
                     if (Fc[itype][ipin][iseg] > sets_per_seg_type[iseg] * fac) {
                         *Fc_clipped = true;
                         Fc[itype][ipin][iseg] = sets_per_seg_type[iseg] * fac;
@@ -4296,7 +4294,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
  */
 static std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs,
                                                                            int delayless_switch) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     const int num_directs = directs.size();
     std::vector<t_clb_to_clb_directs> clb_to_clb_directs(num_directs);
@@ -4314,16 +4312,14 @@ static std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const
         // Parse out the pb_type name, port name, and pin range
         auto [start_pin_index, end_pin_index, tile_name, port_name] = parse_direct_pin_name(directs[i].from_pin, directs[i].line);
 
-        t_physical_tile_type_ptr physical_tile = nullptr;
         // Figure out which type, port, and pin is used
-        physical_tile = find_tile_type_by_name(tile_name, device_ctx.physical_tile_types);
+         t_physical_tile_type_ptr physical_tile = find_tile_type_by_name(tile_name, device_ctx.physical_tile_types);
         if (physical_tile == nullptr) {
             VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name.c_str());
         }
         clb_to_clb_directs[i].from_clb_type = physical_tile;
 
-        t_physical_tile_port tile_port;
-        tile_port = find_tile_port_by_name(physical_tile, port_name);
+        t_physical_tile_port tile_port = find_tile_port_by_name(physical_tile, port_name);
 
         if (start_pin_index == OPEN) {
             VTR_ASSERT(start_pin_index == end_pin_index);

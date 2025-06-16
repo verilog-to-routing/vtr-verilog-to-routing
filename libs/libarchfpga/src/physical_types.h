@@ -1723,51 +1723,45 @@ enum e_Fc_type {
  * used if the route_type is DETAILED.  [0 .. det_routing_arch.num_segment]
  */
 struct t_segment_inf {
-    /**
-     *  @brief The name of the segment type
-     */
+    /// The name of the segment type
     std::string name;
 
-    /**
-     *  @brief ratio of tracks which are of this segment type.
-     */
+    /// brief ratio of tracks which are of this segment type.
     int frequency;
 
-    /**
-     *  @brief Length (in clbs) of the segment.
-     */
+    /// Length (in clbs) of the segment.
     int length;
 
     /**
-     *  @brief Index of the switch type that connects other wires to this segment.
+     * @brief Index of the switch type that connects other wires to this segment.
      * Note that this index is in relation to the switches from the architecture file,
      * not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_wire_switch;
 
     /**
-     *  @brief Index of the switch type that connects output pins to this segment.
+     * @brief Index of the switch type that connects output pins to this segment.
      * Note that this index is in relation to the switches from the architecture file,
      * not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_opin_switch;
 
     /**
-     *  @brief Same as arch_wire_switch but used only for decremental tracks if it is
+     * @brief Same as arch_wire_switch but used only for decremental tracks if it is
      * specified in the architecture file. If -1, this value was not set in the
      * architecture file and arch_wire_switch should be used for "DEC_DIR" wire segments.
      */
     short arch_wire_switch_dec = -1;
 
     /**
-     *  @brief Same as arch_opin_switch but used only for decremental tracks if
+     * @brief Same as arch_opin_switch but used only for decremental tracks if
      * it is specified in the architecture file. If -1, this value was not set in
      * the architecture file and arch_opin_switch should be used for "DEC_DIR" wire segments.
      */
     short arch_opin_switch_dec = -1;
 
     /**
-     *  @brief Index of the switch type that connects output pins (OPINs) to this
+     * @brief Index of the switch type that connects output pins (OPINs) to this
      * segment from another die (layer). Note that this index is in relation to
      * the switches from the architecture file, not the expanded list of switches
      * that is built at the end of build_rr_graph.
@@ -1775,43 +1769,38 @@ struct t_segment_inf {
     short arch_inter_die_switch = -1;
 
     /**
-     *  @brief The fraction of logic blocks along its length to which this segment can connect.
+     * @brief The fraction of logic blocks along its length to which this segment can connect.
      * (i.e. internal population).
      */
     float frac_cb;
 
     /**
-     *  @brief The fraction of the length + 1 switch blocks along the segment to which the segment can connect.
+     * @brief The fraction of the length + 1 switch blocks along the segment to which the segment can connect.
      * Segments that aren't long lines must connect to at least two switch boxes.
      */
     float frac_sb;
 
     bool longline;
 
-    /**
-     *  @brief The resistance of a routing track, per unit logic block length. */
+
+    /// The resistance of a routing track, per unit logic block length.
     float Rmetal;
 
-    /**
-     *  @brief The capacitance of a routing track, per unit logic block length. */
+    ///  The capacitance of a routing track, per unit logic block length.
     float Cmetal;
 
     enum e_directionality directionality;
 
     /**
-     *  @brief Defines what axis the segment is parallel to. See e_parallel_axis
+     * @brief Defines what axis the segment is parallel to. See e_parallel_axis
      * comments for more details on the values.
      */
     enum e_parallel_axis parallel_axis;
 
-    /**
-     *  @brief A vector of booleans indicating whether the segment can connect to a logic block.
-     */
+    /// A vector of booleans indicating whether the segment can connect to a logic block.
     std::vector<bool> cb;
 
-    /**
-     *  @brief A vector of booleans indicating whether the segment can connect to a switch block.
-     */
+    /// A vector of booleans indicating whether the segment can connect to a switch block.
     std::vector<bool> sb;
 
     /**

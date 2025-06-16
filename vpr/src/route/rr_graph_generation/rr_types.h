@@ -157,13 +157,12 @@ class t_chan_seg_details {
     void set_seg_end(int new_end) { seg_end_ = new_end; }
 
   private:
-    //The only unique information about a channel segment is it's start/end
-    //and length.  All other information is shared across segment types,
-    //so we use a flyweight to the t_seg_details which defines that info.
-    //
-    //To preserve the illusion of uniqueness we wrap all t_seg_details members
-    //so it appears transparent -- client code of this class doesn't need to
-    //know about t_seg_details.
+    // The only unique information about a channel segment is its start/end
+    // and length.  All other information is shared across segment types,
+    // so we use a flyweight to the t_seg_details which defines that info.
+    // To preserve the illusion of uniqueness we wrap all t_seg_details members
+    // so it appears transparent -- client code of this class doesn't need to
+    // know about t_seg_details.
     int length_ = -1;
     int seg_start_ = -1;
     int seg_end_ = -1;

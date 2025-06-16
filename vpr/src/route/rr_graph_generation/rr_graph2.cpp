@@ -1072,7 +1072,7 @@ static bool check_3d_SB_RRnodes(RRGraphBuilder& rr_graph_builder, int x, int y, 
 vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_map* sb_conn_map,
                                                                const int custom_3d_sb_fanin_fanout,
                                                                RRGraphBuilder& rr_graph_builder) {
-    auto& grid_ctx = g_vpr_ctx.device().grid;
+    const auto& grid_ctx = g_vpr_ctx.device().grid;
     vtr::NdMatrix<int, 2> extra_nodes_per_switchblocks;
     extra_nodes_per_switchblocks.resize(std::array<size_t, 2>{grid_ctx.width(), grid_ctx.height()}, 0);
 
@@ -1998,9 +1998,7 @@ void load_sblock_pattern_lookup(const int i,
     VTR_ASSERT(j >= 0);
     VTR_ASSERT(j <= int(grid.height()) - 2);
 
-    /* May 12 - 15, 2007
-     *
-     * I identify three types of sblocks in the chip: 1) The core sblock, whose special
+    /* I identify three types of sblocks in the chip: 1) The core sblock, whose special
      * property is that the number of muxes (and ending wires) on each side is the same (very useful
      * property, since it leads to a N-to-N assignment problem with ending wires). 2) The corner sblock
      * which is same as a L=1 core sblock with 2 sides only (again N-to-N assignment problem). 3) The
@@ -2316,35 +2314,32 @@ static void label_incoming_wires(const int chan_num,
      * The returned array maps a track # to a label: array[0] = <the new hash value/label for track 0>,
      * the labels 0,1,2,.. identify consecutive incoming wires that have sblock (passing wires with sblock and ending wires) */
 
-    int itrack, start, end, num_passing, num_ending, pass;
-    bool sblock_exists, is_endpoint;
-
     /* Alloc the list of labels for the tracks */
     labels.resize(max_chan_width);
     std::fill(labels.begin(), labels.end(), UN_SET);
 
-    num_ending = 0;
-    num_passing = 0;
-    for (pass = 0; pass < 2; ++pass) {
-        for (itrack = 0; itrack < max_chan_width; ++itrack) {
+    int num_ending = 0;
+    int num_passing = 0;
+    for (int pass = 0; pass < 2; ++pass) {
+        for (int itrack = 0; itrack < max_chan_width; ++itrack) {
             /* Skip tracks that are undefined */
             if (seg_details[itrack].length() == 0) {
                 continue;
             }
 
             if (seg_details[itrack].direction() == dir) {
-                start = get_seg_start(seg_details, itrack, chan_num, seg_num);
-                end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
+                int start = get_seg_start(seg_details, itrack, chan_num, seg_num);
+                int end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
 
                 /* Determine if we are a wire endpoint */
-                is_endpoint = (seg_num == end);
+                bool is_endpoint = (seg_num == end);
                 if (Direction::DEC == seg_details[itrack].direction()) {
                     is_endpoint = (seg_num == start);
                 }
 
                 /* Determine if we have a sblock on the wire */
-                sblock_exists = is_sblock(chan_num, seg_num, sb_seg, itrack,
-                                          seg_details, UNI_DIRECTIONAL);
+                bool sblock_exists = is_sblock(chan_num, seg_num, sb_seg, itrack,
+                                               seg_details, UNI_DIRECTIONAL);
 
                 switch (pass) {
                         /* On first pass, only load ending wire labels. */
@@ -2358,7 +2353,7 @@ static void label_incoming_wires(const int chan_num,
                         /* On second pass, load the passing wire labels. They
                          * will follow after the ending wire labels. */
                     case 1:
-                        if ((false == is_endpoint) && sblock_exists) {
+                        if (!is_endpoint && sblock_exists) {
                             labels[itrack] = num_ending + num_passing;
                             ++num_passing;
                         }
