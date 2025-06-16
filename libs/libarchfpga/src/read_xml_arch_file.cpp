@@ -406,6 +406,8 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
                                         pugi::xml_node layout_block_type_tag,
                                         const pugiutil::loc_data& loc_data);
 
+static void process_bend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& isbend, const int len, const pugiutil::loc_data& loc_data);
+
 /*
  *
  *
