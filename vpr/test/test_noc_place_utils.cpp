@@ -1,10 +1,8 @@
+#include <random>
 #include "catch2/catch_test_macros.hpp"
-#include "catch2/matchers/catch_matchers_all.hpp"
 
 #include "noc_place_utils.h"
-#include "noc_routing.h"
 #include "xy_routing.h"
-#include "bfs_routing.h"
 #include "vtr_math.h"
 
 // test parameters
@@ -172,7 +170,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         // route it
         routing_algorithm->route_flow((NocRouterId)source_hard_router_id,
                                       (NocRouterId)sink_hard_routed_id,
-                                      (NocTrafficFlowId) traffic_flow_number,
+                                      (NocTrafficFlowId)traffic_flow_number,
                                       traffic_flow_route,
                                       noc_ctx.noc_model);
     }

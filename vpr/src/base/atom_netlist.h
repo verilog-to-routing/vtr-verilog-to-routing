@@ -1,5 +1,4 @@
-#ifndef ATOM_NETLIST_H
-#define ATOM_NETLIST_H
+#pragma once
 
 /**
  * @file
@@ -65,10 +64,10 @@
  * Refer to netlist.h for more information.
  *
  */
+
 #include <vector>
 #include <unordered_map>
 
-#include "vtr_range.h"
 #include "vtr_logic.h"
 #include "vtr_vector_map.h"
 
@@ -94,16 +93,11 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
 
   public: //Public Accessors
-    /*
-     * Blocks
-     */
-    void set_block_types(const t_model* inpad, const t_model* outpad);
-
     ///@brief Returns the type of the specified block
     AtomBlockType block_type(const AtomBlockId id) const;
 
     ///@brief Returns the model associated with the block
-    const t_model* block_model(const AtomBlockId id) const;
+    LogicalModelId block_model(const AtomBlockId id) const;
 
     /**
      * @brief Returns the truth table associated with the block
@@ -175,7 +169,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      *                        The truth_table is optional and only relevant for LUTs (where it describes the logic function)
      *                        and Flip-Flops/latches (where it consists of a single entry defining the initial state).
      */
-    AtomBlockId create_block(const std::string& name, const t_model* model, const TruthTable& truth_table = TruthTable());
+    AtomBlockId create_block(const std::string& name, LogicalModelId model, const TruthTable& truth_table = TruthTable());
 
     /**
      * @brief Create a new port in the netlist.
@@ -262,16 +256,8 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
 
   private: //Private data
     //Block data
-    vtr::vector_map<AtomBlockId, const t_model*> block_models_;   //Architecture model of each block
+    vtr::vector_map<AtomBlockId, LogicalModelId> block_models_;   //Architecture model of each block
     vtr::vector_map<AtomBlockId, TruthTable> block_truth_tables_; //Truth tables of each block
-
-    // Input IOs and output IOs always exist and have their own architecture
-    // models. While their models are already included in block_models_, we
-    // also store direct pointers to them to make checks of whether a block is
-    // an INPAD or OUTPAD fast, as such checks are common in some netlist
-    // operations (e.g. clean-up of an input netlist).
-    const t_model* inpad_model_;
-    const t_model* outpad_model_;
 
     //Port data
     vtr::vector_map<AtomPortId, const t_model_ports*> port_models_; //Architecture port models of each port
@@ -281,5 +267,3 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
 };
 
 #include "atom_lookup.h"
-
-#endif

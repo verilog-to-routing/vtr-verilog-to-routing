@@ -1,17 +1,15 @@
-#include <fstream>
-#include <tuple>
 
+#include "ShowSetup.h"
+
+#include "ap_flow_enums.h"
+#include "globals.h"
+#include "physical_types_util.h"
+#include "vpr_error.h"
+#include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-
-#include "vpr_types.h"
-#include "vpr_error.h"
-
-#include "globals.h"
-#include "echo_files.h"
-#include "read_options.h"
-#include "read_xml_arch_file.h"
-#include "ShowSetup.h"
+#include <fstream>
+#include <tuple>
 
 /******** Function Prototypes ********/
 static void ShowPackerOpts(const t_packer_opts& PackerOpts);
@@ -137,7 +135,7 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
         auto physical_tile = pick_physical_type(logical_block);
         num_blocks_type[logical_block->index]++;
-        if (is_io_type(physical_tile)) {
+        if (physical_tile->is_io()) {
             for (int j = 0; j < logical_block->pb_type->num_pins; j++) {
                 int physical_pin = get_physical_pin(physical_tile, logical_block, j);
 
@@ -254,6 +252,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 
     VTR_LOG("RouterOpts.router_algorithm: ");
     switch (RouterOpts.router_algorithm) {
+        case NESTED:
+            VTR_LOG("NESTED\n");
+            break;
         case PARALLEL:
             VTR_LOG("PARALLEL\n");
             break;
@@ -378,6 +379,12 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
         VTR_LOG("RouterOpts.astar_offset: %f\n", RouterOpts.astar_offset);
         VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
+        VTR_LOG("RouterOpts.enable_parallel_connection_router: %s\n", RouterOpts.enable_parallel_connection_router ? "true" : "false");
+        VTR_LOG("RouterOpts.post_target_prune_fac: %f\n", RouterOpts.post_target_prune_fac);
+        VTR_LOG("RouterOpts.post_target_prune_offset: %f\n", RouterOpts.post_target_prune_offset);
+        VTR_LOG("RouterOpts.multi_queue_num_threads: %d\n", RouterOpts.multi_queue_num_threads);
+        VTR_LOG("RouterOpts.multi_queue_num_queues: %d\n", RouterOpts.multi_queue_num_queues);
+        VTR_LOG("RouterOpts.multi_queue_direct_draining: %s\n", RouterOpts.multi_queue_direct_draining ? "true" : "false");
         VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
         VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
         VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
@@ -597,8 +604,60 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 }
 
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
-    (void)APOpts;
-    // Currently nothing to show, but will happen eventually.
+    VTR_LOG("AnalyticalPlacerOpts.analytical_solver_type: ");
+    switch (APOpts.analytical_solver_type) {
+        case e_ap_analytical_solver::QP_Hybrid:
+            VTR_LOG("qp-hybrid\n");
+            break;
+        case e_ap_analytical_solver::LP_B2B:
+            VTR_LOG("lp-b2b\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown analytical_solver_type\n");
+    }
+
+    VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
+    switch (APOpts.partial_legalizer_type) {
+        case e_ap_partial_legalizer::BiPartitioning:
+            VTR_LOG("bipartitioning\n");
+            break;
+        case e_ap_partial_legalizer::FlowBased:
+            VTR_LOG("flow-based\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown partial_legalizer_type\n");
+    }
+
+    VTR_LOG("AnalyticalPlacerOpts.full_legalizer_type: ");
+    switch (APOpts.full_legalizer_type) {
+        case e_ap_full_legalizer::Naive:
+            VTR_LOG("naive\n");
+            break;
+        case e_ap_full_legalizer::APPack:
+            VTR_LOG("appack\n");
+            break;
+        case e_ap_full_legalizer::Basic_Min_Disturbance:
+            VTR_LOG("basic-min-disturbance\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown full_legalizer_type\n");
+    }
+
+    VTR_LOG("AnalyticalPlacerOpts.detailed_placer_type: ");
+    switch (APOpts.detailed_placer_type) {
+        case e_ap_detailed_placer::Identity:
+            VTR_LOG("none\n");
+            break;
+        case e_ap_detailed_placer::Annealer:
+            VTR_LOG("annealer\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown detailed_placer_type\n");
+    }
+
+    VTR_LOG("AnalyticalPlacerOpts.ap_timing_tradeoff: %f\n", APOpts.ap_timing_tradeoff);
+    VTR_LOG("AnalyticalPlacerOpts.ap_high_fanout_threshold: %d\n", APOpts.ap_high_fanout_threshold);
+    VTR_LOG("AnalyticalPlacerOpts.log_verbosity: %d\n", APOpts.log_verbosity);
 }
 
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
@@ -619,6 +678,8 @@ static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
 
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
     VTR_LOG("AnalysisOpts.gen_post_synthesis_netlist: %s\n", (AnalysisOpts.gen_post_synthesis_netlist) ? "true" : "false");
+    VTR_LOG("AnalysisOpts.gen_post_implementation_merged_netlist: %s\n", AnalysisOpts.gen_post_implementation_merged_netlist ? "true" : "false");
+    VTR_LOG("AnalysisOpts.gen_post_implementation_sdc: %s\n", AnalysisOpts.gen_post_implementation_sdc ? "true" : "false");
     VTR_LOG("AnalysisOpts.timing_report_npaths: %d\n", AnalysisOpts.timing_report_npaths);
     VTR_LOG("AnalysisOpts.timing_report_skew: %s\n", AnalysisOpts.timing_report_skew ? "true" : "false");
     VTR_LOG("AnalysisOpts.echo_dot_timing_graph_node: %s\n", AnalysisOpts.echo_dot_timing_graph_node.c_str());
@@ -665,6 +726,7 @@ static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown post_synth_netlist_unconn_handling\n");
         }
     }
+    VTR_LOG("AnalysisOpts.post_synth_netlist_module_parameters: %s\n", AnalysisOpts.post_synth_netlist_module_parameters ? "on" : "off");
     VTR_LOG("\n");
 }
 
@@ -679,8 +741,8 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown packer allow_unrelated_clustering\n");
     }
-    VTR_LOG("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);
-    VTR_LOG("PackerOpts.beta_clustering: %f\n", PackerOpts.beta);
+    VTR_LOG("PackerOpts.timing_gain_weight: %f\n", PackerOpts.timing_gain_weight);
+    VTR_LOG("PackerOpts.connection_gain_weight: %f\n", PackerOpts.connection_gain_weight);
     VTR_LOG("PackerOpts.cluster_seed_type: ");
     switch (PackerOpts.cluster_seed_type) {
         case e_cluster_seed::TIMING:
@@ -705,8 +767,6 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown packer cluster_seed_type\n");
     }
     VTR_LOG("PackerOpts.connection_driven: %s", (PackerOpts.connection_driven ? "true\n" : "false\n"));
-    VTR_LOG("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "true\n" : "false\n"));
-    VTR_LOG("PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
     VTR_LOG("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.target_external_pin_util: %s", vtr::join(PackerOpts.target_external_pin_util, " ").c_str());
     VTR_LOG("\n");

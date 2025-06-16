@@ -1,8 +1,6 @@
-#ifndef VPR_MOVE_TRANSACTIONS_H
-#define VPR_MOVE_TRANSACTIONS_H
+#pragma once
 
 #include "vpr_types.h"
-#include "clustered_netlist_utils.h"
 
 class BlkLocRegistry;
 class GridBlock;
@@ -62,14 +60,14 @@ struct t_pl_blocks_to_be_moved {
     t_pl_blocks_to_be_moved(t_pl_blocks_to_be_moved&&) = delete;
 
     /**
-    * @brief This function increments the size of the moved_blocks vector and return the index
-    * of the newly added last elements.
-    */
+     * @brief This function increments the size of the moved_blocks vector and return the index
+     * of the newly added last elements.
+     */
     size_t get_size_and_increment();
 
     /**
-    * @brief This function clears all data structures of this struct.
-    */
+     * @brief This function clears all data structures of this struct.
+     */
     void clear_move_blocks();
 
     /**
@@ -81,11 +79,10 @@ struct t_pl_blocks_to_be_moved {
      */
     bool driven_by_moved_block(const ClusterNetId net) const;
 
-
     e_block_move_result record_block_move(ClusterBlockId blk,
                                           t_pl_loc to,
                                           const BlkLocRegistry& blk_loc_registry);
-    
+
     std::set<t_pl_loc> determine_locations_emptied_by_move();
 
     std::vector<t_pl_moved_block> moved_blocks;
@@ -96,5 +93,3 @@ struct t_pl_blocks_to_be_moved {
 
     MoveAbortionLogger move_abortion_logger;
 };
-
-#endif

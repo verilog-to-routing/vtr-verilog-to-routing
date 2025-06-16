@@ -1,0 +1,6 @@
+regression_tests/vtr_reg_nightly_test4/koios_medium
+regression_tests/vtr_reg_nightly_test6/koios_other
+regression_tests/vtr_reg_weekly/koios_bwave_float_large
+regression_tests/vtr_reg_weekly/koios_dla_large
+regression_tests/vtr_reg_weekly/koios_large
+regression_tests/vtr_reg_weekly/koios_proxy

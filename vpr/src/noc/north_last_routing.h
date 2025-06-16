@@ -1,6 +1,4 @@
-#ifndef VTR_NORTH_LAST_ROUTING_H
-#define VTR_NORTH_LAST_ROUTING_H
-
+#pragma once
 /**
  * @file
  * @brief This file declares the NorthLastRouting class, which implements
@@ -45,5 +43,3 @@ class NorthLastRouting : public TurnModelRouting {
     bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
                        const NocStorage& noc_model) const override;
 };
-
-#endif //VTR_NORTH_LAST_ROUTING_H

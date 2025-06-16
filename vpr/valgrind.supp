@@ -766,3 +766,803 @@
    ...
    obj:*libgtk-3*
 }
+#Parmys
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Addr1
+   fun:read_history_range
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:strdup
+   fun:_ZN5Yosys5RTLIL8IdString13get_referenceEPKc
+   fun:_ZN5Yosys5RTLIL8IdStringC1EPKc
+   fun:_ZN5Yosys5RTLIL8IdStringaSEPKc
+   fun:_ZN5Yosys11yosys_setupEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:realloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:_Znwm
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:calloc
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:realloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:realloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_CreateNamespace
+   fun:TclGetNamespaceForQualName
+   fun:Tcl_FindNamespace
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_CreateObjCommand
+   fun:Tcl_NRCreateCommand
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_CreateNamespace
+   fun:TclGetNamespaceForQualName
+   fun:Tcl_FindNamespace
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_CreateObjCommand
+   fun:Tcl_NRCreateCommand
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_DictObjPut
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_DStringSetLength
+   fun:Tcl_ExternalToUtfDString
+   fun:TclSetupEnv
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_GetThreadData
+   fun:TclpGetPwUid
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_CreateNamespace
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_NewStringObj
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_EvalEx
+   fun:Tcl_Eval
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:TclpRealloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_AppendLimitedToObj
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_EvalEx
+   fun:Tcl_Eval
+   fun:_ZN5Yosys20yosys_tcl_iterp_initEP10Tcl_Interp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:TclpRealloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_AppendLimitedToObj
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_EvalEx
+   fun:Tcl_Eval
+   fun:_ZN5Yosys20yosys_tcl_iterp_initEP10Tcl_Interp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_EvalEx
+   fun:Tcl_Eval
+   fun:_ZN5Yosys20yosys_tcl_iterp_initEP10Tcl_Interp
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:TclpRealloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_AppendLimitedToObj
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:TclpRealloc
+   fun:Tcl_Realloc
+   fun:Tcl_DStringAppend
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:TclSetByteCodeFromAny
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:TclNREvalObjEx
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_NewStringObj
+   fun:TclCreateProc
+   fun:Tcl_ProcObjCmd
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_EvalEx
+   fun:Tcl_Eval
+   fun:_ZN5Yosys20yosys_tcl_iterp_initEP10Tcl_Interp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   fun:Tcl_CreateObjCommand
+   fun:Tcl_NRCreateCommand
+   fun:Tcl_ProcObjCmd
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_EvalEx
+   fun:Tcl_Eval
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:TclSetByteCodeFromAny
+   fun:TclProcCompileProc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:TclNRInterpProc
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:TclpRealloc
+   fun:Tcl_Realloc
+   fun:Tcl_DStringSetLength
+   fun:Tcl_ExternalToUtfDString
+   fun:TclSetupEnv
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   fun:TclpAlloc
+   fun:Tcl_Alloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_WriteObj
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+   fun:Tcl_EvalFile
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_NewObj
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:malloc
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_CreateInterp
+   fun:_ZN5Yosys20yosys_get_tcl_interpEv
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: definite
+   fun:malloc
+   fun:realloc
+   obj:*
+   obj:*
+   obj:*
+   obj:*
+   fun:_ZN5Yosys4Pass4callEPNS_5RTLIL6DesignESt6vectorINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEESaISA_EE
+   fun:_ZN5YosysL13tcl_yosys_cmdEPvP10Tcl_InterpiPPKc
+   fun:TclInvokeStringCommand
+   fun:TclNRRunCallbacks
+   obj:/usr/lib/x86_64-linux-gnu/libtcl8.6.so
+   fun:Tcl_FSEvalFileEx
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   fun:read_history_range
+   fun:main
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Cond
+   fun:read_history_range
+   fun:main
+}

@@ -1,3 +1,4 @@
+#pragma once
 /*
  * attraction_groups.h
  *
@@ -5,12 +6,12 @@
  *      Author: khalid88
  */
 
-#ifndef VPR_SRC_PACK_ATTRACTION_GROUPS_H_
-#define VPR_SRC_PACK_ATTRACTION_GROUPS_H_
-
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "atom_netlist_fwd.h"
+
+// Forward declarations
+class PartitionRegion;
 
 /**
  * @file
@@ -53,7 +54,7 @@ class AttractionInfo {
      * Create attraction groups for the partitions that contain overfull regions (i.e.
      * The region has more blocks of a certain type assigned to than are actually available).
      */
-    void create_att_groups_for_overfull_regions();
+    void create_att_groups_for_overfull_regions(const std::vector<PartitionRegion>& overfull_partition_regions);
 
     /*
      * Create attraction groups for all partitions.
@@ -132,5 +133,3 @@ inline void AttractionInfo::set_attraction_group_gain(const AttractGroupId group
 inline AttractionGroup& AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
     return attraction_groups[group_id];
 }
-
-#endif /* VPR_SRC_PACK_ATTRACTION_GROUPS_H_ */

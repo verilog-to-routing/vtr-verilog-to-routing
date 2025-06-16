@@ -1,32 +1,30 @@
 /*draw_searchbar.cpp contains all functions related to searchbar actions.*/
+#ifndef NO_GRAPHICS
+
 #include <cstdio>
-#include <array>
 
 #include "netlist_fwd.h"
 
+#include "physical_types_util.h"
 #include "vpr_utils.h"
 
 #include "globals.h"
-#include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
 #include "draw_basic.h"
 #include "draw_searchbar.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
 
-#ifndef NO_GRAPHICS
-
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
 /****************************** Define Macros *******************************/
 
-#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
 
 /* This function computes and returns the boundary coordinates of a channel
  * wire segment. This can be used for drawing a wire or determining if a
@@ -40,7 +38,7 @@ ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     switch (rr_graph.node_type(inode)) {
-        case CHANX:
+        case e_rr_type::CHANX:
             left = draw_coords->tile_x[rr_graph.node_xlow(inode)];
             right = draw_coords->tile_x[rr_graph.node_xhigh(inode)]
                     + draw_coords->get_tile_width();
@@ -51,7 +49,7 @@ ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
                   + draw_coords->get_tile_width()
                   + (1. + rr_graph.node_track_num(inode));
             break;
-        case CHANY:
+        case e_rr_type::CHANY:
             left = draw_coords->tile_x[rr_graph.node_xlow(inode)]
                    + draw_coords->get_tile_width()
                    + (1. + rr_graph.node_track_num(inode));
@@ -144,7 +142,7 @@ void highlight_nets(char* message, RRNodeId hit_node, bool is_flat) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net_id, is_flat);
         if (!route_ctx.route_trees[parent_id])
             continue;
 
@@ -233,6 +231,7 @@ void deselect_all() {
 
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const auto& device_ctx = g_vpr_ctx.device();
 
     /* Create some colour highlighting */
@@ -241,8 +240,13 @@ void deselect_all() {
             draw_reset_blk_color(blk_id);
     }
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets())
-        draw_state->net_color[net_id] = ezgl::BLACK;
+    if (draw_state->is_flat) {
+        for (auto net_id : atom_ctx.netlist().nets())
+            draw_state->net_color[net_id] = ezgl::BLACK;
+    } else {
+        for (auto net_id : cluster_ctx.clb_nlist.nets())
+            draw_state->net_color[net_id] = ezgl::BLACK;
+    }
 
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
         draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;

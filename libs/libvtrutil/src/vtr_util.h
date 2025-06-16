@@ -1,5 +1,4 @@
-#ifndef VTR_UTIL_H
-#define VTR_UTIL_H
+#pragma once
 
 #include <algorithm>
 #include <vector>
@@ -150,5 +149,3 @@ bool exactly_k_conditions(int k, Conditions... conditions) {
 int get_pid();
 
 } // namespace vtr
-
-#endif

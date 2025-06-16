@@ -8,35 +8,43 @@
  * PrimitiveVector object are working as expected.
  */
 
+#include <algorithm>
 #include "catch2/catch_test_macros.hpp"
 #include "primitive_vector.h"
 
 namespace {
 
 TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
+    PrimitiveVectorDim dim_0 = static_cast<PrimitiveVectorDim>(0);
+    PrimitiveVectorDim dim_1 = static_cast<PrimitiveVectorDim>(1);
+    PrimitiveVectorDim dim_2 = static_cast<PrimitiveVectorDim>(2);
+    PrimitiveVectorDim dim_3 = static_cast<PrimitiveVectorDim>(3);
+    PrimitiveVectorDim dim_4 = static_cast<PrimitiveVectorDim>(4);
+    PrimitiveVectorDim dim_10 = static_cast<PrimitiveVectorDim>(10);
+    PrimitiveVectorDim dim_42 = static_cast<PrimitiveVectorDim>(42);
     SECTION("Test getters and setters") {
         PrimitiveVector vec;
         // Default value in the vector should be zero.
-        REQUIRE(vec.get_dim_val(42) == 0.f);
+        REQUIRE(vec.get_dim_val(dim_42) == 0.f);
         // Able to set a random dim to a value.
-        vec.set_dim_val(42, 2.f);
-        REQUIRE(vec.get_dim_val(42) == 2.f);
+        vec.set_dim_val(dim_42, 2.f);
+        REQUIRE(vec.get_dim_val(dim_42) == 2.f);
         // Able to add a value to a dim.
-        vec.add_val_to_dim(10.f, 42);
-        REQUIRE(vec.get_dim_val(42) == 12.f);
+        vec.add_val_to_dim(10.f, dim_42);
+        REQUIRE(vec.get_dim_val(dim_42) == 12.f);
         // Try a negative number.
-        vec.set_dim_val(0, -2.f);
-        REQUIRE(vec.get_dim_val(0) == -2.f);
-        vec.add_val_to_dim(-4.f, 42);
-        REQUIRE(vec.get_dim_val(42) == 8.f);
+        vec.set_dim_val(dim_0, -2.f);
+        REQUIRE(vec.get_dim_val(dim_0) == -2.f);
+        vec.add_val_to_dim(-4.f, dim_42);
+        REQUIRE(vec.get_dim_val(dim_42) == 8.f);
         // Try setting to zero.
-        vec.set_dim_val(42, 0.f);
-        REQUIRE(vec.get_dim_val(42) == 0.f);
+        vec.set_dim_val(dim_42, 0.f);
+        REQUIRE(vec.get_dim_val(dim_42) == 0.f);
 
         // Test clear method.
         vec.clear();
-        REQUIRE(vec.get_dim_val(42) == 0.f);
-        REQUIRE(vec.get_dim_val(0) == 0.f);
+        REQUIRE(vec.get_dim_val(dim_42) == 0.f);
+        REQUIRE(vec.get_dim_val(dim_0) == 0.f);
     }
     SECTION("Test operators") {
         PrimitiveVector vec1, vec2;
@@ -44,15 +52,15 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         // Equality:
         // Two empty vectors should be equal.
         REQUIRE(vec1 == vec2);
-        vec1.set_dim_val(0, 0.f);
-        vec1.set_dim_val(1, 1.f);
-        vec1.set_dim_val(2, 2.f);
+        vec1.set_dim_val(dim_0, 0.f);
+        vec1.set_dim_val(dim_1, 1.f);
+        vec1.set_dim_val(dim_2, 2.f);
         // Compare with self.
         REQUIRE(vec1 == vec1);
         // Set vec2 indirectly to vec 1
-        vec2.set_dim_val(0, 0.f);
-        vec2.set_dim_val(1, 1.f);
-        vec2.set_dim_val(2, 2.f);
+        vec2.set_dim_val(dim_0, 0.f);
+        vec2.set_dim_val(dim_1, 1.f);
+        vec2.set_dim_val(dim_2, 2.f);
         REQUIRE(vec1 == vec2);
         // Check commutivity
         REQUIRE(vec2 == vec1);
@@ -61,97 +69,97 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         REQUIRE(vec1 == vec3);
         // Check strange corner-case where 1 vec has more dims set than another.
         PrimitiveVector vec4 = vec1;
-        vec4.set_dim_val(10, 100.f);
+        vec4.set_dim_val(dim_10, 100.f);
         REQUIRE(!(vec4 == vec1));
         REQUIRE(!(vec1 == vec4));
 
         // Inequality:
         // Set vec2 to not be equal
-        vec2.set_dim_val(0, 3.f);
+        vec2.set_dim_val(dim_0, 3.f);
         REQUIRE(!(vec1 == vec2));
         REQUIRE(vec1 != vec2);
         REQUIRE(vec2 != vec1);
-        vec2.set_dim_val(0, 0.f);
-        vec2.set_dim_val(3, 3.f);
+        vec2.set_dim_val(dim_0, 0.f);
+        vec2.set_dim_val(dim_3, 3.f);
         REQUIRE(!(vec1 == vec2));
         REQUIRE(vec1 != vec2);
         // Set a random dim to 0. By default all dims are 0.
         vec2 = vec1;
-        vec2.set_dim_val(10, 0.f);
+        vec2.set_dim_val(dim_10, 0.f);
         REQUIRE(vec1 == vec2);
 
         // Accumulation:
         vec1.clear();
         REQUIRE(vec1 == PrimitiveVector());
-        vec1.set_dim_val(0, 0.f);
-        vec1.set_dim_val(1, 1.f);
-        vec1.set_dim_val(2, 2.f);
+        vec1.set_dim_val(dim_0, 0.f);
+        vec1.set_dim_val(dim_1, 1.f);
+        vec1.set_dim_val(dim_2, 2.f);
         vec2.clear();
-        vec2.set_dim_val(0, 3.f);
-        vec2.set_dim_val(1, 4.f);
-        vec2.set_dim_val(2, 5.f);
+        vec2.set_dim_val(dim_0, 3.f);
+        vec2.set_dim_val(dim_1, 4.f);
+        vec2.set_dim_val(dim_2, 5.f);
         vec1 += vec2;
         PrimitiveVector res;
-        res.set_dim_val(0, 3.f);
-        res.set_dim_val(1, 5.f);
-        res.set_dim_val(2, 7.f);
+        res.set_dim_val(dim_0, 3.f);
+        res.set_dim_val(dim_1, 5.f);
+        res.set_dim_val(dim_2, 7.f);
         REQUIRE(vec1 == res);
         // accumulate different dims
         vec1.clear();
-        vec1.set_dim_val(0, 10.f);
+        vec1.set_dim_val(dim_0, 10.f);
         vec2.clear();
-        vec2.set_dim_val(1, 20.f);
+        vec2.set_dim_val(dim_1, 20.f);
         vec1 += vec2;
-        REQUIRE(vec1.get_dim_val(0) == 10.f);
-        REQUIRE(vec1.get_dim_val(1) == 20.f);
+        REQUIRE(vec1.get_dim_val(dim_0) == 10.f);
+        REQUIRE(vec1.get_dim_val(dim_1) == 20.f);
 
         // Subtraction:
         vec1 -= vec2;
-        REQUIRE(vec1.get_dim_val(0) == 10.f);
-        REQUIRE(vec1.get_dim_val(1) == 0.f);
+        REQUIRE(vec1.get_dim_val(dim_0) == 10.f);
+        REQUIRE(vec1.get_dim_val(dim_1) == 0.f);
         res = vec1;
         res -= vec2;
         REQUIRE(vec1 - vec2 == res);
 
         // Element-wise multiplication:
         vec1.clear();
-        vec1.set_dim_val(0, 0.f);
-        vec1.set_dim_val(1, 1.f);
-        vec1.set_dim_val(2, 2.f);
+        vec1.set_dim_val(dim_0, 0.f);
+        vec1.set_dim_val(dim_1, 1.f);
+        vec1.set_dim_val(dim_2, 2.f);
         vec1 *= 2.f;
-        REQUIRE(vec1.get_dim_val(0) == 0.f);
-        REQUIRE(vec1.get_dim_val(1) == 2.f);
-        REQUIRE(vec1.get_dim_val(2) == 4.f);
+        REQUIRE(vec1.get_dim_val(dim_0) == 0.f);
+        REQUIRE(vec1.get_dim_val(dim_1) == 2.f);
+        REQUIRE(vec1.get_dim_val(dim_2) == 4.f);
     }
     SECTION("Test comparitors") {
         PrimitiveVector vec1, vec2;
         // empty vector.
-        vec2.set_dim_val(0, 10.f);
-        vec2.set_dim_val(1, 20.f);
+        vec2.set_dim_val(dim_0, 10.f);
+        vec2.set_dim_val(dim_1, 20.f);
         REQUIRE(vec1 < vec2);
         // 1D case.
         vec1.clear();
         vec2.clear();
-        vec1.set_dim_val(0, 1.f);
-        vec2.set_dim_val(0, 2.f);
+        vec1.set_dim_val(dim_0, 1.f);
+        vec2.set_dim_val(dim_0, 2.f);
         REQUIRE(vec1 < vec2);
-        vec1.set_dim_val(0, 2.f);
+        vec1.set_dim_val(dim_0, 2.f);
         REQUIRE(!(vec1 < vec2));
-        vec1.set_dim_val(0, 3.f);
+        vec1.set_dim_val(dim_0, 3.f);
         REQUIRE(!(vec1 < vec2));
         // 2D case.
         vec1.clear();
         vec2.clear();
-        vec1.set_dim_val(0, 1.f);
-        vec1.set_dim_val(1, 1.f);
-        vec2.set_dim_val(0, 2.f);
-        vec2.set_dim_val(1, 2.f);
+        vec1.set_dim_val(dim_0, 1.f);
+        vec1.set_dim_val(dim_1, 1.f);
+        vec2.set_dim_val(dim_0, 2.f);
+        vec2.set_dim_val(dim_1, 2.f);
         REQUIRE(vec1 < vec2);
         // NOTE: This is somewhat special. Since 1 dimension is less for vec1
         //       it should still be less.
-        vec1.set_dim_val(0, 3.f);
+        vec1.set_dim_val(dim_0, 3.f);
         REQUIRE(vec1 < vec2);
-        vec1.set_dim_val(1, 3.f);
+        vec1.set_dim_val(dim_1, 3.f);
         REQUIRE(!(vec1 < vec2));
     }
     SECTION("Test methods") {
@@ -160,14 +168,14 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         // The default vector is zero.
         REQUIRE(vec1.is_zero());
         // Setting an element of the zero-vector to 0 is still a zero vector.
-        vec1.set_dim_val(0, 0.f);
+        vec1.set_dim_val(dim_0, 0.f);
         REQUIRE(vec1.is_zero());
-        vec1.set_dim_val(42, 0.f);
+        vec1.set_dim_val(dim_42, 0.f);
         REQUIRE(vec1.is_zero());
-        vec1.set_dim_val(42, 1.f);
+        vec1.set_dim_val(dim_42, 1.f);
         REQUIRE(!vec1.is_zero());
         REQUIRE(vec1.is_non_zero());
-        vec1.set_dim_val(42, 0.f);
+        vec1.set_dim_val(dim_42, 0.f);
         REQUIRE(vec1.is_zero());
         REQUIRE(!vec1.is_non_zero());
 
@@ -177,49 +185,49 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         vec1.relu();
         REQUIRE(vec1.is_zero());
         // Relu of a negative vector is the zero vector.
-        vec1.set_dim_val(0, -1.f);
-        vec1.set_dim_val(1, -2.f);
+        vec1.set_dim_val(dim_0, -1.f);
+        vec1.set_dim_val(dim_1, -2.f);
         vec1.relu();
         REQUIRE(vec1.is_zero());
         // Relu of a positive vector is the same vector.
-        vec1.set_dim_val(0, 1.f);
-        vec1.set_dim_val(1, 2.f);
+        vec1.set_dim_val(dim_0, 1.f);
+        vec1.set_dim_val(dim_1, 2.f);
         PrimitiveVector vec2 = vec1;
         vec1.relu();
         REQUIRE(vec1 == vec2);
         // Standard Relu test.
-        vec1.set_dim_val(0, 1.f);
-        vec1.set_dim_val(1, 0.f);
-        vec1.set_dim_val(2, -4.f);
-        vec1.set_dim_val(3, 2.f);
-        vec1.set_dim_val(4, -5.f);
+        vec1.set_dim_val(dim_0, 1.f);
+        vec1.set_dim_val(dim_1, 0.f);
+        vec1.set_dim_val(dim_2, -4.f);
+        vec1.set_dim_val(dim_3, 2.f);
+        vec1.set_dim_val(dim_4, -5.f);
         vec2 = vec1;
         vec1.relu();
-        vec2.set_dim_val(2, 0.f);
-        vec2.set_dim_val(4, 0.f);
+        vec2.set_dim_val(dim_2, 0.f);
+        vec2.set_dim_val(dim_4, 0.f);
         REQUIRE(vec1 == vec2);
 
         // is_non_negative:
         vec1.clear();
         // The zero vector is non-negative.
         REQUIRE(vec1.is_non_negative());
-        vec1.set_dim_val(0, 0.f);
+        vec1.set_dim_val(dim_0, 0.f);
         REQUIRE(vec1.is_non_negative());
         // Postive vector is non-negative
-        vec1.set_dim_val(0, 1.f);
+        vec1.set_dim_val(dim_0, 1.f);
         REQUIRE(vec1.is_non_negative());
-        vec1.set_dim_val(1, 2.f);
+        vec1.set_dim_val(dim_1, 2.f);
         REQUIRE(vec1.is_non_negative());
         // Negative vector is negative.
         vec2.clear();
-        vec2.set_dim_val(0, -1.f);
+        vec2.set_dim_val(dim_0, -1.f);
         REQUIRE(!vec2.is_non_negative());
-        vec2.set_dim_val(1, -2.f);
+        vec2.set_dim_val(dim_1, -2.f);
         REQUIRE(!vec2.is_non_negative());
         // Mixed positive and negative vector is not non-negative.
-        vec2.set_dim_val(1, 2.f);
+        vec2.set_dim_val(dim_1, 2.f);
         REQUIRE(!vec2.is_non_negative());
-        vec2.set_dim_val(0, 1.f);
+        vec2.set_dim_val(dim_0, 1.f);
         REQUIRE(vec1.is_non_negative());
 
         // manhattan_norm:
@@ -227,12 +235,12 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         // Manhatten norm of the zero vector is zero.
         REQUIRE(vec1.manhattan_norm() == 0.f);
         // Manhatten norm of a non-negative vector is the sum of its dims.
-        vec1.set_dim_val(0, 1.f);
+        vec1.set_dim_val(dim_0, 1.f);
         REQUIRE(vec1.manhattan_norm() == 1.f);
-        vec1.set_dim_val(1, 2.f);
-        vec1.set_dim_val(2, 3.f);
-        vec1.set_dim_val(3, 4.f);
-        vec1.set_dim_val(4, 5.f);
+        vec1.set_dim_val(dim_1, 2.f);
+        vec1.set_dim_val(dim_2, 3.f);
+        vec1.set_dim_val(dim_3, 4.f);
+        vec1.set_dim_val(dim_4, 5.f);
         REQUIRE(vec1.manhattan_norm() == 15.f);
         // Manhatten norm of a negative vector is the sum of the absolute value
         // of its dims.
@@ -240,36 +248,54 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         vec2 *= -1.f;
         REQUIRE(vec2.manhattan_norm() == vec1.manhattan_norm());
 
+        // sum:
+        vec1.clear();
+        // Sum of the zero vector is zero.
+        REQUIRE(vec1.sum() == 0.f);
+        // Sum of a non-negative vector is the sum of its dims.
+        vec1.set_dim_val(dim_0, 1.f);
+        REQUIRE(vec1.sum() == 1.f);
+        vec1.set_dim_val(dim_1, 2.f);
+        vec1.set_dim_val(dim_2, 3.f);
+        vec1.set_dim_val(dim_3, 4.f);
+        vec1.set_dim_val(dim_4, 5.f);
+        REQUIRE(vec1.sum() == 15.f);
+        // Sum of a negative vector is the opposite of the sum of the absolute
+        // value of its dims.
+        vec2 = vec1;
+        vec2 *= -1.f;
+        REQUIRE(vec2.sum() == -1.f * vec1.sum());
+
         // Projection:
         // Basic example:
         vec1.clear();
-        vec1.set_dim_val(0, 12.f);
-        vec1.set_dim_val(1, 32.f);
-        vec1.set_dim_val(2, 8.f);
-        vec1.set_dim_val(3, 2.f);
+        vec1.set_dim_val(dim_0, 12.f);
+        vec1.set_dim_val(dim_1, 32.f);
+        vec1.set_dim_val(dim_2, 8.f);
+        vec1.set_dim_val(dim_3, 2.f);
         vec2.clear();
-        vec2.set_dim_val(0, 2.f);
-        vec2.set_dim_val(2, 2.f);
+        vec2.set_dim_val(dim_0, 2.f);
+        vec2.set_dim_val(dim_2, 2.f);
         vec1.project(vec2);
         PrimitiveVector res;
-        res.set_dim_val(0, 12.f);
-        res.set_dim_val(2, 8.f);
+        res.set_dim_val(dim_0, 12.f);
+        res.set_dim_val(dim_2, 8.f);
         REQUIRE(vec1 == res);
         // Projecting onto the same vector again should give the same answer.
         vec1.project(vec2);
         REQUIRE(vec1 == res);
         // Projecting onto the same dimensions should not change the vector.
         vec1.clear();
-        vec1.set_dim_val(0, 1.f);
-        vec1.set_dim_val(1, 2.f);
+        vec1.set_dim_val(dim_0, 1.f);
+        vec1.set_dim_val(dim_1, 2.f);
         vec2.clear();
-        vec2.set_dim_val(0, 3.f);
-        vec2.set_dim_val(1, 4.f);
+        vec2.set_dim_val(dim_0, 3.f);
+        vec2.set_dim_val(dim_1, 4.f);
         res = vec1;
         vec1.project(vec2);
         REQUIRE(vec1 == res);
         // Projecting onto higher dimensions should not change the vector.
-        vec2.set_dim_val(2, 5.f);
+        vec2.set_dim_val(dim_2, 5.f);
         res = vec1;
         vec1.project(vec2);
         REQUIRE(vec1 == res);
@@ -282,35 +308,88 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         REQUIRE(res.is_zero());
         // The max of a non-negative vector with the zero vector is the non-
         // negative vector.
-        vec1.set_dim_val(0, 1.f);
+        vec1.set_dim_val(dim_0, 1.f);
         res = PrimitiveVector::max(vec1, vec2);
         REQUIRE(res == vec1);
         res = PrimitiveVector::max(vec2, vec1);
         REQUIRE(res == vec1);
         // The max of a negative vector with the zero vector is the zero vector.
-        vec1.set_dim_val(0, -1.f);
+        vec1.set_dim_val(dim_0, -1.f);
         res = PrimitiveVector::max(vec1, vec2);
         REQUIRE(res.is_zero());
         // Basic test:
         // max(<5, 9, 0>, <3, 10, -2>) = <5, 10, 0>
         vec1.clear();
-        vec1.set_dim_val(0, 5.f);
-        vec1.set_dim_val(1, 9.f);
-        vec1.set_dim_val(2, 0.f);
+        vec1.set_dim_val(dim_0, 5.f);
+        vec1.set_dim_val(dim_1, 9.f);
+        vec1.set_dim_val(dim_2, 0.f);
         vec2.clear();
-        vec2.set_dim_val(0, 3.f);
-        vec2.set_dim_val(1, 10.f);
-        vec2.set_dim_val(2, -2.f);
+        vec2.set_dim_val(dim_0, 3.f);
+        vec2.set_dim_val(dim_1, 10.f);
+        vec2.set_dim_val(dim_2, -2.f);
         PrimitiveVector golden;
-        golden.set_dim_val(0, 5.f);
-        golden.set_dim_val(1, 10.f);
-        golden.set_dim_val(2, 0.f);
+        golden.set_dim_val(dim_0, 5.f);
+        golden.set_dim_val(dim_1, 10.f);
+        golden.set_dim_val(dim_2, 0.f);
         res = PrimitiveVector::max(vec1, vec2);
         REQUIRE(res == golden);
         res = PrimitiveVector::max(vec2, vec1);
         REQUIRE(res == golden);
     }
+
+    SECTION("Test more operators and methods") {
+        PrimitiveVector vec1, vec2;
+
+        // Subtract value from dimension
+        vec1.set_dim_val(dim_0, 5.f);
+        vec1.subtract_val_from_dim(3.f, dim_0);
+        REQUIRE(vec1.get_dim_val(dim_0) == 2.f);
+
+        // Element-wise addition operator
+        vec1.clear();
+        vec1.set_dim_val(dim_0, 1.f);
+        vec1.set_dim_val(dim_1, 2.f);
+        vec2.clear();
+        vec2.set_dim_val(dim_0, 3.f);
+        vec2.set_dim_val(dim_1, 4.f);
+        PrimitiveVector vec_sum = vec1 + vec2;
+        REQUIRE(vec_sum.get_dim_val(dim_0) == 4.f);
+        REQUIRE(vec_sum.get_dim_val(dim_1) == 6.f);
+
+        // Element-wise division operator
+        vec1.clear();
+        vec1.set_dim_val(dim_0, 10.f);
+        vec1.set_dim_val(dim_1, 20.f);
+        vec1 /= 2.f;
+        REQUIRE(vec1.get_dim_val(dim_0) == 5.f);
+        REQUIRE(vec1.get_dim_val(dim_1) == 10.f);
+
+        // Element-wise division operator (const)
+        vec1.clear();
+        vec1.set_dim_val(dim_0, 10.f);
+        vec1.set_dim_val(dim_1, 20.f);
+        PrimitiveVector vec_div = vec1 / 2.f;
+        REQUIRE(vec_div.get_dim_val(dim_0) == 5.f);
+        REQUIRE(vec_div.get_dim_val(dim_1) == 10.f);
+
+        // Get non-zero dimensions
+        vec1.clear();
+        vec1.set_dim_val(dim_0, 1.f);
+        vec1.set_dim_val(dim_2, 3.f);
+        std::vector<PrimitiveVectorDim> non_zero_dims = vec1.get_non_zero_dims();
+        REQUIRE(std::find(non_zero_dims.begin(), non_zero_dims.end(), dim_0) != non_zero_dims.end());
+        REQUIRE(std::find(non_zero_dims.begin(), non_zero_dims.end(), dim_2) != non_zero_dims.end());
+        REQUIRE(std::find(non_zero_dims.begin(), non_zero_dims.end(), dim_1) == non_zero_dims.end());
+
+        // Test orthogonal vectors
+        vec1.clear();
+        vec2.clear();
+        vec1.set_dim_val(dim_0, 1.f);
+        vec2.set_dim_val(dim_1, 2.f);
+        REQUIRE(vec1.are_dims_disjoint(vec2));
+        vec2.set_dim_val(dim_0, 3.f);
+        REQUIRE(!vec1.are_dims_disjoint(vec2));
+    }
 }
 
 } // namespace
-

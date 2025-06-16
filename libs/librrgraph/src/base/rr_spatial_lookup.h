@@ -1,6 +1,4 @@
-#ifndef RR_SPATIAL_LOOKUP_H
-#define RR_SPATIAL_LOOKUP_H
-
+#pragma once
 /** 
  * @file
  * @brief This RRSpatialLookup class encapsulates 
@@ -15,6 +13,7 @@
  *   - Update the look-up with new nodes
  *   - Find the id of a node with given information, e.g., x, y, type etc.
  */
+
 #include "vtr_geometry.h"
 #include "vtr_vector.h"
 #include "physical_types.h"
@@ -25,7 +24,7 @@ class RRSpatialLookup {
     /* -- Constructors -- */
   public:
     /* Explicitly define the only way to create an object */
-    explicit RRSpatialLookup();
+    explicit RRSpatialLookup() = default;
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -71,7 +70,7 @@ class RRSpatialLookup {
     RRNodeId find_node(int layer,
                        int x,
                        int y,
-                       t_rr_type type,
+                       e_rr_type type,
                        int ptc,
                        e_side side = NUM_2D_SIDES) const;
 
@@ -94,7 +93,7 @@ class RRSpatialLookup {
                                               int ylow,
                                               int xhigh,
                                               int yhigh,
-                                              t_rr_type type,
+                                              e_rr_type type,
                                               int ptc,
                                               e_side side = e_side::NUM_2D_SIDES) const;
 
@@ -116,7 +115,7 @@ class RRSpatialLookup {
     std::vector<RRNodeId> find_channel_nodes(int layer,
                                              int x,
                                              int y,
-                                             t_rr_type type) const;
+                                             e_rr_type type) const;
 
     /**
      * @brief Like find_node() but returns all matching nodes on all the sides.
@@ -127,7 +126,7 @@ class RRSpatialLookup {
     std::vector<RRNodeId> find_nodes_at_all_sides(int layer,
                                                   int x,
                                                   int y,
-                                                  t_rr_type rr_type,
+                                                  e_rr_type rr_type,
                                                   int ptc) const;
 
     /**
@@ -138,7 +137,7 @@ class RRSpatialLookup {
     std::vector<RRNodeId> find_grid_nodes_at_all_sides(int layer,
                                                        int x,
                                                        int y,
-                                                       t_rr_type rr_type) const;
+                                                       e_rr_type rr_type) const;
 
     /* -- Mutators -- */
   public:
@@ -146,7 +145,7 @@ class RRSpatialLookup {
     void reserve_nodes(int layer,
                        int x,
                        int y,
-                       t_rr_type type,
+                       e_rr_type type,
                        int num_nodes,
                        e_side side = TOTAL_2D_SIDES[0]);
 
@@ -179,7 +178,7 @@ class RRSpatialLookup {
                   int layer,
                   int x,
                   int y,
-                  t_rr_type type,
+                  e_rr_type type,
                   int ptc,
                   e_side side = TOTAL_2D_SIDES[0]);
 
@@ -203,7 +202,7 @@ class RRSpatialLookup {
                      int layer,
                      int x,
                      int y,
-                     t_rr_type type,
+                     e_rr_type type,
                      int ptc,
                      e_side side = TOTAL_2D_SIDES[0]);
 
@@ -249,7 +248,7 @@ class RRSpatialLookup {
     void mirror_nodes(const int layer,
                       const vtr::Point<int>& src_coord,
                       const vtr::Point<int>& des_coord,
-                      t_rr_type type,
+                      e_rr_type type,
                       e_side side);
 
     /**
@@ -266,11 +265,11 @@ class RRSpatialLookup {
     void resize_nodes(int layer,
                       int x,
                       int y,
-                      t_rr_type type,
+                      e_rr_type type,
                       e_side side);
 
     /** @brief Reorder the internal look up to be more memory efficient */
-    void reorder(const vtr::vector<RRNodeId, RRNodeId> dest_order);
+    void reorder(const vtr::vector<RRNodeId, RRNodeId>& dest_order);
 
     /** @brief Clear all the data inside */
     void clear();
@@ -285,7 +284,7 @@ class RRSpatialLookup {
     std::vector<RRNodeId> find_nodes(int layer,
                                      int x,
                                      int y,
-                                     t_rr_type type,
+                                     e_rr_type type,
                                      e_side side = TOTAL_2D_SIDES[0]) const;
 
     /* -- Internal data storage -- */
@@ -293,5 +292,3 @@ class RRSpatialLookup {
     /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional array mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
     t_rr_node_indices rr_node_indices_;
 };
-
-#endif

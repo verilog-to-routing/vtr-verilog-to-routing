@@ -1,23 +1,21 @@
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
 #include <fstream>
 #include <iomanip>
+#include <numeric>
 #include <sstream>
-#include <queue> /* Needed for ortho_Cost_index calculation*/
 
 #include "alloc_and_load_rr_indexed_data.h"
 
+#include "arch_types.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_math.h"
 
 #include "vpr_error.h"
 
 #include "rr_graph_utils.h"
-#include "read_xml_arch_file.h"
 
 #include "rr_graph_cost.h"
-#include "rr_graph_type.h"
 
 #include "histogram.h"
 
@@ -29,7 +27,7 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
 
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph, vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
 
-static void calculate_average_switch(const RRGraphView& rr_graph, int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
+static void calculate_average_switch(const RRGraphView& rr_graph, int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, int& num_shorts, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
 
 static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, size_t num_segment);
 
@@ -190,16 +188,16 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
     for (const RRNodeId& rr_node : rr_graph.nodes()) {
         for (size_t iedge = 0; iedge < rr_graph.num_edges(rr_node); ++iedge) {
             RRNodeId to_node = rr_graph.edge_sink_node(rr_node, iedge);
-            t_rr_type from_node_type = rr_graph.node_type(rr_node);
-            t_rr_type to_node_type = rr_graph.node_type(to_node);
+            e_rr_type from_node_type = rr_graph.node_type(rr_node);
+            e_rr_type to_node_type = rr_graph.node_type(to_node);
 
             size_t from_node_cost_index = (size_t)rr_graph.node_cost_index(rr_node);
             size_t to_node_cost_index = (size_t)rr_graph.node_cost_index(to_node);
 
             //if the type  is smaller than start index, means destination is not a CHAN type node.
 
-            if ((from_node_type == CHANX && to_node_type == CHANY) || (from_node_type == CHANY && to_node_type == CHANX)) {
-                if (to_node_type == CHANY) {
+            if ((from_node_type == e_rr_type::CHANX && to_node_type == e_rr_type::CHANY) || (from_node_type == e_rr_type::CHANY && to_node_type == e_rr_type::CHANX)) {
+                if (to_node_type == e_rr_type::CHANY) {
                     dest_nodes_count[from_node_cost_index - CHANX_COST_INDEX_START][to_node_cost_index - (CHANX_COST_INDEX_START + segment_inf_x.size())]++;
                 } else {
                     dest_nodes_count[from_node_cost_index - CHANX_COST_INDEX_START][to_node_cost_index - CHANX_COST_INDEX_START]++;
@@ -430,7 +428,7 @@ static std::vector<size_t> count_rr_segment_types(const RRGraphView& rr_graph, c
     std::vector<size_t> rr_segment_type_counts;
 
     for (const RRNodeId& id : rr_graph.nodes()) {
-        if (rr_graph.node_type(id) != CHANX && rr_graph.node_type(id) != CHANY) continue;
+        if (rr_graph.node_type(id) != e_rr_type::CHANX && rr_graph.node_type(id) != e_rr_type::CHANY) continue;
 
         auto cost_index = rr_graph.node_cost_index(id);
 
@@ -516,7 +514,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_R_total(rr_indexed_data.size());
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_T_total(rr_indexed_data.size());
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_Cinternal_total(rr_indexed_data.size());
-    vtr::vector<RRIndexedDataId, short> switches_buffered(rr_indexed_data.size(), UNDEFINED);
+    vtr::vector<RRIndexedDataId, short> switches_buffered(rr_indexed_data.size(), ARCH_FPGA_UNDEFINED_VAL);
 
     /*
      * Walk through the RR graph and collect all R and C values of all the nodes,
@@ -526,9 +524,9 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
      * data.
      */
     for (const RRNodeId& rr_id : rr_graph.nodes()) {
-        t_rr_type rr_type = rr_graph.node_type(rr_id);
+        e_rr_type rr_type = rr_graph.node_type(rr_id);
 
-        if (rr_type != CHANX && rr_type != CHANY) {
+        if (rr_type != e_rr_type::CHANX && rr_type != e_rr_type::CHANY) {
             continue;
         }
 
@@ -541,15 +539,18 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         double avg_switch_T = 0;
         double avg_switch_Cinternal = 0;
         int num_switches = 0;
-        short buffered = UNDEFINED;
-        calculate_average_switch(rr_graph, (size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
+        int num_shorts = 0;
+        short buffered = ARCH_FPGA_UNDEFINED_VAL;
+        calculate_average_switch(rr_graph, (size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, num_shorts, buffered, fan_in_list);
 
         if (num_switches == 0) {
-            VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no incoming switches\n", rr_id,
-                         rr_graph.node_type_string(rr_id), node_cords.c_str());
+            if (num_shorts == 0) {
+                VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
+                             rr_graph.node_type_string(rr_id), node_cords.c_str());
+            }
             continue;
-        }    
-        VTR_ASSERT(num_switches > 0);
+        }
+        VTR_ASSERT(num_switches > 0 || num_shorts > 0);
 
         num_nodes_of_index[cost_index]++;
         C_total[cost_index].push_back(rr_graph.node_C(rr_id));
@@ -558,13 +559,13 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         switch_R_total[cost_index].push_back(avg_switch_R);
         switch_T_total[cost_index].push_back(avg_switch_T);
         switch_Cinternal_total[cost_index].push_back(avg_switch_Cinternal);
-        if (buffered == UNDEFINED) {
+        if (buffered == ARCH_FPGA_UNDEFINED_VAL) {
             /* this segment does not have any outgoing edges to other general routing wires */
             continue;
         }
 
         /* need to make sure all wire switches of a given wire segment type have the same 'buffered' value */
-        if (switches_buffered[cost_index] == UNDEFINED) {
+        if (switches_buffered[cost_index] == ARCH_FPGA_UNDEFINED_VAL) {
             switches_buffered[cost_index] = buffered;
         } else {
             if (switches_buffered[cost_index] != buffered) {
@@ -633,26 +634,30 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
  * It is not safe to assume that each node of the same wire type has the same switches with the same
  * delays, therefore we take their average to take into account the possible differences
  */
-static void calculate_average_switch(const RRGraphView& rr_graph, int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
+static void calculate_average_switch(const RRGraphView& rr_graph, int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, int& num_shorts, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
     auto node = RRNodeId(inode);
 
     avg_switch_R = 0;
     avg_switch_T = 0;
     avg_switch_Cinternal = 0;
     num_switches = 0;
-    buffered = UNDEFINED;
+    num_shorts = 0;
+    buffered = ARCH_FPGA_UNDEFINED_VAL;
     for (const auto& edge : fan_in_list[node]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
-        if (rr_graph.node_type(node) == CHANX || rr_graph.node_type(node) == CHANY) {
+        if (rr_graph.node_type(node) == e_rr_type::CHANX || rr_graph.node_type(node) == e_rr_type::CHANY) {
             int switch_index = rr_graph.rr_nodes().edge_switch(edge);
 
-            if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::SHORT) continue;
+            if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::SHORT) {
+                num_shorts++;
+                continue;
+            }
 
             avg_switch_R += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).R;
             avg_switch_T += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Tdel;
             avg_switch_Cinternal += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cinternal;
 
-            if (buffered == UNDEFINED) {
+            if (buffered == ARCH_FPGA_UNDEFINED_VAL) {
                 if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered()) {
                     buffered = 1;
                 } else {

@@ -1,9 +1,8 @@
 #pragma once
-
 /** @file Interface for a netlist router.
  *
  * A NetlistRouter manages the required bits of state to complete the netlist routing process,
- * which requires finding a path for every connection in the netlist using a ConnectionRouter.
+ * which requires finding a path for every connection in the netlist using a SerialConnectionRouter.
  * This needs to be an interface because there may be different netlist routing schedules,
  * i.e. parallel or net-decomposing routers.
  *
@@ -19,14 +18,11 @@
 #include "NetPinTimingInvalidator.h"
 #include "clustered_netlist_utils.h"
 #include "connection_based_routing_fwd.h"
-#include "connection_router.h"
-#include "globals.h"
+#include "d_ary_heap.h"
 #include "heap_type.h"
 #include "netlist_fwd.h"
-#include "partition_tree.h"
 #include "routing_predictor.h"
 #include "route_budgets.h"
-#include "route_utils.h"
 #include "router_stats.h"
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
@@ -71,9 +67,10 @@ class NetlistRouter {
 
 /* Include the derived classes here to get the HeapType-templated impls */
 #include "SerialNetlistRouter.h"
+#include "NestedNetlistRouter.h"
 #ifdef VPR_USE_TBB
-#    include "ParallelNetlistRouter.h"
-#    include "DecompNetlistRouter.h"
+#include "ParallelNetlistRouter.h"
+#include "DecompNetlistRouter.h"
 #endif
 
 template<typename HeapType>
@@ -92,6 +89,20 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
     bool is_flat) {
     if (router_opts.router_algorithm == e_router_algorithm::TIMING_DRIVEN) {
         return std::make_unique<SerialNetlistRouter<HeapType>>(
+            net_list,
+            router_lookahead,
+            router_opts,
+            connections_inf,
+            net_delay,
+            netlist_pin_lookup,
+            timing_info,
+            pin_timing_invalidator,
+            budgeting_inf,
+            routing_predictor,
+            choking_spots,
+            is_flat);
+    } else if (router_opts.router_algorithm == e_router_algorithm::NESTED) {
+        return std::make_unique<NestedNetlistRouter<HeapType>>(
             net_list,
             router_lookahead,
             router_opts,

@@ -1,16 +1,15 @@
+#pragma once
 /**
  * @file rr_graph_utils.h
  *
  * @brief This file includes the most-utilized functions that manipulate the RRGraph object.
  */
 
-#ifndef RR_GRAPH_UTILS_H
-#define RR_GRAPH_UTILS_H
-
 /* Include header files which include data structures used by
  * the function declaration
  */
 #include <vector>
+#include "rr_graph_builder.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
 #include "rr_graph_view.h"
@@ -21,7 +20,7 @@ struct t_pin_chain_node {
     int nxt_node_idx = OPEN;
 
     t_pin_chain_node() = default;
-    t_pin_chain_node(int pin_num, int nxt_idx)
+    t_pin_chain_node(int pin_num, int nxt_idx) noexcept
         : pin_physical_num(pin_num)
         , nxt_node_idx(nxt_idx) {}
 };
@@ -76,7 +75,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
  * @brief Returns the segment number (distance along the channel) of the connection box from from_rr_type (CHANX or
  * CHANY) to to_node (IPIN).
  */
-int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int to_node);
+int seg_index_of_cblock(const RRGraphView& rr_graph, e_rr_type from_rr_type, int to_node);
 
 /**
  * @brief Returns the segment number (distance along the channel) of the switch box from from_node (CHANX or CHANY) to
@@ -99,4 +98,3 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
  * @return limited_to_opin
  */
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
-#endif

@@ -13,38 +13,28 @@
  * other file's information
  */
 
-#include <iostream>
 #include <fstream>
 #include <cstdio>
-#include <cstring>
-#include <ctime>
 #include <sstream>
 #include <string>
 
-#include "atom_netlist.h"
-#include "atom_netlist_utils.h"
-#include "rr_graph.h"
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_digest.h"
 #include "vtr_util.h"
-#include "tatum/echo_writer.hpp"
 #include "vtr_log.h"
 #include "check_route.h"
 #include "route_common.h"
 #include "vpr_types.h"
 #include "globals.h"
-#include "vpr_api.h"
 #include "read_place.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vpr_error.h"
-#include "place_and_route.h"
-#include "timing_place.h"
-#include "route_export.h"
-#include "echo_files.h"
 #include "route_common.h"
 #include "route_tree.h"
 #include "read_route.h"
+#include "d_ary_heap.h"
 
 #include "old_traceback.h"
 
@@ -54,7 +44,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
 static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool is_flat);
 static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat);
 static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
-static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input);
+static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input);
 static std::string format_name(std::string name);
 static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node);
 void print_route(const Netlist<>& net_list, FILE* fp, bool is_flat);
@@ -104,7 +94,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 
     /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs();
-    const Netlist<>& router_net_list = (flat_router) ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& router_net_list = (flat_router) ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     init_route_structs(router_net_list,
                        router_opts.bb_factor,
                        router_opts.has_choke_point,
@@ -212,7 +202,6 @@ static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNe
         process_nodes(net_list, fp, inet, filename, lineno);
     }
     input_tokens.clear();
-    return;
 }
 
 static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
@@ -307,7 +296,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
             /* Verify types and ptc*/
             if (tokens[2] == "SOURCE" || tokens[2] == "SINK" || tokens[2] == "OPIN" || tokens[2] == "IPIN") {
                 const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
-                if (tokens[4 + offset] == "Pad:" && !is_io_type(type)) {
+                if (tokens[4 + offset] == "Pad:" && !type->is_io()) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "Node %d is of the wrong type", inode);
                 }
@@ -330,7 +319,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
                 auto type = device_ctx.grid.get_physical_type({x, y, layer_num});
-                if (!is_io_type(type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
+                if (!type->is_io() && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
                     int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
                     int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
@@ -505,7 +494,7 @@ static void format_coordinates(int& layer_num, int& x, int& y, std::string coord
  * @brief Parse the pin info in the form of pb_name.port_name[pb_pin_num]
  *        into its appropriate variables
  */
-static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input) {
+static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input) {
     std::stringstream pb_info(input);
     std::getline(pb_info, pb_name, '.');
     std::getline(pb_info, port_name, '[');
@@ -527,7 +516,7 @@ static std::string format_name(std::string name) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "%s should be enclosed by parenthesis",
                         name.c_str());
-        return nullptr;
+        return {};
     }
 }
 
@@ -544,7 +533,7 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     // If it's starting a new sub branch this is ok
-    if (rr_graph.node_type(prev_node) == SINK) return true;
+    if (rr_graph.node_type(prev_node) == e_rr_type::SINK) return true;
 
     for (RREdgeId edge : rr_graph.edge_range(prev_node)) {
         //If the sink node is reachable by previous node return true
@@ -590,7 +579,7 @@ void print_route(const Netlist<>& net_list,
 
                 while (tptr != nullptr) {
                     RRNodeId inode = RRNodeId(tptr->index);
-                    t_rr_type rr_type = rr_graph.node_type(inode);
+                    e_rr_type rr_type = rr_graph.node_type(inode);
                     int ilow = rr_graph.node_xlow(inode);
                     int jlow = rr_graph.node_ylow(inode);
                     int layer_num = rr_graph.node_layer(inode);
@@ -603,24 +592,27 @@ void print_route(const Netlist<>& net_list,
                         fprintf(fp, "to (%d,%d,%d) ", rr_graph.node_xhigh(inode),
                                 rr_graph.node_yhigh(inode), layer_num);
 
+                    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_num});
+
                     switch (rr_type) {
-                        case IPIN:
-                        case OPIN:
-                            if (is_io_type(device_ctx.grid.get_physical_type({ilow, jlow, layer_num}))) {
+                        case e_rr_type::IPIN:
+                        case e_rr_type::OPIN:
+
+                            if (physical_tile->is_io()) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
                                 fprintf(fp, " Pin: ");
                             }
                             break;
 
-                        case CHANX:
-                        case CHANY:
+                        case e_rr_type::CHANX:
+                        case e_rr_type::CHANY:
                             fprintf(fp, " Track: ");
                             break;
 
-                        case SOURCE:
-                        case SINK:
-                            if (is_io_type(device_ctx.grid.get_physical_type({ilow, jlow, layer_num}))) {
+                        case e_rr_type::SOURCE:
+                        case e_rr_type::SINK:
+                            if (physical_tile->is_io()) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
                                 fprintf(fp, " Class: ");
@@ -636,8 +628,7 @@ void print_route(const Netlist<>& net_list,
 
                     fprintf(fp, "%d  ", rr_graph.node_ptc_num(inode));
 
-                    auto physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_num});
-                    if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
+                    if (!physical_tile->is_io() && (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN)) {
                         int pin_num = rr_graph.node_pin_num(inode);
                         int xoffset = device_ctx.grid.get_width_offset({ilow, jlow, layer_num});
                         int yoffset = device_ctx.grid.get_height_offset({ilow, jlow, layer_num});
@@ -662,7 +653,7 @@ void print_route(const Netlist<>& net_list,
                     fprintf(fp, "Switch: %d", int(tptr->iswitch));
 
                     //Save net pin index for sinks
-                    if (rr_type == SINK) {
+                    if (rr_type == e_rr_type::SINK) {
                         fprintf(fp, " Net_pin_index: %d", tptr->net_pin_index);
                     }
 

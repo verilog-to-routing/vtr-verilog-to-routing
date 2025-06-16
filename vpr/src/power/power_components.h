@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -20,13 +21,9 @@
  * within the FPGA (flip-flops, LUTs, interconnect structures, etc).
  */
 
-#ifndef __POWER_COMPONENTS_H__
-#define __POWER_COMPONENTS_H__
-
 /************************* INCLUDES *********************************/
 #include <string>
 #include "power.h"
-#include "clustered_netlist.h"
 
 /************************* Defines **********************************/
 
@@ -38,7 +35,7 @@
  */
 #define POWER_LUT_SLOW
 #if (!(defined(POWER_LUT_SLOW) || defined(POWER_LUT_FAST)))
-#    define POWER_LUT_SLOW
+#define POWER_LUT_SLOW
 #endif
 
 /************************* ENUMS ************************************/
@@ -93,5 +90,3 @@ void power_usage_mux_multilevel(t_power_usage* power_usage,
                                 bool output_level_restored,
                                 float period);
 void power_usage_buffer(t_power_usage* power_usage, float size, float in_prob, float in_dens, bool level_restored, float period);
-
-#endif

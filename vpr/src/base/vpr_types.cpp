@@ -1,6 +1,9 @@
 #include <cmath>
+#include <sstream>
 #include "vpr_types.h"
 #include "globals.h"
+#include "logic_types.h"
+#include "vpr_utils.h"
 
 t_ext_pin_util_targets::t_ext_pin_util_targets(float default_in_util, float default_out_util) {
     defaults_.input_pin_util = default_in_util;
@@ -361,10 +364,10 @@ t_pb* t_pb::find_mutable_pb(const t_pb_graph_node* gnode) {
     return nullptr; //Not found
 }
 
-const t_pb* t_pb::find_pb_for_model(const std::string& blif_model) const {
+const t_pb* t_pb::find_pb_for_model(LogicalModelId blif_model_id) const {
     //Base case
-    const t_model* model = pb_graph_node->pb_type->model;
-    if (model && model->name == blif_model) {
+    LogicalModelId model_id = pb_graph_node->pb_type->model_id;
+    if (model_id.is_valid() && model_id == blif_model_id) {
         return this;
     }
 
@@ -375,7 +378,7 @@ const t_pb* t_pb::find_pb_for_model(const std::string& blif_model) const {
         for (int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
             const t_pb* child_pb = &child_pbs[ichild_type][ipb];
 
-            const t_pb* matching_pb = child_pb->find_pb_for_model(blif_model);
+            const t_pb* matching_pb = child_pb->find_pb_for_model(blif_model_id);
             if (matching_pb) {
                 return this;
             }
@@ -451,4 +454,3 @@ BitIndex t_pb::atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
 void t_pb::set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx) {
     pin_rotations_[gpin] = atom_pin_bit_idx;
 }
-

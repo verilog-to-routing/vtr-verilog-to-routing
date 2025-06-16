@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -20,11 +21,9 @@
  * components (inverters, simple multiplexers, etc)
  */
 
-#ifndef __POWER_LOW_LEVEL_H__
-#define __POWER_LOW_LEVEL_H__
-
 /************************* INCLUDES *********************************/
-#include "power.h"
+#include "physical_types.h"
+#include "vpr_types.h"
 
 /************************* GLOBALS **********************************/
 
@@ -89,5 +88,3 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in, fl
 float power_calc_node_switching(float capacitance, float density, float period);
 
 float power_calc_buffer_size_from_Cout(float C_out);
-
-#endif

@@ -342,7 +342,6 @@ post_condition_function resolve_binary_operation(ast_node_t* node) {
     }
 }
 
-
 /*
  *  (function: resolve_post_condition)
  *  return a lambda which gives the next value

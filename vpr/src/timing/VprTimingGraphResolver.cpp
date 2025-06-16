@@ -1,15 +1,18 @@
 #include "VprTimingGraphResolver.h"
 #include "atom_netlist.h"
 #include "atom_lookup.h"
+#include "logic_types.h"
 
 VprTimingGraphResolver::VprTimingGraphResolver(const AtomNetlist& netlist,
                                                const AtomLookup& netlist_lookup,
+                                               const LogicalModels& models,
                                                const tatum::TimingGraph& timing_graph,
                                                const AnalysisDelayCalculator& delay_calc,
                                                bool is_flat,
                                                const BlkLocRegistry& blk_loc_registry)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
+    , models_(models)
     , timing_graph_(timing_graph)
     , delay_calc_(delay_calc)
     , is_flat_(is_flat)
@@ -25,7 +28,7 @@ std::string VprTimingGraphResolver::node_type_name(tatum::NodeId node) const {
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
     AtomBlockId blk = netlist_.pin_block(pin);
 
-    std::string name = netlist_.block_model(blk)->name;
+    std::string name = models_.model_name(netlist_.block_model(blk));
 
     if (detail_level() == e_timing_report_detail::AGGREGATED
         || detail_level() == e_timing_report_detail::DETAILED_ROUTING
@@ -34,7 +37,7 @@ std::string VprTimingGraphResolver::node_type_name(tatum::NodeId node) const {
         //Annotate primitive grid location, if known
         auto& atom_ctx = g_vpr_ctx.atom();
         auto& block_locs = blk_loc_registry_.block_locs();
-        ClusterBlockId cb = atom_ctx.lookup.atom_clb(blk);
+        ClusterBlockId cb = atom_ctx.lookup().atom_clb(blk);
         if (cb && block_locs.count(cb)) {
             int x = block_locs[cb].loc.x;
             int y = block_locs[cb].loc.y;
@@ -78,7 +81,7 @@ tatum::EdgeDelayBreakdown VprTimingGraphResolver::edge_delay_breakdown(tatum::Ed
             //component.inst_name = netlist_.block_name(atom_blk);
 
             component.type_name = "primitive '";
-            component.type_name += netlist_.block_model(atom_blk)->name;
+            component.type_name += models_.model_name(netlist_.block_model(atom_blk));
             component.type_name += "'";
 
             if (edge_type == tatum::EdgeType::PRIMITIVE_COMBINATIONAL) {
@@ -174,11 +177,11 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         tatum::Time sink_clb_delay;
 
         if (is_flat_) {
-            AtomNetId tmp_atom_net = atom_ctx.nlist.pin_net((AtomPinId&)src_pin);
-            VTR_ASSERT(tmp_atom_net == atom_ctx.nlist.pin_net((AtomPinId&)sink_pin));
+            AtomNetId tmp_atom_net = atom_ctx.netlist().pin_net((AtomPinId&)src_pin);
+            VTR_ASSERT(tmp_atom_net == atom_ctx.netlist().pin_net((AtomPinId&)sink_pin));
 
-            AtomBlockId tmp_atom_src_block = atom_ctx.nlist.pin_block((AtomPinId&)src_pin);
-            AtomBlockId tmp_atom_sink_block = atom_ctx.nlist.pin_block((AtomPinId&)sink_pin);
+            AtomBlockId tmp_atom_src_block = atom_ctx.netlist().pin_block((AtomPinId&)src_pin);
+            AtomBlockId tmp_atom_sink_block = atom_ctx.netlist().pin_block((AtomPinId&)sink_pin);
 
             src_blk = (ParentBlockId&)tmp_atom_src_block;
             sink_blk = (ParentBlockId&)tmp_atom_sink_block;
@@ -188,7 +191,7 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
             driver_clb_delay = tatum::Time(0);
             sink_clb_delay = tatum::Time(0);
 
-            sink_net_pin_index = g_vpr_ctx.atom().nlist.pin_net_index((AtomPinId&)sink_pin);
+            sink_net_pin_index = g_vpr_ctx.atom().netlist().pin_net_index((AtomPinId&)sink_pin);
 
         } else {
             ClusterNetId tmp_cluster_net = cluster_ctx.clb_nlist.pin_net((ClusterPinId&)src_pin);
@@ -218,7 +221,7 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         //driver_component.inst_name = cluster_ctx.clb_nlist.block_name(src_blk);
         driver_component.type_name = "intra '";
         if (is_flat_) {
-            const t_pb* atom_pb = atom_ctx.lookup.atom_pb((AtomBlockId&)src_blk);
+            const t_pb* atom_pb = atom_ctx.lookup().atom_pb_bimap().atom_pb((AtomBlockId&)src_blk);
             driver_component.type_name += (std::string(atom_pb->name) + "(" + atom_pb->hierarchical_type_name() + ")");
         } else {
             driver_component.type_name += cluster_ctx.clb_nlist.block_type((ClusterBlockId&)src_blk)->name;
@@ -263,7 +266,7 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
         //sink_component.inst_name = cluster_ctx.clb_nlist.block_name(sink_blk);
         sink_component.type_name = "intra '";
         if (is_flat_) {
-            sink_component.type_name += atom_ctx.lookup.atom_pb((AtomBlockId&)sink_blk)->name;
+            sink_component.type_name += atom_ctx.lookup().atom_pb_bimap().atom_pb((AtomBlockId&)sink_blk)->name;
         } else {
             sink_component.type_name += cluster_ctx.clb_nlist.block_type((ClusterBlockId&)sink_blk)->name;
         }
@@ -283,8 +286,8 @@ void VprTimingGraphResolver::set_detail_level(e_timing_report_detail report_deta
 }
 
 void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<tatum::DelayComponent>& components, ParentNetId net_id, ParentPinId sink_pin) const {
-    /* This routine obtains the interconnect components such as: OPIN, CHANX, CHANY, IPIN which join 
-     * two intra-block clusters in two parts. In part one, we construct the route tree 
+    /* This routine obtains the interconnect components such as: OPIN, CHANX, CHANY, IPIN which join
+     * two intra-block clusters in two parts. In part one, we construct the route tree
      * from the traceback and computes its value for R, C, and Tdel. Next, we find the pointer to
      * the route tree sink which corresponds to the sink_pin. In part two, we call the helper function,
      * which walks the route tree from the sink to the source. Along the way, we process each node
@@ -295,7 +298,7 @@ void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<ta
     if (!route_ctx.route_trees[net_id])
         return;
 
-    auto& netlist = is_flat_ ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    auto& netlist = is_flat_ ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
     int ipin = netlist.pin_net_index(sink_pin);
     RRNodeId sink_rr_inode = RRNodeId(route_ctx.net_rr_terminals[net_id][ipin]); //obtain the value of the routing resource sink
@@ -342,11 +345,11 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
         // Process the current interconnect component if it is of type OPIN, CHANX, CHANY, IPIN
         // Only process SOURCE, SINK in debug report mode
         auto rr_type = rr_graph.node_type(RRNodeId(current_node->inode));
-        if (rr_type == OPIN
-            || rr_type == IPIN
-            || rr_type == CHANX
-            || rr_type == CHANY
-            || ((rr_type == SOURCE || rr_type == SINK) && (detail_level() == e_timing_report_detail::DEBUG))) {
+        if (rr_type == e_rr_type::OPIN
+            || rr_type == e_rr_type::IPIN
+            || rr_type == e_rr_type::CHANX
+            || rr_type == e_rr_type::CHANY
+            || ((rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::SINK) && (detail_level() == e_timing_report_detail::DEBUG))) {
             tatum::DelayComponent net_component; // declare a new instance of DelayComponent
 
             net_component.type_name = rr_graph.node_coordinate_to_string(RRNodeId(current_node->inode));

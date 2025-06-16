@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -9,8 +10,6 @@
  * Placement need not represent a legal placement; however, the placed blocks
  * will always be on the device and will respect fixed block locations.
  */
-
-#pragma once
 
 #include <cmath>
 #include "ap_netlist.h"
@@ -71,10 +70,10 @@ struct PartialPlacement {
      *  @param netlist  The APNetlist which contains the blocks to be placed.
      */
     PartialPlacement(const APNetlist& netlist)
-            : block_x_locs(netlist.blocks().size(), -1.0),
-              block_y_locs(netlist.blocks().size(), -1.0),
-              block_layer_nums(netlist.blocks().size(), 0.0),
-              block_sub_tiles(netlist.blocks().size(), 0) {
+        : block_x_locs(netlist.blocks().size(), -1.0)
+        , block_y_locs(netlist.blocks().size(), -1.0)
+        , block_layer_nums(netlist.blocks().size(), 0.0)
+        , block_sub_tiles(netlist.blocks().size(), 0) {
         // Note: All blocks are initialized to:
         //      x_loc = -1.0
         //      y_loc = -1.0
@@ -84,7 +83,7 @@ struct PartialPlacement {
         for (APBlockId blk_id : netlist.blocks()) {
             if (netlist.block_mobility(blk_id) != APBlockMobility::FIXED)
                 continue;
-            const APFixedBlockLoc &loc = netlist.block_loc(blk_id);
+            const APFixedBlockLoc& loc = netlist.block_loc(blk_id);
             if (loc.x != -1)
                 block_x_locs[blk_id] = loc.x;
             if (loc.y != -1)
@@ -201,4 +200,3 @@ struct PartialPlacement {
                 size_t grid_height,
                 size_t grid_num_layers) const;
 };
-

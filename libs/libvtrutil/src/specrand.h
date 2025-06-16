@@ -1,5 +1,4 @@
-#ifndef VPR_SPEC_RAND_H
-#define VPR_SPEC_RAND_H
+#pragma once
 /*
  * For inclusion in the SPEC cpu benchmarks
  * This file implements the random number generation necessary for the SPEC cpu benchmarks. The functions
@@ -114,7 +113,4 @@ class SpecRandomNumberGenerator : public vtr::RandomNumberGeneratorInterface {
     size_t mti = N + 1;
     /// the array for the state vector
     unsigned long mt[N];
-
 };
-
-#endif

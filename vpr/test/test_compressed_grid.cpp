@@ -1,19 +1,13 @@
+#include "arch_util.h"
 #include "catch2/catch_test_macros.hpp"
-#include "catch2/matchers/catch_matchers_all.hpp"
 
 #include "compressed_grid.h"
 #include "globals.h"
 #include "physical_types.h"
 
-// for comparing floats
-#include "vtr_math.h"
-
-#include <limits>
-
 namespace {
 
-void set_type_tile_to_empty(const int x, const int y,
-                            vtr::NdMatrix<t_grid_tile, 3>& grid) {
+void set_type_tile_to_empty(const int x, const int y, vtr::NdMatrix<t_grid_tile, 3>& grid) {
     t_physical_tile_type_ptr type = grid[0][x][y].type;
     const int width_offset = grid[0][x][y].width_offset;
     const int height_offset = grid[0][x][y].height_offset;
@@ -29,12 +23,9 @@ void set_type_tile_to_empty(const int x, const int y,
             }
         }
     }
-
 }
 
-void set_tile_type_at_loc(const int x_anchor, const int y_anchor,
-                          vtr::NdMatrix<t_grid_tile, 3>& grid,
-                          const t_physical_tile_type& tile_type) {
+void set_tile_type_at_loc(const int x_anchor, const int y_anchor, vtr::NdMatrix<t_grid_tile, 3>& grid, const t_physical_tile_type& tile_type) {
 
     for (int i = x_anchor; i < x_anchor + tile_type.width; i++) {
         for (int j = y_anchor; j < y_anchor + tile_type.height; j++) {
@@ -47,7 +38,6 @@ void set_tile_type_at_loc(const int x_anchor, const int y_anchor,
         }
     }
 }
-
 
 TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     // test device grid name
@@ -70,7 +60,6 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     auto& logical_block_types = g_vpr_ctx.mutable_device().logical_block_types;
     logical_block_types.clear();
 
-
     t_physical_tile_type empty_tile;
     empty_tile.name = empty_tile_name;
     empty_tile.height = 1;
@@ -86,7 +75,6 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
 
     empty_tile.sub_tiles.back().index = 0;
     empty_tile.sub_tiles.back().equivalent_sites.push_back(&EMPTY_LOGICAL_BLOCK_TYPE);
-
 
     // create an io physical tile and assign its parameters
     t_physical_tile_type io_tile;
@@ -130,7 +118,6 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     tall_logical_type.equivalent_tiles.push_back(&tall_tile);
     logical_block_types.push_back(tall_logical_type);
 
-
     tall_tile.sub_tiles.back().index = 0;
     tall_tile.sub_tiles.back().equivalent_sites.push_back(&tall_logical_type);
 
@@ -147,7 +134,6 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
 
     large_tile.sub_tiles.back().index = 0;
     large_tile.sub_tiles.back().equivalent_sites.push_back(&large_logical_type);
-
 
     for (int x = 0; x < test_grid_width; x++) {
         for (int y = 0; y < test_grid_height; y++) {
@@ -330,6 +316,7 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
         REQUIRE(grid_loc == t_physical_tile_loc{98, 98, 0});
     }
 
+    logical_block_types.clear();
 }
 
 } // namespace

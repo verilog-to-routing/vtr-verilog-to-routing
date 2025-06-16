@@ -217,26 +217,73 @@ std::string FasmWriterVisitor::build_clb_prefix(const t_pb *pb, const t_pb_graph
   return clb_prefix;
 }
 
-static const t_pb_graph_pin* is_node_used(const t_pb_routes &top_pb_route, const t_pb_graph_node* pb_graph_node) {
-    // Is the node used at all?
-    const t_pb_graph_pin* pin = nullptr;
-    for(int port_index = 0; port_index < pb_graph_node->num_output_ports; ++port_index) {
-        for(int pin_index = 0; pin_index < pb_graph_node->num_output_pins[port_index]; ++pin_index) {
-            pin = &pb_graph_node->output_pins[port_index][pin_index];
-            if (top_pb_route.count(pin->pin_count_in_cluster) > 0 && top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
-                return pin;
-            }
-        }
-    }
+/**
+ * @brief Returns true if the given pin is used (i.e. is not "open").
+ */
+static bool is_pin_used(const t_pb_graph_pin* pin, const t_pb_routes &top_pb_route) {
+    // A pin is used if it has a pb_route that is connected to an atom net.
+    if (top_pb_route.count(pin->pin_count_in_cluster) == 0)
+        return false;
+    if (!top_pb_route[pin->pin_count_in_cluster].atom_net_id.is_valid())
+        return false;
+    return true;
+}
+
+/**
+ * @brief Returns the input pin for the given wire.
+ *
+ * Wires in VPR are a special primitive which is a LUT which acts like a wire
+ * pass-through. Only one input of this LUT should be used.
+ *
+ *  @param top_pb_route
+ *      The top pb route for the cluster that contains the wire.
+ *  @param pb_graph_node
+ *      The pb_graph_node of the wire primitive that we are getting the input
+ *      pin for.
+ */
+static const t_pb_graph_pin* get_wire_input_pin(const t_pb_routes &top_pb_route, const t_pb_graph_node* pb_graph_node) {
+    const t_pb_graph_pin* wire_input_pin = nullptr;
     for(int port_index = 0; port_index < pb_graph_node->num_input_ports; ++port_index) {
         for(int pin_index = 0; pin_index < pb_graph_node->num_input_pins[port_index]; ++pin_index) {
-            pin = &pb_graph_node->input_pins[port_index][pin_index];
-            if (top_pb_route.count(pin->pin_count_in_cluster) > 0 && top_pb_route[pin->pin_count_in_cluster].atom_net_id != AtomNetId::INVALID()) {
-                return pin;
+            const t_pb_graph_pin* pin = &pb_graph_node->input_pins[port_index][pin_index];
+            if (is_pin_used(pin, top_pb_route)) {
+                VTR_ASSERT_MSG(wire_input_pin == nullptr,
+                               "Wire found with more than 1 used input");
+                wire_input_pin = pin;
             }
         }
     }
-    return nullptr;
+    return wire_input_pin;
+}
+
+/**
+ * @brief Returns true if the given wire is used.
+ *
+ * A wire is used if it has a used output pin.
+ *
+ *  @param top_pb_route
+ *      The top pb route for the cluster that contains the wire.
+ *  @param pb_graph_node
+ *      The pb_graph_node of the wire primitive that we are checking is used.
+ */
+static bool is_wire_used(const t_pb_routes &top_pb_route, const t_pb_graph_node* pb_graph_node) {
+    // A wire is used if it has a used output pin.
+    const t_pb_graph_pin* wire_output_pin = nullptr;
+    for(int port_index = 0; port_index < pb_graph_node->num_output_ports; ++port_index) {
+        for(int pin_index = 0; pin_index < pb_graph_node->num_output_pins[port_index]; ++pin_index) {
+            const t_pb_graph_pin* pin = &pb_graph_node->output_pins[port_index][pin_index];
+            if (is_pin_used(pin, top_pb_route)) {
+                VTR_ASSERT_MSG(wire_output_pin == nullptr,
+                               "Wire found with more than 1 used output");
+                wire_output_pin = pin;
+            }
+        }
+    }
+
+    if (wire_output_pin != nullptr)
+        return true;
+
+    return false;
 }
 
 void FasmWriterVisitor::check_features(const t_metadata_dict *meta) const {
@@ -278,14 +325,31 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
   }
 
   if(mode != nullptr && std::string(mode->name) == "wire") {
-    auto io_pin = is_node_used(pb_routes, pb_graph_node);
-    if(io_pin != nullptr) {
-      const auto& route = pb_routes.at(io_pin->pin_count_in_cluster);
+    // Check if the wire is used. If the wire is unused (i.e. it does not connect
+    // to anything), it does not need to be created.
+    if (is_wire_used(pb_routes, pb_graph_node)) {
+      // Get the input pin of the LUT that feeds the wire. There should be one
+      // and only one.
+      const t_pb_graph_pin* wire_input_pin = get_wire_input_pin(pb_routes, pb_graph_node);
+      VTR_ASSERT_MSG(wire_input_pin != nullptr,
+                     "Wire found with no used input pins");
+
+      // Get the route going into this pin.
+      const auto& route = pb_routes.at(wire_input_pin->pin_count_in_cluster);
+
+      // Find the lut definition for the parent of this wire.
       const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
       const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
       VTR_ASSERT(lut_definition->num_inputs == num_inputs);
 
+      // Create a wire implementation for the LUT.
       output_fasm_features(lut_definition->CreateWire(route.pb_graph_pin->pin_number));
+    } else {
+      // If the wire is not used, ensure that the inputs to the wire are also
+      // unused. This is just a sanity check to ensure that all wires are
+      // either completely unused or have one input and one output.
+      VTR_ASSERT_MSG(get_wire_input_pin(pb_routes, pb_graph_node) == nullptr,
+                     "Wire found with a used input pin, but no used output pin");
     }
   }
 
@@ -343,9 +407,9 @@ static AtomNetId _find_atom_input_logical_net(const t_pb* atom, const t_pb_route
 
 static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_routes &pb_route) {
     auto& atom_ctx = g_vpr_ctx.atom();
-    AtomBlockId block_id = atom_ctx.lookup.pb_atom(atom_pb);
-    const auto& truth_table = atom_ctx.nlist.block_truth_table(block_id);
-    auto ports = atom_ctx.nlist.block_input_ports(atom_ctx.lookup.pb_atom(atom_pb));
+    AtomBlockId block_id = atom_ctx.lookup().atom_pb_bimap().pb_atom(atom_pb);
+    const auto& truth_table = atom_ctx.netlist().block_truth_table(block_id);
+    auto ports = atom_ctx.netlist().block_input_ports(atom_ctx.lookup().atom_pb_bimap().pb_atom(atom_pb));
 
     const t_pb_graph_node* gnode = atom_pb->pb_graph_node;
 
@@ -384,7 +448,7 @@ static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_r
 
         if(impl_input_net_id) {
             //If there is a valid net connected in the implementation
-            AtomNetId logical_net_id = atom_ctx.nlist.port_net(port_id, orig_index);
+            AtomNetId logical_net_id = atom_ctx.netlist().port_net(port_id, orig_index);
             VTR_ASSERT(impl_input_net_id == logical_net_id);
 
             //Mark the permutation.
@@ -537,7 +601,7 @@ static const t_pb_routes &find_pb_route(const t_pb* pb) {
 void FasmWriterVisitor::check_for_param(const t_pb *atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    auto atom_blk_id = atom_ctx.lookup.pb_atom(atom);
+    auto atom_blk_id = atom_ctx.lookup().atom_pb_bimap().pb_atom(atom);
     if (atom_blk_id == AtomBlockId::INVALID()) {
         return;
     }
@@ -580,7 +644,7 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
 
     auto &params = iter->second;
 
-    for(const auto& param : atom_ctx.nlist.block_params(atom_blk_id)) {
+    for(const auto& param : atom_ctx.netlist().block_params(atom_blk_id)) {
         auto feature = params.EmitFasmFeature(param.first, param.second);
 
         if(!feature.empty()) {
@@ -591,14 +655,16 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
 
 void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
-    auto atom_blk_id = atom_ctx.lookup.pb_atom(atom);
+    auto atom_blk_id = atom_ctx.lookup().atom_pb_bimap().pb_atom(atom);
     if (atom_blk_id == AtomBlockId::INVALID()) {
         return;
     }
 
-    const t_model* model = atom_ctx.nlist.block_model(atom_blk_id);
-    if (model->name == std::string(MODEL_NAMES)) {
+    LogicalModelId names_model_id = models.get_model_by_name(LogicalModels::MODEL_NAMES);
+    LogicalModelId model_id = atom_ctx.netlist().block_model(atom_blk_id);
+    if (model_id == names_model_id) {
       VTR_ASSERT(atom->pb_graph_node != nullptr);
       const auto *lut_definition = find_lut(atom->pb_graph_node);
       VTR_ASSERT(lut_definition->num_inputs == *atom->pb_graph_node->num_input_pins);

@@ -1,5 +1,4 @@
-#ifndef REGION_H
-#define REGION_H
+#pragma once
 
 #include "vtr_geometry.h"
 #include "vpr_types.h"
@@ -77,9 +76,7 @@ class Region {
     bool is_loc_in_reg(t_pl_loc loc) const;
 
     bool operator==(const Region& reg) const {
-        return (reg.rect_ == rect_ &&
-                reg.layer_range_ == layer_range_ &&
-                reg.get_sub_tile() == sub_tile_);
+        return (reg.rect_ == rect_ && reg.layer_range_ == layer_range_ && reg.get_sub_tile() == sub_tile_);
     }
 
   private:
@@ -99,7 +96,7 @@ class Region {
      */
     std::pair<int, int> layer_range_;
 
-    int sub_tile_;                 ///< users will optionally select a subtile
+    int sub_tile_; ///< users will optionally select a subtile
 };
 
 /**
@@ -132,5 +129,3 @@ struct hash<Region> {
     }
 };
 } // namespace std
-
-#endif /* REGION_H */

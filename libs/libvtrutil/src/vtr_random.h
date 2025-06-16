@@ -1,5 +1,4 @@
-#ifndef VTR_RANDOM_H
-#define VTR_RANDOM_H
+#pragma once
 
 #include <algorithm> //For std::swap
 #include <memory>
@@ -53,7 +52,6 @@ class RandomNumberGenerator : public RandomNumberGeneratorInterface {
     state_t random_state_ = 0;
 };
 
-
 class RngContainer : public RandomNumberGeneratorInterface {
   public:
     RngContainer(const RngContainer&) = delete;
@@ -67,7 +65,6 @@ class RngContainer : public RandomNumberGeneratorInterface {
     inline virtual float frand() override { return rng_->frand(); }
 
   private:
-
     std::unique_ptr<RandomNumberGeneratorInterface> rng_;
 
 #ifdef SPEC_CPU
@@ -96,4 +93,3 @@ void shuffle(Iter first, Iter last, RngContainer& rng) {
 }
 
 } // namespace vtr
-#endif

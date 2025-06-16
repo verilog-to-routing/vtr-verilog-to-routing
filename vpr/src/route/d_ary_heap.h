@@ -1,5 +1,4 @@
-#ifndef _VTR_D_ARY_HEAP_H
-#define _VTR_D_ARY_HEAP_H
+#pragma once
 
 #include <vector>
 
@@ -17,10 +16,12 @@
  * to BinaryHeap. This is likely because FourAryHeap has lower tree height, and as we can fit 8
  * heap node (each is 8 bytes) on a cache line (commonly 64 bytes on modern architectures), each
  * heap operation (the comparison among sibling nodes) tends to benefit from the caches.
-*/
+ */
 template<unsigned D>
 class DAryHeap : public HeapInterface {
   public:
+    static constexpr unsigned arg_D = D;
+
     using priority_queue = customized_d_ary_priority_queue<D, HeapNode, std::vector<HeapNode>, HeapNodeComparator>;
 
     DAryHeap() {}
@@ -70,5 +71,3 @@ class DAryHeap : public HeapInterface {
 
 using BinaryHeap = DAryHeap<2>;
 using FourAryHeap = DAryHeap<4>;
-
-#endif /* _VTR_D_ARY_HEAP_H */

@@ -1,10 +1,9 @@
-
-#ifndef VTR_INITIAL_NOC_PLACEMENT_H
-#define VTR_INITIAL_NOC_PLACEMENT_H
+#pragma once
 
 struct t_noc_opts;
 struct t_placer_opts;
 class BlkLocRegistry;
+class PlaceMacros;
 class NocCostHandler;
 
 namespace vtr {
@@ -22,7 +21,6 @@ class RngContainer;
  */
 void initial_noc_placement(const t_noc_opts& noc_opts,
                            BlkLocRegistry& blk_loc_registry,
+                           const PlaceMacros& place_macros,
                            NocCostHandler& noc_cost_handler,
                            vtr::RngContainer& rng);
-
-#endif //VTR_INITIAL_NOC_PLACEMENT_H

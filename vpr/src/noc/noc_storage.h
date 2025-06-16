@@ -1,6 +1,4 @@
-#ifndef NOC_STORAGE_H
-#define NOC_STORAGE_H
-
+#pragma once
 /**
  * @file
  * @brief This file defines the NocStorage class.
@@ -36,9 +34,9 @@
  */
 
 #include <vector>
-#include <string>
 #include <unordered_map>
 #include "noc_data_types.h"
+#include "vpr_types.h"
 #include "vtr_vector.h"
 #include "noc_router.h"
 #include "noc_link.h"
@@ -317,9 +315,8 @@ class NocStorage {
      * requested NoC links
      * @return A const
      */
-    template <template<typename...> class Container, typename... Ts>
+    template<template<typename...> class Container, typename... Ts>
     const std::vector<std::reference_wrapper<const NocLink>>& get_noc_links(const Container<NocLinkId, Ts...>& noc_link_ids) const;
-
 
     /**
      * @brief Given source and sink router identifiers, this function
@@ -385,7 +382,9 @@ class NocStorage {
      * when it is routed through this router.
      */
     void add_router(int id,
-                    int grid_position_x, int grid_position_y, int layer_position,
+                    int grid_position_x,
+                    int grid_position_y,
+                    int layer_position,
                     double latency);
 
     /**
@@ -560,8 +559,7 @@ class NocStorage {
     void echo_noc(char* file_name) const;
 };
 
-
-template <template<typename...> class Container, typename... Ts>
+template<template<typename...> class Container, typename... Ts>
 const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_links(const Container<NocLinkId, Ts...>& noc_link_ids) const {
     returnable_noc_link_const_refs_.clear();
 
@@ -572,6 +570,3 @@ const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_li
 
     return returnable_noc_link_const_refs_;
 }
-
-#endif
-

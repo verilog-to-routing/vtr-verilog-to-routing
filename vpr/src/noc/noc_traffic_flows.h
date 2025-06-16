@@ -1,6 +1,4 @@
-#ifndef NOC_TRAFFIC_FLOWS_H
-#define NOC_TRAFFIC_FLOWS_H
-
+#pragma once
 /**
  * @file 
  * @brief This file defines the NocTrafficFlows class, which contains all
@@ -29,17 +27,13 @@
  * around to different tiles on the FPGA device.
  * 
  */
-#include <iostream>
+
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 #include "clustered_netlist_fwd.h"
 #include "noc_data_types.h"
 #include "vtr_vector.h"
-#include "echo_files.h"
-#include "vtr_util.h"
-#include "vtr_assert.h"
 
 /**
  * @brief Describes a traffic flow within the NoC, which is the communication
@@ -68,7 +62,13 @@ struct t_noc_traffic_flow {
     int traffic_flow_priority;
 
     /** Constructor initializes all variables*/
-    t_noc_traffic_flow(std::string source_router_name, std::string sink_router_name, ClusterBlockId source_router_id, ClusterBlockId sink_router_id, double flow_bandwidth, double max_flow_latency, int flow_priority)
+    t_noc_traffic_flow(std::string source_router_name,
+                       std::string sink_router_name,
+                       ClusterBlockId source_router_id,
+                       ClusterBlockId sink_router_id,
+                       double flow_bandwidth,
+                       double max_flow_latency,
+                       int flow_priority) noexcept
         : source_router_module_name(std::move(source_router_name))
         , sink_router_module_name(std::move(sink_router_name))
         , source_router_cluster_id(source_router_id)
@@ -295,7 +295,6 @@ class NocTrafficFlows {
      */
     void echo_noc_traffic_flows(char* file_name);
 
-
     /**
      * @brief Defines the latency constraint of a traffic flow
      * when not provided by the user.
@@ -309,5 +308,3 @@ class NocTrafficFlows {
      */
     static constexpr double DEFAULT_MAX_TRAFFIC_FLOW_LATENCY = 1.;
 };
-
-#endif

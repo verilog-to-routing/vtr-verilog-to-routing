@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @brief This file contains functions related to writing out a vpr constraints XML file.
@@ -21,9 +22,6 @@
  * For example, if both options are 2, the constraints file will split the grid into quadrants, dividing the blocks between
  * four partitions - two partitions in the horizontal dimension, and two partitions in the vertical dimension.
  */
-
-#ifndef VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
-#define VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_
 
 class VprConstraints;
 
@@ -73,5 +71,3 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints,
 void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints,
                                                int horizontal_cutpoints,
                                                int vertical_cutpoints);
-
-#endif /* VPR_SRC_BASE_VPR_CONSTRAINTS_WRITER_H_ */

@@ -1,5 +1,4 @@
-#ifndef VTR_STRONG_ID_H
-#define VTR_STRONG_ID_H
+#pragma once
 /**
  * @file
  * @brief This header provides the StrongId class.
@@ -167,7 +166,7 @@ template<typename tag, typename T, T sentinel>
 constexpr bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
 
 template<typename tag, typename T, T sentinel>
-constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept;
 
 template<typename tag, typename T, T sentinel>
 std::ostream& operator<<(std::ostream& out, const StrongId<tag, T, sentinel>& rhs);
@@ -182,11 +181,11 @@ class StrongId {
     static constexpr StrongId INVALID() noexcept { return StrongId(); }
 
     ///@brief Default to the sentinel value
-    constexpr StrongId()
+    constexpr StrongId() noexcept
         : id_(sentinel) {}
 
     ///@brief Only allow explicit constructions from a raw Id (no automatic conversions)
-    explicit constexpr StrongId(T id)
+    explicit constexpr StrongId(T id) noexcept
         : id_(id) {}
 
     // Allow some explicit conversion to useful types:
@@ -216,7 +215,7 @@ class StrongId {
     ///@brief != operator
     friend constexpr bool operator!= <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
     ///@brief < operator
-    friend constexpr bool operator< <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    friend constexpr bool operator< <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept;
 
     /**
      * @brief to be able to print them out
@@ -241,7 +240,7 @@ constexpr bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<
 
 ///@brief operator < Needed for std::map-like containers
 template<typename tag, typename T, T sentinel>
-constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
+constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept {
     return lhs.id_ < rhs.id_;
 }
 
@@ -262,5 +261,3 @@ struct hash<vtr::StrongId<tag, T, sentinel>> {
     }
 };
 } //namespace std
-
-#endif

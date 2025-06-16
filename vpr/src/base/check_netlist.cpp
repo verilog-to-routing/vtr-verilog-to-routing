@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <cstring>
 
+#include "logic_types.h"
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
@@ -16,7 +18,6 @@
 #include "hash.h"
 #include "vpr_utils.h"
 #include "check_netlist.h"
-#include "read_xml_arch_file.h"
 
 #define ERROR_THRESHOLD 100
 
@@ -109,8 +110,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
         int log_index = cluster_ctx.clb_nlist.pin_logical_index(pin_id);
         int pin_index = get_physical_pin(physical_type, logical_type, log_index);
 
-        if (physical_type->is_ignored_pin[pin_index] != net_is_ignored
-            && !is_io_type(physical_type)) {
+        if (physical_type->is_ignored_pin[pin_index] != net_is_ignored && !physical_type->is_io()) {
             VTR_LOGV_WARN(verbosity > 2,
                           "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
                           cluster_ctx.clb_nlist.net_name(net_id).c_str(),

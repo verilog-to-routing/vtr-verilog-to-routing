@@ -1,9 +1,6 @@
-#include <cstdio>
 
 #include "vtr_log.h"
-#include "vtr_memory.h"
 
-#include "vpr_types.h"
 #include "globals.h"
 #include "segment_stats.h"
 
@@ -60,14 +57,14 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
 
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
         auto node_type = rr_graph.node_type(inode);
-        if (node_type == CHANX || node_type == CHANY) {
+        if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
             cost_index = rr_graph.node_cost_index(inode);
             size_t seg_type = device_ctx.rr_indexed_data[cost_index].seg_index;
             int length = segment_inf[seg_type].longline ? LONGLINE : segment_inf[seg_type].length;
 
             const short& inode_capacity = rr_graph.node_capacity(inode);
             int occ = route_ctx.rr_node_route_inf[inode].occ();
-            auto ax = (node_type == CHANX) ? X_AXIS : Y_AXIS;
+            auto ax = (node_type == e_rr_type::CHANX) ? X_AXIS : Y_AXIS;
 
             directed_occ_by_length[ax][length] += occ;
             directed_cap_by_length[ax][length] += inode_capacity;

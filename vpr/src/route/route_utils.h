@@ -2,11 +2,11 @@
 
 /** @file Utility functions used in the top-level router (route.cpp). */
 
+#include "clustered_netlist_utils.h"
 #include "netlist_fwd.h"
 #include "router_stats.h"
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
-#include "vpr_types.h"
 
 #include "RoutingDelayCalculator.h"
 
@@ -73,12 +73,12 @@ int get_max_pins_per_net(const Netlist<>& net_list);
 
 /** Get the RouteTree associated with the ClusterNetId.
  * Flat routing maps AtomNetIds to RouteTrees instead, so we need to first look up the associated AtomNetId. */
-inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(ClusterNetId net_id){
+inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(ClusterNetId net_id) {
     auto& route_ctx = g_vpr_ctx.routing();
-    if(!route_ctx.is_flat){
+    if (!route_ctx.is_flat) {
         return route_ctx.route_trees[ParentNetId(net_id)];
-    }else{
-        auto& atom_lookup = g_vpr_ctx.atom().lookup;
+    } else {
+        auto& atom_lookup = g_vpr_ctx.atom().lookup();
         AtomNetId atom_id = atom_lookup.atom_net(net_id);
         return route_ctx.route_trees[ParentNetId(atom_id)];
     }
@@ -143,7 +143,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
 /** Wrapper for create_rr_graph() with extra checks */
 void try_graph(int width_fac,
                const t_router_opts& router_opts,
-               t_det_routing_arch* det_routing_arch,
+               t_det_routing_arch& det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_chan_width_dist chan_width_dist,
                const std::vector<t_direct_inf>& directs,
@@ -157,3 +157,29 @@ void update_draw_pres_fac(const float new_pres_fac);
  * Stops after the specified router iteration or net id is encountered */
 void update_router_info_and_check_bp(bp_router_type type, int net_id);
 #endif
+
+/**
+ * @brief Checks whether a given net has been routed.
+ *
+ * This function determines if the specified net (identified by `net_id`)
+ * has routing information associated with it in the current routing context.
+ *
+ * @param net_id The identifier of the net to check.
+ * @return true if the net is routed; false otherwise.
+ */
+bool is_net_routed(ParentNetId net_id);
+
+/**
+ * @brief Checks whether a given net is fully absorbed within sink nodes.
+ *
+ * This function inspects the route tree of the specified net and determines
+ * whether it is fully absorbed into non-routing resources (i.e., it does not
+ * occupy any routing channels such as CHANX or CHANY).
+ *
+ * A net is considered fully absorbed if all its route tree nodes are of types
+ * other than CHANX or CHANY (e.g., IPIN, SINK, OPIN).
+ *
+ * @param net_id The identifier of the net to be checked.
+ * @return true if the net is fully absorbed (uses no routing channels); false otherwise.
+ */
+bool is_net_fully_absorbed(ParentNetId net_id);

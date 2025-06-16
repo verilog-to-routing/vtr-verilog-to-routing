@@ -1,15 +1,18 @@
 /* draw_basic.cpp contains all functions that draw in the main graphics area
  * that aren't RR nodes or muxes (they have their own file).
  * All functions in this file contain the prefix draw_. */
+#ifndef NO_GRAPHICS
+
 #include <cstdio>
+#include <numbers>
 #include <cmath>
 #include <algorithm>
 #include <sstream>
 #include <array>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
-#include "vtr_log.h"
 #include "vtr_color_map.h"
 
 #include "vpr_utils.h"
@@ -22,29 +25,24 @@
 #include "draw_rr_edges.h"
 #include "draw_basic.h"
 #include "draw_triangle.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "move_utils.h"
 #include "route_export.h"
 #include "tatum/report/TimingPathCollector.hpp"
 
-#ifndef NO_GRAPHICS
-
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
-#    include "buttons.h"
+#include "route_utilization.h"
+#include "place_macro.h"
 
 /****************************** Define Macros *******************************/
-#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#    define OLD_BLK_LOC_COLOR blk_GOLD
-#    define NEW_BLK_LOC_COLOR blk_GREEN
+#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+#define OLD_BLK_LOC_COLOR blk_GOLD
+#define NEW_BLK_LOC_COLOR blk_GREEN
 
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
@@ -239,7 +237,7 @@ void drawnets(ezgl::renderer* g) {
             ClusterBlockId b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
 
             //the layer of the pin block (net sinks)
-            sink_block_layer_num =block_locs[b2].loc.layer;
+            sink_block_layer_num = block_locs[b2].loc.layer;
 
             t_draw_layer_display element_visibility = get_element_visibility_and_transparency(driver_block_layer_num, sink_block_layer_num);
 
@@ -352,13 +350,13 @@ void draw_congestion(ezgl::renderer* g) {
         color.alpha = transparency_factor;
 
         switch (rr_graph.node_type(inode)) {
-            case CHANX: //fallthrough
-            case CHANY:
+            case e_rr_type::CHANX: //fallthrough
+            case e_rr_type::CHANY:
                 draw_rr_chan(inode, color, g);
                 break;
 
-            case IPIN: //fallthrough
-            case OPIN:
+            case e_rr_type::IPIN: //fallthrough
+            case e_rr_type::OPIN:
                 draw_rr_pin(inode, color, g);
                 break;
             default:
@@ -389,7 +387,9 @@ void draw_routing_costs(ezgl::renderer* g) {
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    vtr::vector<RRNodeId, float> rr_node_costs(0.);
+
+    size_t node_count = device_ctx.rr_graph.nodes().size();
+    vtr::vector<RRNodeId, float> rr_node_costs(node_count, 0.);
 
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
         float cost = 0.;
@@ -538,6 +538,7 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     /* Next free track in each channel segment if routing is GLOBAL */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -547,14 +548,23 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     g->set_color(ezgl::BLACK, ezgl::BLACK.alpha * NET_ALPHA);
 
     /* Now draw each net, one by one.      */
+    if (draw_state->is_flat) {
+        for (AtomNetId net_id : atom_ctx.netlist().nets()) {
+            if (draw_net_type == HIGHLIGHTED
+                && draw_state->net_color[net_id] == ezgl::BLACK)
+                continue;
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (draw_net_type == HIGHLIGHTED
-            && draw_state->net_color[net_id] == ezgl::BLACK)
-            continue;
+            draw_routed_net((ParentNetId&)net_id, g);
+        } /* End for (each net) */
+    } else {
+        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+            if (draw_net_type == HIGHLIGHTED
+                && draw_state->net_color[net_id] == ezgl::BLACK)
+                continue;
 
-        draw_routed_net((ParentNetId&)net_id, g);
-    } /* End for (each net) */
+            draw_routed_net((ParentNetId&)net_id, g);
+        } /* End for (each net) */
+    }
 }
 
 void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
@@ -650,15 +660,15 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         ezgl::color color = draw_state->draw_rr_node[inode].color;
 
         switch (rr_type) {
-            case OPIN: {
+            case e_rr_type::OPIN: {
                 draw_rr_pin(inode, color, g);
                 break;
             }
-            case IPIN: {
+            case e_rr_type::IPIN: {
                 draw_rr_pin(inode, color, g);
                 if (edge_visibility.visible) {
                     g->set_color(color, edge_visibility.alpha);
-                    if (rr_graph.node_type(prev_node) == OPIN) {
+                    if (rr_graph.node_type(prev_node) == e_rr_type::OPIN) {
                         draw_pin_to_pin(prev_node, inode, g);
                     } else {
                         draw_pin_to_chan_edge(inode, prev_node, g);
@@ -666,7 +676,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 }
                 break;
             }
-            case CHANX: {
+            case e_rr_type::CHANX: {
                 if (draw_state->draw_route_type == GLOBAL)
                     chanx_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
@@ -674,15 +684,15 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 if (edge_visibility.visible) {
                     g->set_color(color, edge_visibility.alpha);
                     switch (prev_type) {
-                        case CHANX: {
+                        case e_rr_type::CHANX: {
                             draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
                             break;
                         }
-                        case CHANY: {
+                        case e_rr_type::CHANY: {
                             draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
                             break;
                         }
-                        case OPIN: {
+                        case e_rr_type::OPIN: {
                             draw_pin_to_chan_edge(prev_node, inode, g);
                             break;
                         }
@@ -696,7 +706,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
                 break;
             }
-            case CHANY: {
+            case e_rr_type::CHANY: {
                 if (draw_state->draw_route_type == GLOBAL)
                     chany_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
@@ -705,17 +715,17 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 if (edge_visibility.visible) {
                     g->set_color(color, edge_visibility.alpha);
                     switch (prev_type) {
-                        case CHANX: {
+                        case e_rr_type::CHANX: {
                             draw_chanx_to_chany_edge(prev_node, inode,
                                                      FROM_X_TO_Y, switch_type, g);
                             break;
                         }
-                        case CHANY: {
+                        case e_rr_type::CHANY: {
                             draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
                                                      switch_type, g);
                             break;
                         }
-                        case OPIN: {
+                        case e_rr_type::OPIN: {
                             draw_pin_to_chan_edge(prev_node, inode, g);
 
                             break;
@@ -775,7 +785,9 @@ void draw_placement_macros(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
-    const auto& place_macros = draw_state->get_graphics_blk_loc_registry_ref().place_macros();
+
+    VTR_ASSERT(g_vpr_ctx.placement().place_macros);
+    const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
     for (const t_pl_macro& pl_macro : place_macros.macros()) {
 
@@ -836,11 +848,11 @@ void draw_routing_util(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_usage = calculate_routing_usage(CHANX, draw_state->is_flat, false);
-    auto chany_usage = calculate_routing_usage(CHANY, draw_state->is_flat, false);
+    auto chanx_usage = calculate_routing_usage(e_rr_type::CHANX, draw_state->is_flat, false);
+    auto chany_usage = calculate_routing_usage(e_rr_type::CHANY, draw_state->is_flat, false);
 
-    auto chanx_avail = calculate_routing_avail(CHANX);
-    auto chany_avail = calculate_routing_avail(CHANY);
+    auto chanx_avail = calculate_routing_avail(e_rr_type::CHANX);
+    auto chany_avail = calculate_routing_avail(e_rr_type::CHANY);
 
     float min_util = 0.;
     float max_util = -std::numeric_limits<float>::infinity();
@@ -1084,27 +1096,29 @@ void draw_crit_path(ezgl::renderer* g) {
 
 /**
  * @brief Draw critical path elements.
- * 
+ *
  * This function draws critical path elements based on the provided timing paths
  * and indexes map. It is primarily used in server mode, where items are drawn upon request.
  */
 void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     const ezgl::color contour_color{0, 0, 0, 40};
+    const ezgl::line_dash contour_line_style{ezgl::line_dash::none};
+    const int contour_line_width{1};
 
-    auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay, 
-                                            const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays=false) {
+    auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay,
+                                                 const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays = false) {
         renderer->set_color(color);
         renderer->set_line_dash(line_style);
         renderer->set_line_width(line_width);
         draw_flyline_timing_edge(tnode_draw_coord(prev_node),
-                                tnode_draw_coord(node), delay, renderer, skip_draw_delays);
+                                 tnode_draw_coord(node), delay, renderer, skip_draw_delays);
 
         renderer->set_line_dash(ezgl::line_dash::none);
-        renderer->set_line_width(0);                        
+        renderer->set_line_width(0);
     };
 
-    for (const auto& [path_index, element_indexes]: indexes) {
+    for (const auto& [path_index, element_indexes] : indexes) {
         if (path_index < paths.size()) {
             const tatum::TimingPath& path = paths[path_index];
 
@@ -1114,7 +1128,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
             int element_counter = 0;
             for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
                 bool draw_current_element = element_indexes.empty() || element_indexes.find(element_counter) != element_indexes.end();
-   
+
                 // draw element
                 tatum::NodeId node = elem.node();
                 float arr_time = elem.tag().time();
@@ -1129,9 +1143,9 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
                     float delay = arr_time - prev_arr_time;
                     if ((draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES) || (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS)) {
                         if (draw_current_element) {
-                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::none, /*line_width*/4, delay, prev_node, node);
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::none, /*line_width*/ 4, delay, prev_node, node);
                         } else if (draw_crit_path_contour) {
-                            draw_flyline_timing_edge_helper_fn(g, contour_color, ezgl::line_dash::none, /*line_width*/1, delay, prev_node, node, /*skip_draw_delays*/true);
+                            draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/ true);
                         }
                     } else {
                         VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
@@ -1140,13 +1154,13 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
                             //Draw the routed version of the timing edge
                             draw_routed_timing_edge_connection(prev_node, node, color, g);
 
-                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/3, delay, prev_node, node);
+                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/ 3, delay, prev_node, node);
                         } else if (draw_crit_path_contour) {
-                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/3, delay, prev_node, node, /*skip_draw_delays*/true);
+                            draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/ true);
                         }
                     }
                 }
-                
+
                 prev_node = node;
                 prev_arr_time = arr_time;
                 // end draw element
@@ -1162,9 +1176,9 @@ int get_timing_path_node_layer_num(tatum::NodeId node) {
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
     const auto& atom_ctx = g_vpr_ctx.atom();
 
-    AtomPinId atom_pin = atom_ctx.lookup.tnode_atom_pin(node);
-    AtomBlockId atom_block = atom_ctx.nlist.pin_block(atom_pin);
-    ClusterBlockId clb_block = atom_ctx.lookup.atom_clb(atom_block);
+    AtomPinId atom_pin = atom_ctx.lookup().tnode_atom_pin(node);
+    AtomBlockId atom_block = atom_ctx.netlist().pin_block(atom_pin);
+    ClusterBlockId clb_block = atom_ctx.lookup().atom_clb(atom_block);
     return block_locs[clb_block].loc.layer;
 }
 
@@ -1182,7 +1196,7 @@ bool is_flyline_valid_to_draw(int src_layer, int sink_layer) {
 }
 
 //Draws critical path shown as flylines.
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays/*=false*/) {
+void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays /*=false*/) {
     g->draw_line(start, end);
     draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
     draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
@@ -1191,7 +1205,7 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
                             == DRAW_CRIT_PATH_FLYLINES_DELAYS
                         || get_draw_state_vars()->show_crit_path
                                == DRAW_CRIT_PATH_ROUTING_DELAYS)
-                               && !skip_draw_delays;
+                       && !skip_draw_delays;
     if (draw_delays) {
         //Determine the strict bounding box based on the lines start/end
         float min_x = std::min(start.x, end.x);
@@ -1223,7 +1237,7 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         std::string incr_delay_str = ss.str();
 
         // Get the angle of line, to rotate the text
-        float text_angle = (180 / M_PI)
+        float text_angle = (180 / std::numbers::pi)
                            * atan((end.y - start.y) / (end.x - start.x));
 
         // Get the screen coordinates for text drawing
@@ -1238,9 +1252,9 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
 
         // Find an offset so it is sitting on top/below of the line
         float x_offset = screen_coords.center().x
-                         - 8 * sin(text_angle * (M_PI / 180));
+                         - 8 * sin(text_angle * (std::numbers::pi / 180));
         float y_offset = screen_coords.center().y
-                         - 8 * cos(text_angle * (M_PI / 180));
+                         - 8 * cos(text_angle * (std::numbers::pi / 180));
 
         ezgl::point2d offset_text_bbox(x_offset, y_offset);
         g->draw_text(offset_text_bbox, incr_delay_str.c_str(),
@@ -1262,8 +1276,8 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    AtomPinId atom_src_pin = atom_ctx.lookup.tnode_atom_pin(src_tnode);
-    AtomPinId atom_sink_pin = atom_ctx.lookup.tnode_atom_pin(sink_tnode);
+    AtomPinId atom_src_pin = atom_ctx.lookup().tnode_atom_pin(src_tnode);
+    AtomPinId atom_sink_pin = atom_ctx.lookup().tnode_atom_pin(sink_tnode);
 
     std::vector<ezgl::point2d> points;
     points.push_back(atom_pin_draw_coord(atom_src_pin));
@@ -1281,16 +1295,16 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
         //TODO: most of this code is highly similar to code in PostClusterDelayCalculator, refactor
         //      into a common method for walking the clustered netlist, this would also (potentially)
         //      allow us to grab the component delays
-        AtomBlockId atom_src_block = atom_ctx.nlist.pin_block(atom_src_pin);
-        AtomBlockId atom_sink_block = atom_ctx.nlist.pin_block(atom_sink_pin);
+        AtomBlockId atom_src_block = atom_ctx.netlist().pin_block(atom_src_pin);
+        AtomBlockId atom_sink_block = atom_ctx.netlist().pin_block(atom_sink_pin);
 
-        ClusterBlockId clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
+        ClusterBlockId clb_src_block = atom_ctx.lookup().atom_clb(atom_src_block);
         VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
-        ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(
+        ClusterBlockId clb_sink_block = atom_ctx.lookup().atom_clb(
             atom_sink_block);
         VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
 
-        const t_pb_graph_pin* sink_gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(
+        const t_pb_graph_pin* sink_gpin = atom_ctx.lookup().atom_pin_pb_graph_pin(
             atom_sink_pin);
         VTR_ASSERT(sink_gpin);
 

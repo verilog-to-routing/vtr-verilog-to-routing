@@ -58,6 +58,12 @@ int main(int argc, const char** argv) {
             return SUCCESS_EXIT_CODE;
         }
 
+        if (Options.show_arch_resources) {
+            vpr_print_arch_resources(vpr_setup, Arch);
+            vpr_free_all(Arch, vpr_setup);
+            return SUCCESS_EXIT_CODE;
+        }
+
         bool flow_succeeded = vpr_flow(vpr_setup, Arch);
         if (!flow_succeeded) {
             VTR_LOG("VPR failed to implement circuit\n");

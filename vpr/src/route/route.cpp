@@ -7,16 +7,16 @@
 #include "route.h"
 #include "route_common.h"
 #include "route_debug.h"
-#include "route_export.h"
 #include "route_profiling.h"
 #include "route_utils.h"
+#include "rr_graph.h"
 #include "vtr_time.h"
 
 bool route(const Netlist<>& net_list,
            int width_fac,
            const t_router_opts& router_opts,
            const t_analysis_opts& analysis_opts,
-           t_det_routing_arch* det_routing_arch,
+           t_det_routing_arch& det_routing_arch,
            std::vector<t_segment_inf>& segment_inf,
            NetPinsMatrix<float>& net_delay,
            std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -34,14 +34,14 @@ bool route(const Netlist<>& net_list,
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No nets to route\n");
     }
 
-    t_graph_type graph_type;
-    t_graph_type graph_directionality;
+    e_graph_type graph_type;
+    e_graph_type graph_directionality;
     if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
-        graph_directionality = GRAPH_BIDIR;
+        graph_type = e_graph_type::GLOBAL;
+        graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     /* Set the channel widths */
@@ -73,7 +73,7 @@ bool route(const Netlist<>& net_list,
                        is_flat);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, intra_lb_pb_pin_lookup);
+    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist(), intra_lb_pb_pin_lookup);
 
     auto choking_spots = set_nets_choking_spots(net_list,
                                                 route_ctx.net_terminal_groups,
@@ -119,7 +119,7 @@ bool route(const Netlist<>& net_list,
     route_budgets budgeting_inf(net_list, is_flat);
 
     // This needs to be called before filling intra-cluster lookahead maps to ensure that the intra-cluster lookahead maps are initialized.
-    const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+    const RouterLookahead* router_lookahead = get_cached_router_lookahead(det_routing_arch,
                                                                           router_opts.lookahead_type,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
@@ -139,7 +139,7 @@ bool route(const Netlist<>& net_list,
             mut_router_lookahead->compute_intra_tile();
         }
         route_ctx.cached_router_lookahead_.set(cache_key, std::move(mut_router_lookahead));
-        router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+        router_lookahead = get_cached_router_lookahead(det_routing_arch,
                                                        router_opts.lookahead_type,
                                                        router_opts.write_router_lookahead,
                                                        router_opts.read_router_lookahead,
@@ -200,8 +200,8 @@ bool route(const Netlist<>& net_list,
         router_opts.timing_update_type,
         net_list,
         netlist_pin_lookup,
-        atom_ctx.nlist,
-        atom_ctx.lookup,
+        atom_ctx.netlist(),
+        atom_ctx.lookup(),
         timing_info,
         is_flat);
 
@@ -308,7 +308,7 @@ bool route(const Netlist<>& net_list,
         float iter_cumm_time = iteration_timer.elapsed_sec();
         float iter_elapsed_time = iter_cumm_time - prev_iter_cumm_time;
 
-        PartitionTreeDebug::log("Iteration " + std::to_string(itry) + " took " +  std::to_string(iter_elapsed_time) + " s");
+        PartitionTreeDebug::log("Iteration " + std::to_string(itry) + " took " + std::to_string(iter_elapsed_time) + " s");
 
         //Output progress
         print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, iter_results.stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
@@ -601,7 +601,6 @@ bool route(const Netlist<>& net_list,
                 print_invalid_routing_info(net_list, is_flat);
             }
         }
-
     }
 
     if (router_opts.with_timing_analysis) {
@@ -619,12 +618,13 @@ bool route(const Netlist<>& net_list,
             "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
             router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops,
             router_stats.inter_cluster_node_pushes, router_stats.inter_cluster_node_pops);
-        for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
-            VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pushes[node_type_idx]);
-            VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pops[node_type_idx]);
-            VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pushes[node_type_idx]);
-            VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pops[node_type_idx]);
-            VTR_LOG("rt_node_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_pushes[node_type_idx]);
+
+        for (e_rr_type rr_type : RR_TYPES) {
+            VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[rr_type], router_stats.inter_cluster_node_type_cnt_pushes[rr_type]);
+            VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[rr_type], router_stats.inter_cluster_node_type_cnt_pops[rr_type]);
+            VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[rr_type], router_stats.intra_cluster_node_type_cnt_pushes[rr_type]);
+            VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[rr_type], router_stats.intra_cluster_node_type_cnt_pops[rr_type]);
+            VTR_LOG("rt_node_%s_pushes: %zu ", rr_node_typename[rr_type], router_stats.rt_node_pushes[rr_type]);
         }
     }
     VTR_LOG("\n");

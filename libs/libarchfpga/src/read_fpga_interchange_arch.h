@@ -1,18 +1,7 @@
-#ifndef READ_FPGAINTERCHANGE_ARCH_FILE_H
-#define READ_FPGAINTERCHANGE_ARCH_FILE_H
+#pragma once
 
-#include "arch_types.h"
-
-#ifdef VTR_ENABLE_CAPNPROTO
-
-#    include "DeviceResources.capnp.h"
-#    include "LogicalNetlist.capnp.h"
-#    include "capnp/serialize.h"
-#    include "capnp/serialize-packed.h"
-#    include <fcntl.h>
-#    include <unistd.h>
-
-#endif // VTR_ENABLE_CAPNPROTO
+#include <vector>
+#include "physical_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,6 +22,4 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

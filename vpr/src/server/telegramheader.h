@@ -1,5 +1,4 @@
-#ifndef TELEGRAMHEADER_H
-#define TELEGRAMHEADER_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -25,7 +24,7 @@ namespace comm {
  * @note: The DATA_CHECKSUM field can be used to check the integrity of the telegram body on the client app side.
  */
 class TelegramHeader {
-public:
+  public:
     static constexpr const char SIGNATURE[] = "IPA";
     static constexpr size_t SIGNATURE_SIZE = sizeof(SIGNATURE);
     static constexpr size_t LENGTH_SIZE = sizeof(uint32_t);
@@ -36,7 +35,7 @@ public:
     static constexpr size_t CHECKSUM_OFFSET = LENGTH_OFFSET + LENGTH_SIZE;
     static constexpr size_t COMPRESSORID_OFFSET = CHECKSUM_OFFSET + CHECKSUM_SIZE;
 
-    TelegramHeader()=default;
+    TelegramHeader() = default;
 
     /**
      * @brief Constructs a TelegramHeader object with the specified length, checksum, and optional compressor ID.
@@ -56,7 +55,7 @@ public:
      */
     explicit TelegramHeader(const ByteArray& buffer);
 
-    ~TelegramHeader()=default;
+    ~TelegramHeader() = default;
 
     /**
      * @brief Constructs a TelegramHeader based on the provided body data.
@@ -129,7 +128,7 @@ public:
      */
     std::string info() const;
 
-private:
+  private:
     bool m_is_valid = false;
     ByteArray m_buffer;
 
@@ -141,5 +140,3 @@ private:
 } // namespace comm
 
 #endif /* NO_SERVER */
-
-#endif /* TELEGRAMHEADER_H */

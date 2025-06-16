@@ -1,7 +1,5 @@
-#ifndef ARCH_UTIL_H
-#define ARCH_UTIL_H
+#pragma once
 
-#include <regex>
 #include <unordered_set>
 #include "physical_types.h"
 
@@ -23,8 +21,8 @@ class InstPort {
 
     InstPort() = default;
     InstPort(const std::string& str);
-    std::string instance_name() const { return instance_.name; }
-    std::string port_name() const { return port_.name; }
+    const std::string& instance_name() const { return instance_.name; }
+    const std::string& port_name() const { return port_.name; }
 
     int instance_low_index() const { return instance_.low_idx; }
     int instance_high_index() const { return instance_.high_idx; }
@@ -40,7 +38,7 @@ class InstPort {
 
   private:
     struct name_index {
-        std::string name = "";
+        std::string name;
         int low_idx = UNSPECIFIED;
         int high_idx = UNSPECIFIED;
     };
@@ -52,10 +50,6 @@ class InstPort {
 };
 
 void free_arch(t_arch* arch);
-void free_arch_models(t_model* models);
-t_model* free_arch_model(t_model* model);
-void free_arch_model_ports(t_model_ports* model_ports);
-t_model_ports* free_arch_model_port(t_model_ports* model_port);
 
 void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors);
 void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors);
@@ -84,8 +78,6 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type);
 
 e_power_estimation_method power_method_inherited(e_power_estimation_method parent_power_method);
 
-void CreateModelLibrary(t_arch* arch);
-
 void SyncModelsPbTypes(t_arch* arch,
                        const std::vector<t_logical_block_type>& Types);
 
@@ -97,8 +89,6 @@ void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
 
 bool segment_exists(const t_arch* arch, std::string_view name);
 const t_segment_inf* find_segment(const t_arch* arch, std::string_view name);
-bool is_library_model(const char* model_name);
-bool is_library_model(const t_model* model);
 
 //Returns true if the specified block type contains the specified blif model name
 bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::string& blif_model_name);
@@ -106,8 +96,8 @@ bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::st
 //Returns true of a pb_type (or it's children) contain the specified blif model name
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
 
-const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
-const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string_view in_port, std::string_view out_port);
+bool has_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
+bool has_combinational_annotation(const t_pb_type* pb_type, std::string_view in_port, std::string_view out_port);
 
 /**
  * @brief Updates the physical and logical types based on the equivalence between one and the other.
@@ -122,4 +112,3 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
                                  std::vector<t_logical_block_type>& LogicalBlockTypes);
 
 void setup_pin_classes(t_physical_tile_type* type);
-#endif

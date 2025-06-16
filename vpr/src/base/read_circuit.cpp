@@ -1,4 +1,5 @@
 #include "read_circuit.h"
+#include "logic_types.h"
 #include "read_blif.h"
 #include "read_interchange_netlist.h"
 #include "atom_netlist.h"
@@ -16,15 +17,14 @@ static void process_circuit(AtomNetlist& netlist,
                             bool should_sweep_dangling_nets,
                             bool should_sweep_dangling_blocks,
                             bool should_sweep_constant_primary_outputs,
+                            const LogicalModels& models,
                             int verbosity);
 
-static void show_circuit_stats(const AtomNetlist& netlist);
+static void show_circuit_stats(const AtomNetlist& netlist, const LogicalModels& models);
 
 AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setup& vpr_setup, t_arch& arch) {
     // Options
     const char* circuit_file = vpr_setup.PackerOpts.circuit_file_name.c_str();
-    const t_model* user_models = vpr_setup.user_models;
-    const t_model* library_models = vpr_setup.library_models;
     e_const_gen_inference const_gen_inference = vpr_setup.NetlistOpts.const_gen_inference;
     bool should_absorb_buffers = vpr_setup.NetlistOpts.absorb_buffer_luts;
     bool should_sweep_dangling_primary_ios = vpr_setup.NetlistOpts.sweep_dangling_primary_ios;
@@ -54,7 +54,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
         switch (circuit_format) {
             case e_circuit_format::BLIF:
             case e_circuit_format::EBLIF:
-                netlist = read_blif(circuit_format, circuit_file, user_models, library_models);
+                netlist = read_blif(circuit_format, circuit_file, arch.models);
                 break;
             case e_circuit_format::FPGA_INTERCHANGE:
                 netlist = read_interchange_netlist(circuit_file, arch);
@@ -68,7 +68,7 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
     }
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_ORIG)) {
-        print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_ORIG), netlist);
+        print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_ORIG), netlist, arch.models);
     }
 
     process_circuit(netlist,
@@ -78,13 +78,14 @@ AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setu
                     should_sweep_dangling_nets,
                     should_sweep_dangling_blocks,
                     should_sweep_constant_primary_outputs,
+                    arch.models,
                     verbosity);
 
     if (isEchoFileEnabled(E_ECHO_ATOM_NETLIST_CLEANED)) {
-        print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED), netlist);
+        print_netlist_as_blif(getEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED), netlist, arch.models);
     }
 
-    show_circuit_stats(netlist);
+    show_circuit_stats(netlist, arch.models);
 
     return netlist;
 }
@@ -96,13 +97,14 @@ static void process_circuit(AtomNetlist& netlist,
                             bool should_sweep_dangling_nets,
                             bool should_sweep_dangling_blocks,
                             bool should_sweep_constant_primary_outputs,
+                            const LogicalModels& models,
                             int verbosity) {
     {
         vtr::ScopedStartFinishTimer t("Clean circuit");
 
         //Clean-up lut buffers
         if (should_absorb_buffers) {
-            absorb_buffer_luts(netlist, verbosity);
+            absorb_buffer_luts(netlist, models, verbosity);
         }
 
         //Remove the special 'unconn' net
@@ -126,6 +128,7 @@ static void process_circuit(AtomNetlist& netlist,
                         should_sweep_dangling_blocks,
                         should_sweep_constant_primary_outputs,
                         const_gen_inference_method,
+                        models,
                         verbosity);
     }
 
@@ -142,17 +145,19 @@ static void process_circuit(AtomNetlist& netlist,
     }
 }
 
-static void show_circuit_stats(const AtomNetlist& netlist) {
+static void show_circuit_stats(const AtomNetlist& netlist, const LogicalModels& models) {
     // Count the block statistics
     std::map<std::string, size_t> block_type_counts;
     std::map<std::string, size_t> lut_size_counts;
+    LogicalModelId names_model_id = LogicalModels::MODEL_NAMES_ID;
     for (auto blk_id : netlist.blocks()) {
         // For each model, count the number of occurrences in the netlist.
-        const t_model* blk_model = netlist.block_model(blk_id);
-        ++block_type_counts[blk_model->name];
+        LogicalModelId blk_model_id = netlist.block_model(blk_id);
+        std::string blk_model_name = models.get_model(blk_model_id).name;
+        ++block_type_counts[blk_model_name];
         // If this block is a LUT, also count the occurences of this size of LUT
         // for more logging information.
-        if (blk_model->name == std::string(MODEL_NAMES)) {
+        if (blk_model_id == names_model_id) {
             // May have zero (no input LUT) or one input port
             auto in_ports = netlist.block_input_ports(blk_id);
             VTR_ASSERT(in_ports.size() <= 1 && "Expected number of input ports for LUT to be 0 or 1");
@@ -205,7 +210,7 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
         VTR_LOG("    %-*s: %7zu\n", max_block_type_len, kv.first.c_str(), kv.second);
         // If this block is a LUT, print the different sizes of LUTs in the
         // design.
-        if (kv.first == std::string(MODEL_NAMES)) {
+        if (kv.first == LogicalModels::MODEL_NAMES) {
             for (const auto& lut_kv : lut_size_counts) {
                 VTR_LOG("        %-*s: %7zu\n", max_lut_size_len, lut_kv.first.c_str(), lut_kv.second);
             }
@@ -215,7 +220,7 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
     for (const auto& kv : net_stats) {
         VTR_LOG("    %-*s: %7.1f\n", max_net_type_len, kv.first.c_str(), kv.second);
     }
-    VTR_LOG("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size());
+    VTR_LOG("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist, models).size());
 
     if (netlist.blocks().empty()) {
         VTR_LOG_WARN("Netlist contains no blocks\n");

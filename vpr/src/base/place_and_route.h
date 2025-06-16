@@ -1,24 +1,19 @@
-#ifndef VPR_PLACE_AND_ROUTE_H
-#define VPR_PLACE_AND_ROUTE_H
+#pragma once
 
 #define INFINITE -1
-#define NOT_FOUND 0
 
 #define WNEED 1
 #define WL 2
-#define PROC_TIME 3
 
 #include "vpr_types.h"
 #include "timing_info.h"
 #include "RoutingDelayCalculator.h"
-#include "rr_graph.h"
 
 struct t_fmap_cell {
     int fs;         ///<at this fs
     int fc;         ///<at this fc
     int wneed;      ///<need wneed to route
     int wirelength; ///<corresponding wirelength of successful routing at wneed
-    int proc_time;
     t_fmap_cell* next;
 };
 
@@ -32,17 +27,18 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   const t_arch* arch,
                                   bool verify_binary_search,
                                   int min_chan_width_hint,
-                                  t_det_routing_arch* det_routing_arch,
+                                  t_det_routing_arch& det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
                                   NetPinsMatrix<float>& net_delay,
                                   const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
                                   const std::shared_ptr<RoutingDelayCalculator>& delay_calc,
                                   bool is_flat);
 
+t_chan_width setup_chan_width(const t_router_opts& router_opts,
+                              t_chan_width_dist chan_width_dist);
+
 t_chan_width init_chan(int cfactor,
                        const t_chan_width_dist& chan_width_dist,
-                       t_graph_type graph_directionality);
+                       e_graph_type graph_directionality);
 
 void post_place_sync();
-
-#endif

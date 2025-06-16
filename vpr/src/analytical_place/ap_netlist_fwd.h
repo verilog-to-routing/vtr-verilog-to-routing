@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -6,8 +7,6 @@
  *
  * Forward declares the APNetlist class, and defines common types used by it.
  */
-
-#pragma once
 
 #include "netlist_fwd.h"
 #include "vtr_strong_id.h"
@@ -26,7 +25,7 @@ class APNetlist;
  * @brief A unique identifier for a block in the AP netlist
  */
 class APBlockId : public ParentBlockId {
-public:
+  public:
     static constexpr APBlockId INVALID() { return APBlockId(); }
     using ParentBlockId::ParentBlockId;
 
@@ -37,7 +36,7 @@ public:
  * @brief A unique identifier for a net in the AP netlist
  */
 class APNetId : public ParentNetId {
-public:
+  public:
     static constexpr APNetId INVALID() { return APNetId(); }
     using ParentNetId::ParentNetId;
 
@@ -48,7 +47,7 @@ public:
  * @brief A unique identifier for a port in the AP netlist
  */
 class APPortId : public ParentPortId {
-public:
+  public:
     static constexpr APPortId INVALID() { return APPortId(); }
     using ParentPortId::ParentPortId;
 
@@ -59,7 +58,7 @@ public:
  * @brief A unique identifier for a pin in the AP netlist
  */
 class APPinId : public ParentPinId {
-public:
+  public:
     static constexpr APPinId INVALID() { return APPinId(); }
     using ParentPinId::ParentPinId;
 
@@ -101,4 +100,3 @@ struct hash<APPinId> {
     }
 };
 } // namespace std
-

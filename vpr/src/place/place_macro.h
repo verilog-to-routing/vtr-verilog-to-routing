@@ -1,3 +1,4 @@
+#pragma once
 /****************************************************************************************
  * Y.G.THIEN
  * 29 AUG 2012
@@ -116,14 +117,14 @@
  *
  ****************************************************************************************/
 
-#ifndef PLACE_MACRO_H
-#define PLACE_MACRO_H
-
 #include <vector>
 
 #include "clustered_netlist_fwd.h"
 #include "physical_types.h"
 #include "vpr_types.h"
+
+class AtomLookup;
+class AtomNetlist;
 
 /**
  * @struct t_pl_macro_member
@@ -143,8 +144,6 @@ struct t_pl_macro {
 
 class PlaceMacros {
   public:
-    PlaceMacros() = default;
-
     /**
      * @brief Allocates and loads the placement macros.
      * @details The following steps are taken in this methodL
@@ -162,7 +161,11 @@ class PlaceMacros {
      * carry_in's is connected to the netlist which has only 1 SINK.
      * @param directs
      */
-    void alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs);
+    PlaceMacros(const std::vector<t_direct_inf>& directs,
+                const std::vector<t_physical_tile_type>& physical_tile_types,
+                const ClusteredNetlist& clb_nlist,
+                const AtomNetlist& atom_nlist,
+                const AtomLookup& atom_lookup);
 
     /**
      * @brief Returns the placement macro index to which the given block belongs.
@@ -194,7 +197,6 @@ class PlaceMacros {
     const t_pl_macro& operator[](int idx) const;
 
   private:
-
     /**
      * @brief This array allow us to quickly find pins that could be in a direct connection.
      * @details Values stored is the index of the possible direct connection as specified in the arch file,
@@ -204,12 +206,12 @@ class PlaceMacros {
     std::vector<std::vector<int>> idirect_from_blk_pin_;
 
     /**
-     * @brief This array stores the value SOURCE if the pin is the from_pin,
-     * SINK if the pin is the to_pin in the direct connection as specified in the arch file,
+     * @brief This array stores the value DRIVER if the pin is the from_pin,
+     * RECEIVER if the pin is the to_pin in the direct connection as specified in the arch file,
      * OPEN (-1) is stored for pins that could not be part of a direct chain connection.
      * [0...device_ctx.num_block_types-1][0...num_pins-1]
      */
-    std::vector<std::vector<int>> direct_type_from_blk_pin_;
+    std::vector<std::vector<e_pin_type>> direct_type_from_blk_pin_;
 
     /**
      * @brief Maps a blk_num to the corresponding macro index.
@@ -222,15 +224,23 @@ class PlaceMacros {
     std::vector<t_pl_macro> pl_macros_;
 
   private:
-    int find_all_the_macro_(std::vector<int>& pl_macro_idirect,
+    int find_all_the_macro_(const ClusteredNetlist& clb_nlist,
+                            const AtomNetlist& atom_nlist,
+                            const AtomLookup& atom_lookup,
+                            std::vector<int>& pl_macro_idirect,
                             std::vector<int>& pl_macro_num_members,
                             std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
 
-    void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros);
+    void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros,
+                                          const ClusteredNetlist& clb_nlist);
 
-    void write_place_macros_(std::string filename, const std::vector<t_pl_macro>& macros);
+    void write_place_macros_(std::string filename,
+                             const std::vector<t_pl_macro>& macros,
+                             const std::vector<t_physical_tile_type>& physical_tile_types,
+                             const ClusteredNetlist& clb_nlist);
 
-    bool net_is_driven_by_direct_(ClusterNetId clb_net);
+    bool net_is_driven_by_direct_(ClusterNetId clb_net,
+                                  const ClusteredNetlist& clb_nlist);
 
     /**
      * @brief Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.
@@ -246,8 +256,8 @@ class PlaceMacros {
      * the arch file, OPEN (-1) is stored for pins that could not be part of a direct
      * chain connection.
      * @param directs Contains information about all direct connections in the architecture.
+     * @param physical_tile_types A list of the physical tile types on the device.
      */
-    void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs);
+    void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs,
+                                              const std::vector<t_physical_tile_type>& physical_tile_types);
 };
-
-#endif

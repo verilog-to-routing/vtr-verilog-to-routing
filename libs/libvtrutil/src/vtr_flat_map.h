@@ -1,5 +1,5 @@
-#ifndef VTR_FLAT_MAP
-#define VTR_FLAT_MAP
+#pragma once
+
 #include <functional>
 #include <iterator>
 #include <vector>
@@ -21,7 +21,7 @@ class flat_map2;
  * @brief A function to create a flat map
  *
  * Helper function to create a flat map from a vector of pairs
- * without haveing to explicity specify the key and value types
+ * without having to explicitly specify the key and value types
  */
 template<class K, class V>
 flat_map<K, V> make_flat_map(std::vector<std::pair<K, V>>&& vec) {
@@ -435,7 +435,7 @@ template<class K, class T, class Compare, class Storage>
 class flat_map2 : public flat_map<K, T, Compare, Storage> {
   public:
     ///@brief Constructor
-    flat_map2() {}
+    flat_map2() noexcept {}
     explicit flat_map2(std::vector<typename flat_map2<K, T, Compare, Storage>::value_type>&& values)
         : flat_map<K, T, Compare>(std::move(values)) {}
 
@@ -480,4 +480,3 @@ class flat_map<K, T, Compare, Storage>::value_compare {
 };
 
 } // namespace vtr
-#endif

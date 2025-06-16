@@ -73,15 +73,15 @@ The parser for these runs is considered the Yosys conventional Verilog/SystemVer
 
 .. code-block:: bash
 
-    # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
+    # Using the Synlig System_Verilog tool if installed, otherwise the Yosys conventional Verilog parser
     ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -parser system-verilog
 
     # Using the Surelog plugin if installed, otherwise failure on the unsupported file type
     ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -parser surelog
 
 Running the default VTR flow using the Parmys standalone front-end.
-The Yosys HDL parser is considered as Yosys-SystemVerilog plugin (i.e., ``read_systemverilog``) and Yosys UHDM plugin (i.e., ``read_uhdm``), respectively.
-Utilizing Yosys plugins requires passing the ``-DYOSYS_F4PGA_PLUGINS=ON`` compile flag to build and install the plugins for the Parmys front-end.
+The Synlig HDL parser supports the (i.e., ``read_systemverilog``) and (i.e., ``read_uhdm``) commands. It utilizes Surelog for SystemVerilog 2017 processing and Yosys for synthesis.
+Enable Synlig tool with the ``-DSYNLIG_SYSTEMVERILOG=ON`` compile flag for the Parmys front-end.
 
 .. code-block:: bash
 
@@ -89,6 +89,13 @@ Utilizing Yosys plugins requires passing the ``-DYOSYS_F4PGA_PLUGINS=ON`` compil
     ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file>
 
 Will run the VTR flow (default configuration) with Yosys frontend using Parmys plugin as partial mapper. To utilize the Parmys plugin, the ``-DYOSYS_PARMYS_PLUGIN=ON`` compile flag should be passed while building the VTR project with Yosys as a frontend.
+
+.. code-block:: bash
+
+    # Using the Parmys (Partial Mapper for Yosys) plugin as partial mapper with include files
+    ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file> -include <path/to/include/directory>/*.v*
+
+Will run the VTR flow (default configuration) with Yosys frontend using Parmys plugin as partial mapper. In addition to the main circuit passed in with the architecture, it will also pass in every HDL file with the specified file type within the include directory.
 
 Detailed Command-line Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -123,6 +130,15 @@ Detailed Command-line Options
       * ``vpr``
 
     **Default:** ``vpr``
+    
+.. option:: -include <path_to_file(s)>/*.<file_type(s)>
+
+    List of include files to a benchmark circuit 
+    (pass to VTR frontends as a benchmark design set).
+    
+    Include files can be any file supported by yosys+parmys (normally .v or .vh files).
+    
+    The include directory should not contain the circuit passed in with the architecture.
 
 .. option:: -power
 

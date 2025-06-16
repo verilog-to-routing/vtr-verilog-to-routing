@@ -1,14 +1,10 @@
 #ifndef NO_GRAPHICS
 
-#    include <cstdio>
-#    include <sstream>
+#include <cstdio>
 
-#    include "globals.h"
-#    include "draw.h"
-#    include "draw_global.h"
-#    include "save_graphics.h"
-#    include "vtr_path.h"
-#    include "search_bar.h"
+#include "draw.h"
+#include "save_graphics.h"
+#include "search_bar.h"
 
 extern ezgl::rectangle initial_world;
 

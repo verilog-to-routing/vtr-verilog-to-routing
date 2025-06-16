@@ -1,7 +1,8 @@
-#ifndef RL_AGENT_UTIL_H
-#define RL_AGENT_UTIL_H
+#pragma once
 
 #include "move_generator.h"
+
+class PlaceMacros;
 
 //enum represents the available agent states
 enum class e_agent_state {
@@ -27,6 +28,8 @@ enum class e_agent_state {
  *
  */
 std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create_move_generators(PlacerState& placer_state,
+                                                                                                 const PlaceMacros& place_macros,
+                                                                                                 const NetCostHandler& net_cost_handler,
                                                                                                  const t_placer_opts& placer_opts,
                                                                                                  int move_lim,
                                                                                                  double noc_attraction_weight,
@@ -41,5 +44,3 @@ MoveGenerator& select_move_generator(std::unique_ptr<MoveGenerator>& move_genera
                                      e_agent_state agent_state,
                                      const t_placer_opts& placer_opts,
                                      bool in_quench);
-
-#endif

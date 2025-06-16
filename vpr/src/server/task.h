@@ -1,5 +1,4 @@
-#ifndef TASK_H
-#define TASK_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -19,7 +18,7 @@ namespace server {
  * It generates a JSON data structure to be sent back to the client as a response.
  */
 class Task {
-public:
+  public:
     /**
      * @brief Constructs a new Task object.
      * 
@@ -178,7 +177,7 @@ public:
      */
     const std::string& options() const { return m_options; }
 
-private:
+  private:
     int m_job_id = -1;
     comm::CMD m_cmd = comm::CMD::NONE;
     std::string m_options;
@@ -201,5 +200,3 @@ using TaskPtr = std::unique_ptr<Task>;
 } // namespace server
 
 #endif /* NO_SERVER */
-
-#endif /* TASK_H */

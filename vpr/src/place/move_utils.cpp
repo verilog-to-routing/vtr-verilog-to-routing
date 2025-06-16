@@ -3,18 +3,36 @@
 #include "move_transactions.h"
 #include "globals.h"
 
+#include "physical_types_util.h"
+#include "place_macro.h"
 #include "vtr_random.h"
-
-#include "draw_debug.h"
-#include "draw.h"
 
 #include "place_constraints.h"
 #include "placer_state.h"
+#include "PlacerCriticalities.h"
 
 //f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
 // When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
+
+/**
+ * @brief Adjust the search range based on how many blocks are in the column.
+ * If the number of blocks in the column is less than MIN_NUM_BLOCKS_IN_COLUMN,
+ * expand the search range to cover the entire column.
+ * 
+ * @param block_type The type of the block to move
+ * @param compressed_column_num The compressed column to move the block to
+ * @param to_layer_num The layer that the block is moving to
+ * @param is_range_fixed Whether the search range is fixed (e.g., in case of placement constraints)
+ * @param search_range The search range to adjust
+ * 
+ */
+static void adjust_search_range(t_logical_block_type_ptr block_type,
+                                const int compressed_column_num,
+                                const int to_layer_num,
+                                const bool is_range_fixed,
+                                t_bb& search_range);
 
 //Accessor for f_placer_breakpoint_reached
 bool placer_breakpoint_reached() {
@@ -28,10 +46,11 @@ void set_placer_breakpoint_reached(bool flag) {
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
-                          const BlkLocRegistry& blk_loc_registry) {
+                          const BlkLocRegistry& blk_loc_registry,
+                          const PlaceMacros& place_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-    e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to, blk_loc_registry);
+    e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to, blk_loc_registry, place_macros);
 
     if (outcome == e_block_move_result::INVERT) {
         //Try inverting the swap direction
@@ -44,7 +63,7 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
         } else {
             t_pl_loc from = block_locs[b_from].loc;
 
-            outcome = find_affected_blocks(blocks_affected, b_to, from, blk_loc_registry);
+            outcome = find_affected_blocks(blocks_affected, b_to, from, blk_loc_registry, place_macros);
 
             if (outcome == e_block_move_result::INVERT) {
                 blocks_affected.move_abortion_logger.log_move_abort("inverted move recursion");
@@ -64,14 +83,14 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected,
                                          ClusterBlockId b_from,
                                          t_pl_loc to,
-                                         const BlkLocRegistry& blk_loc_registry) {
+                                         const BlkLocRegistry& blk_loc_registry,
+                                         const PlaceMacros& place_macros) {
     /* Finds and set ups the affected_blocks array.
      * Returns abort_swap. */
     VTR_ASSERT_SAFE(b_from);
 
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-    const auto& place_macros = blk_loc_registry.place_macros();
 
     e_block_move_result outcome = e_block_move_result::VALID;
 
@@ -85,7 +104,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         t_pl_offset swap_offset = to - from;
 
         int imember_from = 0;
-        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry);
+        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry, place_macros);
 
         VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(place_macros[imacro_from].members.size()));
 
@@ -142,14 +161,13 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
             return e_block_move_result::ABORT;
         }
 
-
         // Sets up the blocks moved
         outcome = blocks_affected.record_block_move(b_from, to, blk_loc_registry);
 
         if (outcome != e_block_move_result::VALID) {
             return outcome;
         }
-        
+
         t_pl_loc from = block_locs[b_from].loc;
         outcome = blocks_affected.record_block_move(b_to, from, blk_loc_registry);
 
@@ -165,8 +183,8 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        const int imacro_from,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
-                                       const BlkLocRegistry& blk_loc_registry) {
-    const auto& place_macros = blk_loc_registry.place_macros();
+                                       const BlkLocRegistry& blk_loc_registry,
+                                       const PlaceMacros& place_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
@@ -199,11 +217,11 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                 //To block is a macro
 
                 if (imacro_from == imacro_to) {
-                    outcome = record_macro_self_swaps(blocks_affected, imacro_from, swap_offset, blk_loc_registry);
+                    outcome = record_macro_self_swaps(blocks_affected, imacro_from, swap_offset, blk_loc_registry, place_macros);
                     imember_from = place_macros[imacro_from].members.size();
                     break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                 } else {
-                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, blk_loc_registry);
+                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, blk_loc_registry, place_macros);
                     if (outcome == e_block_move_result::INVERT_VALID) {
                         break; //The move was inverted and successfully proposed, don't need to continue the loop
                     }
@@ -227,7 +245,8 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              const int imacro_to,
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
-                                             const BlkLocRegistry& blk_loc_registry) {
+                                             const BlkLocRegistry& blk_loc_registry,
+                                             const PlaceMacros& pl_macros) {
     //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to its
     //new position.
     //
@@ -235,7 +254,6 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //The position in the from macro ('imacro_from') is specified by 'imember_from', and the relevant
     //macro fro the to block is 'imacro_to'.
 
-    const auto& pl_macros = blk_loc_registry.place_macros().macros();
     const auto& block_locs = blk_loc_registry.block_locs();
 
     //At the moment, we only support blk_to being the first element of the 'to' macro.
@@ -245,7 +263,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //allows these blocks to swap)
     if (pl_macros[imacro_to].members[0].blk_index != blk_to) {
         int imember_to = 0;
-        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry);
+        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros);
         if (outcome == e_block_move_result::INVERT) {
             blocks_affected.move_abortion_logger.log_move_abort("invert recursion2");
             outcome = e_block_move_result::ABORT;
@@ -314,7 +332,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         //
         //Swap the remainder of the 'to' macro to locations after the 'from' macro.
         //Note that we are swapping in the opposite direction so the swap offsets are inverted.
-        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry);
+        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros);
     }
 
     return e_block_move_result::VALID;
@@ -330,8 +348,8 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,
                                       const int imacro,
                                       t_pl_offset swap_offset,
-                                      const BlkLocRegistry& blk_loc_registry) {
-    const auto& place_macros = blk_loc_registry.place_macros();
+                                      const BlkLocRegistry& blk_loc_registry,
+                                      const PlaceMacros& place_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
@@ -364,8 +382,8 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
                                                              const BlkLocRegistry& blk_loc_registry,
+                                                             const PlaceMacros& place_macros,
                                                              MoveAbortionLogger& move_abortion_logger) {
-    const auto& place_macros = blk_loc_registry.place_macros();
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
@@ -390,7 +408,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
             auto itr = std::find(macros.begin(), macros.end(), imacro_to);
             if (itr == macros.end()) {
                 macros.push_back(imacro_to);
-                outcome = identify_macro_self_swap_affected_macros(macros, imacro_to, swap_offset, blk_loc_registry, move_abortion_logger);
+                outcome = identify_macro_self_swap_affected_macros(macros, imacro_to, swap_offset, blk_loc_registry, place_macros, move_abortion_logger);
             }
         }
     }
@@ -400,15 +418,14 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                             const int imacro,
                                             t_pl_offset swap_offset,
-                                            const BlkLocRegistry& blk_loc_registry) {
-    const auto& place_macros = blk_loc_registry.place_macros();
-
+                                            const BlkLocRegistry& blk_loc_registry,
+                                            const PlaceMacros& place_macros) {
     //Reset any partial move
     blocks_affected.clear_move_blocks();
 
     //Collect the macros affected
     std::vector<int> affected_macros;
-    auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro, swap_offset, blk_loc_registry, blocks_affected.move_abortion_logger);
+    auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro, swap_offset, blk_loc_registry, place_macros, blocks_affected.move_abortion_logger);
 
     if (outcome != e_block_move_result::VALID) {
         return outcome;
@@ -421,7 +438,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
 
     //Move all the affected macros by the offset
     for (int imacro_affected : affected_macros) {
-        outcome = record_macro_move(blocks_affected, displaced_blocks, imacro_affected, swap_offset, blk_loc_registry);
+        outcome = record_macro_move(blocks_affected, displaced_blocks, imacro_affected, swap_offset, blk_loc_registry, place_macros);
 
         if (outcome != e_block_move_result::VALID) {
             return outcome;
@@ -469,7 +486,6 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-
 
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
         || to.y < 0 || to.y >= int(device_ctx.grid.height())
@@ -547,30 +563,25 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
 ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int& logical_blk_type_index,
                                      bool highly_crit_block,
+                                     const PlacerCriticalities* placer_criticalities,
                                      ClusterNetId* net_from,
                                      int* pin_from,
                                      const PlacerState& placer_state,
                                      vtr::RngContainer& rng) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& blk_loc_registry = placer_state.blk_loc_registry();
+
     ClusterBlockId b_from = ClusterBlockId::INVALID();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
-        if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_state, rng);
-        } else {
-            b_from = pick_from_block(rng);
-        }
+    if (highly_crit_block) {
+        b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state, *placer_criticalities, rng);
+    } else {
+        b_from = pick_from_block(logical_blk_type_index, rng, blk_loc_registry);
+    }
 
-        //if a movable block found, set the block type
-        if (b_from) {
-            logical_blk_type_index = cluster_ctx.clb_nlist.block_type(b_from)->index;
-        }
-    } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
-        if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state, rng);
-        } else {
-            b_from = pick_from_block(logical_blk_type_index, rng);
-        }
+    //if a movable block found, set the block type
+    if (b_from) {
+        logical_blk_type_index = cluster_ctx.clb_nlist.block_type(b_from)->index;
     }
 
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
@@ -580,110 +591,54 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
     return b_from;
 }
 
-const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type) {
-    const auto& place_ctx = g_vpr_ctx.placement();
+ClusterBlockId pick_from_block(const int logical_blk_type_index,
+                               vtr::RngContainer& rng,
+                               const BlkLocRegistry& blk_loc_registry) {
+    // if logical block type is specified, pick the 'from' block from blocks of that type;
+    // otherwise, select it randomly from all blocks
+    const auto& movable_blocks = (logical_blk_type_index < 0) ? blk_loc_registry.movable_blocks() : blk_loc_registry.movable_blocks_per_type()[logical_blk_type_index];
 
-    // the vector is returned as const reference to avoid unnecessary copies,
-    // especially that returned vectors may be very large as they contain
-    // all clustered blocks with a specific block type
-    return place_ctx.movable_blocks_per_type[blk_type.index];
-}
-
-ClusterBlockId pick_from_block(vtr::RngContainer& rng) {
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    // get the number of movable clustered blocks
-    const size_t n_movable_blocks = place_ctx.movable_blocks.size();
-
-    if (n_movable_blocks > 0) {
-        //Pick a movable block at random and return it
-        auto b_from = ClusterBlockId(rng.irand((int)n_movable_blocks - 1));
-        return b_from;
-    } else {
-        //No movable blocks found
-        return ClusterBlockId::INVALID();
-    }
-}
-
-ClusterBlockId pick_from_block(const int logical_blk_type_index, vtr::RngContainer& rng) {
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    const auto& movable_blocks_of_type = place_ctx.movable_blocks_per_type[logical_blk_type_index];
-
-    if (movable_blocks_of_type.empty()) {
+    if (movable_blocks.empty()) {
         return ClusterBlockId::INVALID();
     }
 
-    auto b_from = ClusterBlockId(movable_blocks_of_type[rng.irand((int)movable_blocks_of_type.size() - 1)]);
+    ClusterBlockId b_from = movable_blocks[rng.irand((int)movable_blocks.size() - 1)];
 
     return b_from;
 }
 
-//Pick a random highly critical block to be swapped with another random block.
-//If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
-                                               int& pin_from,
-                                               const PlacerState& placer_state,
-                                               vtr::RngContainer& rng) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_state.move();
-    auto& block_locs = placer_state.block_locs();
-
-    //Initialize critical net and pin to be invalid
-    net_from = ClusterNetId::INVALID();
-    pin_from = -1;
-
-    //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.empty()) {
-        return ClusterBlockId::INVALID();
-    }
-
-    //pick a random highly critical pin and find the nets driver block
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[rng.irand(place_move_ctx.highly_crit_pins.size() - 1)];
-    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
-
-    if (block_locs[b_from].is_fixed) {
-        return ClusterBlockId::INVALID(); //Block is fixed, cannot move
-    }
-
-    net_from = crit_pin.first;
-    pin_from = crit_pin.second;
-    return b_from;
-
-    //Unreachable statement
-    return ClusterBlockId::INVALID();
-}
-
-//Pick a random highly critical block with a specified block type to be swapped with another random block.
-//If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                const int logical_blk_type_index,
                                                const PlacerState& placer_state,
+                                               const PlacerCriticalities& placer_criticalities,
                                                vtr::RngContainer& rng) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_state.move();
-    auto& block_locs = placer_state.block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = placer_state.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();
     pin_from = -1;
 
+    const auto& highly_crit_pins = placer_criticalities.get_highly_critical_pins();
+
     //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.empty()) {
+    if (highly_crit_pins.empty()) {
         return ClusterBlockId::INVALID();
     }
 
     //pick a random highly critical pin and find the nets driver block
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[rng.irand(place_move_ctx.highly_crit_pins.size() - 1)];
+    std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[rng.irand(highly_crit_pins.size() - 1)];
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
-    //Check if picked block type matches with the blk_type specified, and it is not fixed
-    //blk_type from propose move doesn't account for the EMPTY type
     auto b_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    if (b_from_type->index == logical_blk_type_index) {
+
+    // check if the type of the picked block matches with the specified block type
+    // when a block type is specified, i.e. when logical_blk_type_index >= 0
+    if (b_from_type->index == logical_blk_type_index || logical_blk_type_index < 0) {
+        // ensure that the selected block is not fixed
         if (block_locs[b_from].is_fixed) {
-            return ClusterBlockId::INVALID(); //Block is fixed, cannot move
+            return ClusterBlockId::INVALID(); // a fixed block can't be moved
         }
 
         net_from = crit_pin.first;
@@ -692,7 +647,6 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
     }
 
     //No critical block with 'blk_type' found
-    //Unreachable statement
     return ClusterBlockId::INVALID();
 }
 
@@ -707,7 +661,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
     //of the same block types, and not the physical grid space). This means, for example, that columns of 'rare'
-    //blocks (e.g. DSPs/RAMs) which are physically far appart but logically adjacent will be swappable even
+    //blocks (e.g. DSPs/RAMs) which are physically far apart but logically adjacent will be swappable even
     //at an rlim fo 1.
     //
     //This ensures that such blocks don't get locked down too early during placement (as would be the
@@ -730,10 +684,9 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                                 rlim);
     int delta_cx = search_range.xmax - search_range.xmin;
 
-    t_physical_tile_loc to_compressed_loc;
-    bool legal = false;
+    bool block_constrained = is_cluster_constrained(b_from);
 
-    if (is_cluster_constrained(b_from)) {
+    if (block_constrained) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
@@ -742,6 +695,9 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
             return false;
         }
     }
+
+    t_physical_tile_loc to_compressed_loc;
+    bool legal = false;
     //TODO: For now, we only move the blocks on the same tile
     legal = find_compatible_compressed_loc_in_range(type,
                                                     delta_cx,
@@ -752,7 +708,8 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
                                                     blk_loc_registry,
-                                                    rng);
+                                                    rng,
+                                                    block_constrained);
 
     if (!legal) {
         //No valid position found
@@ -822,10 +779,9 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                       to_layer_num,
                       to_layer_num);
 
-    t_physical_tile_loc to_compressed_loc;
-    bool legal = false;
+    bool block_constrained = is_cluster_constrained(b_from);
 
-    if (is_cluster_constrained(b_from)) {
+    if (block_constrained) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
@@ -835,6 +791,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
         }
     }
 
+    t_physical_tile_loc to_compressed_loc;
+    bool legal = false;
     legal = find_compatible_compressed_loc_in_range(blk_type,
                                                     delta_cx,
                                                     from_compressed_locs[to_layer_num],
@@ -844,7 +802,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
                                                     blk_loc_registry,
-                                                    rng);
+                                                    rng,
+                                                    block_constrained);
 
     if (!legal) {
         //No valid position found
@@ -911,10 +870,9 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     }
     delta_cx = search_range.xmax - search_range.xmin;
 
-    t_physical_tile_loc to_compressed_loc;
-    bool legal = false;
+    bool block_constrained = is_cluster_constrained(b_from);
 
-    if (is_cluster_constrained(b_from)) {
+    if (block_constrained) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
@@ -924,7 +882,10 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
         }
     }
 
-    //TODO: For now, we only move the blocks on the same tile
+    t_physical_tile_loc to_compressed_loc;
+    bool legal = false;
+
+    //TODO: For now, we only move the blocks on the same layer
     legal = find_compatible_compressed_loc_in_range(blk_type,
                                                     delta_cx,
                                                     from_compressed_loc[to_layer_num],
@@ -934,7 +895,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
                                                     blk_loc_registry,
-                                                    rng);
+                                                    rng,
+                                                    block_constrained);
 
     if (!legal) {
         //No valid position found
@@ -1028,7 +990,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              int to_layer_num,
                                              bool search_for_empty,
                                              const BlkLocRegistry& blk_loc_registry,
-                                             vtr::RngContainer& rng) {
+                                             vtr::RngContainer& rng,
+                                             const bool is_range_fixed) {
     //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
     VTR_ASSERT(to_layer_num == from_loc.layer_num);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
@@ -1063,27 +1026,16 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         //The candidates are stored in a flat_map so we can efficiently find the set of valid
         //candidates with upper/lower bound.
         const auto& block_rows = compressed_block_grid.get_column_block_map(to_loc.x, to_layer_num);
+        adjust_search_range(type,
+                            to_loc.x,
+                            to_layer_num,
+                            is_range_fixed,
+                            search_range);
         auto y_lower_iter = block_rows.lower_bound(search_range.ymin);
         if (y_lower_iter == block_rows.end()) {
             continue;
         }
-
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
-
-        if (y_lower_iter->first > search_range.ymin) {
-            //No valid blocks at this x location which are within rlim_y
-            //
-            if (type->index != 1)
-                continue;
-            else {
-                //Fall back to allow the whole y range
-                y_lower_iter = block_rows.begin();
-                y_upper_iter = block_rows.end();
-
-                search_range.ymin = y_lower_iter->first;
-                search_range.ymax = (y_upper_iter - 1)->first;
-            }
-        }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);
         VTR_ASSERT(y_range >= 0);
@@ -1252,7 +1204,7 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
             const auto [layer_low, layer_high] = compressed_intersect_reg.get_layer_range();
             VTR_ASSERT(layer_low == layer_num && layer_high == layer_num);
 
-            delta_cx = intersect_rect.xmax() -  intersect_rect.xmin();
+            delta_cx = intersect_rect.xmax() - intersect_rect.xmin();
             std::tie(search_range.xmin, search_range.ymin,
                      search_range.xmax, search_range.ymax) = intersect_rect.coordinates();
             search_range.layer_min = layer_low;
@@ -1261,6 +1213,25 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
     }
 
     return true;
+}
+
+static void adjust_search_range(t_logical_block_type_ptr block_type,
+                                const int compressed_column_num,
+                                const int to_layer_num,
+                                const bool is_range_fixed,
+                                t_bb& search_range) {
+    // The value is chosen empirically to expand the search range for sparse blocks,
+    // or blocks located on the perimeter of the FPGA (e.g., IO blocks)
+    constexpr int MIN_NUM_BLOCKS_IN_COLUMN = 3;
+
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+
+    size_t num_blocks_in_column = compressed_block_grid.get_column_block_map(compressed_column_num, to_layer_num).size();
+
+    if (num_blocks_in_column < MIN_NUM_BLOCKS_IN_COLUMN && !is_range_fixed) {
+        search_range.ymin = 0;
+        search_range.ymax = compressed_block_grid.get_num_rows(to_layer_num) - 1;
+    }
 }
 
 std::string e_move_result_to_string(e_move_result move_outcome) {
@@ -1323,112 +1294,4 @@ int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& 
     }
 
     return layer_num;
-}
-
-t_bb union_2d_bb(const std::vector<t_2D_bb>& bb_vec) {
-    t_bb merged_bb;
-
-    // Not all 2d_bbs are valid. Thus, if one of the coordinates in the 2D_bb is not valid (equal to OPEN),
-    // we need to skip it.
-    for (const auto& layer_bb : bb_vec) {
-        if (layer_bb.xmin == OPEN) {
-            VTR_ASSERT_SAFE(layer_bb.xmax == OPEN);
-            VTR_ASSERT_SAFE(layer_bb.ymin == OPEN);
-            VTR_ASSERT_SAFE(layer_bb.ymax == OPEN);
-            VTR_ASSERT_SAFE(layer_bb.layer_num == OPEN);
-            continue;
-        }
-        if (merged_bb.xmin == OPEN || layer_bb.xmin < merged_bb.xmin) {
-            merged_bb.xmin = layer_bb.xmin;
-        }
-        if (merged_bb.xmax == OPEN || layer_bb.xmax > merged_bb.xmax) {
-            merged_bb.xmax = layer_bb.xmax;
-        }
-        if (merged_bb.ymin == OPEN || layer_bb.ymin < merged_bb.ymin) {
-            merged_bb.ymin = layer_bb.ymin;
-        }
-        if (merged_bb.ymax == OPEN || layer_bb.ymax > merged_bb.ymax) {
-            merged_bb.ymax = layer_bb.ymax;
-        }
-        if (merged_bb.layer_min == OPEN || layer_bb.layer_num < merged_bb.layer_min) {
-            merged_bb.layer_min = layer_bb.layer_num;
-        }
-        if (merged_bb.layer_max == OPEN || layer_bb.layer_num > merged_bb.layer_max) {
-            merged_bb.layer_max = layer_bb.layer_num;
-        }
-    }
-
-    return merged_bb;
-}
-
-std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
-                                       const std::vector<t_2D_bb>& bb_vec) {
-    t_bb merged_num_edge;
-    t_bb merged_bb;
-
-    for (const auto& layer_bb : bb_vec) {
-        if (layer_bb.xmin == OPEN) {
-            VTR_ASSERT_SAFE(layer_bb.xmax == OPEN);
-            VTR_ASSERT_SAFE(layer_bb.ymin == OPEN);
-            VTR_ASSERT_SAFE(layer_bb.ymax == OPEN);
-            VTR_ASSERT_SAFE(layer_bb.layer_num == OPEN);
-            continue;
-        }
-        if (merged_bb.xmin == OPEN || layer_bb.xmin <= merged_bb.xmin) {
-            if (layer_bb.xmin == merged_bb.xmin) {
-                VTR_ASSERT_SAFE(merged_num_edge.xmin != OPEN);
-                merged_num_edge.xmin += num_edge_vec[layer_bb.layer_num].xmin;
-            } else {
-                merged_num_edge.xmin = num_edge_vec[layer_bb.layer_num].xmin;
-            }
-            merged_bb.xmin = layer_bb.xmin;
-        }
-        if (merged_bb.xmax == OPEN || layer_bb.xmax >= merged_bb.xmax) {
-            if (layer_bb.xmax == merged_bb.xmax) {
-                VTR_ASSERT_SAFE(merged_num_edge.xmax != OPEN);
-                merged_num_edge.xmax += num_edge_vec[layer_bb.layer_num].xmax;
-            } else {
-                merged_num_edge.xmax = num_edge_vec[layer_bb.layer_num].xmax;
-            }
-            merged_bb.xmax = layer_bb.xmax;
-        }
-        if (merged_bb.ymin == OPEN || layer_bb.ymin <= merged_bb.ymin) {
-            if (layer_bb.ymin == merged_bb.ymin) {
-                VTR_ASSERT_SAFE(merged_num_edge.ymin != OPEN);
-                merged_num_edge.ymin += num_edge_vec[layer_bb.layer_num].ymin;
-            } else {
-                merged_num_edge.ymin = num_edge_vec[layer_bb.layer_num].ymin;
-            }
-            merged_bb.ymin = layer_bb.ymin;
-        }
-        if (merged_bb.ymax == OPEN || layer_bb.ymax >= merged_bb.ymax) {
-            if (layer_bb.ymax == merged_bb.ymax) {
-                VTR_ASSERT_SAFE(merged_num_edge.ymax != OPEN);
-                merged_num_edge.ymax += num_edge_vec[layer_bb.layer_num].ymax;
-            } else {
-                merged_num_edge.ymax = num_edge_vec[layer_bb.layer_num].ymax;
-            }
-            merged_bb.ymax = layer_bb.ymax;
-        }
-        if (merged_bb.layer_min == OPEN || layer_bb.layer_num <= merged_bb.layer_min) {
-            if (layer_bb.layer_num == merged_bb.layer_min) {
-                VTR_ASSERT_SAFE(merged_num_edge.layer_min != OPEN);
-                merged_num_edge.layer_min += num_edge_vec[layer_bb.layer_num].layer_num;
-            } else {
-                merged_num_edge.layer_min = num_edge_vec[layer_bb.layer_num].layer_num;
-            }
-            merged_bb.layer_min = layer_bb.layer_num;
-        }
-        if (merged_bb.layer_max == OPEN || layer_bb.layer_num >= merged_bb.layer_max) {
-            if (layer_bb.layer_num == merged_bb.layer_max) {
-                VTR_ASSERT_SAFE(merged_num_edge.layer_max != OPEN);
-                merged_num_edge.layer_max += num_edge_vec[layer_bb.layer_num].layer_num;
-            } else {
-                merged_num_edge.layer_max = num_edge_vec[layer_bb.layer_num].layer_num;
-            }
-            merged_bb.layer_max = layer_bb.layer_num;
-        }
-    }
-
-    return std::make_pair(merged_num_edge, merged_bb);
 }

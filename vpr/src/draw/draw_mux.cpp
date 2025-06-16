@@ -1,22 +1,18 @@
 /*draw_mux.cpp contains all functions that draw muxes.*/
 
+#ifndef NO_GRAPHICS
+
 #include <algorithm>
-#include <array>
 
 #include "vtr_assert.h"
-#include "vtr_color_map.h"
-#include "draw_color.h"
 
 #include "draw_mux.h"
-#include "read_xml_arch_file.h"
-
-#ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 

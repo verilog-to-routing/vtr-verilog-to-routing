@@ -1,5 +1,4 @@
-#ifndef VRP_TIMING_GRAPH_NAME_RESOLVER_H
-#define VRP_TIMING_GRAPH_NAME_RESOLVER_H
+#pragma once
 
 #include "tatum/TimingGraphNameResolver.hpp"
 #include "atom_netlist_fwd.h"
@@ -7,11 +6,13 @@
 #include "AnalysisDelayCalculator.h"
 
 class BlkLocRegistry;
+class LogicalModels;
 
 class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
   public:
     VprTimingGraphResolver(const AtomNetlist& netlist,
                            const AtomLookup& netlist_lookup,
+                           const LogicalModels& models,
                            const tatum::TimingGraph& timing_graph,
                            const AnalysisDelayCalculator& delay_calc,
                            bool is_flat,
@@ -33,6 +34,7 @@ class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
 
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
+    const LogicalModels& models_;
     const tatum::TimingGraph& timing_graph_;
     const AnalysisDelayCalculator& delay_calc_;
     e_timing_report_detail detail_level_ = e_timing_report_detail::NETLIST;
@@ -40,5 +42,3 @@ class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
     ///@brief contains information about the placement of clustered blocks.
     const BlkLocRegistry& blk_loc_registry_;
 };
-
-#endif

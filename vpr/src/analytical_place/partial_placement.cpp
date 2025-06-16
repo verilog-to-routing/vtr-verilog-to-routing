@@ -14,6 +14,8 @@
 double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
     double hpwl = 0.0;
     for (APNetId net_id : netlist.nets()) {
+        if (netlist.net_is_ignored(net_id))
+            continue;
         double min_x = std::numeric_limits<double>::max();
         double max_x = std::numeric_limits<double>::lowest();
         double min_y = std::numeric_limits<double>::max();
@@ -43,13 +45,9 @@ bool PartialPlacement::verify_locs(const APNetlist& netlist,
     for (APBlockId blk_id : netlist.blocks()) {
         double x_pos = block_x_locs[blk_id];
         double y_pos = block_y_locs[blk_id];
-        if (std::isnan(x_pos) ||
-            x_pos < 0.0 ||
-            x_pos >= grid_width)
+        if (std::isnan(x_pos) || x_pos < 0.0 || x_pos >= grid_width)
             return false;
-        if (std::isnan(y_pos) ||
-            y_pos < 0.0 ||
-            y_pos >= grid_height)
+        if (std::isnan(y_pos) || y_pos < 0.0 || y_pos >= grid_height)
             return false;
         if (netlist.block_mobility(blk_id) == APBlockMobility::FIXED) {
             const APFixedBlockLoc& fixed_loc = netlist.block_loc(blk_id);
@@ -120,4 +118,3 @@ bool PartialPlacement::verify(const APNetlist& netlist,
     // If all other verify methods passed, then the placement is valid.
     return true;
 }
-

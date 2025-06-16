@@ -1,6 +1,4 @@
-#ifndef VTR_NOC_AWARE_CLUSTER_UTIL_H
-#define VTR_NOC_AWARE_CLUSTER_UTIL_H
-
+#pragma once
 /**
  * @file This file includes helper functions used to find NoC groups
  * in the atom netlist and assign NoC group IDs to atom blocks.
@@ -22,6 +20,7 @@
 
 class AtomNetlist;
 class AtomBlockId;
+class LogicalModels;
 class t_pack_high_fanout_thresholds;
 
 /**
@@ -30,8 +29,7 @@ class t_pack_high_fanout_thresholds;
  *
  * @return The atom block IDs of the NoC router blocks in the netlist.
  */
-std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist);
-
+std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist, const LogicalModels& models);
 
 /**
  * @brief Runs BFS starting from NoC routers to find all connected
@@ -45,5 +43,3 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
                                         const AtomNetlist& atom_netlist,
                                         const t_pack_high_fanout_thresholds& high_fanout_threshold,
                                         vtr::vector<AtomBlockId, NocGroupId>& atom_noc_grp_id);
-
-#endif

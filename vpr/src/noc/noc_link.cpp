@@ -1,13 +1,12 @@
 #include "noc_link.h"
 
 // constructor
-NocLink::NocLink(NocLinkId link_id, NocRouterId source, NocRouterId sink,
-                 double bw, double lat)
+NocLink::NocLink(NocLinkId link_id, NocRouterId source, NocRouterId sink, double bw, double lat)
     : id(link_id)
     , source_router(source)
     , sink_router(sink)
     , bandwidth(bw)
-    , latency(lat) { }
+    , latency(lat) {}
 
 // getters
 NocRouterId NocLink::get_source_router() const {
@@ -46,4 +45,3 @@ NocLinkId NocLink::get_link_id() const {
 NocLink::operator NocLinkId() const {
     return get_link_id();
 }
-

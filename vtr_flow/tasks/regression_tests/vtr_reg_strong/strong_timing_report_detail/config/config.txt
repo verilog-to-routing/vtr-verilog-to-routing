@@ -24,7 +24,10 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params_common = -starting_stage vpr
+script_params_common = -starting_stage vpr --generate_net_timing_report on
 script_params_list_add=--timing_report_detail netlist
 script_params_list_add=--timing_report_detail aggregated
 script_params_list_add=--timing_report_detail detailed
+script_params_list_add=--timing_report_detail netlist --flat_routing on
+script_params_list_add=--timing_report_detail aggregated --flat_routing on
+script_params_list_add=--timing_report_detail detailed --flat_routing on

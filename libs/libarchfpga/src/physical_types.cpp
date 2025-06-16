@@ -71,6 +71,42 @@ bool t_rr_switch_inf::configurable() const {
     return switch_type_is_configurable(type());
 }
 
+bool t_rr_switch_inf::operator==(const t_rr_switch_inf& other) const {
+    return R == other.R
+           && Cin == other.Cin
+           && Cout == other.Cout
+           && Cinternal == other.Cinternal
+           && Tdel == other.Tdel
+           && mux_trans_size == other.mux_trans_size
+           && buf_size == other.buf_size
+           && power_buffer_type == other.power_buffer_type
+           && power_buffer_size == other.power_buffer_size
+           && intra_tile == other.intra_tile
+           && type() == other.type();
+}
+
+std::size_t t_rr_switch_inf::Hasher::operator()(const t_rr_switch_inf& s) const {
+    std::size_t hash_val = 0;
+
+    auto hash_combine = [&hash_val](auto&& val) {
+        hash_val ^= std::hash<std::decay_t<decltype(val)>>{}(val) + 0x9e3779b9 + (hash_val << 6) + (hash_val >> 2);
+    };
+
+    hash_combine(s.R);
+    hash_combine(s.Cin);
+    hash_combine(s.Cout);
+    hash_combine(s.Cinternal);
+    hash_combine(s.Tdel);
+    hash_combine(s.mux_trans_size);
+    hash_combine(s.buf_size);
+    hash_combine(static_cast<int>(s.power_buffer_type));
+    hash_combine(s.power_buffer_size);
+    hash_combine(s.intra_tile);
+    hash_combine(static_cast<int>(s.type()));
+
+    return hash_val;
+}
+
 void t_rr_switch_inf::set_type(SwitchType type_val) {
     type_ = type_val;
 }
@@ -136,6 +172,56 @@ bool t_physical_tile_type::is_empty() const {
     return name == std::string(EMPTY_BLOCK_NAME);
 }
 
+int t_physical_tile_type::find_pin(std::string_view port_name, int pin_index_in_port) const {
+    int ipin = OPEN;
+    int port_base_ipin = 0;
+    int num_port_pins = OPEN;
+    int pin_offset = 0;
+
+    bool port_found = false;
+    for (const t_sub_tile& sub_tile : sub_tiles) {
+        for (const t_physical_tile_port& port : sub_tile.ports) {
+            if (port_name == port.name) {
+                port_found = true;
+                num_port_pins = port.num_pins;
+                break;
+            }
+
+            port_base_ipin += port.num_pins;
+        }
+
+        if (port_found) {
+            break;
+        }
+
+        port_base_ipin = 0;
+        pin_offset += sub_tile.num_phy_pins;
+    }
+
+    if (num_port_pins != OPEN) {
+        VTR_ASSERT(pin_index_in_port < num_port_pins);
+
+        ipin = port_base_ipin + pin_index_in_port + pin_offset;
+    }
+
+    return ipin;
+}
+
+int t_physical_tile_type::find_pin_class(std::string_view port_name, int pin_index_in_port, e_pin_type pin_type) const {
+    int iclass = OPEN;
+
+    int ipin = find_pin(port_name, pin_index_in_port);
+
+    if (ipin != OPEN) {
+        iclass = pin_class[ipin];
+
+        if (iclass != OPEN) {
+            VTR_ASSERT(class_inf[iclass].type == pin_type);
+        }
+    }
+    return iclass;
+}
+
 /*
  * t_logical_block_type
  */
@@ -144,7 +230,104 @@ bool t_logical_block_type::is_empty() const {
     return name == std::string(EMPTY_BLOCK_NAME);
 }
 
-/**
+bool t_logical_block_type::is_io() const {
+    // Iterate over all equivalent tiles and return true if any
+    // of them are IO tiles
+    for (t_physical_tile_type_ptr tile : equivalent_tiles) {
+        if (tile->is_io()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+const t_port* t_logical_block_type::get_port(std::string_view port_name) const {
+    for (int i = 0; i < pb_type->num_ports; i++) {
+        const t_port& port = pb_type->ports[i];
+        if (port_name == port.name) {
+            return &pb_type->ports[port.index];
+        }
+    }
+
+    return nullptr;
+}
+
+const t_port* t_logical_block_type::get_port_by_pin(int pin) const {
+    for (int i = 0; i < pb_type->num_ports; i++) {
+        const t_port& port = pb_type->ports[i];
+        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
+            return &pb_type->ports[port.index];
+        }
+    }
+
+    return nullptr;
+}
+
+/*
+ * t_pb_type
+ */
+
+int t_pb_type::get_max_primitives() const {
+    int max_size;
+
+    if (modes == nullptr) {
+        max_size = 1;
+    } else {
+        max_size = 0;
+        int temp_size = 0;
+        for (int i = 0; i < num_modes; i++) {
+            for (int j = 0; j < modes[i].num_pb_type_children; j++) {
+                temp_size += modes[i].pb_type_children[j].num_pb * modes[i].pb_type_children[j].get_max_primitives();
+            }
+            if (temp_size > max_size) {
+                max_size = temp_size;
+            }
+        }
+    }
+
+    return max_size;
+}
+
+/* finds maximum number of nets that can be contained in pb_type, this is bounded by the number of driving pins */
+int t_pb_type::get_max_nets() const {
+    int max_nets;
+    if (modes == nullptr) {
+        max_nets = num_output_pins;
+    } else {
+        max_nets = 0;
+
+        for (int i = 0; i < num_modes; i++) {
+            int temp_nets = 0;
+            for (int j = 0; j < modes[i].num_pb_type_children; j++) {
+                temp_nets += modes[i].pb_type_children[j].num_pb * modes[i].pb_type_children[j].get_max_nets();
+            }
+
+            if (temp_nets > max_nets) {
+                max_nets = temp_nets;
+            }
+        }
+    }
+
+    if (is_root()) {
+        max_nets += num_input_pins + num_output_pins + num_clock_pins;
+    }
+
+    return max_nets;
+}
+
+int t_pb_type::get_max_depth() const {
+    int max_depth = depth;
+
+    for (int i = 0; i < num_modes; i++) {
+        for (int j = 0; j < modes[i].num_pb_type_children; j++) {
+            int temp_depth = modes[i].pb_type_children[j].get_max_depth();
+            max_depth = std::max(max_depth, temp_depth);
+        }
+    }
+    return max_depth;
+}
+
+/*
  * t_pb_graph_node
  */
 
@@ -220,7 +403,7 @@ std::string t_pb_graph_pin::to_string(const bool full_description) const {
     return pin_string;
 }
 
-/**
+/*
  * t_pb_graph_edge
  */
 
@@ -252,4 +435,40 @@ bool t_pb_graph_edge::belongs_to_pattern(int pattern_index) const {
 
     // return false otherwise
     return false;
+}
+
+/*
+ * t_sub_tile
+ */
+
+int t_sub_tile::total_num_internal_pins() const {
+    int num_pins = 0;
+
+    for (t_logical_block_type_ptr eq_site : equivalent_sites) {
+        num_pins += (int)eq_site->pin_logical_num_to_pb_pin_mapping.size();
+    }
+
+    num_pins *= capacity.total();
+
+    return num_pins;
+}
+
+const t_physical_tile_port* t_sub_tile::get_port(std::string_view port_name) {
+    for (const t_physical_tile_port& port : ports) {
+        if (port_name == port.name) {
+            return &ports[port.index];
+        }
+    }
+
+    return nullptr;
+}
+
+const t_physical_tile_port* t_sub_tile::get_port_by_pin(int pin) const {
+    for (const t_physical_tile_port& port : ports) {
+        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
+            return &ports[port.index];
+        }
+    }
+
+    return nullptr;
 }

@@ -1,3 +1,5 @@
+#include "vtr_assert.h"
+
 namespace vtr {
 /*
  * Point
@@ -86,7 +88,7 @@ Point<T>& Point<T>::operator-=(const Point<T>& rhs) {
  * Rect
  */
 template<class T>
-Rect<T>::Rect()
+Rect<T>::Rect() noexcept
     : Rect<T>(Point<T>(0, 0), Point<T>(0, 0)) {
     //pass
 }
@@ -185,6 +187,12 @@ bool Rect<T>::contains(const Rect<T>& other) const {
     //Including all edges
     return other.xmin() >= xmin() && other.xmax() <= xmax()
            && other.ymin() >= ymin() && other.ymax() <= ymax();
+}
+
+template<class T>
+bool Rect<T>::strictly_overlaps(const Rect<T>& other) const {
+    return xmin() < other.xmax() && xmax() > other.xmin()
+           && ymax() > other.ymin() && ymin() < other.ymax();
 }
 
 template<class T>

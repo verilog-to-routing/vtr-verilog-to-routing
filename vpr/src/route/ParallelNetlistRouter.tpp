@@ -22,7 +22,7 @@ inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry,
     /* Organize netlist into a PartitionTree.
      * Nets in a given level of nodes are guaranteed to not have any overlapping bounding boxes, so they can be routed in parallel. */
     vtr::Timer timer;
-    if(!_tree){
+    if (!_tree) {
         _tree = PartitionTree(_net_list);
         PartitionTreeDebug::log("Iteration " + std::to_string(itry) + ": built partition tree in " + std::to_string(timer.elapsed_sec()) + " s");
     }
@@ -79,12 +79,12 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
             route_ctx.route_bb[net_id]);
 
         if (!flags.success && !flags.retry_with_full_bb) {
-            /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */
+            /* Disconnected RRG and SerialConnectionRouter doesn't think growing the BB will work */
             _results_th.local().is_routable = false;
             return;
         }
         if (flags.retry_with_full_bb) {
-            /* ConnectionRouter thinks we should grow the BB. Do that and leave this net unrouted for now */
+            /* SerialConnectionRouter thinks we should grow the BB. Do that and leave this net unrouted for now */
             route_ctx.route_bb[net_id] = full_device_bb();
             _results_th.local().bb_updated_nets.push_back(net_id);
             continue;

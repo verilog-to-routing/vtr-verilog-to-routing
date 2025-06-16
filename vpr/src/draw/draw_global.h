@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_global.h
  * This file contains declaration of accessor functions that can be used to
@@ -10,23 +11,18 @@
  * Date: August 21, 2013
  */
 
-#ifndef DRAW_GLOBAL_H
-#define DRAW_GLOBAL_H
-
 #ifndef NO_GRAPHICS
 
-#    include "draw_types.h"
+#include "draw_types.h"
 
 constexpr float DEFAULT_ARROW_SIZE = 0.3;
 
 // a very small area, in (screen pixels)^2
 // used for level of detail culling
-#    define MIN_VISIBLE_AREA 3.0
+#define MIN_VISIBLE_AREA 3.0
 
 t_draw_coords* get_draw_coords_vars();
 
 t_draw_state* get_draw_state_vars();
 
 #endif // NO_GRAPHICS
-
-#endif

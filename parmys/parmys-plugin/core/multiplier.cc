@@ -16,6 +16,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 #include "multiplier.h"
+#include "logic_types.h"
 #include "netlist_utils.h"
 #include "node_utils.h"
 #include "odin_globals.h"
@@ -544,14 +545,15 @@ void report_mult_distribution()
  *-------------------------------------------------------------------------*/
 void find_hard_multipliers()
 {
-    hard_multipliers = Arch.models;
+    hard_multipliers = NULL;
     min_mult = configuration.min_hard_multiplier;
-    while (hard_multipliers != NULL) {
+    for (LogicalModelId model_id : Arch.models.user_models()) {
+        hard_multipliers = &Arch.models.get_model(model_id);
         if (strcmp(hard_multipliers->name, "multiply") == 0) {
             init_mult_distribution();
             return;
         } else {
-            hard_multipliers = hard_multipliers->next;
+            hard_multipliers = NULL;
         }
     }
 

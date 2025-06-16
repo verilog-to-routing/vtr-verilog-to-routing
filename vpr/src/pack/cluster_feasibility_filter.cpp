@@ -28,16 +28,12 @@
  */
 
 #include <vector>
+#include "physical_types.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 
-#include "read_xml_arch_file.h"
-#include "vpr_types.h"
-#include "globals.h"
 #include "hash.h"
 #include "cluster_feasibility_filter.h"
-#include "vpr_utils.h"
 
 /* header functions that identify pin classes */
 static void alloc_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node);
@@ -333,16 +329,14 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
                     reference_pin->list_of_connectable_input_pin_ptrs[depth][i] = temp[i];
 
                 reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
-                                                                         - 1]
-                    = current_pb_graph_pin;
+                                                                         - 1] = current_pb_graph_pin;
             }
 
             else {
                 reference_pin->list_of_connectable_input_pin_ptrs[depth] = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
             }
             reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
-                                                                     - 1]
-                = current_pb_graph_pin;
+                                                                     - 1] = current_pb_graph_pin;
         }
     }
 }

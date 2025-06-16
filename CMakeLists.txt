@@ -26,7 +26,6 @@ set_property(CACHE VTR_IPO_BUILD PROPERTY STRINGS auto on off)
 set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticeable run-time overhead, 4: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 
-option(VTR_ENABLE_STRICT_COMPILE "Specifies whether compiler warnings should be treated as errors (e.g. -Werror)" OFF)
 option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
@@ -42,9 +41,6 @@ option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VP
 #Allow the user to decide whether to compile the server module
 option(VPR_USE_SERVER "Specify whether vpr enables the server mode" ON)
 
-#Allow the user to enable/disable VPR analytic placement
-#VPR option --enable_analytic_placer is also required for Analytic Placement
-option(VPR_ANALYTIC_PLACE "Enable analytic placement in VPR." ON)
 option(VPR_ENABLE_INTERCHANGE "Enable FPGA interchange." ON)
 option(VPR_ENABLE_NOC_SAT_ROUTING "Enable NoC SAT routing." OFF)
 
@@ -60,10 +56,10 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
 option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
-option(YOSYS_F4PGA_PLUGINS "Enable building and installing Yosys SystemVerilog and UHDM plugins" OFF)
+option(SYNLIG_SYSTEMVERILOG "Enable building and installing Synlig SystemVerilog and UHDM plugins" OFF)
 
-set(VTR_VERSION_MAJOR 8)
-set(VTR_VERSION_MINOR 1)
+set(VTR_VERSION_MAJOR 9)
+set(VTR_VERSION_MINOR 0)
 set(VTR_VERSION_PATCH 0)
 set(VTR_VERSION_PRERELEASE "dev")
 
@@ -93,9 +89,9 @@ add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}")
 include(CheckCXXCompilerFlag)
 
 #
-# We require c++17 support
+# We require c++20 support
 #
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF) #No compiler specific extensions
 
@@ -160,7 +156,7 @@ else()
         "-Wcast-align"                  #Warn if a cast causes memory alignment changes
         "-Wshadow"                      #Warn if local variable shadows another variable
         "-Wformat=2"                    #Sanity checks for printf-like formatting
-        "-Wno-format-nonliteral"        # But don't worry about non-literal formtting (i.e. run-time printf format strings)
+        "-Wno-format-nonliteral"        # But don't worry about non-literal formatting (i.e. run-time printf format strings)
         "-Wlogical-op"                  #Checks for logical op when bit-wise expected
         "-Wmissing-declarations"        #Warn if a global function is defined with no declaration
         "-Wmissing-include-dirs"        #Warn if a user include directory is missing
@@ -178,10 +174,10 @@ else()
         "-Wduplicated-cond"             #Warn about identical conditions in if-else chains
         "-Wduplicated-branches"         #Warn when different branches of an if-else chain are equivalent
         "-Wnull-dereference"            #Warn about null pointer dereference execution paths
-        "-Wuninitialized"               #Warn about unitialized values
+        "-Wuninitialized"               #Warn about uninitialized values
         "-Winit-self"                   #Warn about self-initialization
         "-Wcatch-value=3"               #Warn when catch statements don't catch by reference
-        "-Wextra-semi"                  #Warn about redudnant semicolons
+        "-Wextra-semi"                  #Warn about redundant semicolons
         "-Wimplicit-fallthrough=3"      #Warn about case fallthroughs, but allow 'fallthrough' comments to suppress warnings
         #GCC-like optional
         #"-Wsuggest-final-types"         #Suggest where 'final' would help if specified on a type methods
@@ -231,18 +227,17 @@ foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     endif()
 endforeach()
 
-#Suppress IPO link warnings
-set(IPO_LINK_WARN_SUPRESS_FLAGS " ")
-set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK
-    "-Wno-null-dereference"
-    )
-foreach(flag ${IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK})
-    CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
-    if(CXX_COMPILER_SUPPORTS_${flag})
-        #Flag supported, so enable it
-        set(IPO_LINK_WARN_SUPRESS_FLAGS "${IPO_LINK_WARN_SUPRESS_FLAGS} ${flag}")
-    endif()
-endforeach()
+# Suppress IPO link warnings.
+# When IPO is turned on, it sometimes leads to false positives for warnings
+# since it checks for warnings after some of the source files have been compiled.
+# We globally suppress these warnings here. Any CMake executable which is added
+# after this line will have these warnings suppressed at link time.
+if (CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+    message(STATUS "IPO: Suppressing known VTR warnings.")
+    add_link_options(-Wno-alloc-size-larger-than  # libarchfpga allocates C-style arrays using integers.
+                     -Wno-stringop-overflow       # EXTERNAL/capnproto has some string overflow warnings.
+                     )
+endif()
 
 #
 # Sanitizer flags
@@ -453,7 +448,7 @@ if(${WITH_ODIN})
 endif()
 
 # handle cmake params to compile Yosys SystemVerilog/UHDM plugins
-if(${YOSYS_F4PGA_PLUGINS})
+if(${SYNLIG_SYSTEMVERILOG})
     # avoid compiling plugins in case the Parmys frontend is not active
     if(NOT ${WITH_PARMYS})
         message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Parmys frontend. Please set WITH_PARMYS.")

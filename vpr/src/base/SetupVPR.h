@@ -1,7 +1,6 @@
-#ifndef SETUPVPR_H
-#define SETUPVPR_H
+#pragma once
+
 #include <vector>
-#include "logic_types.h"
 #include "read_options.h"
 #include "physical_types.h"
 #include "vpr_types.h"
@@ -11,8 +10,6 @@ void SetupVPR(const t_options* Options,
               const bool readArchFile,
               t_file_name_opts* FileNameOpts,
               t_arch* Arch,
-              t_model** user_models,
-              t_model** library_models,
               t_netlist_opts* NetlistOpts,
               t_packer_opts* PackerOpts,
               t_placer_opts* PlacerOpts,
@@ -21,7 +18,7 @@ void SetupVPR(const t_options* Options,
               t_analysis_opts* AnalysisOpts,
               t_noc_opts* NocOpts,
               t_server_opts* ServerOpts,
-              t_det_routing_arch* RoutingArch,
+              t_det_routing_arch& RoutingArch,
               std::vector<t_lb_type_rr_node>** PackerRRGraphs,
               std::vector<t_segment_inf>& Segments,
               t_timing_inf* Timing,
@@ -31,4 +28,3 @@ void SetupVPR(const t_options* Options,
               std::string* GraphicsCommands,
               t_power_opts* PowerOpts,
               t_vpr_setup* vpr_setup);
-#endif

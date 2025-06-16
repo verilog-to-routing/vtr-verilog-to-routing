@@ -1,5 +1,4 @@
-#ifndef ARCH_CHECK_H
-#define ARCH_CHECK_H
+#pragma once
 
 /**
  *  This file includes all the definitions of functions which purpose is to
@@ -8,12 +7,9 @@
  *  All new functions corresponding to the architecture checking should end up here.
  */
 
-#include "arch_types.h"
-#include "arch_util.h"
-
-#include "physical_types_util.h"
-
-#include "vtr_util.h"
+#include <stdint.h>
+#include "logic_types.h"
+#include "physical_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,7 +22,7 @@ extern "C" {
  * @param file architecture file
  * @param line line in the architecture file that generates the failure
  */
-bool check_model_clocks(t_model* model, const char* file, uint32_t line);
+bool check_model_clocks(const t_model& model, const char* file, uint32_t line);
 
 /**
  * @brief Checks the correctness of the combinational sinks in the model inputs to outputs connections
@@ -35,7 +31,7 @@ bool check_model_clocks(t_model* model, const char* file, uint32_t line);
  * @param file architecture file
  * @param line line in the architecture file that generates the failure
  */
-bool check_model_combinational_sinks(const t_model* model, const char* file, uint32_t line);
+bool check_model_combinational_sinks(const t_model& model, const char* file, uint32_t line);
 
 /**
  * @brief Checks whether the I/O ports can have timing specifications based on their connectivity.
@@ -47,7 +43,7 @@ bool check_model_combinational_sinks(const t_model* model, const char* file, uin
  * @param file architecture file
  * @param line line in the architecture file that generates the failure
  */
-void warn_model_missing_timing(const t_model* model, const char* file, uint32_t line);
+void warn_model_missing_timing(const t_model& model, const char* file, uint32_t line);
 
 /**
  * @brief Checks the consistency of the mappings between a logical block and the corresponding physical tile.
@@ -75,6 +71,4 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 void check_models(t_arch* arch);
 #ifdef __cplusplus
 }
-#endif
-
 #endif

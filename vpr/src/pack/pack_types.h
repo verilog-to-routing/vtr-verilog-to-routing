@@ -1,5 +1,4 @@
-#ifndef PACK_TYPES_H
-#define PACK_TYPES_H
+#pragma once
 /**
  * Jason Luu
  * July 22, 2013
@@ -10,11 +9,10 @@
 #include <unordered_map>
 #include <vector>
 
-#include "arch_types.h"
 #include "atom_netlist_fwd.h"
-#include "attraction_groups.h"
+#include "physical_types.h"
 
-struct t_pack_molecule;
+class t_pack_molecule;
 
 /**************************************************************************
  * Packing Algorithm Enumerations
@@ -69,7 +67,7 @@ struct t_lb_type_rr_node {
     t_pb_graph_pin* pb_graph_pin; /* pb_graph_pin associated with this lb_rr_node if exists, NULL otherwise */
     float intrinsic_cost;         /* cost of this node */
 
-    t_lb_type_rr_node() {
+    t_lb_type_rr_node() noexcept {
         capacity = 0;
         num_modes = 0;
         num_fanout = nullptr;
@@ -130,7 +128,7 @@ struct t_intra_lb_net {
     std::vector<bool> fixed_terminals; /* Marks a terminal as having a fixed target (i.e. a pin not a sink) */
     t_lb_trace* rt_tree;               /* Route tree head */
 
-    t_intra_lb_net() {
+    t_intra_lb_net() noexcept {
         atom_net_id = AtomNetId::INVALID();
         rt_tree = nullptr;
     }
@@ -245,5 +243,3 @@ struct t_mode_selection_status {
         return is_mode_conflict || try_expand_all_modes;
     }
 };
-
-#endif

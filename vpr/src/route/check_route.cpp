@@ -1,20 +1,21 @@
-#include <cstdio>
 
+#include "check_route.h"
+
+#include "describe_rr_node.h"
+#include "physical_types_util.h"
 #include "route_common.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "route_export.h"
-#include "check_route.h"
+
 #include "rr_graph.h"
 #include "check_rr_graph.h"
-#include "read_xml_arch_file.h"
 #include "route_tree.h"
 
 /******************** Subroutines local to this module **********************/
@@ -39,11 +40,32 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          enum e_route_type route_type,
                                          bool is_flat);
 
+/**
+ * Checks that all non-configurable edges are in a legal configuration.
+ * @param net_list The netlist whose routing is to be checked.
+ * @param is_flat True if flat routing is enabled; otherwise false.
+ */
 static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat);
+
+/**
+ * @brief Checks that the specified routing is legal with respect to non-configurable edges.
+ * For routing to be valid, if any non-configurable edge is used, all  nodes in the same set
+ * and the required connecting edges in the set must also be used.
+ *
+ * @param net_list A reference to the netlist.
+ * @param net The net id for which the check is done.
+ * @param non_configurable_rr_sets Node and edge sets that constitute non-configurable RR sets.
+ * @param rrnode_set_id Specifies which RR sets each RR node is part of. These indices can be used to
+ * access elements of node_sets and edge_sets in non_configurable_rr_sets.
+ * @param is_flat Indicates whether flat routing is enabled.
+ * @return True if check is done successfully; otherwise false.
+ */
 static bool check_non_configurable_edges(const Netlist<>& net_list,
                                          ParentNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
+                                         const vtr::vector<RRNodeId, int>& rrnode_set_id,
                                          bool is_flat);
+
 static void check_net_for_stubs(const Netlist<>& net_list,
                                 ParentNetId net,
                                 bool is_flat);
@@ -65,13 +87,9 @@ void check_route(const Netlist<>& net_list,
         return;
     }
 
-    int max_pins;
-    unsigned int ipin;
-    bool valid, connects;
-
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& route_ctx = g_vpr_ctx.routing();
+    const auto& route_ctx = g_vpr_ctx.routing();
 
     const size_t num_switches = rr_graph.num_rr_switches();
 
@@ -83,8 +101,8 @@ void check_route(const Netlist<>& net_list,
      * is a successful routing, but I want to double check it here.          */
 
     recompute_occupancy_from_scratch(net_list, is_flat);
-    valid = feasible_routing();
-    if (valid == false) {
+    const bool valid = feasible_routing();
+    if (!valid) {
         VPR_ERROR(VPR_ERROR_ROUTE,
                   "Error in check_route -- routing resources are overused.\n");
     }
@@ -95,7 +113,7 @@ void check_route(const Netlist<>& net_list,
                                      is_flat);
     }
 
-    max_pins = 0;
+    int max_pins = 0;
     for (auto net_id : net_list.nets())
         max_pins = std::max(max_pins, (int)net_list.net_pins(net_id).size());
 
@@ -129,7 +147,7 @@ void check_route(const Netlist<>& net_list,
             check_switch(rt_node, num_switches);
 
             if (rt_node.parent()) {
-                connects = check_adjacent(rt_node.parent()->inode, rt_node.inode, is_flat);
+                bool connects = check_adjacent(rt_node.parent()->inode, rt_node.inode, is_flat);
                 if (!connects) {
                     VPR_ERROR(VPR_ERROR_ROUTE,
                               "in check_route: found non-adjacent segments in traceback while checking net %d:\n"
@@ -141,7 +159,7 @@ void check_route(const Netlist<>& net_list,
                 }
             }
 
-            if (rr_graph.node_type(inode) == SINK) {
+            if (rr_graph.node_type(inode) == e_rr_type::SINK) {
                 check_sink(net_list, inode, net_pin_index, net_id, pin_done.get());
                 num_sinks += 1;
             }
@@ -154,8 +172,8 @@ void check_route(const Netlist<>& net_list,
                             num_sinks, net_list.net_sinks(net_id).size());
         }
 
-        for (ipin = 0; ipin < net_list.net_pins(net_id).size(); ipin++) {
-            if (pin_done[ipin] == false) {
+        for (size_t ipin = 0; ipin < net_list.net_pins(net_id).size(); ipin++) {
+            if (!pin_done[ipin]) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_route: net %zu does not connect to pin %d.\n", size_t(net_id), ipin);
             }
@@ -184,7 +202,7 @@ static void check_sink(const Netlist<>& net_list,
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    VTR_ASSERT(rr_graph.node_type(inode) == SINK);
+    VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::SINK);
 
     if (net_pin_index == OPEN) { /* If there is no legal net pin index associated with this sink node */
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -194,7 +212,7 @@ static void check_sink(const Netlist<>& net_list,
                         inode, net_list.net_name(net_id).c_str(), size_t(net_id));
     }
 
-    VTR_ASSERT(!pin_done[net_pin_index]); /* Should not have found a routed cnnection to it before */
+    VTR_ASSERT(!pin_done[net_pin_index]); /* Should not have found a routed connection to it before */
     pin_done[net_pin_index] = true;
 }
 
@@ -206,8 +224,8 @@ static void check_source(const Netlist<>& net_list,
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type rr_type = rr_graph.node_type(inode);
-    if (rr_type != SOURCE) {
+    e_rr_type rr_type = rr_graph.node_type(inode);
+    if (rr_type != e_rr_type::SOURCE) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net %d begins with a node of type %d.\n", size_t(net_id), rr_type);
     }
@@ -260,7 +278,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
     int from_layer, from_xlow, from_ylow, to_layer, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
     int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh;
     bool reached;
-    t_rr_type from_type, to_type;
+    e_rr_type from_type, to_type;
     t_physical_tile_type_ptr from_grid_type, to_grid_type;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -303,7 +321,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
     // If to_node is a SINK, it could be anywhere within its containing device grid tile, and it is reasonable for
     // any input pins or within-cluster pins to reach it. Hence, treat its size as that of its containing tile.
-    if (to_type == SINK) {
+    if (to_type == e_rr_type::SINK) {
         vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({to_xlow, to_ylow, to_layer});
 
         to_xlow = tile_bb.xmin();
@@ -315,8 +333,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
     // Layer numbers are should not be more than one layer apart for connected nodes
     VTR_ASSERT(abs(from_layer - to_layer) <= 1);
     switch (from_type) {
-        case SOURCE:
-            VTR_ASSERT(to_type == OPIN);
+        case e_rr_type::SOURCE:
+            VTR_ASSERT(to_type == e_rr_type::OPIN);
 
             //The OPIN should be contained within the bounding box of it's connected source
             if (from_xlow <= to_xlow
@@ -333,34 +351,34 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             }
             break;
 
-        case SINK:
+        case e_rr_type::SINK:
             /* SINKS are adjacent to not connected */
             break;
 
-        case OPIN:
+        case e_rr_type::OPIN:
             from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
-            if (to_type == CHANX || to_type == CHANY) {
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
                 num_adj += 1; //adjacent
             } else if (is_flat) {
-                VTR_ASSERT(to_type == OPIN || to_type == IPIN); // If pin is located inside a cluster
+                VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN); // If pin is located inside a cluster
                 return true;
             } else {
-                VTR_ASSERT(to_type == IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
-                return true;                 /* Special case, direct OPIN to IPIN connections need not be adjacent */
+                VTR_ASSERT(to_type == e_rr_type::IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
+                return true;                            /* Special case, direct OPIN to IPIN connections need not be adjacent */
             }
 
             break;
 
-        case IPIN:
+        case e_rr_type::IPIN:
             from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
             if (is_flat) {
-                VTR_ASSERT(to_type == OPIN || to_type == IPIN || to_type == SINK);
+                VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN || to_type == e_rr_type::SINK);
             } else {
-                VTR_ASSERT(to_type == SINK);
+                VTR_ASSERT(to_type == e_rr_type::SINK);
             }
 
             //An IPIN should be contained within the bounding box of its connected sink's tile
-            if (to_type == SINK) {
+            if (to_type == e_rr_type::SINK) {
                 if (from_xlow >= to_xlow
                     && from_ylow >= to_ylow
                     && from_xhigh <= to_xhigh
@@ -387,10 +405,10 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             }
             break;
 
-        case CHANX:
-            if (to_type == IPIN) {
+        case e_rr_type::CHANX:
+            if (to_type == e_rr_type::IPIN) {
                 num_adj += 1; //adjacent
-            } else if (to_type == CHANX) {
+            } else if (to_type == e_rr_type::CHANX) {
                 from_xhigh = rr_graph.node_xhigh(from_node);
                 to_xhigh = rr_graph.node_xhigh(to_node);
                 if (from_ylow == to_ylow) {
@@ -412,7 +430,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                     }
                     /* UDSD Modification by WMF End */
                 }
-            } else if (to_type == CHANY) {
+            } else if (to_type == e_rr_type::CHANY) {
                 num_adj += chanx_chany_adjacent(from_node, to_node);
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -420,10 +438,10 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             }
             break;
 
-        case CHANY:
-            if (to_type == IPIN) {
+        case e_rr_type::CHANY:
+            if (to_type == e_rr_type::IPIN) {
                 num_adj += 1; //adjacent
-            } else if (to_type == CHANY) {
+            } else if (to_type == e_rr_type::CHANY) {
                 from_yhigh = rr_graph.node_yhigh(from_node);
                 to_yhigh = rr_graph.node_yhigh(to_node);
                 if (from_xlow == to_xlow) {
@@ -444,7 +462,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                     }
                     /* UDSD Modification by WMF End */
                 }
-            } else if (to_type == CHANX) {
+            } else if (to_type == e_rr_type::CHANX) {
                 num_adj += chanx_chany_adjacent(to_node, from_node);
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -535,7 +553,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          bool is_flat) {
     /* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
      * legal routing if subblocks connect to OPINs directly.                    */
-    t_rr_type rr_type;
+    e_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -555,7 +573,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                 /* Now check that node is an OPIN of the right type. */
 
                 rr_type = rr_graph.node_type(RRNodeId(inode));
-                if (rr_type != OPIN) {
+                if (rr_type != e_rr_type::OPIN) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "in check_locally_used_opins: block #%lu (%s)\n"
                                     "\tClass %d local OPIN is wrong rr_type -- rr_node #%d of type %d.\n",
@@ -595,43 +613,71 @@ static void check_node_and_range(RRNodeId inode,
                   is_flat);
 }
 
-//Checks that all non-configurable edges are in a legal configuration
-//This check is slow, so it has been moved out of check_route()
 static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat) {
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+
     vtr::ScopedStartFinishTimer timer("Checking to ensure non-configurable edges are legal");
-    auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
+    const t_non_configurable_rr_sets non_configurable_rr_sets = identify_non_configurable_rr_sets();
+
+    // Specifies which RR set each node is part of.
+    vtr::vector<RRNodeId, int> rrnode_set_ids(rr_graph.num_nodes(), -1);
+
+    const size_t num_non_cfg_rr_sets = non_configurable_rr_sets.node_sets.size();
+
+    // Populate rrnode_set_ids
+    for (size_t non_cfg_rr_set_id = 0; non_cfg_rr_set_id < num_non_cfg_rr_sets; non_cfg_rr_set_id++) {
+        const std::set<RRNodeId>& node_set = non_configurable_rr_sets.node_sets[non_cfg_rr_set_id];
+        for (const RRNodeId node_id : node_set) {
+            VTR_ASSERT_SAFE(rrnode_set_ids[node_id] == -1);
+            rrnode_set_ids[node_id] = (int)non_cfg_rr_set_id;
+        }
+    }
 
     for (auto net_id : net_list.nets()) {
         check_non_configurable_edges(net_list,
                                      net_id,
                                      non_configurable_rr_sets,
+                                     rrnode_set_ids,
                                      is_flat);
     }
 }
 
-// Checks that the specified routing is legal with respect to non-configurable edges
-//
-//For routing to be legal if *any* non-configurable edge is used, so must *all*
-//other non-configurable edges in the same set
 static bool check_non_configurable_edges(const Netlist<>& net_list,
                                          ParentNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
+                                         const vtr::vector<RRNodeId, int>& rrnode_set_id,
                                          bool is_flat) {
     const auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    const auto& route_ctx = g_vpr_ctx.routing();
 
     if (!route_ctx.route_trees[net]) // no routing
         return true;
 
-    // Collect all the edges used by this net's routing
+    // Collect all the nodes, edges, and non-configurable RR set ids used by this net's routing
     std::set<t_node_edge> routing_edges;
     std::set<RRNodeId> routing_nodes;
-    for (auto& rt_node : route_ctx.route_trees[net].value().all_nodes()) {
+    std::set<int> routing_non_configurable_rr_set_ids;
+    for (const RouteTreeNode& rt_node : route_ctx.route_trees[net].value().all_nodes()) {
         routing_nodes.insert(rt_node.inode);
         if (!rt_node.parent())
             continue;
         t_node_edge edge = {rt_node.parent()->inode, rt_node.inode};
         routing_edges.insert(edge);
+
+        if (rrnode_set_id[rt_node.inode] >= 0) { // The node belongs to a non-configurable RR set
+            routing_non_configurable_rr_set_ids.insert(rrnode_set_id[rt_node.inode]);
+        }
+    }
+
+    // Copy used non-configurable RR sets
+    // This is done to check legality only for used non-configurable RR sets. If a non-configurable RR set
+    // is not used by a net's routing, it cannot violate the requirements of using that non-configurable RR set.
+    t_non_configurable_rr_sets used_non_configurable_rr_sets;
+    used_non_configurable_rr_sets.node_sets.reserve(routing_non_configurable_rr_set_ids.size());
+    used_non_configurable_rr_sets.edge_sets.reserve(routing_non_configurable_rr_set_ids.size());
+    for (const int set_idx : routing_non_configurable_rr_set_ids) {
+        used_non_configurable_rr_sets.node_sets.emplace_back(non_configurable_rr_sets.node_sets[set_idx]);
+        used_non_configurable_rr_sets.edge_sets.emplace_back(non_configurable_rr_sets.edge_sets[set_idx]);
     }
 
     //We need to perform two types of checks:
@@ -640,13 +686,13 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
     // 2) That all (required) non-configurable edges are used
     //
     //We need to check (2) in addition to (1) to ensure that (1) did not pass
-    //because the nodes 'happend' to be connected together by configurable
+    //because the nodes 'happened' to be connected together by configurable
     //routing (to be legal, by definition, they must be connected by
     //non-configurable routing).
 
-    //Check that all nodes in each non-configurable set are full included if any element
+    //Check that all nodes in each non-configurable set are fully included if any element
     //within a set is used by the routing
-    for (const auto& rr_nodes : non_configurable_rr_sets.node_sets) {
+    for (const auto& rr_nodes : used_non_configurable_rr_sets.node_sets) {
         //Compute the intersection of the routing and current non-configurable nodes set
         std::vector<RRNodeId> intersection;
         std::set_intersection(routing_nodes.begin(), routing_nodes.end(),
@@ -668,7 +714,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                                     routing_nodes.begin(), routing_nodes.end(),
                                     std::back_inserter(difference));
 
-                VTR_ASSERT(difference.size() > 0);
+                VTR_ASSERT(!difference.empty());
                 std::string msg = vtr::string_fmt(
                     "Illegal routing for net '%s' (#%zu) some "
                     "required non-configurably connected nodes are missing:\n",
@@ -685,7 +731,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
 
     //Check that any sets of non-configurable RR graph edges are fully included
     //in the routing, if any of a set's edges are used
-    for (const auto& rr_edges : non_configurable_rr_sets.edge_sets) {
+    for (const auto& rr_edges : used_non_configurable_rr_sets.edge_sets) {
         //Compute the intersection of the routing and current non-configurable edge set
         std::vector<t_node_edge> intersection;
         std::set_intersection(routing_edges.begin(), routing_edges.end(),
@@ -698,7 +744,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
             //Since at least one non-configurable edge is used, to be legal
             //the full set of non-configurably connected edges must be used.
             //
-            //This is somewhat complicted by the fact that non-configurable edges
+            //This is somewhat complicated by the fact that non-configurable edges
             //are sometimes bi-directional (e.g. electrical shorts) and so appear
             //in rr_edges twice (once forward, once backward). Only one of the
             //paired edges need appear to be correct.
@@ -791,9 +837,9 @@ class StubFinder {
     std::set<int> stub_nodes_;
 };
 
-//Cheks for stubs in a net's routing.
+//Checks for stubs in a net's routing.
 //
-//Stubs (routing branches which don't connect to SINKs) serve no purpose, and only chew up wiring unecessarily.
+//Stubs (routing branches which don't connect to SINKs) serve no purpose, and only chew up wiring unnecessarily.
 //The only exception are stubs required by non-configurable switches (e.g. shorts).
 //
 //We treat any configurable stubs as an error.
@@ -839,7 +885,7 @@ bool StubFinder::RecurseTree(const RouteTreeNode& rt_node) {
 
     if (rt_node.is_leaf()) {
         //If a leaf of the route tree is not a SINK, then it is a stub
-        if (rr_graph.node_type(rt_node.inode) != SINK) {
+        if (rr_graph.node_type(rt_node.inode) != e_rr_type::SINK) {
             return true; //It is the current root of this stub
         } else {
             return false;

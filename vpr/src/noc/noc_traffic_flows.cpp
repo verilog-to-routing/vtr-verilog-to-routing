@@ -1,6 +1,7 @@
 
 #include "noc_traffic_flows.h"
-#include "vpr_error.h"
+#include "vtr_assert.h"
+#include "vtr_util.h"
 
 // constructor indicates that the class has not been properly initialized yet as the user supplied traffic flows have not been added.
 NocTrafficFlows::NocTrafficFlows() {
@@ -48,7 +49,6 @@ const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_all_traffic_flow_id() 
 const vtr::vector<NocTrafficFlowId, t_noc_traffic_flow>& NocTrafficFlows::get_all_traffic_flows() const {
     return noc_traffic_flows;
 }
-
 
 // setters for the traffic flows
 
@@ -189,4 +189,3 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
 
     vtr::fclose(fp);
 }
-

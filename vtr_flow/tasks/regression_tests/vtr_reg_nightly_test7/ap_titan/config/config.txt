@@ -1,0 +1,78 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/titan_blif/titan23/stratixiv
+
+# Path to directory of SDCs to use
+sdc_dir=benchmarks/titan_blif/titan23/stratixiv
+
+# Path to directory of architectures to use
+archs_dir=arch/titan
+
+# Add circuits to list to sweep
+circuit_list_add=LU230_stratixiv_arch_timing.blif
+circuit_list_add=LU_Network_stratixiv_arch_timing.blif
+circuit_list_add=SLAM_spheric_stratixiv_arch_timing.blif
+circuit_list_add=bitcoin_miner_stratixiv_arch_timing.blif
+circuit_list_add=bitonic_mesh_stratixiv_arch_timing.blif
+circuit_list_add=cholesky_bdti_stratixiv_arch_timing.blif
+circuit_list_add=cholesky_mc_stratixiv_arch_timing.blif
+circuit_list_add=dart_stratixiv_arch_timing.blif
+circuit_list_add=denoise_stratixiv_arch_timing.blif
+circuit_list_add=des90_stratixiv_arch_timing.blif
+circuit_list_add=directrf_stratixiv_arch_timing.blif
+circuit_list_add=gsm_switch_stratixiv_arch_timing.blif
+circuit_list_add=mes_noc_stratixiv_arch_timing.blif
+circuit_list_add=minres_stratixiv_arch_timing.blif
+circuit_list_add=neuron_stratixiv_arch_timing.blif
+circuit_list_add=openCV_stratixiv_arch_timing.blif
+circuit_list_add=segmentation_stratixiv_arch_timing.blif
+circuit_list_add=sparcT1_chip2_stratixiv_arch_timing.blif
+circuit_list_add=sparcT1_core_stratixiv_arch_timing.blif
+circuit_list_add=sparcT2_core_stratixiv_arch_timing.blif
+circuit_list_add=stap_qrd_stratixiv_arch_timing.blif
+circuit_list_add=stereo_vision_stratixiv_arch_timing.blif
+# circuit_list_add=gaussianblur_stratixiv_arch_timing.blif
+
+# Constrain the circuits to their devices
+circuit_constraint_list_add=(sparcT1_core_stratixiv_arch_timing.blif,  device=titan_extra_small)
+circuit_constraint_list_add=(SLAM_spheric_stratixiv_arch_timing.blif,  device=titan_extra_small)
+circuit_constraint_list_add=(stereo_vision_stratixiv_arch_timing.blif, device=titan_small)
+circuit_constraint_list_add=(cholesky_mc_stratixiv_arch_timing.blif,   device=titan_small)
+circuit_constraint_list_add=(neuron_stratixiv_arch_timing.blif,        device=titan_small)
+circuit_constraint_list_add=(segmentation_stratixiv_arch_timing.blif,  device=titan_small)
+circuit_constraint_list_add=(dart_stratixiv_arch_timing.blif,          device=titan_small)
+circuit_constraint_list_add=(denoise_stratixiv_arch_timing.blif,       device=titan_medium)
+circuit_constraint_list_add=(sparcT2_core_stratixiv_arch_timing.blif,  device=titan_medium)
+circuit_constraint_list_add=(stap_qrd_stratixiv_arch_timing.blif,      device=titan_medium)
+circuit_constraint_list_add=(cholesky_bdti_stratixiv_arch_timing.blif, device=titan_medium)
+circuit_constraint_list_add=(des90_stratixiv_arch_timing.blif,         device=titan_medium)
+circuit_constraint_list_add=(mes_noc_stratixiv_arch_timing.blif,       device=titan_medium)
+circuit_constraint_list_add=(openCV_stratixiv_arch_timing.blif,        device=titan_medium)
+circuit_constraint_list_add=(LU_Network_stratixiv_arch_timing.blif,    device=titan_large)
+circuit_constraint_list_add=(minres_stratixiv_arch_timing.blif,        device=titan_large)
+circuit_constraint_list_add=(bitcoin_miner_stratixiv_arch_timing.blif, device=titan_large)
+circuit_constraint_list_add=(bitonic_mesh_stratixiv_arch_timing.blif,  device=titan_large)
+circuit_constraint_list_add=(gsm_switch_stratixiv_arch_timing.blif,    device=titan_large)
+circuit_constraint_list_add=(sparcT1_chip2_stratixiv_arch_timing.blif, device=titan_large)
+circuit_constraint_list_add=(directrf_stratixiv_arch_timing.blif,      device=titan_extra_large)
+circuit_constraint_list_add=(LU230_stratixiv_arch_timing.blif,         device=titan_extra_large)
+# circuit_constraint_list_add=(gaussianblur_stratixiv_arch_timing.blif,  device=titan_extra_large)
+
+# Add architectures to list to sweep
+arch_list_add=stratixiv_arch.timing.xml
+
+# Parse info and how to parse
+parse_file=vpr_titan.txt
+
+# How to parse QoR info
+qor_parse_file=qor_vpr_titan.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_vpr_titan.txt
+
+# Pass the script params while writing the vpr constraints.
+#	WL DRIVEN
+script_params=-starting_stage vpr --analytical_place --route --route_chan_width 300 --max_router_iterations 400 --router_lookahead map -timeout 86400 --initial_pres_fac 1.0 --router_profiler_astar_fac 1.5 --seed 3 --timing_analysis off

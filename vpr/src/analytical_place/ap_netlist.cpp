@@ -7,15 +7,16 @@
 
 #include "ap_netlist.h"
 #include <string>
+#include "atom_netlist_fwd.h"
 #include "netlist_fwd.h"
 #include "netlist_utils.h"
-#include "vpr_types.h"
+#include "prepack.h"
 #include "vtr_assert.h"
 
 /*
  * Blocks
  */
-const t_pack_molecule* APNetlist::block_molecule(const APBlockId id) const {
+PackMoleculeId APNetlist::block_molecule(const APBlockId id) const {
     VTR_ASSERT_SAFE(valid_block_id(id));
 
     return block_molecules_[id];
@@ -35,13 +36,31 @@ const APFixedBlockLoc& APNetlist::block_loc(const APBlockId id) const {
 }
 
 /*
+ * Pins
+ */
+AtomPinId APNetlist::pin_atom_pin(const APPinId id) const {
+    VTR_ASSERT_SAFE(valid_pin_id(id));
+
+    return pin_atom_pin_[id];
+}
+
+/*
+ * Nets
+ */
+AtomNetId APNetlist::net_atom_net(const APNetId id) const {
+    VTR_ASSERT_SAFE(valid_net_id(id));
+
+    return net_atom_net_[id];
+}
+
+/*
  * Mutators
  */
-APBlockId APNetlist::create_block(const std::string& name, const t_pack_molecule* mol) {
+APBlockId APNetlist::create_block(const std::string& name, PackMoleculeId molecule_id) {
     APBlockId blk_id = Netlist::create_block(name);
 
     // Initialize the data
-    block_molecules_.insert(blk_id, mol);
+    block_molecules_.insert(blk_id, molecule_id);
     block_mobilities_.insert(blk_id, APBlockMobility::MOVEABLE);
     block_locs_.insert(blk_id, APFixedBlockLoc());
 
@@ -49,7 +68,7 @@ APBlockId APNetlist::create_block(const std::string& name, const t_pack_molecule
     VTR_ASSERT(validate_block_sizes());
 
     // Check post-conditions: values
-    VTR_ASSERT(block_molecule(blk_id) == mol);
+    VTR_ASSERT(block_molecule(blk_id) == molecule_id);
     VTR_ASSERT(block_mobility(blk_id) == APBlockMobility::MOVEABLE);
 
     return blk_id;
@@ -59,18 +78,18 @@ void APNetlist::set_block_loc(const APBlockId id, const APFixedBlockLoc& loc) {
     VTR_ASSERT_SAFE(valid_block_id(id));
 
     // Check that the location is fixed; if all dims are unfixed then it is not fixed.
-    if (loc.x == APFixedBlockLoc::UNFIXED_DIM &&
-        loc.y == APFixedBlockLoc::UNFIXED_DIM &&
-        loc.sub_tile == APFixedBlockLoc::UNFIXED_DIM &&
-        loc.layer_num == APFixedBlockLoc::UNFIXED_DIM)
+    if (loc.x == APFixedBlockLoc::UNFIXED_DIM
+        && loc.y == APFixedBlockLoc::UNFIXED_DIM
+        && loc.sub_tile == APFixedBlockLoc::UNFIXED_DIM
+        && loc.layer_num == APFixedBlockLoc::UNFIXED_DIM)
         return;
 
     // Ensure that the block is fixed to a single position on the grid (x, y, layer).
     // sub-tile is allowed to be unfixed.
-    VTR_ASSERT(loc.x != APFixedBlockLoc::UNFIXED_DIM &&
-               loc.y != APFixedBlockLoc::UNFIXED_DIM &&
-               loc.layer_num != APFixedBlockLoc::UNFIXED_DIM &&
-               "AP: Currently, AP assumes block is locked down to a single position on the device grid.");
+    VTR_ASSERT(loc.x != APFixedBlockLoc::UNFIXED_DIM
+               && loc.y != APFixedBlockLoc::UNFIXED_DIM
+               && loc.layer_num != APFixedBlockLoc::UNFIXED_DIM
+               && "AP: Currently, AP assumes block is locked down to a single position on the device grid.");
 
     block_locs_[id] = loc;
     block_mobilities_[id] = APBlockMobility::FIXED;
@@ -93,8 +112,11 @@ APPortId APNetlist::create_port(const APBlockId blk_id, const std::string& name,
     return port_id;
 }
 
-APPinId APNetlist::create_pin(const APPortId port_id, BitIndex port_bit, const APNetId net_id, const PinType pin_type_, bool is_const) {
+APPinId APNetlist::create_pin(const APPortId port_id, BitIndex port_bit, const APNetId net_id, const PinType pin_type_, const AtomPinId atom_pin_id, bool is_const) {
     APPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, is_const);
+
+    // Initialize the pin data.
+    pin_atom_pin_.insert(pin_id, atom_pin_id);
 
     // Check post-conditions: size
     VTR_ASSERT(validate_pin_sizes());
@@ -107,8 +129,11 @@ APPinId APNetlist::create_pin(const APPortId port_id, BitIndex port_bit, const A
     return pin_id;
 }
 
-APNetId APNetlist::create_net(const std::string& name) {
+APNetId APNetlist::create_net(const std::string& name, const AtomNetId atom_net_id) {
     APNetId net_id = Netlist::create_net(name);
+
+    // Initialize the net data.
+    net_atom_net_.insert(net_id, atom_net_id);
 
     // Check post-conditions: size
     VTR_ASSERT(validate_net_sizes());
@@ -132,12 +157,12 @@ void APNetlist::clean_ports_impl(const vtr::vector_map<APPortId, APPortId>& /*po
     // Unused
 }
 
-void APNetlist::clean_pins_impl(const vtr::vector_map<APPinId, APPinId>& /*pin_id_map*/) {
-    // Unused
+void APNetlist::clean_pins_impl(const vtr::vector_map<APPinId, APPinId>& pin_id_map) {
+    pin_atom_pin_ = clean_and_reorder_values(pin_atom_pin_, pin_id_map);
 }
 
-void APNetlist::clean_nets_impl(const vtr::vector_map<APNetId, APNetId>& /*net_id_map*/) {
-    // Unused
+void APNetlist::clean_nets_impl(const vtr::vector_map<APNetId, APNetId>& net_id_map) {
+    net_atom_net_ = clean_and_reorder_values(net_atom_net_, net_id_map);
 }
 
 void APNetlist::rebuild_block_refs_impl(const vtr::vector_map<APPinId, APPinId>& /*pin_id_map*/,
@@ -162,6 +187,12 @@ void APNetlist::shrink_to_fit_impl() {
     block_molecules_.shrink_to_fit();
     block_mobilities_.shrink_to_fit();
     block_locs_.shrink_to_fit();
+
+    // Pin data
+    pin_atom_pin_.shrink_to_fit();
+
+    // Net data
+    net_atom_net_.shrink_to_fit();
 }
 
 void APNetlist::remove_block_impl(const APBlockId /*blk_id*/) {
@@ -198,13 +229,14 @@ bool APNetlist::validate_port_sizes_impl(size_t /*num_ports*/) const {
     return true;
 }
 
-bool APNetlist::validate_pin_sizes_impl(size_t /*num_pins*/) const {
-    // No AP-specific pin data to check
+bool APNetlist::validate_pin_sizes_impl(size_t num_pins) const {
+    if (pin_atom_pin_.size() != num_pins)
+        return false;
     return true;
 }
 
-bool APNetlist::validate_net_sizes_impl(size_t /*num_nets*/) const {
-    // No AP-specific net data to check
+bool APNetlist::validate_net_sizes_impl(size_t num_nets) const {
+    if (net_atom_net_.size() != num_nets)
+        return false;
     return true;
 }
-

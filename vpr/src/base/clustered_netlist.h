@@ -1,5 +1,4 @@
-#ifndef CLUSTERED_NETLIST_H
-#define CLUSTERED_NETLIST_H
+#pragma once
 /**
  * @file
  * @brief This file defines the ClusteredNetlist class in the ClusteredContext
@@ -106,9 +105,6 @@
  *
  */
 #include "vpr_types.h"
-#include "vpr_utils.h"
-
-#include "vtr_util.h"
 
 #include "netlist.h"
 #include "clustered_netlist_fwd.h"
@@ -343,5 +339,3 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 
     //Nets
 };
-
-#endif

@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -18,14 +19,11 @@
  * unused by Analytical Placement are ignored.
  */
 
-#pragma once
-
 #include <string>
+#include "atom_netlist_fwd.h"
 #include "netlist.h"
 #include "ap_netlist_fwd.h"
-
-// Forward declarations
-class t_pack_molecule;
+#include "prepack.h"
 
 /**
  * @brief Struct to store fixed block location information
@@ -37,10 +35,10 @@ class t_pack_molecule;
  */
 struct APFixedBlockLoc {
     // Value that represents an unfixed dimension.
-    static constexpr int UNFIXED_DIM = -1;
+    static constexpr float UNFIXED_DIM = -1;
     // The dimensions to fix.
-    int x = UNFIXED_DIM;
-    int y = UNFIXED_DIM;
+    float x = UNFIXED_DIM;
+    float y = UNFIXED_DIM;
     int layer_num = UNFIXED_DIM;
     int sub_tile = UNFIXED_DIM;
 };
@@ -51,8 +49,8 @@ struct APFixedBlockLoc {
  *       block ids.
  */
 enum class APBlockMobility : bool {
-    MOVEABLE,   // The block is not constrained in any dimension.
-    FIXED       // The block is fixed.
+    MOVEABLE, // The block is not constrained in any dimension.
+    FIXED     // The block is fixed.
 };
 
 /**
@@ -64,7 +62,7 @@ enum class APBlockMobility : bool {
  * APBlocks. These need not have physical meaning.
  */
 class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
-public:
+  public:
     /**
      * @brief Constructs a netlist
      *
@@ -72,18 +70,19 @@ public:
      *  @param id   A unique identifier for the netlist (e.g. a secure digest of
      *              the input file)
      */
-    APNetlist(std::string name = "", std::string id = "") : Netlist(name, id) {}
+    APNetlist(std::string name = "", std::string id = "")
+        : Netlist(name, id) {}
 
     APNetlist(const APNetlist& rhs) = default;
     APNetlist& operator=(const APNetlist& rhs) = default;
 
-public: // Public Accessors
+  public: // Public Accessors
     /*
      * Blocks
      */
 
     /// @brief Returns the molecule that this block represents.
-    const t_pack_molecule* block_molecule(const APBlockId id) const;
+    PackMoleculeId block_molecule(const APBlockId id) const;
 
     /// @brief Returns the mobility of this block.
     APBlockMobility block_mobility(const APBlockId id) const;
@@ -92,7 +91,21 @@ public: // Public Accessors
     ///        This method should not be used if the block is moveable.
     const APFixedBlockLoc& block_loc(const APBlockId id) const;
 
-public: // Public Mutators
+    /*
+     * Pins
+     */
+
+    /// @brief Returns the atom pin that corresponds with the given AP pin.
+    AtomPinId pin_atom_pin(const APPinId id) const;
+
+    /*
+     * Nets
+     */
+
+    /// @brief Returns the atom net that corresponds with the given AP net.
+    AtomNetId net_atom_net(const APNetId id) const;
+
+  public: // Public Mutators
     /*
      * Note: all create_*() functions will silently return the appropriate ID
      * if it has already been created.
@@ -104,7 +117,7 @@ public: // Public Mutators
      *  @param name The unique name of the block
      *  @param mol  The molecule the block represents
      */
-    APBlockId create_block(const std::string& name, const t_pack_molecule* mol);
+    APBlockId create_block(const std::string& name, PackMoleculeId molecule_id);
 
     /**
      * @brief Fixes a block at the given location
@@ -131,19 +144,21 @@ public: // Public Mutators
      *  @param port_bit The bit index of the pin in the port
      *  @param net_id   The net the pin drives/sinks
      *  @param pin_type The type of the pin (driver/sink)
+     *  @param atom_pin_id The atom pin that this pin is modeling.
      *  @param is_const Indicates whether the pin holds a constant value (e.g.
      *                  vcc/gnd)
      */
-    APPinId create_pin(const APPortId port_id, BitIndex port_bit, const APNetId net_id, const PinType pin_type, bool is_const = false);
+    APPinId create_pin(const APPortId port_id, BitIndex port_bit, const APNetId net_id, const PinType pin_type, const AtomPinId atom_pin_id, bool is_const = false);
 
     /**
      * @brief Create an empty, or return an existing net in the netlist
      *
      *  @param name The unique name of the net
+     *  @param atom_net_id The atom net that this net is modeling.
      */
-    APNetId create_net(const std::string& name);
+    APNetId create_net(const std::string& name, const AtomNetId atom_net_id);
 
-private: // Private Members
+  private: // Private Members
     /*
      * Netlist compression / optimization
      */
@@ -180,13 +195,16 @@ private: // Private Members
     bool validate_pin_sizes_impl(size_t num_pins) const override;
     bool validate_net_sizes_impl(size_t num_nets) const override;
 
-private: // Private Data
+  private: // Private Data
     /// @brief Molecule of each block
-    vtr::vector_map<APBlockId, const t_pack_molecule*> block_molecules_;
+    vtr::vector_map<APBlockId, PackMoleculeId> block_molecules_;
     /// @brief Type of each block
     vtr::vector_map<APBlockId, APBlockMobility> block_mobilities_;
     /// @brief Location of each block (if fixed).
     ///        NOTE: This vector will likely be quite sparse.
     vtr::vector_map<APBlockId, APFixedBlockLoc> block_locs_;
+    /// @brief Atom pin associated with each AP pin.
+    vtr::vector_map<APPinId, AtomPinId> pin_atom_pin_;
+    /// @brief Atom net associated with each AP net.
+    vtr::vector_map<APNetId, AtomNetId> net_atom_net_;
 };
-

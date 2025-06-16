@@ -1,9 +1,7 @@
-#ifndef VPR_ERROR_H
-#define VPR_ERROR_H
+#pragma once
 
 #include <cstdarg>
 #include <string>
-#include <unordered_set>
 
 #include "vtr_error.h"
 
@@ -78,12 +76,12 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
 // information, so we prefer to use it if possible
 #define VPR_THROW_FUNCTION __func__
 #ifdef __GNUC__
-#    ifdef __GNUC_MINOR__
-#        if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
-#            undef VPR_THROW_FUNCTION
-#            define VPR_THROW_FUNCTION __PRETTY_FUNCTION__
-#        endif
-#    endif
+#ifdef __GNUC_MINOR__
+#if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
+#undef VPR_THROW_FUNCTION
+#define VPR_THROW_FUNCTION __PRETTY_FUNCTION__
+#endif
+#endif
 #endif
 
 /*
@@ -124,5 +122,3 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
     do {                                                                                    \
         vpr_throw_opt(type, VPR_THROW_FUNCTION, __func__, __FILE__, __LINE__, __VA_ARGS__); \
     } while (false)
-
-#endif

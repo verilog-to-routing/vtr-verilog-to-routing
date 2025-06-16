@@ -1,5 +1,5 @@
-#ifndef ATOM_NETLIST_UTILS_H
-#define ATOM_NETLIST_UTILS_H
+#pragma once
+
 #include <cstdio>
 #include <set>
 #include "atom_netlist.h"
@@ -9,16 +9,18 @@
  * @brief Useful utilities for working with the AtomNetlist class
  */
 
+class LogicalModels;
+
 /**
  * @brief Walk through the netlist detecting constant generators
  *
  * @note  Initial constant generators (e.g. vcc/gnd) should have already
  *        been marked on the netlist.
  */
-int mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity);
+int mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, const LogicalModels& models, int verbosity);
 
 ///@brief Modifies the netlist by absorbing buffer LUTs
-void absorb_buffer_luts(AtomNetlist& netlist, int verbosity);
+void absorb_buffer_luts(AtomNetlist& netlist, const LogicalModels& models, int verbosity);
 
 /*
  * Modify the netlist by sweeping away unused nets/blocks/inputs
@@ -35,16 +37,17 @@ size_t sweep_iterative(AtomNetlist& netlist,
                        bool should_sweep_dangling_nets,
                        bool should_sweep_constant_primary_outputs,
                        e_const_gen_inference const_gen_inference_method,
+                       const LogicalModels& models,
                        int verbosity);
 
 ///@brief Sweeps blocks that have no fanout
-size_t sweep_blocks(AtomNetlist& netlist, int verbosity);
+size_t sweep_blocks(AtomNetlist& netlist, const LogicalModels& models, int verbosity);
 
 ///@brief Sweeps nets with no drivers and/or no sinks
 size_t sweep_nets(AtomNetlist& netlist, int verbosity);
 
 ///@brief Sweeps primary-inputs with no fanout
-size_t sweep_inputs(AtomNetlist& netlist, int verbosity);
+size_t sweep_inputs(AtomNetlist& netlist, const LogicalModels& models, int verbosity);
 
 ///@brief Sweeps primary-outputs with no fanin
 size_t sweep_outputs(AtomNetlist& netlist, int verbosity);
@@ -54,9 +57,6 @@ size_t sweep_constant_primary_outputs(AtomNetlist& netlist, int verbosity);
 /*
  * Truth-table operations
  */
-
-///@brief Returns true if the specified block is a logical buffer
-bool is_buffer(const AtomNetlist& netlist, const AtomBlockId blk);
 
 /**
  * @brief Deterimine whether a truth table encodes the logic functions 'On' set (returns true)
@@ -96,11 +96,8 @@ std::vector<size_t> cube_to_minterms(std::vector<vtr::LogicValue> cube);
 /*
  * Print the netlist for debugging
  */
-void print_netlist_as_blif(std::string filename, const AtomNetlist& netlist);
-void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist);
-
-///@brief Returns a user-friendly architectural identifier for the specified atom pin
-std::string atom_pin_arch_name(const AtomNetlist& netlist, const AtomPinId pin);
+void print_netlist_as_blif(std::string filename, const AtomNetlist& netlist, const LogicalModels& models);
+void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalModels& models);
 
 /*
  * Identify all clock nets
@@ -112,7 +109,7 @@ std::string atom_pin_arch_name(const AtomNetlist& netlist, const AtomPinId pin);
  * @note The returned nets may be logically equivalent (e.g. driven by buffers
  *       connected to a common net)
  */
-std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist);
+std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist, const LogicalModels& models);
 
 /**
  * @brief Returns the set of pins which logically drive unique clocks in the netlist
@@ -121,8 +118,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
  *       so logically unique should be viewed as true only to the extent of VPR's
  *       understanding
  */
-std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist);
+std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist, const LogicalModels& models);
 
 ///@brief Prints out information about netlist clocks
-void print_netlist_clock_info(const AtomNetlist& netlist);
-#endif
+void print_netlist_clock_info(const AtomNetlist& netlist, const LogicalModels& models);

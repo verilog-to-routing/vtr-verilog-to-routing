@@ -1,12 +1,12 @@
-#ifndef VTR_MEMORY_H
-#define VTR_MEMORY_H
+#pragma once
+
 #include <cstddef>
 #include <cstdlib>
 #include <new>
 
 #ifdef _WIN32
-#    include <cerrno>
-#    include <malloc.h>
+#include <cerrno>
+#include <malloc.h>
 #endif
 
 namespace vtr {
@@ -147,5 +147,3 @@ bool operator==(const aligned_allocator<T>&, const aligned_allocator<T>&) {
 }
 
 } // namespace vtr
-
-#endif

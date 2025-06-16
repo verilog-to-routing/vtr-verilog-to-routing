@@ -1,5 +1,4 @@
-#ifndef VPR_MOVE_UTILS_H
-#define VPR_MOVE_UTILS_H
+#pragma once
 
 #include "vpr_types.h"
 #include "move_transactions.h"
@@ -7,6 +6,8 @@
 
 class PlacerState;
 class BlkLocRegistry;
+class PlaceMacros;
+class PlacerCriticalities;
 namespace vtr {
 class RngContainer;
 }
@@ -97,7 +98,8 @@ struct t_range_limiters {
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
-                          const BlkLocRegistry& blk_loc_registry);
+                          const BlkLocRegistry& blk_loc_registry,
+                          const PlaceMacros& place_macros);
 
 /**
  * @brief Find the blocks that will be affected by a move of b_from to to_loc
@@ -110,7 +112,8 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected,
                                          ClusterBlockId b_from,
                                          t_pl_loc to,
-                                         const BlkLocRegistry& blk_loc_registry);
+                                         const BlkLocRegistry& blk_loc_registry,
+                                         const PlaceMacros& place_macros);
 
 e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                              ClusterBlockId b_from,
@@ -121,7 +124,8 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        const int imacro_from,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
-                                       const BlkLocRegistry& blk_loc_registry);
+                                       const BlkLocRegistry& blk_loc_registry,
+                                       const PlaceMacros& place_macros);
 
 e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                              const int imacro_from,
@@ -129,24 +133,28 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              const int imacro_to,
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
-                                             const BlkLocRegistry& blk_loc_registry);
+                                             const BlkLocRegistry& blk_loc_registry,
+                                             const PlaceMacros& pl_macros);
 
 e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,
                                       const int imacro,
                                       t_pl_offset swap_offset,
-                                      const BlkLocRegistry& blk_loc_registry);
+                                      const BlkLocRegistry& blk_loc_registry,
+                                      const PlaceMacros& place_macros);
 
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
                                                              const BlkLocRegistry& blk_loc_registry,
+                                                             const PlaceMacros& place_macros,
                                                              MoveAbortionLogger& move_abortion_logger);
 
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                             const int imacro,
                                             t_pl_offset swap_offset,
-                                            const BlkLocRegistry& blk_loc_registry);
+                                            const BlkLocRegistry& blk_loc_registry,
+                                            const PlaceMacros& place_macros);
 
 /**
  * @brief Check whether the "to" location is legal for the given "blk"
@@ -171,55 +179,46 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
 ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int& logical_blk_type_index,
                                      bool highly_crit_block,
+                                     const PlacerCriticalities* placer_criticalities,
                                      ClusterNetId* net_from,
                                      int* pin_from,
                                      const PlacerState& placer_state,
                                      vtr::RngContainer& rng);
 
 /**
- * Returns all movable clustered blocks with a specified logical block type.
- * @param blk_type Specifies the logical block block type.
- * @return A const reference to a vector containing all movable blocks with the specified logical block type.
- */
-const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type);
-
-/**
- * @brief Select a random block to be swapped with another block
- * 
- * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
- */
-ClusterBlockId pick_from_block(vtr::RngContainer& rng);
-
-/**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param logical_blk_type_index: the agent type of the moving block.
+ * @param logical_blk_type_index The logical type of the moving block. If a negative value is passed,
+ * the block is selected randomly from all movable blocks and not from a specific type.
+ * @param rng A random number generator used to select a random block.
+ * @param blk_loc_registry Contains movable blocks and movable blocks per type.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block(int logical_blk_type_index, vtr::RngContainer& rng);
+ClusterBlockId pick_from_block(int logical_blk_type_index,
+                               vtr::RngContainer& rng,
+                               const BlkLocRegistry& blk_loc_registry);
 
 /**
- * @brief Select a random highly critical block to be swapped with another block
- * 
- * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
- */
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
-                                               int& pin_from,
-                                               const PlacerState& placer_state,
-                                               vtr::RngContainer& rng);
-
-/**
- * @brief Find a block with a specific block type to be swapped with another block
+ * @brief Find a highly critical block with a specific block type to be swapped with another block.
  *
- *  @param logical_blk_type_index: the agent type of the moving block.
+ * @param net_from The clustered net id of the critical connection of the selected block by this function.
+ * To be filled by this function.
+ * @param pin_from The pin id of the critical connection of the  selected block by this function.
+ * To be filled by this function.
+ * @param logical_blk_type_index The logical type of the moving block. If a negative value is passed,
+ * the block is selected randomly from all movable blocks and not from a specific type.
+ * @param placer_state Used to access the current placement's info, e.g. block locations and if they are fixed.
+ * @param placer_criticalities Holds the clustered netlist connection criticalities.
+ * @param rng A random number generator used to select a random highly critical block.
  * 
- * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found.
  */
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                int logical_blk_type_index,
                                                const PlacerState& placer_state,
+                                               const PlacerCriticalities& placer_criticalities,
                                                vtr::RngContainer& rng);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
@@ -328,6 +327,7 @@ int find_empty_compatible_subtile(t_logical_block_type_ptr type,
  * is_median: true if this is called from find_to_loc_median
  * to_layer_num: the layer number of the new location (set by the caller)
  * search_for_empty: indicates that the returned location must be empty
+ * is_range_fixed: indicates that the search range is fixed and should not be adjusted
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              int delta_cx,
@@ -338,7 +338,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              int to_layer_num,
                                              bool search_for_empty,
                                              const BlkLocRegistry& blk_loc_registry,
-                                             vtr::RngContainer& rng);
+                                             vtr::RngContainer& rng,
+                                             const bool is_range_fixed);
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
@@ -434,24 +435,6 @@ int find_free_layer(t_logical_block_type_ptr logical_block,
 int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng);
 
 /**
- * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. set the layer min and max
- * based on the layers that have a valid BB.
- * @param tbb_vec
- * @return 3D bounding box
- */
-t_bb union_2d_bb(const std::vector<t_2D_bb>& tbb_vec);
-
-/**
- * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. Create the "num_edge" in a similar way. This data structure
- * stores how many blocks are on each edge of the BB. set the layer min and max based on the layers that have a valid BB.
- * @param num_edge_vec
- * @param bb_vec
- * @return num_edge, 3D bb
- */
-std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
-                                       const std::vector<t_2D_bb>& bb_vec);
-
-/**
  * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets
  * connected to the block share the same ID as the net ID passed to the placer_debug_net parameter of the command line,
  * then debugging information should be printed.
@@ -461,5 +444,3 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
  */
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          ClusterBlockId blk_id);
-
-#endif

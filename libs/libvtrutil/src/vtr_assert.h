@@ -1,6 +1,4 @@
-#ifndef VTR_ASSERT_H
-#define VTR_ASSERT_H
-
+#pragma once
 /**
  * @file
  * @brief The header vtr_assert.h defines useful assertion macros for VTR projects.
@@ -29,57 +27,57 @@
 
 // Set a default assertion level if none is specified
 #ifndef VTR_ASSERT_LEVEL
-#    define VTR_ASSERT_LEVEL 2
+#define VTR_ASSERT_LEVEL 2
 #endif
 
 // Enable the assertions based on the specified level
 #if VTR_ASSERT_LEVEL >= 4
-#    define VTR_ASSERT_DEBUG_ENABLED
+#define VTR_ASSERT_DEBUG_ENABLED
 #endif
 
 #if VTR_ASSERT_LEVEL >= 3
-#    define VTR_ASSERT_SAFE_ENABLED
+#define VTR_ASSERT_SAFE_ENABLED
 #endif
 
 #if VTR_ASSERT_LEVEL >= 2
-#    define VTR_ASSERT_ENABLED
+#define VTR_ASSERT_ENABLED
 #endif
 
 #if VTR_ASSERT_LEVEL >= 1
-#    define VTR_ASSERT_OPT_ENABLED
+#define VTR_ASSERT_OPT_ENABLED
 #endif
 
 // Define the user assertion macros
 #ifdef VTR_ASSERT_DEBUG_ENABLED
-#    define VTR_ASSERT_DEBUG(expr) VTR_ASSERT_IMPL(expr, nullptr)
-#    define VTR_ASSERT_DEBUG_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
+#define VTR_ASSERT_DEBUG(expr) VTR_ASSERT_IMPL(expr, nullptr)
+#define VTR_ASSERT_DEBUG_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
 #else
-#    define VTR_ASSERT_DEBUG(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
-#    define VTR_ASSERT_DEBUG_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
+#define VTR_ASSERT_DEBUG(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
+#define VTR_ASSERT_DEBUG_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
 #endif
 
 #ifdef VTR_ASSERT_SAFE_ENABLED
-#    define VTR_ASSERT_SAFE(expr) VTR_ASSERT_IMPL(expr, nullptr)
-#    define VTR_ASSERT_SAFE_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
+#define VTR_ASSERT_SAFE(expr) VTR_ASSERT_IMPL(expr, nullptr)
+#define VTR_ASSERT_SAFE_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
 #else
-#    define VTR_ASSERT_SAFE(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
-#    define VTR_ASSERT_SAFE_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
+#define VTR_ASSERT_SAFE(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
+#define VTR_ASSERT_SAFE_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
 #endif
 
 #ifdef VTR_ASSERT_ENABLED
-#    define VTR_ASSERT(expr) VTR_ASSERT_IMPL(expr, nullptr)
-#    define VTR_ASSERT_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
+#define VTR_ASSERT(expr) VTR_ASSERT_IMPL(expr, nullptr)
+#define VTR_ASSERT_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
 #else
-#    define VTR_ASSERT(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
-#    define VTR_ASSERT_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
+#define VTR_ASSERT(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
+#define VTR_ASSERT_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
 #endif
 
 #ifdef VTR_ASSERT_OPT_ENABLED
-#    define VTR_ASSERT_OPT(expr) VTR_ASSERT_IMPL(expr, nullptr)
-#    define VTR_ASSERT_OPT_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
+#define VTR_ASSERT_OPT(expr) VTR_ASSERT_IMPL(expr, nullptr)
+#define VTR_ASSERT_OPT_MSG(expr, msg) VTR_ASSERT_IMPL(expr, msg)
 #else
-#    define VTR_ASSERT_OPT(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
-#    define VTR_ASSERT_OPT_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
+#define VTR_ASSERT_OPT(expr) VTR_ASSERT_IMPL_NOP(expr, nullptr)
+#define VTR_ASSERT_OPT_MSG(expr, msg) VTR_ASSERT_IMPL_NOP(expr, msg)
 #endif
 
 /**
@@ -124,12 +122,12 @@
  */
 #define VTR_ASSERT_FUNCTION __func__
 #ifdef __GNUC__
-#    ifdef __GNUC_MINOR__
-#        if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
-#            undef VTR_ASSERT_FUNCTION
-#            define VTR_ASSERT_FUNCTION __PRETTY_FUNCTION__
-#        endif
-#    endif
+#ifdef __GNUC_MINOR__
+#if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
+#undef VTR_ASSERT_FUNCTION
+#define VTR_ASSERT_FUNCTION __PRETTY_FUNCTION__
+#endif
+#endif
 #endif
 
 namespace vtr {
@@ -147,5 +145,3 @@ namespace assert {
 [[noreturn]] void handle_assert(const char* expr, const char* file, unsigned int line, const char* function, const char* msg);
 } // namespace assert
 } // namespace vtr
-
-#endif //VTR_ASSERT_H

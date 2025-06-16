@@ -1,10 +1,8 @@
+#pragma once
 /*
  * Data types used to give architectural hints for the CAD algorithm
  */
-#ifndef CAD_TYPES_H
-#define CAD_TYPES_H
 
-#include "logic_types.h"
 #include "physical_types.h"
 
 struct t_pack_pattern_connections;
@@ -104,7 +102,7 @@ struct t_pack_patterns {
     std::vector<std::vector<t_pb_graph_pin*>> chain_root_pins;
 
     // default constructor initializing to an invalid pack pattern
-    t_pack_patterns() {
+    t_pack_patterns() noexcept {
         name = nullptr;
         index = -1;
         root_block = nullptr;
@@ -126,7 +124,5 @@ struct t_cluster_placement_primitive {
     t_pb_graph_node* pb_graph_node;
     bool valid;
     float base_cost;        /* cost independent of current status of packing */
-    float incremental_cost; /* cost dependant on current status of packing */
+    float incremental_cost; /* cost dependent on current status of packing */
 };
-
-#endif

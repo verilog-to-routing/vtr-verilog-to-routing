@@ -1,24 +1,23 @@
 #include <cstring>
 #include <cstdlib>
 #include <vector>
-#include <unordered_set>
 
 #include "echo_arch.h"
-#include "arch_types.h"
 #include "arch_util.h"
+#include "logic_types.h"
+#include "physical_types.h"
 #include "vtr_list.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
 #include "vtr_assert.h"
-
-using vtr::t_linked_vptr;
 
 /// @brief indices to lookup IPIN connection block switch name
 constexpr int ipin_cblock_switch_index_within_die = 0;
 constexpr int ipin_cblock_switch_index_between_dice = 1;
 
 void PrintArchInfo(FILE* Echo, const t_arch* arch);
-static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level);
+static void print_model(FILE* echo, const t_model& model);
+static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, const LogicalModels& models);
 static void PrintPb_types_recPower(FILE* Echo,
                                    const t_pb_type* pb_type,
                                    const char* tabs);
@@ -29,55 +28,21 @@ void EchoArch(const char* EchoFile,
               const std::vector<t_physical_tile_type>& PhysicalTileTypes,
               const std::vector<t_logical_block_type>& LogicalBlockTypes,
               const t_arch* arch) {
-    int i, j;
-    FILE* Echo;
-    t_model* cur_model;
-    t_model_ports* model_port;
-    t_linked_vptr* cur_vptr;
 
-    Echo = vtr::fopen(EchoFile, "w");
-    cur_model = nullptr;
+    FILE* Echo = vtr::fopen(EchoFile, "w");
 
     //Print all layout device switch/segment list info first
     PrintArchInfo(Echo, arch);
 
     //Models
     fprintf(Echo, "*************************************************\n");
-    for (j = 0; j < 2; j++) {
-        if (j == 0) {
-            fprintf(Echo, "Printing user models \n");
-            cur_model = arch->models;
-        } else if (j == 1) {
-            fprintf(Echo, "Printing library models \n");
-            cur_model = arch->model_library;
-        }
-        while (cur_model) {
-            fprintf(Echo, "Model: \"%s\"\n", cur_model->name);
-            model_port = cur_model->inputs;
-            while (model_port) {
-                fprintf(Echo, "\tInput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
-                        model_port->name, model_port->size,
-                        model_port->min_size);
-                model_port = model_port->next;
-            }
-            model_port = cur_model->outputs;
-            while (model_port) {
-                fprintf(Echo, "\tOutput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
-                        model_port->name, model_port->size,
-                        model_port->min_size);
-                model_port = model_port->next;
-            }
-            cur_vptr = cur_model->pb_types;
-            i = 0;
-            while (cur_vptr != nullptr) {
-                fprintf(Echo, "\tpb_type %d: \"%s\"\n", i,
-                        ((t_pb_type*)cur_vptr->data_vptr)->name);
-                cur_vptr = cur_vptr->next;
-                i++;
-            }
-
-            cur_model = cur_model->next;
-        }
+    fprintf(Echo, "Printing library models \n");
+    for (LogicalModelId model_id : arch->models.library_models()) {
+        print_model(Echo, arch->models.get_model(model_id));
+    }
+    fprintf(Echo, "Printing user models \n");
+    for (LogicalModelId model_id : arch->models.user_models()) {
+        print_model(Echo, arch->models.get_model(model_id));
     }
     fprintf(Echo, "*************************************************\n\n");
     fprintf(Echo, "*************************************************\n");
@@ -122,7 +87,7 @@ void EchoArch(const char* EchoFile,
 
     for (auto& LogicalBlock : LogicalBlockTypes) {
         if (LogicalBlock.pb_type) {
-            PrintPb_types_rec(Echo, LogicalBlock.pb_type, 2);
+            PrintPb_types_rec(Echo, LogicalBlock.pb_type, 2, arch->models);
         }
         fprintf(Echo, "\n");
     }
@@ -297,7 +262,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
                 int num_layers = (int)layout.layers.size();
                 if (num_layers > 1) {
                     fprintf(Echo, "\t\t\t\ttype unidir mux_name for between two dice connections: %s\n",
-                            arch->switches[seg.arch_opin_between_dice_switch].name.c_str());
+                            arch->switches[seg.arch_inter_die_switch].name.c_str());
                 }
             }
         } else { //Should be bidir
@@ -371,71 +336,89 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     fprintf(Echo, "*************************************************\n");
     fprintf(Echo, "Clock:\n");
     if (arch->clocks) {
-        for (int i = 0; i < arch->clocks->num_global_clocks; i++) {
-            if (arch->clocks->clock_inf[i].autosize_buffer) {
-                fprintf(Echo, "\tClock[%d]: buffer_size auto C_wire %e", i + 1,
-                        arch->clocks->clock_inf->C_wire);
+        for (size_t i = 0; i < arch->clocks->size(); i++) {
+            if ((*arch->clocks)[i].autosize_buffer) {
+                fprintf(Echo, "\tClock[%zu]: buffer_size auto C_wire %e", i + 1,
+                        (*arch->clocks)[i].C_wire);
             } else {
-                fprintf(Echo, "\tClock[%d]: buffer_size %e C_wire %e", i + 1,
-                        arch->clocks->clock_inf[i].buffer_size,
-                        arch->clocks->clock_inf[i].C_wire);
+                fprintf(Echo, "\tClock[%zu]: buffer_size %e C_wire %e", i + 1,
+                        (*arch->clocks)[i].buffer_size,
+                        (*arch->clocks)[i].C_wire);
             }
             fprintf(Echo, "\t\t\t\tstat_prob %f switch_density %f period %e",
-                    arch->clocks->clock_inf[i].prob,
-                    arch->clocks->clock_inf[i].dens,
-                    arch->clocks->clock_inf[i].period);
+                    (*arch->clocks)[i].prob,
+                    (*arch->clocks)[i].dens,
+                    (*arch->clocks)[i].period);
         }
     }
 
     fprintf(Echo, "*************************************************\n\n");
 }
 
-static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level) {
-    char* tabs;
-
-    tabs = (char*)vtr::malloc((level + 1) * sizeof(char));
-    for (int i = 0; i < level; i++) {
-        tabs[i] = '\t';
+static void print_model(FILE* echo, const t_model& model) {
+    fprintf(echo, "Model: \"%s\"\n", model.name);
+    t_model_ports* input_model_port = model.inputs;
+    while (input_model_port) {
+        fprintf(echo, "\tInput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
+                input_model_port->name, input_model_port->size,
+                input_model_port->min_size);
+        input_model_port = input_model_port->next;
     }
-    tabs[level] = '\0';
+    t_model_ports* output_model_port = model.outputs;
+    while (output_model_port) {
+        fprintf(echo, "\tOutput Ports: \"%s\" \"%d\" min_size=\"%d\"\n",
+                output_model_port->name, output_model_port->size,
+                output_model_port->min_size);
+        output_model_port = output_model_port->next;
+    }
+    vtr::t_linked_vptr* cur_vptr = model.pb_types;
+    int i = 0;
+    while (cur_vptr != nullptr) {
+        fprintf(echo, "\tpb_type %d: \"%s\"\n", i,
+                ((t_pb_type*)cur_vptr->data_vptr)->name);
+        cur_vptr = cur_vptr->next;
+        i++;
+    }
+}
 
-    fprintf(Echo, "%spb_type name: %s\n", tabs, pb_type->name);
-    fprintf(Echo, "%s\tblif_model: %s\n", tabs, pb_type->blif_model);
-    fprintf(Echo, "%s\tclass_type: %d\n", tabs, pb_type->class_type);
-    fprintf(Echo, "%s\tnum_modes: %d\n", tabs, pb_type->num_modes);
-    fprintf(Echo, "%s\tnum_ports: %d\n", tabs, pb_type->num_ports);
+static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, const LogicalModels& models) {
+    std::string tabs = std::string(level, '\t');
+
+    fprintf(Echo, "%spb_type name: %s\n", tabs.c_str(), pb_type->name);
+    fprintf(Echo, "%s\tblif_model: %s\n", tabs.c_str(), pb_type->blif_model);
+    fprintf(Echo, "%s\tclass_type: %d\n", tabs.c_str(), pb_type->class_type);
+    fprintf(Echo, "%s\tnum_modes: %d\n", tabs.c_str(), pb_type->num_modes);
+    fprintf(Echo, "%s\tnum_ports: %d\n", tabs.c_str(), pb_type->num_ports);
     for (int i = 0; i < pb_type->num_ports; i++) {
-        fprintf(Echo, "%s\tport %s type %d num_pins %d\n", tabs,
+        fprintf(Echo, "%s\tport %s type %d num_pins %d\n", tabs.c_str(),
                 pb_type->ports[i].name, pb_type->ports[i].type,
                 pb_type->ports[i].num_pins);
     }
 
     if (pb_type->num_modes > 0) { /*one or more modes*/
         for (int i = 0; i < pb_type->num_modes; i++) {
-            fprintf(Echo, "%s\tmode %s:\n", tabs, pb_type->modes[i].name);
+            fprintf(Echo, "%s\tmode %s:\n", tabs.c_str(), pb_type->modes[i].name);
             for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 PrintPb_types_rec(Echo, &pb_type->modes[i].pb_type_children[j],
-                                  level + 2);
+                                  level + 2, models);
             }
             for (int j = 0; j < pb_type->modes[i].num_interconnect; j++) {
-                fprintf(Echo, "%s\t\tinterconnect %d %s %s\n", tabs,
+                fprintf(Echo, "%s\t\tinterconnect %d %s %s\n", tabs.c_str(),
                         pb_type->modes[i].interconnect[j].type,
                         pb_type->modes[i].interconnect[j].input_string,
                         pb_type->modes[i].interconnect[j].output_string);
-                for (int k = 0;
-                     k < pb_type->modes[i].interconnect[j].num_annotations;
-                     k++) {
-                    fprintf(Echo, "%s\t\t\tannotation %s %s %d: %s\n", tabs,
-                            pb_type->modes[i].interconnect[j].annotations[k].input_pins,
-                            pb_type->modes[i].interconnect[j].annotations[k].output_pins,
-                            pb_type->modes[i].interconnect[j].annotations[k].format,
-                            pb_type->modes[i].interconnect[j].annotations[k].value[0]);
+                for (const t_pin_to_pin_annotation& annotation : pb_type->modes[i].interconnect[j].annotations) {
+                    fprintf(Echo, "%s\t\t\tannotation %s %s %d: %s\n", tabs.c_str(),
+                            annotation.input_pins,
+                            annotation.output_pins,
+                            annotation.format,
+                            annotation.annotation_entries[0].second.c_str());
                 }
                 //Print power info for interconnects
                 if (pb_type->modes[i].interconnect[j].interconnect_power) {
                     if (pb_type->modes[i].interconnect[j].interconnect_power->power_usage.dynamic
                         || pb_type->modes[i].interconnect[j].interconnect_power->power_usage.leakage) {
-                        fprintf(Echo, "%s\t\t\tpower %e %e\n", tabs,
+                        fprintf(Echo, "%s\t\t\tpower %e %e\n", tabs.c_str(),
                                 pb_type->modes[i].interconnect[j].interconnect_power->power_usage.dynamic,
                                 pb_type->modes[i].interconnect[j].interconnect_power->power_usage.leakage);
                     }
@@ -447,24 +430,24 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level) {
          * I/O has no annotations to be displayed
          * All other library or user models may have delays specificied, e.g. Tsetup and Tcq
          * Display the additional information*/
-        if (strcmp(pb_type->model->name, MODEL_NAMES)
-            && strcmp(pb_type->model->name, MODEL_INPUT)
-            && strcmp(pb_type->model->name, MODEL_OUTPUT)) {
-            for (int k = 0; k < pb_type->num_annotations; k++) {
-                fprintf(Echo, "%s\t\t\tannotation %s %s %s %d: %s\n", tabs,
-                        pb_type->annotations[k].clock,
-                        pb_type->annotations[k].input_pins,
-                        pb_type->annotations[k].output_pins,
-                        pb_type->annotations[k].format,
-                        pb_type->annotations[k].value[0]);
+        std::string pb_type_model_name = models.get_model(pb_type->model_id).name;
+        if (pb_type_model_name != LogicalModels::MODEL_NAMES
+            && pb_type_model_name != LogicalModels::MODEL_INPUT
+            && pb_type_model_name != LogicalModels::MODEL_OUTPUT) {
+            for (const t_pin_to_pin_annotation& annotation : pb_type->annotations) {
+                fprintf(Echo, "%s\t\t\tannotation %s %s %s %d: %s\n", tabs.c_str(),
+                        annotation.clock,
+                        annotation.input_pins,
+                        annotation.output_pins,
+                        annotation.format,
+                        annotation.annotation_entries[0].second.c_str());
             }
         }
     }
 
     if (pb_type->pb_type_power) {
-        PrintPb_types_recPower(Echo, pb_type, tabs);
+        PrintPb_types_recPower(Echo, pb_type, tabs.c_str());
     }
-    free(tabs);
 }
 
 //Added May 2013 Daniel Chen, help dump arch info after loading from XML

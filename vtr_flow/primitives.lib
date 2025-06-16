@@ -1,0 +1,370 @@
+/**
+ * @file
+ * @author  Alex Singer
+ * @date    May 2025
+ * @brief A skeleton liberty library used to import the timing connectivity of a
+ *        post-synthesis netlist (from VTR) into OpenSTA.
+ *
+ * This file contains just enough information to allow OpenSTA to use a provided
+ * SDF file for timing analysis of the netlist.
+ *
+ * This file only defines the primitives that VPR defines as "library models".
+ * This includes LUTs (.names) and Flip-Flops (.latch). For user models (the
+ * models defined in the "models" section of the architecture description file),
+ * one should create another liberty file.
+ */
+
+library (VTRPrimitives) {
+
+    /* General Attributes */
+    delay_model             		: table_lookup;
+
+    /* Units Attributes */
+    time_unit               		: "1ns";
+
+    /* Threshold Definitions */
+    /* These are the default values according to the Liberty User Manual */
+    slew_lower_threshold_pct_fall 	: 20.00 ;
+    slew_lower_threshold_pct_rise 	: 20.00 ;
+    slew_upper_threshold_pct_fall 	: 80.00 ;
+    slew_upper_threshold_pct_rise 	: 80.00 ;
+    input_threshold_pct_fall      	: 50.00 ;
+    input_threshold_pct_rise      	: 50.00 ;
+    output_threshold_pct_fall     	: 50.00 ;
+    output_threshold_pct_rise     	: 50.00 ;
+
+    /* Bus types used for the LUT cells to allow their inputs to be arrays.*/
+    type (BUS4) {
+        base_type: array;
+        data_type: bit;
+        bit_width: 4;
+        bit_from: 3;
+        bit_to: 0;
+    }
+    type (BUS5) {
+        base_type: array;
+        data_type: bit;
+        bit_width: 5;
+        bit_from: 4;
+        bit_to: 0;
+    }
+    type (BUS6) {
+        base_type: array;
+        data_type: bit;
+        bit_width: 6;
+        bit_from: 5;
+        bit_to: 0;
+    }
+    type (BUS16) {
+        base_type: array;
+        data_type: bit;
+        bit_width: 16;
+        bit_from: 15;
+        bit_to: 0;
+    }
+    type (BUS32) {
+        base_type: array;
+        data_type: bit;
+        bit_width: 32;
+        bit_from: 31;
+        bit_to: 0;
+    }
+    type (BUS64) {
+        base_type: array;
+        data_type: bit;
+        bit_width: 64;
+        bit_from: 63;
+        bit_to: 0;
+    }
+
+    /**
+     * @brief FPGA interconnect module. This cell acts as a wire in the post-
+     *        implementation netlist to add delays on connections between
+     *        primitives (due to routing delays).
+     *
+     *  INPUTS:
+     *      datain
+     *  OUPUTS:
+     *      dataout
+     */
+    cell (fpga_interconnect) {
+        pin (datain) {
+            direction: input;
+        }
+        pin (dataout) {
+            direction: output;
+            function: "datain";
+
+            timing() {
+                related_pin: "datain";
+                timing_sense: positive_unate;
+
+                cell_fall(scalar) {
+                    values("0.0");
+                }
+                cell_rise(scalar) {
+                    values("0.0");
+                }
+                fall_transition(scalar) {
+                    values("0.0");
+                }
+                rise_transition(scalar) {
+                    values("0.0");
+                }
+            }
+        }
+    }
+
+    /**
+     * @brief 4-input LUT module.
+     *
+     *  INPUTS:
+     *      in:
+     *          The input pins of the LUT, as an array.
+     *      mask:
+     *          The LUT mask that defines the output of the LUT as a function
+     *          of the input. mask[0] is the output if all the inputs are 0, and
+     *          mask[2^k - 1] is the output if all the inputs are 1.
+     *  OUPUTS:
+     *      out
+     */
+    cell (LUT_4) {
+        bus (mask) {
+            bus_type: "BUS16";
+            direction: input;
+        }
+        bus (in) {
+            bus_type: "BUS4";
+            direction: input;
+        }
+        pin (out) {
+            direction: output;
+            function: "(mask[0] & !in[0] & !in[1] & !in[2] & !in[3]) | (mask[1] & in[0] & !in[1] & !in[2] & !in[3]) | (mask[2] & !in[0] & in[1] & !in[2] & !in[3]) | (mask[3] & in[0] & in[1] & !in[2] & !in[3]) | (mask[4] & !in[0] & !in[1] & in[2] & !in[3]) | (mask[5] & in[0] & !in[1] & in[2] & !in[3]) | (mask[6] & !in[0] & in[1] & in[2] & !in[3]) | (mask[7] & in[0] & in[1] & in[2] & !in[3]) | (mask[8] & !in[0] & !in[1] & !in[2] & in[3]) | (mask[9] & in[0] & !in[1] & !in[2] & in[3]) | (mask[10] & !in[0] & in[1] & !in[2] & in[3]) | (mask[11] & in[0] & in[1] & !in[2] & in[3]) | (mask[12] & !in[0] & !in[1] & in[2] & in[3]) | (mask[13] & in[0] & !in[1] & in[2] & in[3]) | (mask[14] & !in[0] & in[1] & in[2] & in[3]) | (mask[15] & in[0] & in[1] & in[2] & in[3])";
+
+            timing() {
+                related_pin: "in";
+                timing_sense: non_unate;
+
+                cell_fall(scalar) {
+                    values("0.0");
+                }
+                cell_rise(scalar) {
+                    values("0.0");
+                }
+                fall_transition(scalar) {
+                    values("0.0");
+                }
+                rise_transition(scalar) {
+                    values("0.0");
+                }
+            }
+        }
+    }
+
+    /**
+     * @brief 5-input LUT module.
+     *
+     *  INPUTS:
+     *      in:
+     *          The input pins of the LUT, as an array.
+     *      mask:
+     *          The LUT mask that defines the output of the LUT as a function
+     *          of the input. mask[0] is the output if all the inputs are 0, and
+     *          mask[2^k - 1] is the output if all the inputs are 1.
+     *  OUPUTS:
+     *      out
+     */
+    cell (LUT_5) {
+        bus (mask) {
+            bus_type: "BUS32";
+            direction: input;
+        }
+        bus (in) {
+            bus_type: "BUS5";
+            direction: input;
+        }
+        pin (out) {
+            direction: output;
+            function: "(mask[0] & !in[0] & !in[1] & !in[2] & !in[3] & !in[4]) | (mask[1] & in[0] & !in[1] & !in[2] & !in[3] & !in[4]) | (mask[2] & !in[0] & in[1] & !in[2] & !in[3] & !in[4]) | (mask[3] & in[0] & in[1] & !in[2] & !in[3] & !in[4]) | (mask[4] & !in[0] & !in[1] & in[2] & !in[3] & !in[4]) | (mask[5] & in[0] & !in[1] & in[2] & !in[3] & !in[4]) | (mask[6] & !in[0] & in[1] & in[2] & !in[3] & !in[4]) | (mask[7] & in[0] & in[1] & in[2] & !in[3] & !in[4]) | (mask[8] & !in[0] & !in[1] & !in[2] & in[3] & !in[4]) | (mask[9] & in[0] & !in[1] & !in[2] & in[3] & !in[4]) | (mask[10] & !in[0] & in[1] & !in[2] & in[3] & !in[4]) | (mask[11] & in[0] & in[1] & !in[2] & in[3] & !in[4]) | (mask[12] & !in[0] & !in[1] & in[2] & in[3] & !in[4]) | (mask[13] & in[0] & !in[1] & in[2] & in[3] & !in[4]) | (mask[14] & !in[0] & in[1] & in[2] & in[3] & !in[4]) | (mask[15] & in[0] & in[1] & in[2] & in[3] & !in[4]) | (mask[16] & !in[0] & !in[1] & !in[2] & !in[3] & in[4]) | (mask[17] & in[0] & !in[1] & !in[2] & !in[3] & in[4]) | (mask[18] & !in[0] & in[1] & !in[2] & !in[3] & in[4]) | (mask[19] & in[0] & in[1] & !in[2] & !in[3] & in[4]) | (mask[20] & !in[0] & !in[1] & in[2] & !in[3] & in[4]) | (mask[21] & in[0] & !in[1] & in[2] & !in[3] & in[4]) | (mask[22] & !in[0] & in[1] & in[2] & !in[3] & in[4]) | (mask[23] & in[0] & in[1] & in[2] & !in[3] & in[4]) | (mask[24] & !in[0] & !in[1] & !in[2] & in[3] & in[4]) | (mask[25] & in[0] & !in[1] & !in[2] & in[3] & in[4]) | (mask[26] & !in[0] & in[1] & !in[2] & in[3] & in[4]) | (mask[27] & in[0] & in[1] & !in[2] & in[3] & in[4]) | (mask[28] & !in[0] & !in[1] & in[2] & in[3] & in[4]) | (mask[29] & in[0] & !in[1] & in[2] & in[3] & in[4]) | (mask[30] & !in[0] & in[1] & in[2] & in[3] & in[4]) | (mask[31] & in[0] & in[1] & in[2] & in[3] & in[4])";
+
+            timing() {
+                related_pin: "in";
+                timing_sense: non_unate;
+
+                cell_fall(scalar) {
+                    values("0.0");
+                }
+                cell_rise(scalar) {
+                    values("0.0");
+                }
+                fall_transition(scalar) {
+                    values("0.0");
+                }
+                rise_transition(scalar) {
+                    values("0.0");
+                }
+            }
+        }
+    }
+
+    /**
+     * @brief 6-input LUT module.
+     *
+     *  INPUTS:
+     *      in:
+     *          The input pins of the LUT, as an array.
+     *      mask:
+     *          The LUT mask that defines the output of the LUT as a function
+     *          of the input. mask[0] is the output if all the inputs are 0, and
+     *          mask[2^k - 1] is the output if all the inputs are 1.
+     *  OUPUTS:
+     *      out
+     */
+    cell (LUT_6) {
+        bus (mask) {
+            bus_type: "BUS64";
+            direction: input;
+        }
+        bus (in) {
+            bus_type: "BUS6";
+            direction: input;
+        }
+        pin (out) {
+            direction: output;
+            function: "(mask[0] & !in[0] & !in[1] & !in[2] & !in[3] & !in[4] & !in[5]) | (mask[1] & in[0] & !in[1] & !in[2] & !in[3] & !in[4] & !in[5]) | (mask[2] & !in[0] & in[1] & !in[2] & !in[3] & !in[4] & !in[5]) | (mask[3] & in[0] & in[1] & !in[2] & !in[3] & !in[4] & !in[5]) | (mask[4] & !in[0] & !in[1] & in[2] & !in[3] & !in[4] & !in[5]) | (mask[5] & in[0] & !in[1] & in[2] & !in[3] & !in[4] & !in[5]) | (mask[6] & !in[0] & in[1] & in[2] & !in[3] & !in[4] & !in[5]) | (mask[7] & in[0] & in[1] & in[2] & !in[3] & !in[4] & !in[5]) | (mask[8] & !in[0] & !in[1] & !in[2] & in[3] & !in[4] & !in[5]) | (mask[9] & in[0] & !in[1] & !in[2] & in[3] & !in[4] & !in[5]) | (mask[10] & !in[0] & in[1] & !in[2] & in[3] & !in[4] & !in[5]) | (mask[11] & in[0] & in[1] & !in[2] & in[3] & !in[4] & !in[5]) | (mask[12] & !in[0] & !in[1] & in[2] & in[3] & !in[4] & !in[5]) | (mask[13] & in[0] & !in[1] & in[2] & in[3] & !in[4] & !in[5]) | (mask[14] & !in[0] & in[1] & in[2] & in[3] & !in[4] & !in[5]) | (mask[15] & in[0] & in[1] & in[2] & in[3] & !in[4] & !in[5]) | (mask[16] & !in[0] & !in[1] & !in[2] & !in[3] & in[4] & !in[5]) | (mask[17] & in[0] & !in[1] & !in[2] & !in[3] & in[4] & !in[5]) | (mask[18] & !in[0] & in[1] & !in[2] & !in[3] & in[4] & !in[5]) | (mask[19] & in[0] & in[1] & !in[2] & !in[3] & in[4] & !in[5]) | (mask[20] & !in[0] & !in[1] & in[2] & !in[3] & in[4] & !in[5]) | (mask[21] & in[0] & !in[1] & in[2] & !in[3] & in[4] & !in[5]) | (mask[22] & !in[0] & in[1] & in[2] & !in[3] & in[4] & !in[5]) | (mask[23] & in[0] & in[1] & in[2] & !in[3] & in[4] & !in[5]) | (mask[24] & !in[0] & !in[1] & !in[2] & in[3] & in[4] & !in[5]) | (mask[25] & in[0] & !in[1] & !in[2] & in[3] & in[4] & !in[5]) | (mask[26] & !in[0] & in[1] & !in[2] & in[3] & in[4] & !in[5]) | (mask[27] & in[0] & in[1] & !in[2] & in[3] & in[4] & !in[5]) | (mask[28] & !in[0] & !in[1] & in[2] & in[3] & in[4] & !in[5]) | (mask[29] & in[0] & !in[1] & in[2] & in[3] & in[4] & !in[5]) | (mask[30] & !in[0] & in[1] & in[2] & in[3] & in[4] & !in[5]) | (mask[31] & in[0] & in[1] & in[2] & in[3] & in[4] & !in[5]) | (mask[32] & !in[0] & !in[1] & !in[2] & !in[3] & !in[4] & in[5]) | (mask[33] & in[0] & !in[1] & !in[2] & !in[3] & !in[4] & in[5]) | (mask[34] & !in[0] & in[1] & !in[2] & !in[3] & !in[4] & in[5]) | (mask[35] & in[0] & in[1] & !in[2] & !in[3] & !in[4] & in[5]) | (mask[36] & !in[0] & !in[1] & in[2] & !in[3] & !in[4] & in[5]) | (mask[37] & in[0] & !in[1] & in[2] & !in[3] & !in[4] & in[5]) | (mask[38] & !in[0] & in[1] & in[2] & !in[3] & !in[4] & in[5]) | (mask[39] & in[0] & in[1] & in[2] & !in[3] & !in[4] & in[5]) | (mask[40] & !in[0] & !in[1] & !in[2] & in[3] & !in[4] & in[5]) | (mask[41] & in[0] & !in[1] & !in[2] & in[3] & !in[4] & in[5]) | (mask[42] & !in[0] & in[1] & !in[2] & in[3] & !in[4] & in[5]) | (mask[43] & in[0] & in[1] & !in[2] & in[3] & !in[4] & in[5]) | (mask[44] & !in[0] & !in[1] & in[2] & in[3] & !in[4] & in[5]) | (mask[45] & in[0] & !in[1] & in[2] & in[3] & !in[4] & in[5]) | (mask[46] & !in[0] & in[1] & in[2] & in[3] & !in[4] & in[5]) | (mask[47] & in[0] & in[1] & in[2] & in[3] & !in[4] & in[5]) | (mask[48] & !in[0] & !in[1] & !in[2] & !in[3] & in[4] & in[5]) | (mask[49] & in[0] & !in[1] & !in[2] & !in[3] & in[4] & in[5]) | (mask[50] & !in[0] & in[1] & !in[2] & !in[3] & in[4] & in[5]) | (mask[51] & in[0] & in[1] & !in[2] & !in[3] & in[4] & in[5]) | (mask[52] & !in[0] & !in[1] & in[2] & !in[3] & in[4] & in[5]) | (mask[53] & in[0] & !in[1] & in[2] & !in[3] & in[4] & in[5]) | (mask[54] & !in[0] & in[1] & in[2] & !in[3] & in[4] & in[5]) | (mask[55] & in[0] & in[1] & in[2] & !in[3] & in[4] & in[5]) | (mask[56] & !in[0] & !in[1] & !in[2] & in[3] & in[4] & in[5]) | (mask[57] & in[0] & !in[1] & !in[2] & in[3] & in[4] & in[5]) | (mask[58] & !in[0] & in[1] & !in[2] & in[3] & in[4] & in[5]) | (mask[59] & in[0] & in[1] & !in[2] & in[3] & in[4] & in[5]) | (mask[60] & !in[0] & !in[1] & in[2] & in[3] & in[4] & in[5]) | (mask[61] & in[0] & !in[1] & in[2] & in[3] & in[4] & in[5]) | (mask[62] & !in[0] & in[1] & in[2] & in[3] & in[4] & in[5]) | (mask[63] & in[0] & in[1] & in[2] & in[3] & in[4] & in[5])";
+
+            timing() {
+                related_pin: "in";
+                timing_sense: non_unate;
+
+                cell_fall(scalar) {
+                    values("0.0");
+                }
+                cell_rise(scalar) {
+                    values("0.0");
+                }
+                fall_transition(scalar) {
+                    values("0.0");
+                }
+                rise_transition(scalar) {
+                    values("0.0");
+                }
+            }
+        }
+    }
+
+    /**
+     * @brief D-Flip-Flop module.
+     *
+     *  INPUTS:
+     *      D:
+     *          The input of the DFF, which will get latched on the rising clock
+     *          edge.
+     *      clock:
+     *          The clock signal for the DFF.
+     *  OUPUTS:
+     *      Q:
+     *          The current value stored in the latch.
+     *      QN:
+     *          The inverse of the current value stored in the latch.
+     */
+    cell (DFF) {
+        ff (IQ, IQN) {
+            next_state: "D";
+            clocked_on: "clock";
+        }
+
+        pin (D) {
+            direction: input;
+            
+            timing() {
+                related_pin: "clock";
+                timing_type: hold_rising;
+
+                fall_constraint(scalar) {
+                    values("0.0");
+                }
+                rise_constraint(scalar) {
+                    values("0.0");
+                }
+            }
+
+            timing() {
+                related_pin: "clock";
+                timing_type: setup_rising;
+
+                fall_constraint(scalar) {
+                    values("0.0");
+                }
+                rise_constraint(scalar) {
+                    values("0.0");
+                }
+            }
+        }
+
+        pin (clock) {
+            direction: input;
+            clock: true;
+
+            timing() {
+                related_pin: "clock";
+                timing_type: min_pulse_width;
+
+                fall_constraint(scalar) {
+                    values("0.0");
+                }
+                rise_constraint(scalar) {
+                    values("0.0");
+                }
+            }
+        }
+
+        pin (Q) {
+            direction: output;
+            function: "IQ";
+            
+            timing() {
+                related_pin: "clock";
+                timing_type: rising_edge;
+                timing_sense: non_unate;
+
+                cell_fall(scalar) {
+                    values("0.0");
+                }
+                cell_rise(scalar) {
+                    values("0.0");
+                }
+                fall_transition(scalar) {
+                    values("0.0");
+                }
+                rise_transition(scalar) {
+                    values("0.0");
+                }
+            }
+        }
+
+        pin (QN) {
+            direction: output;
+            function: "IQN";
+
+            timing() {
+                related_pin: "clock";
+                timing_type: rising_edge;
+                timing_sense: non_unate;
+
+                cell_fall(scalar) {
+                    values("0.0");
+                }
+                cell_rise(scalar) {
+                    values("0.0");
+                }
+                fall_transition(scalar) {
+                    values("0.0");
+                }
+                rise_transition(scalar) {
+                    values("0.0");
+                }
+            }
+        }
+    }
+}

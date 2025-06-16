@@ -1,7 +1,5 @@
-#ifndef RR_GRAPH_STORAGE
-#define RR_GRAPH_STORAGE
+#pragma once
 
-#include <exception>
 #include <bitset>
 
 #include "vtr_vector.h"
@@ -15,7 +13,6 @@
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
-#include <iostream>
 #include <optional>
 #include <cstdint>
 
@@ -25,10 +22,10 @@
  * parallel rr_node_* structures.                                            *
  *                                                                           *
  * This structure should **only** contain data used in the inner loop of the *
- * router.  This data is consider "hot" and the router performance is        *
+ * router.  This data is considered "hot" and the router performance is      *
  * sensitive to layout and size of this "hot" data.
  *
- * Cold data should be stored seperately in t_rr_graph_storage.              *
+ * Cold data should be stored separately in t_rr_graph_storage.              *
  *                                                                           *
  * xlow, xhigh, ylow, yhigh:  Integer coordinates (see route.c for           *
  *       coordinate system) of the ends of this routing resource.            *
@@ -63,7 +60,7 @@ struct alignas(16) t_rr_node_data {
     int16_t xhigh_ = -1;
     int16_t yhigh_ = -1;
 
-    t_rr_type type_ = NUM_RR_TYPES;
+    e_rr_type type_ = e_rr_type::NUM_RR_TYPES;
 
     /* The character is a hex number which is a 4-bit truth table for node sides
      * The 4-bits in serial represent 4 sides on which a node could appear 
@@ -164,7 +161,7 @@ class t_rr_graph_storage {
      * Node methods *
      ****************/
 
-    t_rr_type node_type(RRNodeId id) const {
+    e_rr_type node_type(RRNodeId id) const {
         return node_storage_[id].type_;
     }
     const char* node_type_string(RRNodeId id) const;
@@ -393,11 +390,25 @@ class t_rr_graph_storage {
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
      */
-    RREdgeId edge_id(const RRNodeId& id, t_edge_size iedge) const {
+    RREdgeId edge_id(RRNodeId id, t_edge_size iedge) const {
         RREdgeId first_edge = this->first_edge(id);
         RREdgeId ret(size_t(first_edge) + iedge);
         VTR_ASSERT_SAFE(ret < last_edge(id));
         return ret;
+    }
+
+    /**
+     * @brief Retrieve the RREdgeId that connects the given source and sink nodes.
+     *        If the given source/sink nodes are not connected, RREdgeId::INVALID() is returned.
+     */
+    RREdgeId edge_id(RRNodeId src, RRNodeId sink) const {
+        for (RREdgeId outgoing_edge_id : edge_range(src)) {
+            if (edge_sink_node(outgoing_edge_id) == sink) {
+                return outgoing_edge_id;
+            }
+        }
+
+        return RREdgeId::INVALID();
     }
 
     /** @brief Get the source node for the specified edge. */
@@ -448,7 +459,7 @@ class t_rr_graph_storage {
      *
      * The following methods implement an interface that appears to be
      * equivalent to the interface exposed by std::vector<t_rr_node>.
-     * This was done for backwards compability. See t_rr_node for more details.
+     * This was done for backwards compatibility. See t_rr_node for more details.
      *
      * Proxy methods:
      *
@@ -483,8 +494,8 @@ class t_rr_graph_storage {
      ***************************/
 
     /** @brief
-     * Makes room in storage for RRNodeId in amoritized O(1) fashion.
-     * This results in an allocation pattern similiar to what would happen
+     * Makes room in storage for RRNodeId in amortized O(1) fashion.
+     * This results in an allocation pattern similar to what would happen
      * if push_back(x) / emplace_back() were used if underlying storage
      * was not pre-allocated.
      */
@@ -605,8 +616,8 @@ class t_rr_graph_storage {
     void set_node_track_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
-    void set_node_type(RRNodeId id, t_rr_type new_type);
-    void set_node_name(RRNodeId id, std::string new_name);
+    void set_node_type(RRNodeId id, e_rr_type new_type);
+    void set_node_name(RRNodeId id, const std::string& new_name);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
     void set_node_layer(RRNodeId id, short layer);
     void set_node_ptc_twist_incr(RRNodeId id, short twist);
@@ -616,8 +627,8 @@ class t_rr_graph_storage {
     void set_node_direction(RRNodeId, Direction new_direction);
 
     /** @brief
-     * Add a side to the node abbributes
-     * This is the function to use when you just add a new side WITHOUT reseting side attributes
+     * Add a side to the node attributes
+     * This is the function to use when you just add a new side WITHOUT resetting side attributes
      */
     void add_node_side(RRNodeId, e_side new_side);
 
@@ -707,9 +718,8 @@ class t_rr_graph_storage {
      *
      * init_fan_in does not need to be invoked before this method.
      */
-     size_t count_rr_switches(
-        const std::vector<t_arch_switch_inf>& arch_switch_inf,
-        t_arch_switch_fanin& arch_switch_fanins);
+     size_t count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
+                             t_arch_switch_fanin& arch_switch_fanins);
 
     /** @brief Maps arch_switch_inf indicies to rr_switch_inf indicies.
      *
@@ -730,6 +740,10 @@ class t_rr_graph_storage {
      * non-configurable edges.
      */
     void partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches);
+
+    /** @brief Overrides the associated switch for a given edge by
+     *         updating the edge to use the passed in switch. */
+    void override_edge_switch(RREdgeId edge_id, RRSwitchId switch_id);
 
     /** @brief Validate that edge data is partitioned correctly.*/
     bool validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
@@ -764,7 +778,7 @@ class t_rr_graph_storage {
         const RRNodeId& id,
         const e_side& side) {
         auto& node_data = node_storage[id];
-        if (node_data.type_ != IPIN && node_data.type_ != OPIN) {
+        if (node_data.type_ != e_rr_type::IPIN && node_data.type_ != e_rr_type::OPIN) {
             VTR_LOG_ERROR("Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
                           rr_node_typename[node_data.type_]);
         }
@@ -965,7 +979,7 @@ class t_rr_graph_view {
         return node_storage_.size();
     }
 
-    t_rr_type node_type(RRNodeId id) const {
+    e_rr_type node_type(RRNodeId id) const {
         return node_storage_[id].type_;
     }
     const char* node_type_string(RRNodeId id) const;
@@ -1176,5 +1190,3 @@ class t_rr_graph_view {
     const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx_;
 
 };
-
-#endif /* _RR_GRAPH_STORAGE_ */

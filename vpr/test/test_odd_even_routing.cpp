@@ -1,11 +1,9 @@
 #include "catch2/catch_test_macros.hpp"
-#include "catch2/matchers/catch_matchers_all.hpp"
 
 #include "odd_even_routing.h"
 #include "channel_dependency_graph.h"
 
 #include <random>
-#include <iostream>
 
 namespace {
 
@@ -37,7 +35,6 @@ void compare_routes(const std::vector<NocLink>& golden_path,
         REQUIRE(found_link.get_sink_router() == golden_path[link_index].get_sink_router());
     }
 }
-
 
 void check_turn_legality(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
                          const NocStorage& noc_model,
@@ -229,7 +226,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
     SECTION("Test case where multiple traffic flows are routed, and routes are checked for turn legality and deadlock freedom.") {
         std::random_device device;
         std::mt19937 rand_num_gen(device());
-        std::uniform_int_distribution<std::mt19937::result_type> dist(0,  99);
+        std::uniform_int_distribution<std::mt19937::result_type> dist(0, 99);
 
         NocTrafficFlows traffic_flow_storage;
 
@@ -264,4 +261,4 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
     }
 }
 
-}
+} // namespace

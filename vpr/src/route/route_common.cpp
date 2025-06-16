@@ -2,11 +2,17 @@
 
 #include "atom_netlist_utils.h"
 #include "connection_router_interface.h"
-#include "draw_global.h"
-#include "place_and_route.h"
+#include "describe_rr_node.h"
 #include "route_common.h"
+#include "logic_types.h"
+#include "physical_types_util.h"
 #include "route_export.h"
-#include "rr_graph.h"
+#include "vpr_utils.h"
+
+#if defined(VPR_USE_TBB)
+#include <tbb/parallel_for_each.h>
+#include <tbb/combinable.h>
+#endif
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
@@ -59,6 +65,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 static void adjust_one_rr_occ_and_acc_cost(RRNodeId inode, int add_or_sub, float acc_fac);
 
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
+                                                           const LogicalModels& models,
                                                            bool is_flat);
 
 static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
@@ -93,13 +100,11 @@ void restore_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_ro
  * Use this number as a routing serial number to ensure that programming *
  * changes do not break the router.                                      */
 void get_serial_num(const Netlist<>& net_list) {
-    int serial_num;
-
-    auto& route_ctx = g_vpr_ctx.routing();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& route_ctx = g_vpr_ctx.routing();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    serial_num = 0;
+    int serial_num = 0;
 
     for (auto net_id : net_list.nets()) {
         if (!route_ctx.route_trees[net_id])
@@ -112,7 +117,7 @@ void get_serial_num(const Netlist<>& net_list) {
 
             serial_num -= rr_graph.node_ptc_num(inode) * (size_t(net_id) + 1) * 10;
 
-            serial_num -= rr_graph.node_type(inode) * (size_t(net_id) + 1) * 100;
+            serial_num -= (size_t)rr_graph.node_type(inode) * (size_t(net_id) + 1) * 100;
             serial_num %= 2000000000; /* Prevent overflow */
         }
     }
@@ -263,7 +268,7 @@ void init_route_structs(const Netlist<>& net_list,
                                                        net_list,
                                                        is_flat);
 
-    route_ctx.is_clock_net = load_is_clock_net(net_list, is_flat);
+    route_ctx.is_clock_net = load_is_clock_net(net_list, device_ctx.arch->models, is_flat);
     route_ctx.route_bb = load_route_bb(net_list,
                                        bb_factor);
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_graph,
@@ -354,7 +359,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
         clb_opins_used_locally[blk_id].resize((int)type->class_inf.size());
 
-        if (is_io_type(type)) continue;
+        if (type->is_io()) continue;
 
         const auto [pin_low, pin_high] = get_pin_range_for_block(blk_id);
 
@@ -460,7 +465,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                 inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
                                                          blk_loc.loc.x,
                                                          blk_loc.loc.y,
-                                                         SOURCE,
+                                                         e_rr_type::SOURCE,
                                                          iclass);
             } else {
                 vtr::Rect<int> tile_bb = grid.get_tile_bb({blk_loc.loc.x,
@@ -471,7 +476,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                                                                                               tile_bb.ymin(),
                                                                                               tile_bb.xmax(),
                                                                                               tile_bb.ymax(),
-                                                                                              SINK,
+                                                                                              e_rr_type::SINK,
                                                                                               iclass);
                 VTR_ASSERT_SAFE(sink_nodes.size() == 1);
                 inode = sink_nodes[0];
@@ -533,8 +538,8 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
             }
 
             if (group_num == -1) {
-                /* TODO: net_terminal_groups cannot be fully RRNodeId - ified, because this code calls libarchfpga which 
-                 * I think should not be aware of RRNodeIds. Fixing this requires some refactoring to lift the offending functions 
+                /* TODO: net_terminal_groups cannot be fully RRNodeId - ified, because this code calls libarchfpga which
+                 * I think should not be aware of RRNodeIds. Fixing this requires some refactoring to lift the offending functions
                  * into VPR. */
                 std::vector<int> new_group = {int(rr_node_num)};
                 int new_group_num = net_terminal_groups[net_id].size();
@@ -563,7 +568,7 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
                                                                              bool is_flat) {
     vtr::vector<ParentBlockId, std::vector<RRNodeId>> rr_blk_source;
 
-    t_rr_type rr_type;
+    e_rr_type rr_type;
 
     rr_blk_source.resize(net_list.blocks().size());
 
@@ -578,10 +583,10 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
                 blk_loc = get_block_loc(blk_id, is_flat);
                 auto class_type = get_class_type_from_class_physical_num(type, iclass);
                 if (class_type == DRIVER) {
-                    rr_type = SOURCE;
+                    rr_type = e_rr_type::SOURCE;
                 } else {
                     VTR_ASSERT(class_type == RECEIVER);
-                    rr_type = SINK;
+                    rr_type = e_rr_type::SINK;
                 }
 
                 RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
@@ -600,13 +605,13 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
 }
 
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
+                                                           const LogicalModels& models,
                                                            bool is_flat) {
-    vtr::vector<ParentNetId, uint8_t> is_clock_net;
+    vtr::vector<ParentNetId, uint8_t> is_clock_net(net_list.nets().size());
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.nlist);
+    std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.netlist(), models);
 
-    is_clock_net.resize(net_list.nets().size());
     for (auto net_id : net_list.nets()) {
         std::size_t net_id_num = std::size_t(net_id);
         if (is_flat) {
@@ -614,7 +619,7 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
             is_clock_net[net_id] = clock_nets.find(atom_net_id) != clock_nets.end();
         } else {
             ClusterNetId cluster_net_id = ClusterNetId(net_id_num);
-            is_clock_net[net_id] = clock_nets.find(atom_ctx.lookup.atom_net(cluster_net_id)) != clock_nets.end();
+            is_clock_net[net_id] = clock_nets.find(atom_ctx.lookup().atom_net(cluster_net_id)) != clock_nets.end();
         }
     }
 
@@ -702,7 +707,7 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     bb_factor = std::min(bb_factor, max_dim);
 
     RRNodeId driver_rr = RRNodeId(route_ctx.net_rr_terminals[net_id][0]);
-    VTR_ASSERT(rr_graph.node_type(driver_rr) == SOURCE);
+    VTR_ASSERT(rr_graph.node_type(driver_rr) == e_rr_type::SOURCE);
 
     VTR_ASSERT(rr_graph.node_xlow(driver_rr) <= rr_graph.node_xhigh(driver_rr));
     VTR_ASSERT(rr_graph.node_ylow(driver_rr) <= rr_graph.node_yhigh(driver_rr));
@@ -717,7 +722,7 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     auto net_sinks = net_list.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
         RRNodeId sink_rr = RRNodeId(route_ctx.net_rr_terminals[net_id][ipin]);
-        VTR_ASSERT(rr_graph.node_type(sink_rr) == SINK);
+        VTR_ASSERT(rr_graph.node_type(sink_rr) == e_rr_type::SINK);
 
         VTR_ASSERT(rr_graph.node_xlow(sink_rr) <= rr_graph.node_xhigh(sink_rr));
         VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
@@ -838,7 +843,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             for (iconn = 0; iconn < num_edges; iconn++) {
                 RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iconn);
 
-                VTR_ASSERT(rr_graph.node_type(RRNodeId(to_node)) == OPIN);
+                VTR_ASSERT(rr_graph.node_type(RRNodeId(to_node)) == e_rr_type::OPIN);
 
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node, pres_fac);
@@ -853,7 +858,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 VTR_ASSERT(heap->try_pop(heap_head_node));
                 const RRNodeId& inode = heap_head_node.node;
 
-                VTR_ASSERT(rr_graph.node_type(inode) == OPIN);
+                VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::OPIN);
 
                 adjust_one_rr_occ_and_acc_cost(inode, 1, acc_fac);
                 route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;

@@ -1,6 +1,4 @@
-#ifndef SETUP_NOC
-#define SETUP_NOC
-
+#pragma once
 /**
  * @file 
  * @brief This is the setup_noc header file. The main purpose of 
@@ -32,14 +30,13 @@
  */
 
 #include <string_view>
-#include <vector>
 
 #include "device_grid.h"
 #include "vpr_context.h"
 
 // a data structure to store the position information of a noc router in the FPGA device
 struct t_noc_router_tile_position {
-    t_noc_router_tile_position(int x, int y, int layer_num, float centroid_x, float centroid_y)
+    t_noc_router_tile_position(int x, int y, int layer_num, float centroid_x, float centroid_y) noexcept
         : grid_width_position(x)
         , grid_height_position(y)
         , layer_position(layer_num)
@@ -130,5 +127,3 @@ void create_noc_routers(const t_noc_inf& noc_info,
  *                  routers and links that connect the routers together.
  */
 void create_noc_links(const t_noc_inf& noc_info, NocStorage* noc_model);
-
-#endif

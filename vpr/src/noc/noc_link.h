@@ -1,6 +1,4 @@
-#ifndef NOC_LINK_H
-#define NOC_LINK_H
-
+#pragma once
 /**
  * @file
  * @brief This file defines the NocLink class.
@@ -37,8 +35,6 @@
  * 
  */
 
-#include <iostream>
-#include "noc_router.h"
 #include "noc_data_types.h"
 
 class NocLink {
@@ -50,11 +46,10 @@ class NocLink {
     NocRouterId sink_router;   /*!< The router which uses this link as an incoming edge*/
 
     double bandwidth; /*!< Represents the maximum bits per second that can be transmitted over the link without causing congestion*/
-    double latency; /*!< The zero-load latency of this link in seconds.*/
+    double latency;   /*!< The zero-load latency of this link in seconds.*/
 
   public:
-    NocLink(NocLinkId link_id, NocRouterId source_router, NocRouterId sink_router,
-            double bw, double lat);
+    NocLink(NocLinkId link_id, NocRouterId source_router, NocRouterId sink_router, double bw, double lat);
 
     // getters
 
@@ -121,5 +116,3 @@ class NocLink {
      */
     operator NocLinkId() const;
 };
-
-#endif

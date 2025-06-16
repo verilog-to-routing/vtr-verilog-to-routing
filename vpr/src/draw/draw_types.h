@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_types.h
  * 
@@ -15,25 +16,20 @@
  * Author: Long Yu (Mike) Wang, Sebastian Lievano
  */
 
-#ifndef DRAW_TYPES_H
-#define DRAW_TYPES_H
-
 #ifndef NO_GRAPHICS
 
-#    include <vector>
-#    include <memory>
-#    include "clustered_netlist.h"
-#    include "timing_info_fwd.h"
-#    include "vtr_util.h"
-#    include "vpr_types.h"
-#    include "vtr_color_map.h"
-#    include "vtr_vector.h"
-#    include "breakpoint.h"
-#    include "manual_moves.h"
+#include <vector>
+#include <memory>
+#include "timing_info_fwd.h"
+#include "vtr_util.h"
+#include "vpr_types.h"
+#include "vtr_color_map.h"
+#include "vtr_vector.h"
+#include "breakpoint.h"
+#include "manual_moves.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/rectangle.hpp"
-#    include "ezgl/color.hpp"
+#include "ezgl/rectangle.hpp"
+#include "ezgl/color.hpp"
 
 enum e_draw_crit_path {
     DRAW_NO_CRIT_PATH,
@@ -238,7 +234,7 @@ struct t_draw_state {
     char default_message[vtr::bufsize];
 
     ///@brief color in which each net should be drawn. [0..cluster_ctx.clb_nlist.nets().size()-1]
-    vtr::vector<ClusterNetId, ezgl::color> net_color;
+    vtr::vector<ParentNetId, ezgl::color> net_color;
 
     /**
      * @brief stores the state information of each routing resource.
@@ -410,6 +406,11 @@ struct t_draw_coords {
     ///@brief constructor
     t_draw_coords();
 
+    ///@brief Sets the tile width
+    inline void set_tile_width(float new_tile_width) {
+        tile_width = new_tile_width;
+    }
+
     ///@brief returns tile width
     float get_tile_width();
 
@@ -452,5 +453,3 @@ struct t_draw_coords {
 };
 
 #endif // NO_GRAPHICS
-
-#endif

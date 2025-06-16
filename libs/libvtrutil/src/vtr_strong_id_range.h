@@ -1,7 +1,6 @@
-#ifndef _VTR_STRONG_ID_RANGE_H
-#define _VTR_STRONG_ID_RANGE_H
+#pragma once
 
-#include <algorithm>
+#include <iterator>
 #include "vtr_assert.h"
 
 namespace vtr {
@@ -46,9 +45,9 @@ class StrongIdIterator {
     using difference_type = ssize_t;
 
     ///@brief Dereference operator (*)
-    StrongId& operator*() {
+    StrongId operator*() const {
         VTR_ASSERT_SAFE(bool(id_));
-        return this->id_;
+        return id_;
     }
 
     ///@brief += operator
@@ -73,6 +72,14 @@ class StrongIdIterator {
         *this += 1;
         VTR_ASSERT_SAFE(bool(id_));
         return *this;
+    }
+
+    ///@brief Post-increment operator
+    StrongIdIterator operator++(int) {
+        VTR_ASSERT_SAFE(bool(id_));
+        StrongIdIterator temp = *this; // Create a copy of the current object
+        ++(*this);                     // Use the pre-increment operator to increment
+        return temp;                   // Return the copy
     }
 
     ///@brief Decremment operator
@@ -179,5 +186,3 @@ class StrongIdRange {
 };
 
 } //namespace vtr
-
-#endif /* _VTR_STRONG_ID_RANGE_H */

@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -6,8 +7,6 @@
  *          that ensure that the given clustering is valid and can be used with
  *          the rest of the VPR flow.
  */
-
-#pragma once
 
 #include <unordered_set>
 #include "vtr_vector.h"
@@ -82,4 +81,3 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
  *          log messages for each error found.
  */
 unsigned verify_clustering(const VprContext& ctx);
-

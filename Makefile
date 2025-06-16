@@ -1,4 +1,4 @@
-#This is a simple wrapper which hides cmake (for convenience, and from non-expert end users).
+# This is a simple wrapper which hides cmake (for convenience, and from non-expert end users).
 #
 # It supports the targets:
 #   'make'           - builds everything (all libaries/executables)
@@ -15,12 +15,14 @@
 #
 #   'make BUILD_TYPE=debug VERBOSE=1'
 
-#Default build type
-# Possible values:
-#    release_pgo	#Perform a 2-stage build with profile-guided compiler optimization
-#    release		#Build with compiler optimization
-#    debug			#Build with debug info and no compiler optimization
-#    strict			#Build VPR with warnings treated as errors
+# Build type
+# Possible values (not case sensitive):
+#    release            #Build with compiler optimization (Default)
+#    RelWithDebInfo     #Build with debug info and compiler optimizations
+#    debug              #Build with debug info and no compiler optimization
+# Possible suffixes:
+#    _pgo               #Perform a 2-stage build with profile-guided compiler optimization
+#    _strict            #Build VPR with warnings treated as errors
 BUILD_TYPE ?= release
 
 #Debugging verbosity enable
@@ -40,7 +42,7 @@ override CMAKE_PARAMS := -DCMAKE_BUILD_TYPE=$(CMAKE_BUILD_TYPE) -G 'Unix Makefil
 #Are we doing a strict (i.e. warnings as errors) build?
 ifneq (,$(findstring strict,$(BUILD_TYPE)))
 	#Configure for strict build with VPR warning treated as errors
-override CMAKE_PARAMS := -DVTR_ENABLE_STRICT_COMPILE=on ${CMAKE_PARAMS}
+override CMAKE_PARAMS := -DCMAKE_COMPILE_WARNING_AS_ERROR=on ${CMAKE_PARAMS}
 endif #Strict build type
 
 #Enable verbosity
@@ -48,14 +50,14 @@ ifeq ($(VERBOSE),1)
 override CMAKE_PARAMS := -DVTR_ENABLE_VERBOSE=on ${CMAKE_PARAMS}
 endif
 
-# -s : Suppresss makefile output (e.g. entering/leaving directories)
+# -s : Suppresses makefile output (e.g. entering/leaving directories)
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
 
 SOURCE_DIR := $(PWD)
 BUILD_DIR ?= build
 
-#Check for the cmake exectuable
+#Check for the cmake executable
 CMAKE := $(shell command -v cmake 2> /dev/null)
 
 #Show test log on failures with 'make test'
