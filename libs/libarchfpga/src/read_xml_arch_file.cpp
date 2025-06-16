@@ -375,17 +375,36 @@ static bool attribute_to_bool(const pugi::xml_node node,
                               const pugiutil::loc_data& loc_data);
 
 /**
+ * @brief Searches for a switch whose matches with the given name.
+ * @param switches Contains all the architecture switches.
+ * @param switch_name The name with which switch names are compared.
+ * @return A negative integer if no switch was found with the given name; otherwise
+ * the index of the matching switch is returned.
+ */
+static int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches, std::string_view switch_name);
+
 static e_side string_to_side(const std::string& side_str);
 
 template<typename T>
 static T* get_type_by_name(std::string_view type_name, std::vector<T>& types);
 
-static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
-static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
-static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data);
-static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
-// static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_from_or_to_inf>& froms);
-// static void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
+static void process_vib_arch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
+
+static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
+
+static void process_first_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data);
+
+static void process_second_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
+
+static void process_vib_layout(pugi::xml_node vib_layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data);
+
+static t_vib_grid_def process_vib_grid_layout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
+
+static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
+                                        int die_number,
+                                        vtr::string_internment& strings,
+                                        pugi::xml_node layout_block_type_tag,
+                                        const pugiutil::loc_data& loc_data);
 
 /*
  *
@@ -449,7 +468,7 @@ void xml_read_arch(const char* ArchFile,
         /* Precess vib_layout */
         Next = get_single_child(architecture, "vib_layout", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
-            ProcessVibLayout(Next, arch, loc_data);
+            process_vib_layout(Next, arch, loc_data);
         }
 
         /* Process device */
@@ -493,7 +512,7 @@ void xml_read_arch(const char* ArchFile,
         /* Process vib_arch */
         Next = get_single_child(architecture, "vib_arch", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
-            ProcessVibArch(Next, PhysicalTileTypes, arch, loc_data);
+            process_vib_arch(Next, PhysicalTileTypes, arch, loc_data);
         }
 
         /* Process Clock Networks */
@@ -4115,7 +4134,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             Segs[i].isbend = false;
             SubElem = get_single_child(Node, "bend", loc_data, ReqOpt::OPTIONAL);
             if (SubElem) {
-                ProcessBend(SubElem, Segs[i].bend, Segs[i].part_len, Segs[i].isbend, (length - 1), loc_data);
+                process_bend(SubElem, Segs[i].bend, Segs[i].part_len, Segs[i].isbend, (length - 1), loc_data);
             }
         }
 
@@ -4134,7 +4153,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
     return Segs;
 }
 
-static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& isbend, const int len, const pugiutil::loc_data& loc_data) {
+static void process_bend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& isbend, const int len, const pugiutil::loc_data& loc_data) {
     const char* tmp = nullptr;
     int i;
 
@@ -4165,8 +4184,6 @@ static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                                    "B pattern is not supported in current version\n",
                                    *tmp);
-                    //                    list.push_back(3);
-                    //                    isbend = true;
                     break;
                 default:
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
@@ -5122,7 +5139,7 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
 }
 
 /* for vib arch*/
-static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data) {
+static void process_vib_arch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     //pugi::xml_node SubElem;
 
@@ -5132,12 +5149,12 @@ static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_ty
     Node = get_first_child(Parent, "vib", loc_data);
 
     for (int i_vib = 0; i_vib < num_vibs; i_vib++) {
-        ProcessVib(Node, PhysicalTileTypes, arch, loc_data);
+        process_vib(Node, PhysicalTileTypes, arch, loc_data);
         Node = Node.next_sibling(Node.name());
     }
 }
 
-static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data) {
+static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     pugi::xml_node SubElem;
     const char* tmp;
@@ -5226,7 +5243,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     SubElem = get_single_child(Node, "first_stage", loc_data);
     if (SubElem) {
         std::vector<t_first_stage_mux_inf> first_stages;
-        ProcessFirstStage(SubElem, PhysicalTileTypes, first_stages, loc_data);
+        process_first_stage(SubElem, PhysicalTileTypes, first_stages, loc_data);
 
         for (auto first_stage : first_stages) {
             vib.push_first_stage(first_stage);
@@ -5236,7 +5253,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     SubElem = get_single_child(Node, "second_stage", loc_data);
     if (SubElem) {
         std::vector<t_second_stage_mux_inf> second_stages;
-        ProcessSecondStage(SubElem, PhysicalTileTypes, second_stages, loc_data);
+        process_second_stage(SubElem, PhysicalTileTypes, second_stages, loc_data);
 
         for (auto second_stage : second_stages) {
             vib.push_second_stage(second_stage);
@@ -5246,7 +5263,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     arch->vib_infs.push_back(vib);
 }
 
-static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
+static void process_first_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     pugi::xml_node SubElem;
     //pugi::xml_node Cur;
@@ -5266,7 +5283,6 @@ static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_
         for (int i_from = 0; i_from < from_num; i_from++) {
             std::vector<std::string> from_tokens = vtr::split(SubElem.child_value());
             first_stage_mux.from_tokens.push_back(from_tokens);
-            //ProcessFromOrToTokens(from_tokens, PhysicalTileTypes, segments, first_stage_mux.froms);
             SubElem = SubElem.next_sibling(SubElem.name());
         }
         first_stages.push_back(first_stage_mux);
@@ -5275,7 +5291,7 @@ static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_
     }
 }
 
-static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
+static void process_second_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     pugi::xml_node SubElem;
 
@@ -5301,7 +5317,6 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
         for (int i_from = 0; i_from < from_num; i_from++) {
             std::vector<std::string> from_tokens = vtr::split(SubElem.child_value());
             second_stage_mux.from_tokens.push_back(from_tokens);
-            //ProcessFromOrToTokens(from_tokens, PhysicalTileTypes, segments, second_stage_mux.froms);
             SubElem = SubElem.next_sibling(SubElem.name());
         }
 
@@ -5312,7 +5327,7 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 }
 
 /* Process vib layout */
-static void ProcessVibLayout(pugi::xml_node vib_layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data) {
+static void process_vib_layout(pugi::xml_node vib_layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data) {
     VTR_ASSERT(vib_layout_tag.name() == std::string("vib_layout"));
 
     size_t auto_layout_cnt = 0;
@@ -5341,13 +5356,13 @@ static void ProcessVibLayout(pugi::xml_node vib_layout_tag, t_arch* arch, const 
     int num_of_avail_layer;
 
     for (auto vib_layout_type_tag : vib_layout_tag.children()) {
-        t_vib_grid_def grid_def = ProcessVibGridLayout(arch->strings, vib_layout_type_tag, loc_data, arch, num_of_avail_layer);
+        t_vib_grid_def grid_def = process_vib_grid_layout(arch->strings, vib_layout_type_tag, loc_data, arch, num_of_avail_layer);
 
         arch->vib_grid_layouts.emplace_back(std::move(grid_def));
     }
 }
 
-static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer) {
+static t_vib_grid_def process_vib_grid_layout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer) {
     t_vib_grid_def grid_def;
     num_of_avail_layer = get_number_of_layers(layout_type_tag, loc_data);
     bool has_layer = layout_type_tag.child("layer");
@@ -5413,22 +5428,22 @@ static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi
             VTR_ASSERT(die_number >= 0 && die_number < num_of_avail_layer);
             auto insert_res = seen_die_numbers.insert(die_number);
             VTR_ASSERT_MSG(insert_res.second, "Two different layers with a same die number may have been specified in the Architecture file");
-            ProcessVibBlockTypeLocs(grid_def, die_number, strings, layer_child, loc_data);
+            process_vib_block_type_locs(grid_def, die_number, strings, layer_child, loc_data);
         }
     } else {
         //if only one die is available, then global routing resources must exist in that die
         int die_number = 0;
         arch->layer_global_routing.at(die_number) = true;
-        ProcessVibBlockTypeLocs(grid_def, die_number, strings, layout_type_tag, loc_data);
+        process_vib_block_type_locs(grid_def, die_number, strings, layout_type_tag, loc_data);
     }
     return grid_def;
 }
 
-static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
-                                    int die_number,
-                                    vtr::string_internment& strings,
-                                    pugi::xml_node layout_block_type_tag,
-                                    const pugiutil::loc_data& loc_data) {
+static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
+                                        int die_number,
+                                        vtr::string_internment& strings,
+                                        pugi::xml_node layout_block_type_tag,
+                                        const pugiutil::loc_data& loc_data) {
     //Process all the block location specifications
     for (auto loc_spec_tag : layout_block_type_tag.children()) {
         auto loc_type = loc_spec_tag.name();
