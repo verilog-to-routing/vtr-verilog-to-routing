@@ -1167,6 +1167,24 @@ The following tags are common to all ``<tile>`` tags:
 
                 **Default:** ``0``
 
+            If the subtile capacity is greater than 1, you can specify the capacity range when defining the pin locations. For example:
+
+            .. code-block:: xml
+
+                <sub_tile name="io_bottom" capacity="6">
+                    <equivalent_sites>
+                        <site pb_type="io"/>
+                    </equivalent_sites>
+                    <input name="outpad" num_pins="1"/>
+                    <output name="inpad" num_pins="1"/>
+                    <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+                    <pinlocations pattern="custom">
+                        <loc side="top">io_bottom[0:1].outpad io_bottom[0:3].inpad io_bottom[2:5].outpad io_bottom[4:5].inpad</loc>
+                    </pinlocations>
+                </sub_tile>
+            
+            If no capacity range is specified, it is assumed that the location applies to all capacity instances.
+
         Physical equivalence for a pin is specified by listing a pin more than once for different locations.
         For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
 

@@ -268,18 +268,15 @@ void load_block_names(ezgl::application* app) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
-    int i = 0;
     for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter,
                            0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
-        i++;
     }
     for (AtomBlockId id : atom_ctx.netlist().blocks()) {
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter,
                            0, (atom_ctx.netlist().block_name(id)).c_str(), -1);
-        i++;
     }
 }
 
@@ -293,12 +290,10 @@ void load_net_names(ezgl::application* app) {
     auto& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
     //Loading net names
-    int i = 0;
     for (AtomNetId id : atom_ctx.netlist().nets()) {
         gtk_list_store_append(netStorage, &iter);
         gtk_list_store_set(netStorage, &iter,
                            0, (atom_ctx.netlist().net_name(id)).c_str(), -1);
-        i++;
     }
 }
 

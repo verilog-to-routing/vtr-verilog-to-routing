@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
         printf("Reading in architecture\n");
 
         /* function declarations */
-        XmlReadArch(argv[1], atoi(argv[2]), &arch, physical_tile_types, logical_block_types);
+        xml_read_arch(argv[1], atoi(argv[2]), &arch, physical_tile_types, logical_block_types);
 
         printf("Printing Results\n");
 
