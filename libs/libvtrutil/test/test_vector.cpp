@@ -5,8 +5,7 @@
 
 #include <ostream>
 
-struct test_tag;
-typedef vtr::StrongId<test_tag> TestId;
+typedef vtr::StrongId<struct test_tag> TestId;
 
 std::ostream& operator<<(std::ostream& os, const TestId id);
 
