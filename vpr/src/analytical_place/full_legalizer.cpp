@@ -58,6 +58,11 @@
 #include "vtr_vector.h"
 
 #include "physical_types_util.h"
+#include "greedy_clusterer.h"
+#include "attraction_groups.h"
+#include "appack_context.h"
+#include "greedy_candidate_selector.h"
+#include "greedy_seed_selector.h"
 
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
@@ -238,6 +243,23 @@ class APClusterPlacer {
         enum e_pad_loc_type pad_loc_type = g_vpr_ctx.device().pad_loc_type;
         return try_place_macro_exhaustively(pl_macro, pr, block_type, pad_loc_type, blk_loc_registry);
     }
+};
+
+} // namespace
+
+namespace {
+
+/**
+ * @brief Struct to hold statistics on the progress of clustering.
+ */
+struct t_cluster_progress_stats {
+    // The total number of molecules in the design.
+    int num_molecules = 0;
+    // The number of molecules which have been clustered.
+    int num_molecules_processed = 0;
+    // The number of molecules clustered since the last time the status was
+    // logged.
+    int mols_since_last_print = 0;
 };
 
 } // namespace
@@ -499,42 +521,130 @@ void BasicMinDisturbance::neighbor_cluster_pass(
 {
     std::string timer_label = "Neighbor Pass Clustering with search radius " + std::to_string(search_radius);
     vtr::ScopedStartFinishTimer neighbor_pass_clustering(timer_label);
-    // For each unclustered molecule
-    while (!unclustered_blocks.empty()) {
-        // Pick the first seed molecule and erase it from unclustered data
-        auto seed_it = unclustered_blocks.begin();
-        PackMoleculeId seed_mol = seed_it->first;
-        t_physical_tile_loc seed_loc = seed_it->second;
-        unclustered_blocks.erase(seed_it);
 
-        // Get molecues in our search radius.
-        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> neighbor_molecules;
-        for (const auto& [mol_id, loc] : unclustered_blocks) {
-            int distance = std::abs(seed_loc.x - loc.x) + std::abs(seed_loc.y - loc.y) + std::abs(seed_loc.layer_num - loc.layer_num);
-            if (distance <= search_radius) {
-                neighbor_molecules.emplace_back(mol_id, loc);
-            }
+    // Greedy clusterer related
+    std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
+    t_cluster_progress_stats clustering_stats;
+    clustering_stats.num_molecules = prepacker_.molecules().size();
+
+    // Get the candidate selector datato be used.
+    AttractionInfo attraction_groups(false);
+    std::unordered_set<AtomNetId> is_clock, is_global;
+    is_clock = alloc_and_load_is_clock();
+    is_global.insert(is_clock.begin(), is_clock.end());
+    t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
+    const t_molecule_stats max_molecule_stats = prepacker_.calc_max_molecule_stats(atom_netlist_, arch_.models);
+    APPackContext appack_ctx(g_vpr_ctx.atom().flat_placement_info(),
+                             vpr_setup_.APOpts,
+                             g_vpr_ctx.device().logical_block_types,
+                             g_vpr_ctx.device().grid);
+    
+    // Initialize the greedy clusterer.
+    GreedyClusterer greedy_clusterer(vpr_setup_.PackerOpts,
+                              vpr_setup_.AnalysisOpts,
+                              atom_netlist_,
+                              arch_,
+                              high_fanout_thresholds,
+                              is_clock,
+                              is_global,
+                              pre_cluster_timing_manager_,
+                              appack_ctx);
+    
+    // Create the candidate selector.
+    GreedyCandidateSelector candidate_selector(atom_netlist_,
+                                               prepacker_,
+                                               vpr_setup_.PackerOpts,
+                                               true, // = allow_unrelated_clustering,
+                                               max_molecule_stats,
+                                               primitive_candidate_block_types,
+                                               high_fanout_thresholds,
+                                               is_clock,
+                                               is_global,
+                                               identify_net_output_feeds_driving_block_input(atom_netlist_),
+                                               pre_cluster_timing_manager_,
+                                               appack_ctx,
+                                               arch_.models,
+                                               vpr_setup_.PackerOpts.pack_verbosity);
+    
+    // Create the greedy seed selector.
+    GreedySeedSelector seed_selector(atom_netlist_,
+                                     prepacker_,
+                                     vpr_setup_.PackerOpts.cluster_seed_type,
+                                     max_molecule_stats,
+                                     arch_.models,
+                                     pre_cluster_timing_manager_);
+    
+    // Pick the first seed molecule.
+    PackMoleculeId seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
+
+    print_pack_status_header();
+    
+    // Continue clustering as long as a valid seed is returned from the seed
+    // selector.
+    while (seed_mol_id.is_valid()) {
+        // Check to ensure that this molecule is unclustered.
+        VTR_ASSERT(!cluster_legalizer.is_mol_clustered(seed_mol_id));
+
+        // The basic algorithm:
+        // 1) Try to put all the molecules in that you can without doing the
+        //    full intra-lb route. Then do full legalization at the end.
+        // 2) If the legalization at the end fails, try again, but this time
+        //    do full legalization for each molecule added to the cluster.
+
+        // Try to grow a cluster from the seed molecule without doing intra-lb
+        // route for each molecule (i.e. just use faster but not fully
+        // conservative legality checks).
+        LegalizationClusterId new_cluster_id = greedy_clusterer.try_grow_cluster(seed_mol_id,
+                                                                candidate_selector,
+                                                                ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
+                                                                cluster_legalizer,
+                                                                prepacker_,
+                                                                true, // = balance_block_type_utilization
+                                                                attraction_groups,
+                                                                num_used_type_instances,
+                                                                g_vpr_ctx.mutable_device());
+
+        if (!new_cluster_id.is_valid()) {
+            // If the previous strategy failed, try to grow the cluster again,
+            // but this time perform full legalization for each molecule added
+            // to the cluster.
+            new_cluster_id = greedy_clusterer.try_grow_cluster(seed_mol_id,
+                                              candidate_selector,
+                                              ClusterLegalizationStrategy::FULL,
+                                              cluster_legalizer,
+                                              prepacker_,
+                                              true, // = balance_block_type_utilization
+                                              attraction_groups,
+                                              num_used_type_instances,
+                                              g_vpr_ctx.mutable_device());
         }
 
-        // Sort by Manhattan distance to seed.
-        std::sort(neighbor_molecules.begin(), neighbor_molecules.end(),
-                [&](const auto& a, const auto& b) {
-                    int da = std::abs(seed_loc.x - a.second.x) + std::abs(seed_loc.y - a.second.y) + std::abs(seed_loc.layer_num - a.second.layer_num);
-                    int db = std::abs(seed_loc.x - b.second.x) + std::abs(seed_loc.y - b.second.y) + std::abs(seed_loc.layer_num - b.second.layer_num);
-                    return da < db;
-                });
+        // Ensure that the seed was packed successfully.
+        VTR_ASSERT(new_cluster_id.is_valid());
+        VTR_ASSERT(cluster_legalizer.is_mol_clustered(seed_mol_id));
 
-        // Try to cluster them
-        LegalizationClusterId cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-        for (const auto& [neighbor_mol, neighbor_loc] : neighbor_molecules) {
-            if (!cluster_legalizer.is_molecule_compatible(neighbor_mol, cluster_id))
-                continue;
-            if (cluster_legalizer.add_mol_to_cluster(neighbor_mol, cluster_id) == e_block_pack_status::BLK_PASSED) {
-                // If added, remove from unclustered data
-                unclustered_blocks.erase(std::remove(unclustered_blocks.begin(), unclustered_blocks.end(), std::pair(neighbor_mol, neighbor_loc)), unclustered_blocks.end());
-            }
-        }
+        // Update the clustering progress stats.
+        size_t num_molecules_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(new_cluster_id);
+        clustering_stats.num_molecules_processed += num_molecules_in_cluster;
+        clustering_stats.mols_since_last_print += num_molecules_in_cluster;
+
+        // Print the current progress of the packing after a cluster has been
+        // successfully created.
+        print_pack_status(clustering_stats.num_molecules,
+                          clustering_stats.num_molecules_processed,
+                          clustering_stats.mols_since_last_print,
+                          g_vpr_ctx.mutable_device().grid.width(),
+                          g_vpr_ctx.mutable_device().grid.height(),
+                          attraction_groups,
+                          cluster_legalizer);
+
+        // Pick new seed.
+        seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
     }
+    // If this architecture has LE physical block, report its usage.
+    greedy_clusterer.report_le_physical_block_usage(cluster_legalizer);
+        
+    
 }
 
 
