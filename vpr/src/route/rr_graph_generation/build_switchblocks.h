@@ -129,7 +129,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                                                              const DeviceGrid& grid,
                                                              const std::vector<bool>& inter_cluster_rr,
                                                              const std::vector<t_switchblock_inf>& switchblocks,
-                                                             t_chan_width* nodes_per_chan,
+                                                             const t_chan_width& nodes_per_chan,
                                                              enum e_directionality directionality,
                                                              vtr::RngContainer& rng);
 

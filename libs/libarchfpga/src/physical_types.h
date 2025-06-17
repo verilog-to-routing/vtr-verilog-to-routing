@@ -2143,22 +2143,24 @@ class SB_Side_Connection {
 /* Use a map to index into the string permutation functions used to connect from one side to another */
 typedef std::map<SB_Side_Connection, std::vector<std::string>> t_permutation_map;
 
-/* Lists all information about a particular switch block specified in the architecture file */
+/**
+ * @briefLists all information about a particular switch block specified in the architecture file
+ */
 struct t_switchblock_inf {
-    std::string name;                /* the name of this switchblock */
-    e_sb_location location;          /* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
-    e_directionality directionality; /* the directionality of this switchblock (unidir/bidir) */
+    std::string name;                ///< the name of this switchblock
+    e_sb_location location;          ///< where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere)
+    e_directionality directionality; ///< the directionality of this switchblock (unidir/bidir)
 
-    int x = -1; /* The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified */
-    int y = -1; /* The exact y-axis location that this SB is used, meaningful when type is set to E_XY_specified */
+    int x = -1; ///< The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified
+    int y = -1; ///< The exact y-axis location that this SB is used, meaningful when type is set to E_XY_specified
 
     /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
     t_sb_loc_spec reg_x;
     t_sb_loc_spec reg_y;
 
-    t_permutation_map permutation_map; /* map holding the permutation functions attributed to this switchblock */
+    t_permutation_map permutation_map; ///< map holding the permutation functions attributed to this switchblock
 
-    std::vector<t_wireconn_inf> wireconns; /* list of wire types/groups this SB will connect */
+    std::vector<t_wireconn_inf> wireconns; ///< list of wire types/groups this SB will connect
 };
 
 /* Clock related data types used for building a dedicated clock network */
