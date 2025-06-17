@@ -7,6 +7,8 @@
 
 #include "flat_placement_density_manager.h"
 #include <tuple>
+#include <unordered_map>
+#include "ap_argparse_utils.h"
 #include "ap_netlist.h"
 #include "ap_netlist_fwd.h"
 #include "atom_netlist.h"
@@ -18,6 +20,8 @@
 #include "prepack.h"
 #include "primitive_dim_manager.h"
 #include "primitive_vector.h"
+#include "vpr_error.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_vector.h"
@@ -45,6 +49,60 @@ static PrimitiveVector calc_bin_underfill(const PrimitiveVector& bin_utilization
     return underfill;
 }
 
+/**
+ * @brief Get the physical type target densities given the user arguments.
+ *
+ * This will automatically select good target densisities, but will allow the
+ * user to override these values from the command line.
+ *
+ *  @param target_density_arg_strs
+ *      The command-line arguments provided by the user.
+ *  @param physical_tile_types
+ *      A vector of all physical tile types in the architecture.
+ */
+static std::vector<float> get_physical_type_target_densities(const std::vector<std::string>& target_density_arg_strs,
+                                                             const std::vector<t_physical_tile_type>& physical_tile_types) {
+    // Get the target densisty of each physical block type.
+    // TODO: Create auto feature to automatically select target densities based
+    //       on properties of the architecture. Need to sweep to find reasonable
+    //       values.
+    std::vector<float> phy_ty_target_density(physical_tile_types.size(), 1.0f);
+
+    // Set to auto if no user args are provided.
+    if (target_density_arg_strs.size() == 0)
+        return phy_ty_target_density;
+    if (target_density_arg_strs.size() == 1 && target_density_arg_strs[0] == "auto")
+        return phy_ty_target_density;
+
+    // Parse the user args. The physical type names are expected to be used as keys.
+    std::vector<std::string> phy_ty_names;
+    phy_ty_names.reserve(physical_tile_types.size());
+    std::unordered_map<std::string, int> phy_ty_name_to_index;
+    for (const t_physical_tile_type& phy_ty : physical_tile_types) {
+        phy_ty_names.push_back(phy_ty.name);
+        phy_ty_name_to_index[phy_ty.name] = phy_ty.index;
+    }
+    auto phy_ty_name_to_tar_density = key_to_float_argument_parser(target_density_arg_strs,
+                                                                   phy_ty_names,
+                                                                   1);
+
+    // Update the target densities based on the user args.
+    for (const auto& phy_ty_name_to_density_pair : phy_ty_name_to_tar_density) {
+        const std::string& phy_ty_name = phy_ty_name_to_density_pair.first;
+        VTR_ASSERT(phy_ty_name_to_density_pair.second.size() == 1);
+        float target_density = phy_ty_name_to_density_pair.second[0];
+        if (target_density < 0.0f) {
+            VPR_FATAL_ERROR(VPR_ERROR_AP,
+                            "Cannot have negative target density");
+        }
+
+        int phy_ty_index = phy_ty_name_to_index[phy_ty_name];
+        phy_ty_target_density[phy_ty_index] = target_density;
+    }
+
+    return phy_ty_target_density;
+}
+
 FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_netlist,
                                                          const Prepacker& prepacker,
                                                          const AtomNetlist& atom_netlist,
@@ -52,6 +110,7 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
                                                          const std::vector<t_logical_block_type>& logical_block_types,
                                                          const std::vector<t_physical_tile_type>& physical_tile_types,
                                                          const LogicalModels& models,
+                                                         const std::vector<std::string>& target_density_arg_strs,
                                                          int log_verbosity)
     : ap_netlist_(ap_netlist)
     , bins_(ap_netlist)
@@ -61,6 +120,15 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
     size_t num_layers, width, height;
     std::tie(num_layers, width, height) = device_grid.dim_sizes();
     bin_spatial_lookup_.resize({num_layers, width, height});
+
+    // Get the target densisty of each physical block type.
+    std::vector<float> phy_ty_target_densities = get_physical_type_target_densities(target_density_arg_strs,
+                                                                                    physical_tile_types);
+    VTR_LOG("Partial legalizer is using target densities:");
+    for (const t_physical_tile_type& phy_ty : physical_tile_types) {
+        VTR_LOG(" %s:%.1f", phy_ty.name.c_str(), phy_ty_target_densities[phy_ty.index]);
+    }
+    VTR_LOG("\n");
 
     // Create a bin for each tile. This will create one bin for each root tile
     // location.
@@ -96,6 +164,12 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
                 // Store the index of the physical tile type into a map to be
                 // used to compute the capacity.
                 bin_phy_tile_type_idx.insert(new_bin_id, tile_type->index);
+
+                // Set the target density for this bin based on the physical
+                // tile type..
+                float target_density = phy_ty_target_densities[tile_type->index];
+                bin_target_density_.push_back(target_density);
+                VTR_ASSERT(bin_target_density_[new_bin_id] = target_density);
             }
         }
     }
