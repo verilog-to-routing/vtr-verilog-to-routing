@@ -144,15 +144,6 @@
 using vtr::FormulaParser;
 using vtr::t_formula_data;
 
-/************ Defines ************/
-/* if defined, switch block patterns are loaded by first computing a row of switch blocks and then
- * stamping out the row throughout the FPGA */
-
-/* REF_X/REF_Y set a reference coordinate; some look-up structures in this file are computed relative to
- * this reference */
-#define REF_X 1 //constexpr int REX_X = 1;	<-- basically C++11 defines; more type-safe
-#define REF_Y 1
-
 /************ Classes ************/
 /** Contains info about a wire segment type */
 class WireInfo {
@@ -194,8 +185,21 @@ struct t_wireconn_scratchpad {
 typedef vtr::flat_map<vtr::string_view, WireInfo> t_wire_type_sizes;
 
 /************ Function Declarations ************/
-/* Counts the number of wires in each wire type in the specified channel */
-static void count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan, t_wire_type_sizes* wire_type_sizes);
+/**
+ * @brief Counts and summarizes wire types in a routing channel.
+ *
+ * Iterates through the given array of segment details for a routing channel,
+ * grouping segments by wire type (as identified by `type_name()`).
+ * For each unique wire type, it records:
+ *   - the wire segment length,
+ *   - the number of wires of that type,
+ *   - the start index of the first wire of that type in the array.
+ *
+ * @param channel Pointer to an array of `t_chan_seg_details` representing the wires in a channel.
+ * @param nodes_per_chan The total number of wire segments (i.e., size of the `channel` array).
+ * @return A map (`t_wire_type_sizes`) from wire type name to `WireInfo` containing size and indexing info for each type.
+ */
+static t_wire_type_sizes count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan);
 
 /* Compute the wire(s) that the wire at (x, y, from_side, to_side, from_wire) should connect to.
  * sb_conns is updated with the result */
@@ -239,7 +243,7 @@ static void compute_wireconn_connections(
     vtr::RngContainer& rng,
     t_wireconn_scratchpad* scratchpad);
 
-static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::string num_conns_formula, int from_wire_count, int to_wire_count);
+static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, const std::string& num_conns_formula, int from_wire_count, int to_wire_count);
 
 /**
  *
@@ -257,7 +261,6 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
  *  @param order switchpoint order (fixed, shuffled) specified in the architecture file
  *  @param rand_state used to randomly shuffle switchpoint if required (shuffled order)
  *  @param output_wires collected wire indices that matches the specified types and switchpoints
- *
  */
 static void get_switchpoint_wires(
     const DeviceGrid& grid,
@@ -282,7 +285,7 @@ static void get_switchpoint_wires(
  *  @param tile_y y-coordinate of the tile
  *  @param tile_layer layer-coordinate of the tile
  *  @param src_side switch block source side
- *  @param dest_side swtich block destination side
+ *  @param dest_side switch block destination side
  *  @param chan_details_x x-channel segment details (length, start and end points, ...)
  *  @param chan_details_y x-channel segment details (length, start and end points, ...)
  *  @param chan_x x-coordinate of the channel
@@ -292,7 +295,17 @@ static void get_switchpoint_wires(
  *
  * @return returns the type of channel that we are indexing into (ie, CHANX or CHANY) and channel coordinates and type
  */
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, e_rr_type& chan_type);
+static const t_chan_details& index_into_correct_chan(int tile_x,
+                                                     int tile_y,
+                                                     int tile_layer,
+                                                     enum e_side src_side,
+                                                     enum e_side dest_side,
+                                                     const t_chan_details& chan_details_x,
+                                                     const t_chan_details& chan_details_y,
+                                                     int& chan_x,
+                                                     int& chan_y,
+                                                     int& chan_layer,
+                                                     e_rr_type& chan_type);
 
 /**
  * @brief check whether a specific track location is valid within the device grid
@@ -328,7 +341,12 @@ static int get_switchpoint_of_wire(const DeviceGrid& grid, e_rr_type chan_type, 
  *
  * @return true if a switch block exists at the specified location, false otherwise.
  */
-static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer, const t_switchblock_inf& sb);
+static bool sb_not_here(const DeviceGrid& grid,
+                        const std::vector<bool>& inter_cluster_rr,
+                        int x,
+                        int y,
+                        int layer,
+                        const t_switchblock_inf& sb);
 
 /**
  * @brief check whether specified coordinate is located at the device grid corner and a switch block exists there
@@ -406,16 +424,13 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                                                              const t_chan_width& nodes_per_chan,
                                                              e_directionality directionality,
                                                              vtr::RngContainer& rng) {
-    /* Holds temporary memory for parsing. */
+    // Holds temporary memory for parsing.
     t_wireconn_scratchpad scratchpad;
 
     t_sb_connection_map* sb_conns = new t_sb_connection_map;
 
     /* We assume that x & y channels have the same ratios of wire types. i.e., looking at a single
      * channel is representative of all channels in the FPGA -- as of 3/9/2013 this is true in VPR */
-    t_wire_type_sizes wire_type_sizes;
-    t_wire_type_sizes wire_type_sizes_x;
-    t_wire_type_sizes wire_type_sizes_y;
 
     /* Count the number of wires in each wire type in the specified channel. Note that this is representative of
      * the wire count for every channel in direction due to the assumption stated above. 
@@ -423,31 +438,31 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
      *     1) support different horizontal and vertical segment distributions
      *     2) support non-uniform channel distributions.
      */
-
-    count_wire_type_sizes(chan_details_y[0][0].data(), nodes_per_chan.y_max, &wire_type_sizes_y);
-    count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan.x_max, &wire_type_sizes_x);
-    count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan.max, &wire_type_sizes);
+    t_wire_type_sizes wire_type_sizes_y = count_wire_type_sizes(chan_details_y[0][0].data(), nodes_per_chan.y_max);
+    t_wire_type_sizes wire_type_sizes_x = count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan.x_max);
+    t_wire_type_sizes wire_type_sizes = count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan.max);
 
     /******** slow switch block computation method; computes switchblocks at each coordinate ********/
-    /* iterate over all the switchblocks specified in the architecture */
+    // Iterate over all the switchblocks specified in the architecture
     for (const t_switchblock_inf& sb : switchblocks) {
 
-        /* verify that switchblock type matches specified directionality -- currently we have to stay consistent */
+        // Verify that switchblock type matches specified directionality -- currently we have to stay consistent
         if (directionality != sb.directionality) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
         }
-        /* Iterate over the x,y, layer coordinates spanning the FPGA, filling in all the switch blocks that exist */
+
+        // Iterate over the x,y, layer coordinates spanning the FPGA, filling in all the switch blocks that exist
         for (int layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
             for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
                 for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++) {
                     if (sb_not_here(grid, inter_cluster_rr, x_coord, y_coord, layer_coord, sb)) {
                         continue;
                     }
-                    /* now we iterate over all the potential side1->side2 connections */
+
+                    // now we iterate over all the potential side1->side2 connections
                     for (e_side from_side : TOTAL_3D_SIDES) {
                         for (e_side to_side : TOTAL_3D_SIDES) {
-                            /* Fill appropriate entry of the sb_conns map with vector specifying the wires
-                             * the current wire will connect to */
+                            // Fill appropriate entry of the sb_conns map with vector specifying the wires the current wire will connect to
                             compute_wire_connections(x_coord, y_coord, layer_coord, from_side, to_side,
                                                      chan_details_x, chan_details_y, sb, grid,
                                                      &wire_type_sizes_x, &wire_type_sizes_y, directionality, sb_conns,
@@ -473,10 +488,14 @@ void free_switchblock_permutations(t_sb_connection_map* sb_conns) {
      * this significantly reduces memory usage during the routing stage when running multiple
      * large benchmark circuits in parallel. */
     vtr::malloc_trim(0);
-    return;
 }
 
-static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int x, int y, int layer, const t_switchblock_inf& sb) {
+static bool sb_not_here(const DeviceGrid& grid,
+                        const std::vector<bool>& inter_cluster_rr,
+                        int x,
+                        int y,
+                        int layer,
+                        const t_switchblock_inf& sb) {
     bool sb_not_here = true;
 
     switch (sb.location) {
@@ -626,7 +645,7 @@ static bool match_sb_xy(const DeviceGrid& grid, const std::vector<bool>& inter_c
     return false;
 }
 
-static void count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan, t_wire_type_sizes* wire_type_sizes) {
+static t_wire_type_sizes count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan) {
     int num_wires = 0;
     WireInfo wire_info;
 
@@ -634,13 +653,15 @@ static void count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_p
     int length = channel[0].length();
     int start = 0;
 
+    t_wire_type_sizes wire_type_sizes;
+
     for (int iwire = 0; iwire < nodes_per_chan; iwire++) {
         vtr::string_view new_type = channel[iwire].type_name();
         int new_length = channel[iwire].length();
         int new_start = iwire;
         if (new_type != wire_type) {
             wire_info.set(length, num_wires, start);
-            (*wire_type_sizes)[wire_type] = wire_info;
+            wire_type_sizes[wire_type] = wire_info;
             wire_type = new_type;
             length = new_length;
             start = new_start;
@@ -650,7 +671,9 @@ static void count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_p
     }
 
     wire_info.set(length, num_wires, start);
-    (*wire_type_sizes)[wire_type] = wire_info;
+    wire_type_sizes[wire_type] = wire_info;
+
+    return wire_type_sizes;
 }
 
 static void get_switchpoint_wires(
@@ -772,29 +795,31 @@ static void compute_wire_connections(int x_coord,
     SB_Side_Connection side_conn(from_side, to_side);                              /* for indexing into this switchblock's permutation funcs */
     Switchblock_Lookup sb_conn(x_coord, y_coord, layer_coord, from_side, to_side); /* for indexing into FPGA's switchblock map */
 
-    /* can't connect a switchblock side to itself */
+    // Can't connect a switchblock side to itself
     if (from_side == to_side) {
         return;
     }
-    /* check that the permutation map has an entry for this side combination */
+
+    // Check that the permutation map has an entry for this side combination
     if (sb.permutation_map.count(side_conn) == 0) {
-        /* the specified switchblock does not have any permutation funcs for this side1->side2 connection */
+        // The specified switchblock does not have any permutation funcs for `from_side` to `to_side` connection
         return;
     }
 
     /* find the correct channel, and the coordinates to index into it for both the source and
      * destination channels. also return the channel type (ie chanx/chany/both) into which we are
      * indexing */
-    /* details for source channel */
+    // Details for source channel
     const t_chan_details& from_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, from_side, to_side, chan_details_x, chan_details_y,
                                                                       from_x, from_y, from_layer, from_chan_type);
 
-    /* details for destination channel */
+    // Details for destination channel
     const t_chan_details& to_chan_details = index_into_correct_chan(x_coord, y_coord, layer_coord, to_side, from_side, chan_details_x, chan_details_y,
                                                                     to_x, to_y, to_layer, to_chan_type);
 
-    /* make sure from_x/y and to_x/y aren't out of bounds */
-    if (coords_out_of_bounds(grid, to_x, to_y, to_layer, to_chan_type) || coords_out_of_bounds(grid, from_x, from_y, from_layer, from_chan_type)) {
+    // make sure from_x/y and to_x/y aren't out of bounds
+    if (coords_out_of_bounds(grid, to_x, to_y, to_layer, to_chan_type)
+        || coords_out_of_bounds(grid, from_x, from_y, from_layer, from_chan_type)) {
         return;
     }
 
@@ -807,13 +832,12 @@ static void compute_wire_connections(int x_coord,
         wire_type_sizes_to = wire_type_sizes_y;
     }
 
-    /* iterate over all the wire connections specified for this switch block */
+    // Iterate over all the wire connections specified for this switch block
     for (int iconn = 0; iconn < (int)sb.wireconns.size(); iconn++) {
-        /* pointer to a connection specification between wire types/subsegment_nums */
+        // Pointer to a connection specification between wire types/subsegment_nums
         const t_wireconn_inf& wireconn = sb.wireconns[iconn];
 
-        /* compute the destination wire segments to which the source wire segment should connect based on the
-         * current wireconn */
+        // compute the destination wire segments to which the source wire segment should connect based on the current wireconn
         compute_wireconn_connections(grid, directionality, from_chan_details, to_chan_details,
                                      sb_conn, from_x, from_y, from_layer, to_x, to_y, to_layer, from_chan_type, to_chan_type, wire_type_sizes_from,
                                      wire_type_sizes_to, sb, wireconn, sb_conns, rng, scratchpad);
@@ -821,8 +845,8 @@ static void compute_wire_connections(int x_coord,
 }
 
 /* computes the destination wire segments that a source wire segment at the coordinate 'sb_conn' (in
- * channel segment with coordinate from_x/from_y) should connect to based on the specified 'wireconn_ptr'.
- * wireconn_ptr defines the source and destination sets of wire segments (based on wire segment type & switchpoint
+ * channel segment with coordinate from_x/from_y) should connect to based on the specified 'wireconn'.
+ * wireconn defines the source and destination sets of wire segments (based on wire segment type & switchpoint
  * as defined at the top of this file), and the indices of wires to connect to are relative to these sets */
 static void compute_wireconn_connections(
     const DeviceGrid& grid,
@@ -847,10 +871,10 @@ static void compute_wireconn_connections(
     t_wireconn_scratchpad* scratchpad) {
     constexpr bool verbose = false;
 
-    //choose the from_side to be the same as to_side if the connection is travelling across dice in multi-die FPGAs
-    auto from_side = (sb_conn.from_side != ABOVE && sb_conn.from_side != UNDER) ? sb_conn.from_side : sb_conn.to_side;
-    //choose the to_side to be the same as from_side if the connection is travelling across dice in multi-die FPGAs
-    auto to_side = (sb_conn.to_side != ABOVE && sb_conn.to_side != UNDER) ? sb_conn.to_side : sb_conn.from_side;
+    // Choose the from_side to be the same as to_side if the connection is travelling across dice in multi-die FPGAs
+    e_side from_side = (sb_conn.from_side != ABOVE && sb_conn.from_side != UNDER) ? sb_conn.from_side : sb_conn.to_side;
+    // Choose the to_side to be the same as from_side if the connection is travelling across dice in multi-die FPGAs
+    e_side to_side = (sb_conn.to_side != ABOVE && sb_conn.to_side != UNDER) ? sb_conn.to_side : sb_conn.from_side;
 
     /* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
     get_switchpoint_wires(grid, from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, from_side,
@@ -863,8 +887,8 @@ static void compute_wireconn_connections(
                           wireconn.to_switchpoint_order, rng, &scratchpad->potential_dest_wires,
                           &scratchpad->scratch_wires);
 
-    const auto& potential_src_wires = scratchpad->potential_src_wires;
-    const auto& potential_dest_wires = scratchpad->potential_dest_wires;
+    const std::vector<t_wire_switchpoint>& potential_src_wires = scratchpad->potential_src_wires;
+    const std::vector<t_wire_switchpoint>& potential_dest_wires = scratchpad->potential_dest_wires;
 
 #ifdef VERBOSE_RR
     VTR_LOGV(verbose, "SB_LOC: %d,%d %s->%s\n", sb_conn.x_coord, sb_conn.y_coord, TOTAL_2D_SIDE_STRINGS[sb_conn.from_side], TOTAL_2D_SIDE_STRINGS[sb_conn.to_side]);
@@ -902,7 +926,7 @@ static void compute_wireconn_connections(
 #endif
 
     if (potential_src_wires.empty() || potential_dest_wires.empty()) {
-        //Can't make any connections between empty sets
+        // Can't make any connections between empty sets
         return;
     }
 
@@ -916,14 +940,14 @@ static void compute_wireconn_connections(
     //      * randomly shuffle, or
     //      * interleave (to ensure good diversity)
 
-    //Determine how many connections to make
+    // Determine how many connections to make
     int num_conns = evaluate_num_conns_formula(scratchpad, wireconn.num_conns_formula, potential_src_wires.size(), potential_dest_wires.size());
     VTR_ASSERT_MSG(num_conns >= 0, "Number of switchblock connections to create must be non-negative");
 
     VTR_LOGV(verbose, "  num_conns: %zu\n", num_conns);
 
     for (size_t iconn = 0; iconn < size_t(num_conns); ++iconn) {
-        //Select the from wire
+        // Select the from wire
         // We modulo by the src set size to wrap around if there are more connections that src wires
         int src_wire_ind = iconn % potential_src_wires.size();  //Index in src set
         int from_wire = potential_src_wires[src_wire_ind].wire; //Index in channel
@@ -946,7 +970,7 @@ static void compute_wireconn_connections(
             VTR_ASSERT(from_wire_direction == Direction::BIDIR);
         }
 
-        //Evaluate permutation functions for the from_wire
+        // Evaluate permutation functions for the from_wire
         SB_Side_Connection side_conn(sb_conn.from_side, sb_conn.to_side);
         auto iter = sb.permutation_map.find(side_conn);
         if (iter == sb.permutation_map.end()) {
@@ -989,10 +1013,10 @@ static void compute_wireconn_connections(
             }
             VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);
 
-            /* and now, finally, add this switchblock connection to the switchblock connections map */
+            // and now, finally, add this switchblock connection to the switchblock connections map
             (*sb_conns)[sb_conn].push_back(sb_edge);
 
-            /* If bidir architecture, implement the reverse connection as well */
+            // If bidir architecture, implement the reverse connection as well
             if (BI_DIRECTIONAL == directionality) {
                 t_switchblock_edge sb_reverse_edge = sb_edge;
                 std::swap(sb_reverse_edge.from_wire, sb_reverse_edge.to_wire);
@@ -1007,7 +1031,7 @@ static void compute_wireconn_connections(
     }
 }
 
-static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::string num_conns_formula, int from_wire_count, int to_wire_count) {
+static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, const std::string& num_conns_formula, int from_wire_count, int to_wire_count) {
     t_formula_data& vars = scratchpad->formula_data;
     vars.clear();
 
@@ -1017,7 +1041,17 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
     return scratchpad->formula_parser.parse_formula(num_conns_formula, vars);
 }
 
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, e_rr_type& chan_type) {
+static const t_chan_details& index_into_correct_chan(int tile_x,
+                                                     int tile_y,
+                                                     int tile_layer,
+                                                     enum e_side src_side,
+                                                     enum e_side dest_side,
+                                                     const t_chan_details& chan_details_x,
+                                                     const t_chan_details& chan_details_y,
+                                                     int& chan_x,
+                                                     int& chan_y,
+                                                     int& chan_layer,
+                                                     e_rr_type& chan_type) {
     chan_type = e_rr_type::CHANX;
     /* here we use the VPR convention that a tile 'owns' the channels directly to the right
      * and above it */

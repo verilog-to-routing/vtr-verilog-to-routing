@@ -2144,7 +2144,7 @@ class SB_Side_Connection {
 typedef std::map<SB_Side_Connection, std::vector<std::string>> t_permutation_map;
 
 /**
- * @briefLists all information about a particular switch block specified in the architecture file
+ * @brief Lists all information about a particular switch block specified in the architecture file
  */
 struct t_switchblock_inf {
     std::string name;                ///< the name of this switchblock
