@@ -406,7 +406,7 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
                                         pugi::xml_node layout_block_type_tag,
                                         const pugiutil::loc_data& loc_data);
 
-static void process_bend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& isbend, const int len, const pugiutil::loc_data& loc_data);
+static void process_bend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& is_bend, const int len, const pugiutil::loc_data& loc_data);
 
 /*
  *
@@ -4133,10 +4133,10 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
 
         /* Setup the bend list if they give one, otherwise use default */
         if (length > 1) {
-            Segs[i].isbend = false;
+            Segs[i].is_bend = false;
             SubElem = get_single_child(Node, "bend", loc_data, ReqOpt::OPTIONAL);
             if (SubElem) {
-                process_bend(SubElem, Segs[i].bend, Segs[i].part_len, Segs[i].isbend, (length - 1), loc_data);
+                process_bend(SubElem, Segs[i].bend, Segs[i].part_len, Segs[i].is_bend, (length - 1), loc_data);
             }
         }
 
@@ -4155,7 +4155,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
     return Segs;
 }
 
-static void process_bend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& isbend, const int len, const pugiutil::loc_data& loc_data) {
+static void process_bend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& is_bend, const int len, const pugiutil::loc_data& loc_data) {
     const char* tmp = nullptr;
     int i;
 
@@ -4176,11 +4176,11 @@ static void process_bend(pugi::xml_node Node, std::vector<int>& list, std::vecto
                     break;
                 case 'U':
                     list.push_back(1);
-                    isbend = true;
+                    is_bend = true;
                     break;
                 case 'D':
                     list.push_back(2);
-                    isbend = true;
+                    is_bend = true;
                     break;
                 case 'B':
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),

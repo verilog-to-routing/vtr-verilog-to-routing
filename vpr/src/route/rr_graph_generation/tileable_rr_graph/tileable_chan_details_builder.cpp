@@ -184,7 +184,7 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
     size_t cur_track = 0;
     size_t bend_num = 0; // The index for bend segments
     for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
-        if (!segment_inf[iseg].isbend) {
+        if (!segment_inf[iseg].is_bend) {
             /* segment length will be set to maxium segment length if this is a longwire */
             size_t seg_len = segment_inf[iseg].length;
             if (true == segment_inf[iseg].longline) {
@@ -213,7 +213,7 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
             }
         } else { // bend segment
             bend_num++;
-            VTR_ASSERT(segment_inf[iseg].isbend);
+            VTR_ASSERT(segment_inf[iseg].is_bend);
             std::vector<int> seg_len = segment_inf[iseg].part_len;
             std::vector<int> bend = segment_inf[iseg].bend;
             VTR_ASSERT(seg_len.size() == 2); // Only support one bend position for a segment.

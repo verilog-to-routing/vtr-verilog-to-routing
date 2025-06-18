@@ -1826,7 +1826,7 @@ struct t_segment_inf {
     /**
      *  @brief This segment is bend or not
      */
-    bool isbend;
+    bool is_bend;
 
     /**
      *  @brief The bend type of the segment, "-"-0, "U"-1, "D"-2

@@ -549,7 +549,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
     int bend_seg_num = 0;
     std::vector<int> bend_seg_type; //bend type:  1: U; 2: D
     for (size_t iseg = 0; iseg < segment_inf.size(); iseg++) {
-        if (segment_inf[iseg].isbend) {
+        if (segment_inf[iseg].is_bend) {
             bend_seg_num++;
 
             for (size_t i = 0; i < segment_inf[iseg].bend.size(); i++) {
