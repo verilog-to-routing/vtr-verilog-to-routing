@@ -369,6 +369,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
     VTR_LOG("RouterOpts.max_pres_fac: %f\n", RouterOpts.max_pres_fac);
     VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
     VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
+    VTR_LOG("RouterOpts.initial_acc_cost_chan_congestion_threshold: %f\n", RouterOpts.initial_acc_cost_chan_congestion_threshold);
+    VTR_LOG("RouterOpts.initial_acc_cost_chan_congestion_weight: %f\n", RouterOpts.initial_acc_cost_chan_congestion_weight);
     VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
     VTR_LOG("RouterOpts.verify_binary_search: %s\n", RouterOpts.verify_binary_search ? "true" : "false");
     VTR_LOG("RouterOpts.min_channel_width_hint: %d\n", RouterOpts.min_channel_width_hint);
