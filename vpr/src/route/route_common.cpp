@@ -439,7 +439,6 @@ static float comp_initial_acc_cost(RRNodeId node_id,
                                    const t_router_opts& route_opts,
                                    const vtr::NdMatrix<double, 3>& chanx_util,
                                    const vtr::NdMatrix<double, 3>& chany_util) {
-    const auto& route_ctx = g_vpr_ctx.routing();
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     // The default acc_cost is 1 for all rr_nodes. For routing wires, if they pass through a channel
