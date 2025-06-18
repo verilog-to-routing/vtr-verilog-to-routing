@@ -156,9 +156,15 @@ ezgl::point2d t_draw_coords::get_absolute_pin_location( const ClusterBlockId clb
     t_pb_graph_node* pb_gnode = pb_graph_pin->parent_node;
     ezgl::rectangle pb_bbox = this->get_absolute_pb_bbox(clb_index, pb_gnode);
     int num_pins = pb_gnode->num_pins();
-    // int pin_index =
+    int num_pin_in_port = pb_graph_pin->pin_number;
+    int num_pins_in_port = pb_graph_pin->port->num_pins;
+    int num_port = pb_graph_pin->port->index;
+    int num_pin = num_pins_in_port * num_port + num_pin_in_port;
 
-    
+
+    float interval = pb_bbox.width() / (num_pins + 1);
+
+    return ezgl::point2d(interval * (num_pin + 1), 0.01 *this->tile_width) + pb_bbox.top_left();
 }
 
 ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_logical_block_type_ptr block_type) {

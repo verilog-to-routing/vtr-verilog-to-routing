@@ -1755,7 +1755,7 @@ RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id) {
     return rr_node_id;
 }
 
-AtomPinId get_rr_node_atom_pin_id(RRNodeId rr_node_id) {
+std::pair<ClusterBlockId, t_pb_graph_pin*> get_rr_node_cluster_blk_id_pb_graph_pin(RRNodeId rr_node_id) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -1777,6 +1777,14 @@ AtomPinId get_rr_node_atom_pin_id(RRNodeId rr_node_id) {
     t_pb_graph_pin* pb_graph_pin =  physical_tile->pin_num_to_pb_pin.at(pin_physical_num);
 
     VTR_ASSERT(pb_graph_pin);
+
+    return {blk_id, pb_graph_pin};
+}
+
+AtomPinId get_rr_node_atom_pin_id(RRNodeId rr_node_id) {
+    ClusterBlockId blk_id;
+    t_pb_graph_pin* pb_graph_pin;
+    std::tie(blk_id, pb_graph_pin) = get_rr_node_cluster_blk_id_pb_graph_pin(rr_node_id);
 
     AtomPinId atom_pin_id = find_atom_pin(blk_id, pb_graph_pin);
 
