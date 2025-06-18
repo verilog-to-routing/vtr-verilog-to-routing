@@ -592,6 +592,10 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
             draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
         }
 
+        if(rr_nodes_to_draw.empty() && rt_node.parent().has_value()) {
+            rr_nodes_to_draw.push_back(rt_node.parent().value().inode);
+        }
+
         rr_nodes_to_draw.push_back(inode);
 
         if (rt_node.is_leaf()) { // End of branch
