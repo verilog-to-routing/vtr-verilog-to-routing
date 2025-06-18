@@ -63,6 +63,7 @@ class AnalyticalSolver {
     AnalyticalSolver(const APNetlist& netlist,
                      const AtomNetlist& atom_netlist,
                      const PreClusterTimingManager& pre_cluster_timing_manager,
+                     const DeviceGrid& device_grid,
                      float ap_timing_tradeoff,
                      int log_verbosity);
 
@@ -135,6 +136,21 @@ class AnalyticalSolver {
     ///        others. These weights can be any positive value, but are often
     ///        between 0 and 1.
     vtr::vector<APNetId, float> net_weights_;
+
+    /// @brief A vector of blocks in the netlist which are not connected to any
+    ///        non-ignored nets. Since the blocks have no connection to any
+    ///        other blocks in the netlist, the are not considered movable or
+    ///        fixed. The solver will just leave these blocks wherever they were
+    ///        legalized.
+    std::vector<APBlockId> disconnected_blocks_;
+
+    /// @brief The width of the device grid. Used for randomly generating points
+    ///        on the grid.
+    size_t device_grid_width_;
+
+    /// @brief The height of the device grid. Used for randomly generating points
+    ///        on the grid.
+    size_t device_grid_height_;
 
     /// @brief The AP timing tradeoff term used during global placement. Decides
     ///        how much the solver cares about timing vs wirelength.
@@ -313,7 +329,12 @@ class QPHybridSolver : public AnalyticalSolver {
                    const PreClusterTimingManager& pre_cluster_timing_manager,
                    float ap_timing_tradeoff,
                    int log_verbosity)
-        : AnalyticalSolver(netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, log_verbosity) {
+        : AnalyticalSolver(netlist,
+                           atom_netlist,
+                           pre_cluster_timing_manager,
+                           device_grid,
+                           ap_timing_tradeoff,
+                           log_verbosity) {
         // Initializing the linear system only depends on the netlist and fixed
         // block locations. Both are provided by the netlist, allowing this to
         // be initialized in the constructor.
@@ -449,9 +470,12 @@ class B2BSolver : public AnalyticalSolver {
               const PreClusterTimingManager& pre_cluster_timing_manager,
               float ap_timing_tradeoff,
               int log_verbosity)
-        : AnalyticalSolver(ap_netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, log_verbosity)
-        , device_grid_width_(device_grid.width())
-        , device_grid_height_(device_grid.height()) {}
+        : AnalyticalSolver(ap_netlist,
+                           atom_netlist,
+                           pre_cluster_timing_manager,
+                           device_grid,
+                           ap_timing_tradeoff,
+                           log_verbosity) {}
 
     /**
      * @brief Perform an iteration of the B2B solver, storing the result into
@@ -602,13 +626,6 @@ class B2BSolver : public AnalyticalSolver {
     // blocks during the solver.
     vtr::vector<APBlockId, double> block_x_locs_legalized;
     vtr::vector<APBlockId, double> block_y_locs_legalized;
-
-    /// @brief The width of the device grid. Used for randomly generating points
-    ///        on the grid.
-    size_t device_grid_width_;
-    /// @brief The height of the device grid. Used for randomly generating points
-    ///        on the grid.
-    size_t device_grid_height_;
 
     /// @brief The total number of CG iterations that this solver has performed
     ///        so far. This can be a useful metric for the amount of work the
