@@ -14,11 +14,32 @@ RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc
 }
 
 std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing_chan_util() {
-    // Compute net bounding boxes
-    net_cost_handler_->comp_bb_cost(e_cost_methods::NORMAL);
+    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const auto& block_locs = placer_state_->block_locs();
 
-    // Estimate routing channel utilization using
-    return net_cost_handler_->estimate_routing_chan_util();
+    bool placement_is_done = (block_locs.size() == clb_nlist.blocks().size());
+
+    if (placement_is_done) {
+        // Compute net bounding boxes
+        net_cost_handler_->comp_bb_cost(e_cost_methods::NORMAL);
+
+        // Estimate routing channel utilization using
+        return net_cost_handler_->estimate_routing_chan_util();
+    } else {
+        const auto& device_ctx = g_vpr_ctx.device();
+
+        auto chanx_util = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                                     device_ctx.grid.width(),
+                                                     device_ctx.grid.height()}},
+                                                   0);
+
+        auto chany_util = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                                     device_ctx.grid.width(),
+                                                     device_ctx.grid.height()}},
+                                                   0);
+
+        return {chanx_util, chany_util};
+    }
 }
 
 vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool is_print) {

@@ -289,8 +289,7 @@ void init_route_structs(const Netlist<>& net_list,
                                                        is_flat);
 
     route_ctx.is_clock_net = load_is_clock_net(net_list, device_ctx.arch->models, is_flat);
-    route_ctx.route_bb = load_route_bb(net_list,
-                                       bb_factor);
+    route_ctx.route_bb = load_route_bb(net_list, bb_factor);
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_graph,
                                                   net_list,
                                                   is_flat);
