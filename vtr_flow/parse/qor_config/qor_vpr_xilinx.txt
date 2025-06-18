@@ -1,12 +1,15 @@
 vpr_status;output.txt;vpr_status=(.*)
-total_wirelength;vpr.out;\s*Total wirelength: (\d+)
-#total_wirelength_(mcw);vpr.out;Total wirelength:\s*(\d+)
-#total_wirelength_(1.3mcw);vpr.crit_path.out;Total wirelength:\s*(\d+)
-total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
-#pack_time;vpr.out;Packing took (.*) seconds
-#place_time;vpr.out;Placement took (.*) seconds
-#route_time;vpr.out;Routing took (.*) seconds
-#num_pre_packed_nets;vpr.out;Total Nets: (\d+)
-#num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
-crit_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
 
+total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
+pack_time;vpr.out;\s*Packing took (.*) seconds
+place_time;vpr.out;\s*Placement took (.*) seconds
+route_time;vpr.out;\s*Routing took (.*) seconds .*
+
+num_pre_packed_nets;vpr.out;Total Nets: (\d+)
+num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
+
+num_pre_packed_blocks;vpr.out;\s+Blocks\s*:\s*(\d+)
+num_post_packed_blocks;vpr.out;Netlist num_blocks:\s*(\d+)
+
+total_wirelength;vpr.out;\s*Total wirelength: (\d+)
+critical_path_delay;vpr.out;Final critical path delay \(least slack\): (.*) ns

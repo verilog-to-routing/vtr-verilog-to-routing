@@ -18,11 +18,8 @@
 // Forward declarations.
 class Prepacker;
 
-/// @brief Tag for the ModelGroupId
-struct model_group_id_tag;
-
 /// @brief A unique ID of a group of models created by the ModelGrouper class.
-typedef vtr::StrongId<model_group_id_tag, size_t> ModelGroupId;
+typedef vtr::StrongId<struct model_group_id_tag, size_t> ModelGroupId;
 
 /**
  * @brief A manager class for grouping together models that must be legalized

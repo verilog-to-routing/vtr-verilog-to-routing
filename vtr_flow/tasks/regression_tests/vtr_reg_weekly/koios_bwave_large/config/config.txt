@@ -27,13 +27,13 @@ arch_list_add=k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml
 include_list_add=hard_block_include.v
 
 # Parse info and how to parse
-parse_file=vpr_standard.txt
+parse_file=vpr_fixed_chan_width.txt
 
 # How to parse QoR info
 qor_parse_file=qor_standard.txt
 
 # Pass requirements
-pass_requirements_file=pass_requirements.txt
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 #Script parameters
 script_params=-track_memory_usage -crit_path_router_iterations 100 --route_chan_width 400 --target_utilization 0.12
