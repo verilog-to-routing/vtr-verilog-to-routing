@@ -329,7 +329,7 @@ class PlacementAnnealer {
     int tot_iter_;
     /// Indicates whether the annealer has entered into the quench stage
     bool quench_started_;
-
+    /// Indicates whether routing congestion modeling has been started
     bool congestion_modeling_started_;
 
     void LOG_MOVE_STATS_HEADER();

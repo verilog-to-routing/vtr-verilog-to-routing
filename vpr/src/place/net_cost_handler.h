@@ -129,6 +129,7 @@ class NetCostHandler {
     double estimate_routing_chann_util();
 
   private:
+    bool congestion_modeling_started_;
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;
     ///@brief Determines whether the FPGA has multiple dies (layers)
