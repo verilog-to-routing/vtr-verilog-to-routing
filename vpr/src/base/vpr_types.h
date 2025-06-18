@@ -1397,13 +1397,12 @@ struct t_det_routing_arch {
     /// the CUSTOM switch block type. See comment at top of SRC/route/build_switchblocks.c
     std::vector<t_switchblock_inf> switchblocks;
 
-    /* Xifan Tang: subtype of switch blocks.
-     * Sub type and Fs are applied to pass tracks
-     */
-    int subFs;
+    /// Subtype of switch blocks.
+    /// Sub type and Fs are applied to pass tracks
+    int sub_fs;
     enum e_switch_block_type switch_block_subtype;
 
-    /* Xifan Tang: tileable routing */
+    /// Tileable routing parameters
     bool tileable;
     bool perimeter_cb;
     bool shrink_boundary;

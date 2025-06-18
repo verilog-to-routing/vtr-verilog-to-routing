@@ -38,7 +38,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const e_switch_block_type& sb_type,
                                                const int& Fs,
                                                const e_switch_block_type& sb_subtype,
-                                               const int& subFs,
+                                               const int& sub_fs,
                                                const bool& concat_wire,
                                                const bool& wire_opposite_side,
                                                const std::vector<t_segment_inf>& segment_inf);

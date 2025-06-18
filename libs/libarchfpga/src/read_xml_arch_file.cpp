@@ -3034,7 +3034,7 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
 
     ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);
     arch->Fs = get_attribute(Cur, "fs", loc_data, CUSTOM_SWITCHBLOCK_REQD).as_int(3);
-    arch->subFs = get_attribute(Cur, "sub_fs", loc_data, BoolToReqOpt(false)).as_int(arch->Fs);
+    arch->sub_fs = get_attribute(Cur, "sub_fs", loc_data, BoolToReqOpt(false)).as_int(arch->Fs);
 
     Cur = get_single_child(Node, "default_fc", loc_data, ReqOpt::OPTIONAL);
     if (Cur) {

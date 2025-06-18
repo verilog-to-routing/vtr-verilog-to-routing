@@ -19,7 +19,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const e_switch_block_type& sb_type,
                                     const int& Fs,
                                     const e_switch_block_type& sb_subtype,
-                                    const int& subFs,
+                                    const int& sub_fs,
                                     const std::vector<t_segment_inf>& segment_inf,
                                     const int& delayless_switch,
                                     const int& wire_to_arch_ipin_switch,

@@ -2292,7 +2292,7 @@ struct t_arch {
     /// Secure hash digest of the architecture file to uniquely identify this architecture
     char* architecture_id;
 
-    /* Xifan Tang: options for tileable routing architectures */
+    // Options for tileable routing architectures
     bool tileable;
     bool perimeter_cb;
     bool shrink_boundary;
@@ -2308,7 +2308,7 @@ struct t_arch {
     float R_minW_nmos;
     float R_minW_pmos;
     int Fs;
-    int subFs;
+    int sub_fs;
     float grid_logic_tile_area;
     std::vector<t_segment_inf> Segments;
 

@@ -432,7 +432,7 @@ static void SetupRoutingArch(const t_arch& Arch,
     RoutingArch.R_minW_nmos = Arch.R_minW_nmos;
     RoutingArch.R_minW_pmos = Arch.R_minW_pmos;
     RoutingArch.Fs = Arch.Fs;
-    RoutingArch.subFs = Arch.subFs;
+    RoutingArch.sub_fs = Arch.sub_fs;
     RoutingArch.directionality = BI_DIRECTIONAL;
     if (!Arch.Segments.empty()) {
         RoutingArch.directionality = Arch.Segments[0].directionality;

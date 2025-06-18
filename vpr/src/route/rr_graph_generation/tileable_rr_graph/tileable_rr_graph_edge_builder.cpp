@@ -116,7 +116,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const e_switch_block_type& sb_type,
                           const int& Fs,
                           const e_switch_block_type& sb_subtype,
-                          const int& subFs,
+                          const int& sub_fs,
                           const bool& perimeter_cb,
                           const bool& opin2all_sides,
                           const bool& concat_wire,
@@ -151,7 +151,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                      sb_type,
                                      Fs,
                                      sb_subtype,
-                                     subFs,
+                                     sub_fs,
                                      perimeter_cb,
                                      opin2all_sides,
                                      concat_wire,
@@ -234,29 +234,6 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
             build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
 
             rr_graph_builder.build_edges(true);
-
-            // else {
-            //     /* adapt the track_to_ipin_lookup for the GSB nodes */
-            //     t_track2pin_map track2ipin_map; /* [0..track_gsb_side][0..num_tracks][ipin_indices] */
-            //     track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
-
-            //     /* adapt the opin_to_track_map for the GSB nodes */
-            //     t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
-            //     opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
-
-            //     /* adapt the switch_block_conn for the GSB nodes */
-            //     t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
-            //     sb_conn = build_gsb_track_to_track_map(rr_graph, rr_gsb,
-            //                                            sb_type, Fs, sb_subtype, subFs, concat_wire, wire_opposite_side,
-            //                                            segment_inf);
-
-            //     /* Build edges for a GSB */
-            //     build_edges_for_one_tileable_rr_gsb(rr_graph_builder, rr_gsb,
-            //                                         sb_bend_conn, track2ipin_map, opin2track_map,
-            //                                         sb_conn, rr_node_driver_switches, num_edges_to_create);
-            //     /* Finish this GSB, go to the next*/
-            //     rr_graph_builder.build_edges(true);
-            // }
         }
     }
 
@@ -329,7 +306,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   const e_switch_block_type& sb_type,
                                   const int& Fs,
                                   const e_switch_block_type& sb_subtype,
-                                  const int& subFs,
+                                  const int& sub_fs,
                                   const bool& perimeter_cb,
                                   const bool& opin2all_sides,
                                   const bool& concat_wire,
@@ -363,7 +340,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
             /* adapt the switch_block_conn for the GSB nodes */
             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
             sb_conn = build_gsb_track_to_track_map(rr_graph, rr_gsb,
-                                                   sb_type, Fs, sb_subtype, subFs, concat_wire, wire_opposite_side,
+                                                   sb_type, Fs, sb_subtype, sub_fs, concat_wire, wire_opposite_side,
                                                    segment_inf);
 
             /* Build edges for a GSB */

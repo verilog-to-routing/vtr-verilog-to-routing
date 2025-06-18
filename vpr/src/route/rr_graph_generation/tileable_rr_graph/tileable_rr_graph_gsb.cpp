@@ -440,7 +440,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                                                const e_switch_block_type& sb_type,
                                                const int& Fs,
                                                const e_switch_block_type& sb_subtype,
-                                               const int& subFs,
+                                               const int& sub_fs,
                                                const bool& concat_wire,
                                                const bool& wire_opposite_side,
                                                const std::vector<t_segment_inf>& segment_inf) {
@@ -526,7 +526,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
     //    VTR_LOG("Number of pass tracks %d on side %s\n", pass_tracks[size_t(curr_side)].size(), SIDE_STRING[curr_side]);
     //}
     build_gsb_one_group_track_to_track_map(rr_graph, rr_gsb,
-                                           sb_subtype, subFs,
+                                           sb_subtype, sub_fs,
                                            wire_opposite_side, /* Pass tracks may not be wired to start tracks */
                                            pass_tracks, start_tracks,
                                            track2track_map);
