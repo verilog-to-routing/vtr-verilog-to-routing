@@ -8,8 +8,8 @@ routed_wirelength;RangeAbs(0.50,1.50,5)
 #Area metrics
 logic_block_area_total;Range(0.5,1.6)
 logic_block_area_used;Range(0.5,1.6)
-min_chan_width_routing_area_total;Range(0.5,1.6)
-min_chan_width_routing_area_per_tile;Range(0.5,1.6)
+routing_area_total;Range(0.5,1.6)
+routing_area_per_tile;Range(0.5,1.6)
 
 #Run-time metrics
 crit_path_route_time;RangeAbs(0.10,10.0,2)

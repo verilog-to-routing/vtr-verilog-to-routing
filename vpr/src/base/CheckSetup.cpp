@@ -88,6 +88,12 @@ void CheckSetup(const t_packer_opts& packer_opts,
                             "ap_timing_tradeoff expects a value between 0.0 and 1.0");
         }
 
+        // Make sure that the high fanout threshold for solver is valid.
+        if (ap_opts.ap_high_fanout_threshold <= 1) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "ap_high_fanout_threshold should be greater than 1");
+        }
+
         // TODO: Should we enforce that the size of the device is fixed. This
         //       goes with ensuring that some blocks are fixed.
     }

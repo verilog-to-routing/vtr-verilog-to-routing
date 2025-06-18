@@ -39,8 +39,7 @@ class PreClusterTimingManager;
  * This gives a linearized ID for each of the moveable blocks from 0 to the
  * number of moveable blocks.
  */
-struct ap_row_id_tag {};
-typedef vtr::StrongId<ap_row_id_tag, size_t> APRowId;
+typedef vtr::StrongId<struct ap_row_id_tag, size_t> APRowId;
 
 /**
  * @brief The Analytical Solver base class

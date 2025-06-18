@@ -124,9 +124,19 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
  */
 static void print_placement_stats(const PartialPlacement& p_placement,
                                   const APNetlist& ap_netlist,
-                                  FlatPlacementDensityManager& density_manager) {
+                                  FlatPlacementDensityManager& density_manager,
+                                  const PreClusterTimingManager& pre_cluster_timing_manager) {
     // Print the placement HPWL
-    VTR_LOG("\tPlacement HPWL: %f\n", p_placement.get_hpwl(ap_netlist));
+    VTR_LOG("\tPlacement objective HPWL: %f\n", p_placement.get_hpwl(ap_netlist));
+    VTR_LOG("\tPlacement estimated wirelength: %u\n", p_placement.estimate_post_placement_wirelength(ap_netlist));
+
+    // Print the timing information.
+    if (pre_cluster_timing_manager.is_valid()) {
+        float cpd_ns = pre_cluster_timing_manager.get_timing_info().least_slack_critical_path().delay() * 1e9;
+        float stns_ns = pre_cluster_timing_manager.get_timing_info().setup_total_negative_slack() * 1e9;
+        VTR_LOG("\tPlacement estimated CPD: %f ns\n", cpd_ns);
+        VTR_LOG("\tPlacement estimated sTNS: %f ns\n", stns_ns);
+    }
 
     // Print density information. Need to reset the density manager to ensure
     // the data is valid.
@@ -424,7 +434,8 @@ PartialPlacement SimPLGlobalPlacer::place() {
     VTR_LOG("Placement after Global Placement:\n");
     print_placement_stats(best_p_placement,
                           ap_netlist_,
-                          *density_manager_);
+                          *density_manager_,
+                          pre_cluster_timing_manager_);
 
     // Return the placement from the final iteration.
     return best_p_placement;
