@@ -2633,6 +2633,53 @@ The full format is documented below.
     The 'to' set is all L4 switchpoint 0's.
     Note that since different switchpoints are selected from different segment types it is not possible to specify this without using ``<from>`` sub-tags.
 
+.. _arch_metadata:
+
+Architecture metadata
+---------------------
+
+Architecture metadata enables tagging of architecture or routing graph
+information that exists outside of the normal VPR flow (e.g. pack, place,
+route, etc).  For example this could be used to enable bitstream generation by
+tagging routing edges and pb_type features.
+
+The metadata will not be used by the vpr executable, but can be leveraged by
+new tools using the libvpr library.  These new tools can access the metadata
+on the various VPR internal data structures.
+
+To enable tagging of architecture structures with metadata, the ``<metadata>``
+tag can be inserted under the following XML tags:
+
+* ``<pb_type>``
+* Any tag under ``<interconnect>`` (``<direct>``, ``<mux>``, etc).
+* ``<mode>``
+* Any grid location type (``<perimeter>``, ``<fill>``, ``<corners>``, ``<single>``, ``<col>``, ``<row>``, ``<region>``)
+
+.. arch:tag:: <metadata>
+
+Specifies the root of a metadata block.  Can have 0 or more ``<meta>`` Children.
+
+.. arch:tag:: <meta name="string" >
+
+    :req_param name: Key name of this metadata value.
+
+Specifies a value within a metadata block.  The name is a key
+for looking up the value contained within the ``<meta>`` tag.  Keys can be
+repeated, and will be stored in a vector in order of occurrence.
+
+The value of the ``<meta>`` is the text in the block. Both the ``name`` and
+``<meta>`` value will be stored as a string.  XML children are not supported
+in the ``<meta>`` tag.
+
+Example of a metadata block with 2 keys:
+
+    .. code-block:: xml
+
+      <metadata>
+        <meta name="some_key">Some value</meta>
+        <meta name="other key!">Other value!</meta>
+      </metadata>
+
 .. _openfpga_arch_syntax:
 
 Additional Syntax for Tileable Architecture
@@ -2801,52 +2848,4 @@ A quick example which defines a length-4 uni-directional routing segment called 
   </segmentlist>
 
 .. note:: Currently, OpenFPGA only supports uni-directional routing architectures
-
-
-.. _arch_metadata:
-
-Architecture metadata
----------------------
-
-Architecture metadata enables tagging of architecture or routing graph
-information that exists outside of the normal VPR flow (e.g. pack, place,
-route, etc).  For example this could be used to enable bitstream generation by
-tagging routing edges and pb_type features.
-
-The metadata will not be used by the vpr executable, but can be leveraged by
-new tools using the libvpr library.  These new tools can access the metadata
-on the various VPR internal data structures.
-
-To enable tagging of architecture structures with metadata, the ``<metadata>``
-tag can be inserted under the following XML tags:
-
-* ``<pb_type>``
-* Any tag under ``<interconnect>`` (``<direct>``, ``<mux>``, etc).
-* ``<mode>``
-* Any grid location type (``<perimeter>``, ``<fill>``, ``<corners>``, ``<single>``, ``<col>``, ``<row>``, ``<region>``)
-
-.. arch:tag:: <metadata>
-
-Specifies the root of a metadata block.  Can have 0 or more ``<meta>`` Children.
-
-.. arch:tag:: <meta name="string" >
-
-    :req_param name: Key name of this metadata value.
-
-Specifies a value within a metadata block.  The name is a key
-for looking up the value contained within the ``<meta>`` tag.  Keys can be
-repeated, and will be stored in a vector in order of occurrence.
-
-The value of the ``<meta>`` is the text in the block. Both the ``name`` and
-``<meta>`` value will be stored as a string.  XML children are not supported
-in the ``<meta>`` tag.
-
-Example of a metadata block with 2 keys:
-
-    .. code-block:: xml
-
-      <metadata>
-        <meta name="some_key">Some value</meta>
-        <meta name="other key!">Other value!</meta>
-      </metadata>
 
