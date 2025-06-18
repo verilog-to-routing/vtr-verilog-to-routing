@@ -267,8 +267,8 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
 }
 
 void write_channel_occupancy_table(const std::string_view filename,
-                                          const vtr::Matrix<int>& occupancy,
-                                          const std::vector<int>& capacity_list) {
+                                   const vtr::Matrix<int>& occupancy,
+                                   const std::vector<int>& capacity_list) {
     constexpr int w_coord = 6;
     constexpr int w_value = 12;
     constexpr int w_percent = 12;

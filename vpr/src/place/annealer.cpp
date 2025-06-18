@@ -682,17 +682,15 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
         || (annealing_state_.rlim / MoveGenerator::first_rlim) < placer_opts_.congestion_acceptance_rate_trigger) {
         costs_.congestion_cost = net_cost_handler_.estimate_routing_chann_util();
 
-
         if (!congestion_modeling_started_) {
             VTR_LOG("Congestion modeling started. %f %f\n", placer_opts_.congestion_factor, placer_opts_.timing_tradeoff);
             placer_opts_.congestion_factor = congestion_factor_;
             placer_opts_.congestion_factor /= 1.f + congestion_factor_;
-//            placer_opts_.congestion_factor /= 1.f + placer_opts_.congestion_factor;
+            //            placer_opts_.congestion_factor /= 1.f + placer_opts_.congestion_factor;
             placer_opts_.timing_tradeoff /= 1.f + congestion_factor_;
             VTR_LOG("Congestion modeling started. %f %f\n", placer_opts_.congestion_factor, placer_opts_.timing_tradeoff);
             congestion_modeling_started_ = true;
         }
-
     }
 
     // Update the cost normalization factors

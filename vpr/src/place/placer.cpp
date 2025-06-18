@@ -123,7 +123,7 @@ Placer::Placer(const Netlist<>& net_list,
     } else {
         VTR_ASSERT(placer_opts.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
         // Timing cost is not used
-        costs_.timing_cost = std::numeric_limits<double>::quiet_NaN();;
+        costs_.timing_cost = std::numeric_limits<double>::quiet_NaN();
     }
 
     costs_.update_norm_factors();

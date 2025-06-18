@@ -251,7 +251,6 @@ class NetCostHandler {
     vtr::NdMatrix<int, 3> chanx_width_;
     vtr::NdMatrix<int, 3> chany_width_;
 
-
     /**
      * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 
      * the cross-die-layer direction over a 2D (x,y) region. We don't assume the inter-die connectivity is the same at all (x,y) locations, so we

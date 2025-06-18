@@ -155,14 +155,14 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     alloc_and_load_chan_w_factors_for_place_cost_();
 
     chanx_util_ = vtr::Matrix<double>({{
-                                          device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
-                                          device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (# x channels)
+                                          device_ctx.grid.width(), //[0 .. device_ctx.grid.width() - 1] (length of x channel)
+                                          device_ctx.grid.height() //[0 .. device_ctx.grid.height() - 1] (# x channels)
                                       }},
                                       0);
 
     chany_util_ = vtr::Matrix<double>({{
-                                          device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (# y channels)
-                                          device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
+                                          device_ctx.grid.width(), //[0 .. device_ctx.grid.width() - 1] (# y channels)
+                                          device_ctx.grid.height() //[0 .. device_ctx.grid.height() - 1] (length of y channel)
                                       }},
                                       0);
 
@@ -341,8 +341,6 @@ std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cos
             }
         }
     }
-
-
 
     return {cost, expected_wirelength, cong_cost};
 }
@@ -1438,8 +1436,8 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
     float x_chan_cong = (x_chan_util < threshold) ? 0.0f : x_chan_util - threshold;
     float y_chan_cong = (y_chan_util < threshold) ? 0.0f : y_chan_util - threshold;
 
-//    return (distance_x * x_chan_cong) + (distance_y * y_chan_cong);
-    return  x_chan_cong + y_chan_cong;
+    //    return (distance_x * x_chan_cong) + (distance_y * y_chan_cong);
+    return x_chan_cong + y_chan_cong;
 }
 
 double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_ts) {
@@ -1772,7 +1770,6 @@ double NetCostHandler::estimate_routing_chann_util() {
         std::tie(chanx_width_, chany_width_) = calculate_channel_width();
     }
 
-
     for (size_t x = 0; x < chanx_util_.dim_size(0); ++x) {
         for (size_t y = 0; y < chanx_util_.dim_size(1); ++y) {
             if (chanx_width_[0][x][y] > 0) {
@@ -1780,7 +1777,6 @@ double NetCostHandler::estimate_routing_chann_util() {
             } else {
                 chanx_util_[x][y] = 1.;
             }
-
         }
     }
 
