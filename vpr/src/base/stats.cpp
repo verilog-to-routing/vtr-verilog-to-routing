@@ -34,23 +34,6 @@ static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::Matrix<int>& chany_occ);
 
 /**
- * @brief Writes channel occupancy data to a file.
- *
- * Each row contains:
- *   - (x, y) coordinate
- *   - Occupancy count
- *   - Occupancy percentage (occupancy / capacity)
- *   - Channel capacity
- *
- * @param filename      Output file path.
- * @param occupancy     Matrix of occupancy counts.
- * @param capacity_list List of channel capacities (per y for chanx, per x for chany).
- */
-static void write_channel_occupancy_table(const std::string_view filename,
-                                          const vtr::Matrix<int>& occupancy,
-                                          const std::vector<int>& capacity_list);
-
-/**
  * @brief Figures out maximum, minimum and average number of bends
  *        and net length in the routing.
  */
@@ -127,6 +110,41 @@ void routing_stats(const Netlist<>& net_list,
     if (full_stats) {
         print_wirelen_prob_dist(is_flat);
     }
+}
+
+std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width() {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    auto chanx_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width(),
+                                               device_ctx.grid.height()}},
+                                             0);
+
+    auto chany_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width(),
+                                               device_ctx.grid.height()}},
+                                             0);
+
+    for (RRNodeId node_id : rr_graph.nodes()) {
+        e_rr_type rr_type = rr_graph.node_type(node_id);
+
+        if (rr_type == e_rr_type::CHANX) {
+            int y = rr_graph.node_ylow(node_id);
+            int layer = rr_graph.node_layer(node_id);
+            for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
+                chanx_width[layer][x][y]++;
+            }
+        } else if (rr_type == e_rr_type::CHANY) {
+            int x = rr_graph.node_xlow(node_id);
+            int layer = rr_graph.node_layer(node_id);
+            for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
+                chany_width[layer][x][y]++;
+            }
+        }
+    }
+
+    return {chanx_width, chany_width};
 }
 
 void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
@@ -248,9 +266,9 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
     VTR_LOG("\n");
 }
 
-static void write_channel_occupancy_table(const std::string_view filename,
-                                          const vtr::Matrix<int>& occupancy,
-                                          const std::vector<int>& capacity_list) {
+void write_channel_occupancy_table(const std::string_view filename,
+                                   const vtr::Matrix<int>& occupancy,
+                                   const std::vector<int>& capacity_list) {
     constexpr int w_coord = 6;
     constexpr int w_value = 12;
     constexpr int w_percent = 12;

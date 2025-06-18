@@ -268,7 +268,9 @@ class PlacementAnnealer {
     float estimate_starting_temperature_();
 
   private:
-    const t_placer_opts& placer_opts_;
+    t_placer_opts placer_opts_;
+    float congestion_factor_;
+
     PlacerState& placer_state_;
     const PlaceMacros& place_macros_;
     /// Stores different placement cost terms
@@ -327,6 +329,8 @@ class PlacementAnnealer {
     int tot_iter_;
     /// Indicates whether the annealer has entered into the quench stage
     bool quench_started_;
+    /// Indicates whether routing congestion modeling has been started
+    bool congestion_modeling_started_;
 
     void LOG_MOVE_STATS_HEADER();
     void LOG_MOVE_STATS_PROPOSED();

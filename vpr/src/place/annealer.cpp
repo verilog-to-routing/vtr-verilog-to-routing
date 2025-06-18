@@ -227,8 +227,12 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , move_stats_file_(nullptr, vtr::fclose)
     , outer_crit_iter_count_(1)
     , blocks_affected_(placer_state.block_locs().size())
-    , quench_started_(false) {
+    , quench_started_(false)
+    , congestion_modeling_started_(false) {
     const auto& device_ctx = g_vpr_ctx.device();
+
+    congestion_factor_ = placer_opts_.congestion_factor;
+    placer_opts_.congestion_factor = 0.;
 
     float first_crit_exponent;
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -373,9 +377,10 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
     /* I'm using negative values of proposed_net_cost as a flag,
      * so DO NOT use cost functions that can go negative. */
-    double delta_c = 0;        //Change in cost due to this swap.
-    double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
-    double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
+    double delta_c = 0.;        //Change in cost due to this swap.
+    double bb_delta_c = 0.;     //Change in the bounding box (wiring) cost.
+    double timing_delta_c = 0.; //Change in the timing cost (delay * criticality).
+    double congestion_delta_c = 0.;
 
     /* Allow some fraction of moves to not be restricted by rlim,
      * in the hopes of better escaping local minima. */
@@ -453,7 +458,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
          * delays and timing costs and store them in proposed_* data structures.
          */
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
-                                                              bb_delta_c, timing_delta_c);
+                                                              bb_delta_c, timing_delta_c, congestion_delta_c);
 
         if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
@@ -469,8 +474,9 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            placer_opts_.timing_tradeoff,
                            timing_delta_c,
                            costs_.timing_cost_norm);
-            delta_c = (1 - placer_opts_.timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
-                      + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm;
+            delta_c = (1 - placer_opts_.timing_tradeoff - placer_opts_.congestion_factor) * bb_delta_c * costs_.bb_cost_norm
+                      + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
+                      + placer_opts_.congestion_factor * congestion_delta_c * costs_.congestion_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -537,6 +543,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         if (move_outcome == e_move_result::ACCEPTED) {
             costs_.cost += delta_c;
             costs_.bb_cost += bb_delta_c;
+            costs_.congestion_cost += congestion_delta_c;
 
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
@@ -669,6 +676,21 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
             outer_crit_iter_count_ = 0;
         }
         outer_crit_iter_count_++;
+    }
+
+    if (congestion_modeling_started_
+        || (annealing_state_.rlim / MoveGenerator::first_rlim) < placer_opts_.congestion_acceptance_rate_trigger) {
+        costs_.congestion_cost = net_cost_handler_.estimate_routing_chann_util();
+
+        if (!congestion_modeling_started_) {
+            VTR_LOG("Congestion modeling started. %f %f\n", placer_opts_.congestion_factor, placer_opts_.timing_tradeoff);
+            placer_opts_.congestion_factor = congestion_factor_;
+            placer_opts_.congestion_factor /= 1.f + congestion_factor_;
+            //            placer_opts_.congestion_factor /= 1.f + placer_opts_.congestion_factor;
+            placer_opts_.timing_tradeoff /= 1.f + congestion_factor_;
+            VTR_LOG("Congestion modeling started. %f %f\n", placer_opts_.congestion_factor, placer_opts_.timing_tradeoff);
+            congestion_modeling_started_ = true;
+        }
     }
 
     // Update the cost normalization factors
