@@ -1,7 +1,10 @@
 /* draw_basic.cpp contains all functions that draw in the main graphics area
  * that aren't RR nodes or muxes (they have their own file).
  * All functions in this file contain the prefix draw_. */
+#ifndef NO_GRAPHICS
+
 #include <cstdio>
+#include <numbers>
 #include <cmath>
 #include <algorithm>
 #include <sstream>
@@ -27,18 +30,14 @@
 #include "route_export.h"
 #include "tatum/report/TimingPathCollector.hpp"
 
-#ifndef NO_GRAPHICS
-
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
 #if defined(X11) && !defined(__MINGW32__)
 #include <X11/keysym.h>
 #endif
 
-#include "rr_graph.h"
 #include "route_utilization.h"
 #include "place_macro.h"
-#include "buttons.h"
 
 /****************************** Define Macros *******************************/
 #define DEFAULT_RR_NODE_COLOR ezgl::BLACK
@@ -539,6 +538,7 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     /* Next free track in each channel segment if routing is GLOBAL */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -548,14 +548,23 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     g->set_color(ezgl::BLACK, ezgl::BLACK.alpha * NET_ALPHA);
 
     /* Now draw each net, one by one.      */
+    if (draw_state->is_flat) {
+        for (AtomNetId net_id : atom_ctx.netlist().nets()) {
+            if (draw_net_type == HIGHLIGHTED
+                && draw_state->net_color[net_id] == ezgl::BLACK)
+                continue;
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (draw_net_type == HIGHLIGHTED
-            && draw_state->net_color[net_id] == ezgl::BLACK)
-            continue;
+            draw_routed_net((ParentNetId&)net_id, g);
+        } /* End for (each net) */
+    } else {
+        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+            if (draw_net_type == HIGHLIGHTED
+                && draw_state->net_color[net_id] == ezgl::BLACK)
+                continue;
 
-        draw_routed_net((ParentNetId&)net_id, g);
-    } /* End for (each net) */
+            draw_routed_net((ParentNetId&)net_id, g);
+        } /* End for (each net) */
+    }
 }
 
 void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
@@ -1094,6 +1103,8 @@ void draw_crit_path(ezgl::renderer* g) {
 void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     const ezgl::color contour_color{0, 0, 0, 40};
+    const ezgl::line_dash contour_line_style{ezgl::line_dash::none};
+    const int contour_line_width{1};
 
     auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay,
                                                  const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays = false) {
@@ -1134,7 +1145,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
                         if (draw_current_element) {
                             draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::none, /*line_width*/ 4, delay, prev_node, node);
                         } else if (draw_crit_path_contour) {
-                            draw_flyline_timing_edge_helper_fn(g, contour_color, ezgl::line_dash::none, /*line_width*/ 1, delay, prev_node, node, /*skip_draw_delays*/ true);
+                            draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/ true);
                         }
                     } else {
                         VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
@@ -1145,7 +1156,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 
                             draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/ 3, delay, prev_node, node);
                         } else if (draw_crit_path_contour) {
-                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/ 3, delay, prev_node, node, /*skip_draw_delays*/ true);
+                            draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/ true);
                         }
                     }
                 }
@@ -1226,7 +1237,7 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         std::string incr_delay_str = ss.str();
 
         // Get the angle of line, to rotate the text
-        float text_angle = (180 / M_PI)
+        float text_angle = (180 / std::numbers::pi)
                            * atan((end.y - start.y) / (end.x - start.x));
 
         // Get the screen coordinates for text drawing
@@ -1241,9 +1252,9 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
 
         // Find an offset so it is sitting on top/below of the line
         float x_offset = screen_coords.center().x
-                         - 8 * sin(text_angle * (M_PI / 180));
+                         - 8 * sin(text_angle * (std::numbers::pi / 180));
         float y_offset = screen_coords.center().y
-                         - 8 * cos(text_angle * (M_PI / 180));
+                         - 8 * cos(text_angle * (std::numbers::pi / 180));
 
         ezgl::point2d offset_text_bbox(x_offset, y_offset);
         g->draw_text(offset_text_bbox, incr_delay_str.c_str(),

@@ -1,12 +1,9 @@
+#pragma once
+
 #include "rr_graph_fwd.h"
-#include "vtr_assert.h"
 
 #include <set>
-#include <list>
 #include <vector>
-
-#ifndef _PATH_MANAGER_H
-#define _PATH_MANAGER_H
 
 /* Extra path data needed by RCV, separated from RTExploredNode struct for performance reasons
  * Can be accessed by a pointer, won't be initialized unless by RCV
@@ -115,5 +112,3 @@ class PathManager {
     // Required by RCV so the router doesn't expand already visited nodes
     std::set<RRNodeId> route_tree_nodes_;
 };
-
-#endif

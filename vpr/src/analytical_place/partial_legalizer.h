@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer and Robert Luo
@@ -11,8 +12,6 @@
  * constraints of the architecture).
  */
 
-#pragma once
-
 #include <functional>
 #include <memory>
 #include <vector>
@@ -22,7 +21,9 @@
 #include "flat_placement_density_manager.h"
 #include "logic_types.h"
 #include "model_grouper.h"
-#include "primitive_vector.h"
+#include "primitive_dim_manager.h"
+#include "primitive_vector_fwd.h"
+#include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_prefix_sum.h"
 #include "vtr_vector.h"
@@ -96,6 +97,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          const APNetlist& netlist,
                                                          std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                                          const Prepacker& prepacker,
+                                                         const LogicalModels& models,
                                                          int log_verbosity);
 
 /**
@@ -235,6 +237,7 @@ class FlowBasedLegalizer : public PartialLegalizer {
      */
     FlowBasedLegalizer(const APNetlist& netlist,
                        std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                       const LogicalModels& models,
                        int log_verbosity);
 
     /**
@@ -301,41 +304,125 @@ struct PartitionedWindow {
 
 /**
  * @brief Wrapper class around the prefix sum class which creates a prefix sum
- *        for each model type and has helper methods for getting the sums over
+ *        for each dim type and has helper methods for getting the sums over
  *        regions.
  */
-class PerModelPrefixSum2D {
+class PerPrimitiveDimPrefixSum2D {
   public:
-    PerModelPrefixSum2D() = default;
+    PerPrimitiveDimPrefixSum2D() = default;
 
     /**
-     * @brief Construct prefix sums for each of the models in the architecture.
+     * @brief Construct prefix sums for each of the primitive vector dims.
      *
      * Uses the density manager to get the size of the placeable region.
      *
      * The lookup is a lambda used to populate the prefix sum. It provides
      * the model index, x, and y to be populated.
      */
-    PerModelPrefixSum2D(const FlatPlacementDensityManager& density_manager,
-                        const LogicalModels& models,
-                        std::function<float(LogicalModelId, size_t, size_t)> lookup);
+    PerPrimitiveDimPrefixSum2D(const FlatPlacementDensityManager& density_manager,
+                               std::function<float(PrimitiveVectorDim, size_t, size_t)> lookup);
 
     /**
-     * @brief Get the sum for a given model over the given region.
+     * @brief Get the sum for a given dim over the given region.
      */
-    float get_model_sum(LogicalModelId model_index,
-                        const vtr::Rect<double>& region) const;
+    float get_dim_sum(PrimitiveVectorDim dim,
+                      const vtr::Rect<double>& region) const;
 
     /**
-     * @brief Get the multi-dimensional sum over the given model indices over
+     * @brief Get the multi-dimensional sum over the given dims over
      *        the given region.
      */
-    PrimitiveVector get_sum(const std::vector<LogicalModelId>& model_indices,
+    PrimitiveVector get_sum(const std::vector<PrimitiveVectorDim>& dims,
                             const vtr::Rect<double>& region) const;
 
   private:
-    /// @brief Per-Model Prefix Sums
-    vtr::vector<LogicalModelId, vtr::PrefixSum2D<float>> model_prefix_sum_;
+    /// @brief Per-Dim Prefix Sums
+    vtr::vector<PrimitiveVectorDim, vtr::PrefixSum2D<float>> dim_prefix_sum_;
+};
+
+/// @brief A unique ID of a group of primitive dims created by the PrimitiveDimGrouper class.
+typedef vtr::StrongId<struct primitive_group_id_tag, size_t> PrimitiveGroupId;
+
+/**
+ * @brief A manager class for grouping together dimensions of the primitive
+ *        vector which must be legalized together in a flat placement due to
+ *        how the models they represent being associated with one another.
+ */
+class PrimitiveDimGrouper {
+  public:
+    // Iterator for the primitive group IDs.
+    typedef typename vtr::vector_map<PrimitiveGroupId, PrimitiveGroupId>::const_iterator prim_group_iterator;
+
+    // Range for the primitive group IDs.
+    typedef typename vtr::Range<prim_group_iterator> prim_group_range;
+
+  public:
+    PrimitiveDimGrouper() = delete;
+
+    /**
+     * @brief Constructor for the primitive grouper class. Groups are formed here.
+     *
+     *  @param prepacker
+     *      The prepacker used to create molecules in the flat placement.
+     *  @param models
+     *      The logical models in the architecture.
+     *  @param density_manager
+     *      The density manager object used to manage mass in the legalizer.
+     *  @param dim_manager
+     *      The primitive vector dimension manager.
+     *  @param log_verbosity
+     *      The verbosity of log messages in the grouper class.
+     */
+    PrimitiveDimGrouper(const Prepacker& prepacker,
+                        const LogicalModels& models,
+                        const FlatPlacementDensityManager& density_manager,
+                        const PrimitiveDimManager& dim_manager,
+                        int log_verbosity);
+
+    /**
+     * @brief Returns a list of all valid primitive group IDs.
+     */
+    inline prim_group_range groups() const {
+        return vtr::make_range(group_ids_.begin(), group_ids_.end());
+    }
+
+    /**
+     * @brief Gets the primitive group ID of the given primitive dim.
+     */
+    inline PrimitiveGroupId get_dim_group_id(PrimitiveVectorDim dim) const {
+        VTR_ASSERT_SAFE_MSG(dim.is_valid(),
+                            "Cannot get the group of an invalid dim");
+        PrimitiveGroupId group_id = dim_group_id_[dim];
+        VTR_ASSERT_SAFE_MSG(group_id.is_valid(),
+                            "Dim is not in a group");
+        return group_id;
+    }
+
+    /**
+     * @brief Gets the primitive dims in the given primitive group.
+     */
+    inline const std::vector<PrimitiveVectorDim>& get_dims_in_group(PrimitiveGroupId group_id) const {
+        VTR_ASSERT_SAFE_MSG(group_id.is_valid(),
+                            "Invalid group id");
+        VTR_ASSERT_SAFE_MSG(groups_[group_id].size() != 0,
+                            "Group is empty");
+        return groups_[group_id];
+    }
+
+  private:
+    /// @brief Grouper object which handles grouping together models which must
+    ///        be spread together. Models are grouped based on the pack patterns
+    ///        that they can form with each other.
+    ModelGrouper model_grouper_;
+
+    /// @brief List of all primitive group IDs.
+    vtr::vector_map<PrimitiveGroupId, PrimitiveGroupId> group_ids_;
+
+    /// @brief A lookup between primitive dims and the group ID that contains them.
+    vtr::vector<PrimitiveVectorDim, PrimitiveGroupId> dim_group_id_;
+
+    /// @brief A lookup between each primitive group ID and the dims in that group.
+    vtr::vector<PrimitiveGroupId, std::vector<PrimitiveVectorDim>> groups_;
 };
 
 /**
@@ -379,6 +466,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     BiPartitioningPartialLegalizer(const APNetlist& netlist,
                                    std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                    const Prepacker& prepacker,
+                                   const LogicalModels& models,
                                    int log_verbosity);
 
     /**
@@ -424,7 +512,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      *  - This allows us to ignore block models which are already in legal
      *    positions.
      */
-    std::vector<SpreadingWindow> identify_non_overlapping_windows(ModelGroupId group_id);
+    std::vector<SpreadingWindow> identify_non_overlapping_windows(PrimitiveGroupId group_id);
 
     /**
      * @brief Identifies clusters of overfilled bins for the given model group.
@@ -432,7 +520,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      * This locates clusters of overfilled bins which are within a given
      * distance from each other.
      */
-    std::vector<FlatPlacementBinCluster> get_overfilled_bin_clusters(ModelGroupId group_id);
+    std::vector<FlatPlacementBinCluster> get_overfilled_bin_clusters(PrimitiveGroupId group_id);
 
     /**
      * @brief Creates and grows minimum spanning windows around the given
@@ -444,7 +532,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      */
     std::vector<SpreadingWindow> get_min_windows_around_clusters(
         const std::vector<FlatPlacementBinCluster>& overfilled_bin_clusters,
-        ModelGroupId group_id);
+        PrimitiveGroupId group_id);
 
     /**
      * @brief Merges overlapping windows in the given vector of windows.
@@ -459,7 +547,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      * Only blocks in the given model group will be moved.
      */
     void move_blocks_into_windows(std::vector<SpreadingWindow>& non_overlapping_windows,
-                                  ModelGroupId group_id);
+                                  PrimitiveGroupId group_id);
 
     // ========================================================================
     //      Spreading blocks over windows
@@ -474,7 +562,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      */
     void spread_over_windows(std::vector<SpreadingWindow>& non_overlapping_windows,
                              const PartialPlacement& p_placement,
-                             ModelGroupId group_id);
+                             PrimitiveGroupId group_id);
 
     /**
      * @brief Partition the given window into two sub-windows.
@@ -483,7 +571,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      * the direction of the partition (vertical / horizontal) and the position
      * of the cut.
      */
-    PartitionedWindow partition_window(SpreadingWindow& window, ModelGroupId group_id);
+    PartitionedWindow partition_window(SpreadingWindow& window, PrimitiveGroupId group_id);
 
     /**
      * @brief Partition the blocks in the given window into the partitioned
@@ -495,7 +583,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      */
     void partition_blocks_in_window(SpreadingWindow& window,
                                     PartitionedWindow& partitioned_window,
-                                    ModelGroupId group_id,
+                                    PrimitiveGroupId group_id,
                                     const PartialPlacement& p_placement);
 
     /**
@@ -509,10 +597,11 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     ///        of regions of the device.
     std::shared_ptr<FlatPlacementDensityManager> density_manager_;
 
-    /// @brief Grouper object which handles grouping together models which must
-    ///        be spread together. Models are grouped based on the pack patterns
-    ///        that they can form with each other.
-    ModelGrouper model_grouper_;
+    /// @brief Grouper object which handles grouping together primitive dimensions
+    ///        which must be spread together. Dims are grouped based on the model
+    ///        pack patterns they represent and how those models are mapped into
+    ///        primitive vector dimensions.
+    PrimitiveDimGrouper dim_grouper_;
 
     /// @brief The prefix sum for the capacity of the device, as given by the
     ///        density manager. We will need to get the capacity of 2D regions
@@ -520,7 +609,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     ///        structure greatly improves the time complexity of this operation.
     ///
     /// This is populated in the constructor and not modified.
-    PerModelPrefixSum2D capacity_prefix_sum_;
+    PerPrimitiveDimPrefixSum2D capacity_prefix_sum_;
 
     /// @brief The number of times a window was partitioned in the legalizer.
     unsigned num_windows_partitioned_ = 0;

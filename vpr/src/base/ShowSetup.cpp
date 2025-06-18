@@ -135,7 +135,7 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
         auto physical_tile = pick_physical_type(logical_block);
         num_blocks_type[logical_block->index]++;
-        if (is_io_type(physical_tile)) {
+        if (physical_tile->is_io()) {
             for (int j = 0; j < logical_block->pb_type->num_pins; j++) {
                 int physical_pin = get_physical_pin(physical_tile, logical_block, j);
 
@@ -656,6 +656,7 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
     }
 
     VTR_LOG("AnalyticalPlacerOpts.ap_timing_tradeoff: %f\n", APOpts.ap_timing_tradeoff);
+    VTR_LOG("AnalyticalPlacerOpts.ap_high_fanout_threshold: %d\n", APOpts.ap_high_fanout_threshold);
     VTR_LOG("AnalyticalPlacerOpts.log_verbosity: %d\n", APOpts.log_verbosity);
 }
 

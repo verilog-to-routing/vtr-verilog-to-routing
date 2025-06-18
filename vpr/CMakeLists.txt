@@ -175,14 +175,6 @@ add_executable(vpr ${EXEC_SOURCES})
 target_link_libraries(vpr libvpr)
 
 
-#Suppress IPO link warnings if IPO is enabled
-get_target_property(VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
-if (VPR_USES_IPO)
-    set_property(TARGET vpr APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
-endif()
-
-
-
 #
 # Profile Guilded Optimization Configuration
 #
@@ -225,24 +217,6 @@ elseif (VPR_PGO_CONFIG STREQUAL "none")
     #Pass
 else()
     message(ERROR "Unsupported VPR_PGO_CONFIG '${VPR_PGO_CONFIG}'")
-endif()
-
-if (VTR_ENABLE_STRICT_COMPILE)
-    message(STATUS "VPR: building with strict flags")
-
-    set(VPR_STRICT_COMPILE_FLAGS_TO_CHECK
-        #GCC-like
-        "-Werror"
-        # due to the pointer hackery in timing_driven_route_structs and BinaryHeap.heap_
-        "-Wno-error=free-nonheap-object"
-        )
-
-    foreach(flag ${VPR_STRICT_COMPILE_FLAGS_TO_CHECK})
-        message(STATUS "\tAdding CXX flag: ${flag}")
-        target_compile_options(libvpr PRIVATE ${flag})
-        target_compile_options(vpr PRIVATE ${flag})
-        target_link_libraries(vpr ${flag})
-    endforeach()
 endif()
 
 #
@@ -320,12 +294,6 @@ add_executable(test_vpr ${TEST_SOURCES})
 target_link_libraries(test_vpr
                         Catch2::Catch2WithMain
                         libvpr)
-
-#Suppress IPO link warnings if IPO is enabled
-get_target_property(TEST_VPR_USES_IPO vpr INTERPROCEDURAL_OPTIMIZATION)
-if (TEST_VPR_USES_IPO)
-    set_property(TARGET test_vpr APPEND PROPERTY LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
-endif()
 
 add_test(NAME test_vpr
     COMMAND test_vpr --colour-mode ansi

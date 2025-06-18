@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -7,8 +8,6 @@
  *          routed by VTR.
  */
 
-#pragma once
-
 #include <memory>
 #include "ap_flow_enums.h"
 
@@ -17,7 +16,7 @@ class APNetlist;
 class AtomNetlist;
 class ClusteredNetlist;
 class DeviceGrid;
-class PartialPlacement;
+struct PartialPlacement;
 class PlaceMacros;
 class PreClusterTimingManager;
 class Prepacker;

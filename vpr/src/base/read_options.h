@@ -1,5 +1,4 @@
-#ifndef READ_OPTIONS_H
-#define READ_OPTIONS_H
+#pragma once
 
 #include "arch_types.h"
 #include "read_circuit.h"
@@ -68,6 +67,7 @@ struct t_options {
     /* General options */
     argparse::ArgValue<bool> show_help;
     argparse::ArgValue<bool> show_version;
+    argparse::ArgValue<bool> show_arch_resources;
     argparse::ArgValue<size_t> num_workers;
     argparse::ArgValue<bool> timing_analysis;
     argparse::ArgValue<e_timing_update_type> timing_update_type;
@@ -106,6 +106,8 @@ struct t_options {
     argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
+    argparse::ArgValue<int> ap_high_fanout_threshold;
+    argparse::ArgValue<bool> ap_generate_mass_report;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
@@ -276,6 +278,7 @@ struct t_options {
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
     argparse::ArgValue<bool> post_synth_netlist_module_parameters;
     argparse::ArgValue<std::string> write_timing_summary;
+    argparse::ArgValue<bool> skip_sync_clustering_and_routing_results;
     argparse::ArgValue<bool> generate_net_timing_report;
 };
 
@@ -283,5 +286,3 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 t_options read_options(int argc, const char** argv);
 void set_conditional_defaults(t_options& args);
 bool verify_args(const t_options& args);
-
-#endif

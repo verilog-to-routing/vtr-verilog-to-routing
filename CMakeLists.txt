@@ -26,7 +26,6 @@ set_property(CACHE VTR_IPO_BUILD PROPERTY STRINGS auto on off)
 set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticeable run-time overhead, 4: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 
-option(VTR_ENABLE_STRICT_COMPILE "Specifies whether compiler warnings should be treated as errors (e.g. -Werror)" OFF)
 option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
@@ -228,18 +227,17 @@ foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     endif()
 endforeach()
 
-#Suppress IPO link warnings
-set(IPO_LINK_WARN_SUPRESS_FLAGS " ")
-set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK
-    "-Wno-null-dereference"
-    )
-foreach(flag ${IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK})
-    CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
-    if(CXX_COMPILER_SUPPORTS_${flag})
-        #Flag supported, so enable it
-        set(IPO_LINK_WARN_SUPRESS_FLAGS "${IPO_LINK_WARN_SUPRESS_FLAGS} ${flag}")
-    endif()
-endforeach()
+# Suppress IPO link warnings.
+# When IPO is turned on, it sometimes leads to false positives for warnings
+# since it checks for warnings after some of the source files have been compiled.
+# We globally suppress these warnings here. Any CMake executable which is added
+# after this line will have these warnings suppressed at link time.
+if (CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+    message(STATUS "IPO: Suppressing known VTR warnings.")
+    add_link_options(-Wno-alloc-size-larger-than  # libarchfpga allocates C-style arrays using integers.
+                     -Wno-stringop-overflow       # EXTERNAL/capnproto has some string overflow warnings.
+                     )
+endif()
 
 #
 # Sanitizer flags

@@ -112,4 +112,25 @@ jobs:
         name: nightly_test_results
         path: |
           vtr_flow/**/*.log
+          vtr_flow/**/vpr.out
           vtr_flow/**/parse_results*.txt
+
+    - name: Generate golden results
+      if: success() || failure()
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py vtr_reg_nightly_test1 -create_golden
+        ./run_reg_test.py vtr_reg_nightly_test2 -create_golden
+        ./run_reg_test.py vtr_reg_nightly_test3 -create_golden
+        ./run_reg_test.py vtr_reg_nightly_test4 -create_golden
+        ./run_reg_test.py vtr_reg_nightly_test5 -create_golden
+        ./run_reg_test.py vtr_reg_nightly_test6 -create_golden
+        ./run_reg_test.py vtr_reg_nightly_test7 -create_golden
+
+    - name: Upload golden results
+      if: success() || failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly_tests_golden
+        path: |
+          vtr_flow/**/vtr_reg_nightly*/**/golden_results.txt

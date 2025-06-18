@@ -8,6 +8,7 @@
 #include "vpr_api.h"
 #include "echo_files.h"
 #include <cstring>
+#include <random>
 #include <vector>
 
 namespace {
@@ -22,8 +23,8 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
-    XmlReadArch(kArchFile, /*timing_enabled=*/false,
-                &arch, physical_tile_types, logical_block_types);
+    xml_read_arch(kArchFile, /*timing_enabled=*/false,
+                  &arch, physical_tile_types, logical_block_types);
 
     auto type_str = arch.strings.intern_string(vtr::string_view("type"));
     auto pb_type_type = arch.strings.intern_string(vtr::string_view("pb_type_type"));

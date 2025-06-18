@@ -1,4 +1,3 @@
-#ifndef NO_GRAPHICS
 /**
  * @file UI_SETUP.CPP
  * @author Sebastian Lievano
@@ -10,18 +9,18 @@
  * Each function here initializes a different set of ui buttons, connecting their callback functions
  */
 
-#include "draw_global.h"
-#include "draw.h"
-#include "draw_toggle_functions.h"
-#include "buttons.h"
-#include "intra_logic_block.h"
-#include "clustered_netlist.h"
-#include "ui_setup.h"
-#include "save_graphics.h"
+#ifndef NO_GRAPHICS
 
-#include "ezgl/point.hpp"
+#include "clustered_netlist.h"
+#include "draw.h"
+#include "draw_global.h"
+#include "draw_toggle_functions.h"
+#include "save_graphics.h"
+#include "search_bar.h"
+#include "ui_setup.h"
+
 #include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
+
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -269,18 +268,15 @@ void load_block_names(ezgl::application* app) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
-    int i = 0;
     for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter,
                            0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
-        i++;
     }
     for (AtomBlockId id : atom_ctx.netlist().blocks()) {
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter,
                            0, (atom_ctx.netlist().block_name(id)).c_str(), -1);
-        i++;
     }
 }
 
@@ -294,12 +290,10 @@ void load_net_names(ezgl::application* app) {
     auto& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
     //Loading net names
-    int i = 0;
     for (AtomNetId id : atom_ctx.netlist().nets()) {
         gtk_list_store_append(netStorage, &iter);
         gtk_list_store_set(netStorage, &iter,
                            0, (atom_ctx.netlist().net_name(id)).c_str(), -1);
-        i++;
     }
 }
 

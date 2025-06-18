@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -9,8 +10,6 @@
  * Placement need not represent a legal placement; however, the placed blocks
  * will always be on the device and will respect fixed block locations.
  */
-
-#pragma once
 
 #include <cmath>
 #include "ap_netlist.h"
@@ -145,6 +144,15 @@ struct PartialPlacement {
      *       result. This is used for the Global Placer.
      */
     double get_hpwl(const APNetlist& netlist) const;
+
+    /**
+     * @brief Estimate the wirelength of the current placement assuming that all
+     *        blocks will be placed exactly where they are in the partial placement.
+     *
+     * NOTE: This is an underestimate of the actual wirelength mainly due to
+     *       the placement not being legalized yet.
+     */
+    double estimate_post_placement_wirelength(const APNetlist& netlist) const;
 
     /**
      * @brief Verify the block_x_locs and block_y_locs vectors

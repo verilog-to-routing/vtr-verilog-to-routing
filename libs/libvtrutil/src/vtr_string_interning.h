@@ -1,5 +1,4 @@
-#ifndef VTR_STRING_INTERNING_H_
-#define VTR_STRING_INTERNING_H_
+#pragma once
 
 /**
  * @file
@@ -44,7 +43,6 @@
  */
 #include <cstring>
 #include <string>
-#include <vector>
 #include <unordered_map>
 #include <stdexcept>
 #include <climits>
@@ -555,5 +553,3 @@ struct hash<vtr::interned_string> {
     }
 };
 } // namespace std
-
-#endif /* VTR_STRING_INTERNING_H_ */

@@ -159,11 +159,11 @@ void SetupVPR(const t_options* options,
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
         switch (options->arch_format) {
             case e_arch_format::VTR:
-                XmlReadArch(options->ArchFile.value().c_str(),
-                            timingenabled,
-                            arch,
-                            device_ctx.physical_tile_types,
-                            device_ctx.logical_block_types);
+                xml_read_arch(options->ArchFile.value().c_str(),
+                              timingenabled,
+                              arch,
+                              device_ctx.physical_tile_types,
+                              device_ctx.logical_block_types);
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");
@@ -558,9 +558,11 @@ void SetupAPOpts(const t_options& options,
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
     apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
+    apOpts.ap_high_fanout_threshold = options.ap_high_fanout_threshold.value();
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
+    apOpts.generate_mass_report = options.ap_generate_mass_report.value();
 }
 
 /**
@@ -722,6 +724,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 
     analysis_opts.timing_update_type = Options.timing_update_type;
     analysis_opts.write_timing_summary = Options.write_timing_summary;
+    analysis_opts.skip_sync_clustering_and_routing_results = Options.skip_sync_clustering_and_routing_results;
     analysis_opts.generate_net_timing_report = Options.generate_net_timing_report;
 }
 
@@ -734,14 +737,16 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
         if (!Arch->power)
             Arch->power = new t_power_arch();
 
-        if (!Arch->clocks)
-            Arch->clocks = new t_clock_arch();
+        if (!Arch->clocks) {
+            Arch->clocks = std::make_shared<std::vector<t_clock_network>>();
+        }
 
         device_ctx.clock_arch = Arch->clocks;
+
     } else {
         Arch->power = nullptr;
-        Arch->clocks = nullptr;
-        device_ctx.clock_arch = nullptr;
+        Arch->clocks.reset();
+        device_ctx.clock_arch.reset();
     }
 }
 
@@ -899,9 +904,11 @@ static void add_logical_pin_to_physical_tile(int physical_pin_offset,
                                              t_logical_block_type_ptr logical_block_ptr,
                                              t_physical_tile_type* physical_type) {
     for (auto logical_pin_pair : logical_block_ptr->pin_logical_num_to_pb_pin_mapping) {
-        auto pin_logical_num = logical_pin_pair.first;
-        auto pb_pin = logical_pin_pair.second;
-        physical_type->pin_num_to_pb_pin.insert(std::make_pair(pin_logical_num + physical_pin_offset, pb_pin));
+        int pin_logical_num = logical_pin_pair.first;
+        t_pb_graph_pin* pb_pin = logical_pin_pair.second;
+        int pin_physical_num = pin_logical_num + physical_pin_offset;
+        physical_type->pin_num_to_pb_pin.insert({pin_physical_num, pb_pin});
+        physical_type->pb_pin_to_pin_num.insert({pb_pin, pin_physical_num});
     }
 }
 

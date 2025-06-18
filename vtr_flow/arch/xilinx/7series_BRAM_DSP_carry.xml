@@ -956,7 +956,8 @@
             <interconnect>
               <mux name="cin" input="fle.cin fle.inX" output="adder.cin">
                 <pack_pattern name="chain" in_port="fle.cin" out_port="adder.cin" />
-                <pack_pattern name="chain2" in_port="fle.inX" out_port="adder.cin" />
+                <!-- <pack_pattern name="chain" in_port="fle.inX" out_port="adder.cin" /> -->
+                <!-- Not currently supported but more accurate. Commented out for now. -->
               </mux>
               <direct name="cout" input="adder.cout" output="fle.cout">
                 <pack_pattern name="chain" in_port="adder.cout" out_port="fle.cout" />
@@ -981,7 +982,6 @@
               <!-- mux for the input to the inner FF of each SLICE_L -->
               <mux name="FFMUX" input="ALUT.O5 fle.inX" output="FDSE[0].D">
                 <pack_pattern name="ff_in" in_port="ALUT.O5" out_port="FDSE[0].D" />
-                <pack_pattern name="ff_in2" in_port="fle.inX" out_port="FDSE[0].D" />
                 <delay_constant in_port="fle.inX" max="2.0200000000000003e-10"
                   out_port="FDSE[0].D" />
                 <delay_constant in_port="ALUT.O5" max="1.07e-10"

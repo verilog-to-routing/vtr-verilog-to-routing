@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "move_utils.h"

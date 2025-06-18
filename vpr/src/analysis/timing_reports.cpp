@@ -1,14 +1,11 @@
 #include "timing_reports.h"
 
 #include <fstream>
-#include <sstream>
 
 #include "timing_reports.h"
-#include "rr_graph.h"
 
 #include "tatum/TimingReporter.hpp"
 
-#include "vtr_version.h"
 #include "vpr_types.h"
 #include "globals.h"
 

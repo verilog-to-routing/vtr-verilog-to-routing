@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author Jason Luu
@@ -23,9 +24,6 @@
  * 2.  vpr_types.h - Very major file that defines the core data structures used in VPR.  This includes detailed architecture information, user netlist data structures, and data structures that describe the mapping between those two.
  * 3.  globals.h - Defines the global variables used by VPR.
  */
-
-#ifndef VPR_API_H
-#define VPR_API_H
 
 #include <vector>
 #include "physical_types.h"
@@ -136,6 +134,9 @@ void vpr_analysis(const Netlist<>& net_list,
 ///@brief Create the device (grid + rr graph)
 void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch);
 
+/// @brief Print architecture resources
+void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch);
+
 ///@brief Create the device grid
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 
@@ -221,5 +222,3 @@ char* vpr_get_output_file_name(enum e_output_files ename);
 
 ///@brief Prints user file or internal errors for VPR
 void vpr_print_error(const VprError& vpr_error);
-
-#endif

@@ -230,9 +230,20 @@ bool t_logical_block_type::is_empty() const {
     return name == std::string(EMPTY_BLOCK_NAME);
 }
 
+bool t_logical_block_type::is_io() const {
+    // Iterate over all equivalent tiles and return true if any
+    // of them are IO tiles
+    for (t_physical_tile_type_ptr tile : equivalent_tiles) {
+        if (tile->is_io()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 const t_port* t_logical_block_type::get_port(std::string_view port_name) const {
     for (int i = 0; i < pb_type->num_ports; i++) {
-        auto port = pb_type->ports[i];
+        const t_port& port = pb_type->ports[i];
         if (port_name == port.name) {
             return &pb_type->ports[port.index];
         }
@@ -252,7 +263,71 @@ const t_port* t_logical_block_type::get_port_by_pin(int pin) const {
     return nullptr;
 }
 
-/**
+/*
+ * t_pb_type
+ */
+
+int t_pb_type::get_max_primitives() const {
+    int max_size;
+
+    if (modes == nullptr) {
+        max_size = 1;
+    } else {
+        max_size = 0;
+        int temp_size = 0;
+        for (int i = 0; i < num_modes; i++) {
+            for (int j = 0; j < modes[i].num_pb_type_children; j++) {
+                temp_size += modes[i].pb_type_children[j].num_pb * modes[i].pb_type_children[j].get_max_primitives();
+            }
+            if (temp_size > max_size) {
+                max_size = temp_size;
+            }
+        }
+    }
+
+    return max_size;
+}
+
+/* finds maximum number of nets that can be contained in pb_type, this is bounded by the number of driving pins */
+int t_pb_type::get_max_nets() const {
+    int max_nets;
+    if (modes == nullptr) {
+        max_nets = num_output_pins;
+    } else {
+        max_nets = 0;
+
+        for (int i = 0; i < num_modes; i++) {
+            int temp_nets = 0;
+            for (int j = 0; j < modes[i].num_pb_type_children; j++) {
+                temp_nets += modes[i].pb_type_children[j].num_pb * modes[i].pb_type_children[j].get_max_nets();
+            }
+
+            if (temp_nets > max_nets) {
+                max_nets = temp_nets;
+            }
+        }
+    }
+
+    if (is_root()) {
+        max_nets += num_input_pins + num_output_pins + num_clock_pins;
+    }
+
+    return max_nets;
+}
+
+int t_pb_type::get_max_depth() const {
+    int max_depth = depth;
+
+    for (int i = 0; i < num_modes; i++) {
+        for (int j = 0; j < modes[i].num_pb_type_children; j++) {
+            int temp_depth = modes[i].pb_type_children[j].get_max_depth();
+            max_depth = std::max(max_depth, temp_depth);
+        }
+    }
+    return max_depth;
+}
+
+/*
  * t_pb_graph_node
  */
 

@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @brief This is a core file that defines the major data types used by VPR
@@ -20,8 +21,6 @@
  * t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA architecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
  * The t_pb hierarchy follows what is described by t_pb_graph_node
  */
-
-#pragma once
 
 #include <vector>
 #include <set>
@@ -412,6 +411,13 @@ struct t_net_power {
 /**
  * @brief Stores a 3D bounding box in terms of the minimum and
  *        maximum coordinates: x, y, layer
+ * 
+ * @var xmin: The minimum x-coordinate of the bounding box
+ * @var xmax: The maximum x-coordinate of the bounding box
+ * @var ymin: The minimum y-coordinate of the bounding box
+ * @var ymax: The maximum y-coordinate of the bounding box
+ * @var layer_min: The minimum layer of the bounding box
+ * @var layer_max: The maximum layer of the bounding box
  */
 struct t_bb {
     t_bb() = default;
@@ -1099,6 +1105,9 @@ struct t_placer_opts {
  *   @param ap_timing_tradeoff
  *              A trade-off parameter used to decide how focused the AP flow
  *              should be on optimizing timing over wirelength.
+ *   @param ap_high_fanout_threshold;
+ *              The threshold to ignore nets with higher fanout than that
+ *              value while constructing the solver.
  *   @param appack_max_dist_th
  *              Array of string passed by the user to configure the max candidate
  *              distance thresholds.
@@ -1107,6 +1116,8 @@ struct t_placer_opts {
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
+ *   @param generate_mass_report
+ *              Whether to generate a mass report during global placement or not.
  */
 struct t_ap_opts {
     e_stage_action doAP;
@@ -1121,11 +1132,15 @@ struct t_ap_opts {
 
     float ap_timing_tradeoff;
 
+    int ap_high_fanout_threshold;
+
     std::vector<std::string> appack_max_dist_th;
 
     unsigned num_threads;
 
     int log_verbosity;
+
+    bool generate_mass_report;
 };
 
 /******************************************************************
@@ -1345,6 +1360,7 @@ struct t_analysis_opts {
     bool generate_net_timing_report;
 
     e_timing_update_type timing_update_type;
+    bool skip_sync_clustering_and_routing_results;
 };
 
 /// Stores NoC specific options, when supplied as an input by the user

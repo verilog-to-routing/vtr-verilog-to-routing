@@ -1,5 +1,4 @@
-#ifndef RR_GRAPH_TYPE_H
-#define RR_GRAPH_TYPE_H
+#pragma once
 
 #include <vector>
 #include "physical_types.h"
@@ -46,5 +45,3 @@ enum class e_graph_type {
  * @see get_parallel_segs for more details.
  */
 typedef std::unordered_multimap<size_t, std::pair<size_t, e_parallel_axis>> t_unified_to_parallel_seg_index;
-
-#endif

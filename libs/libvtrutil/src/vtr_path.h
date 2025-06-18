@@ -1,5 +1,5 @@
-#ifndef VTR_PATH_H
-#define VTR_PATH_H
+#pragma once
+
 #include <string>
 #include <array>
 
@@ -30,4 +30,3 @@ std::string dirname(const std::string& path);
 std::string getcwd();
 
 } // namespace vtr
-#endif

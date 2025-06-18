@@ -1,6 +1,4 @@
-#ifndef READ_XML_NOC_TRAFFIC_FLOWS_FILE_H
-#define READ_XML_NOC_TRAFFIC_FLOWS_FILE_H
-
+#pragma once
 /**
  *  @brief The purpose of this file is to read and parse an xml file that has 
  *         a '.flows' extension. This file contains the description of
@@ -17,24 +15,18 @@
  * 
  */
 
+#include "clustered_netlist_fwd.h"
+#include "physical_types.h"
 #include "pugixml.hpp"
-#include "pugixml_util.hpp"
-#include "read_xml_util.h"
-#include "globals.h"
+#include "pugixml_loc.hpp"
 
-#include "vtr_assert.h"
-#include "vtr_util.h"
-#include "ShowSetup.h"
-#include "vpr_error.h"
-#include "echo_files.h"
-
-#include "noc_data_types.h"
-#include "noc_traffic_flows.h"
-
-#include <iostream>
 #include <vector>
 #include <string>
 #include <float.h>
+
+struct DeviceContext;
+struct ClusteringContext;
+struct NocContext;
 
 // identifier when an integer conversion failed while reading an attribute value in an xml file
 constexpr int NUMERICAL_ATTRIBUTE_CONVERSION_FAILURE = -1;
@@ -256,5 +248,3 @@ bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
  *                                     are compatible with a NoC router tile. 
  */
 std::vector<ClusterBlockId> get_cluster_blocks_compatible_with_noc_router_tiles(const ClusteringContext& cluster_ctx, t_physical_tile_type_ptr noc_router_tile_type);
-
-#endif

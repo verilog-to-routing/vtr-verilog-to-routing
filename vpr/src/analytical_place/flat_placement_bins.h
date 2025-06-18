@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -7,8 +8,6 @@
  * This file declares a class which can bin AP Blocks spatially throughout the
  * FPGA.
  */
-
-#pragma once
 
 #include <unordered_set>
 #include "ap_netlist.h"
@@ -20,13 +19,10 @@
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 
-// The tag for the flat placement bin.
-struct flat_placement_bin_tag {};
-
 /**
  * @brief A unique ID to a flat placement bin.
  */
-typedef vtr::StrongId<flat_placement_bin_tag, size_t> FlatPlacementBinId;
+typedef vtr::StrongId<struct flat_placement_bin_tag, size_t> FlatPlacementBinId;
 
 /**
  * @brief A container of bins which hold AP blocks and take up space on the FPGA.

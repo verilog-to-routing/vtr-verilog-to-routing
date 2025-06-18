@@ -1,5 +1,4 @@
-#ifndef VRP_TIMING_GRAPH_NAME_RESOLVER_H
-#define VRP_TIMING_GRAPH_NAME_RESOLVER_H
+#pragma once
 
 #include "tatum/TimingGraphNameResolver.hpp"
 #include "atom_netlist_fwd.h"
@@ -43,5 +42,3 @@ class VprTimingGraphResolver : public tatum::TimingGraphNameResolver {
     ///@brief contains information about the placement of clustered blocks.
     const BlkLocRegistry& blk_loc_registry_;
 };
-
-#endif

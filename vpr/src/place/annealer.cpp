@@ -5,7 +5,6 @@
 #include <cmath>
 
 #include "globals.h"
-#include "draw_global.h"
 #include "place_macro.h"
 #include "vpr_types.h"
 #include "place_util.h"
@@ -19,6 +18,11 @@
 #include "RL_agent_util.h"
 #include "PlacerSetupSlacks.h"
 #include "PlacerCriticalities.h"
+#include "vtr_expr_eval.h"
+
+#ifndef NO_GRAPHICS
+#include "draw_global.h"
+#endif // NO_GRAPHICS
 
 /**************************************************************************/
 /*************** Static Function Declarations *****************************/

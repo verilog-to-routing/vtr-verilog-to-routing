@@ -1,7 +1,6 @@
 #include <limits>
 #include <numeric>
 #include <cmath>
-#include <algorithm>
 
 #include "vtr_assert.h"
 

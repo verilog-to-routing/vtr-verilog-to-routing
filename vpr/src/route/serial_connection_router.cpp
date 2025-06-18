@@ -1,7 +1,7 @@
 #include "serial_connection_router.h"
 
 #include <algorithm>
-#include "rr_graph.h"
+#include "d_ary_heap.h"
 #include "rr_graph_fwd.h"
 
 /** Used to update router statistics for serial connection router */

@@ -1,5 +1,4 @@
-#ifndef VPR_READ_CIRCUIT_H
-#define VPR_READ_CIRCUIT_H
+#pragma once
 
 #include "atom_netlist_fwd.h"
 
@@ -14,4 +13,3 @@ enum class e_circuit_format {
 };
 
 AtomNetlist read_and_process_circuit(e_circuit_format circuit_format, t_vpr_setup& vpr_setup, t_arch& arch);
-#endif

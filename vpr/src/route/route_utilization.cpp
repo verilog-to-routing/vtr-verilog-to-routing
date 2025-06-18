@@ -1,4 +1,6 @@
 #include "route_utilization.h"
+#include "draw_global.h"
+#include "draw_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
 

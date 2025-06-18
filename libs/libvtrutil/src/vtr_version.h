@@ -1,5 +1,5 @@
-#ifndef VTR_VERSION_H
-#define VTR_VERSION_H
+#pragma once
+
 #include <cstddef>
 
 namespace vtr {
@@ -16,5 +16,3 @@ extern const char* COMPILER;
 extern const char* BUILD_TIMESTAMP;
 extern const char* BUILD_INFO;
 } // namespace vtr
-
-#endif

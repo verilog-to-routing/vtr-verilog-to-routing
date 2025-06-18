@@ -1584,6 +1584,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Show version information then exit")
         .action(argparse::Action::VERSION);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.show_arch_resources, "--show_arch_resources")
+        .help("Show architecture resources then exit")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
     gen_grp.add_argument<std::string>(args.device_layout, "--device")
         .help(
             "Controls which device layout/floorplan is used from the architecture file."
@@ -1945,6 +1950,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<int>(args.ap_high_fanout_threshold, "--ap_high_fanout_threshold")
+        .help(
+            "Defines the threshold for high fanout nets within AP flow.\n"
+            "Ignores the nets that have higher fanouts than the threshold for the analytical solver.")
+        .default_value("256")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument(args.appack_max_dist_th, "--appack_max_dist_th")
         .help(
             "Sets the maximum candidate distance thresholds for the logical block types"
@@ -1976,6 +1988,15 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "values produce more output (useful for debugging the AP "
             "algorithms).")
         .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<bool, ParseOnOff>(args.ap_generate_mass_report, "--ap_generate_mass_report")
+        .help(
+            "Controls whether to generate a report on how the partial legalizer "
+            "within the AP flow calculates the mass of primitives and the "
+            "capacity of tiles on the device. This report is useful when "
+            "debugging the partial legalizer.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& pack_grp = parser.add_argument_group("packing options");
@@ -3093,6 +3114,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     analysis_grp.add_argument(args.write_timing_summary, "--write_timing_summary")
         .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<bool, ParseOnOff>(args.skip_sync_clustering_and_routing_results, "--skip_sync_clustering_and_routing_results")
+        .help(
+            "Select to skip the synchronization on clustering results based on routing optimization results."
+            "Note that when this sync-up is disabled, clustering results may be wrong (leading to incorrect bitstreams)!")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument<bool, ParseOnOff>(args.generate_net_timing_report, "--generate_net_timing_report")

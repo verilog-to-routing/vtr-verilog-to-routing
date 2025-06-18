@@ -1,11 +1,4 @@
-
 #pragma once
-#include "vtr_vec_id_set.h"
-#include "timing_info_fwd.h"
-#include "clustered_netlist_utils.h"
-#include "place_delay_model.h"
-#include "vpr_net_pins_matrix.h"
-
 /**
  * @brief PlacerTimingCosts mimics a 2D array of connection timing costs running from:
  *        [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1].
@@ -73,6 +66,9 @@
  * PlacerTimingCosts's invalidate() method marks the cost element's ancestors as invalid (NaN)
  * so they will be re-calculated by PlacerTimingCosts' total_cost() method.
  */
+
+#include "clustered_netlist.h"
+
 class PlacerTimingCosts {
   public:
     PlacerTimingCosts() = default;

@@ -1,7 +1,9 @@
-#ifndef ROUTER_DELAY_PROFILING_H_
-#define ROUTER_DELAY_PROFILING_H_
+#pragma once
 
-#include "vpr_types.h"
+#include "d_ary_heap.h"
+#include "netlist.h"
+#include "router_lookahead.h"
+#include "router_stats.h"
 #include "serial_connection_router.h"
 
 #include <vector>
@@ -60,5 +62,3 @@ void alloc_routing_structs(const t_chan_width& chan_width,
                            bool is_flat);
 
 void free_routing_structs();
-
-#endif /* ROUTER_DELAY_PROFILING_H_ */
