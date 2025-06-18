@@ -26,32 +26,32 @@
 
 static void setup_netlist_opts(const t_options& Options, t_netlist_opts& NetlistOpts);
 static void setup_ap_opts(const t_options& options,
-                        t_ap_opts& apOpts);
+                          t_ap_opts& apOpts);
 static void setup_packer_opts(const t_options& Options,
-                            t_packer_opts* PackerOpts);
+                              t_packer_opts* PackerOpts);
 static void setup_placer_opts(const t_options& Options,
-                            t_placer_opts* PlacerOpts);
+                              t_placer_opts* PlacerOpts);
 static void setup_anneal_sched(const t_options& Options,
-                             t_annealing_sched* AnnealSched);
+                               t_annealing_sched* AnnealSched);
 static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpts);
 static void setup_noc_opts(const t_options& Options,
-                         t_noc_opts* NocOpts);
+                           t_noc_opts* NocOpts);
 static void setup_server_opts(const t_options& Options,
-                            t_server_opts* ServerOpts);
+                              t_server_opts* ServerOpts);
 
 static void setup_routing_arch(const t_arch& Arch, t_det_routing_arch& RoutingArch);
 
 static void setup_timing(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 static void setup_switches(const t_arch& Arch,
-                          t_det_routing_arch& RoutingArch,
-                          const std::vector<t_arch_switch_inf>& arch_switches);
+                           t_det_routing_arch& RoutingArch,
+                           const std::vector<t_arch_switch_inf>& arch_switches);
 static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
 static void setup_vib_inf(const std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                        const std::vector<t_arch_switch_inf>& Switches,
-                        const std::vector<t_segment_inf>& Segments,
-                        std::vector<VibInf>& vib_infs);
+                          const std::vector<t_arch_switch_inf>& Switches,
+                          const std::vector<t_segment_inf>& Segments,
+                          std::vector<VibInf>& vib_infs);
 
 static void process_from_or_to_tokens(const std::vector<std::string> Tokens, const std::vector<t_physical_tile_type>& PhysicalTileTypes, const std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms);
 static void parse_pin_name(const char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
@@ -369,8 +369,8 @@ static void setup_timing(const t_options& Options, const bool TimingEnabled, t_t
  *        from the arch file with the special switches that VPR needs.
  */
 static void setup_switches(const t_arch& Arch,
-                          t_det_routing_arch& RoutingArch,
-                          const std::vector<t_arch_switch_inf>& arch_switches) {
+                           t_det_routing_arch& RoutingArch,
+                           const std::vector<t_arch_switch_inf>& arch_switches) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int switches_to_copy = (int)arch_switches.size();
@@ -426,7 +426,7 @@ static void setup_switches(const t_arch& Arch,
  * Since checks are already done, this just copies values across
  */
 static void setup_routing_arch(const t_arch& Arch,
-                             t_det_routing_arch& RoutingArch) {
+                               t_det_routing_arch& RoutingArch) {
     RoutingArch.switch_block_type = Arch.SBType;
     RoutingArch.switch_block_subtype = Arch.SBSubType;
     RoutingArch.R_minW_nmos = Arch.R_minW_nmos;
@@ -540,7 +540,7 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
 }
 
 static void setup_anneal_sched(const t_options& Options,
-                             t_annealing_sched* AnnealSched) {
+                               t_annealing_sched* AnnealSched) {
     AnnealSched->alpha_t = Options.PlaceAlphaT;
     if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_t must be between 0 and 1 exclusive.\n");
@@ -576,7 +576,7 @@ static void setup_anneal_sched(const t_options& Options,
  * to be done beforehand
  */
 void setup_ap_opts(const t_options& options,
-                 t_ap_opts& apOpts) {
+                   t_ap_opts& apOpts) {
     apOpts.analytical_solver_type = options.ap_analytical_solver.value();
     apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
@@ -597,7 +597,7 @@ void setup_ap_opts(const t_options& options,
  * to be done beforehand
  */
 void setup_packer_opts(const t_options& Options,
-                     t_packer_opts* PackerOpts) {
+                       t_packer_opts* PackerOpts) {
     PackerOpts->output_file = Options.NetFile;
 
     PackerOpts->circuit_file_name = Options.CircuitFile;
@@ -1041,9 +1041,9 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
 }
 
 static void setup_vib_inf(const std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                        const std::vector<t_arch_switch_inf>& switches,
-                        const std::vector<t_segment_inf>& Segments,
-                        std::vector<VibInf>& vib_infs) {
+                          const std::vector<t_arch_switch_inf>& switches,
+                          const std::vector<t_segment_inf>& Segments,
+                          std::vector<VibInf>& vib_infs) {
     VTR_ASSERT(!vib_infs.empty());
     for (auto& vib_inf : vib_infs) {
         for (size_t i_switch = 0; i_switch < switches.size(); i_switch++) {
