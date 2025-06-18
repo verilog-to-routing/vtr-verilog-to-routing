@@ -551,6 +551,7 @@ void BasicMinDisturbance::neighbor_cluster_pass(
                               appack_ctx);
     
     // Create the candidate selector.
+    auto net_output_feeds_driving_block_input = identify_net_output_feeds_driving_block_input(atom_netlist_);
     GreedyCandidateSelector candidate_selector(atom_netlist_,
                                                prepacker_,
                                                vpr_setup_.PackerOpts,
@@ -560,7 +561,7 @@ void BasicMinDisturbance::neighbor_cluster_pass(
                                                high_fanout_thresholds,
                                                is_clock,
                                                is_global,
-                                               identify_net_output_feeds_driving_block_input(atom_netlist_),
+                                               net_output_feeds_driving_block_input,
                                                pre_cluster_timing_manager_,
                                                appack_ctx,
                                                arch_.models,
