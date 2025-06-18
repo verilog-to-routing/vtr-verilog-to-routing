@@ -64,16 +64,6 @@ struct t_second_stage_mux_inf : t_first_stage_mux_inf {
     std::vector<t_from_or_to_inf> to; // for io type, port[pin] may map to several sinks
 };
 
-// struct t_vib_inf {
-//     std::string name;           /* vib name */
-//     std::string pbtype_name;    /* pbtype name of vib */
-//     int seg_group_num;          /* seg group number of vib */
-//     int switch_idx;             /* vib switch index */
-//     std::vector<t_seg_group> seg_groups;
-//     std::vector<t_first_stage_mux_inf> first_stages;
-//     std::vector<t_second_stage_mux_inf> second_stages;
-// };
-
 /* VibInf is used to reserve the VIB information.                     *
  * For example, a VIB is described:                                   *
  *  <vib name="vib0" pbtype_name="clb" vib_seg_group="4" arch_vib_switch="mux0">

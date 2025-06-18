@@ -380,13 +380,6 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     /* Check that the segment is within the array and such. */
     type = grid.get_physical_type({xlow, ylow, layer_num});
-    const VibInf* vib_type;
-    if (vib_grid.get_num_layers() > 0) {
-        vib_type = vib_grid.get_vib(layer_num, xlow, ylow);
-    }
-    else {
-        vib_type = nullptr;
-    }
 
     switch (rr_type) {
         case e_rr_type::SOURCE:
@@ -458,6 +451,10 @@ void check_rr_node(const RRGraphView& rr_graph,
     int class_max_ptc = get_tile_class_max_ptc(type, is_flat);
     int pin_max_ptc = get_tile_pin_max_ptc(type, is_flat);
     int mux_max_ptc = -1;
+    const VibInf* vib_type = nullptr;
+    if (vib_grid.get_num_layers() > 0) {
+        vib_type = vib_grid.get_vib(layer_num, xlow, ylow);
+    }
     if (vib_type) {
         mux_max_ptc = (int)vib_type->get_first_stages().size();
     }

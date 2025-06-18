@@ -128,7 +128,8 @@ class RRGraphBuilder {
     }
 
     /** @brief Create a new rr_node in the node storage and register it to the node look-up.
-     *  Return a valid node id if succeed. Otherwise, return an invalid id.
+     * Return a valid node id if succeed. Otherwise, return an invalid id. This function is
+     * currently only used when building the tileable rr_graph.
      */
     RRNodeId create_node(int layer, int x, int y, e_rr_type type, int ptc, e_side side = NUM_2D_SIDES); 
 
@@ -235,8 +236,8 @@ class RRGraphBuilder {
     }
 
     /** @brief Add a track id for a given node base on the offset in coordinate, applicable only to CHANX and CHANY nodes.
-     *         This API is used by tileable routing resource graph generator, which requires each routing track has a different
-     *         track id depending their location in FPGA fabric.
+     * This API is used by tileable routing resource graph generator, which requires each routing track has a different
+     * track id depending their location in FPGA fabric.
      */
     void add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id);
 
@@ -272,12 +273,15 @@ class RRGraphBuilder {
     void create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped);
 
     /** @brief Allocate and build actual edges in storage. 
-     *  Once called, the cached edges will be uniquified and added to routing resource nodes, 
-     * while the cache will be empty once build-up is accomplished */
+     * Once called, the cached edges will be uniquified and added to routing resource nodes, 
+     * while the cache will be empty once build-up is accomplished 
+     */
     void build_edges(const bool& uniquify = true);
 
     /** @brief Allocate and build incoming edges for each node. 
-     *  By default, no incoming edges are kept in storage, to be memory efficient */
+     * By default, no incoming edges are kept in storage, to be memory efficient
+     * Currently, this function is only called when building the tileable rr_graph.
+     */
     void build_in_edges();
 
     /** @brief Return incoming edges for a given routing resource node 
