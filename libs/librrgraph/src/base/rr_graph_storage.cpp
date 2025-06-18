@@ -779,13 +779,11 @@ void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, s
 }
 
 void t_rr_graph_storage::set_node_bend_start(RRNodeId id, size_t bend_start) {
-    auto& node = node_storage_[id];
-    node.node_bend_start_ = bend_start;
+    node_bend_start_[id] = bend_start;
 }
 
 void t_rr_graph_storage::set_node_bend_end(RRNodeId id, size_t bend_end) {
-    auto& node = node_storage_[id];
-    node.node_bend_end_ = bend_end;
+    node_bend_end_[id] = bend_end;
 }
 
 void t_rr_graph_storage::set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
@@ -870,7 +868,9 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
         vtr::make_const_array_view_id(edge_switch_),
-        virtual_clock_network_root_idx_);
+        virtual_clock_network_root_idx_,
+        vtr::make_const_array_view_id(node_bend_start_),
+        vtr::make_const_array_view_id(node_bend_end_));
 }
 
 // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),

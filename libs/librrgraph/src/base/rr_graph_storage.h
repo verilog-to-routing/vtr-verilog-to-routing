@@ -51,7 +51,7 @@
  * side: The side of a grid location where an IPIN or OPIN is located.       *
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
-struct alignas(32) t_rr_node_data {
+struct alignas(16) t_rr_node_data {
     int16_t cost_index_ = -1;
     int16_t rc_index_ = -1;
 
@@ -59,9 +59,6 @@ struct alignas(32) t_rr_node_data {
     int16_t ylow_ = -1;
     int16_t xhigh_ = -1;
     int16_t yhigh_ = -1;
-
-    int16_t node_bend_start_ = 0;
-    int16_t node_bend_end_ = 0;
 
     e_rr_type type_ = e_rr_type::NUM_RR_TYPES;
 
@@ -86,8 +83,8 @@ struct alignas(32) t_rr_node_data {
 // t_rr_node_data is a key data structure, so fail at compile time if the
 // structure gets bigger than expected (16 bytes right now). Developers
 // should only expand it after careful consideration and measurement.
-static_assert(sizeof(t_rr_node_data) == 32, "Check t_rr_node_data size");
-static_assert(alignof(t_rr_node_data) == 32, "Check t_rr_node_data size");
+static_assert(sizeof(t_rr_node_data) == 16, "Check t_rr_node_data size");
+static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 
 /* t_rr_node_ptc_data is cold data is therefore kept seperate from
  * t_rr_node_data.
@@ -188,10 +185,10 @@ class t_rr_graph_storage {
     }
 
     short node_bend_start(RRNodeId id) const {
-        return node_storage_[id].node_bend_start_;
+        return node_bend_start_[id];
     }
     short node_bend_end(RRNodeId id) const {
-        return node_storage_[id].node_bend_end_;
+        return node_bend_end_[id];
     }
 
     short node_capacity(RRNodeId id) const {
@@ -932,6 +929,14 @@ class t_rr_graph_storage {
     */
     vtr::vector<RREdgeId, bool> edge_remapped_;
 
+    /** @brief
+     * Bend start and end are used to store the bend information for each node.
+     * Bend start and end are only used for CHANX and CHANY nodes.
+     * Bend start and end are only used for tileable routing resource graph.
+     */
+    vtr::vector<RRNodeId, int16_t> node_bend_start_;
+    vtr::vector<RRNodeId, int16_t> node_bend_end_;
+
     /***************
      * State flags *
      ***************/
@@ -986,7 +991,9 @@ class t_rr_graph_view {
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch,
-        const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx)
+        const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx,
+        const vtr::array_view_id<RRNodeId, const int16_t> node_bend_start,
+        const vtr::array_view_id<RRNodeId, const int16_t> node_bend_end)
         : node_storage_(node_storage)
         , node_ptc_(node_ptc)
         , node_first_edge_(node_first_edge)
@@ -997,7 +1004,9 @@ class t_rr_graph_view {
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
         , edge_switch_(edge_switch)
-        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx) {}
+        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx)
+        , node_bend_start_(node_bend_start)
+        , node_bend_end_(node_bend_end) {}
 
     /****************
      * Node methods *
@@ -1217,5 +1226,8 @@ class t_rr_graph_view {
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
     const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx_;
+
+    vtr::array_view_id<RRNodeId, const int16_t> node_bend_start_;
+    vtr::array_view_id<RRNodeId, const int16_t> node_bend_end_;
 
 };
