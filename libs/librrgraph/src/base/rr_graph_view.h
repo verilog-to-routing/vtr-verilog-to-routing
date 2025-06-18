@@ -580,11 +580,20 @@ class RRGraphView {
     /** @brief Get the segment id which a routing resource node represents. Only applicable to nodes whose type is CHANX or CHANY */
     RRSegmentId node_segment(RRNodeId node) const;
 
-    /** @brief Return incoming edges for a given routing resource node 
-     *  Require build_in_edges() to be called first
+    /** 
+     * @brief Return incoming edges for a given routing resource node 
+     * Require build_in_edges() to be called first
      */
     std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
+
+    /** 
+     * @brief Return configurable incoming edges for a given routing resource node 
+     */
     std::vector<RREdgeId> node_configurable_in_edges(RRNodeId node) const;
+
+    /** 
+     * @brief Return non-configurable incoming edges for a given routing resource node 
+     */
     std::vector<RREdgeId> node_non_configurable_in_edges(RRNodeId node) const;
 
     /** @brief Return detailed routing segment information of a specified segment
