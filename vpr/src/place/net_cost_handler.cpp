@@ -461,15 +461,15 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
         return;
     }
 
-    /* Record effected nets */
+    // Record effected nets
     record_affected_net_(net_id);
 
     ClusterBlockId blk_id = moving_blk_inf.block_num;
-    /* Update the net bounding boxes. */
+    // Update the net bounding boxes.
     update_net_bb_(net_id, blk_id, pin_id, moving_blk_inf);
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
-        /* Determine the change in connection delay and timing cost. */
+        // Determine the change in connection delay and timing cost.
         update_td_delta_costs_(delay_model,
                                *criticalities,
                                net_id,

@@ -9,6 +9,7 @@
 #include "physical_types_util.h"
 #include "route_export.h"
 #include "vpr_utils.h"
+#include "route_utilization.h"
 
 #if defined(VPR_USE_TBB)
 #include <tbb/parallel_for_each.h>
@@ -79,10 +80,15 @@ static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num,
  * @param route_opts Contains channel utilization threshold and weighting factor
  *                   used to increase initial 'acc_cost' for nodes going through
  *                   congested channels.
+ * @param chanx_util Post-placement estimate of CHANX routing utilization per (layer, x, y) location.
+ * @param chany_util Post-placement estimate of CHANY routing utilization per (layer, x, y) location.
  * @return Initial `acc_cost` for the given RR node.
  */
+
 static float comp_initial_acc_cost(RRNodeId node_id,
-                                   const t_router_opts& route_opts);
+                                   const t_router_opts& route_opts,
+                                   const vtr::NdMatrix<double, 3>& chanx_util,
+                                   const vtr::NdMatrix<double, 3>& chany_util);
 
 /************************** Subroutine definitions ***************************/
 
@@ -430,7 +436,9 @@ void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts) {
 }
 
 static float comp_initial_acc_cost(RRNodeId node_id,
-                                   const t_router_opts& route_opts) {
+                                   const t_router_opts& route_opts,
+                                   const vtr::NdMatrix<double, 3>& chanx_util,
+                                   const vtr::NdMatrix<double, 3>& chany_util) {
     const auto& route_ctx = g_vpr_ctx.routing();
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
@@ -444,15 +452,14 @@ static float comp_initial_acc_cost(RRNodeId node_id,
     const double weight = route_opts.initial_acc_cost_chan_congestion_weight;
 
     // TODO: We don't have an explicit CHANZ type. These wires are marked as CHANX. This should be fixed.
-    if (is_chan(rr_type) && !route_ctx.chanx_util.empty()) {
-        VTR_ASSERT_SAFE(!route_ctx.chany_util.empty());
+    if (is_chan(rr_type)) {
         double max_util = 0.;
 
         if (rr_type == e_rr_type::CHANX) {
             int y = rr_graph.node_ylow(node_id);
             int layer = rr_graph.node_layer(node_id);
             for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
-                max_util = std::max(max_util, route_ctx.chanx_util[layer][x][y]);
+                max_util = std::max(max_util, chanx_util[layer][x][y]);
             }
 
         } else {
@@ -460,7 +467,7 @@ static float comp_initial_acc_cost(RRNodeId node_id,
             int x = rr_graph.node_xlow(node_id);
             int layer = rr_graph.node_layer(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
-                max_util = std::max(max_util, route_ctx.chany_util[layer][x][y]);
+                max_util = std::max(max_util, chany_util[layer][x][y]);
             }
         }
 
@@ -475,14 +482,19 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
+    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
 
     VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_graph.num_nodes()));
+
+    RoutingChanUtilEstimator routing_chan_util_estimator(blk_loc_registry, cube_bb);
+    const auto [chanx_util, chany_util] = routing_chan_util_estimator.estimate_routing_chan_util();
 
     for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
         t_rr_node_route_inf& node_inf = route_ctx.rr_node_route_inf[rr_id];
 
         node_inf.prev_edge = RREdgeId::INVALID();
-        node_inf.acc_cost = comp_initial_acc_cost(rr_id, route_opts);
+        node_inf.acc_cost = comp_initial_acc_cost(rr_id, route_opts, chanx_util, chany_util);
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
         node_inf.set_occ(0);

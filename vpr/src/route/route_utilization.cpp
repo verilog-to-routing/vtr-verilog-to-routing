@@ -5,6 +5,22 @@
 #include "vpr_utils.h"
 #include "route_common.h"
 
+RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc_registry, bool cube_bb) {
+    placer_state_ = std::make_unique<PlacerState>(/*placement_is_timing_driven=*/false);
+    placer_state_->mutable_blk_loc_registry() = blk_loc_registry;
+
+    placer_opts_.place_algorithm = e_place_algorithm::BOUNDING_BOX_PLACE;
+    net_cost_handler_ = std::make_unique<NetCostHandler>(placer_opts_, *placer_state_, cube_bb);
+}
+
+std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing_chan_util() {
+    // Compute net bounding boxes
+    net_cost_handler_->comp_bb_cost(e_cost_methods::NORMAL);
+
+    // Estimate routing channel utilization using
+    return net_cost_handler_->estimate_routing_chan_util();
+}
+
 vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool is_print) {
     VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
@@ -15,21 +31,21 @@ vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool
 
     vtr::Matrix<float> usage({{device_ctx.grid.width(), device_ctx.grid.height()}}, 0.);
 
-    //Collect all the in-use RR nodes
+    // Collect all the in-use RR nodes
     std::set<RRNodeId> rr_nodes;
-    for (auto net : cluster_ctx.clb_nlist.nets()) {
-        auto parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net, is_flat);
+    for (ClusterNetId net : cluster_ctx.clb_nlist.nets()) {
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net, is_flat);
 
         if (!route_ctx.route_trees[parent_id])
             continue;
-        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+        for (const RouteTreeNode& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
             if (rr_graph.node_type(rt_node.inode) == rr_type) {
                 rr_nodes.insert(rt_node.inode);
             }
         }
     }
 
-    //Record number of used resources in each x/y channel
+    // Record number of used resources in each x/y channel
     for (RRNodeId rr_node : rr_nodes) {
 #ifndef NO_GRAPHICS
         if (!is_print) {
@@ -66,7 +82,7 @@ vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool
 }
 
 vtr::Matrix<float> calculate_routing_avail(e_rr_type rr_type) {
-    //Calculate the number of available resources in each x/y channel
+    // Calculate the number of available resources in each x/y channel
     VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
     auto& device_ctx = g_vpr_ctx.device();

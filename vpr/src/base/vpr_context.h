@@ -554,18 +554,11 @@ struct RoutingContext : public Context {
                RouterLookahead>
         cached_router_lookahead_;
 
-    /**
-     * @brief User specified routing constraints
-     */
+    /// @brief User specified routing constraints
     UserRouteConstraints constraints;
 
     /** Is flat routing enabled? */
     bool is_flat;
-
-    /// @brief Post-placement estimate of CHANX routing utilization per (layer, x, y) location.
-    vtr::NdMatrix<double, 3> chanx_util;
-    /// @brief Post-placement estimate of CHANY routing utilization per (layer, x, y) location.
-    vtr::NdMatrix<double, 3> chany_util;
 };
 
 /**
