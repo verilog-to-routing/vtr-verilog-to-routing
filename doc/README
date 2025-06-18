@@ -14,19 +14,22 @@ Currently VTR's documenation is automatically built by https://readthedocs.org/p
 How to build documentation
 --------------------------
 
-To build the documentation locally you need sphinx installed:
+To build the documentation locally you need to to install Doxygen (Optional) and the python dependencies. You can use your distribution's package manager to install Doxygen. Ubuntu and Debian users can use the following command:
 
-    For ubuntu/debian based systems:
+    $ sudo apt install doxygen
 
-        $ apt-get install python-sphinx
+While Fedora and RHEL users can use the following command:
 
-    To properly build citations and the bibliography, we use the sphinxcontrib-bibtex extension:
+    $ sudo dnf install doxygen
 
-        $ pip install sphinxcontrib-bibtex
+You can install python dependencies by fist optionally making a virtual environment:
 
-    To install all the python requirements:
+    $ python -m venv .venv
+    $ source .venv/bin/activate
 
-        $ pip install -r requirements.txt
+And then using the requirements file to install the dependencies:
+
+    $ pip install -r requirements.txt
 
 To build the documentation just run:
 
