@@ -1,6 +1,5 @@
 #pragma once
 
-#include "physical_types.h"
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
 #include "vtr_expr_eval.h"

@@ -23,7 +23,7 @@
 #include "arch_error.h"
 
 #include "arch_util.h"
-#include "physical_types.h"
+#include "switchblock_types.h"
 #include "parse_switchblocks.h"
 
 using pugiutil::ReqOpt;

@@ -16,9 +16,9 @@
 #include <map>
 #include <regex>
 #include <set>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string>
-#include <string.h>
+#include <cstring>
 #include <zlib.h>
 #include <sstream>
 

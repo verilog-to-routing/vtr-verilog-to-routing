@@ -41,6 +41,7 @@
 
 #include "logic_types.h"
 #include "clock_types.h"
+#include "switchblock_types.h"
 
 //Forward declarations
 struct t_clock_network;
@@ -164,24 +165,6 @@ enum e_interconnect {
     MUX_INTERC = 3
 };
 
-/* Orientations. */
-enum e_side : unsigned char {
-    TOP = 0,
-    RIGHT = 1,
-    BOTTOM = 2,
-    LEFT = 3,
-    NUM_2D_SIDES = 4,
-    ABOVE = 5,
-    UNDER = 7,
-    NUM_3D_SIDES = 6,
-};
-
-constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
-constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
-
-constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         //Set of all side orientations including different layers
-constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; //String versions of side orientations including different layers
-
 /* pin location distributions */
 enum class e_pin_location_distr {
     SPREAD,
@@ -246,25 +229,7 @@ enum e_power_estimation_method_ {
 typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
 
-/* Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere) */
-enum class e_sb_location {
-    E_PERIMETER = 0,
-    E_CORNER,
-    E_FRINGE, /* perimeter minus corners */
-    E_CORE,
-    E_EVERYWHERE,
-    E_XY_SPECIFIED
-};
 
-/**
- * @brief Describes regions that a specific switch block specifications should be applied to
- */
-struct t_sb_loc_spec {
-    int start = -1;
-    int repeat = -1;
-    int incr = -1;
-    int end = -1;
-};
 
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
@@ -606,9 +571,6 @@ enum class e_sb_type {
     FULL        //Full SB at this location (i.e. turns + straight)
 
 };
-
-constexpr int NO_SWITCH = -1;
-constexpr int DEFAULT_SWITCH = -2;
 
 /* Describes the type for a physical tile
  * name: unique identifier for type
@@ -1661,11 +1623,6 @@ struct t_chan_width_dist {
     t_chan chan_y_dist;
 };
 
-enum e_directionality {
-    UNI_DIRECTIONAL,
-    BI_DIRECTIONAL
-};
-
 /* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
  * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
  * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
@@ -2064,103 +2021,6 @@ struct t_direct_inf {
     e_side to_side;
     /// The line number in the architecture file that specifies this particular placement macro.
     int line;
-};
-
-enum class SwitchPointOrder {
-    FIXED,   //Switchpoints are ordered as specified in architecture
-    SHUFFLED //Switchpoints are shuffled (more diversity)
-};
-
-//A collection of switchpoints associated with a segment
-struct t_wire_switchpoints {
-    std::string segment_name;      //The type of segment
-    std::vector<int> switchpoints; //The indices of wire points along the segment
-};
-
-/* Used to list information about a set of track segments that should connect through a switchblock */
-struct t_wireconn_inf {
-    std::vector<t_wire_switchpoints> from_switchpoint_set;             //The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
-    std::vector<t_wire_switchpoints> to_switchpoint_set;               //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
-    SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
-    SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   //The desired to_switchpoint_set ordering
-    int switch_override_indx = DEFAULT_SWITCH;                         // index in switch array of the switch used to override wire_switch of the 'to' set.
-                                                                       // DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
-
-    std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
-                                    *
-                                    * '<int>': A specific number of connections
-                                    * 'from':  The number of generated connections between the 'from' and 'to' sets equals the
-                                    *          size of the 'from' set. This ensures every element in the from set is connected
-                                    *          to an element of the 'to' set.
-                                    *          Note: this it may result in 'to' elements being driven by multiple 'from'
-                                    *          elements (if 'from' is larger than 'to'), or in some elements of 'to' having
-                                    *          no driving connections (if 'to' is larger than 'from').
-                                    * 'to':    The number of generated connections is set equal to the size of the 'to' set.
-                                    *          This ensures that each element of the 'to' set has precisely one incoming connection.
-                                    *          Note: this may result in 'from' elements driving multiple 'to' elements (if 'to' is
-                                    *          larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
-                                    *          larger than 'to')
-                                    */
-};
-
-/* represents a connection between two sides of a switchblock */
-class SB_Side_Connection {
-  public:
-    /* specify the two SB sides that form a connection */
-    enum e_side from_side = TOP;
-    enum e_side to_side = TOP;
-
-    void set_sides(enum e_side from, enum e_side to) {
-        from_side = from;
-        to_side = to;
-    }
-
-    SB_Side_Connection() = default;
-
-    SB_Side_Connection(enum e_side from, enum e_side to)
-        : from_side(from)
-        , to_side(to) {
-    }
-
-    /* overload < operator which will be used by std::map */
-    bool operator<(const SB_Side_Connection& obj) const {
-        bool result;
-
-        if (from_side < obj.from_side) {
-            result = true;
-        } else {
-            if (from_side == obj.from_side) {
-                result = (to_side < obj.to_side) ? true : false;
-            } else {
-                result = false;
-            }
-        }
-
-        return result;
-    }
-};
-
-/* Use a map to index into the string permutation functions used to connect from one side to another */
-typedef std::map<SB_Side_Connection, std::vector<std::string>> t_permutation_map;
-
-/**
- * @brief Lists all information about a particular switch block specified in the architecture file
- */
-struct t_switchblock_inf {
-    std::string name;                ///< the name of this switchblock
-    e_sb_location location;          ///< where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere)
-    e_directionality directionality; ///< the directionality of this switchblock (unidir/bidir)
-
-    int x = -1; ///< The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified
-    int y = -1; ///< The exact y-axis location that this SB is used, meaningful when type is set to E_XY_specified
-
-    /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
-    t_sb_loc_spec reg_x;
-    t_sb_loc_spec reg_y;
-
-    t_permutation_map permutation_map; ///< map holding the permutation functions attributed to this switchblock
-
-    std::vector<t_wireconn_inf> wireconns; ///< list of wire types/groups this SB will connect
 };
 
 /* Clock related data types used for building a dedicated clock network */
