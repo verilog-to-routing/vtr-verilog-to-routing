@@ -1105,6 +1105,9 @@ struct t_placer_opts {
  *   @param ap_high_fanout_threshold;
  *              The threshold to ignore nets with higher fanout than that
  *              value while constructing the solver.
+ *   @param ap_partial_legalizer_target_density
+ *              Vector of strings passed by the user to configure the target
+ *              density of different physical tiles on the device.
  *   @param appack_max_dist_th
  *              Array of string passed by the user to configure the max candidate
  *              distance thresholds.
@@ -1130,6 +1133,8 @@ struct t_ap_opts {
     float ap_timing_tradeoff;
 
     int ap_high_fanout_threshold;
+
+    std::vector<std::string> ap_partial_legalizer_target_density;
 
     std::vector<std::string> appack_max_dist_th;
 
