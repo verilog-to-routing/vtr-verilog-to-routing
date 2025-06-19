@@ -16,6 +16,13 @@ class PlacerState;
 class PlacerCriticalities;
 
 /**
+ * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter
+ * bounding box wirelength's underestimate of wiring for nets with fanout greater than 2.
+ * @return Multiplicative wirelength correction factor
+ */
+double wirelength_crossing_count(size_t fanout);
+
+/**
  * @brief The method used to calculate placement cost
  * @details For comp_cost. NORMAL means use the method that generates updatable bounding boxes for speed.
  * CHECK means compute all bounding boxes from scratch using a very simple routine to allow checks

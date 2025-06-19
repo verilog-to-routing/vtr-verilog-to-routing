@@ -1957,6 +1957,24 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("256")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument(args.ap_partial_legalizer_target_density, "--ap_partial_legalizer_target_density")
+        .help(
+            "Sets the target density of different physical tiles on the FPGA device "
+            "for the partial legalizer in the AP flow. The partial legalizer will "
+            "try to fill tiles up to (but not beyond) this target density. This "
+            "is used as a guide, the legalizer may not follow this if it must fill "
+            "the tile more."
+            "\n"
+            "When this option is set ot auto, VPR will select good values for the "
+            "target density of tiles."
+            "\n"
+            "This option is similar to appack_max_dist_th, where a regex string "
+            "is used to set the target density of different physical tiles. See "
+            "the documentation for more information.")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument(args.appack_max_dist_th, "--appack_max_dist_th")
         .help(
             "Sets the maximum candidate distance thresholds for the logical block types"

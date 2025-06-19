@@ -1281,6 +1281,40 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``0.5``
 
+.. option:: --ap_partial_legalizer_target_density { auto | <regex>:<float>,<float> }
+
+   Sets the target density of different physical tiles on the FPGA device
+   for the partial legalizer in the AP flow. The partial legalizer will
+   try to fill tiles up to (but not beyond) this target density. This
+   is used as a guide, the legalizer may not follow this if it must fill
+   the tile more.
+
+   The partial legalizer uses an abstraction called "mass" to describe the resources
+   used by a set of primitives in the netlist and the capacity of resources in a
+   given tile. For primitives like LUTs, FFs, and DSPs this mass can be thought of
+   as the number of pins used (but not exactly). For memories, this mass can be
+   thought of as the number of bits stored. This target density parameter lowers
+   the mass capacity of tiles.
+
+   When this option is set ot auto, VPR will select good values for the
+   target density of tiles.
+
+   reasonable values are between 0.0 and 1.0, with negative values not being allowed.
+
+   This option is similar to appack_max_dist_th, where a regex string
+   is used to set the target density of different physical tiles.
+
+   For example:
+
+     .. code-block:: none
+
+        --ap_partial_legalizer_target_density .*:0.9 "clb|memory:0.8"
+
+   Would set the target density of all physical tiles to be 0.9, except for the clb and
+   memory tiles, which will be set to a target density of 0.8.
+
+    **Default:** ``auto``
+
 .. option:: --appack_max_dist_th { auto | <regex>:<float>,<float> }
 
    Sets the maximum candidate distance thresholds for the logical block types
