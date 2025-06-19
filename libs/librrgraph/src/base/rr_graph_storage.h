@@ -526,6 +526,8 @@ class t_rr_graph_storage {
         node_ptc_.resize(node_storage_.size());
         node_layer_.resize(node_storage_.size());
         node_ptc_twist_incr_.resize(node_storage_.size());
+        node_bend_start_.resize(node_storage_.size());
+        node_bend_end_.resize(node_storage_.size());
     }
 
     /** @brief  Reserve storage for RR nodes. */
@@ -535,6 +537,8 @@ class t_rr_graph_storage {
         node_storage_.reserve(size);
         node_ptc_.reserve(size);
         node_layer_.reserve(size);
+        node_bend_start_.reserve(size);
+        node_bend_end_.reserve(size);
     }
 
     /** @brief  Resize node storage to accomidate size RR nodes. */
@@ -544,6 +548,8 @@ class t_rr_graph_storage {
         node_storage_.resize(size);
         node_ptc_.resize(size);
         node_layer_.resize(size);
+        node_bend_start_.resize(size);
+        node_bend_end_.resize(size);
     }
 
     /** @brief We only allocate the ptc twist increment array while building tileable rr-graphs */
@@ -570,6 +576,8 @@ class t_rr_graph_storage {
         node_first_edge_.clear();
         node_fan_in_.clear();
         node_layer_.clear();
+        node_bend_start_.clear();
+        node_bend_end_.clear();
         node_name_.clear();
         virtual_clock_network_root_idx_.clear();
         node_ptc_twist_incr_.clear();
@@ -606,6 +614,8 @@ class t_rr_graph_storage {
         node_first_edge_.shrink_to_fit();
         node_fan_in_.shrink_to_fit();
         node_layer_.shrink_to_fit();
+        node_bend_start_.shrink_to_fit();
+        node_bend_end_.shrink_to_fit();
         node_ptc_twist_incr_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
@@ -620,6 +630,8 @@ class t_rr_graph_storage {
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
         node_layer_.emplace_back();
+        node_bend_start_.emplace_back();
+        node_bend_end_.emplace_back();
     }
 
     /** @brief Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
