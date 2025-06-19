@@ -4,6 +4,7 @@
 #ifndef NO_GRAPHICS
 
 #include <cstdio>
+#include <numbers>
 #include <cmath>
 #include <algorithm>
 #include <sstream>
@@ -590,6 +591,11 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
         } else {
             /* If not highlighted, draw the node in default color. */
             draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
+        }
+
+        // When drawing a new branch, add the parent node to the vector to ensure that the conenction is drawn.
+        if (rr_nodes_to_draw.empty() && rt_node.parent().has_value()) {
+            rr_nodes_to_draw.push_back(rt_node.parent().value().inode);
         }
 
         rr_nodes_to_draw.push_back(inode);
@@ -1259,7 +1265,7 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
         std::string incr_delay_str = ss.str();
 
         // Get the angle of line, to rotate the text
-        float text_angle = (180 / M_PI)
+        float text_angle = (180 / std::numbers::pi)
                            * atan((end.y - start.y) / (end.x - start.x));
 
         // Get the screen coordinates for text drawing
@@ -1274,9 +1280,9 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
 
         // Find an offset so it is sitting on top/below of the line
         float x_offset = screen_coords.center().x
-                         - 8 * sin(text_angle * (M_PI / 180));
+                         - 8 * sin(text_angle * (std::numbers::pi / 180));
         float y_offset = screen_coords.center().y
-                         - 8 * cos(text_angle * (M_PI / 180));
+                         - 8 * cos(text_angle * (std::numbers::pi / 180));
 
         ezgl::point2d offset_text_bbox(x_offset, y_offset);
         g->draw_text(offset_text_bbox, incr_delay_str.c_str(),

@@ -33,6 +33,48 @@ double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
     return hpwl;
 }
 
+double PartialPlacement::estimate_post_placement_wirelength(const APNetlist& netlist) const {
+    // Go through each net and calculate the half-perimeter wirelength. Since
+    // we want to estimate the post-placement wirelength, we do not want the
+    // flat placement positions of the blocks. Instead we compute the HPWL over
+    // the tiles that the flat placement is placing the blocks over.
+    unsigned total_hpwl = 0;
+    for (APNetId net_id : netlist.nets()) {
+        // Note: Other wirelength estimates in VTR ignore global nets; however
+        //       it is not known if a net is global or not until packing is
+        //       complete. For now, we just approximate post-placement wirelength
+        //       using the HPWL (in tile space).
+        // TODO: The reason we do not know what nets are ignored / global is
+        //       because the pin on the tile that the net connects to is what
+        //       decides if a net is global / ignored for place and route. Since
+        //       we have not packed anything yet, we do not know what pin each
+        //       net will go to; however, we can probably get a good idea based
+        //       on some properties of the net and the tile its going to / from.
+        //       Should investigate this to get a better estimate of wirelength.
+        double min_x = std::numeric_limits<unsigned>::max();
+        double max_x = std::numeric_limits<unsigned>::lowest();
+        double min_y = std::numeric_limits<unsigned>::max();
+        double max_y = std::numeric_limits<unsigned>::lowest();
+        for (APPinId pin_id : netlist.net_pins(net_id)) {
+            APBlockId blk_id = netlist.pin_block(pin_id);
+            min_x = std::min(min_x, block_x_locs[blk_id]);
+            max_x = std::max(max_x, block_x_locs[blk_id]);
+            min_y = std::min(min_y, block_y_locs[blk_id]);
+            max_y = std::max(max_y, block_y_locs[blk_id]);
+        }
+        VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y);
+
+        // Floor the positions to get the x and y coordinates of the tiles each
+        // block belongs to.
+        unsigned tile_dx = std::floor(max_x) - std::floor(min_x);
+        unsigned tile_dy = std::floor(max_y) - std::floor(min_y);
+
+        total_hpwl += tile_dx + tile_dy;
+    }
+
+    return total_hpwl;
+}
+
 bool PartialPlacement::verify_locs(const APNetlist& netlist,
                                    size_t grid_width,
                                    size_t grid_height) const {

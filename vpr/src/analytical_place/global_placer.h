@@ -87,6 +87,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                  float ap_timing_tradeoff,
                                                  bool generate_mass_report,
+                                                 const std::vector<std::string>& target_density_arg_strs,
                                                  unsigned num_threads,
                                                  int log_verbosity);
 
@@ -164,6 +165,7 @@ class SimPLGlobalPlacer : public GlobalPlacer {
                       std::shared_ptr<PlaceDelayModel> place_delay_model,
                       float ap_timing_tradeoff,
                       bool generate_mass_report,
+                      const std::vector<std::string>& target_density_arg_strs,
                       unsigned num_threads,
                       int log_verbosity);
 

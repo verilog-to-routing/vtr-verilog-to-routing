@@ -1950,6 +1950,31 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<int>(args.ap_high_fanout_threshold, "--ap_high_fanout_threshold")
+        .help(
+            "Defines the threshold for high fanout nets within AP flow.\n"
+            "Ignores the nets that have higher fanouts than the threshold for the analytical solver.")
+        .default_value("256")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument(args.ap_partial_legalizer_target_density, "--ap_partial_legalizer_target_density")
+        .help(
+            "Sets the target density of different physical tiles on the FPGA device "
+            "for the partial legalizer in the AP flow. The partial legalizer will "
+            "try to fill tiles up to (but not beyond) this target density. This "
+            "is used as a guide, the legalizer may not follow this if it must fill "
+            "the tile more."
+            "\n"
+            "When this option is set ot auto, VPR will select good values for the "
+            "target density of tiles."
+            "\n"
+            "This option is similar to appack_max_dist_th, where a regex string "
+            "is used to set the target density of different physical tiles. See "
+            "the documentation for more information.")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument(args.appack_max_dist_th, "--appack_max_dist_th")
         .help(
             "Sets the maximum candidate distance thresholds for the logical block types"
@@ -3093,6 +3118,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     analysis_grp.add_argument(args.write_timing_summary, "--write_timing_summary")
         .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<bool, ParseOnOff>(args.skip_sync_clustering_and_routing_results, "--skip_sync_clustering_and_routing_results")
+        .help(
+            "Select to skip the synchronization on clustering results based on routing optimization results."
+            "Note that when this sync-up is disabled, clustering results may be wrong (leading to incorrect bitstreams)!")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument<bool, ParseOnOff>(args.generate_net_timing_report, "--generate_net_timing_report")

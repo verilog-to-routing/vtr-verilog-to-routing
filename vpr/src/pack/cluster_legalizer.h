@@ -34,8 +34,7 @@ struct t_lb_router_data;
 // A special ID to identify the legalization clusters. This is separate from the
 // ClusterBlockId since this legalizer is not necessarily tied to the Clustered
 // netlist, but is used as a sub-routine to it.
-struct legalization_cluster_id_tag;
-typedef vtr::StrongId<legalization_cluster_id_tag, size_t> LegalizationClusterId;
+typedef vtr::StrongId<struct legalization_cluster_id_tag, size_t> LegalizationClusterId;
 
 /**
  * @brief Holds information to be shared between molecules that represent the

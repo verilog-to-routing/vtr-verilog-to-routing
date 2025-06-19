@@ -308,6 +308,16 @@ struct PartitionedWindow {
  *        regions.
  */
 class PerPrimitiveDimPrefixSum2D {
+    // This class stores the prefix sum as a fixed-point number instead of a
+    // floating point number. This is to prevent error accumulation which can
+    // occur due to numerical imprecisions. This variable selects how many bits
+    // the fractional component of the fixed-point number should have.
+    static constexpr unsigned num_fractional_bits_ = 10;
+
+    // When converting to/from fixed-point, we need to scale/shrink by 2 to the
+    // power of the number of fractional bits.
+    static constexpr float fractional_scale_ = 2 << num_fractional_bits_;
+
   public:
     PerPrimitiveDimPrefixSum2D() = default;
 
@@ -336,15 +346,13 @@ class PerPrimitiveDimPrefixSum2D {
                             const vtr::Rect<double>& region) const;
 
   private:
-    /// @brief Per-Dim Prefix Sums
-    vtr::vector<PrimitiveVectorDim, vtr::PrefixSum2D<float>> dim_prefix_sum_;
+    /// @brief Per-Dim Prefix Sums. These are stored as fixed-point numbers to
+    ///        prevent error accumulations due to numerical imprecisions.
+    vtr::vector<PrimitiveVectorDim, vtr::PrefixSum2D<uint64_t>> dim_prefix_sum_;
 };
 
-/// @brief Tag for the PrimitiveGroupId
-struct primitive_group_id_tag;
-
 /// @brief A unique ID of a group of primitive dims created by the PrimitiveDimGrouper class.
-typedef vtr::StrongId<primitive_group_id_tag, size_t> PrimitiveGroupId;
+typedef vtr::StrongId<struct primitive_group_id_tag, size_t> PrimitiveGroupId;
 
 /**
  * @brief A manager class for grouping together dimensions of the primitive
