@@ -10,3 +10,6 @@
 [submodule "libs/EXTERNAL/libezgl"]
 	path = libs/EXTERNAL/libezgl
 	url = https://github.com/verilog-to-routing/ezgl.git
+[submodule "yosys"]
+	path = yosys
+	url = https://github.com/YosysHQ/yosys.git
