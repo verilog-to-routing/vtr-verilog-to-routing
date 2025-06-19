@@ -391,6 +391,8 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
                                         tile_loc.y - height_offset,
                                         tile_loc.layer_num};
         tile_blocks[root_loc].push_back(mol_id);
+        // Save for easy access.
+        mol_id_to_root_loc[mol_id] = root_loc;
     }
 
     return tile_blocks;
@@ -577,75 +579,88 @@ void BasicMinDisturbance::neighbor_cluster_pass(
     
     // Pick the first seed molecule.
     PackMoleculeId seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
-
-    print_pack_status_header();
     
-    // Continue clustering as long as a valid seed is returned from the seed
-    // selector.
-    while (seed_mol_id.is_valid()) {
-        // Check to ensure that this molecule is unclustered.
-        VTR_ASSERT(!cluster_legalizer.is_mol_clustered(seed_mol_id));
+    // Continue untill no unclustered molecule left
+    while (seed_mol_id.is_valid())
+    {
+        // Get the tile location of seed molecule
+        t_physical_tile_loc seed_loc = mol_id_to_root_loc[seed_mol_id];
+        
+        // Create new cluster with the seed.
+        LegalizationClusterId legalization_cluster_id = create_new_cluster(seed_mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
 
-        // The basic algorithm:
-        // 1) Try to put all the molecules in that you can without doing the
-        //    full intra-lb route. Then do full legalization at the end.
-        // 2) If the legalization at the end fails, try again, but this time
-        //    do full legalization for each molecule added to the cluster.
+        // Create the cluster gain stats. This updates the gains in the candidate
+        // selector due to a new molecule being clustered.
+        ClusterGainStats cluster_gain_stats = candidate_selector.create_cluster_gain_stats(seed_mol_id,
+                                                                                        legalization_cluster_id,
+                                                                                        cluster_legalizer,
+                                                                                        attraction_groups);
+        // Select the first candidate molecule to try to add to this cluster.
+        PackMoleculeId candidate_mol_id = candidate_selector.get_next_candidate_for_cluster(
+            cluster_gain_stats,
+            legalization_cluster_id,
+            cluster_legalizer,
+            attraction_groups);
+        
+        int max_num_repeated_molecules = 1;
+        int num_repeated_molecules = 0;
+        while (candidate_mol_id.is_valid() && num_repeated_molecules < max_num_repeated_molecules) {
+            bool success = true;
+            // Check if the candidate is in our search radius
+            t_physical_tile_loc candidate_loc = mol_id_to_root_loc[candidate_mol_id];
+            int distance = std::abs(seed_loc.x - candidate_loc.x) + std::abs(seed_loc.y - candidate_loc.y) + std::abs(seed_loc.layer_num- candidate_loc.layer_num);
+            if (distance > search_radius) {
+                success = false;
+            }
+            
+            // Try to cluster the candidate molecule into the cluster.
+            if (success) {
+                success = greedy_clusterer.try_add_candidate_mol_to_cluster(candidate_mol_id,
+                                                                            legalization_cluster_id,
+                                                                            cluster_legalizer,
+                                                                            prepacker_);
+            }
+            
+            // If the candidate molecule was clustered successfully, update
+            // the cluster stats.
+            if (success) {
+                // If the last candidate was clustered successfully, update the
+                // gains in the candidate selector.
+                candidate_selector.update_cluster_gain_stats_candidate_success(cluster_gain_stats,
+                                                                            candidate_mol_id,
+                                                                            legalization_cluster_id,
+                                                                            cluster_legalizer,
+                                                                            attraction_groups);
+            } else {
+                // If the last candidate was not clustered successfully, update the
+                // gains in the candidate selector accordingly.
+                candidate_selector.update_cluster_gain_stats_candidate_failed(cluster_gain_stats,
+                                                                            candidate_mol_id);
+            }
 
-        // Try to grow a cluster from the seed molecule without doing intra-lb
-        // route for each molecule (i.e. just use faster but not fully
-        // conservative legality checks).
-        LegalizationClusterId new_cluster_id = greedy_clusterer.try_grow_cluster(seed_mol_id,
-                                                                candidate_selector,
-                                                                ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
-                                                                cluster_legalizer,
-                                                                prepacker_,
-                                                                true, // = balance_block_type_utilization
-                                                                attraction_groups,
-                                                                num_used_type_instances,
-                                                                g_vpr_ctx.mutable_device());
+            // Get the next candidate molecule.
+            PackMoleculeId prev_candidate_mol_id = candidate_mol_id;
+            candidate_mol_id = candidate_selector.get_next_candidate_for_cluster(
+                cluster_gain_stats,
+                legalization_cluster_id,
+                cluster_legalizer,
+                attraction_groups);
 
-        if (!new_cluster_id.is_valid()) {
-            // If the previous strategy failed, try to grow the cluster again,
-            // but this time perform full legalization for each molecule added
-            // to the cluster.
-            new_cluster_id = greedy_clusterer.try_grow_cluster(seed_mol_id,
-                                              candidate_selector,
-                                              ClusterLegalizationStrategy::FULL,
-                                              cluster_legalizer,
-                                              prepacker_,
-                                              true, // = balance_block_type_utilization
-                                              attraction_groups,
-                                              num_used_type_instances,
-                                              g_vpr_ctx.mutable_device());
+            // If the next candidate molecule is the same as the previous
+            // candidate molecule, increment the number of repeated
+            // molecules counter.
+            if (candidate_mol_id == prev_candidate_mol_id)
+                num_repeated_molecules++;
         }
+        // After the cluster has been fully created, update internal structures
+        // to improve the gain calculation.
+        candidate_selector.update_candidate_selector_finalize_cluster(cluster_gain_stats,
+                                                                      legalization_cluster_id);
+        cluster_legalizer.clean_cluster(legalization_cluster_id);
 
-        // Ensure that the seed was packed successfully.
-        VTR_ASSERT(new_cluster_id.is_valid());
-        VTR_ASSERT(cluster_legalizer.is_mol_clustered(seed_mol_id));
-
-        // Update the clustering progress stats.
-        size_t num_molecules_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(new_cluster_id);
-        clustering_stats.num_molecules_processed += num_molecules_in_cluster;
-        clustering_stats.mols_since_last_print += num_molecules_in_cluster;
-
-        // Print the current progress of the packing after a cluster has been
-        // successfully created.
-        print_pack_status(clustering_stats.num_molecules,
-                          clustering_stats.num_molecules_processed,
-                          clustering_stats.mols_since_last_print,
-                          g_vpr_ctx.mutable_device().grid.width(),
-                          g_vpr_ctx.mutable_device().grid.height(),
-                          attraction_groups,
-                          cluster_legalizer);
-
-        // Pick new seed.
+        // Pick the next seed molecule.
         seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
     }
-    // If this architecture has LE physical block, report its usage.
-    greedy_clusterer.report_le_physical_block_usage(cluster_legalizer);
-        
-    
 }
 
 

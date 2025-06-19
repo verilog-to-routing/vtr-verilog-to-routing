@@ -135,6 +135,9 @@ public:
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
 
     std::unordered_set<AtomBlockId> first_pass_atoms;
+
+    // for easy access from mol to loc
+    std::unordered_map<PackMoleculeId, t_physical_tile_loc> mol_id_to_root_loc;
     
     void neighbor_cluster_pass(
                         ClusterLegalizer& cluster_legalizer,
