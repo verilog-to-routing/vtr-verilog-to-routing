@@ -229,8 +229,6 @@ enum e_power_estimation_method_ {
 typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
 
-
-
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
 /*************************************************************************************************/
@@ -1738,7 +1736,6 @@ struct t_segment_inf {
     float frac_sb;
 
     bool longline;
-
 
     /// The resistance of a routing track, per unit logic block length.
     float Rmetal;

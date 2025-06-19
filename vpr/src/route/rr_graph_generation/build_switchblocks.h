@@ -18,11 +18,11 @@
  */
 class Switchblock_Lookup {
   public:
-    int x_coord;        ///< x coordinate of switchblock connection
-    int y_coord;        ///< y coordinate of switchblock connection
-    int layer_coord;    ///< layer number of switchblock
-    e_side from_side;   ///< source side of switchblock connection
-    e_side to_side;     ///< destination side of switchblock connection
+    int x_coord;      ///< x coordinate of switchblock connection
+    int y_coord;      ///< y coordinate of switchblock connection
+    int layer_coord;  ///< layer number of switchblock
+    e_side from_side; ///< source side of switchblock connection
+    e_side to_side;   ///< destination side of switchblock connection
 
     /// @brief Empty constructor initializes everything to 0
     Switchblock_Lookup() {
