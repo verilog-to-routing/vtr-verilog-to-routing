@@ -84,13 +84,6 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
                             t_2D_bb& bb_edge_new,
                             t_2D_bb& bb_coord_new);
 
-/**
- * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter
- * bounding box wirelength's underestimate of wiring for nets with fanout greater than 2.
- * @return Multiplicative wirelength correction factor
- */
-static double wirelength_crossing_count(size_t fanout);
-
 /******************************* End of Function definitions ************************************/
 
 NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
@@ -1492,7 +1485,7 @@ double NetCostHandler::recompute_bb_cost_() {
     return cost;
 }
 
-static double wirelength_crossing_count(size_t fanout) {
+double wirelength_crossing_count(size_t fanout) {
     /* Get the expected "crossing count" of a net, based on its number *
      * of pins.  Extrapolate for very large nets.                      */
 

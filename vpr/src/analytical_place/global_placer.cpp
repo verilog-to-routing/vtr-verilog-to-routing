@@ -132,7 +132,7 @@ static void print_placement_stats(const PartialPlacement& p_placement,
                                   const PreClusterTimingManager& pre_cluster_timing_manager) {
     // Print the placement HPWL
     VTR_LOG("\tPlacement objective HPWL: %f\n", p_placement.get_hpwl(ap_netlist));
-    VTR_LOG("\tPlacement estimated wirelength: %u\n", p_placement.estimate_post_placement_wirelength(ap_netlist));
+    VTR_LOG("\tPlacement estimated wirelength: %g\n", p_placement.estimate_post_placement_wirelength(ap_netlist));
 
     // Print the timing information.
     if (pre_cluster_timing_manager.is_valid()) {
