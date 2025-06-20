@@ -514,7 +514,12 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 }
 
 void draw_rr_intrapin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    if(!draw_state->is_flat){
+        return;
+    }
 
     auto blk_id_pin_id = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
 
@@ -697,6 +702,30 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
         int layer_num = rr_graph.node_layer(inode);
         if (!draw_state->draw_layer_display[layer_num].visible) {
             continue; /* Don't check RR nodes on currently invisible layers*/
+        }
+
+        // Skip Source and Sink Nodes
+        if (rr_graph.node_type(inode) == e_rr_type::SOURCE
+            || rr_graph.node_type(inode) == e_rr_type::SINK) {
+            continue;
+        }
+
+        // Check for intra cluster nodes
+        if (!is_inter_cluster_node(rr_graph, inode)) {
+
+            if(!draw_state->is_flat){
+                continue;
+            }
+
+            auto blk_id_pin_id = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+            ezgl::point2d p = draw_coords->get_absolute_pin_location(blk_id_pin_id.first, blk_id_pin_id.second);
+
+            if (click_x >= p.x - draw_coords->pin_size && click_x <= p.x + draw_coords->pin_size && click_y >= p.y - draw_coords->pin_size && click_y <= p.y + draw_coords->pin_size) {
+                hit_node = inode;
+                return hit_node;
+            }
+
+            continue;
         }
         switch (rr_graph.node_type(inode)) {
             case e_rr_type::IPIN:

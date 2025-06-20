@@ -280,8 +280,12 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_e
 }
 
 void draw_intrapin_to_intrapin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto draw_coords = get_draw_coords_vars();
+    if(!draw_state->is_flat){
+        return;
+    }
 
     auto blk_id_pin_id1 = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
     auto blk_id_pin_id2 = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
@@ -293,7 +297,12 @@ void draw_intrapin_to_intrapin(RRNodeId inode, RRNodeId prev_node, ezgl::rendere
 }
 
 void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
-    auto draw_coords = get_draw_coords_vars();
+    t_draw_state* draw_state = get_draw_state_vars();
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    if(!draw_state->is_flat){
+        return;
+    }
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     if (!is_inter_cluster_node(rr_graph, inode) && is_inter_cluster_node(rr_graph, prev_node)) {
