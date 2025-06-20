@@ -17,17 +17,21 @@ if(${CMAKE_GENERATOR} STREQUAL "Ninja")
 endif()
 
 #Initialize yosys submodules
-#execute_process(
-#  COMMAND git submodule update --init --recursive
-#  WORKING_DIRECTORY ${YOSYS_SRC_DIR}
+execute_process(
+ COMMAND git submodule update --init
+ WORKING_DIRECTORY ${YOSYS_SRC_DIR}
 #  RESULT_VARIABLE _submod_ret
 #  OUTPUT_QUIET
 #  ERROR_QUIET
-#)
-#if(NOT _submod_ret EQUAL 0)
+)
+execute_process(
+  COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive git\ submodule\ update\ --init
+  WORKING_DIRECTORY ${YOSYS_SRC_DIR}
+)
+# if(NOT _submod_ret EQUAL 0)
 #  message(FATAL_ERROR
 #    "Failed to `git submodule update --init --recursive` in ${YOSYS_SRC_DIR}")
-#endif()
+# endif()
 
 # how to build the result of the library
 add_custom_command(OUTPUT yosys-bin
