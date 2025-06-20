@@ -101,7 +101,7 @@ void AnnealerDetailedPlacer::optimize_placement() {
     placer_->place();
 
     // Copy the placement solution into the global placement solution.
-    placer_->copy_locs_to_global_state(g_vpr_ctx.mutable_placement());
+    placer_->update_global_state();
 
     // Since the placement was modified, need to resynchronize the pins in the
     // clusters.

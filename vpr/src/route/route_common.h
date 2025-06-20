@@ -7,6 +7,48 @@
 #include "router_stats.h"
 #include "globals.h"
 
+/**
+ * @brief Extra information about each rr_node needed only during routing
+ *        (i.e. during the maze expansion).
+ */
+struct t_rr_node_route_inf {
+    /** ID of the edge (globally unique edge ID in the RR Graph)
+     *  that was used to reach this node from the previous node.
+     *  If there is no predecessor, prev_edge = NO_PREVIOUS.
+     */
+    RREdgeId prev_edge;
+
+    /** Accumulated cost term from previous Pathfinder iterations. */
+    float acc_cost;
+
+    /** Total cost of the path up to and including this node +
+     *  the expected cost to the target if the timing_driven router
+     *  is being used.
+     */
+    float path_cost;
+
+    /** Total cost of the path up to and including this node. */
+    float backward_path_cost;
+
+    /** Upstream resistance to ground from this node in the current
+     *  path search (connection routing), including the resistance
+     *  of the node itself (device_ctx.rr_nodes[index].R).
+     */
+    float R_upstream;
+
+  public: // Accessors
+    /** @return The current occupancy of the associated rr node. */
+    short occ() const { return occ_; }
+
+  public: // Mutators
+    /** @param new_occ The new occupancy to set. */
+    void set_occ(int new_occ) { occ_ = new_occ; }
+
+  private: // Data
+    /** The current occupancy of the associated rr node. */
+    short occ_ = 0;
+};
+
 /** This routine checks to see if this is a resource-feasible routing.
  * That is, are all rr_node capacity limitations respected?  It assumes
  * that the occupancy arrays are up to date when it is called. */
@@ -118,9 +160,9 @@ void init_route_structs(const Netlist<>& net_list,
                         bool has_choking_point,
                         bool is_flat);
 
-void alloc_and_load_rr_node_route_structs();
+void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts);
 
-void reset_rr_node_route_structs();
+void reset_rr_node_route_structs(const t_router_opts& route_opts);
 
 void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat);
 
@@ -140,5 +182,5 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               RRNodeId from_node,
                               RRNodeId to_node,
                               float R_upstream,
-                              const t_conn_cost_params cost_params,
+                              const t_conn_cost_params& cost_params,
                               bool is_flat);
