@@ -19,16 +19,16 @@
         "Average Path": 4,
         "Estimated LUTs": 4,
         "Total Node": 4,
-        "Wires": 9,
-        "Wire Bits": 9,
+        "Wires": 11,
+        "Wire Bits": 11,
         "Public Wires": 4,
         "Public Wire Bits": 4,
-        "Total Cells": 7,
+        "Total Cells": 9,
         "MUX": 1,
         "XOR": 2,
-        "OR": 1,
+        "OR": 2,
         "AND": 1,
-        "NOT": 2
+        "NOT": 3
     },
     "else/if_else/no_arch": {
         "test_name": "else/if_else/no_arch",

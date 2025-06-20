@@ -939,10 +939,8 @@ class Netlist {
     NetId add_net(const std::string name, PinId driver, std::vector<PinId> sinks);
 
   protected: //Protected Base Types
-    struct string_id_tag;
-
     ///@brief A unique identifier for a string in the netlist
-    typedef vtr::StrongId<string_id_tag> StringId;
+    typedef vtr::StrongId<struct string_id_tag> StringId;
 
   protected: //Protected Base Members
     /*

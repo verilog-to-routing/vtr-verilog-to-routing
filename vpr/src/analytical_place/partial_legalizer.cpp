@@ -694,11 +694,18 @@ PerPrimitiveDimPrefixSum2D::PerPrimitiveDimPrefixSum2D(const FlatPlacementDensit
     const PrimitiveDimManager& dim_manager = density_manager.mass_calculator().get_dim_manager();
     dim_prefix_sum_.resize(dim_manager.dims().size());
     for (PrimitiveVectorDim dim : density_manager.get_used_dims_mask().get_non_zero_dims()) {
-        dim_prefix_sum_[dim] = vtr::PrefixSum2D<float>(
+        dim_prefix_sum_[dim] = vtr::PrefixSum2D<uint64_t>(
             width,
             height,
             [&](size_t x, size_t y) {
-                return lookup(dim, x, y);
+                // Convert the floating point value into fixed point to prevent
+                // error accumulation in the prefix sum.
+                // Note: We ceil here since we do not want to lose information
+                //       on numbers that get very close to 0.
+                float val = lookup(dim, x, y);
+                VTR_ASSERT_SAFE_MSG(val >= 0.0f,
+                                    "PerPrimitiveDimPrefixSum2D expected to only hold positive values");
+                return std::ceil(val * fractional_scale_);
             });
     }
 }
@@ -707,10 +714,14 @@ float PerPrimitiveDimPrefixSum2D::get_dim_sum(PrimitiveVectorDim dim,
                                               const vtr::Rect<double>& region) const {
     VTR_ASSERT_SAFE(dim.is_valid());
     // Get the sum over the given region.
-    return dim_prefix_sum_[dim].get_sum(region.xmin(),
-                                        region.ymin(),
-                                        region.xmax() - 1,
-                                        region.ymax() - 1);
+    uint64_t sum = dim_prefix_sum_[dim].get_sum(region.xmin(),
+                                                region.ymin(),
+                                                region.xmax() - 1,
+                                                region.ymax() - 1);
+
+    // The sum is stored as a fixed point number. Cast into float by casting to
+    // a float and dividing by the fractional scale.
+    return static_cast<float>(sum) / fractional_scale_;
 }
 
 PrimitiveVector PerPrimitiveDimPrefixSum2D::get_sum(const std::vector<PrimitiveVectorDim>& dims,
@@ -846,13 +857,22 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
             // Get the capacity of the bin for this dim.
             float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val(dim);
             VTR_ASSERT_SAFE(cap >= 0.0f);
+
+            // Update the capacity with the target density. By multiplying by the
+            // target density, we make the capacity appear smaller than it actually
+            // is during partial legalization.
+            float target_density = density_manager_->get_bin_target_density(bin_id);
+            cap *= target_density;
+
             // Bins may be large, but the prefix sum assumes a 1x1 grid of
             // values. Normalize by the area of the bin to turn this into
             // a 1x1 bin equivalent.
             const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
             float bin_area = bin_region.width() * bin_region.height();
-            VTR_ASSERT_SAFE(!vtr::isclose(bin_area, 0.f));
-            return cap / bin_area;
+            VTR_ASSERT_SAFE(!vtr::isclose(bin_area, 0.0f));
+            cap /= bin_area;
+
+            return cap;
         });
 
     num_windows_partitioned_ = 0;

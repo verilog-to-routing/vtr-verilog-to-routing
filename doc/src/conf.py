@@ -67,13 +67,13 @@ source_suffix = [".rst"]
 master_doc = "index"
 
 project = "Verilog-to-Routing"
-copyright = "2012-2022, VTR Developers"
+copyright = "2012-2025, VTR Developers"
 author = "VTR Developers"
 
 version = get_vtr_version()
 release = get_vtr_release()
 
-language = None
+language = "en"
 
 exclude_patterns = ["_build"]
 
@@ -86,8 +86,6 @@ numfig = True
 # -- Options for HTML output ----------------------------------------------
 
 html_theme = "sphinx_rtd_theme"
-
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 html_logo = "_static/vtr_logo.svg"
 

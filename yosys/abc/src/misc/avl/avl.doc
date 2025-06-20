@@ -1,0 +1,166 @@
+/*
+ * Revision Control Information
+ *
+ * /projects/hsis/CVS/utilities/avl/avl.doc,v
+ * rajeev
+ * 1.3
+ * 1995/08/08 22:36:22
+ *
+ */
+avl_tree *
+avl_init_table(compare)
+int (*compare)();
+	Initialize and return a new avl_tree.  Use the function `compare' to
+	compare items in the tree.  `compare' should be of the form:
+
+		int
+		compare(a,b)
+		char *a, *b;
+
+	and return a number < 0, == 0, > 0 depending on whether a < b,
+	a == b, or a > b, respectively.
+
+
+void
+avl_free_table(tree, key_delete_func, value_delete_func)
+avl_tree *tree;
+void (*key_delete_func)();
+void (*value_delete_func)();
+
+	Delete all storage associated with `tree'.  The functions 
+	key_delete_func and value_delete_func, if non-null, are called
+	to free each (key, value) pair.  They are declared as:
+
+		void
+		key_delete_func(key)
+		char *key;
+		{}
+
+		void
+		value_delete_func(value)
+		char *value;
+		{}
+
+	The C-library function free is often suitable as a free function.
+
+
+avl_first(tree, key_p, value_p)
+avl_tree *tree;
+char **key_p;
+char **value_p;
+	Retrieves the smallest element in the tree.  Returns 0 if there
+	are no elements in the tree.
+
+
+avl_last(tree, key_p, value_p)
+avl_tree *tree;
+char **key_p;
+char **value_p;
+	Retrieves the largest element in the tree.  Returns 0 if there
+	are no elements in the tree.
+
+
+avl_lookup(tree, key, value_p)
+avl_tree *tree;
+char *key;
+char **value_p;
+	Search for an entry matching `key'.  If found, set `value_p' to
+	the associated value field and return 1.  If not found, return
+	0 and leave `value_p' unchanged.
+
+
+avl_insert(tree, key, value);
+avl_tree *tree;
+char *key;
+char *value;
+	Insert the value `value' under the key `key'.  Multiple items
+	are allowed with the same value; all are inserted.
+
+
+avl_delete(tree, key_p, value_p)
+avl_tree *tree;
+char **key_p;
+char **value_p;
+	Search for the item with key `*key_p' in `tree'.  If found, set
+	`key_p' and `value_p' to point to the key and value of item,
+	delete the item and return 1.  Otherwise return 0 and leave
+	`key_p' and `value_p' unchanged.  WARNING: This interface is
+	buggy; in particular, if identical keys are in the table, it is
+	not possible to delete a particular (key, value) pair.  This
+	will be fixed either with 'handles' or a separate delete
+	function.
+
+
+avl_find_or_add(tree, key, slot_p)
+avl_tree *tree;
+char *key;
+char ***slot_p;
+	Search for an entry matching key; if not found, insert key and
+	return the address of the value slot for this entry.  If found,
+	do not insert key, and return the address of the value slot for
+	the existing entry.  slot_p can be used to associate a value with
+	the key.
+
+
+void
+avl_foreach(tree, func, direction)
+avl_tree *tree;
+int (*func)();
+int direction;
+
+	Apply `func' to each item in the tree `tree' in turn.  If
+	direction is AVL_FORWARD, the tree is traversed from smallest
+	to largest. Otherwise it is traversed from largest to smallest.
+
+	func should be of the form:
+
+	     void 
+	     func(key, value)
+	     char *key;
+	     char *value;
+
+	where `key' is the key the item was stored under, and `value'
+	the value of the item.
+
+
+avl_count(tree)
+avl_tree *tree;
+	Returns the number of entries in the avl tree.
+
+
+avl_generator *
+avl_init_gen(tree, direction)
+avl_tree *tree;
+int direction;
+	Start up a generator on an avl-tree.  direction is either 
+	AVL_FORWARD or AVL_BACKWARD indicating the direction of
+	generation.
+
+
+avl_gen(gen, key_p, value_p)
+avl_generator *gen;
+char **key_p;
+char **value_p;
+	Generate the next item from the avl-tree.  Returns 0 if there
+	are no more items in the tree.  Deletion of last generated item
+	(via avl_delete) is supported.  Insertion of items during
+	generation will result in these items never being generated
+	(until the next avl_init_gen()).  Excercise for the interested
+	student: how does one write an avl generator ? 
+
+
+void
+avl_free_gen(gen)
+avl_generator *gen;
+	Free a generator.
+
+
+avl_foreach_item(tree, gen, direction, key_p, value_p)
+avl_tree *tree;
+avl_generator *gen;
+int direction;
+char **key_p;
+char **value_p;
+	Generate over all items in an avl-tree.  This macro iterator
+	combines avl_init_gen(), avl_gen(), and avl_free_gen() into
+	a single statement iterator.

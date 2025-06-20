@@ -156,6 +156,7 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                                                          place_delay_model,
                                                                          ap_opts.ap_timing_tradeoff,
                                                                          ap_opts.generate_mass_report,
+                                                                         ap_opts.ap_partial_legalizer_target_density,
                                                                          ap_opts.num_threads,
                                                                          ap_opts.log_verbosity);
         return global_placer->place();
