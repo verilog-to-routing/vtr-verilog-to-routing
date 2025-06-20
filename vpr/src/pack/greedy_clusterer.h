@@ -142,6 +142,7 @@ class GreedyClusterer {
                   AttractionInfo& attraction_groups,
                   DeviceContext& mutable_device_ctx);
 
+  private:
     /**
      * @brief Given a seed molecule and a legalization strategy, tries to grow
      *        a cluster greedily, starting with the provided seed and adding
@@ -205,7 +206,6 @@ class GreedyClusterer {
      */
     void report_le_physical_block_usage(const ClusterLegalizer& cluster_legalizer);
 
-  private:
     /*
      * When attraction groups are created, the purpose is to pack more densely by adding more molecules
      * from the cluster's attraction group to the cluster. In a normal flow, (when attraction groups are
