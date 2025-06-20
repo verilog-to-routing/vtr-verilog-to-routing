@@ -131,40 +131,60 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
 /* If an rr_node has been clicked on, it will be highlighted in MAGENTA.
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
-void highlight_nets(char* message, RRNodeId hit_node, bool is_flat) {
+void highlight_net(char* message, RRNodeId hit_node) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.routing();
 
     /* Don't crash if there's no routing */
     if (route_ctx.route_trees.empty())
         return;
 
-    t_draw_state* draw_state = get_draw_state_vars();
+    if (route_ctx.is_flat){
+        for (auto net_id : atom_ctx.netlist().nets()){
+            check_node_highlight_net(message, net_id, hit_node);
+        } 
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net_id, is_flat);
-        if (!route_ctx.route_trees[parent_id])
-            continue;
-
-        for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
-            RRNodeId inode = rt_node.inode;
-            if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
-                draw_state->net_color[net_id] = draw_state->draw_rr_node[inode].color;
-                if (inode == hit_node) {
-                    std::string orig_msg(message);
-                    sprintf(message, "%s  ||  Net: %zu (%s)", orig_msg.c_str(),
-                            size_t(net_id),
-                            cluster_ctx.clb_nlist.net_name(net_id).c_str());
-                }
-            } else if (draw_state->draw_rr_node[inode].color
-                       == ezgl::WHITE) {
-                // If node is de-selected.
-                draw_state->net_color[net_id] = ezgl::BLACK;
-                break;
-            }
+    } else{
+        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+            check_node_highlight_net(message, net_id, hit_node);
         }
     }
+    
     application.update_message(message);
+}
+
+void check_node_highlight_net(char* message, ParentNetId parent_id, 
+                   RRNodeId hit_node) {
+    auto& route_ctx = g_vpr_ctx.routing();
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    if (!route_ctx.route_trees[parent_id])
+        return;
+
+    for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
+        RRNodeId inode = rt_node.inode;
+        if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
+            draw_state->net_color[parent_id] = draw_state->draw_rr_node[inode].color;
+            if (inode == hit_node) {
+                std::string orig_msg(message);
+                std::string net_name;                 
+                if(!route_ctx.is_flat){
+                    net_name = g_vpr_ctx.clustering().clb_nlist.net_name(convert_to_cluster_net_id(parent_id));
+                } else {
+                    net_name = g_vpr_ctx.atom().netlist().net_name(convert_to_atom_net_id(parent_id));
+                }
+                sprintf(message, "%s  ||  Net: %zu (%s)", orig_msg.c_str(),
+                        size_t(parent_id),
+                        net_name.c_str());
+            }
+        } else if (draw_state->draw_rr_node[inode].color
+                    == ezgl::WHITE) {
+            // If node is de-selected.
+            draw_state->net_color[parent_id] = ezgl::BLACK;
+            break;
+        }
+    }
 }
 
 /* If an rr_node has been clicked on, it will be either highlighted in MAGENTA,

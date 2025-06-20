@@ -164,7 +164,7 @@ ezgl::point2d t_draw_coords::get_absolute_pin_location( const ClusterBlockId clb
 
     float interval = pb_bbox.width() / (num_pins + 1);
 
-    return ezgl::point2d(interval * (num_pin + 1), 0.01 *this->tile_width) + pb_bbox.top_left();
+    return ezgl::point2d(interval * (num_pin + 1), -0.01 *this->tile_width) + pb_bbox.top_left();
 }
 
 ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_logical_block_type_ptr block_type) {

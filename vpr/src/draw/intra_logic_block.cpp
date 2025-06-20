@@ -198,7 +198,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
     int i, j;
     t_mode mode;
-    int max_levels = 0;
+    int max_levels = 1;
 
     /* If pb_type is a primitive, we have reached the end of pb_graph */
     if (pb_type.is_primitive())

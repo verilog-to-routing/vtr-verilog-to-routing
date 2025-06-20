@@ -569,12 +569,8 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
 
 void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
     auto& route_ctx = g_vpr_ctx.routing();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     t_draw_state* draw_state = get_draw_state_vars();
-
-    if (cluster_ctx.clb_nlist.net_is_ignored(convert_to_cluster_net_id(net_id))) /* Don't draw. */
-        return;
 
     if (!route_ctx.route_trees[net_id]) // No routing -> Skip. (Allows me to draw partially complete routes)
         return;
@@ -583,10 +579,10 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
     for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
         RRNodeId inode = rt_node.inode;
 
-        if (draw_if_net_highlighted(convert_to_cluster_net_id(net_id))) {
+        if (draw_if_net_highlighted(net_id)) {
             /* If a net has been highlighted, highlight the whole net in *
              * the same color.											 */
-            draw_state->draw_rr_node[inode].color = draw_state->net_color[convert_to_cluster_net_id(net_id)];
+            draw_state->draw_rr_node[inode].color = draw_state->net_color[net_id];
             draw_state->draw_rr_node[inode].node_highlighted = true;
         } else {
             /* If not highlighted, draw the node in default color. */
@@ -676,12 +672,35 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
             g->set_color(color, edge_visibility.alpha);
             g->draw_line(p1, p2);
+            g->draw_text(p1, blk_id_pin_id1.second->parent_node->pb_type->name, 50, 0.5 * 20);
 
             continue;
         }
 
         if (!is_inode_inter_cluster || !is_prev_node_inter_cluster) {
+            bool swap = false;
+            if (!is_inode_inter_cluster && is_prev_node_inter_cluster) {
+                //Swap the nodes so that the inter-cluster node is always the current node
+                std::swap(inode, prev_node);
+                swap = true;
+            }
+
+            auto blk_id_pin_id = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
+            float x1, y1;
+            ezgl::point2d p2 = draw_coords->get_absolute_pin_location(blk_id_pin_id.first, blk_id_pin_id.second);
+            
+
+            for (const e_side& pin_side : TOTAL_2D_SIDES) {
+                if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
+                    continue;
+                }
+                draw_get_rr_pin_coords(inode, &x1, &y1, pin_side);
+                g->set_color(color, edge_visibility.alpha);
+                g->draw_line({x1, y1}, p2);
+            }
+
             continue;
+
         }
 
         auto iedge = find_edge(prev_node, inode);
