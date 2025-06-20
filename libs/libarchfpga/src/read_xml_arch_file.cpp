@@ -3915,7 +3915,7 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
     const char* tmp;
 
     /* get the number of switchblocks */
-    int num_switchblocks = count_children(Parent, "switchblock", loc_data);
+    const int num_switchblocks = count_children(Parent, "switchblock", loc_data);
     arch->switchblocks.reserve(num_switchblocks);
 
     int layout_index = -1;
@@ -3946,7 +3946,7 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
             } else if (0 == strcmp(tmp, "unidir")) {
                 sb.directionality = UNI_DIRECTIONAL;
             } else {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported switchblock type: %s\n", tmp);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsupported switchblock type: %s\n", tmp);
             }
         }
 
@@ -4004,9 +4004,9 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
             }
         }
 
-        /* get switchblock permutation functions */
+        // get switchblock permutation functions
         SubElem = get_first_child(Node, "switchfuncs", loc_data);
-        read_sb_switchfuncs(SubElem, &sb, loc_data);
+        read_sb_switchfuncs(SubElem, sb, loc_data);
 
         read_sb_wireconns(arch->switches, Node, &sb, loc_data);
 

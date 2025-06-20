@@ -328,46 +328,38 @@ static void set_switch_func_type(SB_Side_Connection& conn, const char* func_type
     }
 }
 
-/* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be
- * <switchfuncs> */
-void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiutil::loc_data& loc_data) {
-    /* Make sure the passed-in is correct */
-    check_node(Node, "switchfuncs", loc_data);
+void read_sb_switchfuncs(pugi::xml_node node, t_switchblock_inf& sb, const pugiutil::loc_data& loc_data) {
+    // Make sure the passed-in node is correct
+    check_node(node, "switchfuncs", loc_data);
 
     pugi::xml_node SubElem;
 
-    /* get the number of specified permutation functions */
-    int num_funcs = count_children(Node, "func", loc_data, ReqOpt::OPTIONAL);
+    // Get the number of specified permutation functions
+    const int num_funcs = count_children(node, "func", loc_data, ReqOpt::OPTIONAL);
 
-    const char* func_type;
-    const char* func_formula;
-    std::vector<std::string>* func_ptr;
-
-    /* used to index into permutation map of switchblock */
-    SB_Side_Connection conn;
-
-    /* now we iterate through all the specified permutation functions, and
-     * load them into the switchblock structure as appropriate */
+    // now we iterate through all the specified permutation functions, and
+    // load them into the switchblock structure as appropriate
     if (num_funcs > 0) {
-        SubElem = get_first_child(Node, "func", loc_data);
+        SubElem = get_first_child(node, "func", loc_data);
     }
+
     for (int ifunc = 0; ifunc < num_funcs; ifunc++) {
-        /* get function type */
-        func_type = get_attribute(SubElem, "type", loc_data).as_string(nullptr);
+        // Get function type
+        const char* func_type = get_attribute(SubElem, "type", loc_data).as_string(nullptr);
 
-        /* get function formula */
-        func_formula = get_attribute(SubElem, "formula", loc_data).as_string(nullptr);
+        // Get function formula
+        const char* func_formula = get_attribute(SubElem, "formula", loc_data).as_string(nullptr);
 
-        /* go through all the possible cases of func_type */
+        // Used to index into permutation map of switchblock
+        SB_Side_Connection conn;
+
+        // go through all the possible cases of func_type
         set_switch_func_type(conn, func_type);
 
-        func_ptr = &(sb->permutation_map[conn]);
+        // Here we load the specified switch function(s)
+        sb.permutation_map[conn].emplace_back(func_formula);
 
-        /* Here we load the specified switch function(s) */
-        func_ptr->push_back(std::string(func_formula));
-
-        func_ptr = nullptr;
-        /* get the next switchblock function */
+        // get the next switchblock function
         SubElem = SubElem.next_sibling(SubElem.name());
     }
 }
