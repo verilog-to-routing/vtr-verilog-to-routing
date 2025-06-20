@@ -43,8 +43,8 @@ if (${WITH_PARMYS})
 	#project(yosys_wrapper NONE)
 
 	# Create a target out of the library compilation result
-	SET(YOSYS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys CACHE PATH "")
-	SET(YOSYS_BUILD_DIR ${CMAKE_BINARY_DIR}/yosys CACHE PATH "")
+	SET(YOSYS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys)
+	SET(YOSYS_BUILD_DIR ${CMAKE_BINARY_DIR}/yosys)
 
 	set(CURRENT_CPPFLAGS "$(CPPFLAGS)-w")
 	if(${CMAKE_GENERATOR} STREQUAL "Ninja")
@@ -69,23 +69,25 @@ if (${WITH_PARMYS})
 	# endif()
 
 	# how to build the result of the library
-	add_custom_command(OUTPUT yosys-bin
+	add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/bin/yosys
 		COMMAND ${MAKE_PROGRAM} -C ${YOSYS_SRC_DIR}
 		    ENABLE_ABC=0
-		    PREFIX=${YOSYS_BUILD_DIR}
-		COMMAND 
+		    PREFIX=${CMAKE_BINARY_DIR}
+		    #> /dev/null
+		#COMMAND 
 	#            -j${CUSTOM_BUILD_PARALLEL_LEVEL}
-		    > /dev/null
+		    #> /dev/null
 
-		 COMMAND ${MAKE_PROGRAM} -C ${YOSYS_SRC_DIR}
-		    install ENABLE_ABC=0
-		    PREFIX=${YOSYS_BUILD_DIR}
-		    > /dev/null
+		 COMMAND ${MAKE_PROGRAM} 
+		    -C ${YOSYS_SRC_DIR}
+		    install
+		    ENABLE_ABC=0
+		    PREFIX=${CMAKE_BINARY_DIR}
+		    #> /dev/null
 
 		WORKING_DIRECTORY ${YOSYS_SRC_DIR})
 
-	add_custom_target(yosys ALL DEPENDS yosys-bin)
-
+	add_custom_target(yosys ALL DEPENDS ${CMAKE_BINARY_DIR}/bin/yosys)
 
     if (${SYNLIG_SYSTEMVERILOG})
 
