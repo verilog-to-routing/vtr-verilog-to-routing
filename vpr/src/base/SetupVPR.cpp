@@ -24,29 +24,37 @@
 #include "clock_modeling.h"
 #include "ShowSetup.h"
 
-static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
-static void SetupAPOpts(const t_options& options,
-                        t_ap_opts& apOpts);
-static void SetupPackerOpts(const t_options& Options,
-                            t_packer_opts* PackerOpts);
-static void SetupPlacerOpts(const t_options& Options,
-                            t_placer_opts* PlacerOpts);
-static void SetupAnnealSched(const t_options& Options,
-                             t_annealing_sched* AnnealSched);
-static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts);
-static void SetupNocOpts(const t_options& Options,
-                         t_noc_opts* NocOpts);
-static void SetupServerOpts(const t_options& Options,
-                            t_server_opts* ServerOpts);
+static void setup_netlist_opts(const t_options& Options, t_netlist_opts& NetlistOpts);
+static void setup_ap_opts(const t_options& options,
+                          t_ap_opts& apOpts);
+static void setup_packer_opts(const t_options& Options,
+                              t_packer_opts* PackerOpts);
+static void setup_placer_opts(const t_options& Options,
+                              t_placer_opts* PlacerOpts);
+static void setup_anneal_sched(const t_options& Options,
+                               t_annealing_sched* AnnealSched);
+static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpts);
+static void setup_noc_opts(const t_options& Options,
+                           t_noc_opts* NocOpts);
+static void setup_server_opts(const t_options& Options,
+                              t_server_opts* ServerOpts);
 
-static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch& RoutingArch);
+static void setup_routing_arch(const t_arch& Arch, t_det_routing_arch& RoutingArch);
 
-static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
-static void SetupSwitches(const t_arch& Arch,
-                          t_det_routing_arch& RoutingArch,
-                          const std::vector<t_arch_switch_inf>& arch_switches);
-static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
-static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
+static void setup_timing(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
+static void setup_switches(const t_arch& Arch,
+                           t_det_routing_arch& RoutingArch,
+                           const std::vector<t_arch_switch_inf>& arch_switches);
+static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts);
+static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
+
+static void setup_vib_inf(const std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                          const std::vector<t_arch_switch_inf>& Switches,
+                          const std::vector<t_segment_inf>& Segments,
+                          std::vector<VibInf>& vib_infs);
+
+static void process_from_or_to_tokens(const std::vector<std::string> Tokens, const std::vector<t_physical_tile_type>& PhysicalTileTypes, const std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms);
+static void parse_pin_name(const char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
 
 /**
  * @brief Identify which switch must be used for *track* to *IPIN* connections based on architecture file specification.
@@ -143,14 +151,14 @@ void SetupVPR(const t_options* options,
 
     fileNameOpts->verify_file_digests = options->verify_file_digests;
 
-    SetupNetlistOpts(*options, *netlistOpts);
-    SetupPlacerOpts(*options, placerOpts);
-    SetupAnnealSched(*options, &placerOpts->anneal_sched);
-    SetupRouterOpts(*options, routerOpts);
-    SetupAnalysisOpts(*options, *analysisOpts);
-    SetupPowerOpts(*options, powerOpts, arch);
-    SetupNocOpts(*options, nocOpts);
-    SetupServerOpts(*options, serverOpts);
+    setup_netlist_opts(*options, *netlistOpts);
+    setup_placer_opts(*options, placerOpts);
+    setup_anneal_sched(*options, &placerOpts->anneal_sched);
+    setup_router_opts(*options, routerOpts);
+    setup_analysis_opts(*options, *analysisOpts);
+    setup_power_opts(*options, powerOpts, arch);
+    setup_noc_opts(*options, nocOpts);
+    setup_server_opts(*options, serverOpts);
 
     //save the device layout, which is required to parse the architecture file
     arch->device_layout = options->device_layout;
@@ -228,14 +236,18 @@ void SetupVPR(const t_options* options,
 
     segments = arch->Segments;
 
-    SetupSwitches(*arch, routingArch, arch->switches);
-    SetupRoutingArch(*arch, routingArch);
-    SetupTiming(*options, timingenabled, timing);
-    SetupPackerOpts(*options, packerOpts);
-    SetupAPOpts(*options, *apOpts);
+    setup_switches(*arch, routingArch, arch->switches);
+    setup_routing_arch(*arch, routingArch);
+    setup_timing(*options, timingenabled, timing);
+    setup_packer_opts(*options, packerOpts);
+    setup_ap_opts(*options, *apOpts);
     routingArch.write_rr_graph_filename = options->write_rr_graph_file;
     routingArch.read_rr_graph_filename = options->read_rr_graph_file;
     routingArch.read_rr_edge_override_filename = options->read_rr_edge_override_file;
+
+    if (!arch->vib_infs.empty()) {
+        setup_vib_inf(device_ctx.physical_tile_types, arch->switches, arch->Segments, arch->vib_infs);
+    }
 
     for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
@@ -341,7 +353,7 @@ void SetupVPR(const t_options* options,
     }
 }
 
-static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing) {
+static void setup_timing(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing) {
     /* Don't do anything if they don't want timing */
     if (!TimingEnabled) {
         Timing->timing_analysis_enabled = false;
@@ -356,9 +368,9 @@ static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_ti
  * @brief This loads up VPR's arch_switch_inf data by combining the switches
  *        from the arch file with the special switches that VPR needs.
  */
-static void SetupSwitches(const t_arch& Arch,
-                          t_det_routing_arch& RoutingArch,
-                          const std::vector<t_arch_switch_inf>& arch_switches) {
+static void setup_switches(const t_arch& Arch,
+                           t_det_routing_arch& RoutingArch,
+                           const std::vector<t_arch_switch_inf>& arch_switches) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int switches_to_copy = (int)arch_switches.size();
@@ -413,12 +425,14 @@ static void SetupSwitches(const t_arch& Arch,
  *
  * Since checks are already done, this just copies values across
  */
-static void SetupRoutingArch(const t_arch& Arch,
-                             t_det_routing_arch& RoutingArch) {
+static void setup_routing_arch(const t_arch& Arch,
+                               t_det_routing_arch& RoutingArch) {
     RoutingArch.switch_block_type = Arch.SBType;
+    RoutingArch.switch_block_subtype = Arch.SBSubType;
     RoutingArch.R_minW_nmos = Arch.R_minW_nmos;
     RoutingArch.R_minW_pmos = Arch.R_minW_pmos;
     RoutingArch.Fs = Arch.Fs;
+    RoutingArch.sub_fs = Arch.sub_fs;
     RoutingArch.directionality = BI_DIRECTIONAL;
     if (!Arch.Segments.empty()) {
         RoutingArch.directionality = Arch.Segments[0].directionality;
@@ -426,9 +440,18 @@ static void SetupRoutingArch(const t_arch& Arch,
 
     /* copy over the switch block information */
     RoutingArch.switchblocks = Arch.switchblocks;
+
+    /* Copy the tileable routing setting */
+    RoutingArch.tileable = Arch.tileable;
+    RoutingArch.perimeter_cb = Arch.perimeter_cb;
+    RoutingArch.shrink_boundary = Arch.shrink_boundary;
+    RoutingArch.through_channel = Arch.through_channel;
+    RoutingArch.opin2all_sides = Arch.opin2all_sides;
+    RoutingArch.concat_wire = Arch.concat_wire;
+    RoutingArch.concat_pass_wire = Arch.concat_pass_wire;
 }
 
-static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
+static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpts) {
     RouterOpts->do_check_rr_graph = Options.check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
     RouterOpts->astar_offset = Options.astar_offset;
@@ -462,6 +485,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_algorithm = Options.RouterAlgorithm;
     RouterOpts->fixed_channel_width = Options.RouteChanWidth;
     RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
+
     RouterOpts->read_rr_edge_metadata = Options.read_rr_edge_metadata;
     RouterOpts->reorder_rr_graph_nodes_algorithm = Options.reorder_rr_graph_nodes_algorithm;
     RouterOpts->reorder_rr_graph_nodes_threshold = Options.reorder_rr_graph_nodes_threshold;
@@ -518,8 +542,8 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->with_timing_analysis = Options.timing_analysis;
 }
 
-static void SetupAnnealSched(const t_options& Options,
-                             t_annealing_sched* AnnealSched) {
+static void setup_anneal_sched(const t_options& Options,
+                               t_annealing_sched* AnnealSched) {
     AnnealSched->alpha_t = Options.PlaceAlphaT;
     if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_t must be between 0 and 1 exclusive.\n");
@@ -554,8 +578,8 @@ static void SetupAnnealSched(const t_options& Options,
  * Error checking, such as checking for conflicting params is assumed
  * to be done beforehand
  */
-void SetupAPOpts(const t_options& options,
-                 t_ap_opts& apOpts) {
+void setup_ap_opts(const t_options& options,
+                   t_ap_opts& apOpts) {
     apOpts.analytical_solver_type = options.ap_analytical_solver.value();
     apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
@@ -576,8 +600,8 @@ void SetupAPOpts(const t_options& options,
  * Error checking, such as checking for conflicting params is assumed
  * to be done beforehand
  */
-void SetupPackerOpts(const t_options& Options,
-                     t_packer_opts* PackerOpts) {
+void setup_packer_opts(const t_options& Options,
+                       t_packer_opts* PackerOpts) {
     PackerOpts->output_file = Options.NetFile;
 
     PackerOpts->circuit_file_name = Options.CircuitFile;
@@ -607,7 +631,7 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->timing_update_type = Options.timing_update_type;
 }
 
-static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {
+static void setup_netlist_opts(const t_options& Options, t_netlist_opts& NetlistOpts) {
     NetlistOpts.const_gen_inference = Options.const_gen_inference;
     NetlistOpts.absorb_buffer_luts = Options.absorb_buffer_luts;
     NetlistOpts.sweep_dangling_primary_ios = Options.sweep_dangling_primary_ios;
@@ -623,7 +647,7 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
  * Error checking, such as checking for conflicting params
  * is assumed to be done beforehand
  */
-static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts) {
+static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpts) {
     if (Options.do_placement) {
         PlacerOpts->doPlacement = STAGE_DO;
     }
@@ -705,7 +729,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->placer_debug_net = Options.placer_debug_net;
 }
 
-static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
+static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts) {
     if (Options.do_analysis) {
         analysis_opts.doAnalysis = STAGE_DO;
     }
@@ -729,7 +753,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
     analysis_opts.generate_net_timing_report = Options.generate_net_timing_report;
 }
 
-static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {
+static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     power_opts->do_power = Options.do_power;
@@ -754,7 +778,7 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
 /*
  * Go through all the NoC options supplied by the user and store them internally.
  */
-static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
+static void setup_noc_opts(const t_options& Options, t_noc_opts* NocOpts) {
     // assign the noc specific options from the command line
     NocOpts->noc = Options.noc;
     NocOpts->noc_flows_file = Options.noc_flows_file;
@@ -778,7 +802,7 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
 }
 
-static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {
+static void setup_server_opts(const t_options& Options, t_server_opts* ServerOpts) {
     ServerOpts->is_server_mode_enabled = Options.is_server_mode_enabled;
     ServerOpts->port_num = Options.server_port_num;
 }
@@ -1016,6 +1040,234 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
                     }
                 }
             }
+        }
+    }
+}
+
+static void setup_vib_inf(const std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                          const std::vector<t_arch_switch_inf>& switches,
+                          const std::vector<t_segment_inf>& Segments,
+                          std::vector<VibInf>& vib_infs) {
+    VTR_ASSERT(!vib_infs.empty());
+    for (auto& vib_inf : vib_infs) {
+        for (size_t i_switch = 0; i_switch < switches.size(); i_switch++) {
+            if (vib_inf.get_switch_name() == switches[i_switch].name) {
+                vib_inf.set_switch_idx(i_switch);
+                break;
+            }
+        }
+
+        std::vector<t_seg_group> seg_groups = vib_inf.get_seg_groups();
+        for (auto& seg_group : seg_groups) {
+            for (int i_seg = 0; i_seg < (int)Segments.size(); i_seg++) {
+                if (Segments[i_seg].name == seg_group.name) {
+                    seg_group.seg_index = i_seg;
+                    break;
+                }
+            }
+        }
+        vib_inf.set_seg_groups(seg_groups);
+
+        std::vector<t_first_stage_mux_inf> first_stages = vib_inf.get_first_stages();
+        for (auto& first_stage : first_stages) {
+            auto& from_tokens = first_stage.from_tokens;
+            for (const auto& from_token : from_tokens) {
+                process_from_or_to_tokens(from_token, PhysicalTileTypes, Segments, first_stage.froms);
+            }
+        }
+        vib_inf.set_first_stages(first_stages);
+
+        auto second_stages = vib_inf.get_second_stages();
+        for (auto& second_stage : second_stages) {
+            std::vector<t_from_or_to_inf> tos;
+
+            process_from_or_to_tokens(second_stage.to_tokens, PhysicalTileTypes, Segments, tos);
+            for (auto& to : tos) {
+                VTR_ASSERT(to.from_type == SEGMENT || to.from_type == PB);
+                second_stage.to.push_back(to);
+            }
+
+            auto from_tokens = second_stage.from_tokens;
+            for (const auto& from_token : from_tokens) {
+                process_from_or_to_tokens(from_token, PhysicalTileTypes, Segments, second_stage.froms);
+            }
+        }
+        vib_inf.set_second_stages(second_stages);
+    }
+}
+
+static void process_from_or_to_tokens(const std::vector<std::string> Tokens, const std::vector<t_physical_tile_type>& PhysicalTileTypes, const std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms) {
+    for (int i_token = 0; i_token < (int)Tokens.size(); i_token++) {
+        std::string Token = Tokens[i_token];
+        const char* Token_char = Token.c_str();
+        auto token = vtr::split(Token, ".");
+        if (token.size() == 1) {
+            t_from_or_to_inf from_inf;
+            from_inf.type_name = token[0];
+            from_inf.from_type = MUX;
+            froms.push_back(from_inf);
+        } else if (token.size() == 2) {
+            std::string from_type_name = token[0];
+            e_multistage_mux_from_or_to_type from_type;
+            for (int i_phy_type = 0; i_phy_type < (int)PhysicalTileTypes.size(); i_phy_type++) {
+                if (from_type_name == PhysicalTileTypes[i_phy_type].name) {
+                    from_type = PB;
+                    int start_pin_index, end_pin_index;
+                    char *pb_type_name, *port_name;
+                    pb_type_name = nullptr;
+                    port_name = nullptr;
+                    pb_type_name = new char[strlen(Token_char)];
+                    port_name = new char[strlen(Token_char)];
+                    parse_pin_name(Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
+
+                    std::vector<int> all_sub_tile_to_tile_pin_indices;
+                    for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
+                        int sub_tile_capacity = sub_tile.capacity.total();
+
+                        int start = 0;
+                        int end = 0;
+                        int i_port = 0;
+                        for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
+                            if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
+                                start = sub_tile.ports[i_port].absolute_first_pin_index;
+                                end = start + sub_tile.ports[i_port].num_pins - 1;
+                                break;
+                            }
+                        }
+                        if (i_port == (int)sub_tile.ports.size()) {
+                            continue;
+                        }
+                        for (int pin_num = start; pin_num <= end; ++pin_num) {
+                            VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
+                            for (int capacity = 0; capacity < sub_tile_capacity; ++capacity) {
+                                int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
+                                int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
+                                all_sub_tile_to_tile_pin_indices.push_back(physical_pin_index);
+                            }
+                        }
+                    }
+
+                    if (start_pin_index == end_pin_index && start_pin_index < 0) {
+                        start_pin_index = 0;
+                        end_pin_index = all_sub_tile_to_tile_pin_indices.size() - 1;
+                    }
+
+                    if ((int)all_sub_tile_to_tile_pin_indices.size() <= start_pin_index || (int)all_sub_tile_to_tile_pin_indices.size() <= end_pin_index) {
+                        VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                       "The index of pbtype %s : port %s exceeds its total number!\n", pb_type_name, port_name);
+                    }
+
+                    for (int i = start_pin_index; i <= end_pin_index; i++) {
+                        t_from_or_to_inf from_inf;
+                        from_inf.type_name = from_type_name;
+                        from_inf.from_type = from_type;
+                        from_inf.type_index = i_phy_type;
+                        from_inf.phy_pin_index = all_sub_tile_to_tile_pin_indices[i];
+                        froms.push_back(from_inf);
+                    }
+                }
+            }
+            for (int i_seg_type = 0; i_seg_type < (int)segments.size(); i_seg_type++) {
+                if (from_type_name == segments[i_seg_type].name) {
+                    from_type = SEGMENT;
+                    std::string from_detail = token[1];
+                    if (from_detail.length() >= 2) {
+                        char dir = from_detail.c_str()[0];
+                        from_detail.erase(from_detail.begin());
+                        int seg_index = std::stoi(from_detail);
+
+                        t_from_or_to_inf from_inf;
+                        from_inf.type_name = from_type_name;
+                        from_inf.from_type = from_type;
+                        from_inf.type_index = i_seg_type;
+                        from_inf.seg_dir = dir;
+                        from_inf.seg_index = seg_index;
+                        froms.push_back(from_inf);
+                    }
+
+                    break;
+                }
+            }
+            VTR_ASSERT(from_type == PB || from_type == SEGMENT);
+
+        } else {
+            std::string msg = vtr::string_fmt("Failed to parse vib mux from information '%s'", Token.c_str());
+            VTR_LOGF_ERROR(__FILE__, __LINE__, msg.c_str());
+        }
+    }
+}
+
+static void parse_pin_name(const char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
+    /* Parses out the pb_type_name and port_name   *
+     * If the start_pin_index and end_pin_index is specified, parse them too. *
+     * Return the values parsed by reference.                                 */
+
+    char source_string[128];
+    int ichar, match_count;
+
+    // parse out the pb_type and port name, possibly pin_indices
+    const char* find_format = strstr(src_string, "[");
+    if (find_format == nullptr) {
+        /* Format "pb_type_name.port_name" */
+        *start_pin_index = *end_pin_index = -1;
+
+        strcpy(source_string, src_string);
+
+        for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+            if (source_string[ichar] == '.')
+                source_string[ichar] = ' ';
+        }
+
+        match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
+        if (match_count != 2) {
+            VTR_LOG_ERROR(
+                "Invalid pin - %s, name should be in the format "
+                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+                "The end_pin_index and start_pin_index can be the same.\n",
+                src_string);
+            exit(1);
+        }
+    } else {
+        /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
+        strcpy(source_string, src_string);
+        for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+            //Need white space between the components when using %s with
+            //sscanf
+            if (source_string[ichar] == '.')
+                source_string[ichar] = ' ';
+            if (source_string[ichar] == '[')
+                source_string[ichar] = ' ';
+        }
+
+        match_count = sscanf(source_string, "%s %s %d:%d]",
+                             pb_type_name, port_name,
+                             end_pin_index, start_pin_index);
+        if (match_count != 4) {
+            match_count = sscanf(source_string, "%s %s %d]",
+                                 pb_type_name, port_name,
+                                 end_pin_index);
+            *start_pin_index = *end_pin_index;
+            if (match_count != 3) {
+                VTR_LOG_ERROR(
+                    "Invalid pin - %s, name should be in the format "
+                    "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+                    "The end_pin_index and start_pin_index can be the same.\n",
+                    src_string);
+                exit(1);
+            }
+        }
+        if (*end_pin_index < 0 || *start_pin_index < 0) {
+            VTR_LOG_ERROR(
+                "Invalid pin - %s, the pin_index in "
+                "[end_pin_index:start_pin_index] should not be a negative value.\n",
+                src_string);
+            exit(1);
+        }
+        if (*end_pin_index < *start_pin_index) {
+            int temp;
+            temp = *end_pin_index;
+            *end_pin_index = *start_pin_index;
+            *start_pin_index = temp;
         }
     }
 }

@@ -63,13 +63,13 @@ struct alignas(16) t_rr_node_data {
     e_rr_type type_ = e_rr_type::NUM_RR_TYPES;
 
     /* The character is a hex number which is a 4-bit truth table for node sides
-     * The 4-bits in serial represent 4 sides on which a node could appear 
-     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0) 
+     * The 4-bits in serial represent 4 sides on which a node could appear
+     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0)
      *   - When a node appears on a given side, it is set to "1"
      *   - When a node does not appear on a given side, it is set to "0"
      * For example,
-     *   - '1' means '0001' in hex number, which means the node appears on TOP 
-     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides, 
+     *   - '1' means '0001' in hex number, which means the node appears on TOP
+     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides,
      */
     union {
         Direction direction;       //Valid only for CHANX/CHANY
@@ -96,6 +96,7 @@ struct t_rr_node_ptc_data {
         int pin_num;
         int track_num;
         int class_num;
+        int mux_num;
     } ptc_;
 };
 
@@ -183,6 +184,13 @@ class t_rr_graph_storage {
         return node_storage_[id].yhigh_;
     }
 
+    short node_bend_start(RRNodeId id) const {
+        return node_bend_start_[id];
+    }
+    short node_bend_end(RRNodeId id) const {
+        return node_bend_end_[id];
+    }
+
     short node_capacity(RRNodeId id) const {
         return node_storage_[id].capacity_;
     }
@@ -220,6 +228,7 @@ class t_rr_graph_storage {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_mux_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /** @brief Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
     t_edge_size fan_in(RRNodeId id) const {
@@ -335,6 +344,7 @@ class t_rr_graph_storage {
      * - num_non_configurable_edges(RRNodeId)
      * - edge_id(RRNodeId, t_edge_size)
      * - edge_sink_node(RRNodeId, t_edge_size)
+     * - edge_source_node(RRNodeId, t_edge_size)
      * - edge_switch(RRNodeId, t_edge_size)
      *
      * Only call these methods after partition_edges has been invoked.
@@ -353,6 +363,7 @@ class t_rr_graph_storage {
     t_edge_size num_edges(const RRNodeId& id) const {
         return size_t(last_edge(id)) - size_t(first_edge(id));
     }
+    bool edge_is_configurable(RREdgeId edge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     bool edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     t_edge_size num_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     t_edge_size num_non_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
@@ -423,6 +434,11 @@ class t_rr_graph_storage {
         return edge_dest_node_[edge];
     }
 
+    // Get the source node for the specified edge.
+    RRNodeId edge_source_node(const RREdgeId& edge) const {
+        return edge_src_node_[edge];
+    }
+
     /** @brief Call the `apply` function with the edge id, source, and sink nodes of every edge. */
     void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
         for (size_t i = 0; i < edge_dest_node_.size(); i++) {
@@ -438,6 +454,11 @@ class t_rr_graph_storage {
      */
     RRNodeId edge_sink_node(const RRNodeId& id, t_edge_size iedge) const {
         return edge_sink_node(edge_id(id, iedge));
+    }
+
+    // Get the source node for the iedge'th edge from specified RRNodeId.
+    RRNodeId edge_source_node(const RRNodeId& id, t_edge_size iedge) const {
+        return edge_source_node(edge_id(id, iedge));
     }
 
     /** @brief Get the switch used for the specified edge. */
@@ -505,6 +526,8 @@ class t_rr_graph_storage {
         node_ptc_.resize(node_storage_.size());
         node_layer_.resize(node_storage_.size());
         node_ptc_twist_incr_.resize(node_storage_.size());
+        node_bend_start_.resize(node_storage_.size());
+        node_bend_end_.resize(node_storage_.size());
     }
 
     /** @brief  Reserve storage for RR nodes. */
@@ -514,6 +537,8 @@ class t_rr_graph_storage {
         node_storage_.reserve(size);
         node_ptc_.reserve(size);
         node_layer_.reserve(size);
+        node_bend_start_.reserve(size);
+        node_bend_end_.reserve(size);
     }
 
     /** @brief  Resize node storage to accomidate size RR nodes. */
@@ -523,6 +548,8 @@ class t_rr_graph_storage {
         node_storage_.resize(size);
         node_ptc_.resize(size);
         node_layer_.resize(size);
+        node_bend_start_.resize(size);
+        node_bend_end_.resize(size);
     }
 
     /** @brief We only allocate the ptc twist increment array while building tileable rr-graphs */
@@ -549,6 +576,8 @@ class t_rr_graph_storage {
         node_first_edge_.clear();
         node_fan_in_.clear();
         node_layer_.clear();
+        node_bend_start_.clear();
+        node_bend_end_.clear();
         node_name_.clear();
         virtual_clock_network_root_idx_.clear();
         node_ptc_twist_incr_.clear();
@@ -585,6 +614,8 @@ class t_rr_graph_storage {
         node_first_edge_.shrink_to_fit();
         node_fan_in_.shrink_to_fit();
         node_layer_.shrink_to_fit();
+        node_bend_start_.shrink_to_fit();
+        node_bend_end_.shrink_to_fit();
         node_ptc_twist_incr_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
@@ -599,6 +630,8 @@ class t_rr_graph_storage {
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
         node_layer_.emplace_back();
+        node_bend_start_.emplace_back();
+        node_bend_end_.emplace_back();
     }
 
     /** @brief Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
@@ -615,6 +648,7 @@ class t_rr_graph_storage {
     void set_node_pin_num(RRNodeId id, int);   //Same as set_ptc_num() by checks type() is consistent
     void set_node_track_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
+    void set_node_mux_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
     void set_node_type(RRNodeId id, e_rr_type new_type);
     void set_node_name(RRNodeId id, const std::string& new_name);
@@ -622,6 +656,8 @@ class t_rr_graph_storage {
     void set_node_layer(RRNodeId id, short layer);
     void set_node_ptc_twist_incr(RRNodeId id, short twist);
     void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
+    void set_node_bend_start(RRNodeId id, size_t bend_start);
+    void set_node_bend_end(RRNodeId id, size_t bend_end);
     void set_node_rc_index(RRNodeId, NodeRCIndex new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, Direction new_direction);
@@ -787,6 +823,7 @@ class t_rr_graph_storage {
         return side_tt[size_t(side)];
     }
 
+  public:
     inline void clear_node_first_edge() {
         node_first_edge_.clear();
     }
@@ -904,6 +941,14 @@ class t_rr_graph_storage {
     */
     vtr::vector<RREdgeId, bool> edge_remapped_;
 
+    /** @brief
+     * Bend start and end are used to store the bend information for each node.
+     * Bend start and end are only used for CHANX and CHANY nodes.
+     * Bend start and end are only used for tileable routing resource graph.
+     */
+    vtr::vector<RRNodeId, int16_t> node_bend_start_;
+    vtr::vector<RRNodeId, int16_t> node_bend_end_;
+
     /***************
      * State flags *
      ***************/
@@ -958,7 +1003,9 @@ class t_rr_graph_view {
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch,
-        const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx)
+        const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx,
+        const vtr::array_view_id<RRNodeId, const int16_t> node_bend_start,
+        const vtr::array_view_id<RRNodeId, const int16_t> node_bend_end)
         : node_storage_(node_storage)
         , node_ptc_(node_ptc)
         , node_first_edge_(node_first_edge)
@@ -969,7 +1016,9 @@ class t_rr_graph_view {
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
         , edge_switch_(edge_switch)
-        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx) {}
+        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx)
+        , node_bend_start_(node_bend_start)
+        , node_bend_end_(node_bend_end) {}
 
     /****************
      * Node methods *
@@ -1017,6 +1066,7 @@ class t_rr_graph_view {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_mux_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /**
     * @brief Retrieve the fan-in for a given RRNodeId.
@@ -1188,5 +1238,8 @@ class t_rr_graph_view {
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
     const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx_;
+
+    vtr::array_view_id<RRNodeId, const int16_t> node_bend_start_;
+    vtr::array_view_id<RRNodeId, const int16_t> node_bend_end_;
 
 };
