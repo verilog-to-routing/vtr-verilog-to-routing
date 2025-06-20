@@ -1,4 +1,0 @@
-library(fake) {
-  cell(bugbad) {
-  }
-}

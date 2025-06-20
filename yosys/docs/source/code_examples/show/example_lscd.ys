@@ -1,8 +1,0 @@
-read_verilog example.v
-echo on
-ls
-cd example
-ls
-dump $2
-cd ..
-echo off

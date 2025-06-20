@@ -420,7 +420,7 @@ if(${WITH_PARMYS}) # define cmake params to compile Yosys
     # else()
     #     set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
     # endif()
-    add_subdirectory(yosys)
+    #add_subdirectory(yosys)
 endif()
 
 add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries

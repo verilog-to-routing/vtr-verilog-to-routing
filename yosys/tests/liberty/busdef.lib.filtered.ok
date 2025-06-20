@@ -1,8 +1,0 @@
-library(supergate) {
-  cell(SRAM) {
-    area : 1 ;
-    pin(CE1) {
-      direction : input ;
-    }
-  }
-}
