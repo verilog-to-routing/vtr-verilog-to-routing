@@ -613,29 +613,17 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    static vtr::OffsetMatrix<int> chanx_track; /* [1..device_ctx.grid.width() - 2][0..device_ctx.grid.height() - 2] */
-    static vtr::OffsetMatrix<int> chany_track; /* [0..device_ctx.grid.width() - 2][1..device_ctx.grid.height() - 2] */
-    if (draw_state->draw_route_type == GLOBAL) {
-        /* Allocate some temporary storage if it's not already available. */
-        int width = (int)device_ctx.grid.width();
-        int height = (int)device_ctx.grid.height();
-        if (chanx_track.empty()) {
-            chanx_track = vtr::OffsetMatrix<int>({{{1, width - 1}, {0, height - 1}}});
-        }
+    // Draw Pins
+    for (RRNodeId inode : rr_nodes_to_draw) {
+        
+        bool is_inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
 
-        if (chany_track.empty()) {
-            chany_track = vtr::OffsetMatrix<int>({{{0, width - 1}, {1, height - 1}}});
-        }
 
-        for (int i = 1; i < width - 1; i++)
-            for (int j = 0; j < height - 1; j++)
-                chanx_track[i][j] = (-1);
-
-        for (int i = 0; i < width - 1; i++)
-            for (int j = 1; j < height - 1; j++)
-                chany_track[i][j] = (-1);
     }
 
+
+
+    // Draw Edges
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
         RRNodeId inode = rr_nodes_to_draw[i];
         auto rr_type = rr_graph.node_type(inode);
@@ -724,9 +712,6 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 break;
             }
             case e_rr_type::CHANX: {
-                if (draw_state->draw_route_type == GLOBAL)
-                    chanx_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
-
                 draw_rr_chan(inode, color, g);
                 if (edge_visibility.visible) {
                     g->set_color(color, edge_visibility.alpha);
@@ -754,9 +739,6 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 break;
             }
             case e_rr_type::CHANY: {
-                if (draw_state->draw_route_type == GLOBAL)
-                    chany_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
-
                 draw_rr_chan(inode, color, g);
 
                 if (edge_visibility.visible) {
