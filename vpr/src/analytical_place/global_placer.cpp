@@ -95,6 +95,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      device_grid,
                                      atom_netlist,
                                      pre_cluster_timing_manager_,
+                                     place_delay_model_,
                                      ap_timing_tradeoff,
                                      num_threads,
                                      log_verbosity_);

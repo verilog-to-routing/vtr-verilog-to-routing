@@ -21,8 +21,11 @@
 #include "flat_placement_types.h"
 #include "partial_placement.h"
 #include "ap_netlist.h"
+#include "place_delay_model.h"
+#include "timing_info.h"
 #include "vpr_error.h"
 #include "vtr_assert.h"
+#include "vtr_math.h"
 #include "vtr_time.h"
 #include "vtr_vector.h"
 
@@ -49,6 +52,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const DeviceGrid& device_grid,
                                                          const AtomNetlist& atom_netlist,
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                         std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                          float ap_timing_tradeoff,
                                                          unsigned num_threads,
                                                          int log_verbosity) {
@@ -81,6 +85,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
             (void)device_grid;
             (void)atom_netlist;
             (void)pre_cluster_timing_manager;
+            (void)place_delay_model;
             (void)ap_timing_tradeoff;
             (void)log_verbosity;
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -93,6 +98,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                device_grid,
                                                atom_netlist,
                                                pre_cluster_timing_manager,
+                                               place_delay_model,
                                                ap_timing_tradeoff,
                                                log_verbosity);
 #else
@@ -110,7 +116,6 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
 
 AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
                                    const AtomNetlist& atom_netlist,
-                                   const PreClusterTimingManager& pre_cluster_timing_manager,
                                    const DeviceGrid& device_grid,
                                    float ap_timing_tradeoff,
                                    int log_verbosity)
@@ -159,40 +164,6 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
         row_id_to_blk_id_[new_row_id] = blk_id;
         current_row_id++;
         num_moveable_blocks_++;
-    }
-
-    update_net_weights(pre_cluster_timing_manager);
-}
-
-void AnalyticalSolver::update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager) {
-    // If the pre-cluster timing manager has not been initialized (i.e. timing
-    // analysis is off), no need to update.
-    if (!pre_cluster_timing_manager.is_valid())
-        return;
-
-    // For each of the nets, update the net weights.
-    for (APNetId net_id : netlist_.nets()) {
-        // Note: To save time, we do not compute the weights of nets that we
-        //       do not care about for AP. This leaves their weights at 1.0 just
-        //       in case they are accidentally used.
-        if (netlist_.net_is_ignored(net_id))
-            continue;
-
-        AtomNetId atom_net_id = netlist_.net_atom_net(net_id);
-        VTR_ASSERT_SAFE(atom_net_id.is_valid());
-
-        float crit = pre_cluster_timing_manager.calc_net_setup_criticality(atom_net_id, atom_netlist_);
-
-        // When optimizing for WL, the net weights are just set to 1 (meaning
-        // that we want to minimize the WL of nets).
-        // When optimizing for timing, the net weights are set to the timing
-        // criticality, which is based on the lowest slack of any edge belonging
-        // to this net.
-        // The intuition is that we care more about shrinking the wirelength of
-        // more critical connections than less critical ones.
-        // Use the AP timing trade-off term to linearly interpolate between these
-        // weighting terms.
-        net_weights_[net_id] = ap_timing_tradeoff_ * crit + (1.0f - ap_timing_tradeoff_);
     }
 }
 
@@ -524,6 +495,41 @@ void QPHybridSolver::store_solution_into_placement(const Eigen::VectorXd& x_soln
     }
 }
 
+void QPHybridSolver::update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager) {
+    // For the quadratic solver, we use a basic net weighting scheme for adding
+    // timing to the objective.
+
+    // If the pre-cluster timing manager has not been initialized (i.e. timing
+    // analysis is off), no need to update.
+    if (!pre_cluster_timing_manager.is_valid())
+        return;
+
+    // For each of the nets, update the net weights.
+    for (APNetId net_id : netlist_.nets()) {
+        // Note: To save time, we do not compute the weights of nets that we
+        //       do not care about for AP. This leaves their weights at 1.0 just
+        //       in case they are accidentally used.
+        if (netlist_.net_is_ignored(net_id))
+            continue;
+
+        AtomNetId atom_net_id = netlist_.net_atom_net(net_id);
+        VTR_ASSERT_SAFE(atom_net_id.is_valid());
+
+        float crit = pre_cluster_timing_manager.calc_net_setup_criticality(atom_net_id, atom_netlist_);
+
+        // When optimizing for WL, the net weights are just set to 1 (meaning
+        // that we want to minimize the WL of nets).
+        // When optimizing for timing, the net weights are set to the timing
+        // criticality, which is based on the lowest slack of any edge belonging
+        // to this net.
+        // The intuition is that we care more about shrinking the wirelength of
+        // more critical connections than less critical ones.
+        // Use the AP timing trade-off term to linearly interpolate between these
+        // weighting terms.
+        net_weights_[net_id] = ap_timing_tradeoff_ * crit + (1.0f - ap_timing_tradeoff_);
+    }
+}
+
 void QPHybridSolver::print_statistics() {
     VTR_LOG("QP-Hybrid Solver Statistics:\n");
     VTR_LOG("\tTotal number of CG iterations: %u\n", total_num_cg_iters_);
@@ -645,7 +651,7 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
 
         // Set up the linear system, including anchor points.
         float build_linear_system_start_time = runtime_timer.elapsed_sec();
-        init_linear_system(p_placement);
+        init_linear_system(p_placement, iteration);
         if (iteration != 0)
             update_linear_system_with_anchors(iteration);
         total_time_spent_building_linear_system_ += runtime_timer.elapsed_sec() - build_linear_system_start_time;
@@ -850,7 +856,180 @@ void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
     }
 }
 
-void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
+// Use Finite Differences to compute derivative.
+std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
+                                                          APBlockId sink_blk,
+                                                          const PartialPlacement& p_placement) {
+
+    // Get the flat distance from the driver block to the sink block.
+    // NOTE: Here we take the magnitude of the difference since we assume that
+    //       the delay is symmetric (same delay regardless if you are going left
+    //       or right for example). This simplifies the code below some by having
+    //       us only focus on the positive axis.
+    float flat_dx = std::abs(p_placement.block_x_locs[sink_blk] - p_placement.block_x_locs[driver_blk]);
+    float flat_dy = std::abs(p_placement.block_y_locs[sink_blk] - p_placement.block_y_locs[driver_blk]);
+
+    // TODO: Handle 3D FPGAs for this method.
+    int layer_num = 0;
+    VTR_ASSERT_SAFE_MSG(p_placement.block_layer_nums[driver_blk] == layer_num && p_placement.block_layer_nums[sink_blk] == layer_num,
+                        "3D FPGAs not supported yet in the B2B solver");
+
+    // Get the physical tile location of the legalized driver block. The PlaceDelayModel
+    // may use this position to determine the physical tile the wire is coming from.
+    // When the placement is being solved, the driver may be moved to a physical tile
+    // which cannot implement any wires and the delays become infinite. By using the
+    // legalized position of the driver block, we ensure that the delays always exist
+    // (assuming the partial legalizer only places blocks in locations that a block
+    // can be implemented, which it currently does).
+    t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
+                                         block_y_locs_legalized[driver_blk],
+                                         layer_num);
+
+    // Get the physical tle location of the sink block, relative to the driver block.
+    // Based on the current implementation of the PlaceDelayModel, the location of this
+    // block does not actually matter, only the difference in x and y position is used.
+    // Hence, it is ok if this position is off the device, so long as the difference
+    // in x/y is not larger than the width/height of the device.
+    t_physical_tile_loc sink_block_loc(driver_block_loc.x + flat_dx,
+                                       driver_block_loc.y + flat_dy,
+                                       layer_num);
+
+    int tile_dx = sink_block_loc.x - driver_block_loc.x;
+    int tile_dy = sink_block_loc.y - driver_block_loc.y;
+    VTR_ASSERT_SAFE(tile_dx < (int)device_grid_width_);
+    VTR_ASSERT_SAFE(tile_dy < (int)device_grid_height_);
+
+    // Get the delay of a wire going from the given driver block location to the
+    // given sink block location. This should only use the physical tile type of
+    // the driver block location and the dx / dy of the positions to compute
+    // delay.
+    float current_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                         0 /*from_pin*/,
+                                                         sink_block_loc,
+                                                         0 /*to_pin*/);
+
+    // Get the delays of going from the driver block to the blocks directly
+    // surrounding the sink block (one tile above, below, left, and right).
+    // These will be used to compute the derivative.
+    t_physical_tile_loc right_block_loc(sink_block_loc.x + 1,
+                                        sink_block_loc.y,
+                                        sink_block_loc.layer_num);
+    t_physical_tile_loc left_block_loc(sink_block_loc.x - 1,
+                                       sink_block_loc.y,
+                                       sink_block_loc.layer_num);
+    t_physical_tile_loc upper_block_loc(sink_block_loc.x,
+                                        sink_block_loc.y + 1,
+                                        sink_block_loc.layer_num);
+    t_physical_tile_loc lower_block_loc(sink_block_loc.x,
+                                        sink_block_loc.y - 1,
+                                        sink_block_loc.layer_num);
+
+    float right_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                       0 /*from_pin*/,
+                                                       right_block_loc,
+                                                       0 /*to_pin*/);
+    float left_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                      0 /*from_pin*/,
+                                                      left_block_loc,
+                                                      0 /*to_pin*/);
+    float upper_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                       0 /*from_pin*/,
+                                                       upper_block_loc,
+                                                       0 /*to_pin*/);
+    float lower_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                       0 /*from_pin*/,
+                                                       lower_block_loc,
+                                                       0 /*to_pin*/);
+
+    // Use Finite Differences to compute the instantanious derivative of delay
+    // with respect to tile position at this current distance from the driver
+    // block to the sink block.
+    //
+    // Finite Differences are used to compute the derivative of a discrete
+    // function at a given point.
+    //
+    // To compute the derivative of a discrete function at a point, we get the
+    // difference in delay one tile ahead of the current point (the forward
+    // difference) and one tile behind the current point (the backward difference).
+    // We can then approximate the derivative by averaging the forward and backward
+    // differences to get what is called the central difference.
+    float forward_difference_x = right_edge_delay - current_edge_delay;
+    float backward_difference_x = current_edge_delay - left_edge_delay;
+    float central_difference_x = (forward_difference_x + backward_difference_x) / 2.0f;
+
+    float forward_difference_y = upper_edge_delay - current_edge_delay;
+    float backward_difference_y = current_edge_delay - lower_edge_delay;
+    float central_difference_y = (forward_difference_y + backward_difference_y) / 2.0f;
+
+    // Set the resulting derivative to be equal to the central difference.
+    float d_delay_x = central_difference_x;
+    float d_delay_y = central_difference_y;
+
+    // For approximating the derivative of our PlaceDelayModel, there is a special
+    // case when the distance between the driver and sink are 0 in x or y. Since
+    // our delay models are symmetric, the forward and backward difference will
+    // be equal in magnitude and opposite. This means the central difference will
+    // be 0. This is not good since it would cause the objective to ignore the
+    // delay of blocks within the same cluster (making them more incentivized to
+    // not be in the same cluster together). To prevent this, we set the derivative
+    // to be the forward difference in that case. It must be the forward difference
+    // since the backward difference will likely be negative. This basically sets
+    // the derivative to be the penalty for putting the driver and sink in different
+    // tiles.
+    if (tile_dx == 0) {
+        VTR_ASSERT_SAFE_MSG(forward_difference_x == -1.0f * backward_difference_x,
+                            "Delay model expected to be symmetric");
+        d_delay_x = forward_difference_x;
+    }
+    if (tile_dy == 0) {
+        VTR_ASSERT_SAFE_MSG(forward_difference_y == -1.0f * backward_difference_y,
+                            "Delay model expected to be symmetric");
+        d_delay_y = forward_difference_y;
+    }
+
+    return std::make_pair(d_delay_x, d_delay_y);
+}
+
+std::pair<double, double> B2BSolver::get_delay_normalization_facs(APBlockId driver_blk) {
+    // We want to find normalization factors for the delays along connections.
+    // A simple normalization factor to use is 1 over the delay of leaving a
+    // tile. This should be able to remove the units without changing the value
+    // too much.
+
+    // Similar to calcuting the derivative, we want to use the legalized position
+    // of the driver block to try and estimate the delay from that block type.
+    t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
+                                         block_y_locs_legalized[driver_blk],
+                                         0 /*layer_num*/);
+
+    // Get the delay of exiting the block.
+    double norm_fac_inv_x = place_delay_model_->delay(driver_block_loc,
+                                                      0 /*from_pin*/,
+                                                      {driver_block_loc.x + 1, driver_block_loc.y, driver_block_loc.layer_num},
+                                                      0 /*to_pin*/);
+    double norm_fac_inv_y = place_delay_model_->delay(driver_block_loc,
+                                                      0 /*from_pin*/,
+                                                      {driver_block_loc.x, driver_block_loc.y + 1, driver_block_loc.layer_num},
+                                                      0 /*to_pin*/);
+
+    // Normalization factors are expected to be non-negative.
+    VTR_ASSERT_SAFE(norm_fac_inv_x >= 0.0);
+    VTR_ASSERT_SAFE(norm_fac_inv_y >= 0.0);
+
+    // The normalization factors will become infinite if we divide by 0 delay.
+    // If the normalization factor is near 0, just set it to 1e-9 (or on the order
+    // of a nanosecond). This should not be hit, but this is just a safety to
+    // prevent infinities from entering the objective by mistake.
+    if (vtr::isclose(norm_fac_inv_x, 0.0))
+        norm_fac_inv_x = 1e-9;
+    if (vtr::isclose(norm_fac_inv_y, 0.0))
+        norm_fac_inv_y = 1e-9;
+
+    // Return the normalization factors.
+    return std::make_pair(1.0 / norm_fac_inv_x, 1.0 / norm_fac_inv_y);
+}
+
+void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned iteration) {
     // Reset the linear system
     A_sparse_x = Eigen::SparseMatrix<double>(num_moveable_blocks_, num_moveable_blocks_);
     A_sparse_y = Eigen::SparseMatrix<double>(num_moveable_blocks_, num_moveable_blocks_);
@@ -871,7 +1050,10 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_SAFE_MSG(num_pins > 1, "net must have at least 2 pins");
 
-        double net_w = net_weights_[net_id];
+        // ====================================================================
+        // Wirelength Connections
+        // ====================================================================
+        double wl_net_w = (1.0f - ap_timing_tradeoff_) * net_weights_[net_id];
 
         // Find the bounding blocks
         APNetBounds net_bounds = get_unique_net_bounds(net_id, p_placement, netlist_);
@@ -883,19 +1065,85 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
         for (APPinId pin_id : netlist_.net_pins(net_id)) {
             APBlockId blk_id = netlist_.pin_block(pin_id);
             if (blk_id != net_bounds.max_x_blk && blk_id != net_bounds.min_x_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, net_w, p_placement.block_x_locs, triplet_list_x, b_x);
-                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, net_w, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
             }
             if (blk_id != net_bounds.max_y_blk && blk_id != net_bounds.min_y_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, net_w, p_placement.block_y_locs, triplet_list_y, b_y);
-                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
             }
         }
 
         // Connect the bounds to each other. Its just easier to put these here
         // instead of in the for loop above.
-        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, net_w, p_placement.block_x_locs, triplet_list_x, b_x);
-        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
+        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+
+        // ====================================================================
+        // Timing Connections
+        // ====================================================================
+        // Only add timing connection if timing analysis is on and we are not
+        // in the first iteration. The current timing flow needs legalized
+        // positions to compute the delay derivative, which do not exist until
+        // the next iteration. Its fine to do one wirelength driven iteration first.
+        if (pre_cluster_timing_manager_.is_valid() && iteration != 0) {
+            // Create connections from each driver pin to each of its sink pins.
+            // This will incentivize shrinking the distance from drivers to sinks
+            // of connections which would improve the timing.
+            APPinId driver_pin = netlist_.net_driver(net_id);
+            APBlockId driver_blk = netlist_.pin_block(driver_pin);
+            for (APPinId net_pin : netlist_.net_pins(net_id)) {
+                if (net_pin == driver_pin)
+                    continue;
+                APBlockId sink_blk = netlist_.pin_block(net_pin);
+
+                // Get the instantaneous derivative of delay at the given distance
+                // from driver to sink. This will provide a value which is higher
+                // if the tradeoff between delay and wirelength is better, and
+                // lower when the tradeoff between delay and wirelength is worse.
+                auto [d_delay_x, d_delay_y] = get_delay_derivative(driver_blk,
+                                                                   sink_blk,
+                                                                   p_placement);
+
+                // Since the delay between two blocks may not monotonically increase
+                // (it may go down with distance due to different length wires), it
+                // is possible for the derivative of delay to be negative. The weight
+                // terms in this formulation should not be negative to prevent infinite
+                // answers. To prevent this, clamp the derivative to 0.
+                // TODO: If this is negative, it means that the sink should try to move
+                //       away from the driver. Perhaps add an anchor point to pull the
+                //       sink away.
+                if (d_delay_x < 0)
+                    d_delay_x = 0;
+                if (d_delay_y < 0)
+                    d_delay_y = 0;
+
+                // The units for delay is in seconds; however the units for
+                // the wirelength term is in tile. To ensure the units match,
+                // we need to normalize away the time units. Get normalization
+                // factors to remove the time units.
+                auto [delay_x_norm, delay_y_norm] = get_delay_normalization_facs(driver_blk);
+
+                // Get the criticality of this timing edge from driver to sink.
+                double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(net_pin));
+
+                // Set the weight of the connection from driver to sink equal to:
+                //      weight_tradeoff_terms * (1 + crit) * d_delay * delay_norm
+                // The intuition is that we want the solver to shrink the distance
+                // from drivers to sinks (which would improve timing) for edges
+                // with the best tradeoff between delay and wire, with a focus
+                // on the more critical edges.
+                double timing_net_w = ap_timing_tradeoff_ * net_weights_[net_id] * timing_slope_fac_ * (1.0 + crit);
+
+                add_connection_to_system(driver_blk, sink_blk,
+                                         2 /*num_pins*/, timing_net_w * d_delay_x * delay_x_norm,
+                                         p_placement.block_x_locs, triplet_list_x, b_x);
+
+                add_connection_to_system(driver_blk, sink_blk,
+                                         2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm,
+                                         p_placement.block_y_locs, triplet_list_y, b_y);
+            }
+        }
     }
 
     // Build the sparse connectivity matrices from the triplets.
@@ -954,6 +1202,13 @@ void B2BSolver::store_solution_into_placement(Eigen::VectorXd& x_soln,
         p_placement.block_x_locs[blk_id] = x_soln[row_id_idx];
         p_placement.block_y_locs[blk_id] = y_soln[row_id_idx];
     }
+}
+
+void B2BSolver::update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager) {
+    (void)pre_cluster_timing_manager;
+    // Currently does not do anything. Eventually should investigate updating the
+    // net weights.
+    return;
 }
 
 void B2BSolver::print_statistics() {
