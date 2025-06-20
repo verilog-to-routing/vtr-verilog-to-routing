@@ -279,6 +279,43 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_e
     }
 }
 
+void draw_intrapin_to_intrapin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
+
+    auto draw_coords = get_draw_coords_vars();
+
+    auto blk_id_pin_id1 = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+    auto blk_id_pin_id2 = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
+
+    ezgl::point2d p1 = draw_coords->get_absolute_pin_location(blk_id_pin_id1.first, blk_id_pin_id1.second);
+    ezgl::point2d p2 = draw_coords->get_absolute_pin_location(blk_id_pin_id2.first, blk_id_pin_id2.second);
+
+    g->draw_line(p1, p2);
+}
+
+void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
+    auto draw_coords = get_draw_coords_vars();
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    if (!is_inter_cluster_node(rr_graph, inode) && is_inter_cluster_node(rr_graph, prev_node)) {
+        //Swap the nodes so that the inter-cluster node is always the current node
+        std::swap(inode, prev_node);
+    }
+
+    auto blk_id_pin_id = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
+    float x1, y1;
+    ezgl::point2d p2 = draw_coords->get_absolute_pin_location(blk_id_pin_id.first, blk_id_pin_id.second);
+    
+
+    for (const e_side& pin_side : TOTAL_2D_SIDES) {
+        if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
+            continue;
+        }
+        draw_get_rr_pin_coords(inode, &x1, &y1, pin_side);
+        g->draw_line({x1, y1}, p2);
+    }
+
+}
+
 void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) {
     /* This routine draws an edge from the opin rr node to the ipin rr node */
     const auto& device_ctx = g_vpr_ctx.device();

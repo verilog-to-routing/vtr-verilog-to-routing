@@ -513,6 +513,21 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     } /* End of for each edge loop */
 }
 
+void draw_rr_intrapin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    auto blk_id_pin_id = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+
+    ezgl::point2d p = draw_coords->get_absolute_pin_location(blk_id_pin_id.first, blk_id_pin_id.second);
+
+    int transparency_factor = get_rr_node_transparency(inode);
+
+    g->set_color(color, transparency_factor);
+    g->fill_rectangle(
+        {p.x - draw_coords->pin_size, p.y - draw_coords->pin_size},
+        {p.x + draw_coords->pin_size, p.y + draw_coords->pin_size});
+}
+
 /* Draws an IPIN or OPIN rr_node.  Note that the pin can appear on more    *
  * than one side of a clb.  Also note that this routine can change the     *
  * current color to BLACK.                                                 */
