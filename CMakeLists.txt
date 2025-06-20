@@ -420,7 +420,18 @@ if(${WITH_PARMYS}) # define cmake params to compile Yosys
     # else()
     #     set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
     # endif()
-    add_subdirectory(yosys)
+    execute_process(
+        COMMAND git submodule update --init --recursive
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/yosys
+        RESULT_VARIABLE _submod_ret
+        OUTPUT_QUIET
+        ERROR_QUIET
+    )
+    if(NOT _submod_ret EQUAL 0)
+        message(FATAL_ERROR
+        "Failed to `git submodule update --init --recursive` in ${CMAKE_CURRENT_SOURCE_DIR}/yosys")
+    endif()
+    add_subdirectory(cmake/yosys)
 endif()
 
 add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
