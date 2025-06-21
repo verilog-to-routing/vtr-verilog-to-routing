@@ -1,4 +1,5 @@
 #pragma once
+
 /**
  * @file
  * @brief This file defines the ConnectionRouter class.

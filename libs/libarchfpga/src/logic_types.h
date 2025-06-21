@@ -62,10 +62,8 @@ struct t_model {
     bool never_prune = false;               ///< Don't remove from the netlist even if a block of this type has no output ports used and, therefore, unconnected to the rest of the netlist
 };
 
-// Tag for the logical model ID
-struct logical_model_id_tag;
 // A unique ID that represents a logical model in the architecture.
-typedef vtr::StrongId<logical_model_id_tag, size_t> LogicalModelId;
+typedef vtr::StrongId<struct logical_model_id_tag, size_t> LogicalModelId;
 
 /**
  * @brief A storage class containing all of the logical models in an FPGA

@@ -105,8 +105,7 @@ namespace {
 /// This is used for putting the molecules in bins for packing.
 // FIXME: Bring this into the device_grid.
 //  - Maybe this can be called DeviceRootTileId or something.
-struct device_tile_id_tag {};
-typedef vtr::StrongId<device_tile_id_tag, size_t> DeviceTileId;
+typedef vtr::StrongId<struct device_tile_id_tag, size_t> DeviceTileId;
 
 /**
  * @brief Helper class to place cluster in the AP context.

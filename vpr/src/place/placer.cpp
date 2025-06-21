@@ -311,7 +311,7 @@ void Placer::place() {
 
             // Outer loop of the simulated annealing ends
         } while (annealer_->outer_loop_update_state());
-    } //skip_anneal ends
+    } // skip_anneal ends
 
     // Start Quench
     annealer_->start_quench();
@@ -376,12 +376,14 @@ void Placer::place() {
     log_printer_.print_post_placement_stats();
 }
 
-void Placer::copy_locs_to_global_state(PlacementContext& place_ctx) {
+void Placer::update_global_state() {
+    auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
+
     // the placement location variables should be unlocked before being accessed
-    place_ctx.unlock_loc_vars();
+    mutable_palce_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
-    auto& global_blk_loc_registry = place_ctx.mutable_blk_loc_registry();
+    auto& global_blk_loc_registry = mutable_palce_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
 
 #ifndef NO_GRAPHICS

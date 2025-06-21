@@ -67,10 +67,10 @@ class Placer {
     void place();
 
     /**
-     * @brief Copies the placement location variables into the given global placement context.
-     * @param place_ctx The placement context to which location information will be copied.
+     * @brief Copies the placement location variables into the global placement context.
+     * This method also updates the global routing context with the estimated routing channel utilization.
      */
-    void copy_locs_to_global_state(PlacementContext& place_ctx);
+    void update_global_state();
 
   private:
     /// Holds placement algorithm parameters

@@ -69,6 +69,7 @@ class FlatPlacementDensityManager {
      *  @param logical_block_types
      *  @param physical_tile_types
      *  @param models
+     *  @param target_density_arg_strs
      *  @param log_verbosity
      */
     FlatPlacementDensityManager(const APNetlist& ap_netlist,
@@ -78,6 +79,7 @@ class FlatPlacementDensityManager {
                                 const std::vector<t_logical_block_type>& logical_block_types,
                                 const std::vector<t_physical_tile_type>& physical_tile_types,
                                 const LogicalModels& models,
+                                const std::vector<std::string>& target_density_arg_strs,
                                 int log_verbosity);
 
     /**
@@ -166,6 +168,14 @@ class FlatPlacementDensityManager {
     inline const PrimitiveVector& get_bin_underfill(FlatPlacementBinId bin_id) const {
         VTR_ASSERT(bin_id.is_valid());
         return bin_underfill_[bin_id];
+    }
+
+    /**
+     * @brief Returns the target density for the given bin.
+     */
+    inline float get_bin_target_density(FlatPlacementBinId bin_id) const {
+        VTR_ASSERT_SAFE(bin_id.is_valid());
+        return bin_target_density_[bin_id];
     }
 
     /**
@@ -291,6 +301,9 @@ class FlatPlacementDensityManager {
     ///        in the netlist. If a dimension is used, its value will be set to
     ///        1 in this vector, and 0 otherwise.
     PrimitiveVector used_dims_mask_;
+
+    /// @brief The target density of each bin.
+    vtr::vector<FlatPlacementBinId, float> bin_target_density_;
 
     /// @brief The verbosity of log messages in this class.
     const int log_verbosity_;

@@ -15,11 +15,8 @@
  * with L, T or other shapes can be created with a union of multiple rectangles.
  */
 
-/// @brief Type tag for PartitionId
-struct partition_id_tag;
-
 /// @brief A unique identifier for a partition
-typedef vtr::StrongId<partition_id_tag> PartitionId;
+typedef vtr::StrongId<struct partition_id_tag> PartitionId;
 
 class Partition {
   public:
