@@ -604,7 +604,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     // TODO: Neighbor search radius is selected from a small set of values.
     //       We can set it adaptively according to remaining molecules number
     //       and device size.
-    int NEIGHBOR_SEARCH_RADIUS = 4;
+    int NEIGHBOR_SEARCH_RADIUS = 8;
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
     neighbor_cluster_pass(cluster_legalizer,
                           primitive_candidate_block_types,
@@ -697,7 +697,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     return clb_nlist;
 }
 
-void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist) {
+void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist, const PartialPlacement& p_placement) {
     // Setup the global variables for placement.
     g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
@@ -734,7 +734,8 @@ void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist) {
     //       how reconstruction pass clusters created, so there is no need to explicitely
     //       prioritize these clusters. However, if it changes in time, the atoms clustered
     //       in neighbor pass and atoms misplaced might not match exactly.
-    initial_placement(vpr_setup_.PlacerOpts,
+    if (g_vpr_ctx.atom().flat_placement_info().valid) {
+        initial_placement(vpr_setup_.PlacerOpts,
                       vpr_setup_.PlacerOpts.constraints_file.c_str(),
                       vpr_setup_.NocOpts,
                       blk_loc_registry,
@@ -742,14 +743,43 @@ void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist) {
                       noc_cost_handler,
                       g_vpr_ctx.atom().flat_placement_info(),
                       rng);
-
-    // Log some information on how good the reconstruction was.
-    log_flat_placement_reconstruction_info(g_vpr_ctx.atom().flat_placement_info(),
-                                           blk_loc_registry.block_locs(),
-                                           g_vpr_ctx.clustering().atoms_lookup,
-                                           g_vpr_ctx.atom().lookup(),
-                                           atom_netlist_,
-                                           g_vpr_ctx.clustering().clb_nlist);
+        // Log some information on how good the reconstruction was.
+        log_flat_placement_reconstruction_info(g_vpr_ctx.atom().flat_placement_info(),
+                                            blk_loc_registry.block_locs(),
+                                            g_vpr_ctx.clustering().atoms_lookup,
+                                            g_vpr_ctx.atom().lookup(),
+                                            atom_netlist_,
+                                            g_vpr_ctx.clustering().clb_nlist);
+    } else {
+        FlatPlacementInfo flat_placement_info(atom_netlist_);
+        for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
+            PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
+            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+                if (!atom_blk_id.is_valid())
+                    continue;
+                flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
+                flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
+                flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
+                flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
+            }
+        }
+        initial_placement(vpr_setup_.PlacerOpts,
+                          vpr_setup_.PlacerOpts.constraints_file.c_str(),
+                          vpr_setup_.NocOpts,
+                          blk_loc_registry,
+                          *g_vpr_ctx.placement().place_macros,
+                          noc_cost_handler,
+                          flat_placement_info,
+                          rng);
+        // Log some information on how good the reconstruction was.
+        log_flat_placement_reconstruction_info(flat_placement_info,
+                                            blk_loc_registry.block_locs(),
+                                            g_vpr_ctx.clustering().atoms_lookup,
+                                            g_vpr_ctx.atom().lookup(),
+                                            atom_netlist_,
+                                            g_vpr_ctx.clustering().clb_nlist);
+    }
 
     // Verify that the placement is valid for the VTR flow.
     unsigned num_errors = verify_placement(blk_loc_registry,
@@ -805,7 +835,7 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     }
 
     // Perform the initial placement on created clusters
-    place_clusters(clb_nlist);
+    place_clusters(clb_nlist, p_placement);
 }
 
 void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {

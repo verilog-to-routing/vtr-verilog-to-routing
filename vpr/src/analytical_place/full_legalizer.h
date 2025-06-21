@@ -130,7 +130,7 @@ public:
         std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
         std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check);
     
-    void place_clusters(const ClusteredNetlist& clb_nlist);
+    void place_clusters(const ClusteredNetlist& clb_nlist, const PartialPlacement& p_placement);
 
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
 
