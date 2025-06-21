@@ -294,6 +294,10 @@ void draw_intrapin_to_intrapin(RRNodeId inode, RRNodeId prev_node, ezgl::rendere
     ezgl::point2d p2 = draw_coords->get_absolute_pin_location(blk_id_pin_id2.first, blk_id_pin_id2.second);
 
     g->draw_line(p1, p2);
+
+    float xend = p2.x + (p1.x - p2.x) / 10.;
+    float yend = p2.y + (p1.y - p2.y) / 10.;
+    draw_triangle_along_line(g, xend, yend, p1.x, p2.x, p1.y, p2.y);
 }
 
 void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
@@ -305,9 +309,11 @@ void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g)
     }
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
+    bool swapped = false;
     if (!is_inter_cluster_node(rr_graph, inode) && is_inter_cluster_node(rr_graph, prev_node)) {
         //Swap the nodes so that the inter-cluster node is always the current node
         std::swap(inode, prev_node);
+        swapped = true;
     }
 
     auto blk_id_pin_id = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
@@ -320,7 +326,16 @@ void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g)
             continue;
         }
         draw_get_rr_pin_coords(inode, &x1, &y1, pin_side);
-        g->draw_line({x1, y1}, p2);
+        ezgl::point2d p1 = {x1, y1};
+
+        if (swapped) {
+            std::swap(p1, p2);
+        }
+
+        g->draw_line(p1, p2);
+        float xend = p2.x + (p1.x - p2.x) / 10.;
+        float yend = p2.y + (p1.y - p2.y) / 10.;
+        draw_triangle_along_line(g, xend, yend, p1.x, p2.x, p1.y, p2.y);
     }
 
 }
