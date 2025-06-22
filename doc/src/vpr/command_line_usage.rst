@@ -1824,6 +1824,20 @@ The following options are only valid when the router is in timing-driven mode (t
 
      **Default:** ``map``
 
+.. option:: --router_initial_acc_cost_chan_congestion_threshold <float>
+
+    Utilization threshold above which initial accumulated routing cost (acc_cost) is increased to penalize congested channels.
+    Used to bias routing away from highly utilized regions during early routing iterations.
+
+    **Default:** ``0.5``
+
+.. option:: --router_initial_acc_cost_chan_congestion_weight <float>
+    Weight applied to the excess channel utilization (above threshold) when computing the initial accumulated cost (acc_cost)of routing resources.
+
+    Higher values make the router more sensitive to early congestion.
+
+    **Default:** ``0.5``
+
 .. option:: --router_max_convergence_count <float>
 
     Controls how many times the router is allowed to converge to a legal routing before halting.

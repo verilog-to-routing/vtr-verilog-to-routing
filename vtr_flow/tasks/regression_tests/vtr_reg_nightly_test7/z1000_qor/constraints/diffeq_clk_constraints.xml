@@ -1,0 +1,7 @@
+<vpr_constraints tool_name="vpr">
+<partition_list>
+<partition name="pclk"><add_atom name_pattern="pclk" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="1" y_low="1" />
+</partition>
+</partition_list>
+</vpr_constraints>
