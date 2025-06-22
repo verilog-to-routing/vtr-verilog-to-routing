@@ -241,15 +241,15 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
 
             // determine an optimal number of columns
             int num_columns = 1;
-            for(int k = 1; k * k <= num_blocks; ++k) {
-                if(num_blocks % k == 0) {
+            for (int k = 1; k * k <= num_blocks; ++k) {
+                if (num_blocks % k == 0) {
                     num_columns = k;
                 }
             }
             int num_rows = num_blocks / num_columns;
 
             const int MAX_WIDTH_HEIGHT_RATIO = 2;
-            if(parent_width > parent_height * MAX_WIDTH_HEIGHT_RATIO){
+            if (parent_width > parent_height * MAX_WIDTH_HEIGHT_RATIO) {
                 std::swap(num_columns, num_rows);
             }
 
@@ -287,23 +287,23 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     const float FRACTION_PARENT_PADDING = 0.005;
     const float FRACTION_CHILD_MARGIN = 0.003;
     const float FRACTION_TEXT_PADDING = 0.01;
-    const int MIN_WIDTH_HEIGHT_RATIO = 2; 
+    const int MIN_WIDTH_HEIGHT_RATIO = 2;
 
     float abs_parent_padding = tile_width * FRACTION_PARENT_PADDING;
     float abs_text_padding = tile_width * FRACTION_TEXT_PADDING;
     float abs_child_margin = tile_width * FRACTION_CHILD_MARGIN;
 
     // add safety check to ensure that the dimensions will never be below zero
-    if (parent_width <= 2* abs_parent_padding || parent_height <= 2 * abs_parent_padding - abs_text_padding) {
+    if (parent_width <= 2 * abs_parent_padding || parent_height <= 2 * abs_parent_padding - abs_text_padding) {
         abs_parent_padding = 0;
         abs_text_padding = 0;
     }
 
     /* Draw all child-level blocks in just most of the space inside their parent block. */
-    float parent_drawing_width = parent_width - 2* abs_parent_padding;
+    float parent_drawing_width = parent_width - 2 * abs_parent_padding;
     float parent_drawing_height = parent_height - 2 * abs_parent_padding - abs_text_padding;
 
-    if(parent_drawing_height > MIN_WIDTH_HEIGHT_RATIO * parent_drawing_width) {
+    if (parent_drawing_height > MIN_WIDTH_HEIGHT_RATIO * parent_drawing_width) {
         parent_drawing_height /= 2;
     }
 
@@ -314,7 +314,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     float child_height = parent_drawing_height / num_rows;
 
     // add safety check to ensure that the dimensions will never be below zero
-    if(child_width <= abs_child_margin * 2 || child_height <= abs_child_margin * 2) {
+    if (child_width <= abs_child_margin * 2 || child_height <= abs_child_margin * 2) {
         abs_child_margin = 0;
     }
 
@@ -322,7 +322,6 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     double left = child_width * x_index + abs_parent_padding + abs_child_margin;
     double bot = child_height * y_index + abs_parent_padding + abs_child_margin;
 
-    
     child_width -= abs_child_margin * 2;
     child_height -= abs_child_margin * 2;
 

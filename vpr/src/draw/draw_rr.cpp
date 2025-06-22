@@ -517,7 +517,7 @@ void draw_rr_intrapin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* 
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    if(!draw_state->is_flat){
+    if (!draw_state->is_flat) {
         return;
     }
 
@@ -713,7 +713,7 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
         // Check for intra cluster nodes
         if (!is_inter_cluster_node(rr_graph, inode)) {
 
-            if(!draw_state->is_flat){
+            if (!draw_state->is_flat) {
                 continue;
             }
 

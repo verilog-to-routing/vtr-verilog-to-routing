@@ -283,7 +283,7 @@ void draw_intrapin_to_intrapin(RRNodeId inode, RRNodeId prev_node, ezgl::rendere
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    if(!draw_state->is_flat){
+    if (!draw_state->is_flat) {
         return;
     }
 
@@ -304,7 +304,7 @@ void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g)
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    if(!draw_state->is_flat){
+    if (!draw_state->is_flat) {
         return;
     }
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
@@ -319,7 +319,6 @@ void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g)
     auto blk_id_pin_id = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
     float x1, y1;
     ezgl::point2d p2 = draw_coords->get_absolute_pin_location(blk_id_pin_id.first, blk_id_pin_id.second);
-    
 
     for (const e_side& pin_side : TOTAL_2D_SIDES) {
         if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
@@ -337,7 +336,6 @@ void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g)
         float yend = p2.y + (p1.y - p2.y) / 10.;
         draw_triangle_along_line(g, xend, yend, p1.x, p2.x, p1.y, p2.y);
     }
-
 }
 
 void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) {

@@ -627,7 +627,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         }
 
         // Skip drawing sources and sinks
-        if (rr_type == e_rr_type::SINK || rr_type == e_rr_type::SOURCE){
+        if (rr_type == e_rr_type::SINK || rr_type == e_rr_type::SOURCE) {
             continue;
         }
 
@@ -716,8 +716,8 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                     }
                     default: {
                         VPR_ERROR(VPR_ERROR_OTHER,
-                                    "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                    prev_type, rr_type);
+                                  "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                  prev_type, rr_type);
                     }
                 }
                 break;
@@ -726,12 +726,12 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 switch (prev_type) {
                     case e_rr_type::CHANX: {
                         draw_chanx_to_chany_edge(prev_node, inode,
-                                                    FROM_X_TO_Y, switch_type, g);
+                                                 FROM_X_TO_Y, switch_type, g);
                         break;
                     }
                     case e_rr_type::CHANY: {
                         draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                    switch_type, g);
+                                                 switch_type, g);
                         break;
                     }
                     case e_rr_type::OPIN: {
@@ -741,8 +741,8 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                     }
                     default: {
                         VPR_ERROR(VPR_ERROR_OTHER,
-                                    "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                    prev_type, rr_type);
+                                  "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                  prev_type, rr_type);
                     }
                 }
                 break;

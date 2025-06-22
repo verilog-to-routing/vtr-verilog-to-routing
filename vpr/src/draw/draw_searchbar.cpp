@@ -140,22 +140,21 @@ void highlight_net(char* message, RRNodeId hit_node) {
     if (route_ctx.route_trees.empty())
         return;
 
-    if (route_ctx.is_flat){
-        for (auto net_id : atom_ctx.netlist().nets()){
+    if (route_ctx.is_flat) {
+        for (auto net_id : atom_ctx.netlist().nets()) {
             check_node_highlight_net(message, net_id, hit_node);
-        } 
+        }
 
-    } else{
+    } else {
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
             check_node_highlight_net(message, net_id, hit_node);
         }
     }
-    
+
     application.update_message(message);
 }
 
-void check_node_highlight_net(char* message, ParentNetId parent_id, 
-                   RRNodeId hit_node) {
+void check_node_highlight_net(char* message, ParentNetId parent_id, RRNodeId hit_node) {
     auto& route_ctx = g_vpr_ctx.routing();
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -168,8 +167,8 @@ void check_node_highlight_net(char* message, ParentNetId parent_id,
             draw_state->net_color[parent_id] = draw_state->draw_rr_node[inode].color;
             if (inode == hit_node) {
                 std::string orig_msg(message);
-                std::string net_name;                 
-                if(!route_ctx.is_flat){
+                std::string net_name;
+                if (!route_ctx.is_flat) {
                     net_name = g_vpr_ctx.clustering().clb_nlist.net_name(convert_to_cluster_net_id(parent_id));
                 } else {
                     net_name = g_vpr_ctx.atom().netlist().net_name(convert_to_atom_net_id(parent_id));
@@ -179,7 +178,7 @@ void check_node_highlight_net(char* message, ParentNetId parent_id,
                         net_name.c_str());
             }
         } else if (draw_state->draw_rr_node[inode].color
-                    == ezgl::WHITE) {
+                   == ezgl::WHITE) {
             // If node is de-selected.
             draw_state->net_color[parent_id] = ezgl::BLACK;
             break;

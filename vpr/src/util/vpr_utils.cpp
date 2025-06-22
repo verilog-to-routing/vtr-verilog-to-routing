@@ -879,7 +879,7 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
                 atom_pin = pin;
         }
     }
-    
+
     VTR_ASSERT(atom_pin);
 
     return atom_pin;
@@ -1774,7 +1774,7 @@ std::pair<ClusterBlockId, t_pb_graph_pin*> get_rr_node_cluster_blk_id_pb_graph_p
     ClusterBlockId blk_id = place_ctx.grid_blocks().block_at_location({x, y, sub_tile_num, layer});
     VTR_ASSERT(blk_id != ClusterBlockId::INVALID());
 
-    t_pb_graph_pin* pb_graph_pin =  physical_tile->pin_num_to_pb_pin.at(pin_physical_num);
+    t_pb_graph_pin* pb_graph_pin = physical_tile->pin_num_to_pb_pin.at(pin_physical_num);
 
     VTR_ASSERT(pb_graph_pin);
 
