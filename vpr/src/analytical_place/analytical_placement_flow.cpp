@@ -80,6 +80,7 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
  * to be generated on ap_netlist or have the same blocks.
  */
 static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, const Prepacker& prepacker, PartialPlacement& p_placement) {
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
         // Get the molecule that AP block represents
         PackMoleculeId mol_id = ap_netlist.block_molecule(ap_blk_id);
@@ -105,20 +106,37 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                                     current_loc_x, current_loc_y, current_loc_layer, current_loc_sub_tile,
                                     atom_loc_x, atom_loc_y, atom_loc_layer, atom_loc_sub_tile);
             } else {
-                atom_loc_x = current_loc_x;
-                atom_loc_y = current_loc_y;
-                atom_loc_layer = current_loc_layer;
-                atom_loc_sub_tile = current_loc_sub_tile;
-                found_valid_atom = true;
+                if (current_loc_x != -1 && current_loc_y != -1 && current_loc_layer != -1 && current_loc_sub_tile != -1) {
+                    atom_loc_x = current_loc_x;
+                    atom_loc_y = current_loc_y;
+                    atom_loc_layer = current_loc_layer;
+                    atom_loc_sub_tile = current_loc_sub_tile;
+                    found_valid_atom = true;
+                }
             }
         }
         // Ensure that there is a valid atom in the molecule to pass its location.
-        VTR_ASSERT_MSG(found_valid_atom, "Each molecule must contain at least one valid atom");
-        // Pass the placement information
-        p_placement.block_x_locs[ap_blk_id] = atom_loc_x;
-        p_placement.block_y_locs[ap_blk_id] = atom_loc_y;
-        p_placement.block_layer_nums[ap_blk_id] = atom_loc_layer;
-        p_placement.block_sub_tiles[ap_blk_id] = atom_loc_sub_tile;
+        //VTR_ASSERT_MSG(found_valid_atom, "Each molecule must contain at least one valid atom");
+        if (!found_valid_atom) {
+            VTR_LOG_WARN("No atoms of molecule ID %zu provided in flat placement. Assigning it to device center.\n", mol_id);
+            p_placement.block_x_locs[ap_blk_id] = g_vpr_ctx.device().grid.width()/2.0f;
+            p_placement.block_y_locs[ap_blk_id] = g_vpr_ctx.device().grid.height()/2.0f;
+            p_placement.block_layer_nums[ap_blk_id] = 0;
+            p_placement.block_sub_tiles[ap_blk_id] = 0;
+            // Update flat placement for atoms of that molecule accordingly
+            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_x_pos[atom_blk_id] = g_vpr_ctx.device().grid.width()/2.0f;
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_y_pos[atom_blk_id] = g_vpr_ctx.device().grid.height()/2.0f;
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_layer[atom_blk_id] = 0;
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_sub_tile[atom_blk_id] = 0;
+            }
+        } else{
+            // Pass the placement information
+            p_placement.block_x_locs[ap_blk_id] = atom_loc_x;
+            p_placement.block_y_locs[ap_blk_id] = atom_loc_y;
+            p_placement.block_layer_nums[ap_blk_id] = atom_loc_layer;
+            p_placement.block_sub_tiles[ap_blk_id] = atom_loc_sub_tile;
+        }
     }
 }
 
