@@ -364,28 +364,23 @@
 
     <!-- Artix-7 12k Logic Cell device.
                     Data sheet     |   Actual
-                - 2,000 CLB slices | 950 CLB tiles
+                - 2,000 CLB slices | 1015 CLB tiles
                 - 40 DSP slices    | 20 DSP tiles
                 - 20 BRAM blocks   | 20 BRAM tiles
                 - 150 IOs          | 19 IO tiles
     -->
     <fixed_layout name="XC7A12T-like" width="37" height="37">
-      <!-- 150 IOs (or around 19 tiles). Distribute them evenly around the border (5ish per side) -->
+      <!-- 150 IOs (or around 19 tiles). 10 on one side, 9 on the other. -->
       <perimeter type="EMPTY" priority="99" />
       <corners type="EMPTY" priority="101" />
-      <col type="io" startx="0" starty="1" incry="8" priority="100" />
-      <col type="io" startx="36" starty="1" incry="8" priority="100" />
-      <row type="io" startx="1" starty="0" incrx="8" priority="100" />
-      <row type="io" startx="1" starty="36" incrx="9" priority="100" />
+      <col type="io" startx="0" starty="4" incry="3" priority="100" />
+      <single type="EMPTY" x="0" y="34" priority="101" />
+      <col type="io" startx="36" starty="1" incry="4" priority="100" />
 
       <!--Fill
         with 'CLB'-->
       <fill type="CLB" priority="10" />
 
-      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
-        other. The actual repeatx for each of these block types is slightly different from the bellow due
-        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
-        bellow are the average spacing between DSP and BRAM columns.-->
       <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
       <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
       <!-- Remove 3 DSPs from one column, 2 from all others each column to bring the total number of DSP slices to 20 -->
@@ -409,22 +404,24 @@
                 - 250 IOs          | 32 IO tiles
     -->
     <fixed_layout name="XC7A15T-like" width="42" height="42">
-      <!-- 250 IOs (or around 32 tiles). Distribute them evenly around the border (8 per side) -->
+      <!-- 250 IOs (or around 32 tiles). 16 on the left and 16 on the right. -->
       <perimeter type="EMPTY" priority="99" />
       <corners type="EMPTY" priority="101" />
-      <col type="io" startx="0" starty="1" incry="5" priority="100" />
-      <col type="io" startx="41" starty="1" incry="5" priority="100" />
-      <row type="io" startx="1" starty="0" incrx="5" priority="100" />
-      <row type="io" startx="1" starty="41" incrx="5" priority="100" />
+      <col type="io" startx="0" starty="1" incry="2" priority="100" />
+      <single type="EMPTY" x="0" y="9" priority="101" />
+      <single type="EMPTY" x="0" y="17" priority="101" />
+      <single type="EMPTY" x="0" y="25" priority="101" />
+      <single type="EMPTY" x="0" y="37" priority="101" />
+      <col type="io" startx="41" starty="1" incry="2" priority="100" />
+      <single type="EMPTY" x="41" y="9" priority="101" />
+      <single type="EMPTY" x="41" y="17" priority="101" />
+      <single type="EMPTY" x="41" y="25" priority="101" />
+      <single type="EMPTY" x="41" y="37" priority="101" />
 
       <!--Fill
         with 'CLB'-->
       <fill type="CLB" priority="10" />
 
-      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
-        other. The actual repeatx for each of these block types is slightly different from the bellow due
-        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
-        bellow are the average spacing between DSP and BRAM columns.-->
       <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
       <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
       <!-- Remove 6 DSPs from each column to bring the total number of DSP slices to 44 -->
@@ -449,22 +446,17 @@
                 - 150 IOs          | 19 IO tiles
     -->
     <fixed_layout name="XC7A25T-like" width="49" height="49">
-      <!-- 150 IOs (or around 19 tiles). Distribute them evenly around the border (5ish per side) -->
+      <!-- 150 IOs (or around 19 tiles). 10 on the left and 9 on the right. -->
       <perimeter type="EMPTY" priority="99" />
       <corners type="EMPTY" priority="101" />
-      <col type="io" startx="0" starty="1" incry="11" priority="100" />
-      <col type="io" startx="48" starty="1" incry="11" priority="100" />
-      <row type="io" startx="1" starty="0" incrx="11" priority="100" />
-      <row type="io" startx="1" starty="48" incrx="12" priority="100" />
+      <col type="io" startx="0" starty="1" incry="5" priority="100" />
+      <col type="io" startx="48" starty="1" incry="5" priority="100" />
+      <single type="EMPTY" x="48" y="46" priority="101" />
 
       <!--Fill
         with 'CLB'-->
       <fill type="CLB" priority="10" />
 
-      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
-        other. The actual repeatx for each of these block types is slightly different from the bellow due
-        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
-        bellow are the average spacing between DSP and BRAM columns.-->
       <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
       <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
       <!-- Remove 2 DSPs from each column to bring the total number of DSP slices to 40 -->
@@ -479,28 +471,26 @@
 
     <!-- Artix-7 35k Logic Cell device.
                     Data sheet     |   Actual
-                - 5,200 CLB slices | 2,570 CLB tiles
+                - 5,200 CLB slices | 2,576 CLB tiles
                 - 90 DSP slices    | 45 DSP tiles
                 - 50 BRAM blocks   | 50 BRAM tiles
-                - 250 IOs          | 31 IO tiles
+                - 250 IOs          | 32 IO tiles
     -->
     <fixed_layout name="XC7A35T-like" width="58" height="58">
-      <!-- 250 IOs (or around 31 tiles). Distribute them evenly around the border (8ish per side) -->
+      <!-- 250 IOs (or around 32 tiles). 16 on the left and 16 on the right. -->
       <perimeter type="EMPTY" priority="99" />
       <corners type="EMPTY" priority="101" />
-      <col type="io" startx="0" starty="1" incry="7" priority="100" />
-      <col type="io" startx="57" starty="1" incry="7" priority="100" />
-      <row type="io" startx="1" starty="0" incrx="7" priority="100" />
-      <row type="io" startx="1" starty="57" incrx="8" priority="100" />
+      <col type="io" startx="0" starty="1" incry="4" priority="100" />
+      <single type="io" x="0" y="18" priority="100" />
+      <single type="io" x="0" y="42" priority="100" />
+      <col type="io" startx="57" starty="1" incry="4" priority="100" />
+      <single type="io" x="57" y="18" priority="100" />
+      <single type="io" x="57" y="42" priority="100" />
 
       <!--Fill
         with 'CLB'-->
       <fill type="CLB" priority="10" />
 
-      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
-        other. The actual repeatx for each of these block types is slightly different from the bellow due
-        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
-        bellow are the average spacing between DSP and BRAM columns.-->
       <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
       <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
       <!-- Remove 6 DSPs from each column to bring the total number of DSP slices to 90 -->
@@ -525,25 +515,23 @@
                 - 8,150 CLB slices | 4,060 CLB tiles
                 - 120 DSP slices   | 60 DSP tiles
                 - 75 BRAM blocks   | 75 BRAM tiles
-                - 250 IOs          | 31 IO tiles
+                - 250 IOs          | 32 IO tiles
     -->
     <fixed_layout name="XC7A50T-like" width="72" height="72">
-      <!-- 250 IOs (or around 31 tiles). Distribute them evenly around the border (8ish per side) -->
+      <!-- 250 IOs (or around 32 tiles). 16 on the left and 16 on the right. -->
       <perimeter type="EMPTY" priority="99" />
       <corners type="EMPTY" priority="101" />
-      <col type="io" startx="0" starty="1" incry="9" priority="100" />
-      <col type="io" startx="71" starty="1" incry="9" priority="100" />
-      <row type="io" startx="1" starty="0" incrx="9" priority="100" />
-      <row type="io" startx="1" starty="71" incrx="10" priority="100" />
+      <col type="io" startx="0" starty="1" incry="5" priority="100" />
+      <single type="io" x="0" y="24" priority="100" />
+      <single type="io" x="0" y="48" priority="100" />
+      <col type="io" startx="71" starty="1" incry="5" priority="100" />
+      <single type="io" x="71" y="24" priority="100" />
+      <single type="io" x="71" y="48" priority="100" />
 
       <!--Fill
         with 'CLB'-->
       <fill type="CLB" priority="10" />
 
-      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
-        other. The actual repeatx for each of these block types is slightly different from the bellow due
-        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
-        bellow are the average spacing between DSP and BRAM columns.-->
       <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
       <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
       <!-- Remove 8 DSPs from each column to bring the total number of DSP slices to 120 -->
@@ -573,22 +561,24 @@
                 - 300 IOs           | 38 IO tiles
     -->
     <fixed_layout name="XC7A75T-like" width="87" height="87">
-      <!-- 300 IOs (or around 38 tiles). Distribute them evenly around the border (9ish per side) -->
+      <!-- 300 IOs (or around 38 tiles). 19 on the left and 19 on the right. -->
       <perimeter type="EMPTY" priority="99" />
       <corners type="EMPTY" priority="101" />
-      <col type="io" startx="0" starty="1" incry="9" priority="100" />
-      <col type="io" startx="86" starty="1" incry="9" priority="100" />
-      <row type="io" startx="1" starty="0" incrx="10" priority="100" />
-      <row type="io" startx="1" starty="86" incrx="10" priority="100" />
+      <col type="io" startx="0" starty="1" incry="6" priority="100" />
+      <single type="io" x="0" y="17" priority="100" />
+      <single type="io" x="0" y="35" priority="100" />
+      <single type="io" x="0" y="52" priority="100" />
+      <single type="io" x="0" y="70" priority="100" />
+      <col type="io" startx="86" starty="1" incry="6" priority="100" />
+      <single type="io" x="86" y="17" priority="100" />
+      <single type="io" x="86" y="35" priority="100" />
+      <single type="io" x="86" y="52" priority="100" />
+      <single type="io" x="86" y="70" priority="100" />
 
       <!--Fill
         with 'CLB'-->
       <fill type="CLB" priority="10" />
 
-      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
-        other. The actual repeatx for each of these block types is slightly different from the bellow due
-        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
-        bellow are the average spacing between DSP and BRAM columns.-->
       <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
       <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
       <!-- Remove DSPs -->
@@ -621,22 +611,20 @@
                 - 300 IOs           | 38 IO tiles
     -->
     <fixed_layout name="XC7A100T-like" width="100" height="100">
-      <!-- 300 IOs (or around 38 tiles). Distribute them evenly around the border (9ish per side) -->
+      <!-- 300 IOs (or around 38 tiles). 19 on the left and 19 on the right. -->
       <perimeter type="EMPTY" priority="99" />
       <corners type="EMPTY" priority="101" />
-      <col type="io" startx="0" starty="1" incry="10" priority="100" />
-      <col type="io" startx="99" starty="1" incry="10" priority="100" />
-      <row type="io" startx="1" starty="0" incrx="12" priority="100" />
-      <row type="io" startx="1" starty="99" incrx="12" priority="100" />
+      <col type="io" startx="0" starty="1" incry="6" priority="100" />
+      <single type="io" x="0" y="33" priority="100" />
+      <single type="io" x="0" y="66" priority="100" />
+      <col type="io" startx="99" starty="1" incry="6" priority="100" />
+      <single type="io" x="99" y="33" priority="100" />
+      <single type="io" x="99" y="66" priority="100" />
 
       <!--Fill
         with 'CLB'-->
       <fill type="CLB" priority="10" />
 
-      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
-        other. The actual repeatx for each of these block types is slightly different from the bellow due
-        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
-        bellow are the average spacing between DSP and BRAM columns.-->
       <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
       <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
       <!-- Remove DSPs -->
@@ -672,22 +660,21 @@
                 - 500 IOs           | 63 IO tiles
     -->
     <fixed_layout name="XC7A200T-like" width="145" height="145">
-      <!-- 500 IOs (or around 63 tiles). Distribute them evenly around the border (9ish per side) -->
+      <!-- 500 IOs (or around 63 tiles). 32 on the left and 31 on the right. -->
       <perimeter type="EMPTY" priority="99" />
       <corners type="EMPTY" priority="101" />
-      <col type="io" startx="0" starty="1" incry="9" priority="100" />
-      <col type="io" startx="144" starty="1" incry="9" priority="100" />
-      <row type="io" startx="1" starty="0" incrx="9" priority="100" />
-      <row type="io" startx="1" starty="144" incrx="10" priority="100" />
+      <col type="io" startx="0" starty="1" incry="5" priority="100" />
+      <single type="io" x="0" y="37" priority="100" />
+      <single type="io" x="0" y="72" priority="100" />
+      <single type="io" x="0" y="109" priority="100" />
+      <col type="io" startx="144" starty="1" incry="5" priority="100" />
+      <single type="io" x="144" y="48" priority="100" />
+      <single type="io" x="144" y="97" priority="100" />
 
       <!--Fill
         with 'CLB'-->
       <fill type="CLB" priority="10" />
 
-      <!-- In the actual 7-series BRAM and DSP are almost always placed 4 tiles apart from each
-        other. The actual repeatx for each of these block types is slightly different from the bellow due
-        to differences in how Xilinx lays out BRAM and DSP on the physical chip. The values given
-        bellow are the average spacing between DSP and BRAM columns.-->
       <col type="DSP" startx="10" starty="1" repeatx="11" priority="20" />
       <col type="EMPTY" startx="10" repeatx="11" starty="1" priority="19" />
       <!-- Remove DSPs -->
