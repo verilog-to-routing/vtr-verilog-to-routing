@@ -3,6 +3,7 @@
 #include "clustered_netlist_fwd.h"
 #include "globals.h"
 #include "vtr_assert.h"
+#include "route_common.h"
 
 #include <vector>
 

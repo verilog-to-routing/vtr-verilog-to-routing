@@ -1,7 +1,4 @@
 #pragma once
-//
-// Created by amin on 11/27/23.
-//
 
 #include <string>
 #include "vtr_ndmatrix.h"

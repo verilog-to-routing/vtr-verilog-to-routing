@@ -361,6 +361,14 @@ add_custom_target(get_symbiflow_benchmarks
     COMMENT "Downloading (~100MB) and extracting SymbiFlow architectures (~2.7GB) into VTR source tree.")
 
 #
+# Zero ASIC RR Graph Files
+#
+add_custom_target(get_zeroasic_rr_graphs
+    COMMAND ./vtr_flow/scripts/get_zeroasic_rr_graphs.py --vtr_flow_dir ./vtr_flow
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Downloading (~2MB) and extracting Zero ASIC RR graphs (~0.1GB) into VTR source tree.")
+
+#
 # Unit Testing
 #
 enable_testing()
