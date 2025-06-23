@@ -44,7 +44,7 @@ if (${WITH_PARMYS})
 
 	# Create a target out of the library compilation result
 	SET(YOSYS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys)
-	SET(YOSYS_BUILD_DIR ${CMAKE_BINARY_DIR}/yosys)
+	SET(YOSYS_BUILD_DIR ${CMAKE_BINARY_DIR}/bin/yosys)
 
 	set(CURRENT_CPPFLAGS "$(CPPFLAGS)-w")
 	if(${CMAKE_GENERATOR} STREQUAL "Ninja")
@@ -55,39 +55,27 @@ if (${WITH_PARMYS})
 	execute_process(
 	 COMMAND git submodule update --init
 	 WORKING_DIRECTORY ${YOSYS_SRC_DIR}
-	#  RESULT_VARIABLE _submod_ret
-	#  OUTPUT_QUIET
-	#  ERROR_QUIET
 	)
 	execute_process(
 	  COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive git\ submodule\ update\ --init
 	  WORKING_DIRECTORY ${YOSYS_SRC_DIR}
 	)
-	# if(NOT _submod_ret EQUAL 0)
-	#  message(FATAL_ERROR
-	#    "Failed to `git submodule update --init --recursive` in ${YOSYS_SRC_DIR}")
-	# endif()
 
 	# how to build the result of the library
-	add_custom_command(OUTPUT ${CMAKE_BINARY_DIR}/bin/yosys
+	add_custom_command(OUTPUT ${YOSYS_BUILD_DIR}
 		COMMAND ${MAKE_PROGRAM} -C ${YOSYS_SRC_DIR}
 		    ENABLE_ABC=0
 		    PREFIX=${CMAKE_BINARY_DIR}
-		    #> /dev/null
-		#COMMAND 
-	#            -j${CUSTOM_BUILD_PARALLEL_LEVEL}
-		    #> /dev/null
 
 		 COMMAND ${MAKE_PROGRAM} 
 		    -C ${YOSYS_SRC_DIR}
 		    install
 		    ENABLE_ABC=0
 		    PREFIX=${CMAKE_BINARY_DIR}
-		    #> /dev/null
 
 		WORKING_DIRECTORY ${YOSYS_SRC_DIR})
 
-	add_custom_target(yosys ALL DEPENDS ${CMAKE_BINARY_DIR}/bin/yosys)
+	add_custom_target(yosys ALL DEPENDS ${YOSYS_BUILD_DIR})
 
     if (${SYNLIG_SYSTEMVERILOG})
 
