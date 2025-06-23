@@ -43,7 +43,7 @@ void read_sb_wireconns(const std::vector<t_arch_switch_inf>& switches,
                        const pugiutil::loc_data& loc_data);
 
 /* checks for correctness of switch block read-in from the XML architecture file */
-void check_switchblock(const t_switchblock_inf* sb, const t_arch* arch);
+void check_switchblock(const t_switchblock_inf& sb, const t_arch* arch);
 
 /* returns integer result according to the specified formula and data */
 int get_sb_formula_raw_result(vtr::FormulaParser& formula_parser, const char* formula, const vtr::t_formula_data& mydata);

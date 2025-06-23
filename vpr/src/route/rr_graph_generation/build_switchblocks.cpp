@@ -792,7 +792,7 @@ static void compute_wire_connections(int x_coord,
     e_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
     from_x = from_y = to_x = to_y = from_layer = to_layer = UNDEFINED;
 
-    SB_Side_Connection side_conn(from_side, to_side);                              /* for indexing into this switchblock's permutation funcs */
+    SBSideConnection side_conn(from_side, to_side);                              /* for indexing into this switchblock's permutation funcs */
     Switchblock_Lookup sb_conn(x_coord, y_coord, layer_coord, from_side, to_side); /* for indexing into FPGA's switchblock map */
 
     // Can't connect a switchblock side to itself
@@ -971,7 +971,7 @@ static void compute_wireconn_connections(
         }
 
         // Evaluate permutation functions for the from_wire
-        SB_Side_Connection side_conn(sb_conn.from_side, sb_conn.to_side);
+        SBSideConnection side_conn(sb_conn.from_side, sb_conn.to_side);
         auto iter = sb.permutation_map.find(side_conn);
         if (iter == sb.permutation_map.end()) {
             continue;

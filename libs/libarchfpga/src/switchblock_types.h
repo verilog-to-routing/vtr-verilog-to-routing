@@ -51,7 +51,7 @@ struct t_sb_loc_spec {
 };
 
 /* represents a connection between two sides of a switchblock */
-class SB_Side_Connection {
+class SBSideConnection {
   public:
     /* specify the two SB sides that form a connection */
     enum e_side from_side = TOP;
@@ -62,15 +62,15 @@ class SB_Side_Connection {
         to_side = to;
     }
 
-    SB_Side_Connection() = default;
+    SBSideConnection() = default;
 
-    SB_Side_Connection(enum e_side from, enum e_side to)
+    SBSideConnection(enum e_side from, enum e_side to)
         : from_side(from)
         , to_side(to) {
     }
 
     /* overload < operator which will be used by std::map */
-    bool operator<(const SB_Side_Connection& obj) const {
+    bool operator<(const SBSideConnection& obj) const {
         bool result;
 
         if (from_side < obj.from_side) {
@@ -125,7 +125,7 @@ struct t_wireconn_inf {
 };
 
 /* Use a map to index into the string permutation functions used to connect from one side to another */
-typedef std::map<SB_Side_Connection, std::vector<std::string>> t_permutation_map;
+typedef std::map<SBSideConnection, std::vector<std::string>> t_permutation_map;
 
 /**
  * @brief Lists all information about a particular switch block specified in the architecture file

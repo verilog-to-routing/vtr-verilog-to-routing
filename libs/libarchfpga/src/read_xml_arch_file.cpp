@@ -4008,12 +4008,12 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
         SubElem = get_first_child(Node, "switchfuncs", loc_data);
         read_sb_switchfuncs(SubElem, sb, loc_data);
 
-        read_sb_wireconns(arch->switches, Node, &sb, loc_data);
+        read_sb_wireconns(arch->switches, Node, sb, loc_data);
 
-        /* run error checks on switch blocks */
-        check_switchblock(&sb, arch);
+        // run error checks on switch blocks
+        check_switchblock(sb, arch);
 
-        /* assign the sb to the switchblocks vector */
+        // assign the sb to the switchblocks vector
         arch->switchblocks.push_back(sb);
 
         Node = Node.next_sibling(Node.name());
