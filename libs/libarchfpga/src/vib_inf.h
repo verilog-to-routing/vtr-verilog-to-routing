@@ -121,17 +121,17 @@ class VibInf {
     VibInf();
 
   public:
-    void set_name(const std::string name);
-    void set_pbtype_name(const std::string pbtype_name);
+    void set_name(const std::string& name);
+    void set_pbtype_name(const std::string& pbtype_name);
     void set_seg_group_num(const int seg_group_num);
     void set_switch_idx(const int switch_idx);
-    void set_switch_name(const std::string switch_name);
-    void set_seg_groups(const std::vector<t_seg_group> seg_groups);
-    void push_seg_group(const t_seg_group seg_group);
-    void set_first_stages(const std::vector<t_first_stage_mux_inf> first_stages);
-    void push_first_stage(const t_first_stage_mux_inf first_stage);
-    void set_second_stages(const std::vector<t_second_stage_mux_inf> second_stages);
-    void push_second_stage(const t_second_stage_mux_inf second_stage);
+    void set_switch_name(const std::string& switch_name);
+    void set_seg_groups(const std::vector<t_seg_group>& seg_groups);
+    void push_seg_group(const t_seg_group& seg_group);
+    void set_first_stages(const std::vector<t_first_stage_mux_inf>& first_stages);
+    void push_first_stage(const t_first_stage_mux_inf& first_stage);
+    void set_second_stages(const std::vector<t_second_stage_mux_inf>& second_stages);
+    void push_second_stage(const t_second_stage_mux_inf& second_stage);
 
     std::string get_name() const;
     std::string get_pbtype_name() const;

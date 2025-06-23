@@ -2293,13 +2293,33 @@ struct t_arch {
     char* architecture_id;
 
     // Options for tileable routing architectures
+
+    /// Whether the routing architecture is tileable
     bool tileable;
+
+    /// Allow connection blocks to appear around the perimeter programmable block
     bool perimeter_cb;
+
+    /// Remove all the routing wires in empty regions
     bool shrink_boundary;
+
+    /// Allow routing channels to pass through multi-width and 
+    /// multi-height programable blocks
     bool through_channel;
+
+    /// Allow each output pin of a programmable block to drive the 
+    /// routing tracks on all the sides of its adjacent switch block
     bool opin2all_sides;
+
+    /// Whether the routing architecture has concat wire
+    /// For further detail, please refer to documentation
     bool concat_wire;
+
+    /// Whether the routing architecture has concat pass wire
+    /// For further detail, please refer to documentation
     bool concat_pass_wire;
+
+    // End of tileable architecture options
 
     t_chan_width_dist Chans;
     enum e_switch_block_type SBType;

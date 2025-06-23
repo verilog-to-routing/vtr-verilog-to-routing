@@ -1,9 +1,4 @@
 #include "vib_inf.h"
-// #include "vtr_math.h"
-// #include "vtr_util.h"
-// #include "vtr_log.h"
-
-// #include "arch_util.h"
 
 VibInf::VibInf() {
     name_.clear();
@@ -15,12 +10,12 @@ VibInf::VibInf() {
     second_stages_.clear();
 }
 
-void VibInf::set_name(const std::string name) {
+void VibInf::set_name(const std::string& name) {
     VTR_ASSERT(!name.empty());
     name_ = name;
 }
 
-void VibInf::set_pbtype_name(const std::string pbtype_name) {
+void VibInf::set_pbtype_name(const std::string& pbtype_name) {
     VTR_ASSERT(!pbtype_name.empty());
     pbtype_name_ = pbtype_name;
 }
@@ -35,46 +30,37 @@ void VibInf::set_switch_idx(const int switch_idx) {
     switch_idx_ = switch_idx;
 }
 
-void VibInf::set_switch_name(const std::string switch_name) {
+void VibInf::set_switch_name(const std::string& switch_name) {
     VTR_ASSERT(!switch_name.empty());
     switch_name_ = switch_name;
 }
 
-void VibInf::set_seg_groups(const std::vector<t_seg_group> seg_groups) {
+void VibInf::set_seg_groups(const std::vector<t_seg_group>& seg_groups) {
     VTR_ASSERT(!seg_groups.empty());
-    seg_groups_.clear();
-    for (auto seg_group : seg_groups) {
-        seg_groups_.push_back(seg_group);
-    }
+    seg_groups_ = seg_groups;
 }
 
-void VibInf::push_seg_group(const t_seg_group seg_group) {
+void VibInf::push_seg_group(const t_seg_group& seg_group) {
     VTR_ASSERT(!seg_group.name.empty());
     seg_groups_.push_back(seg_group);
 }
 
-void VibInf::set_first_stages(const std::vector<t_first_stage_mux_inf> first_stages) {
+void VibInf::set_first_stages(const std::vector<t_first_stage_mux_inf>& first_stages) {
     VTR_ASSERT(!first_stages.empty());
-    first_stages_.clear();
-    for (auto first_stage : first_stages) {
-        first_stages_.push_back(first_stage);
-    }
+    first_stages_ = first_stages;
 }
 
-void VibInf::push_first_stage(const t_first_stage_mux_inf first_stage) {
+void VibInf::push_first_stage(const t_first_stage_mux_inf& first_stage) {
     VTR_ASSERT(!first_stage.mux_name.empty());
     first_stages_.push_back(first_stage);
 }
 
-void VibInf::set_second_stages(const std::vector<t_second_stage_mux_inf> second_stages) {
+void VibInf::set_second_stages(const std::vector<t_second_stage_mux_inf>& second_stages) {
     VTR_ASSERT(!second_stages.empty());
-    second_stages_.clear();
-    for (auto second_stage : second_stages) {
-        second_stages_.push_back(second_stage);
-    }
+    second_stages_ = second_stages;
 }
 
-void VibInf::push_second_stage(const t_second_stage_mux_inf second_stage) {
+void VibInf::push_second_stage(const t_second_stage_mux_inf& second_stage) {
     VTR_ASSERT(!second_stage.mux_name.empty());
     second_stages_.push_back(second_stage);
 }
