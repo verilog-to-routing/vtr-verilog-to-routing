@@ -5179,7 +5179,6 @@ static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_typ
 
     int group_num = count_children(Vib_node, "seg_group", loc_data);
     VTR_ASSERT(vib.get_seg_group_num() == group_num);
-    //vib.seg_groups.reserve(group_num);
     pugi::xml_node Node = get_first_child(Vib_node, "seg_group", loc_data);
     for (int i_group = 0; i_group < group_num; i_group++) {
         t_seg_group seg_group;
@@ -5418,6 +5417,18 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
                                         vtr::string_internment& strings,
                                         pugi::xml_node layout_block_type_tag,
                                         const pugiutil::loc_data& loc_data) {
+    // Helper struct to define coordinate parameters
+    struct CoordParams {
+        std::string x_start, x_end, y_start, y_end;
+        std::string x_repeat = "", x_incr = "", y_repeat = "", y_incr = "";
+        
+        CoordParams(const std::string& xs, const std::string& xe, 
+                   const std::string& ys, const std::string& ye)
+            : x_start(xs), x_end(xe), y_start(ys), y_end(ye) {}
+            
+        CoordParams() = default;
+    };
+
     //Process all the block location specifications
     for (auto loc_spec_tag : layout_block_type_tag.children()) {
         auto loc_type = loc_spec_tag.name();
@@ -5425,199 +5436,145 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
         int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
         t_metadata_dict meta = process_meta_data(strings, loc_spec_tag, loc_data);
 
+        auto& loc_defs = grid_def.layers.at(die_number).loc_defs;
+
         if (loc_type == std::string("perimeter")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
-            //The edges
-            t_vib_grid_loc_def left_edge(type_name, priority); //Including corners
-            left_edge.x.start_expr = "0";
-            left_edge.x.end_expr = "0";
-            left_edge.y.start_expr = "0";
-            left_edge.y.end_expr = "H - 1";
-
-            t_vib_grid_loc_def right_edge(type_name, priority); //Including corners
-            right_edge.x.start_expr = "W - 1";
-            right_edge.x.end_expr = "W - 1";
-            right_edge.y.start_expr = "0";
-            right_edge.y.end_expr = "H - 1";
-
-            t_vib_grid_loc_def bottom_edge(type_name, priority); //Exclucing corners
-            bottom_edge.x.start_expr = "1";
-            bottom_edge.x.end_expr = "W - 2";
-            bottom_edge.y.start_expr = "0";
-            bottom_edge.y.end_expr = "0";
-
-            t_vib_grid_loc_def top_edge(type_name, priority); //Excluding corners
-            top_edge.x.start_expr = "1";
-            top_edge.x.end_expr = "W - 2";
-            top_edge.y.start_expr = "H - 1";
-            top_edge.y.end_expr = "H - 1";
-
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(left_edge));
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(right_edge));
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_edge));
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_edge));
-
+            const std::vector<CoordParams> perimeter_edges = {
+                {"0",     "0",     "0",     "H - 1"},  // left (including corners)
+                {"W - 1", "W - 1", "0",     "H - 1"},  // right (including corners)
+                {"1",     "W - 2", "0",     "0"},      // bottom (excluding corners)
+                {"1",     "W - 2", "H - 1", "H - 1"}   // top (excluding corners)
+            };
+            
+            for (const auto& edge : perimeter_edges) {
+                t_vib_grid_loc_def edge_def(type_name, priority);
+                edge_def.x.start_expr = edge.x_start;
+                edge_def.x.end_expr = edge.x_end;
+                edge_def.y.start_expr = edge.y_start;
+                edge_def.y.end_expr = edge.y_end;
+                loc_defs.emplace_back(std::move(edge_def));
+            }
         } else if (loc_type == std::string("corners")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
-            //The corners
-            t_vib_grid_loc_def bottom_left(type_name, priority);
-            bottom_left.x.start_expr = "0";
-            bottom_left.x.end_expr = "0";
-            bottom_left.y.start_expr = "0";
-            bottom_left.y.end_expr = "0";
-
-            t_vib_grid_loc_def top_left(type_name, priority);
-            top_left.x.start_expr = "0";
-            top_left.x.end_expr = "0";
-            top_left.y.start_expr = "H-1";
-            top_left.y.end_expr = "H-1";
-
-            t_vib_grid_loc_def bottom_right(type_name, priority);
-            bottom_right.x.start_expr = "W-1";
-            bottom_right.x.end_expr = "W-1";
-            bottom_right.y.start_expr = "0";
-            bottom_right.y.end_expr = "0";
-
-            t_vib_grid_loc_def top_right(type_name, priority);
-            top_right.x.start_expr = "W-1";
-            top_right.x.end_expr = "W-1";
-            top_right.y.start_expr = "H-1";
-            top_right.y.end_expr = "H-1";
-
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_left));
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_left));
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_right));
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_right));
-
+            const std::vector<CoordParams> corner_positions = {
+                {"0",     "0",     "0",     "0"},      // bottom_left
+                {"0",     "0",     "H-1",   "H-1"},    // top_left
+                {"W-1",   "W-1",   "0",     "0"},      // bottom_right
+                {"W-1",   "W-1",   "H-1",   "H-1"}     // top_right
+            };
+            
+            for (const auto& corner : corner_positions) {
+                t_vib_grid_loc_def corner_def(type_name, priority);
+                corner_def.x.start_expr = corner.x_start;
+                corner_def.x.end_expr = corner.x_end;
+                corner_def.y.start_expr = corner.y_start;
+                corner_def.y.end_expr = corner.y_end;
+                loc_defs.emplace_back(std::move(corner_def));
+            }
         } else if (loc_type == std::string("fill")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
-            t_vib_grid_loc_def fill(type_name, priority);
-            fill.x.start_expr = "0";
-            fill.x.end_expr = "W - 1";
-            fill.y.start_expr = "0";
-            fill.y.end_expr = "H - 1";
-
-            // fill.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            // fill.meta = fill.owned_meta.get();
-
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(fill));
-
+            t_vib_grid_loc_def fill_def(type_name, priority);
+            fill_def.x.start_expr = "0";
+            fill_def.x.end_expr = "W - 1";
+            fill_def.y.start_expr = "0";
+            fill_def.y.end_expr = "H - 1";
+            loc_defs.push_back(std::move(fill_def));
         } else if (loc_type == std::string("single")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "x", "y"}, loc_data);
 
-            t_vib_grid_loc_def single(type_name, priority);
-            single.x.start_expr = get_attribute(loc_spec_tag, "x", loc_data).value();
-            single.y.start_expr = get_attribute(loc_spec_tag, "y", loc_data).value();
-            single.x.end_expr = single.x.start_expr + " + w - 1";
-            single.y.end_expr = single.y.start_expr + " + h - 1";
-
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(single));
-
+            const std::string x_pos = get_attribute(loc_spec_tag, "x", loc_data).value();
+            const std::string y_pos = get_attribute(loc_spec_tag, "y", loc_data).value();
+            
+            t_vib_grid_loc_def single_def(type_name, priority);
+            single_def.x.start_expr = x_pos;
+            single_def.x.end_expr = x_pos + " + w - 1";
+            single_def.y.start_expr = y_pos;
+            single_def.y.end_expr = y_pos + " + h - 1";
+            loc_defs.push_back(std::move(single_def));
         } else if (loc_type == std::string("col")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty", "incry"}, loc_data);
 
-            t_vib_grid_loc_def col(type_name, priority);
-
-            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data);
-
-            col.x.start_expr = startx_attr.value();
-            col.x.end_expr = startx_attr.value() + std::string(" + w - 1"); //end is inclusive so need to include block width
-
+            const std::string start_x = get_attribute(loc_spec_tag, "startx", loc_data).value();
+            
+            t_vib_grid_loc_def col_def(type_name, priority);
+            col_def.x.start_expr = start_x;
+            col_def.x.end_expr = start_x + " + w - 1";
+            
+            // Handle optional attributes
             auto repeat_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
             if (repeat_attr) {
-                col.x.repeat_expr = repeat_attr.value();
+                col_def.x.repeat_expr = repeat_attr.value();
             }
-
-            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
-            if (starty_attr) {
-                col.y.start_expr = starty_attr.value();
+            
+            auto start_y_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
+            if (start_y_attr) {
+                col_def.y.start_expr = start_y_attr.value();
             }
-
-            auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
-            if (incry_attr) {
-                col.y.incr_expr = incry_attr.value();
+            
+            auto incr_y_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
+            if (incr_y_attr) {
+                col_def.y.incr_expr = incr_y_attr.value();
             }
-
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(col));
+            
+            loc_defs.push_back(std::move(col_def));
 
         } else if (loc_type == std::string("row")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx", "incrx"}, loc_data);
 
-            t_vib_grid_loc_def row(type_name, priority);
-
-            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data);
-
-            row.y.start_expr = starty_attr.value();
-            row.y.end_expr = starty_attr.value() + std::string(" + h - 1"); //end is inclusive so need to include block height
-
+            const std::string start_y = get_attribute(loc_spec_tag, "starty", loc_data).value();
+            
+            t_vib_grid_loc_def row_def(type_name, priority);
+            row_def.y.start_expr = start_y;
+            row_def.y.end_expr = start_y + " + h - 1";
+            
+            // Handle optional attributes
             auto repeat_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
             if (repeat_attr) {
-                row.y.repeat_expr = repeat_attr.value();
+                row_def.y.repeat_expr = repeat_attr.value();
             }
-
-            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
-            if (startx_attr) {
-                row.x.start_expr = startx_attr.value();
+            
+            auto start_x_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
+            if (start_x_attr) {
+                row_def.x.start_expr = start_x_attr.value();
             }
-
-            auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
-            if (incrx_attr) {
-                row.x.incr_expr = incrx_attr.value();
+            
+            auto incr_x_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
+            if (incr_x_attr) {
+                row_def.x.incr_expr = incr_x_attr.value();
             }
-
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(row));
+            
+            loc_defs.push_back(std::move(row_def));
         } else if (loc_type == std::string("region")) {
             expect_only_attributes(loc_spec_tag,
                                    {"type", "priority",
                                     "startx", "endx", "repeatx", "incrx",
                                     "starty", "endy", "repeaty", "incry"},
                                    loc_data);
-            t_vib_grid_loc_def region(type_name, priority);
-
-            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
-            if (startx_attr) {
-                region.x.start_expr = startx_attr.value();
-            }
-
-            auto endx_attr = get_attribute(loc_spec_tag, "endx", loc_data, ReqOpt::OPTIONAL);
-            if (endx_attr) {
-                region.x.end_expr = endx_attr.value();
-            }
-
-            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
-            if (starty_attr) {
-                region.y.start_expr = starty_attr.value();
-            }
-
-            auto endy_attr = get_attribute(loc_spec_tag, "endy", loc_data, ReqOpt::OPTIONAL);
-            if (endy_attr) {
-                region.y.end_expr = endy_attr.value();
-            }
-
-            auto repeatx_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
-            if (repeatx_attr) {
-                region.x.repeat_expr = repeatx_attr.value();
-            }
-
-            auto repeaty_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
-            if (repeaty_attr) {
-                region.y.repeat_expr = repeaty_attr.value();
-            }
-
-            auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
-            if (incrx_attr) {
-                region.x.incr_expr = incrx_attr.value();
-            }
-
-            auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
-            if (incry_attr) {
-                region.y.incr_expr = incry_attr.value();
-            }
-
-            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(region));
+            t_vib_grid_loc_def region_def(type_name, priority);
+            
+            // Helper lambda to set optional attribute
+            auto set_optional_attr = [&](const char* attr_name, std::string& target) {
+                auto attr = get_attribute(loc_spec_tag, attr_name, loc_data, ReqOpt::OPTIONAL);
+                if (attr) {
+                    target = attr.value();
+                }
+            };
+            
+            // Set all optional region attributes
+            set_optional_attr("startx", region_def.x.start_expr);
+            set_optional_attr("endx", region_def.x.end_expr);
+            set_optional_attr("repeatx", region_def.x.repeat_expr);
+            set_optional_attr("incrx", region_def.x.incr_expr);
+            set_optional_attr("starty", region_def.y.start_expr);
+            set_optional_attr("endy", region_def.y.end_expr);
+            set_optional_attr("repeaty", region_def.y.repeat_expr);
+            set_optional_attr("incry", region_def.y.incr_expr);
+            
+            loc_defs.push_back(std::move(region_def));
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
                            "Unrecognized grid location specification type '%s'\n", loc_type);
