@@ -226,7 +226,7 @@ static void compute_wireconn_connections(
     e_directionality directionality,
     const t_chan_details& from_chan_details,
     const t_chan_details& to_chan_details,
-    Switchblock_Lookup sb_conn,
+    SwitchblockLookupKey sb_conn,
     int from_x,
     int from_y,
     int from_layer,
@@ -793,7 +793,7 @@ static void compute_wire_connections(int x_coord,
     from_x = from_y = to_x = to_y = from_layer = to_layer = UNDEFINED;
 
     SBSideConnection side_conn(from_side, to_side);                              /* for indexing into this switchblock's permutation funcs */
-    Switchblock_Lookup sb_conn(x_coord, y_coord, layer_coord, from_side, to_side); /* for indexing into FPGA's switchblock map */
+    SwitchblockLookupKey sb_conn(x_coord, y_coord, layer_coord, from_side, to_side); /* for indexing into FPGA's switchblock map */
 
     // Can't connect a switchblock side to itself
     if (from_side == to_side) {
@@ -853,7 +853,7 @@ static void compute_wireconn_connections(
     e_directionality directionality,
     const t_chan_details& from_chan_details,
     const t_chan_details& to_chan_details,
-    Switchblock_Lookup sb_conn,
+    SwitchblockLookupKey sb_conn,
     int from_x,
     int from_y,
     int from_layer,
@@ -1024,7 +1024,7 @@ static void compute_wireconn_connections(
                 //
                 //Coverity flags this (false positive), so annotate coverity ignores it:
                 // coverity[swapped_arguments : Intentional]
-                Switchblock_Lookup sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.layer_coord, sb_conn.to_side, sb_conn.from_side);
+                SwitchblockLookupKey sb_conn_reverse(sb_conn.x_coord, sb_conn.y_coord, sb_conn.layer_coord, sb_conn.to_side, sb_conn.from_side);
                 (*sb_conns)[sb_conn_reverse].push_back(sb_reverse_edge);
             }
         }

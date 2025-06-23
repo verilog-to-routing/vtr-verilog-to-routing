@@ -16,7 +16,7 @@
  * Used to index into a map which specifies which destination wire segments this source wire should
  * connect to.
  */
-class Switchblock_Lookup {
+class SwitchblockLookupKey {
   public:
     int x_coord;      ///< x coordinate of switchblock connection
     int y_coord;      ///< y coordinate of switchblock connection
@@ -25,17 +25,17 @@ class Switchblock_Lookup {
     e_side to_side;   ///< destination side of switchblock connection
 
     /// @brief Empty constructor initializes everything to 0
-    Switchblock_Lookup() {
+    SwitchblockLookupKey() {
         x_coord = y_coord = layer_coord = -1; //TODO: use set function
     }
 
     /// @brief Constructor for initializing member variables
-    Switchblock_Lookup(int set_x, int set_y, int set_layer, e_side set_from, e_side set_to) {
+    SwitchblockLookupKey(int set_x, int set_y, int set_layer, e_side set_from, e_side set_to) {
         this->set_coords(set_x, set_y, set_layer, set_from, set_to);
     }
 
     /// @brief Constructor for initializing member variables with default layer number (0), used for single die FPGA
-    Switchblock_Lookup(int set_x, int set_y, e_side set_from, e_side set_to) {
+    SwitchblockLookupKey(int set_x, int set_y, e_side set_from, e_side set_to) {
         this->set_coords(set_x, set_y, 0, set_from, set_to);
     }
 
@@ -49,7 +49,7 @@ class Switchblock_Lookup {
     }
 
     /// @brief Overload == operator which is used by std::unordered_map
-    bool operator==(const Switchblock_Lookup& obj) const {
+    bool operator==(const SwitchblockLookupKey& obj) const {
         bool result;
         if (x_coord == obj.x_coord && y_coord == obj.y_coord
             && from_side == obj.from_side && to_side == obj.to_side
@@ -63,7 +63,7 @@ class Switchblock_Lookup {
 };
 
 struct t_hash_Switchblock_Lookup {
-    size_t operator()(const Switchblock_Lookup& obj) const noexcept {
+    size_t operator()(const SwitchblockLookupKey& obj) const noexcept {
         std::size_t hash = std::hash<int>{}(obj.x_coord);
         vtr::hash_combine(hash, obj.y_coord);
         vtr::hash_combine(hash, obj.layer_coord);
@@ -106,7 +106,7 @@ struct t_switchblock_edge {
  * A matrix specifying connections for all switchblocks in an FPGA would be sparse and possibly very large,
  * so we use an unordered map to take advantage of the sparsity.
  */
-typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, t_hash_Switchblock_Lookup> t_sb_connection_map;
+typedef std::unordered_map<SwitchblockLookupKey, std::vector<t_switchblock_edge>, t_hash_Switchblock_Lookup> t_sb_connection_map;
 
 /************ Functions ************/
 

@@ -1085,7 +1085,7 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
                         if (!is_sb_conn_layer_crossing(from_side, to_side)) { //this connection is not crossing any layer
                             continue;
                         } else {
-                            Switchblock_Lookup sb_coord(x, y, layer, from_side, to_side);
+                            SwitchblockLookupKey sb_coord(x, y, layer, from_side, to_side);
                             if (sb_conn_map->count(sb_coord) > 0) {
                                 std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
                                 for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
@@ -1533,7 +1533,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
     auto& device_ctx = g_vpr_ctx.device();
 
     /* get coordinate to index into the SB map */
-    Switchblock_Lookup sb_coord(tile_x, tile_y, layer, from_side, to_side);
+    SwitchblockLookupKey sb_coord(tile_x, tile_y, layer, from_side, to_side);
     if (sb_conn_map->count(sb_coord) > 0) {
         /* get reference to the connections vector which lists all destination wires for a given source wire
          * at a specific coordinate sb_coord */
