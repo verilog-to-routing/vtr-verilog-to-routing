@@ -1,5 +1,4 @@
-#ifndef TILEABLE_RR_GRAPH_EDGE_BUILDER_H
-#define TILEABLE_RR_GRAPH_EDGE_BUILDER_H
+#pragma once
 
 /********************************************************************
  * Include header files that are required by function declaration
@@ -96,5 +95,3 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   const bool& opin2all_sides,
                                   const bool& concat_wire,
                                   const bool& wire_opposite_side);
-
-#endif

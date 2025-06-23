@@ -59,7 +59,6 @@ bool operator!=(const RectUnion<T>& lhs, const RectUnion<T>& rhs);
 template<class T>
 class Point {
   public: //Constructors
-    Point() {}
     Point(T x_val, T y_val) noexcept;
 
   public: //Accessors

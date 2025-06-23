@@ -1,5 +1,4 @@
-#ifndef CHAN_NODE_DETAILS_H
-#define CHAN_NODE_DETAILS_H
+#pragma once
 
 /********************************************************************
  * Include header files that are required by function declaration
@@ -7,7 +6,7 @@
 #include <vector>
 #include "vpr_types.h"
 #include "rr_node_types.h"
-#include "rr_graph_types.h"
+#include "tileable_rr_graph_types.h"
 
 /************************************************************************
  *  This file contains a class to model the details of routing node
@@ -73,5 +72,3 @@ class ChanNodeDetails {
     std::vector<size_t> track_bend_start_;   /* flag to identify if this is the starting point of the track after bend. 0 means it is not a bend start. Int number means the corresponding bend group */
     std::vector<size_t> track_bend_end_;
 };
-
-#endif

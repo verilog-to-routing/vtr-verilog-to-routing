@@ -229,10 +229,21 @@ class RRGraphView {
     inline short node_layer(RRNodeId node) const {
         return node_storage_.node_layer(node);
     }
-
+    
+    /** 
+     * @brief Return the bend start of a specified node.
+     * @param node The node id
+     * @return The bend start
+     */
     inline short node_bend_start(RRNodeId node) const {
         return node_storage_.node_bend_start(node);
     }
+
+    /** 
+     * @brief Return the bend end of a specified node.
+     * @param node The node id
+     * @return The bend end
+     */
     inline short node_bend_end(RRNodeId node) const {
         return node_storage_.node_bend_end(node);
     }
@@ -446,6 +457,12 @@ class RRGraphView {
     inline RRNodeId edge_sink_node(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_sink_node(id, iedge);
     }
+
+    /**
+     * @brief Return the destination node for the specified edge.
+     * @param edge The edge id
+     * @return The destination node id
+     */
     inline RRNodeId edge_sink_node(RREdgeId edge) const {
         return node_storage_.edge_sink_node(edge);
     }
@@ -466,6 +483,12 @@ class RRGraphView {
     inline bool edge_is_configurable(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_is_configurable(id, iedge, rr_switch_inf_);
     }
+
+    /**
+     * @brief Check if the edge is a configurable edge
+     * @param edge The edge id
+     * @return True if the edge is configurable, false otherwise
+     */
     inline bool edge_is_configurable(RREdgeId edge) const {
         return node_storage_.edge_is_configurable(edge, rr_switch_inf_);
     }

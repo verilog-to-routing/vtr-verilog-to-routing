@@ -1,5 +1,4 @@
-#ifndef RR_GRAPH_VIEW_UTIL_H
-#define RR_GRAPH_VIEW_UTIL_H
+#pragma once
 
 /* Include header files which include data structures used by
  * the function declaration
@@ -34,5 +33,3 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
                                                const e_rr_type& rr_type,
                                                const e_side& side,
                                                bool include_clock = false);
-
-#endif

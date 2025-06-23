@@ -5192,14 +5192,14 @@ static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_typ
                            "No name specified for the vib seg group!\n");
         }
 
-        seg_group.axis = BOTH_DIR; /*DEFAULT value if no axis is specified*/
+        seg_group.axis = e_parallel_axis_vib::BOTH_DIR; /*DEFAULT value if no axis is specified*/
         tmp = get_attribute(Node, "axis", loc_data, ReqOpt::OPTIONAL).as_string("");
 
         if (!tmp.empty()) {
             if (tmp == "x") {
-                seg_group.axis = X;
+                seg_group.axis = e_parallel_axis_vib::X;
             } else if (tmp == "y") {
-                seg_group.axis = Y;
+                seg_group.axis = e_parallel_axis_vib::Y;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp);
             }

@@ -1,5 +1,4 @@
-#ifndef VTR_TOKENIZER_H
-#define VTR_TOKENIZER_H
+#pragma once
 
 /********************************************************************
  * Include header files that are required by data structure declaration
@@ -66,5 +65,3 @@ class StringToken {
 };
 
 }  // namespace openfpga
-
-#endif

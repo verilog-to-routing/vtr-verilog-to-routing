@@ -27,7 +27,7 @@ enum class LogicValue {
     TRUE = 1,
     DONT_CARE = 2,
     UNKOWN = 3,
-    NUM_LOGIC_VALUE_TYPES
+    NUM_LOGIC_VALUE_TYPES = 4
 };
 
 constexpr std::array<const char*, std::size_t(LogicValue::NUM_LOGIC_VALUE_TYPES)> LOGIC_VALUE_STRING = {{"false", "true", "don't care", "unknown"}};

@@ -193,10 +193,20 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
+    /**
+     * @brief Set the bend start of a node
+     * @param id The node id
+     * @param bend_start The bend start
+     */
     inline void set_node_bend_start(RRNodeId id, size_t bend_start) {
         node_storage_.set_node_bend_start(id, bend_start);
     }
     
+    /**
+     * @brief Set the bend end of a node
+     * @param id The node id
+     * @param bend_end The bend end
+     */
     inline void set_node_bend_end(RRNodeId id, size_t bend_end) {
         node_storage_.set_node_bend_end(id, bend_end);
     }

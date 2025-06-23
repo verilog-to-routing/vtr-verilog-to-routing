@@ -8,7 +8,7 @@
 #include "vtr_geometry.h"
 
 /* Headers from openfpgautil library */
-#include "openfpga_side_manager.h"
+#include "side_manager.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -72,9 +72,8 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
                     num_grid_rr_nodes += get_grid_num_classes(grids, layer, ix, iy, RECEIVER);
                     break;
                 default:
-                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                    "Invalid routing resource node!\n");
-                    exit(1);
             }
         }
     }
@@ -93,19 +92,16 @@ static size_t estimate_num_mux_rr_nodes(const DeviceGrid& grids,
 
             const VibInf* vib = vib_grid.get_vib(layer, ix, iy);
             if (!vib) {
-                VTR_LOGF_ERROR(__FILE__, __LINE__,
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                "VIB at (%d, %d) is EMPTY!\n", ix, iy);
-                exit(1);
-                continue;
             }
 
             size_t count = 0;
             for (size_t i_first_stage = 0; i_first_stage < vib->get_first_stages().size(); i_first_stage++) {
                 auto first_stage = vib->get_first_stages()[i_first_stage];
                 if (first_stage.froms.size() == 0) {
-                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                    "VIB first stage '%s' at (%d, %d) has no from!\n", first_stage.mux_name.c_str(), ix, iy);
-                    exit(1);
                 }
                 count++;
             }

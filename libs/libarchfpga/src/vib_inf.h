@@ -1,5 +1,4 @@
-#ifndef VIB_INF_H
-#define VIB_INF_H
+#pragma once
 
 #include <functional>
 #include <utility>
@@ -22,15 +21,18 @@
 #include "logic_types.h"
 #include "clock_types.h"
 
-//#include "physical_types.h"
-
-/* for vib tag */
-enum e_parallel_axis_vib {
+/**
+ * @brief The parallel axis of the VIB segment group.
+ */
+enum class e_parallel_axis_vib {
     X,
     Y,
     BOTH_DIR
 };
 
+/**
+ * @brief Segment group information.
+ */
 struct t_seg_group {
     std::string name;
     e_parallel_axis_vib axis;
@@ -38,10 +40,13 @@ struct t_seg_group {
     int track_num;
 };
 
-enum e_multistage_mux_from_or_to_type {
-    PB = 0,
-    SEGMENT,
-    MUX
+/**
+ * @brief The type of the from or to of the multistage mux.
+ */
+enum class e_multistage_mux_from_or_to_type {
+    PB = 0, //Physical block
+    SEGMENT, //Segment
+    MUX //MUX
 };
 
 struct t_from_or_to_inf {
@@ -270,5 +275,3 @@ class VibDeviceGrid {
      */
     vtr::NdMatrix<const VibInf*, 3> vib_grid_; //This stores the grid of complex blocks. It is a 3D matrix: [0..num_layers-1][0..grid.width()-1][0..grid_height()-1]
 };
-
-#endif

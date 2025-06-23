@@ -620,7 +620,7 @@ void print_route(const Netlist<>& net_list,
                             break;
 
                         case e_rr_type::MUX:
-                            fprintf(fp, " INDEX: ");
+                            fprintf(fp, " Index: ");
                             break;
 
                         default:

@@ -1,5 +1,4 @@
-#ifndef OPENFPGA_SIDE_MANAGER_H
-#define OPENFPGA_SIDE_MANAGER_H
+#pragma once
 
 /********************************************************************
  * Include header files that are required by function declaration
@@ -43,5 +42,3 @@ class SideManager {
   private: /* internal data */
     enum e_side side_;
 };
-
-#endif

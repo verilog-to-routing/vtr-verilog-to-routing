@@ -176,6 +176,9 @@ struct DeviceContext : public Context {
      */
     DeviceGrid grid;
 
+    /**
+     * @brief The VIB device grid
+     */
     VibDeviceGrid vib_grid;
 
     /*

@@ -1,5 +1,4 @@
-#ifndef RR_GRAPH_BUILDER_UTILS_H
-#define RR_GRAPH_BUILDER_UTILS_H
+#pragma once
 
 /********************************************************************
  * Include header files that are required by function declaration
@@ -122,5 +121,3 @@ void print_rr_graph_mux_stats(const RRGraph& rr_graph);
 int find_parallel_seg_index(const int abs_index,
                             const t_unified_to_parallel_seg_index& index_map,
                             const e_parallel_axis parallel_axis);
-
-#endif

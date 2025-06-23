@@ -1,7 +1,7 @@
 /********************************************************************
  * Memeber function for class SideManagerManager
  *******************************************************************/
-#include "openfpga_side_manager.h"
+#include "side_manager.h"
 
 /* Constructors */
 SideManager::SideManager(enum e_side side) {

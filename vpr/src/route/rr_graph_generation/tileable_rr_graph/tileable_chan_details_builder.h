@@ -1,5 +1,4 @@
-#ifndef TILEABLE_CHAN_DETAILS_BUILDER_H
-#define TILEABLE_CHAN_DETAILS_BUILDER_H
+#pragma once
 
 /********************************************************************
  * Include header files that are required by function declaration
@@ -23,5 +22,3 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
                                                const bool& force_start,
                                                const bool& force_end,
                                                const std::vector<t_segment_inf>& segment_inf);
-
-#endif

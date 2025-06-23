@@ -6,20 +6,20 @@ The VIB architecture adds modeling support for double-level MUX topology and ben
 
 Figure 1 shows the proposed VIB architecture which is tile-based. Each tile is composed of a CLB and a VIB. Each CLB can interact with the corresponding VIB which contains all the routing programmable switches in one tile. Figure 2 shows an example of the detailed interconnect architecture in VIB. The CLB input muxes and the driving muxes of wire segments can share the same fanins. A routing path of a net with two sinks is presented red in the Figure.
 
-.. figure:: ../Images/VIB.png
+.. figure:: Images/VIB.png
     :align: center 
     :height: 300
     
     Figure 1. VIB architecture. The connections between the inputs and outputs of the LB and the routing wires are all implemented within the VIB.
 
-.. figure:: ../Images/double-level.png
+.. figure:: Images/double-level.png
     :align: center
     
     Figure 2. Double-level MUX topology.
 
 Figure 3 shows the modeling for bent wires. A bent L-length wire is modeled as two segments in CHANX and CHANY respectively connected by a delayless switch. The orange and red arrows represent conterclockwise and clockwise bent wires respectively. The bent wires can connect to both bent and straight wire segments.
     
-.. figure:: ../Images/bent_wires.png
+.. figure:: Images/bent_wires.png
     :align: center
     
     Figure 3. Presentation for bent wires.
@@ -217,7 +217,7 @@ Here is a complete example of the ``<vib>`` tag:
 
 Its corresponding detailed architecture is shown in Figure 4.
 
-.. figure:: ../Images/vib_example.png
+.. figure:: Images/vib_example.png
     :align: center 
     :height: 600
     

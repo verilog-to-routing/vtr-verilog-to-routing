@@ -1080,7 +1080,8 @@ static void setup_vib_inf(const std::vector<t_physical_tile_type>& PhysicalTileT
 
             process_from_or_to_tokens(second_stage.to_tokens, PhysicalTileTypes, Segments, tos);
             for (auto& to : tos) {
-                VTR_ASSERT(to.from_type == SEGMENT || to.from_type == PB);
+                VTR_ASSERT(to.from_type == e_multistage_mux_from_or_to_type::SEGMENT
+                           || to.from_type == e_multistage_mux_from_or_to_type::PB);
                 second_stage.to.push_back(to);
             }
 
@@ -1101,14 +1102,14 @@ static void process_from_or_to_tokens(const std::vector<std::string> Tokens, con
         if (token.size() == 1) {
             t_from_or_to_inf from_inf;
             from_inf.type_name = token[0];
-            from_inf.from_type = MUX;
+            from_inf.from_type = e_multistage_mux_from_or_to_type::MUX;
             froms.push_back(from_inf);
         } else if (token.size() == 2) {
             std::string from_type_name = token[0];
             e_multistage_mux_from_or_to_type from_type;
             for (int i_phy_type = 0; i_phy_type < (int)PhysicalTileTypes.size(); i_phy_type++) {
                 if (from_type_name == PhysicalTileTypes[i_phy_type].name) {
-                    from_type = PB;
+                    from_type = e_multistage_mux_from_or_to_type::PB;
                     int start_pin_index, end_pin_index;
                     char *pb_type_name, *port_name;
                     pb_type_name = nullptr;
@@ -1166,7 +1167,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> Tokens, con
             }
             for (int i_seg_type = 0; i_seg_type < (int)segments.size(); i_seg_type++) {
                 if (from_type_name == segments[i_seg_type].name) {
-                    from_type = SEGMENT;
+                    from_type = e_multistage_mux_from_or_to_type::SEGMENT;
                     std::string from_detail = token[1];
                     if (from_detail.length() >= 2) {
                         char dir = from_detail.c_str()[0];
@@ -1185,7 +1186,8 @@ static void process_from_or_to_tokens(const std::vector<std::string> Tokens, con
                     break;
                 }
             }
-            VTR_ASSERT(from_type == PB || from_type == SEGMENT);
+            VTR_ASSERT(from_type == e_multistage_mux_from_or_to_type::PB 
+                       || from_type == e_multistage_mux_from_or_to_type::SEGMENT);
 
         } else {
             std::string msg = vtr::string_fmt("Failed to parse vib mux from information '%s'", Token.c_str());
@@ -1195,12 +1197,11 @@ static void process_from_or_to_tokens(const std::vector<std::string> Tokens, con
 }
 
 static void parse_pin_name(const char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
-    /* Parses out the pb_type_name and port_name   *
-     * If the start_pin_index and end_pin_index is specified, parse them too. *
-     * Return the values parsed by reference.                                 */
+    // Parses out the pb_type_name and port_name
+    // If the start_pin_index and end_pin_index is specified, parse them too.
+    // Return the values parsed by reference.
 
-    char source_string[128];
-    int ichar, match_count;
+    std::string source_string;
 
     // parse out the pb_type and port name, possibly pin_indices
     const char* find_format = strstr(src_string, "[");
@@ -1208,26 +1209,25 @@ static void parse_pin_name(const char* src_string, int* start_pin_index, int* en
         /* Format "pb_type_name.port_name" */
         *start_pin_index = *end_pin_index = -1;
 
-        strcpy(source_string, src_string);
+        source_string = src_string;
 
-        for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+        for (size_t ichar = 0; ichar < source_string.size(); ichar++) {
             if (source_string[ichar] == '.')
                 source_string[ichar] = ' ';
         }
 
-        match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
+        int match_count = sscanf(source_string.c_str(), "%s %s", pb_type_name, port_name);
         if (match_count != 2) {
-            VTR_LOG_ERROR(
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                 "Invalid pin - %s, name should be in the format "
                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
                 "The end_pin_index and start_pin_index can be the same.\n",
                 src_string);
-            exit(1);
         }
     } else {
         /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
-        strcpy(source_string, src_string);
-        for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+        source_string = src_string;
+        for (size_t ichar = 0; ichar < source_string.size(); ichar++) {
             //Need white space between the components when using %s with
             //sscanf
             if (source_string[ichar] == '.')
@@ -1236,29 +1236,27 @@ static void parse_pin_name(const char* src_string, int* start_pin_index, int* en
                 source_string[ichar] = ' ';
         }
 
-        match_count = sscanf(source_string, "%s %s %d:%d]",
+        int match_count = sscanf(source_string.c_str(), "%s %s %d:%d]",
                              pb_type_name, port_name,
                              end_pin_index, start_pin_index);
         if (match_count != 4) {
-            match_count = sscanf(source_string, "%s %s %d]",
+            match_count = sscanf(source_string.c_str(), "%s %s %d]",
                                  pb_type_name, port_name,
                                  end_pin_index);
             *start_pin_index = *end_pin_index;
             if (match_count != 3) {
-                VTR_LOG_ERROR(
+                VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                     "Invalid pin - %s, name should be in the format "
                     "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
                     "The end_pin_index and start_pin_index can be the same.\n",
                     src_string);
-                exit(1);
             }
         }
         if (*end_pin_index < 0 || *start_pin_index < 0) {
-            VTR_LOG_ERROR(
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                 "Invalid pin - %s, the pin_index in "
                 "[end_pin_index:start_pin_index] should not be a negative value.\n",
                 src_string);
-            exit(1);
         }
         if (*end_pin_index < *start_pin_index) {
             int temp;

@@ -33,8 +33,7 @@ static void set_vib_grid_block_type(int priority,
 VibDeviceGrid create_vib_device_grid(std::string layout_name, const std::vector<t_vib_grid_def>& vib_grid_layouts) {
     if (layout_name == "auto") {
         //We do not support auto layout now
-        //
-        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "We do not support auto layout now\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "VIB architecture doesn't support auto layout now\n");
 
     } else {
         //Use the specified device
@@ -86,7 +85,6 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
 
     //Initialize the device to all empty blocks
     const VibInf* empty_type = nullptr;
-    //VTR_ASSERT(empty_type != nullptr);
     for (int layer = 0; layer < num_layers; ++layer) {
         for (size_t x = 0; x < grid_width; ++x) {
             for (size_t y = 0; y < grid_height; ++y) {
@@ -103,7 +101,6 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
     for (int layer = 0; layer < num_layers; layer++) {
         for (const auto& grid_loc_def : grid_def.layers.at(layer).loc_defs) {
             //Fill in the block types according to the specification
-            //auto type = find_tile_type_by_name(grid_loc_def.block_type, device_ctx.physical_tile_types);
             const VibInf* type = nullptr;
             for (size_t vib_type = 0; vib_type < device_ctx.arch->vib_infs.size(); vib_type++) {
                 if (grid_loc_def.block_type == device_ctx.arch->vib_infs[vib_type].get_name()) {
@@ -199,7 +196,6 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
             }
 
             //The minimum increment is the block dimension
-            //VTR_ASSERT(type->width > 0);
             if (incrx < 1 /*size_t(type->width)*/) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification incrx for block type '%s' must be at least"
@@ -207,7 +203,6 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
                                 type->get_name().c_str(), 1, xspec.incr_expr.c_str(), incrx);
             }
 
-            //VTR_ASSERT(type->height > 0);
             if (incry < 1 /*size_t(type->height)*/) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification incry for block type '%s' must be at least"
@@ -231,11 +226,6 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
                                 " the region height (%d) to avoid overlapping instances (was %s = %d)",
                                 type->get_name().c_str(), region_height, xspec.repeat_expr.c_str(), repeaty);
             }
-
-            //VTR_LOG("Applying grid_loc_def for '%s' priority %d startx=%s=%zu, endx=%s=%zu, starty=%s=%zu, endx=%s=%zu,\n",
-            //            type->name, grid_loc_def.priority,
-            //            xspec.start_expr.c_str(), startx, xspec.end_expr.c_str(), endx,
-            //            yspec.start_expr.c_str(), starty, yspec.end_expr.c_str(), endy);
 
             size_t x_end = 0;
             for (size_t kx = 0; x_end < grid_width; ++kx) { //Repeat in x direction
@@ -264,19 +254,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
         }
     }
 
-    //Warn if any types were not specified in the grid layout
-    // for (auto const& type : device_ctx.physical_tile_types) {
-    //     if (&type == empty_type) continue; //Don't worry if empty hasn't been specified
-
-    //     if (!seen_types.count(&type)) {
-    //         VTR_LOG_WARN("Block type '%s' was not specified in device grid layout\n",
-    //                      type.name);
-    //     }
-    // }
-
     auto vib_device_grid = VibDeviceGrid(grid_def.name, vib_grid);
-
-    // CheckGrid(device_grid);
 
     return vib_device_grid;
 }
@@ -377,10 +355,6 @@ static void set_vib_grid_block_type(int priority,
             }
 
             vib_grid[layer_num][x][y] = type;
-            //grid[layer_num][x][y].width_offset = x_offset;
-            //grid[layer_num][x][y].height_offset = y_offset;
-            //grid[layer_num][x][y].meta = meta;
-
             grid_priorities[layer_num][x][y] = priority;
         }
     }
@@ -396,12 +370,6 @@ static void set_vib_grid_block_type(int priority,
                 if (vib_grid[layer_num][x][y] == invalidated_root.type
                     && 0 == x_offset
                     && 0 == y_offset) {
-                    //This is a left-over invalidated block, mark as empty
-                    // Note: that we explicitly check the type and offsets, since the original block
-                    //       may have been completely overwritten, and we don't want to change anything
-                    //       in that case
-                    //VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE->width == 1);
-                    //VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE->height == 1);
 
 #ifdef VERBOSE
                     VTR_LOG("Ripping up block '%s' at (%d,%d) offset (%d,%d). Overlapped by '%s' at (%d,%d)\n",
@@ -411,9 +379,6 @@ static void set_vib_grid_block_type(int priority,
 #endif
 
                     vib_grid[layer_num][x][y] = nullptr;
-                    //grid[layer_num][x][y].width_offset = 0;
-                    //grid[layer_num][x][y].height_offset = 0;
-
                     grid_priorities[layer_num][x][y] = std::numeric_limits<int>::lowest();
                 }
             }

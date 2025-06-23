@@ -2701,11 +2701,11 @@ Layout
 
   Technical details can be found in :cite:`XTang_FPT_2019`. 
 
-  .. note:: Strongly recommend to enable the tileable routing architecture when you want to PnR large FPGA fabrics, which can effectively reduce the runtime.
+  .. note:: It is strongly recommended to to enable the tileable routing architecture when you want to PnR large FPGA fabrics, which can effectively reduce the runtime.
 
 .. option:: through_channel="<bool>"
   
-  Allow routing channels to pass through multi-width and multi-height programable blocks. This is mainly used in heterogeneous FPGAs to increase routability, as illustrated in :numref:`fig_thru_channel`.
+  Allow routing channels to pass through multi-width and multi-height programmable blocks. This is mainly used in heterogeneous FPGAs to increase routability, as illustrated in :numref:`fig_thru_channel`.
   By default, it is ``false``.
 
   .. _fig_thru_channel:
@@ -3023,4 +3023,9 @@ A point to point connection can be applied in different ways than showed in the 
 .. figure:: point2point_truthtable.png
 
     Point to point truth table
+
+VIB Architecture
+~~~~~~~~~~~~~~~~
+
+.. include:: VIB.rst
 

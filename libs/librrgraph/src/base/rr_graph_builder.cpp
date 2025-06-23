@@ -246,7 +246,6 @@ void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str
 std::string RRGraphBuilder::node_ptc_nums_to_string(RRNodeId node) const {
     if (node_ptc_nums_.empty()) {
         return std::to_string(size_t(node_storage_.node_ptc_num(node)));
-//        VTR_LOG("Node ptc single: %d -> string %s\n", node_storage_.node_ptc_num(node), ret.c_str()); 
     }
     VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
     if (node_ptc_nums_[node].empty()) {
@@ -300,8 +299,8 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
     VTR_ASSERT(size_t(std::max(node_storage_.node_xlow(node), node_storage_.node_xhigh(node))) == node_x.back());
     VTR_ASSERT(size_t(std::max(node_storage_.node_ylow(node), node_storage_.node_yhigh(node))) == node_y.back());
 
-    for (const size_t& x : node_x) {
-        for (const size_t& y : node_y) {
+    for (const size_t x : node_x) {
+        for (const size_t y : node_y) {
             size_t ptc = node_storage_.node_ptc_num(node);
             e_rr_type node_type = node_storage_.node_type(node);
             /* Routing channel nodes may have different ptc num 

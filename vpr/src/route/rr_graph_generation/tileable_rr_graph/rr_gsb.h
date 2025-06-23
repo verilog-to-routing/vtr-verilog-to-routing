@@ -1,5 +1,4 @@
-#ifndef RR_GSB_H
-#define RR_GSB_H
+#pragma once
 
 /********************************************************************
  * Include header files required by the data structure definition
@@ -287,7 +286,4 @@ class RRGSB {
 
     /* MUX Nodes Data */
     std::vector<RRNodeId> mux_node_;
-    std::map<RRNodeId, std::string> mux_node_name_map_;
 };
-
-#endif

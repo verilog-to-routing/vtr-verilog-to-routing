@@ -1,5 +1,4 @@
-#ifndef RR_CHAN_H
-#define RR_CHAN_H
+#pragma once
 
 /********************************************************************
  * Include header files required by the data structure definition
@@ -79,5 +78,3 @@ class RRChan {
     std::vector<RRNodeId> nodes_;            /* rr nodes of each track in the channel */
     std::vector<RRSegmentId> node_segments_; /* segment of each track */
 };
-
-#endif

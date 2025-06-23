@@ -1,5 +1,4 @@
-#ifndef TILEABLE_RR_GRAPH_NODE_BUILDER_H
-#define TILEABLE_RR_GRAPH_NODE_BUILDER_H
+#pragma once
 
 /********************************************************************
  * Include header files that are required by function declaration
@@ -35,7 +34,7 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    const bool& perimeter_cb,
                                    const bool& through_channel);
 
-void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
+void f(const RRGraphView& rr_graph,
                                     RRGraphBuilder& rr_graph_builder,
                                     vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                     std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
@@ -53,5 +52,3 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     const bool& shrink_boundary,
                                     const bool& perimeter_cb,
                                     const bool& through_channel);
-
-#endif

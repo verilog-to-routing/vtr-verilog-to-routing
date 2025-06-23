@@ -5,8 +5,8 @@
 #include "vtr_log.h"
 #include "vtr_assert.h"
 
-#include "openfpga_rr_graph_utils.h"
-#include "openfpga_side_manager.h"
+#include "tileable_rr_graph_utils.h"
+#include "side_manager.h"
 
 #include "rr_gsb.h"
 #include "vtr_geometry.h"
@@ -15,7 +15,7 @@
  * Constructors
  ***********************************************************************/
 /* Constructor for an empty object */
-RRGSB::RRGSB() {
+RRGSB::RRGSB(): coordinate_(size_t(-1), size_t(-1)) {
     /* Set a clean start! */
     coordinate_.set(0, 0);
 
@@ -836,8 +836,8 @@ void RRGSB::add_mux_node(const RRNodeId& mux_node) {
 void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
                                     const e_side& chan_side,
                                     const size_t& track_id) {
-    std::map<size_t, std::map<size_t, RREdgeId>> from_grid_edge_map;
-    std::map<size_t, std::map<size_t, RREdgeId>> from_track_edge_map;
+    std::unordered_map<size_t, std::unordered_map<size_t, RREdgeId>> from_grid_edge_map;
+    std::unordered_map<size_t, std::unordered_map<size_t, RREdgeId>> from_track_edge_map;
 
     const RRNodeId& chan_node = chan_node_[size_t(chan_side)].get_node(track_id);
 
@@ -938,7 +938,7 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph) {
 void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                                     const e_side& ipin_side,
                                     const size_t& ipin_id) {
-    std::map<size_t, RREdgeId> from_track_edge_map;
+    std::unordered_map<size_t, RREdgeId> from_track_edge_map;
     std::array<std::map<size_t, RREdgeId>, NUM_2D_SIDES> from_opin_edge_map;
 
     e_side chan_side = get_cb_chan_side(ipin_side);

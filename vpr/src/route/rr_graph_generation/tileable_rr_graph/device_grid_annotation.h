@@ -1,5 +1,4 @@
-#ifndef DEVICE_GRID_ANNOTATION_H
-#define DEVICE_GRID_ANNOTATION_H
+#pragma once
 
 /********************************************************************
  * Include header files required by the data structure definition
@@ -38,5 +37,3 @@ class DeviceGridAnnotation {
     vtr::NdMatrix<bool, 2> chanx_existence_;
     vtr::NdMatrix<bool, 2> chany_existence_;
 };
-
-#endif

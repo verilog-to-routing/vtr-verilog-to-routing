@@ -475,7 +475,6 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             break;
 
         case e_rr_type::MUX:
-            //from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
             if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::MUX) {
                 num_adj += 1; //adjacent
             } else if (is_flat) {
