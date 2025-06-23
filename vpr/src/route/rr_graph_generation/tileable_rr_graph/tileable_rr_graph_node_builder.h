@@ -34,7 +34,7 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    const bool& perimeter_cb,
                                    const bool& through_channel);
 
-void f(const RRGraphView& rr_graph,
+void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     RRGraphBuilder& rr_graph_builder,
                                     vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                     std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,

@@ -700,7 +700,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
     mem_pb_type->model_id = LogicalModelId::INVALID();
 
     mem_pb_type->modes[0].num_interconnect = mem_pb_type->num_ports * num_pb;
-    
+
     std::stringstream ss;
     ss << "Memory pb_type " << mem_pb_type->name << " has no interconnect";
     VTR_ASSERT_MSG(mem_pb_type->modes[0].num_interconnect > 0, ss.str().c_str());

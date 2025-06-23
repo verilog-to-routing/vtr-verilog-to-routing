@@ -73,7 +73,7 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
                     break;
                 default:
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "Invalid routing resource node!\n");
+                                    "Invalid routing resource node!\n");
             }
         }
     }
@@ -93,7 +93,7 @@ static size_t estimate_num_mux_rr_nodes(const DeviceGrid& grids,
             const VibInf* vib = vib_grid.get_vib(layer, ix, iy);
             if (!vib) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                               "VIB at (%d, %d) is EMPTY!\n", ix, iy);
+                                "VIB at (%d, %d) is EMPTY!\n", ix, iy);
             }
 
             size_t count = 0;
@@ -101,7 +101,7 @@ static size_t estimate_num_mux_rr_nodes(const DeviceGrid& grids,
                 auto first_stage = vib->get_first_stages()[i_first_stage];
                 if (first_stage.froms.size() == 0) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "VIB first stage '%s' at (%d, %d) has no from!\n", first_stage.mux_name.c_str(), ix, iy);
+                                    "VIB first stage '%s' at (%d, %d) has no from!\n", first_stage.mux_name.c_str(), ix, iy);
                 }
                 count++;
             }

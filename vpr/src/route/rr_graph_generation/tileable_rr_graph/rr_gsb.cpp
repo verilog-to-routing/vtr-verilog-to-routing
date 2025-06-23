@@ -15,7 +15,8 @@
  * Constructors
  ***********************************************************************/
 /* Constructor for an empty object */
-RRGSB::RRGSB(): coordinate_(size_t(-1), size_t(-1)) {
+RRGSB::RRGSB()
+    : coordinate_(size_t(-1), size_t(-1)) {
     /* Set a clean start! */
     coordinate_.set(0, 0);
 

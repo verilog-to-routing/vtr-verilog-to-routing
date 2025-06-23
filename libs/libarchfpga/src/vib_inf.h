@@ -44,9 +44,9 @@ struct t_seg_group {
  * @brief The type of the from or to of the multistage mux.
  */
 enum class e_multistage_mux_from_or_to_type {
-    PB = 0, //Physical block
+    PB = 0,  //Physical block
     SEGMENT, //Segment
-    MUX //MUX
+    MUX      //MUX
 };
 
 struct t_from_or_to_inf {

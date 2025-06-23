@@ -5421,11 +5421,13 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
     struct CoordParams {
         std::string x_start, x_end, y_start, y_end;
         std::string x_repeat = "", x_incr = "", y_repeat = "", y_incr = "";
-        
-        CoordParams(const std::string& xs, const std::string& xe, 
-                   const std::string& ys, const std::string& ye)
-            : x_start(xs), x_end(xe), y_start(ys), y_end(ye) {}
-            
+
+        CoordParams(const std::string& xs, const std::string& xe, const std::string& ys, const std::string& ye)
+            : x_start(xs)
+            , x_end(xe)
+            , y_start(ys)
+            , y_end(ye) {}
+
         CoordParams() = default;
     };
 
@@ -5442,12 +5444,12 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
             const std::vector<CoordParams> perimeter_edges = {
-                {"0",     "0",     "0",     "H - 1"},  // left (including corners)
-                {"W - 1", "W - 1", "0",     "H - 1"},  // right (including corners)
-                {"1",     "W - 2", "0",     "0"},      // bottom (excluding corners)
-                {"1",     "W - 2", "H - 1", "H - 1"}   // top (excluding corners)
+                {"0", "0", "0", "H - 1"},         // left (including corners)
+                {"W - 1", "W - 1", "0", "H - 1"}, // right (including corners)
+                {"1", "W - 2", "0", "0"},         // bottom (excluding corners)
+                {"1", "W - 2", "H - 1", "H - 1"}  // top (excluding corners)
             };
-            
+
             for (const auto& edge : perimeter_edges) {
                 t_vib_grid_loc_def edge_def(type_name, priority);
                 edge_def.x.start_expr = edge.x_start;
@@ -5460,12 +5462,12 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
             const std::vector<CoordParams> corner_positions = {
-                {"0",     "0",     "0",     "0"},      // bottom_left
-                {"0",     "0",     "H-1",   "H-1"},    // top_left
-                {"W-1",   "W-1",   "0",     "0"},      // bottom_right
-                {"W-1",   "W-1",   "H-1",   "H-1"}     // top_right
+                {"0", "0", "0", "0"},        // bottom_left
+                {"0", "0", "H-1", "H-1"},    // top_left
+                {"W-1", "W-1", "0", "0"},    // bottom_right
+                {"W-1", "W-1", "H-1", "H-1"} // top_right
             };
-            
+
             for (const auto& corner : corner_positions) {
                 t_vib_grid_loc_def corner_def(type_name, priority);
                 corner_def.x.start_expr = corner.x_start;
@@ -5488,7 +5490,7 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
 
             const std::string x_pos = get_attribute(loc_spec_tag, "x", loc_data).value();
             const std::string y_pos = get_attribute(loc_spec_tag, "y", loc_data).value();
-            
+
             t_vib_grid_loc_def single_def(type_name, priority);
             single_def.x.start_expr = x_pos;
             single_def.x.end_expr = x_pos + " + w - 1";
@@ -5499,54 +5501,54 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
             expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty", "incry"}, loc_data);
 
             const std::string start_x = get_attribute(loc_spec_tag, "startx", loc_data).value();
-            
+
             t_vib_grid_loc_def col_def(type_name, priority);
             col_def.x.start_expr = start_x;
             col_def.x.end_expr = start_x + " + w - 1";
-            
+
             // Handle optional attributes
             auto repeat_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
             if (repeat_attr) {
                 col_def.x.repeat_expr = repeat_attr.value();
             }
-            
+
             auto start_y_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
             if (start_y_attr) {
                 col_def.y.start_expr = start_y_attr.value();
             }
-            
+
             auto incr_y_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
             if (incr_y_attr) {
                 col_def.y.incr_expr = incr_y_attr.value();
             }
-            
+
             loc_defs.push_back(std::move(col_def));
 
         } else if (loc_type == std::string("row")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx", "incrx"}, loc_data);
 
             const std::string start_y = get_attribute(loc_spec_tag, "starty", loc_data).value();
-            
+
             t_vib_grid_loc_def row_def(type_name, priority);
             row_def.y.start_expr = start_y;
             row_def.y.end_expr = start_y + " + h - 1";
-            
+
             // Handle optional attributes
             auto repeat_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
             if (repeat_attr) {
                 row_def.y.repeat_expr = repeat_attr.value();
             }
-            
+
             auto start_x_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
             if (start_x_attr) {
                 row_def.x.start_expr = start_x_attr.value();
             }
-            
+
             auto incr_x_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
             if (incr_x_attr) {
                 row_def.x.incr_expr = incr_x_attr.value();
             }
-            
+
             loc_defs.push_back(std::move(row_def));
         } else if (loc_type == std::string("region")) {
             expect_only_attributes(loc_spec_tag,
@@ -5555,7 +5557,7 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
                                     "starty", "endy", "repeaty", "incry"},
                                    loc_data);
             t_vib_grid_loc_def region_def(type_name, priority);
-            
+
             // Helper lambda to set optional attribute
             auto set_optional_attr = [&](const char* attr_name, std::string& target) {
                 auto attr = get_attribute(loc_spec_tag, attr_name, loc_data, ReqOpt::OPTIONAL);
@@ -5563,7 +5565,7 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
                     target = attr.value();
                 }
             };
-            
+
             // Set all optional region attributes
             set_optional_attr("startx", region_def.x.start_expr);
             set_optional_attr("endx", region_def.x.end_expr);
@@ -5573,7 +5575,7 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
             set_optional_attr("endy", region_def.y.end_expr);
             set_optional_attr("repeaty", region_def.y.repeat_expr);
             set_optional_attr("incry", region_def.y.incr_expr);
-            
+
             loc_defs.push_back(std::move(region_def));
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),

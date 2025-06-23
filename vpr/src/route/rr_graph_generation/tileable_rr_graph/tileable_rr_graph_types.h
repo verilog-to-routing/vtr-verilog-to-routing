@@ -18,4 +18,3 @@ enum e_direction : unsigned char {
 
 /* Xifan Tang - string used in describe_rr_node() and write_xml_rr_graph_obj() */
 constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTION_STRING_WRITE_XML = {{"INC_DIR", "DEC_DIR", "BI_DIR", "NO_DIR"}};
-#endif

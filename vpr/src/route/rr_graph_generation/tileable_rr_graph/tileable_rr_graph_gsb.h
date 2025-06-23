@@ -113,4 +113,3 @@ void build_edges_for_one_tileable_vib(RRGraphBuilder& rr_graph_builder,
                                       const t_bend_track2track_map& sb_bend_conn,
                                       const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                       size_t& num_edges_to_create);
-                                      

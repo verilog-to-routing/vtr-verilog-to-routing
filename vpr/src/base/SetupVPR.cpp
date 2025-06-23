@@ -1186,7 +1186,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> Tokens, con
                     break;
                 }
             }
-            VTR_ASSERT(from_type == e_multistage_mux_from_or_to_type::PB 
+            VTR_ASSERT(from_type == e_multistage_mux_from_or_to_type::PB
                        || from_type == e_multistage_mux_from_or_to_type::SEGMENT);
 
         } else {
@@ -1219,10 +1219,10 @@ static void parse_pin_name(const char* src_string, int* start_pin_index, int* en
         int match_count = sscanf(source_string.c_str(), "%s %s", pb_type_name, port_name);
         if (match_count != 2) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                "Invalid pin - %s, name should be in the format "
-                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                "The end_pin_index and start_pin_index can be the same.\n",
-                src_string);
+                            "Invalid pin - %s, name should be in the format "
+                            "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+                            "The end_pin_index and start_pin_index can be the same.\n",
+                            src_string);
         }
     } else {
         /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
@@ -1237,8 +1237,8 @@ static void parse_pin_name(const char* src_string, int* start_pin_index, int* en
         }
 
         int match_count = sscanf(source_string.c_str(), "%s %s %d:%d]",
-                             pb_type_name, port_name,
-                             end_pin_index, start_pin_index);
+                                 pb_type_name, port_name,
+                                 end_pin_index, start_pin_index);
         if (match_count != 4) {
             match_count = sscanf(source_string.c_str(), "%s %s %d]",
                                  pb_type_name, port_name,
@@ -1246,17 +1246,17 @@ static void parse_pin_name(const char* src_string, int* start_pin_index, int* en
             *start_pin_index = *end_pin_index;
             if (match_count != 3) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                    "Invalid pin - %s, name should be in the format "
-                    "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                    "The end_pin_index and start_pin_index can be the same.\n",
-                    src_string);
+                                "Invalid pin - %s, name should be in the format "
+                                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+                                "The end_pin_index and start_pin_index can be the same.\n",
+                                src_string);
             }
         }
         if (*end_pin_index < 0 || *start_pin_index < 0) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                "Invalid pin - %s, the pin_index in "
-                "[end_pin_index:start_pin_index] should not be a negative value.\n",
-                src_string);
+                            "Invalid pin - %s, the pin_index in "
+                            "[end_pin_index:start_pin_index] should not be a negative value.\n",
+                            src_string);
         }
         if (*end_pin_index < *start_pin_index) {
             int temp;

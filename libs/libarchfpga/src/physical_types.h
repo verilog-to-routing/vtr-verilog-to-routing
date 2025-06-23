@@ -2303,11 +2303,11 @@ struct t_arch {
     /// Remove all the routing wires in empty regions
     bool shrink_boundary;
 
-    /// Allow routing channels to pass through multi-width and 
+    /// Allow routing channels to pass through multi-width and
     /// multi-height programable blocks
     bool through_channel;
 
-    /// Allow each output pin of a programmable block to drive the 
+    /// Allow each output pin of a programmable block to drive the
     /// routing tracks on all the sides of its adjacent switch block
     bool opin2all_sides;
 

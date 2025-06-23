@@ -297,7 +297,7 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
         /* End switch_block_type == WILTON case. */
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                           "Invalid switch block pattern !\n");
+                            "Invalid switch block pattern !\n");
     }
 
     return to_tracks;
@@ -491,7 +491,7 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
                     break;
                 default:
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "Invalid track status!\n");
+                                    "Invalid track status!\n");
             }
         }
     }
@@ -705,7 +705,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                               "Invalid side index!\n");
+                                "Invalid side index!\n");
         }
     }
     std::map<RRNodeId, RRNodeId> bend_seg_head2bend_seg_end_map;
@@ -1008,7 +1008,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                               "Invalid side index!\n");
+                                "Invalid side index!\n");
         }
 
         /* Organize a vector of port direction */
@@ -1121,7 +1121,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                               "Invalid side index!\n");
+                                "Invalid side index!\n");
         }
 
         /* If there is no channel at this side, we skip ipin_node annotation */
@@ -1810,7 +1810,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
 
                 if (from.type_name != vib->get_pbtype_name()) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "Wrong from type name!\n");
+                                    "Wrong from type name!\n");
                 }
 
                 for (e_side side : TOTAL_2D_SIDES) {
@@ -1825,7 +1825,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!rr_gsb.is_opin_node(from_node)) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "Opin node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                    "Opin node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                 }
             } else if (from.from_type == e_multistage_mux_from_or_to_type::SEGMENT) {
                 char from_dir = from.seg_dir;
@@ -1851,7 +1851,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     side = TOP;
                 else {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "Wrong segment from direction!\n");
+                                    "Wrong segment from direction!\n");
                 }
 
                 std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(side, RRSegmentId(segment.seg_index));
@@ -1870,7 +1870,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
                     if (!rr_gsb.is_chan_node(from_node)) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                       "Wire node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                        "Wire node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                     }
                 }
 
@@ -1879,11 +1879,11 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MUX, from_mux_index);
                 if (!rr_gsb.is_mux_node(from_node)) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                    "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                 }
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                               "Wrong from type!\n");
+                                "Wrong from type!\n");
             }
             VTR_ASSERT(from_node.is_valid());
             auto iter = vib_map.begin();
@@ -1912,7 +1912,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
 
                 if (to.type_name != vib->get_pbtype_name()) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "Wrong to type name!\n");
+                                    "Wrong to type name!\n");
                 }
 
                 for (e_side side : TOTAL_2D_SIDES) {
@@ -1927,7 +1927,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!rr_gsb.is_ipin_node(to_node)) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "MUX node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                    "MUX node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
                 }
             } else if (to.from_type == e_multistage_mux_from_or_to_type::SEGMENT) {
                 char to_dir = to.seg_dir;
@@ -1953,7 +1953,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     side = BOTTOM;
                 else {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "Wrong segment from direction!\n");
+                                    "Wrong segment from direction!\n");
                 }
 
                 std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(side, RRSegmentId(segment.seg_index));
@@ -1975,13 +1975,13 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     VTR_ASSERT(OUT_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
                     if (!rr_gsb.is_chan_node(to_node)) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                       "MUX node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                        "MUX node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
                     }
                 }
 
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                               "Wrong from type!\n");
+                                "Wrong from type!\n");
             }
             VTR_ASSERT(to_node.is_valid());
             to_nodes.push_back(to_node);
@@ -1994,7 +1994,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
 
                 if (from.type_name != vib->get_pbtype_name()) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "Wrong from type name!\n");
+                                    "Wrong from type name!\n");
                 }
 
                 for (e_side side : TOTAL_2D_SIDES) {
@@ -2009,7 +2009,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!rr_gsb.is_opin_node(from_node)) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                    "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                 }
             } else if (from.from_type == e_multistage_mux_from_or_to_type::SEGMENT) {
                 char from_dir = from.seg_dir;
@@ -2035,7 +2035,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     side = TOP;
                 else {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "Wrong segment from direction!\n");
+                                    "Wrong segment from direction!\n");
                 }
 
                 std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(side, RRSegmentId(segment.seg_index));
@@ -2054,7 +2054,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
                     if (!rr_gsb.is_chan_node(from_node)) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                       "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                        "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                     }
                 }
 
@@ -2063,11 +2063,11 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MUX, from_mux_index);
                 if (!rr_gsb.is_mux_node(from_node)) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                   "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                    "MUX node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                 }
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                               "Wrong from type!\n");
+                                "Wrong from type!\n");
             }
             VTR_ASSERT(from_node.is_valid());
             from_nodes.push_back(from_node);
