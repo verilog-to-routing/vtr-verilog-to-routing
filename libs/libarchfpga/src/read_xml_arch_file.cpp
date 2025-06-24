@@ -5201,7 +5201,7 @@ static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_typ
             } else if (tmp == "y") {
                 seg_group.axis = e_parallel_axis_vib::Y;
             } else {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp);
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp.c_str());
             }
         }
 
