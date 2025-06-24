@@ -39,9 +39,30 @@
 #include "old_traceback.h"
 
 /*************Functions local to this module*************/
-static void process_route(const Netlist<>& net_list, std::ifstream& fp, const char* filename, int& lineno, bool is_flat);
-static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
-static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool is_flat);
+static void process_route(const Netlist<>& net_list,
+                          std::ifstream& fp,
+                          const char* filename,
+                          int& lineno,
+                          bool verify_rr_switch_id,
+                          bool is_flat);
+
+static void process_nodes(const Netlist<>& net_list,
+                          std::ifstream& fp,
+                          ClusterNetId inet,
+                          const char* filename,
+                          bool verify_rr_switch_id,
+                          int& lineno);
+
+static void process_nets(const Netlist<>& net_list,
+                         std::ifstream& fp,
+                         ClusterNetId inet,
+                         std::string name,
+                         std::vector<std::string> input_tokens,
+                         const char* filename,
+                         int& lineno,
+                         bool verify_rr_switch_id,
+                         bool is_flat);
+
 static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat);
 static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
 static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input);
@@ -112,7 +133,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     }
 
     /* Read in every net */
-    process_route(router_net_list, fp, route_file, lineno, is_flat);
+    process_route(router_net_list, fp, route_file, lineno, router_opts.verify_rr_switch_id, is_flat);
 
     fp.close();
 
@@ -145,7 +166,12 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 }
 
 ///@brief Walks through every net and add the routing appropriately
-static void process_route(const Netlist<>& net_list, std::ifstream& fp, const char* filename, int& lineno, bool is_flat) {
+static void process_route(const Netlist<>& net_list,
+                          std::ifstream& fp,
+                          const char* filename,
+                          int& lineno,
+                          bool verify_rr_switch_id,
+                          bool is_flat) {
     std::string input;
     std::vector<std::string> tokens;
     while (std::getline(fp, input)) {
@@ -158,7 +184,7 @@ static void process_route(const Netlist<>& net_list, std::ifstream& fp, const ch
             continue; //Skip commented lines
         } else if (tokens[0] == "Net") {
             ClusterNetId inet(atoi(tokens[1].c_str()));
-            process_nets(net_list, fp, inet, tokens[2], tokens, filename, lineno, is_flat);
+            process_nets(net_list, fp, inet, tokens[2], tokens, filename, lineno, verify_rr_switch_id, is_flat);
         }
     }
 
@@ -166,7 +192,7 @@ static void process_route(const Netlist<>& net_list, std::ifstream& fp, const ch
 }
 
 ///@brief Check if the net is global or not, and process appropriately
-static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool is_flat) {
+static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool verify_rr_switch_id, bool is_flat) {
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
         && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
@@ -199,12 +225,12 @@ static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNe
                       name.c_str(), size_t(inet), net_list.net_name(inet).c_str());
         }
 
-        process_nodes(net_list, fp, inet, filename, lineno);
+        process_nodes(net_list, fp, inet, filename, verify_rr_switch_id, lineno);
     }
     input_tokens.clear();
 }
 
-static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
+static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, bool verify_rr_switch_id, int& lineno) {
     /* Not a global net. Goes through every node and add it into trace.head*/
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
