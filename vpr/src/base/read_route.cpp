@@ -63,6 +63,8 @@ static void process_nets(const Netlist<>& net_list,
                          bool verify_rr_switch_id,
                          bool is_flat);
 
+static void update_rr_switch_id(t_trace* trace, std::set<int>& seen_rr_nodes);
+
 static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat);
 static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
 static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input);
@@ -422,10 +424,65 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
         oldpos = fp.tellg();
     }
 
+    if (verify_rr_switch_id) {
+        VTR_ASSERT(validate_traceback(head_ptr));
+    } else {
+        std::set<int> seen_rr_nodes;
+        update_rr_switch_id(head_ptr, seen_rr_nodes);
+    }
+
     /* Convert to route_tree after reading */
-    VTR_ASSERT(validate_traceback(head_ptr));
     route_ctx.route_trees[inet] = TracebackCompat::traceback_to_route_tree(head_ptr);
     free_traceback(head_ptr);
+}
+
+static void update_rr_switch_id(t_trace* trace, std::set<int>& seen_rr_nodes) {
+    if (!trace) {
+        return;
+    }
+
+    seen_rr_nodes.insert(trace->index);
+
+    t_trace* next = trace->next;
+
+    if (next) {
+        if (trace->iswitch == OPEN) { //End of a branch
+
+            //Verify that the next element (branch point) has been already seen in the traceback so far
+            if (!seen_rr_nodes.count(next->index)) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
+            } else {
+                //Recurse along the new branch
+                update_rr_switch_id(next, seen_rr_nodes);
+                return;
+            }
+        } else { //Midway along branch
+
+            //Check there is an edge connecting trace and next
+
+            auto& device_ctx = g_vpr_ctx.device();
+            const auto& rr_graph = device_ctx.rr_graph;
+            bool found = false;
+            for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(trace->index)); ++iedge) {
+                int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), iedge));
+                if (to_node == next->index) {
+                    found = true;
+
+                    //Verify that the switch matches
+                    int rr_iswitch = rr_graph.edge_switch(RRNodeId(trace->index), iedge);
+                    trace->iswitch = rr_iswitch;
+                    break;
+                }
+            }
+            if (!found) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
+            }
+            //Recurse
+            update_rr_switch_id(next, seen_rr_nodes);
+            return;
+        }
+    }
+    VTR_ASSERT(!next);
 }
 
 /**
