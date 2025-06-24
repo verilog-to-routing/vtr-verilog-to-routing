@@ -16,6 +16,7 @@ constexpr int FALSE = 0;
 constexpr int TRUE = 1;
 
 #include <array>
+#include <string_view>
 
 namespace vtr {
 
