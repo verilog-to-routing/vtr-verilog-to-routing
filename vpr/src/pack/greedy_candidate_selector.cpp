@@ -8,6 +8,7 @@
 #include "greedy_candidate_selector.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <queue>
 #include <vector>
 #include "PreClusterTimingManager.h"
@@ -18,15 +19,16 @@
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "cluster_placement.h"
+#include "globals.h"
 #include "greedy_clusterer.h"
 #include "logic_types.h"
+#include "physical_types.h"
 #include "prepack.h"
 #include "timing_info.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
-#include "vtr_vector_map.h"
 
 /*
  * @brief Get gain of packing molecule into current cluster.
@@ -755,7 +757,9 @@ PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
     if (allow_unrelated_clustering_ && best_molecule == PackMoleculeId::INVALID()) {
         const t_appack_options& appack_options = appack_ctx_.appack_options;
         if (appack_options.use_appack) {
-            if (num_unrelated_clustering_attempts_ < appack_options.max_unrelated_clustering_attempts) {
+            t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
+            int cluster_max_attempts = appack_options.max_unrelated_clustering_attempts[cluster_type->index];
+            if (num_unrelated_clustering_attempts_ < cluster_max_attempts) {
                 best_molecule = get_unrelated_candidate_for_cluster_appack(cluster_gain_stats,
                                                                            cluster_id,
                                                                            cluster_legalizer);
@@ -1101,8 +1105,23 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         // Get the position of the molecule
         t_flat_pl_loc target_loc = get_molecule_pos(molecule_id, prepacker, appack_ctx);
 
+        // Get the physical tile location of the flat cluster position.
+        // TODO: This should really be the closest compatible tile to the cluster
+        //       centroid. To do this would require using information from the
+        //       placer which we do not have yet.
+        t_physical_tile_loc cluster_tile_loc(cluster_gain_stats.flat_cluster_position.x,
+                                             cluster_gain_stats.flat_cluster_position.y,
+                                             cluster_gain_stats.flat_cluster_position.layer);
+
         // Compute the gain attenuatation term.
-        float dist = get_manhattan_distance(cluster_gain_stats.flat_cluster_position, target_loc);
+
+        // Here we compute the distance we would need to move the molecule from
+        // its GP solution to go into the tile we think the cluster will go into.
+        // This returns a distance of 0 if the molecule is already in the same
+        // tile as the rest of the molecules in the cluster.
+        float dist = get_manhattan_distance_to_tile(target_loc,
+                                                    cluster_tile_loc,
+                                                    g_vpr_ctx.device().grid);
         float gain_mult = 1.0f;
         if (dist < appack_options.dist_th) {
             gain_mult = 1.0f - (appack_options.quad_fac_sqr * dist * dist);
@@ -1245,21 +1264,34 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
     }
 
     // Create a queue of locations to search and a map of visited grid locations.
-    std::queue<t_flat_pl_loc> search_queue;
+    std::queue<t_physical_tile_loc> search_queue;
     vtr::NdMatrix<bool, 2> visited({appack_unrelated_clustering_data_.dim_size(0),
                                     appack_unrelated_clustering_data_.dim_size(1)},
                                    false);
     // Push the position of the cluster to the queue.
-    search_queue.push(cluster_gain_stats.flat_cluster_position);
+    t_physical_tile_loc cluster_tile_loc(cluster_gain_stats.flat_cluster_position.x,
+                                         cluster_gain_stats.flat_cluster_position.y,
+                                         cluster_gain_stats.flat_cluster_position.layer);
+    search_queue.push(cluster_tile_loc);
+
+    // Get the max unrelated tile distance for the block type of this cluster.
+    t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
+    float max_dist = appack_ctx_.appack_options.max_unrelated_tile_distance[cluster_type->index];
+
+    // Keep track of the closest compatible molecule and its distance.
+    float best_distance = std::numeric_limits<float>::max();
+    PackMoleculeId closest_compatible_molecule = PackMoleculeId::INVALID();
 
     while (!search_queue.empty()) {
         // Pop a position to search from the queue.
-        const t_flat_pl_loc& node_loc = search_queue.front();
-        VTR_ASSERT_SAFE(node_loc.layer == 0);
+        const t_physical_tile_loc& node_loc = search_queue.front();
+        VTR_ASSERT_SAFE(node_loc.layer_num == 0);
+
+        // Get the distance from the cluster to the current tile in tiles.
+        float dist = std::abs(node_loc.x - cluster_tile_loc.x) + std::abs(node_loc.y - cluster_tile_loc.y);
 
         // If this position is too far from the source, skip it.
-        float dist = get_manhattan_distance(node_loc, cluster_gain_stats.flat_cluster_position);
-        if (dist > 1) {
+        if (dist > max_dist) {
             search_queue.pop();
             continue;
         }
@@ -1272,6 +1304,10 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
         visited[node_loc.x][node_loc.y] = true;
 
         // Explore this position from highest number of inputs available to lowest.
+        // Here, we are trying to find the closest compatible molecule, where we
+        // break ties based on whoever has more external inputs.
+        PackMoleculeId best_candidate = PackMoleculeId::INVALID();
+        float best_candidate_distance = std::numeric_limits<float>::max();
         const auto& uc_data = appack_unrelated_clustering_data_[node_loc.x][node_loc.y];
         VTR_ASSERT_SAFE(inputs_avail < uc_data.size());
         for (int ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
@@ -1289,30 +1325,46 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
                 // skip it.
                 if (!cluster_legalizer.is_molecule_compatible(mol_id, cluster_id))
                     continue;
-                // Return this molecule as the unrelated candidate.
-                return mol_id;
+
+                // If this is the best candidate we have seen so far, hold onto it.
+                // Here, we get the distance needed to move the molecule from its
+                // GP placement to the current cluster's tile.
+                t_flat_pl_loc mol_pos = get_molecule_pos(mol_id, prepacker_, appack_ctx_);
+                float mol_dist = get_manhattan_distance_to_tile(mol_pos,
+                                                                cluster_tile_loc,
+                                                                g_vpr_ctx.device().grid);
+                if (mol_dist < best_candidate_distance && mol_dist < best_distance) {
+                    best_candidate = mol_id;
+                    best_candidate_distance = mol_dist;
+                }
             }
+        }
+
+        // If a candidate could be found, add it as the best found so far.
+        if (best_candidate.is_valid()) {
+            closest_compatible_molecule = best_candidate;
+            best_distance = best_candidate_distance;
         }
 
         // Push the neighbors of the position to the queue.
         // Note: Here, we are using the manhattan distance, so we do not push
         //       the diagonals. We also want to try the direct neighbors first
         //       since they should be closer.
-        if (node_loc.x >= 1.0f)
-            search_queue.push({node_loc.x - 1, node_loc.y, node_loc.layer});
-        if (node_loc.x <= visited.dim_size(0) - 2)
-            search_queue.push({node_loc.x + 1, node_loc.y, node_loc.layer});
-        if (node_loc.y >= 1.0f)
-            search_queue.push({node_loc.x, node_loc.y - 1, node_loc.layer});
-        if (node_loc.y <= visited.dim_size(1) - 2)
-            search_queue.push({node_loc.x, node_loc.y + 1, node_loc.layer});
+        if (node_loc.x >= 1)
+            search_queue.push({node_loc.x - 1, node_loc.y, node_loc.layer_num});
+        if (node_loc.x <= (int)visited.dim_size(0) - 2)
+            search_queue.push({node_loc.x + 1, node_loc.y, node_loc.layer_num});
+        if (node_loc.y >= 1)
+            search_queue.push({node_loc.x, node_loc.y - 1, node_loc.layer_num});
+        if (node_loc.y <= (int)visited.dim_size(1) - 2)
+            search_queue.push({node_loc.x, node_loc.y + 1, node_loc.layer_num});
 
         // Pop the position off the queue.
         search_queue.pop();
     }
 
-    // No molecule could be found. Return an invalid ID.
-    return PackMoleculeId::INVALID();
+    // Return the closest compatible molecule to the cluster.
+    return closest_compatible_molecule;
 }
 
 void GreedyCandidateSelector::update_candidate_selector_finalize_cluster(

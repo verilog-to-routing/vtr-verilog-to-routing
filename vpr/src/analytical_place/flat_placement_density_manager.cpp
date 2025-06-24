@@ -59,14 +59,19 @@ static PrimitiveVector calc_bin_underfill(const PrimitiveVector& bin_utilization
  *      The command-line arguments provided by the user.
  *  @param physical_tile_types
  *      A vector of all physical tile types in the architecture.
+ *  @param device_grid
+ *      The current physical device grid of the FPGA.
  */
 static std::vector<float> get_physical_type_target_densities(const std::vector<std::string>& target_density_arg_strs,
-                                                             const std::vector<t_physical_tile_type>& physical_tile_types) {
+                                                             const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                             const DeviceGrid& device_grid) {
     // Get the target densisty of each physical block type.
-    // TODO: Create auto feature to automatically select target densities based
-    //       on properties of the architecture. Need to sweep to find reasonable
-    //       values.
     std::vector<float> phy_ty_target_density(physical_tile_types.size(), 1.0f);
+
+    // By default (auto), make the CLB target density 80%, leaving the other
+    // blocks at 100%.
+    t_logical_block_type_ptr logic_block_type = infer_logic_block_type(device_grid);
+    phy_ty_target_density[logic_block_type->index] = 0.8f;
 
     // Set to auto if no user args are provided.
     if (target_density_arg_strs.size() == 0)
@@ -123,7 +128,8 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
 
     // Get the target densisty of each physical block type.
     std::vector<float> phy_ty_target_densities = get_physical_type_target_densities(target_density_arg_strs,
-                                                                                    physical_tile_types);
+                                                                                    physical_tile_types,
+                                                                                    device_grid);
     VTR_LOG("Partial legalizer is using target densities:");
     for (const t_physical_tile_type& phy_ty : physical_tile_types) {
         VTR_LOG(" %s:%.1f", phy_ty.name.c_str(), phy_ty_target_densities[phy_ty.index]);
