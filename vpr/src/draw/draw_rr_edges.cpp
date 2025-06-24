@@ -290,8 +290,8 @@ void draw_intrapin_to_intrapin(RRNodeId inode, RRNodeId prev_node, ezgl::rendere
     auto blk_id_pin_id1 = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
     auto blk_id_pin_id2 = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
 
-    ezgl::point2d p1 = draw_coords->get_absolute_pin_location(blk_id_pin_id1.first, blk_id_pin_id1.second);
-    ezgl::point2d p2 = draw_coords->get_absolute_pin_location(blk_id_pin_id2.first, blk_id_pin_id2.second);
+    ezgl::point2d p2 = draw_coords->get_absolute_pin_location(blk_id_pin_id1.first, blk_id_pin_id1.second);
+    ezgl::point2d p1 = draw_coords->get_absolute_pin_location(blk_id_pin_id2.first, blk_id_pin_id2.second);
 
     g->draw_line(p1, p2);
 
@@ -327,7 +327,7 @@ void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g)
         draw_get_rr_pin_coords(inode, &x1, &y1, pin_side);
         ezgl::point2d p1 = {x1, y1};
 
-        if (swapped) {
+        if (!swapped) {
             std::swap(p1, p2);
         }
 
