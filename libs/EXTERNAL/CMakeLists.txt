@@ -40,12 +40,14 @@ if (${WITH_PARMYS})
 
 	cmake_minimum_required(VERSION 3.16)
 
-	#project(yosys_wrapper NONE)
+	#project(yosys)
 
 	# Create a target out of the library compilation result
 	SET(YOSYS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys)
 	SET(YOSYS_BUILD_DIR ${CMAKE_BINARY_DIR}/bin/yosys)
 
+    add_definitions("-D_YOSYS_")
+    set(MAKE_PROGRAM "$(MAKE)")
 	set(CURRENT_CPPFLAGS "$(CPPFLAGS)-w")
 	if(${CMAKE_GENERATOR} STREQUAL "Ninja")
 	    set(CURRENT_CPPFLAGS "-w")

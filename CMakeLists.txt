@@ -413,24 +413,6 @@ if(${WITH_ABC})
     add_subdirectory(abc)
 endif()
 
-if(${WITH_PARMYS}) # define cmake params to compile Yosys
-    add_definitions("-D_YOSYS_")
-
-    set(MAKE_PROGRAM "$(MAKE)")
-    if(${CMAKE_GENERATOR} STREQUAL "Ninja")
-        set(MAKE_PROGRAM "make")
-    endif()
-
-    # Commented out since a make file should not call another make command with
-    # threads. It should pass this information from the parent automatically.
-    # if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
-    #     set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
-    # else()
-    #     set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
-    # endif()
-    #add_subdirectory(yosys)
-endif()
-
 add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
 
 if(${WITH_PARMYS})
