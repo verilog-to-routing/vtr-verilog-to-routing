@@ -46,6 +46,8 @@ class PostClusterDelayCalculator;
 
 #endif /* NO_SERVER */
 
+struct t_rr_node_route_inf;
+
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
  *
@@ -564,9 +566,7 @@ struct RoutingContext : public Context {
                RouterLookahead>
         cached_router_lookahead_;
 
-    /**
-     * @brief User specified routing constraints
-     */
+    /// @brief User specified routing constraints
     UserRouteConstraints constraints;
 
     /** Is flat routing enabled? */

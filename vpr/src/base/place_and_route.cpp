@@ -79,7 +79,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
     /* Allocate the major routing structures. */
 
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
@@ -380,8 +380,8 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
     init_draw_coords(final, g_vpr_ctx.placement().blk_loc_registry());
 
-    /* Allocate and load additional rr_graph information needed only by the router. */
-    alloc_and_load_rr_node_route_structs();
+    // Allocate and load additional rr_graph information needed only by the router.
+    alloc_and_load_rr_node_route_structs(router_opts);
 
     init_route_structs(router_net_list,
                        router_opts.bb_factor,
@@ -428,7 +428,7 @@ t_chan_width setup_chan_width(const t_router_opts& router_opts,
         width_fac = router_opts.fixed_channel_width;
     }
 
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_directionality = e_graph_type::BIDIR;
     } else {
         graph_directionality = e_graph_type::UNIDIR;

@@ -810,6 +810,22 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``circuit``
 
+.. option:: --anneal_auto_init_t_scale <float>
+
+    A scale on the starting temperature of the anneal for the automatic annealing
+    schedule.
+
+    When in the automatic annealing schedule, the annealer will select a good
+    initial temperature based on the quality of the initial placement. This option
+    allows you to scale that initial temperature up or down by multiplying the
+    initial temperature by the given scale. Increasing this number
+    will increase the initial temperature which will have the annealer potentially
+    explore more of the space at the expense of run time. Depending on the quality
+    of the initial placement, this may improve or hurt the quality of the final
+    placement.
+
+    **Default:** ``1.0``
+
 .. option:: --init_t <float>
 
     The starting temperature of the anneal for the manual annealing schedule.
@@ -1823,6 +1839,20 @@ The following options are only valid when the router is in timing-driven mode (t
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
 
      **Default:** ``map``
+
+.. option:: --router_initial_acc_cost_chan_congestion_threshold <float>
+
+    Utilization threshold above which initial accumulated routing cost (acc_cost) is increased to penalize congested channels.
+    Used to bias routing away from highly utilized regions during early routing iterations.
+
+    **Default:** ``0.5``
+
+.. option:: --router_initial_acc_cost_chan_congestion_weight <float>
+    Weight applied to the excess channel utilization (above threshold) when computing the initial accumulated cost (acc_cost)of routing resources.
+
+    Higher values make the router more sensitive to early congestion.
+
+    **Default:** ``0.5``
 
 .. option:: --router_max_convergence_count <float>
 

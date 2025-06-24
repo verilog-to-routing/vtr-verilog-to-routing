@@ -1,5 +1,6 @@
 #include "route_path_manager.h"
 #include "vpr_context.h"
+#include "route_common.h"
 
 PathManager::PathManager() {
     // Only init data structure if required by RCV
@@ -23,7 +24,7 @@ bool PathManager::node_exists_in_tree(t_heap_path* path_data,
         }
     }
 
-    // Search through route tree set for nodes existance
+    // Search through route tree set for nodes existence
     auto node_exists_in_route_tree = route_tree_nodes_.find(to_node);
 
     if (node_exists_in_route_tree != route_tree_nodes_.end()) {
@@ -70,7 +71,7 @@ void PathManager::alloc_path_struct(t_heap_path*& tptr) {
     // if (tptr == nullptr) {
     // Use a free node list to avoid unnecessary data allocation
     // If there are unused data structures in memory use these
-    if (freed_nodes_.size() > 0) {
+    if (!freed_nodes_.empty()) {
         tptr = freed_nodes_.back();
         freed_nodes_.pop_back();
     } else {

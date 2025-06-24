@@ -260,18 +260,6 @@ class t_rr_graph_storage {
         return std::nullopt;  // Return an empty optional if key is not found
     }
 
-    /** @brief Find the twist number that RR node uses to change ptc number across the same track.
-     * By default this number is zero, meaning that ptc number across the same track should be the same.
-     * This number is only meaningful for CHANX/CHANY nodes, not the other nodes.
-     */
-    short node_ptc_twist(RRNodeId id) const{
-        //check whether node_ptc_twist_incr has been allocated
-        if(node_ptc_twist_incr_.empty()){
-            return 0;
-        }
-        return node_ptc_twist_incr_[id];
-    }
-
     /**
      * @brief Returns the node ID of the virtual sink for the specified clock network name.
      *
@@ -525,7 +513,6 @@ class t_rr_graph_storage {
         node_ptc_.reserve(node_storage_.capacity());
         node_ptc_.resize(node_storage_.size());
         node_layer_.resize(node_storage_.size());
-        node_ptc_twist_incr_.resize(node_storage_.size());
         node_bend_start_.resize(node_storage_.size());
         node_bend_end_.resize(node_storage_.size());
     }
@@ -552,11 +539,6 @@ class t_rr_graph_storage {
         node_bend_end_.resize(size);
     }
 
-    /** @brief We only allocate the ptc twist increment array while building tileable rr-graphs */
-    void resize_ptc_twist_incr(size_t size){
-        node_ptc_twist_incr_.resize(size);
-    }
-
     /** @brief Number of RR nodes that can be accessed. */
     size_t size() const {
         return node_storage_.size();
@@ -580,7 +562,6 @@ class t_rr_graph_storage {
         node_bend_end_.clear();
         node_name_.clear();
         virtual_clock_network_root_idx_.clear();
-        node_ptc_twist_incr_.clear();
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
@@ -616,7 +597,7 @@ class t_rr_graph_storage {
         node_layer_.shrink_to_fit();
         node_bend_start_.shrink_to_fit();
         node_bend_end_.shrink_to_fit();
-        node_ptc_twist_incr_.shrink_to_fit();
+
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
@@ -654,7 +635,6 @@ class t_rr_graph_storage {
     void set_node_name(RRNodeId id, const std::string& new_name);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
     void set_node_layer(RRNodeId id, short layer);
-    void set_node_ptc_twist_incr(RRNodeId id, short twist);
     void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
     void set_node_bend_start(RRNodeId id, size_t bend_start);
     void set_node_bend_end(RRNodeId id, size_t bend_end);
@@ -909,15 +889,6 @@ class t_rr_graph_storage {
      */
     std::unordered_map<std::string, RRNodeId> virtual_clock_network_root_idx_;
 
-    /** @brief
-     *Twist Increment number is defined for CHANX/CHANY nodes; it is useful for layout of tileable FPGAs used by openFPGA.
-     *It gives us a new track index in each tile a longer wire crosses, which enables us to make long wires with a repeated single-tile pattern that "twists" the wires as they cross the tile.
-     *For example, an L4 wire would change tracks 4 times with metal shorts [e.g. 0, 2, 4, 6] and track 6 would drive a switch -- together this implements an L4 wire with only one layout tile.
-     * Twist increment number is only meaningful for CHANX and CHANY nodes; it is 0 for other node types.
-     * We also don't bother allocating this storage if the FPGA is not specified to be tileable; instead in that case the twist for all nodes will always be returned as 0.
-     */
-    vtr::vector<RRNodeId, short> node_ptc_twist_incr_;
-
     /** @brief Edge storage */
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
@@ -999,7 +970,6 @@ class t_rr_graph_view {
         const vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in,
         const vtr::array_view_id<RRNodeId, const short> node_layer,
         const std::unordered_map<RRNodeId, std::string>& node_name,
-        const vtr::array_view_id<RRNodeId, const short> node_ptc_twist_incr,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch,
@@ -1012,7 +982,6 @@ class t_rr_graph_view {
         , node_fan_in_(node_fan_in)
         , node_layer_(node_layer)
         , node_name_(node_name)
-        , node_ptc_twist_incr_(node_ptc_twist_incr)
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
         , edge_switch_(edge_switch)
@@ -1103,20 +1072,6 @@ class t_rr_graph_view {
             return &it->second;  // Return the value if key is found
         }
         return std::nullopt;  // Return an empty optional if key is not found
-    }
-
-    /**
-     * @brief Retrieve the twist number (if available) that the given RRNodeId used for its PTC number.
-     *
-     * @param id The RRNodeId for which to retrieve the twist number.
-     * @return The twist number used for the PTC number, or a default value if not available.
-     */
-    short node_ptc_twist_incr(RRNodeId id) const{
-        //check if ptc twist increment allocated
-        if(node_ptc_twist_incr_.empty()){
-            return 0; //if it is not allocated we just assume that is zero
-        }
-        return node_ptc_twist_incr_[id];
     }
 
     /**
@@ -1233,7 +1188,6 @@ class t_rr_graph_view {
     vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in_;
     vtr::array_view_id<RRNodeId, const short> node_layer_;
     const std::unordered_map<RRNodeId, std::string>& node_name_;
-    vtr::array_view_id<RRNodeId, const short> node_ptc_twist_incr_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;

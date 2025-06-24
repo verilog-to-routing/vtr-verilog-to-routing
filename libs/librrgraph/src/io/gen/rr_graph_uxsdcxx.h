@@ -4,10 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-
- * md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/smahmoudi/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/smahmoudi/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: dcf32619cae0c49d168a2575bdb00896
  */
 
 #include <functional>
@@ -202,15 +201,10 @@ inline void write_rr_graph_xml(T &in, Context &context, std::ostream &os){
 }
 
 
-#if defined(_MSC_VER)
-typedef const uint32_t __declspec(align(1)) triehash_uu32;
-typedef const uint64_t __declspec(align(1)) triehash_uu64;
-#else
 typedef const uint32_t __attribute__((aligned(1))) triehash_uu32;
 typedef const uint64_t __attribute__((aligned(1))) triehash_uu64;
 static_assert(alignof(triehash_uu32) == 1, "Unaligned 32-bit access not found.");
 static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.");
-#endif
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define onechar(c, s, l) (((uint64_t)(c)) << (s))
 #else
@@ -281,8 +275,8 @@ constexpr const char *atok_lookup_t_grid_loc[] = {"block_type_id", "height_offse
 enum class gtok_t_grid_locs {GRID_LOC};
 constexpr const char *gtok_lookup_t_grid_locs[] = {"grid_loc"};
 
-enum class atok_t_node_loc {LAYER, PTC, SIDE, TWIST, XHIGH, XLOW, YHIGH, YLOW};
-constexpr const char *atok_lookup_t_node_loc[] = {"layer", "ptc", "side", "twist", "xhigh", "xlow", "yhigh", "ylow"};
+enum class atok_t_node_loc {LAYER, PTC, SIDE, XHIGH, XLOW, YHIGH, YLOW};
+constexpr const char *atok_lookup_t_node_loc[] = {"layer", "ptc", "side", "xhigh", "xlow", "yhigh", "ylow"};
 
 
 enum class atok_t_node_timing {C, R};
@@ -1166,14 +1160,6 @@ inline atok_t_node_loc lex_attr_t_node_loc(const char *in, const std::function<v
 			switch(in[4]){
 			case onechar('r', 0, 8):
 				return atok_t_node_loc::LAYER;
-			break;
-			default: break;
-			}
-		break;
-		case onechar('t', 0, 32) | onechar('w', 8, 32) | onechar('i', 16, 32) | onechar('s', 24, 32):
-			switch(in[4]){
-			case onechar('t', 0, 8):
-				return atok_t_node_loc::TWIST;
 			break;
 			default: break;
 			}
@@ -2490,9 +2476,6 @@ inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * 
 		case atok_t_node_loc::SIDE:
 			/* Attribute side set after element init */
 			break;
-		case atok_t_node_loc::TWIST:
-			/* Attribute twist set after element init */
-			break;
 		case atok_t_node_loc::XHIGH:
 			*xhigh = load_int(attr.value(), report_error);
 			break;
@@ -2508,7 +2491,7 @@ inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * 
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<8> test_astate = astate | std::bitset<8>(0b00001101);
+	std::bitset<7> test_astate = astate | std::bitset<7>(0b0000101);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_loc, report_error);
 }
 
@@ -3432,9 +3415,6 @@ inline void load_node_loc(const pugi::xml_node &root, T &out, Context &context, 
 		case atok_t_node_loc::SIDE:
 			out.set_node_loc_side(lex_enum_loc_side(attr.value(), true, report_error), context);
 			break;
-		case atok_t_node_loc::TWIST:
-			out.set_node_loc_twist(load_int(attr.value(), report_error), context);
-			break;
 		case atok_t_node_loc::XHIGH:
 			/* Attribute xhigh is already set */
 			break;
@@ -4173,8 +4153,6 @@ inline void write_node(T &in, std::ostream &os, Context &context){
 		os << " ptc=\"" << in.get_node_loc_ptc(child_context) << "\"";
 		if((bool)in.get_node_loc_side(child_context))
 			os << " side=\"" << lookup_loc_side[(int)in.get_node_loc_side(child_context)] << "\"";
-		if((bool)in.get_node_loc_twist(child_context))
-			os << " twist=\"" << in.get_node_loc_twist(child_context) << "\"";
 		os << " xhigh=\"" << in.get_node_loc_xhigh(child_context) << "\"";
 		os << " xlow=\"" << in.get_node_loc_xlow(child_context) << "\"";
 		os << " yhigh=\"" << in.get_node_loc_yhigh(child_context) << "\"";

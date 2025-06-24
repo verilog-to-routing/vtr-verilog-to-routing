@@ -247,11 +247,6 @@ class RRGraphView {
     inline short node_bend_end(RRNodeId node) const {
         return node_storage_.node_bend_end(node);
     }
-    
-     /** @brief Return the ptc number twist of a specified node. */
-    inline short node_ptc_twist(RRNodeId node) const{
-        return node_storage_.node_ptc_twist(node);
-    }
 
     /** @brief Return the first outgoing edge of a specified node.
     */

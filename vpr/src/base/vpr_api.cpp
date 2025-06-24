@@ -56,6 +56,7 @@
 #include "pb_type_graph.h"
 #include "route.h"
 #include "route_export.h"
+#include "route_common.h"
 #include "vpr_api.h"
 #include "read_sdc.h"
 #include "power.h"
@@ -906,7 +907,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
     auto& blk_loc_registry = place_ctx.mutable_blk_loc_registry();
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
-    //Initialize the block location registry, which will be filled when loading placement
+    // Initialize the block location registry, which will be filled when loading placement
     blk_loc_registry.init();
 
     // Alloc and load the placement macros.
@@ -916,13 +917,12 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
                                                            g_vpr_ctx.atom().netlist(),
                                                            g_vpr_ctx.atom().lookup());
 
-    //Load an existing placement from a file
+    // Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
                                         blk_loc_registry,
                                         filename_opts.verify_file_digests, device_ctx.grid);
 
-    // Verify that the placement invariants are met after reading the placement
-    // from a file.
+    // Verify that the placement invariants are met after reading the placement from a file.
     unsigned num_errors = verify_placement(g_vpr_ctx);
     if (num_errors == 0) {
         VTR_LOG("Completed placement consistency check successfully.\n");
@@ -1176,7 +1176,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 
     e_graph_type graph_type;
     e_graph_type graph_directionality;
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
