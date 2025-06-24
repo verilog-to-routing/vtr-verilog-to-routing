@@ -4,6 +4,7 @@
 /* Headers from vtrutil library */
 #include "vtr_log.h"
 #include "vtr_assert.h"
+#include "vpr_error.h"
 
 #include "tileable_rr_graph_utils.h"
 #include "side_manager.h"
@@ -98,8 +99,7 @@ std::vector<enum e_side> RRGSB::get_cb_ipin_sides(const e_rr_type& cb_type) cons
             ipin_sides.push_back(LEFT);
             break;
         default:
-            VTR_LOG("Invalid type of connection block!\n");
-            exit(1);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid type of connection block!\n");
     }
 
     return ipin_sides;
@@ -123,8 +123,7 @@ std::vector<enum e_side> RRGSB::get_cb_opin_sides(const e_rr_type& cb_type) cons
             opin_sides.push_back(LEFT);
             break;
         default:
-            VTR_LOG("Invalid type of connection block!\n");
-            exit(1);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid type of connection block!\n");
     }
 
     return opin_sides;
@@ -381,8 +380,7 @@ int RRGSB::get_node_index(const RRGraphView& rr_graph,
             }
             break;
         default:
-            VTR_LOG("Invalid cur_rr_node type! Should be [CHANX|CHANY|IPIN|OPIN]\n");
-            exit(1);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid cur_rr_node type! Should be [CHANX|CHANY|IPIN|OPIN]\n");
     }
 
     VTR_ASSERT((0 == cnt) || (1 == cnt));
@@ -675,8 +673,7 @@ vtr::Point<size_t> RRGSB::get_cb_coordinate(const e_rr_type& cb_type) const {
         case e_rr_type::CHANY:
             return coordinate_;
         default:
-            VTR_LOG("Invalid type of connection block!\n");
-            exit(1);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid type of connection block!\n");
     }
 }
 
@@ -688,8 +685,7 @@ e_side RRGSB::get_cb_chan_side(const e_rr_type& cb_type) const {
         case e_rr_type::CHANY:
             return BOTTOM;
         default:
-            VTR_LOG("Invalid type of connection block!\n");
-            exit(1);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid type of connection block!\n");
     }
 }
 
@@ -705,8 +701,7 @@ e_side RRGSB::get_cb_chan_side(const e_side& ipin_side) const {
         case LEFT:
             return BOTTOM;
         default:
-            VTR_LOG("Invalid type of ipin_side!\n");
-            exit(1);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid type of ipin_side!\n");
     }
 }
 
@@ -735,8 +730,7 @@ vtr::Point<size_t> RRGSB::get_side_block_coordinate(const e_side& side) const {
             /* 4. Channel X [x][y] inputs */
             break;
         default:
-            VTR_LOG(" Invalid side!\n");
-            exit(1);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, " Invalid side!\n");
     }
 
     return ret;
@@ -752,10 +746,10 @@ vtr::Point<size_t> RRGSB::get_grid_coordinate() const {
 /* get a copy from a source */
 void RRGSB::set(const RRGSB& src) {
     /* Copy coordinate */
-    this->set_coordinate(src.get_sb_coordinate().x(), src.get_sb_coordinate().y());
+    set_coordinate(src.get_sb_coordinate().x(), src.get_sb_coordinate().y());
 
     /* Initialize sides */
-    this->init_num_sides(src.get_num_sides());
+    init_num_sides(src.get_num_sides());
 
     /* Copy vectors */
     for (size_t side = 0; side < src.get_num_sides(); ++side) {
@@ -763,24 +757,24 @@ void RRGSB::set(const RRGSB& src) {
         /* Copy chan_nodes */
         /* skip if there is no channel width */
         if (0 < src.get_chan_width(side_manager.get_side())) {
-            this->chan_node_[side_manager.get_side()].set(src.chan_node_[side_manager.get_side()]);
+            chan_node_[side_manager.get_side()].set(src.chan_node_[side_manager.get_side()]);
             /* Copy chan_node_direction_*/
-            this->chan_node_direction_[side_manager.get_side()].clear();
+            chan_node_direction_[side_manager.get_side()].clear();
             for (size_t inode = 0; inode < src.get_chan_width(side_manager.get_side()); ++inode) {
-                this->chan_node_direction_[side_manager.get_side()].push_back(src.get_chan_node_direction(side_manager.get_side(), inode));
+                chan_node_direction_[side_manager.get_side()].push_back(src.get_chan_node_direction(side_manager.get_side(), inode));
             }
         }
 
         /* Copy opin_node and opin_node_grid_side_ */
-        this->opin_node_[side_manager.get_side()].clear();
+        opin_node_[side_manager.get_side()].clear();
         for (size_t inode = 0; inode < src.get_num_opin_nodes(side_manager.get_side()); ++inode) {
-            this->opin_node_[side_manager.get_side()].push_back(src.get_opin_node(side_manager.get_side(), inode));
+            opin_node_[side_manager.get_side()].push_back(src.get_opin_node(side_manager.get_side(), inode));
         }
 
         /* Copy ipin_node and ipin_node_grid_side_ */
-        this->ipin_node_[side_manager.get_side()].clear();
+        ipin_node_[side_manager.get_side()].clear();
         for (size_t inode = 0; inode < src.get_num_ipin_nodes(side_manager.get_side()); ++inode) {
-            this->ipin_node_[side_manager.get_side()].push_back(src.get_ipin_node(side_manager.get_side(), inode));
+            ipin_node_[side_manager.get_side()].push_back(src.get_ipin_node(side_manager.get_side(), inode));
         }
     }
 }
@@ -863,22 +857,22 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
 
         /* Must have valid side and index */
         if (NUM_2D_SIDES == side) {
-            VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
-            VTR_LOG("----------------------------------\n");
-            VTR_LOG("SRC node:\n");
-            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(src_node).c_str());
-            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
-            VTR_LOG("Fan-out nodes:\n");
+            VTR_LOG_DEBUG("GSB[%lu][%lu]:\n", get_x(), get_y());
+            VTR_LOG_DEBUG("----------------------------------\n");
+            VTR_LOG_DEBUG("SRC node:\n");
+            VTR_LOG_DEBUG("Node info: %s\n", rr_graph.node_coordinate_to_string(src_node).c_str());
+            VTR_LOG_DEBUG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
+            VTR_LOG_DEBUG("Fan-out nodes:\n");
             for (const auto& temp_edge : rr_graph.edge_range(src_node)) {
-                VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
+                VTR_LOG_DEBUG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
             }
-            VTR_LOG("\n----------------------------------\n");
-            VTR_LOG("Channel node:\n");
-            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(chan_node).c_str());
-            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(chan_node));
-            VTR_LOG("Fan-in nodes:\n");
+            VTR_LOG_DEBUG("\n----------------------------------\n");
+            VTR_LOG_DEBUG("Channel node:\n");
+            VTR_LOG_DEBUG("Node info: %s\n", rr_graph.node_coordinate_to_string(chan_node).c_str());
+            VTR_LOG_DEBUG("Node ptc: %d\n", rr_graph.node_ptc_num(chan_node));
+            VTR_LOG_DEBUG("Fan-in nodes:\n");
             for (const auto& temp_edge : rr_graph.node_in_edges(chan_node)) {
-                VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
+                VTR_LOG_DEBUG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
             }
         }
 
@@ -979,22 +973,22 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
 
         /* Must have valid side and index */
         if (OPEN == index) {
-            VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
-            VTR_LOG("----------------------------------\n");
-            VTR_LOG("SRC node:\n");
-            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(src_node).c_str());
-            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
-            VTR_LOG("Fan-out nodes:\n");
+            VTR_LOG_DEBUG("GSB[%lu][%lu]:\n", get_x(), get_y());
+            VTR_LOG_DEBUG("----------------------------------\n");
+            VTR_LOG_DEBUG("SRC node:\n");
+            VTR_LOG_DEBUG("Node info: %s\n", rr_graph.node_coordinate_to_string(src_node).c_str());
+            VTR_LOG_DEBUG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
+            VTR_LOG_DEBUG("Fan-out nodes:\n");
             for (const auto& temp_edge : rr_graph.edge_range(src_node)) {
-                VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
+                VTR_LOG_DEBUG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
             }
-            VTR_LOG("\n----------------------------------\n");
-            VTR_LOG("IPIN node:\n");
-            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(ipin_node).c_str());
-            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(ipin_node));
-            VTR_LOG("Fan-in nodes:\n");
+            VTR_LOG_DEBUG("\n----------------------------------\n");
+            VTR_LOG_DEBUG("IPIN node:\n");
+            VTR_LOG_DEBUG("Node info: %s\n", rr_graph.node_coordinate_to_string(ipin_node).c_str());
+            VTR_LOG_DEBUG("Node ptc: %d\n", rr_graph.node_ptc_num(ipin_node));
+            VTR_LOG_DEBUG("Fan-in nodes:\n");
             for (const auto& temp_edge : rr_graph.node_in_edges(ipin_node)) {
-                VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
+                VTR_LOG_DEBUG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
             }
         }
 
@@ -1020,22 +1014,22 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         VTR_ASSERT((-1 != cb_opin_index) && (NUM_2D_SIDES != cb_opin_side));
         /* Must have valid side and index */
         if (OPEN == cb_opin_index || NUM_2D_SIDES == cb_opin_side) {
-            VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
-            VTR_LOG("----------------------------------\n");
-            VTR_LOG("SRC node:\n");
-            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(src_node).c_str());
-            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
-            VTR_LOG("Fan-out nodes:\n");
+            VTR_LOG_DEBUG("GSB[%lu][%lu]:\n", get_x(), get_y());
+            VTR_LOG_DEBUG("----------------------------------\n");
+            VTR_LOG_DEBUG("SRC node:\n");
+            VTR_LOG_DEBUG("Node info: %s\n", rr_graph.node_coordinate_to_string(src_node).c_str());
+            VTR_LOG_DEBUG("Node ptc: %d\n", rr_graph.node_ptc_num(src_node));
+            VTR_LOG_DEBUG("Fan-out nodes:\n");
             for (const auto& temp_edge : rr_graph.edge_range(src_node)) {
-                VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
+                VTR_LOG_DEBUG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
             }
-            VTR_LOG("\n----------------------------------\n");
-            VTR_LOG("IPIN node:\n");
-            VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(ipin_node).c_str());
-            VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(ipin_node));
-            VTR_LOG("Fan-in nodes:\n");
+            VTR_LOG_DEBUG("\n----------------------------------\n");
+            VTR_LOG_DEBUG("IPIN node:\n");
+            VTR_LOG_DEBUG("Node info: %s\n", rr_graph.node_coordinate_to_string(ipin_node).c_str());
+            VTR_LOG_DEBUG("Node ptc: %d\n", rr_graph.node_ptc_num(ipin_node));
+            VTR_LOG_DEBUG("Fan-in nodes:\n");
             for (const auto& temp_edge : rr_graph.node_in_edges(ipin_node)) {
-                VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
+                VTR_LOG_DEBUG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
             }
         }
         from_opin_edge_map[size_t(cb_opin_side)][cb_opin_index] = edge;
@@ -1095,14 +1089,14 @@ void RRGSB::build_cb_opin_nodes(const RRGraphView& rr_graph) {
                     get_node_side_and_index(rr_graph, cand_node, IN_PORT, cb_opin_side,
                                             cb_opin_index);
                     if ((-1 == cb_opin_index) || (NUM_2D_SIDES == cb_opin_side)) {
-                        VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
-                        VTR_LOG("----------------------------------\n");
-                        VTR_LOG("SRC node:\n");
-                        VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(cand_node).c_str());
-                        VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(cand_node));
-                        VTR_LOG("Fan-out nodes:\n");
+                        VTR_LOG_DEBUG("GSB[%lu][%lu]:\n", get_x(), get_y());
+                        VTR_LOG_DEBUG("----------------------------------\n");
+                        VTR_LOG_DEBUG("SRC node:\n");
+                        VTR_LOG_DEBUG("Node info: %s\n", rr_graph.node_coordinate_to_string(cand_node).c_str());
+                        VTR_LOG_DEBUG("Node ptc: %d\n", rr_graph.node_ptc_num(cand_node));
+                        VTR_LOG_DEBUG("Fan-out nodes:\n");
                         for (const auto& temp_edge : rr_graph.edge_range(cand_node)) {
-                            VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
+                            VTR_LOG_DEBUG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
                         }
                     }
                     VTR_ASSERT((-1 != cb_opin_index) && (NUM_2D_SIDES != cb_opin_side));
