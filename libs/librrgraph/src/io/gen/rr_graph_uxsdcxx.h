@@ -2461,7 +2461,7 @@ inline void load_grid_loc_required_attributes(const pugi::xml_node &root, int * 
 }
 
 inline void load_node_loc_required_attributes(const pugi::xml_node &root, int * xhigh, int * xlow, int * yhigh, int * ylow, const std::function<void(const char *)> * report_error){
-	std::bitset<8> astate = 0;
+	std::bitset<7> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_node_loc in = lex_attr_t_node_loc(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
