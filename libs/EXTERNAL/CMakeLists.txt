@@ -48,9 +48,9 @@ if (${WITH_PARMYS})
 
     add_definitions("-D_YOSYS_")
     if(${CMAKE_GENERATOR} STREQUAL "Ninja")
-        set(MAKE_PROGRAM "make")
+        set(MAKE_PROGRAM "$$MAKE") # Escaped for Ninja
     else()
-        set(MAKE_PROGRAM "$$MAKE")  # Escaped for Ninja
+        set(MAKE_PROGRAM "$(MAKE)")
     endif()
 
     set(CURRENT_CPPFLAGS "$(CPPFLAGS)-w")
