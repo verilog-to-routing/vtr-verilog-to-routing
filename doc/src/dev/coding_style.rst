@@ -95,53 +95,6 @@ Specific Conventions
   Example: `router_lookahead_map.cpp`, `netlist_walker.h`
 
 
-Use of `auto`
-~~~~~~~~~~~~~
-
-Use `auto` only when the type is long, complex, or hard to write explicitly.
-
-Examples where `auto` is appropriate:
-
-.. code-block:: cpp
-
-    auto it = container.begin();  // Iterator type is long and not helpful to spell out
-
-    // The return type is std::vector<std::vector<std::pair<int, float>>>
-    auto matrix = generate_adjacency_matrix();
-
-    // Lambdas have unreadable and compiler-generated types — use auto for them
-    auto add = [](int x, int y) { return x + y; };
-
-
-Avoid `auto` when the type is simple and clear:
-
-.. code-block:: cpp
-
-    // Use type names when they are short and readable.
-    for (RRNodeId node_id : device_ctx.rr_graph.nodes()) {
-        t_rr_node_route_inf& node_inf = route_ctx.rr_node_route_inf[rr_id];
-    }
-
-    int count = 0;
-    std::string name = "example";
-    std::vector<int> numbers = {1, 2, 3};
-
-Avoid:
-
-.. code-block:: cpp
-
-    auto count = 0;                // Simple and obvious type
-    auto name = std::string("x");  // Hides a short, clear type
-
-    for (auto node_id : device_ctx.rr_graph.nodes()) {
-        // node_id is RRNodeId. Write it out for clarity.
-        auto& node_inf = route_ctx.rr_node_route_inf[rr_id];
-        // node_inf is t_rr_node_route_inf. Use the explicit type since it's simple and meaningful.
-    }
-
-Rationale: clear, explicit types help with readability and understanding. Avoid hiding simple types behind `auto`.
-
-
 
 Commenting Style
 ~~~~~~~~~~~~~~~~
@@ -272,7 +225,7 @@ Avoid Unnecessary Complexity
 .. code-block:: cpp
 
     // Prefer this
-    std::vector<int> get_ids() const;
+    const std::vector<int>& get_ids() const;
 
     // Avoid this unless you truly need it
     template<typename T>
@@ -280,11 +233,11 @@ Avoid Unnecessary Complexity
 
 
 - **Write short functions.** Functions should do one thing. Short functions are easier to understand, test, and reuse,
-   and their purpose can be clearly described in a concise comment or documentation block.
+    and their purpose can be clearly described in a concise comment or documentation block.
 - **Limit function length.** If a function is growing too long or is difficult to describe in a sentence or two,
-   consider splitting it into smaller helper functions.
+    consider splitting it into smaller helper functions.
 - **Favor simplicity.** Avoid clever or unnecessarily complex constructs. Code should be easy to read and maintain by others,
-   not just the original author.
+    not just the original author.
 - Before adding new functions, classes, or utilities, check the codebase and documentation to see if a similar utility already exists.
 - Reuse or extend existing routines instead of duplicating functionality. This reduces bugs and makes the codebase more maintainable.
 
@@ -347,3 +300,51 @@ General Guidelines
 .. note::
 
    For more on assertion macros and their behavior, see :ref:`vtr_assertion` for more details.
+
+
+
+Use of `auto`
+~~~~~~~~~~~~~
+
+Use `auto` only when the type is long, complex, or hard to write explicitly.
+
+Examples where `auto` is appropriate:
+
+.. code-block:: cpp
+
+    auto it = container.begin();  // Iterator type is long and not helpful to spell out
+
+    // The return type is std::vector<std::vector<std::pair<int, float>>>
+    auto matrix = generate_adjacency_matrix();
+
+    // Lambdas have unreadable and compiler-generated types — use auto for them
+    auto add = [](int x, int y) { return x + y; };
+
+
+Avoid `auto` when the type is simple and clear:
+
+.. code-block:: cpp
+
+    // Use type names when they are short and readable.
+    for (RRNodeId node_id : device_ctx.rr_graph.nodes()) {
+        t_rr_node_route_inf& node_inf = route_ctx.rr_node_route_inf[rr_id];
+    }
+
+    int count = 0;
+    std::string name = "example";
+    std::vector<int> numbers = {1, 2, 3};
+
+Avoid:
+
+.. code-block:: cpp
+
+    auto count = 0;                // Simple and obvious type
+    auto name = std::string("x");  // Hides a short, clear type
+
+    for (auto node_id : device_ctx.rr_graph.nodes()) {
+        // node_id is RRNodeId. Write it out for clarity.
+        auto& node_inf = route_ctx.rr_node_route_inf[rr_id];
+        // node_inf is t_rr_node_route_inf. Use the explicit type since it's simple and meaningful.
+    }
+
+Rationale: clear, explicit types help with readability and understanding. Avoid hiding simple types behind `auto`.
