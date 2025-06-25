@@ -1124,7 +1124,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> Tokens, con
                     parse_pin_name(Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
 
                     std::vector<int> all_sub_tile_to_tile_pin_indices;
-                    for (t_sub_tile& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
+                    for (const t_sub_tile& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
                         int sub_tile_capacity = sub_tile.capacity.total();
 
                         int start = 0;

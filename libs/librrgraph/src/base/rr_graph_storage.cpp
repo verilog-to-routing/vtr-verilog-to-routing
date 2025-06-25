@@ -575,12 +575,12 @@ t_edge_size t_rr_graph_storage::num_non_configurable_edges(RRNodeId node, const 
 }
 
 bool t_rr_graph_storage::edge_is_configurable(RREdgeId edge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
-  auto iswitch = edge_switch(edge);
+  short iswitch = edge_switch(edge);
   return rr_switches[RRSwitchId(iswitch)].configurable();
 }
 
 bool t_rr_graph_storage::edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
-  auto iswitch = edge_switch(id, iedge);
+  short iswitch = edge_switch(id, iedge);
   return rr_switches[RRSwitchId(iswitch)].configurable();
 }
 
@@ -715,7 +715,7 @@ static int get_node_mux_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
-    auto node_type = node_storage[id].type_;
+    e_rr_type node_type = node_storage[id].type_;
     if (node_type != e_rr_type::MUX) {
         VTR_LOG_ERROR("Attempted to access RR node 'mux_num' for non-MUX type '%s'\n", rr_node_typename[node_type]);
     }
@@ -755,7 +755,7 @@ void t_rr_graph_storage::set_node_name(RRNodeId id, const std::string& new_name)
     node_name_.insert(std::make_pair(id, new_name));
 }
 void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
-    auto& node = node_storage_[id];
+    t_rr_node_data& node = node_storage_[id];
     if (x1 < x2) {
         node.xlow_ = x1;
         node.xhigh_ = x2;
@@ -782,7 +782,7 @@ void t_rr_graph_storage::set_node_bend_end(RRNodeId id, size_t bend_end) {
 }
 
 void t_rr_graph_storage::set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
-    auto& node = node_storage_[id];
+    t_rr_node_data& node = node_storage_[id];
     if ((size_t)new_cost_index >= std::numeric_limits<decltype(node.cost_index_)>::max()) {
         VTR_LOG_ERROR("Attempted to set cost_index_ %zu above cost_index storage max value.\n",
                       new_cost_index);
@@ -835,15 +835,19 @@ void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clo
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
+
 int t_rr_graph_view::node_pin_num(RRNodeId id) const {
     return get_node_pin_num(node_storage_, node_ptc_, id);
 }
+
 int t_rr_graph_view::node_track_num(RRNodeId id) const {
     return get_node_track_num(node_storage_, node_ptc_, id);
 }
+
 int t_rr_graph_view::node_class_num(RRNodeId id) const {
     return get_node_class_num(node_storage_, node_ptc_, id);
 }
+
 int t_rr_graph_view::node_mux_num(RRNodeId id) const {
     return get_node_mux_num(node_storage_, node_ptc_, id);
 }
@@ -889,7 +893,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
 
         // Reorder nodes
         for (size_t i = 0; i < node_storage_.size(); i++) {
-            auto n = RRNodeId(i);
+            RRNodeId n = RRNodeId(i);
             VTR_ASSERT(n == inverse_order[order[n]]);
             node_storage_[order[n]] = old_node_storage[n];
         }
@@ -905,8 +909,8 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         // Reorder edges by source node
         for (size_t i = 0; i < node_storage_.size(); i++) {
             node_first_edge_[RRNodeId(i)] = cur_edge;
-            auto n = inverse_order[RRNodeId(i)];
-            for (auto e = old_node_first_edge[n];
+            RRNodeId n = inverse_order[RRNodeId(i)];
+            for (RREdgeId e = old_node_first_edge[n];
                  e < old_node_first_edge[RRNodeId(size_t(n) + 1)];
                  e = RREdgeId(size_t(e) + 1)) {
                 edge_src_node_[cur_edge] = order[old_edge_src_node[e]]; // == n?

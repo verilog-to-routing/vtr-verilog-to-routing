@@ -187,6 +187,7 @@ class t_rr_graph_storage {
     short node_bend_start(RRNodeId id) const {
         return node_bend_start_[id];
     }
+    
     short node_bend_end(RRNodeId id) const {
         return node_bend_end_[id];
     }
@@ -228,7 +229,7 @@ class t_rr_graph_storage {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
-    int node_mux_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_mux_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
 
     /** @brief Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
     t_edge_size fan_in(RRNodeId id) const {
@@ -337,18 +338,18 @@ class t_rr_graph_storage {
      *
      * Only call these methods after partition_edges has been invoked.
      */
-    edge_idx_range edges(const RRNodeId& id) const {
+    edge_idx_range edges(const RRNodeId id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
-    edge_idx_range configurable_edges(const RRNodeId& id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+    edge_idx_range configurable_edges(const RRNodeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id, rr_switches)));
     }
-    edge_idx_range non_configurable_edges(const RRNodeId& id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+    edge_idx_range non_configurable_edges(const RRNodeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
         return vtr::make_range(edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id, rr_switches)), edge_idx_iterator(num_edges(id)));
     }
 
-    t_edge_size num_edges(const RRNodeId& id) const {
+    t_edge_size num_edges(const RRNodeId id) const {
         return size_t(last_edge(id)) - size_t(first_edge(id));
     }
     bool edge_is_configurable(RREdgeId edge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
@@ -363,7 +364,7 @@ class t_rr_graph_storage {
      *
      * If first_edge == last_edge, then a RRNodeId has no edges.
      */
-     RREdgeId first_edge(const RRNodeId& id) const {
+     RREdgeId first_edge(const RRNodeId id) const {
         return node_first_edge_[id];
     }
 
@@ -372,7 +373,7 @@ class t_rr_graph_storage {
      * we always allocate that dummy node. We also assume that the edges have
      * been sorted by rr_node, which is true after partition_edges().
      */
-    RREdgeId last_edge(const RRNodeId& id) const {
+    RREdgeId last_edge(const RRNodeId id) const {
         return (&node_first_edge_[id])[1];
     }
 
@@ -411,19 +412,19 @@ class t_rr_graph_storage {
     }
 
     /** @brief Get the source node for the specified edge. */
-    RRNodeId edge_src_node(const RREdgeId& edge) const {
+    RRNodeId edge_src_node(const RREdgeId edge) const {
         VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_src_node_[edge];
     }
 
     /** @brief Get the destination node for the specified edge. */
-    RRNodeId edge_sink_node(const RREdgeId& edge) const {
+    RRNodeId edge_sink_node(const RREdgeId edge) const {
         VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_dest_node_[edge];
     }
 
     // Get the source node for the specified edge.
-    RRNodeId edge_source_node(const RREdgeId& edge) const {
+    RRNodeId edge_source_node(const RREdgeId edge) const {
         return edge_src_node_[edge];
     }
 
@@ -440,17 +441,17 @@ class t_rr_graph_storage {
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
      */
-    RRNodeId edge_sink_node(const RRNodeId& id, t_edge_size iedge) const {
+    RRNodeId edge_sink_node(const RRNodeId id, t_edge_size iedge) const {
         return edge_sink_node(edge_id(id, iedge));
     }
 
     // Get the source node for the iedge'th edge from specified RRNodeId.
-    RRNodeId edge_source_node(const RRNodeId& id, t_edge_size iedge) const {
+    RRNodeId edge_source_node(const RRNodeId id, t_edge_size iedge) const {
         return edge_source_node(edge_id(id, iedge));
     }
 
     /** @brief Get the switch used for the specified edge. */
-    short edge_switch(const RREdgeId& edge) const {
+    short edge_switch(const RREdgeId edge) const {
         return edge_switch_[edge];
     }
 
@@ -459,7 +460,7 @@ class t_rr_graph_storage {
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
      */
-    short edge_switch(const RRNodeId& id, t_edge_size iedge) const {
+    short edge_switch(const RRNodeId id, t_edge_size iedge) const {
         return edge_switch(edge_id(id, iedge));
     }
 
@@ -791,8 +792,8 @@ class t_rr_graph_storage {
      */
     static inline bool is_node_on_specific_side(
         vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
-        const RRNodeId& id,
-        const e_side& side) {
+        const RRNodeId id,
+        const e_side side) {
         auto& node_data = node_storage[id];
         if (node_data.type_ != e_rr_type::IPIN && node_data.type_ != e_rr_type::OPIN) {
             VTR_LOG_ERROR("Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
@@ -1035,7 +1036,7 @@ class t_rr_graph_view {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
-    int node_mux_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_mux_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
 
     /**
     * @brief Retrieve the fan-in for a given RRNodeId.

@@ -695,7 +695,7 @@ bool is_real_param(const std::string& param) {
     }
 
     /* The string must match the regular expression */
-    static const std::regex real_number_expr("[+-]?([0-9]*\\.[0-9]+)|([0-9]+\\.[0-9]*)");
+    const std::regex real_number_expr("[+-]?([0-9]*\\.[0-9]+)|([0-9]+\\.[0-9]*)");
     if (!std::regex_match(param, real_number_expr)) {
         return false;
     }

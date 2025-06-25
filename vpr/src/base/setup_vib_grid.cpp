@@ -100,7 +100,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
     FormulaParser p;
     std::set<const VibInf*> seen_types;
     for (int layer = 0; layer < num_layers; layer++) {
-        for (const auto& grid_loc_def : grid_def.layers.at(layer).loc_defs) {
+        for (const t_vib_grid_loc_def& grid_loc_def : grid_def.layers.at(layer).loc_defs) {
             //Fill in the block types according to the specification
             const VibInf* type = nullptr;
             for (size_t vib_type = 0; vib_type < device_ctx.arch->vib_infs.size(); vib_type++) {
