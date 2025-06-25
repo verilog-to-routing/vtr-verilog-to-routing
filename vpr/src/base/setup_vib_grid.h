@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <string_view>
+
 #include "physical_types.h"
 
 /**
@@ -9,4 +11,4 @@
  * @param vib_grid_layouts The list of VIB device grid layouts
  * @return The VIB device grid
  */
-VibDeviceGrid create_vib_device_grid(std::string layout_name, const std::vector<t_vib_grid_def>& vib_grid_layouts);
+VibDeviceGrid create_vib_device_grid(std::string_view layout_name, const std::vector<t_vib_grid_def>& vib_grid_layouts);

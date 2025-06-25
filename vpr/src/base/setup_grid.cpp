@@ -22,7 +22,7 @@
 #include "vpr_utils.h"
 
 #include "globals.h"
-#include "SetupGrid.h"
+#include "setup_grid.h"
 #include "vtr_expr_eval.h"
 
 #define MAX_SIZE_FACTOR 10000

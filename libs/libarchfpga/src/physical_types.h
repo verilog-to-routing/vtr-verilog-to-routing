@@ -2374,19 +2374,20 @@ struct t_arch {
     std::vector<t_lut_cell> lut_cells;
     std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
-    //The name of the switch used for the input connection block (i.e. to
-    //connect routing tracks to block pins). tracks can be connected to
+    // The name of the switch used for the input connection block (i.e. to
+    // connect routing tracks to block pins). tracks can be connected to
     // ipins through the same die or from other dice, each of these
-    //types of connections requires a different switch, all names should correspond to a switch in Switches.
+    // types of connections requires a different switch, all names should correspond to a switch in Switches.
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 
-    //the layout that is chosen to be used with command line options
-    //It is used to generate custom SB for a specific locations within the device
-    //If the layout is not specified in the command line options, this variable will be set to "auto"
+    // the layout that is chosen to be used with command line options
+    // It is used to generate custom SB for a specific locations within the device
+    // If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout;
 
+    /// VIB grid layouts
     std::vector<t_vib_grid_def> vib_grid_layouts;
 
     t_clock_arch_spec clock_arch; // Clock related data types

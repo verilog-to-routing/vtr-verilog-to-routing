@@ -1,7 +1,7 @@
 #include <vector>
 #include <list>
 
-#include "SetupVPR.h"
+#include "setup_vpr.h"
 #include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -1103,7 +1103,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> Tokens, con
     for (int i_token = 0; i_token < (int)Tokens.size(); i_token++) {
         std::string Token = Tokens[i_token];
         const char* Token_char = Token.c_str();
-        auto token = vtr::split(Token, ".");
+        auto token = vtr::StringToken(Token).split(".");
         if (token.size() == 1) {
             t_from_or_to_inf from_inf;
             from_inf.type_name = token[0];

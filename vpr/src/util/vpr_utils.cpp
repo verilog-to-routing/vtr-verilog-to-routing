@@ -1355,7 +1355,7 @@ void free_pb_stats(t_pb* pb) {
  ***************************************************************************************/
 std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line) {
 
-    if (vtr::split(src_string).size() > 1) {
+    if (vtr::StringToken(src_string).split(" \t\n").size() > 1) {
         VPR_THROW(VPR_ERROR_ARCH,
                   "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
     }

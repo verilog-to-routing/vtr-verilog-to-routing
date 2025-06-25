@@ -13,8 +13,8 @@
 #include "vpr_utils.h"
 
 #include "globals.h"
-#include "SetupGrid.h"
-#include "SetupVibGrid.h"
+#include "setup_grid.h"
+#include "setup_vib_grid.h"
 #include "vtr_expr_eval.h"
 
 using vtr::FormulaParser;
@@ -30,7 +30,7 @@ static void set_vib_grid_block_type(int priority,
                                     vtr::NdMatrix<const VibInf*, 3>& vib_grid,
                                     vtr::NdMatrix<int, 3>& grid_priorities);
 
-VibDeviceGrid create_vib_device_grid(std::string layout_name, const std::vector<t_vib_grid_def>& vib_grid_layouts) {
+VibDeviceGrid create_vib_device_grid(std::string_view layout_name, const std::vector<t_vib_grid_def>& vib_grid_layouts) {
     if (layout_name == "auto") {
         //We do not support auto layout now
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "VIB architecture doesn't support auto layout now\n");
@@ -53,7 +53,8 @@ VibDeviceGrid create_vib_device_grid(std::string layout_name, const std::vector<
                 }
                 valid_names += "'" + vib_grid_layouts[i].name + "'";
             }
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find grid layout named '%s' (valid grid layouts: %s)\n", layout_name.c_str(), valid_names.c_str());
+            std::string error_msg = vtr::string_fmt("Failed to find grid layout named '%s' (valid grid layouts: %s)", layout_name, valid_names.c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, error_msg.c_str());
         }
 
         return build_vib_device_grid(*iter, iter->width, iter->height);

@@ -2531,7 +2531,7 @@ static void process_model_ports(pugi::xml_node port_group, t_model& model, std::
                 model_port->clock = std::string(attr.value());
 
             } else if (attr.name() == std::string("combinational_sink_ports")) {
-                model_port->combinational_sink_ports = vtr::split(attr.value());
+                model_port->combinational_sink_ports = vtr::StringToken(attr.value()).split(" \t\n");
 
             } else {
                 bad_attribute(attr, port, loc_data);
@@ -3579,7 +3579,7 @@ static void process_pin_locations(pugi::xml_node Locations,
             seen_sides.insert(side_offset);
 
             /* Go through lists of pins */
-            const std::vector<std::string> Tokens = vtr::split(Cur.child_value());
+            const std::vector<std::string> Tokens = vtr::StringToken(Cur.child_value()).split(" \t\n");
             int Count = (int)Tokens.size();
             if (Count > 0) {
                 for (int pin = 0; pin < Count; ++pin) {
@@ -5257,7 +5257,7 @@ static void process_first_stage(pugi::xml_node Stage_node, std::vector<t_physica
         pugi::xml_node SubElem = get_first_child(Node, "from", loc_data);
         int from_num = count_children(Node, "from", loc_data);
         for (int i_from = 0; i_from < from_num; i_from++) {
-            std::vector<std::string> from_tokens = vtr::split(SubElem.child_value());
+            std::vector<std::string> from_tokens = vtr::StringToken(SubElem.child_value()).split(" \t\n");
             first_stage_mux.from_tokens.push_back(from_tokens);
             SubElem = SubElem.next_sibling(SubElem.name());
         }
@@ -5281,14 +5281,14 @@ static void process_second_stage(pugi::xml_node Stage_node, std::vector<t_physic
         pugi::xml_node SubElem = get_first_child(Node, "to", loc_data);
         int to_num = count_children(Node, "to", loc_data);
         VTR_ASSERT(to_num == 1);
-        std::vector<std::string> to_tokens = vtr::split(SubElem.child_value());
+        std::vector<std::string> to_tokens = vtr::StringToken(SubElem.child_value()).split(" \t\n");
         VTR_ASSERT(to_tokens.size() == 1);
         second_stage_mux.to_tokens = to_tokens;
 
         SubElem = get_first_child(Node, "from", loc_data);
         int from_num = count_children(Node, "from", loc_data);
         for (int i_from = 0; i_from < from_num; i_from++) {
-            std::vector<std::string> from_tokens = vtr::split(SubElem.child_value());
+            std::vector<std::string> from_tokens = vtr::StringToken(SubElem.child_value()).split(" \t\n");
             second_stage_mux.from_tokens.push_back(from_tokens);
             SubElem = SubElem.next_sibling(SubElem.name());
         }

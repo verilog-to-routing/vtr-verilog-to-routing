@@ -29,7 +29,7 @@ std::array<std::string, 2> split_ext(const std::string& filename) {
 }
 
 std::string basename(const std::string& path) {
-    auto elements = split(path, PATH_DELIM);
+    auto elements = StringToken(path).split(PATH_DELIM);
 
     std::string str;
     if (elements.size() > 0) {
@@ -41,7 +41,7 @@ std::string basename(const std::string& path) {
 }
 
 std::string dirname(const std::string& path) {
-    auto elements = split(path, PATH_DELIM);
+    auto elements = StringToken(path).split(PATH_DELIM);
 
     std::string str;
     if (elements.size() > 0) {

@@ -39,8 +39,8 @@
 #include "place_and_route.h"
 #include "pack.h"
 #include "place.h"
-#include "SetupGrid.h"
-#include "SetupVibGrid.h"
+#include "setup_grid.h"
+#include "setup_vib_grid.h"
 #include "setup_clocks.h"
 #include "setup_noc.h"
 #include "read_xml_noc_traffic_flows_file.h"
@@ -48,7 +48,7 @@
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
-#include "SetupVPR.h"
+#include "setup_vpr.h"
 #include "ShowSetup.h"
 #include "CheckArch.h"
 #include "CheckSetup.h"
@@ -260,7 +260,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which VPR_ERRORs
      * are demoted to VTR_LOG_WARNs
      */
-    for (const std::string& func_name : vtr::split(options->disable_errors.value(), ":")) {
+    for (const std::string& func_name : vtr::StringToken(options->disable_errors.value()).split(":")) {
         map_error_activation_status(func_name);
     }
 
@@ -268,7 +268,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which
      * warnings are being suppressed
      */
-    std::vector<std::string> split_warning_option = vtr::split(options->suppress_warnings.value(), ",");
+    std::vector<std::string> split_warning_option = vtr::StringToken(options->suppress_warnings.value()).split(",");
     std::string warn_log_file;
     std::string warn_functions;
     // If no log file name is provided, the specified warning
@@ -281,7 +281,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     }
 
     set_noisy_warn_log_file(warn_log_file);
-    for (const std::string& func_name : vtr::split(warn_functions, std::string(":"))) {
+    for (const std::string& func_name : vtr::StringToken(warn_functions).split(":")) {
         add_warnings_to_suppress(func_name);
     }
 

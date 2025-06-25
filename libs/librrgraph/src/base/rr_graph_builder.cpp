@@ -2,7 +2,7 @@
 #include "vtr_log.h"
 #include "rr_graph_builder.h"
 #include "vtr_time.h"
-#include "vtr_tokenizer.h"
+#include "vtr_util.h"
 #include <queue>
 #include <random>
 

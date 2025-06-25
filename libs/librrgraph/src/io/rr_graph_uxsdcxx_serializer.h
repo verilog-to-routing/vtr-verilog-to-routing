@@ -706,7 +706,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return node;
     }
     inline void set_node_loc_ptc(const char* ptc, int& inode) final {
-        auto node = (*rr_nodes_)[inode];
+        t_rr_node node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
         return rr_graph_builder_->set_node_ptc_nums(node_id, std::string(ptc));
     }

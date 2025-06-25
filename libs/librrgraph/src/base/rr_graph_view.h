@@ -500,15 +500,19 @@ class RRGraphView {
         return node_storage_.num_non_configurable_edges(node, rr_switch_inf_);
     }
 
-
-    /** @brief A configurable edge represents a programmable switch between routing resources, which could be
-     * a multiplexer
-     * a tri-state buffer
-     * a pass gate
+    /** 
+     * @brief A configurable edge represents a programmable switch between routing resources, which could be
+     *  - a multiplexer
+     *  - a tri-state buffer
+     *  - a pass gate
      * This API gets ID range for configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range configurable_edges(RRNodeId node) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)));
     }
+
+    /**
+     * @brief Return ID range for configurable outgoing edges.
+     */
     inline edge_idx_range node_configurable_out_edges(RRNodeId node) const {
         return configurable_edges(node);
     }
@@ -521,6 +525,10 @@ class RRGraphView {
     inline edge_idx_range non_configurable_edges(RRNodeId node) const {
         return vtr::make_range(edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)), edge_idx_iterator(num_edges(node)));
     }
+
+    /**
+     * @brief Return ID range for non-configurable outgoing edges.
+     */
     inline edge_idx_range node_non_configurable_out_edges(RRNodeId node) const {
         return non_configurable_edges(node);
     }
@@ -539,12 +547,16 @@ class RRGraphView {
     inline edge_idx_range edges(const RRNodeId& id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
+
+    /**
+     * @brief Return ID range for outgoing edges.
+     */
     inline edge_idx_range node_out_edges(const RRNodeId& id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
     /** @brief find the edges between two nodes */
-    std::vector<RREdgeId> find_edges(const RRNodeId& src_node, const RRNodeId& des_node) const;
+    std::vector<RREdgeId> find_edges(RRNodeId src_node, RRNodeId des_node) const;
 
     /** @brief Return the number of edges.
      */

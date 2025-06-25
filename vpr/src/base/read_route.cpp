@@ -79,7 +79,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     std::getline(fp, header_str);
     ++lineno;
 
-    std::vector<std::string> header = vtr::split(header_str);
+    std::vector<std::string> header = vtr::StringToken(header_str).split(" \t\n");
     if (header[0] == "Placement_File:" && header[2] == "Placement_ID:" && header[3] != place_ctx.placement_id) {
         auto msg = vtr::string_fmt(
             "Placement file %s specified in the routing file"
@@ -104,7 +104,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     std::getline(fp, header_str);
     ++lineno;
     header.clear();
-    header = vtr::split(header_str);
+    header = vtr::StringToken(header_str).split(" \t\n");
     if (header[0] == "Array" && header[1] == "size:" && (vtr::atou(header[2].c_str()) != device_ctx.grid.width() || vtr::atou(header[4].c_str()) != device_ctx.grid.height())) {
         vpr_throw(VPR_ERROR_ROUTE, route_file, lineno,
                   "Device dimensions %sx%s specified in the routing file does not match given %dx%d ",
@@ -151,7 +151,7 @@ static void process_route(const Netlist<>& net_list, std::ifstream& fp, const ch
     while (std::getline(fp, input)) {
         ++lineno;
         tokens.clear();
-        tokens = vtr::split(input);
+        tokens = vtr::StringToken(input).split(" \t\n");
         if (tokens.empty()) {
             continue; //Skip blank lines
         } else if (tokens[0][0] == '#') {
@@ -228,7 +228,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
         ++lineno;
 
         tokens.clear();
-        tokens = vtr::split(input);
+        tokens = vtr::StringToken(input).split(" \t\n");
 
         if (tokens.empty()) {
             continue; /*Skip blank lines*/
@@ -416,7 +416,7 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
     while (std::getline(fp, block)) {
         ++lineno;
         tokens.clear();
-        tokens = vtr::split(block);
+        tokens = vtr::StringToken(block).split(" \t\n");
 
         if (tokens.empty()) {
             continue; /*Skip blank lines*/

@@ -37,7 +37,7 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
                                rr_graph.node_pin_num(inode),
                                pin_name.c_str());
     } else if (rr_graph.node_type(inode) == e_rr_type::MUX) {
-        auto index = rr_graph.node_ptc_num(inode);
+        int index = rr_graph.node_ptc_num(inode);
         
         msg += vtr::string_fmt(" mux index: %d",
                                index);
