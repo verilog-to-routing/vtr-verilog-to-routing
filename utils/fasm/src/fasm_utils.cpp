@@ -29,7 +29,7 @@ std::vector<std::string> split_fasm_entry(std::string entry,
     }
   }
 
-  return vtr::StringToken(entry).split(delims);
+  return vtr::StringToken(entry).split(std::string(delims));
 }
 
 std::vector<std::string> find_tags_in_feature (std::string_view a_String) {
