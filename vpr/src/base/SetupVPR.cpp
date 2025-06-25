@@ -703,6 +703,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->placer_debug_block = Options.placer_debug_block;
     PlacerOpts->placer_debug_net = Options.placer_debug_net;
+
+    PlacerOpts->place_auto_init_t_scale = Options.place_auto_init_t_scale.value();
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

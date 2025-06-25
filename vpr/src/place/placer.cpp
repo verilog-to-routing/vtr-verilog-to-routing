@@ -35,6 +35,7 @@ Placer::Placer(const Netlist<>& net_list,
                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
+               float anneal_auto_init_t_scale,
                bool cube_bb,
                bool is_flat,
                bool quiet)
@@ -152,6 +153,7 @@ Placer::Placer(const Netlist<>& net_list,
     annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, place_macros, costs_, net_cost_handler_, noc_cost_handler_,
                                                     noc_opts_, rng_, std::move(move_generator), std::move(move_generator2), place_delay_model_.get(),
                                                     placer_criticalities_.get(), placer_setup_slacks_.get(), timing_info_.get(), pin_timing_invalidator_.get(),
+                                                    anneal_auto_init_t_scale,
                                                     move_lim);
 }
 

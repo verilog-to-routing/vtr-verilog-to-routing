@@ -1004,8 +1004,9 @@ enum class e_move_type;
  *   @param place_constraint_subtile
  *              True if subtiles should be specified when printing floorplan
  *              constraints. False if not.
- *
- *
+ *   @param place_auto_init_t_scale
+ *              When the annealer is using the automatic schedule, this option
+ *              scales the initial temperature selected.
  */
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
@@ -1077,6 +1078,8 @@ struct t_placer_opts {
     std::string allowed_tiles_for_delay_model;
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
+
+    float place_auto_init_t_scale;
 };
 
 /******************************************************************

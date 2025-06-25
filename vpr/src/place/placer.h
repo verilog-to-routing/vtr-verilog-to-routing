@@ -49,6 +49,7 @@ class Placer {
            const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
            const FlatPlacementInfo& flat_placement_info,
            std::shared_ptr<PlaceDelayModel> place_delay_model,
+           float anneal_auto_init_t_scale,
            bool cube_bb,
            bool is_flat,
            bool quiet);

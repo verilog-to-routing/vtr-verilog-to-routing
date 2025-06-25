@@ -129,6 +129,7 @@ struct t_options {
     argparse::ArgValue<int> Seed;
     argparse::ArgValue<bool> ShowPlaceTiming;
     argparse::ArgValue<float> PlaceInnerNum;
+    argparse::ArgValue<float> place_auto_init_t_scale;
     argparse::ArgValue<float> PlaceInitT;
     argparse::ArgValue<float> PlaceExitT;
     argparse::ArgValue<float> PlaceAlphaT;

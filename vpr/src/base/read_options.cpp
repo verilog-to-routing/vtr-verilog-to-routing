@@ -2200,6 +2200,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("circuit")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_auto_init_t_scale, "--anneal_auto_init_t_scale")
+        .help(
+            "A scale on the starting temperature of the anneal for the automatic annealing "
+            "schedule.\n"
+            "\n"
+            "When in the automatic annealing schedule, the annealer will select a good "
+            "initial temperature based on the quality of the initial placement. This option "
+            "allows you to scale that initial temperature up or down by multiplying the "
+            "initial temperature by the given scale. Increasing this number "
+            "will increase the initial temperature which will have the annealer potentially "
+            "explore more of the space at the expense of run time. Depending on the quality "
+            "of the initial placement, this may improve or hurt the quality of the final "
+            "placement.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.PlaceInitT, "--init_t")
         .help("Initial temperature for manual annealing schedule")
         .default_value("100.0")

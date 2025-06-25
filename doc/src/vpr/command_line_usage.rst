@@ -810,6 +810,22 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``circuit``
 
+.. option:: --anneal_auto_init_t_scale <float>
+
+    A scale on the starting temperature of the anneal for the automatic annealing
+    schedule.
+
+    When in the automatic annealing schedule, the annealer will select a good
+    initial temperature based on the quality of the initial placement. This option
+    allows you to scale that initial temperature up or down by multiplying the
+    initial temperature by the given scale. Increasing this number
+    will increase the initial temperature which will have the annealer potentially
+    explore more of the space at the expense of run time. Depending on the quality
+    of the initial placement, this may improve or hurt the quality of the final
+    placement.
+
+    **Default:** ``1.0``
+
 .. option:: --init_t <float>
 
     The starting temperature of the anneal for the manual annealing schedule.
