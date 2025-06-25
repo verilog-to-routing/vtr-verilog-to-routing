@@ -232,14 +232,14 @@ Avoid Unnecessary Complexity
     auto&& get_ids() const && noexcept;
 
 
-- **Write short functions.** Functions should do one thing. Short functions are easier to understand, test, and reuse,
-    and their purpose can be clearly described in a concise comment or documentation block.
-- **Limit function length.** If a function is growing too long or is difficult to describe in a sentence or two,
-    consider splitting it into smaller helper functions.
-- **Favor simplicity.** Avoid clever or unnecessarily complex constructs. Code should be easy to read and maintain by others,
-    not just the original author.
+- **Write short functions.** Functions should do one thing. Short functions are easier to understand, test, and reuse, and their purpose can be clearly described in a concise comment or documentation block.
+- **Limit function length.** If a function is growing too long or is difficult to describe in a sentence or two, consider splitting it into smaller helper functions.
+- **Favor simplicity.** Avoid clever or unnecessarily complex constructs. Code should be easy to read and maintain by others, not just the original author.
+- **Avoid deep abstract class hierarchies.** Excessive layering of virtual base classes makes the code hard to navigate and understand. Many tools (e.g., IDEs, LSPs) struggle to follow virtual call chains, especially in large or templated codebases.
+- **Avoid mixing templates with virtual functions.** This combination is particularly difficult to reason about and navigate. If you need to write generic code, prefer using either virtual dispatch or templates, but not both in the same interface.
 - Before adding new functions, classes, or utilities, check the codebase and documentation to see if a similar utility already exists.
 - Reuse or extend existing routines instead of duplicating functionality. This reduces bugs and makes the codebase more maintainable.
+
 
 
 Group Related Data
@@ -300,6 +300,30 @@ General Guidelines
 .. note::
 
    For more on assertion macros and their behavior, see :ref:`vtr_assertion` for more details.
+
+
+Logging and Error Reporting
+~~~~~~~~~~~~~
+Use the VTR logging and error handling utilities instead of raw `printf`, `std::cerr`, `exit()`, or `throw`.
+
+- Use `VTR_LOG`, `VTR_LOG_WARN`, and `VTR_LOG_ERROR`
+
+
+.. code-block:: cpp
+
+    VTR_LOG("Incr Slack updates %zu in %g sec\n", incr_slack_updates, incr_slack_update_time_sec);
+
+    if (check_route_option == e_check_route_option::OFF) {
+        VTR_LOG_WARN("The user disabled the check route step.");
+        return;
+    }
+
+    if (total_edges_to_node[inode] != 0) {
+        VTR_LOG_ERROR("in check_rr_graph: SOURCE node %d has a fanin of %d, expected 0.\n", inode, total_edges_to_node[inode]);
+    }
+
+
+Refer to :doc:`Logging - Errors - Assertions</api/vtrutil/logging>` to learn more about logging and error reporting.
 
 
 
