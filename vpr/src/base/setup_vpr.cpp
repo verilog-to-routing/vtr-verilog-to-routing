@@ -119,7 +119,7 @@ void SetupVPR(const t_options* options,
               t_vpr_setup* vpr_setup) {
     using argparse::Provenance;
 
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     device_ctx.arch = arch;
 
@@ -190,7 +190,7 @@ void SetupVPR(const t_options* options,
     device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
     int num_inputs = 0;
     int num_outputs = 0;
-    for (auto& type : device_ctx.physical_tile_types) {
+    for (t_physical_tile_type& type : device_ctx.physical_tile_types) {
         if (type.is_empty()) {
             VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE == nullptr);
             VTR_ASSERT(type.num_pins == 0);
@@ -208,7 +208,7 @@ void SetupVPR(const t_options* options,
 
     device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = nullptr;
     int max_equivalent_tiles = 0;
-    for (const auto& type : device_ctx.logical_block_types) {
+    for (const t_logical_block_type& type : device_ctx.logical_block_types) {
         if (type.is_empty()) {
             VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE == nullptr);
             VTR_ASSERT(type.pb_type == nullptr);
@@ -249,7 +249,7 @@ void SetupVPR(const t_options* options,
         setup_vib_inf(device_ctx.physical_tile_types, arch->switches, arch->Segments, arch->vib_infs);
     }
 
-    for (auto has_global_routing : arch->layer_global_routing) {
+    for (bool has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
     }
 
@@ -371,7 +371,7 @@ static void setup_timing(const t_options& Options, const bool TimingEnabled, t_t
 static void setup_switches(const t_arch& Arch,
                            t_det_routing_arch& RoutingArch,
                            const std::vector<t_arch_switch_inf>& arch_switches) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     int switches_to_copy = (int)arch_switches.size();
     int num_arch_switches = (int)arch_switches.size();
@@ -756,7 +756,7 @@ static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analy
 }
 
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     power_opts->do_power = Options.do_power;
 
@@ -836,20 +836,20 @@ static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_
 }
 
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
-    for (auto& physical_type : device_ctx.physical_tile_types) {
+    for (t_physical_tile_type& physical_type : device_ctx.physical_tile_types) {
         set_root_pin_to_pb_pin_map(&physical_type);
         // Physical number of pins and classes in the clusters start from the number of pins and classes on the cluster
         // to avoid collision between intra-cluster pins and classes with root-level ones
         int physical_pin_offset = physical_type.num_pins;
         int physical_class_offset = (int)physical_type.class_inf.size();
         physical_type.primitive_class_starting_idx = physical_class_offset;
-        for (auto& sub_tile : physical_type.sub_tiles) {
+        for (t_sub_tile& sub_tile : physical_type.sub_tiles) {
             sub_tile.primitive_class_range.resize(sub_tile.capacity.total());
             sub_tile.intra_pin_range.resize(sub_tile.capacity.total());
             for (int sub_tile_inst = 0; sub_tile_inst < sub_tile.capacity.total(); sub_tile_inst++) {
-                for (auto logic_block_ptr : sub_tile.equivalent_sites) {
+                for (t_logical_block_type_ptr logic_block_ptr : sub_tile.equivalent_sites) {
                     int num_classes = (int)logic_block_ptr->primitive_logical_class_inf.size();
                     int num_pins = (int)logic_block_ptr->pin_logical_num_to_pb_pin_mapping.size();
                     int logical_block_idx = logic_block_ptr->index;
@@ -868,13 +868,13 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
                     // Change the pin numbers in a class pin list from logical number to physical number
                     std::for_each(logical_classes.begin(), logical_classes.end(),
                                   [&physical_pin_offset](t_class& l_class) {
-                                      for (auto& pin : l_class.pinlist) {
+                                      for (int& pin : l_class.pinlist) {
                                           pin += physical_pin_offset;
                                       }
                                   });
 
                     int physical_class_num = physical_class_offset;
-                    for (auto& logic_class : logical_classes) {
+                    for (t_class& logic_class : logical_classes) {
                         auto result = physical_type.primitive_class_inf.insert(std::make_pair(physical_class_num, logic_class));
                         add_primitive_pin_to_physical_tile(logic_class.pinlist,
                                                            physical_class_num,
@@ -900,13 +900,13 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
 
 static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type) {
     for (int sub_tile_idx = 0; sub_tile_idx < (int)physical_type->sub_tiles.size(); sub_tile_idx++) {
-        auto& sub_tile = physical_type->sub_tiles[sub_tile_idx];
+        t_sub_tile& sub_tile = physical_type->sub_tiles[sub_tile_idx];
         int inst_num_pin = sub_tile.num_phy_pins / sub_tile.capacity.total();
         // Later in the code, I've assumed that pins of a subtile are mapped in a continuous fashion to
         // the tile pins - Usage case: vpr_utils.cpp:get_pb_pins
         VTR_ASSERT(sub_tile.sub_tile_to_tile_pin_indices[0] + sub_tile.num_phy_pins - 1 == sub_tile.sub_tile_to_tile_pin_indices[sub_tile.num_phy_pins - 1]);
         for (int sub_tile_pin_num = 0; sub_tile_pin_num < sub_tile.num_phy_pins; sub_tile_pin_num++) {
-            for (auto& eq_site : sub_tile.equivalent_sites) {
+            for (t_logical_block_type_ptr eq_site : sub_tile.equivalent_sites) {
                 t_physical_pin sub_tile_physical_pin = t_physical_pin(sub_tile_pin_num % inst_num_pin);
                 int physical_pin_num = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_num];
                 auto direct_map = physical_type->tile_block_pin_directs_map.at(eq_site->index).at(sub_tile.index);
@@ -942,19 +942,19 @@ static void add_logical_pin_to_physical_tile(int physical_pin_offset,
 static void add_primitive_pin_to_physical_tile(const std::vector<int>& pin_list,
                                                int physical_class_num,
                                                t_physical_tile_type* physical_tile) {
-    for (auto pin_num : pin_list) {
+    for (int pin_num : pin_list) {
         physical_tile->primitive_pin_class.insert(std::make_pair(pin_num, physical_class_num));
     }
 }
 
 static void add_intra_tile_switches() {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     std::unordered_map<float, int> pb_edge_delays;
 
     VTR_ASSERT(device_ctx.all_sw_inf.size() == device_ctx.arch_switch_inf.size());
 
-    for (auto& logical_block : device_ctx.logical_block_types) {
+    for (t_logical_block_type& logical_block : device_ctx.logical_block_types) {
         if (logical_block.is_empty()) {
             continue;
         }
@@ -968,7 +968,7 @@ static void add_intra_tile_switches() {
         while (!pb_graph_node_q.empty()) {
             pb_graph_node = pb_graph_node_q.front();
             pb_graph_node_q.pop_front();
-            auto pb_pins = get_mutable_pb_graph_node_pb_pins(pb_graph_node);
+            std::vector<t_pb_graph_pin*> pb_pins = get_mutable_pb_graph_node_pb_pins(pb_graph_node);
 
             for (t_pb_graph_pin* pb_pin : pb_pins) {
                 for (int out_edge_idx = 0; out_edge_idx < pb_pin->num_output_edges; out_edge_idx++) {
@@ -1032,10 +1032,10 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
             // Make sure that we are visiting each pin once.
             if (insert_res.second) {
                 curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
-                auto driving_pins = get_physical_pin_src_pins(physical_tile,
+                std::vector<int> driving_pins = get_physical_pin_src_pins(physical_tile,
                                                               logical_block,
                                                               curr_pin_physical_num);
-                for (auto driving_pin_physical_num : driving_pins) {
+                for (int driving_pin_physical_num : driving_pins) {
                     // Since we define reachable class as a class which is connected to a pin through a series of IPINs, only IPINs are added to the list
                     if (get_pin_type_from_pin_physical_num(physical_tile, driving_pin_physical_num) == e_pin_type::RECEIVER) {
                         pin_list.push_back(driving_pin_physical_num);
@@ -1051,7 +1051,7 @@ static void setup_vib_inf(const std::vector<t_physical_tile_type>& PhysicalTileT
                           const std::vector<t_segment_inf>& Segments,
                           std::vector<VibInf>& vib_infs) {
     VTR_ASSERT(!vib_infs.empty());
-    for (auto& vib_inf : vib_infs) {
+    for (VibInf& vib_inf : vib_infs) {
         for (size_t i_switch = 0; i_switch < switches.size(); i_switch++) {
             if (vib_inf.get_switch_name() == switches[i_switch].name) {
                 vib_inf.set_switch_idx(i_switch);
@@ -1060,7 +1060,7 @@ static void setup_vib_inf(const std::vector<t_physical_tile_type>& PhysicalTileT
         }
 
         std::vector<t_seg_group> seg_groups = vib_inf.get_seg_groups();
-        for (auto& seg_group : seg_groups) {
+        for (t_seg_group& seg_group : seg_groups) {
             for (int i_seg = 0; i_seg < (int)Segments.size(); i_seg++) {
                 if (Segments[i_seg].name == seg_group.name) {
                     seg_group.seg_index = i_seg;
@@ -1071,27 +1071,27 @@ static void setup_vib_inf(const std::vector<t_physical_tile_type>& PhysicalTileT
         vib_inf.set_seg_groups(seg_groups);
 
         std::vector<t_first_stage_mux_inf> first_stages = vib_inf.get_first_stages();
-        for (auto& first_stage : first_stages) {
-            auto& from_tokens = first_stage.from_tokens;
-            for (const auto& from_token : from_tokens) {
+        for (t_first_stage_mux_inf& first_stage : first_stages) {
+            std::vector<std::vector<std::string>>& from_tokens = first_stage.from_tokens;
+            for (const std::vector<std::string>& from_token : from_tokens) {
                 process_from_or_to_tokens(from_token, PhysicalTileTypes, Segments, first_stage.froms);
             }
         }
         vib_inf.set_first_stages(first_stages);
 
-        auto second_stages = vib_inf.get_second_stages();
-        for (auto& second_stage : second_stages) {
+        std::vector<t_second_stage_mux_inf> second_stages = vib_inf.get_second_stages();
+        for (t_second_stage_mux_inf& second_stage : second_stages) {
             std::vector<t_from_or_to_inf> tos;
 
             process_from_or_to_tokens(second_stage.to_tokens, PhysicalTileTypes, Segments, tos);
-            for (auto& to : tos) {
+            for (t_from_or_to_inf& to : tos) {
                 VTR_ASSERT(to.from_type == e_multistage_mux_from_or_to_type::SEGMENT
                            || to.from_type == e_multistage_mux_from_or_to_type::PB);
                 second_stage.to.push_back(to);
             }
 
-            auto from_tokens = second_stage.from_tokens;
-            for (const auto& from_token : from_tokens) {
+            std::vector<std::vector<std::string>> from_tokens = second_stage.from_tokens;
+            for (const std::vector<std::string>& from_token : from_tokens) {
                 process_from_or_to_tokens(from_token, PhysicalTileTypes, Segments, second_stage.froms);
             }
         }
@@ -1103,7 +1103,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> Tokens, con
     for (int i_token = 0; i_token < (int)Tokens.size(); i_token++) {
         std::string Token = Tokens[i_token];
         const char* Token_char = Token.c_str();
-        auto token = vtr::StringToken(Token).split(".");
+        std::vector<std::string> token = vtr::StringToken(Token).split(".");
         if (token.size() == 1) {
             t_from_or_to_inf from_inf;
             from_inf.type_name = token[0];
@@ -1124,7 +1124,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> Tokens, con
                     parse_pin_name(Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
 
                     std::vector<int> all_sub_tile_to_tile_pin_indices;
-                    for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
+                    for (t_sub_tile& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
                         int sub_tile_capacity = sub_tile.capacity.total();
 
                         int start = 0;
