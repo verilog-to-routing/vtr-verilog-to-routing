@@ -1,9 +1,4 @@
-//
-// Created by amin on 11/27/23.
-//
 
-#include <cmath>
-#include <vector>
 #include <ctime>
 #include "router_lookahead_compressed_map.h"
 #include "connection_router_interface.h"

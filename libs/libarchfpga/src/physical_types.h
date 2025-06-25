@@ -98,6 +98,13 @@ class t_metadata_value {
     // Return string value.
     vtr::interned_string as_string() const { return value_; }
 
+    t_metadata_value& operator=(const t_metadata_value& o) noexcept {
+        if (this != &o) {
+            value_ = o.value_;
+        }
+        return *this;
+    }
+
   private:
     vtr::interned_string value_;
 };

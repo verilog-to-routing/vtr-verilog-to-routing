@@ -31,7 +31,7 @@ class string_view {
         : data_(str)
         , size_(size) {}
 
-    constexpr explicit string_view(const std::string& other)
+    explicit string_view(const std::string& other)
         : data_(other.c_str())
         , size_(other.size()) {}
 

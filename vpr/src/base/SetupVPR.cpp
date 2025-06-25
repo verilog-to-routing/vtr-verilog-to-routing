@@ -159,11 +159,11 @@ void SetupVPR(const t_options* options,
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
         switch (options->arch_format) {
             case e_arch_format::VTR:
-                XmlReadArch(options->ArchFile.value().c_str(),
-                            timingenabled,
-                            arch,
-                            device_ctx.physical_tile_types,
-                            device_ctx.logical_block_types);
+                xml_read_arch(options->ArchFile.value().c_str(),
+                              timingenabled,
+                              arch,
+                              device_ctx.physical_tile_types,
+                              device_ctx.logical_block_types);
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");
@@ -488,6 +488,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_debug_sink_rr = Options.router_debug_sink_rr;
     RouterOpts->router_debug_iteration = Options.router_debug_iteration;
     RouterOpts->lookahead_type = Options.router_lookahead_type;
+    RouterOpts->initial_acc_cost_chan_congestion_threshold = Options.router_initial_acc_cost_chan_congestion_threshold;
+    RouterOpts->initial_acc_cost_chan_congestion_weight = Options.router_initial_acc_cost_chan_congestion_weight;
+
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
     RouterOpts->initial_timing = Options.router_initial_timing;
@@ -559,6 +562,7 @@ void SetupAPOpts(const t_options& options,
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
     apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
     apOpts.ap_high_fanout_threshold = options.ap_high_fanout_threshold.value();
+    apOpts.ap_partial_legalizer_target_density = options.ap_partial_legalizer_target_density.value();
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
@@ -699,6 +703,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->placer_debug_block = Options.placer_debug_block;
     PlacerOpts->placer_debug_net = Options.placer_debug_net;
+
+    PlacerOpts->place_auto_init_t_scale = Options.place_auto_init_t_scale.value();
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

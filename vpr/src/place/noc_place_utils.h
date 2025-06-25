@@ -31,7 +31,7 @@ class NocCostHandler {
     NocCostHandler(const NocCostHandler&) = delete;
     NocCostHandler& operator=(const NocCostHandler&) = delete;
     NocCostHandler(NocCostHandler&&) = default;
-    NocCostHandler& operator=(NocCostHandler&&) = default;
+    NocCostHandler& operator=(NocCostHandler&&) = delete;
 
     /**
      * @brief Check if the internal reference to block_locs is pointing to the same

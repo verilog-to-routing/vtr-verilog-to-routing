@@ -34,8 +34,8 @@ void CheckSetup(const t_packer_opts& packer_opts,
         }
     }
 
-    if ((GLOBAL == router_opts.route_type)
-        && (placer_opts.place_algorithm.is_timing_driven())) {
+    if (e_route_type::GLOBAL == router_opts.route_type
+        && placer_opts.place_algorithm.is_timing_driven()) {
         /* Works, but very weird.  Can't optimize timing well, since you're
          * not doing proper architecture delay modelling. */
         VTR_LOG_WARN(
@@ -67,6 +67,11 @@ void CheckSetup(const t_packer_opts& packer_opts,
                         "The number of placer non timing move probabilities (%d) should equal to or less than the total number of supported moves (%d).\n",
                         placer_opts.place_static_move_prob.size(),
                         NUM_PL_MOVE_TYPES);
+    }
+
+    if (placer_opts.place_auto_init_t_scale < 0.0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Cannot have negative annealer auto initial temperature scale.\n");
     }
 
     // Rules for doing Analytical Placement
@@ -106,7 +111,7 @@ void CheckSetup(const t_packer_opts& packer_opts,
         }
     }
 
-    if (DETAILED == router_opts.route_type) {
+    if (e_route_type::DETAILED == router_opts.route_type) {
         if ((chans.chan_x_dist.type != UNIFORM)
             || (chans.chan_y_dist.type != UNIFORM)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,

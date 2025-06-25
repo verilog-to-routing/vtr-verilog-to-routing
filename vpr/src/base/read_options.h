@@ -103,6 +103,7 @@ struct t_options {
     argparse::ArgValue<e_ap_partial_legalizer> ap_partial_legalizer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
+    argparse::ArgValue<std::vector<std::string>> ap_partial_legalizer_target_density;
     argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
@@ -128,6 +129,7 @@ struct t_options {
     argparse::ArgValue<int> Seed;
     argparse::ArgValue<bool> ShowPlaceTiming;
     argparse::ArgValue<float> PlaceInnerNum;
+    argparse::ArgValue<float> place_auto_init_t_scale;
     argparse::ArgValue<float> PlaceInitT;
     argparse::ArgValue<float> PlaceExitT;
     argparse::ArgValue<float> PlaceAlphaT;
@@ -254,6 +256,8 @@ struct t_options {
     argparse::ArgValue<int> router_debug_sink_rr;
     argparse::ArgValue<int> router_debug_iteration;
     argparse::ArgValue<e_router_lookahead> router_lookahead_type;
+    argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_threshold;
+    argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_weight;
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
     argparse::ArgValue<bool> router_update_lower_bound_delays;

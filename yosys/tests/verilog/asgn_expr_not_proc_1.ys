@@ -1,7 +1,0 @@
-logger -expect error "Assignments within expressions are only permitted within procedures." 1
-read_verilog -sv <<EOF
-module top;
-integer x, y;
-assign x = y++;
-endmodule
-EOF

@@ -126,6 +126,7 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             ap_netlist.set_net_is_ignored(ap_net_id, true);
             continue;
         }
+
         // Is the net global, if so mark as global for AP (also ignored)
         if (atom_netlist.net_is_global(atom_net_id)) {
             ap_netlist.set_net_is_global(ap_net_id, true);
@@ -133,6 +134,30 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             ap_netlist.set_net_is_ignored(ap_net_id, true);
             continue;
         }
+
+        // Prior to AP, it is likely that the nets in the Atom Netlist have not
+        // been annotated with being global or ignored. To get around this, we
+        // annotate the AP Netlist speculatively.
+        // We label a net as being global if one of its pin connect to a clock
+        // port or a non-clock global model port.
+        bool is_global = false;
+        for (AtomPinId pin_id : atom_netlist.net_pins(atom_net_id)) {
+            AtomPortId port_id = atom_netlist.pin_port(pin_id);
+            if (atom_netlist.port_type(port_id) == PortType::CLOCK) {
+                is_global = true;
+                break;
+            }
+            if (atom_netlist.port_model(port_id)->is_non_clock_global) {
+                is_global = true;
+                break;
+            }
+        }
+        if (is_global) {
+            ap_netlist.set_net_is_global(ap_net_id, true);
+            // Global nets are also ignored in the AP flow.
+            ap_netlist.set_net_is_ignored(ap_net_id, true);
+        }
+
         // Get the unique blocks connectioned to this net
         std::unordered_set<APBlockId> net_blocks;
         for (APPinId ap_pin_id : ap_netlist.net_pins(ap_net_id)) {

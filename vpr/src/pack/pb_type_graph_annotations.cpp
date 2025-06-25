@@ -118,7 +118,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
  * Add the pattern name to the pack_pattern field for each pb_graph_edge that is used in a pack pattern
  */
 static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const std::string& value) {
-    int i, j, k, m, n, p, iedge;
+    int i, j, m, n, iedge;
     t_pb_graph_pin ***in_port, ***out_port;
     int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
     t_pb_graph_node** children = nullptr;
@@ -130,10 +130,8 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
                                                         annot_out_pins, &num_out_ptrs, &num_out_sets, false, false);
 
     /* Discover edge then annotate edge with name of pack pattern */
-    k = 0;
     for (i = 0; i < num_in_sets; i++) {
         for (j = 0; j < num_in_ptrs[i]; j++) {
-            p = 0;
             for (m = 0; m < num_out_sets; m++) {
                 for (n = 0; n < num_out_ptrs[m]; n++) {
                     for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
@@ -148,10 +146,8 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
                         in_port[i][j]->output_edges[iedge]->pack_pattern_names.resize(in_port[i][j]->output_edges[iedge]->num_pack_patterns);
                         in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1] = value.c_str(); // TODO: convert to std::string
                     }
-                    p++;
                 }
             }
-            k++;
         }
     }
 

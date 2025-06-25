@@ -1,0 +1,20 @@
+circuits_dir=benchmarks/verilog
+
+archs_dir=arch/xilinx
+
+arch_list_add=simple-7series.xml
+
+# Add circuits to list to sweep
+circuit_list_add=stereovision3.v
+
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+script_params=-track_memory_usage
