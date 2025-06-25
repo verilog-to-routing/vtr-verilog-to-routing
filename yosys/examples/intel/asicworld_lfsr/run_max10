@@ -1,2 +1,0 @@
-#!/bin/env bash
-yosys -p "synth_intel -family max10 -top lfsr_updown -vqm top.vqm" lfsr_updown.v

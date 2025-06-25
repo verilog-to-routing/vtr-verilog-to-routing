@@ -1,6 +1,0 @@
-library("foobar") {
-  pin("foo") {
-    bar : baz[0] ;
-  }
-}
-
