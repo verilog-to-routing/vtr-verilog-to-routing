@@ -381,7 +381,7 @@ int get_pid() {
 /************************************************************************
  * Constructors
  ***********************************************************************/
-StringToken::StringToken(const std::string& data) { 
+StringToken::StringToken(const std::string& data) {
     set_data(data);
 }
 
@@ -397,7 +397,7 @@ StringToken::StringToken(const char* data) {
  * Public Accessors
  ***********************************************************************/
 /* Get the data string */
-std::string StringToken::data() const { 
+std::string StringToken::data() const {
     return data_;
 }
 
@@ -480,7 +480,8 @@ std::vector<size_t> StringToken::find_positions(const char& delim) const {
 }
 
 std::vector<std::string> StringToken::split_by_chunks(
-    const char& chunk_delim, const bool& split_odd_chunk) const {
+    const char& chunk_delim,
+    const bool& split_odd_chunk) const {
     size_t chunk_idx_mod = 0;
     if (split_odd_chunk) {
         chunk_idx_mod = 1;

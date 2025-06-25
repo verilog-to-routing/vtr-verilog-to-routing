@@ -1427,15 +1427,15 @@ struct t_det_routing_arch {
     /// Allow routing channels to pass through multi-width and multi-height programmable blocks.
     bool through_channel;
 
-    /// Allow each output pin of a programmable block to drive the routing tracks on all the 
+    /// Allow each output pin of a programmable block to drive the routing tracks on all the
     /// sides of its adjacent switch block
     bool opin2all_sides;
 
-    ///In each switch block, allow each routing track which ends to drive another 
+    ///In each switch block, allow each routing track which ends to drive another
     /// routing track on the opposite side
     bool concat_wire;
 
-    /// In each switch block, allow each routing track which passes to drive 
+    /// In each switch block, allow each routing track which passes to drive
     /// another routing track on the opposite side
     bool concat_pass_wire;
 

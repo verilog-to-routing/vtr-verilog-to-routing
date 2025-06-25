@@ -1033,8 +1033,8 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
             if (insert_res.second) {
                 curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
                 std::vector<int> driving_pins = get_physical_pin_src_pins(physical_tile,
-                                                              logical_block,
-                                                              curr_pin_physical_num);
+                                                                          logical_block,
+                                                                          curr_pin_physical_num);
                 for (int driving_pin_physical_num : driving_pins) {
                     // Since we define reachable class as a class which is connected to a pin through a series of IPINs, only IPINs are added to the list
                     if (get_pin_type_from_pin_physical_num(physical_tile, driving_pin_physical_num) == e_pin_type::RECEIVER) {

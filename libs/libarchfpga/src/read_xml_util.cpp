@@ -161,8 +161,8 @@ int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_dat
 }
 
 t_metadata_dict process_meta_data(vtr::string_internment& strings,
-                                         pugi::xml_node Parent,
-                                         const pugiutil::loc_data& loc_data) {
+                                  pugi::xml_node Parent,
+                                  const pugiutil::loc_data& loc_data) {
     //	<metadata>
     //	  <meta>CLBLL_L_</meta>
     //	</metadata>

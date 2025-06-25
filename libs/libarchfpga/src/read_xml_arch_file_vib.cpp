@@ -16,10 +16,10 @@ static void process_first_stage(pugi::xml_node Stage_node, std::vector<t_physica
 static void process_second_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
 
 static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
-                                 int die_number,
-                                 vtr::string_internment& strings,
-                                 pugi::xml_node layout_block_type_tag,
-                                 const pugiutil::loc_data& loc_data);
+                                        int die_number,
+                                        vtr::string_internment& strings,
+                                        pugi::xml_node layout_block_type_tag,
+                                        const pugiutil::loc_data& loc_data);
 
 void process_vib_arch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data) {
     int num_vibs = count_children(Parent, "vib", loc_data);
