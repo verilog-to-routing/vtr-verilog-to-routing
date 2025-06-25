@@ -736,9 +736,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
  * Note that this seg_inf vector is NOT the segment_info vectored as stored in the device variable. This index is w.r.t to seg_inf_x
  * or seg_inf_y for x-adjacent and y-adjacent segments respectively. This index is assigned in get_seg_details earlier 
  * in the rr_graph_builder routine. This t_seg_detail is then used to build t_chan_seg_details which is passed in to label_wire mux
- * routine used in this function. 
- *
- * 
+ * routine used in this function.
  */
 int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 const int opin_layer,
@@ -758,11 +756,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     /* Gets a linked list of Fc nodes of specified seg_type_index to connect
      * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
 
-    int num_inc_muxes, num_dec_muxes, iconn;
-    int inc_mux, dec_mux;
-    int inc_track, dec_track;
-    int x, y;
-    int num_edges;
+    int num_inc_muxes, num_dec_muxes;
 
     *Fc_clipped = false;
 
@@ -770,14 +764,14 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     VTR_ASSERT(Fc % 2 == 0);
 
     /* get_rr_node_indices needs x and y coords. */
-    x = ((e_rr_type::CHANX == chan_type) ? seg : chan);
-    y = ((e_rr_type::CHANX == chan_type) ? chan : seg);
+    int x = ((e_rr_type::CHANX == chan_type) ? seg : chan);
+    int y = ((e_rr_type::CHANX == chan_type) ? chan : seg);
 
     /* Get the lists of possible muxes. */
     int dummy;
     std::vector<int> inc_muxes;
     std::vector<int> dec_muxes;
-    /* AA: Determine the channel width instead of using max channels to not create hanging nodes*/
+    // Determine the channel width instead of using max channels to not create hanging nodes
     int max_chan_width = (e_rr_type::CHANX == chan_type) ? nodes_per_chan.x_list[y] : nodes_per_chan.y_list[x];
 
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
@@ -792,16 +786,16 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     }
 
     /* Assign tracks to meet Fc demand */
-    num_edges = 0;
-    for (iconn = 0; iconn < (Fc / 2); ++iconn) {
+    int num_edges = 0;
+    for (int iconn = 0; iconn < (Fc / 2); ++iconn) {
         /* Figure of the next mux to use for the 'inc' and 'dec' connections */
-        inc_mux = Fc_ofs[chan][seg][seg_type_index] % num_inc_muxes;
-        dec_mux = Fc_ofs[chan][seg][seg_type_index] % num_dec_muxes;
+        int inc_mux = Fc_ofs[chan][seg][seg_type_index] % num_inc_muxes;
+        int dec_mux = Fc_ofs[chan][seg][seg_type_index] % num_dec_muxes;
         ++Fc_ofs[chan][seg][seg_type_index];
 
         /* Figure out the track it corresponds to. */
-        inc_track = inc_muxes[inc_mux];
-        dec_track = dec_muxes[dec_mux];
+        int inc_track = inc_muxes[inc_mux];
+        int dec_track = dec_muxes[dec_mux];
 
         /* Figure the inodes of those muxes */
         RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(track_layer, x, y, chan_type, inc_track);
@@ -812,7 +806,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Add to the list. */
-        auto to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[inc_track].arch_inter_die_switch();
+        short to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[inc_track].arch_inter_die_switch();
         rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch, false);
         ++num_edges;
 
@@ -1058,7 +1052,15 @@ static bool is_sb_conn_layer_crossing(enum e_side src_side, enum e_side dest_sid
     return true;
 }
 
-static bool check_3d_SB_RRnodes(RRGraphBuilder& rr_graph_builder, int x, int y, int from_wire, int from_wire_layer, e_rr_type from_wire_type, int to_wire, int to_wire_layer, e_rr_type to_wire_type) {
+static bool check_3d_SB_RRnodes(RRGraphBuilder& rr_graph_builder,
+                                int x,
+                                int y,
+                                int from_wire,
+                                int from_wire_layer,
+                                e_rr_type from_wire_type,
+                                int to_wire,
+                                int to_wire_layer,
+                                e_rr_type to_wire_type) {
     RRNodeId from_inode = rr_graph_builder.node_lookup().find_node(from_wire_layer, x, y, from_wire_type, from_wire);
     RRNodeId to_inode = rr_graph_builder.node_lookup().find_node(to_wire_layer, x, y, to_wire_type, to_wire);
 
@@ -1073,40 +1075,41 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
                                                                const int custom_3d_sb_fanin_fanout,
                                                                RRGraphBuilder& rr_graph_builder) {
     const auto& grid_ctx = g_vpr_ctx.device().grid;
-    vtr::NdMatrix<int, 2> extra_nodes_per_switchblocks;
-    extra_nodes_per_switchblocks.resize(std::array<size_t, 2>{grid_ctx.width(), grid_ctx.height()}, 0);
+    vtr::NdMatrix<int, 2> extra_nodes_per_switchblocks{{grid_ctx.width(), grid_ctx.height()}, 0};
 
     for (size_t y = 0; y < grid_ctx.height(); y++) {
         for (size_t x = 0; x < grid_ctx.width(); x++) {
-            for (auto layer = 0; layer < grid_ctx.get_num_layers(); layer++) {
+            for (int layer = 0; layer < grid_ctx.get_num_layers(); layer++) {
+
                 int num_of_3d_conn = 0;
-                for (auto from_side : TOTAL_3D_SIDES) {
-                    for (auto to_side : TOTAL_3D_SIDES) {
-                        if (!is_sb_conn_layer_crossing(from_side, to_side)) { //this connection is not crossing any layer
+                for (e_side from_side : TOTAL_3D_SIDES) {
+                    for (e_side to_side : TOTAL_3D_SIDES) {
+                        if (!is_sb_conn_layer_crossing(from_side, to_side)) { // this connection is not crossing any layer
                             continue;
-                        } else {
-                            SwitchblockLookupKey sb_coord(x, y, layer, from_side, to_side);
-                            if (sb_conn_map->count(sb_coord) > 0) {
-                                std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
-                                for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
-                                    //check if both from_node and to_node exists in the rr-graph
-                                    //CHANY -> CHANX connection
-                                    if (check_3d_SB_RRnodes(rr_graph_builder, x, y, conn_vector[iconn].from_wire,
-                                                            conn_vector[iconn].from_wire_layer, e_rr_type::CHANY,
-                                                            conn_vector[iconn].to_wire, conn_vector[iconn].to_wire_layer,
-                                                            e_rr_type::CHANX)) {
-                                        num_of_3d_conn++;
-                                    }
-                                    //CHANX -> CHANY connection
-                                    if (check_3d_SB_RRnodes(rr_graph_builder, x, y, conn_vector[iconn].from_wire,
-                                                            conn_vector[iconn].from_wire_layer, e_rr_type::CHANX,
-                                                            conn_vector[iconn].to_wire, conn_vector[iconn].to_wire_layer,
-                                                            e_rr_type::CHANY)) {
-                                        num_of_3d_conn++;
-                                    }
+                        }
+
+                        SwitchblockLookupKey sb_coord(x, y, layer, from_side, to_side);
+                        if (sb_conn_map->count(sb_coord) > 0) {
+                            std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
+                            for (const t_switchblock_edge& iconn : conn_vector) {
+                                // check if both from_node and to_node exists in the rr-graph
+                                // CHANY -> CHANX connection
+                                if (check_3d_SB_RRnodes(rr_graph_builder, x, y, iconn.from_wire,
+                                                        iconn.from_wire_layer, e_rr_type::CHANY,
+                                                        iconn.to_wire, iconn.to_wire_layer,
+                                                        e_rr_type::CHANX)) {
+                                    num_of_3d_conn++;
+                                }
+                                // CHANX -> CHANY connection
+                                if (check_3d_SB_RRnodes(rr_graph_builder, x, y, iconn.from_wire,
+                                                        iconn.from_wire_layer, e_rr_type::CHANX,
+                                                        iconn.to_wire, iconn.to_wire_layer,
+                                                        e_rr_type::CHANY)) {
+                                    num_of_3d_conn++;
                                 }
                             }
                         }
+
                     }
                 }
                 extra_nodes_per_switchblocks[x][y] += ((num_of_3d_conn + custom_3d_sb_fanin_fanout - 1) / custom_3d_sb_fanin_fanout);
@@ -1246,11 +1249,10 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
     int to_chan, to_sb;
     std::vector<int> conn_tracks;
     bool from_is_sblock, is_behind, Fs_clipped;
-    enum e_side from_side_a, from_side_b, to_side;
-    bool custom_switch_block;
+    enum e_side to_side;
 
     /* check whether a custom switch block will be used */
-    custom_switch_block = false;
+    bool custom_switch_block = false;
     if (sb_conn_map) {
         custom_switch_block = true;
         VTR_ASSERT(switch_block_conn.empty());
@@ -1268,7 +1270,8 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
     //end of the current wire segment is located
     int end_sb_seg = get_seg_end(from_seg_details, from_track, from_seg, from_chan, chan_len);
 
-    /* Figure out the sides of SB the from_wire will use */
+    // Figure out the sides of SB the from_wire will use
+    e_side from_side_a, from_side_b;
     if (e_rr_type::CHANX == from_type) {
         from_side_a = RIGHT;
         from_side_b = LEFT;
@@ -1278,13 +1281,12 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         from_side_b = BOTTOM;
     }
 
-    //Set the loop bounds so we iterate over the whole wire segment
+    // Set the loop bounds, so we iterate over the whole wire segment
     int start = start_sb_seg;
     int end = end_sb_seg;
 
-    //If source and destination segments both lie along the same channel
-    //we clip the loop bounds to the switch blocks of interest and proceed
-    //normally
+    // If source and destination segments both lie along the same channel
+    // we clip the loop bounds to the switch blocks of interest and proceed normally
     if (to_type == from_type) {
         start = to_seg - 1;
         end = to_seg;
@@ -1306,7 +1308,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
             from_is_sblock = true;
         }
 
-        auto switch_override = should_create_switchblock(grid, layer, from_chan, sb_seg, from_type, to_type);
+        int switch_override = should_create_switchblock(grid, layer, from_chan, sb_seg, from_type, to_type);
         if (switch_override == NO_SWITCH) {
             continue; //Do not create an SB here
         }
@@ -2221,7 +2223,6 @@ void load_sblock_pattern_lookup(const int i,
  * This routine orders wire muxes by their natural order, i.e. track #
  * If seg_type_index == UNDEFINED, all segments in the channel are considered. Otherwise this routine
  * only looks at segments that belong to the specified segment type. */
-
 static void label_wire_muxes(const int chan_num,
                              const int seg_num,
                              const t_chan_seg_details* seg_details,
@@ -2233,13 +2234,10 @@ static void label_wire_muxes(const int chan_num,
                              std::vector<int>& labels,
                              int* num_wire_muxes,
                              int* num_wire_muxes_cb_restricted) {
-    int itrack, start, end, num_labels, num_labels_restricted, pass;
-    bool is_endpoint;
-
     /* COUNT pass then a LOAD pass */
-    num_labels = 0;
-    num_labels_restricted = 0;
-    for (pass = 0; pass < 2; ++pass) {
+    int num_labels = 0;
+    int num_labels_restricted = 0;
+    for (int pass = 0; pass < 2; ++pass) {
         /* Alloc the list on LOAD pass */
         if (pass > 0) {
             labels.resize(num_labels);
@@ -2248,9 +2246,9 @@ static void label_wire_muxes(const int chan_num,
         }
 
         /* Find the tracks that are starting. */
-        for (itrack = 0; itrack < max_chan_width; ++itrack) {
-            start = get_seg_start(seg_details, itrack, chan_num, seg_num);
-            end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
+        for (int itrack = 0; itrack < max_chan_width; ++itrack) {
+            int start = get_seg_start(seg_details, itrack, chan_num, seg_num);
+            int end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
 
             /* Skip tracks that are undefined */
             if (seg_details[itrack].length() == 0) {
@@ -2270,7 +2268,7 @@ static void label_wire_muxes(const int chan_num,
             }
 
             /* Determine if we are a wire startpoint */
-            is_endpoint = (seg_num == start);
+            bool is_endpoint = (seg_num == start);
             if (Direction::DEC == seg_details[itrack].direction()) {
                 is_endpoint = (seg_num == end);
             }

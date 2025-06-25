@@ -12,7 +12,7 @@
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 /**
- * @brief goes through 3D custom switch blocks and counts how many connections are crossing dice for each switch block.
+ * @brief Goes through 3D custom switch blocks and counts how many connections are crossing dice for each switch block.
  *
  *  @param sb_conn_map switch block permutation map
  *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
