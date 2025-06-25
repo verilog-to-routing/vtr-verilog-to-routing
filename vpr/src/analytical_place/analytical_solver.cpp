@@ -498,6 +498,9 @@ void QPHybridSolver::store_solution_into_placement(const Eigen::VectorXd& x_soln
 void QPHybridSolver::update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager) {
     // For the quadratic solver, we use a basic net weighting scheme for adding
     // timing to the objective.
+    //
+    // NOTE: This is only for the quadratic solver, other solvers (like B2B) will
+    //       likely set these weights to something else.
 
     // If the pre-cluster timing manager has not been initialized (i.e. timing
     // analysis is off), no need to update.
@@ -977,13 +980,9 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     // the derivative to be the penalty for putting the driver and sink in different
     // tiles.
     if (tile_dx == 0) {
-        VTR_ASSERT_SAFE_MSG(forward_difference_x == -1.0f * backward_difference_x,
-                            "Delay model expected to be symmetric");
         d_delay_x = forward_difference_x;
     }
     if (tile_dy == 0) {
-        VTR_ASSERT_SAFE_MSG(forward_difference_y == -1.0f * backward_difference_y,
-                            "Delay model expected to be symmetric");
         d_delay_y = forward_difference_y;
     }
 
@@ -996,7 +995,7 @@ std::pair<double, double> B2BSolver::get_delay_normalization_facs(APBlockId driv
     // tile. This should be able to remove the units without changing the value
     // too much.
 
-    // Similar to calcuting the derivative, we want to use the legalized position
+    // Similar to calculating the derivative, we want to use the legalized position
     // of the driver block to try and estimate the delay from that block type.
     t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
                                          block_y_locs_legalized[driver_blk],
@@ -1053,6 +1052,8 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         // ====================================================================
         // Wirelength Connections
         // ====================================================================
+        // In the objective there is are wirelength connections and timing
+        // connections, trade-off between the weight of each type of connection.
         double wl_net_w = (1.0f - ap_timing_tradeoff_) * net_weights_[net_id];
 
         // Find the bounding blocks
@@ -1087,15 +1088,13 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         // positions to compute the delay derivative, which do not exist until
         // the next iteration. Its fine to do one wirelength driven iteration first.
         if (pre_cluster_timing_manager_.is_valid() && iteration != 0) {
-            // Create connections from each driver pin to each of its sink pins.
+            // Create connections from each driver pin to each of it's sink pins.
             // This will incentivize shrinking the distance from drivers to sinks
             // of connections which would improve the timing.
             APPinId driver_pin = netlist_.net_driver(net_id);
             APBlockId driver_blk = netlist_.pin_block(driver_pin);
-            for (APPinId net_pin : netlist_.net_pins(net_id)) {
-                if (net_pin == driver_pin)
-                    continue;
-                APBlockId sink_blk = netlist_.pin_block(net_pin);
+            for (APPinId sink_pin : netlist_.net_sinks(net_id)) {
+                APBlockId sink_blk = netlist_.pin_block(sink_pin);
 
                 // Get the instantaneous derivative of delay at the given distance
                 // from driver to sink. This will provide a value which is higher
@@ -1113,19 +1112,17 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 // TODO: If this is negative, it means that the sink should try to move
                 //       away from the driver. Perhaps add an anchor point to pull the
                 //       sink away.
-                if (d_delay_x < 0)
-                    d_delay_x = 0;
-                if (d_delay_y < 0)
-                    d_delay_y = 0;
+                d_delay_x = std::max(d_delay_x, 0.0);
+                d_delay_y = std::max(d_delay_y, 0.0);
 
-                // The units for delay is in seconds; however the units for
-                // the wirelength term is in tile. To ensure the units match,
+                // The units for delay are in seconds; however the units for
+                // the wirelength term are in tiles. To ensure the units match,
                 // we need to normalize away the time units. Get normalization
                 // factors to remove the time units.
                 auto [delay_x_norm, delay_y_norm] = get_delay_normalization_facs(driver_blk);
 
                 // Get the criticality of this timing edge from driver to sink.
-                double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(net_pin));
+                double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(sink_pin));
 
                 // Set the weight of the connection from driver to sink equal to:
                 //      weight_tradeoff_terms * (1 + crit) * d_delay * delay_norm
@@ -1133,6 +1130,9 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 // from drivers to sinks (which would improve timing) for edges
                 // with the best tradeoff between delay and wire, with a focus
                 // on the more critical edges.
+                // The ap_timing_tradeoff serves to trade-off between the wirelength
+                // and timing net weights. The net weights are the general net weights
+                // based on prior knowledge about the nets.
                 double timing_net_w = ap_timing_tradeoff_ * net_weights_[net_id] * timing_slope_fac_ * (1.0 + crit);
 
                 add_connection_to_system(driver_blk, sink_blk,

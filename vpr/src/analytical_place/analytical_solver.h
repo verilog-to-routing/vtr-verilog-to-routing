@@ -602,8 +602,9 @@ class B2BSolver : public AnalyticalSolver {
      *        and sink pair.
      *
      * The instantaneous derivative gives the amount delay would increase or
-     * decrease for a change in distance. This is passed into the objective
-     * function to help guide the solver to trading off timing and wirelength.
+     * decrease for a change in distance by one unit. This is passed into the
+     * objective function to help guide the solver to trading off timing and
+     * wirelength.
      *
      *  @param driver_blk
      *      The driver block for the edge to get the derivative of.
@@ -707,8 +708,8 @@ class B2BSolver : public AnalyticalSolver {
     ///        edges in the graph.
     const PreClusterTimingManager& pre_cluster_timing_manager_;
 
-    /// @breif The place delay model used for calculating the delay between
-    ///        to tiles on the FPGA. Used for computing the timing terms.
+    /// @brief The place delay model used for calculating the delay between
+    ///        two tiles on the FPGA. Used for computing the timing terms.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
 };
 
