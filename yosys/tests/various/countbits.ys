@@ -1,8 +1,0 @@
-read_verilog -sv countbits.sv
-hierarchy
-proc
-flatten
-opt -full
-select -module top
-async2sync
-sat -verify -seq 1 -tempinduct -prove-asserts -show-all
