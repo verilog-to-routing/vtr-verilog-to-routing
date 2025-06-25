@@ -1,5 +1,4 @@
-#ifndef POST_ROUTING_PB_PIN_FIXUP_H
-#define POST_ROUTING_PB_PIN_FIXUP_H
+#pragma once
 
 /********************************************************************
  * Include header files that are required by function declaration
@@ -32,5 +31,3 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
                               ClusteringContext& clustering_ctx,
                               const PlacementContext& placement_ctx,
                               const bool& verbose);
-
-#endif

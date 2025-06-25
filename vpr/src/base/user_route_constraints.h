@@ -1,10 +1,8 @@
-#ifndef USER_ROUTE_CONSTRAINTS_H
-#define USER_ROUTE_CONSTRAINTS_H
+#pragma once
 
 #include "clock_modeling.h"
-#include "vpr_error.h"
+#include <string>
 #include <unordered_map>
-#include <regex>
 
 /**
  * @brief This class specifies a routing scheme for a global net.
@@ -153,4 +151,3 @@ class UserRouteConstraints {
      */
     std::unordered_map<std::string, RoutingScheme> route_constraints_;
 };
-#endif /* USER_ROUTE_CONSTRAINTS_H */

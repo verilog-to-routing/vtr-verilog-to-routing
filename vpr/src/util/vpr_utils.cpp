@@ -729,66 +729,6 @@ static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::reg
     return false;
 }
 
-int get_max_primitives_in_pb_type(t_pb_type* pb_type) {
-    int max_size;
-    if (pb_type->modes == nullptr) {
-        max_size = 1;
-    } else {
-        max_size = 0;
-        int temp_size = 0;
-        for (int i = 0; i < pb_type->num_modes; i++) {
-            for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-                temp_size += pb_type->modes[i].pb_type_children[j].num_pb
-                             * get_max_primitives_in_pb_type(
-                                 &pb_type->modes[i].pb_type_children[j]);
-            }
-            if (temp_size > max_size) {
-                max_size = temp_size;
-            }
-        }
-    }
-    return max_size;
-}
-
-/* finds maximum number of nets that can be contained in pb_type, this is bounded by the number of driving pins */
-int get_max_nets_in_pb_type(const t_pb_type* pb_type) {
-    int max_nets;
-    if (pb_type->modes == nullptr) {
-        max_nets = pb_type->num_output_pins;
-    } else {
-        max_nets = 0;
-        for (int i = 0; i < pb_type->num_modes; i++) {
-            int temp_nets = 0;
-            for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-                temp_nets += pb_type->modes[i].pb_type_children[j].num_pb
-                             * get_max_nets_in_pb_type(
-                                 &pb_type->modes[i].pb_type_children[j]);
-            }
-            if (temp_nets > max_nets) {
-                max_nets = temp_nets;
-            }
-        }
-    }
-    if (pb_type->is_root()) {
-        max_nets += pb_type->num_input_pins + pb_type->num_output_pins
-                    + pb_type->num_clock_pins;
-    }
-    return max_nets;
-}
-
-int get_max_depth_of_pb_type(t_pb_type* pb_type) {
-    int max_depth = pb_type->depth;
-    for (int i = 0; i < pb_type->num_modes; i++) {
-        for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-            int temp_depth = get_max_depth_of_pb_type(&pb_type->modes[i].pb_type_children[j]);
-            if (temp_depth > max_depth) {
-                max_depth = temp_depth;
-            }
-        }
-    }
-    return max_depth;
-}
-
 /**
  * given an atom block and physical primitive type, is the mapping legal
  */
@@ -1778,6 +1718,41 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     VTR_ASSERT(class_type == DRIVER || class_type == RECEIVER);
     e_rr_type node_type = (class_type == e_pin_type::DRIVER) ? e_rr_type::SOURCE : e_rr_type::SINK;
     return rr_spatial_lookup.find_node(layer, i, j, node_type, class_physical_num);
+}
+
+RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id) {
+    auto& atom_nlist = g_vpr_ctx.atom().netlist();
+    auto& atom_lookup = g_vpr_ctx.atom().lookup();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+
+    /*
+     * To get the RRNodeId for an atom pin, we need to:
+     * 1. Find the atom block that the pin belongs to
+     * 2. Find the cluster block that the atom block is a part of
+     * 3. Find the physical tile that the cluster block is located on
+     * 4. Find the physical pin number of the atom pin (corresponds to ptc number of the RR node)
+     * 5. Call get_pin_rr_node_id to get the RRNodeId for the pin
+     */
+
+    AtomBlockId atom_blk_id = atom_nlist.pin_block(atom_pin_id);
+    ClusterBlockId clb_blk_id = atom_lookup.atom_clb(atom_blk_id);
+
+    t_pl_loc clb_blk_loc = place_ctx.block_locs()[clb_blk_id].loc;
+
+    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({clb_blk_loc.x, clb_blk_loc.y, clb_blk_loc.layer});
+
+    const t_pb_graph_pin* atom_pb_pin = atom_lookup.atom_pin_pb_graph_pin(atom_pin_id);
+    int pin_physical_num = physical_tile->pb_pin_to_pin_num.at(atom_pb_pin);
+
+    RRNodeId rr_node_id = get_pin_rr_node_id(device_ctx.rr_graph.node_lookup(),
+                                             physical_tile,
+                                             clb_blk_loc.layer,
+                                             clb_blk_loc.x,
+                                             clb_blk_loc.y,
+                                             pin_physical_num);
+
+    return rr_node_id;
 }
 
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {

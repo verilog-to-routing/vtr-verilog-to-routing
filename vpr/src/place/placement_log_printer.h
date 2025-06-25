@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file placement_log_printer.h
  * @brief Declares the PlacementLogPrinter class and associated utilities for logging
@@ -8,9 +9,6 @@
  * the placement process for debugging, optimization, and analysis purposes.
  */
 
-#pragma once
-
-#include <cstddef>
 #include <vector>
 
 #include "timing_info_fwd.h"

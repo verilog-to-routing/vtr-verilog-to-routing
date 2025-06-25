@@ -1,0 +1,79 @@
+{"test_suites": [
+    {
+        "name": "vtr_reg_basic",
+        "ignored_tasks": []
+    },
+    {
+        "name": "vtr_reg_basic_odin",
+        "ignored_tasks": []
+    },
+    {
+        "name": "parmys_reg_basic",
+        "ignored_tasks": []
+    },
+    {
+        "name": "vtr_reg_valgrind_small",
+        "ignored_tasks": []
+    },
+    {
+        "name": "vtr_reg_strong",
+        "ignored_tasks": [
+            "strong_router_heap",
+            "strong_verify_rr_graph_3d"
+        ]
+    },
+    {
+        "name": "vtr_reg_strong_odin",
+        "ignored_tasks": [
+            "strong_router_heap",
+            "strong_cluster_seed_type"
+        ]
+    },
+    {
+        "name": "vtr_reg_nightly_test1",
+        "ignored_tasks": [
+            "arithmetic_tasks/FIR_filters",
+            "arithmetic_tasks/FIR_filters_frac",
+            "arithmetic_tasks/adder_trees",
+            "symbiflow"
+        ]
+    },
+    {
+        "name": "vtr_reg_nightly_test2",
+        "ignored_tasks": [
+            "complex_switch",
+            "vpr_verify_custom_sb_diff_chan_width"
+        ]
+    },
+    {
+        "name": "vtr_reg_nightly_test3",
+        "ignored_tasks": [
+            "vtr_reg_qor_chain_large"
+        ]
+    },
+    {
+        "name": "vtr_reg_nightly_test4",
+        "ignored_tasks": []
+    },
+    {
+        "name": "vtr_reg_nightly_test5",
+        "ignored_tasks": [
+            "vpr_noc_mlp_odin_ii",
+            "vpr_3d_noc_star_topology",
+            "vpr_3d_noc_nearest_neighbor_topology",
+            "vpr_3d_noc_clique_topology"
+        ]
+    },
+    {
+        "name": "vtr_reg_nightly_test6",
+        "ignored_tasks": []
+    },
+    {
+        "name": "vtr_reg_nightly_test7",
+        "ignored_tasks": [
+            "vtr_reg_qor_large_depop_run_flat",
+            "vtr_reg_qor_large_run_flat",
+            "verify_router_lookahead_run_flat"
+        ]
+    }
+]}

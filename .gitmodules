@@ -6,3 +6,10 @@
 [submodule "libs/EXTERNAL/sockpp"]
 	path = libs/EXTERNAL/sockpp
 	url = https://github.com/w0lek/sockpp.git
+
+[submodule "libs/EXTERNAL/libezgl"]
+	path = libs/EXTERNAL/libezgl
+	url = https://github.com/verilog-to-routing/ezgl.git
+[submodule "libs/EXTERNAL/yosys"]
+	path = libs/EXTERNAL/yosys
+	url = https://github.com/YosysHQ/yosys.git

@@ -24,13 +24,11 @@
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
 #include "flat_placement_mass_calculator.h"
-#include "globals.h"
 #include "model_grouper.h"
 #include "partial_placement.h"
-#include "physical_types.h"
 #include "prepack.h"
+#include "primitive_dim_manager.h"
 #include "primitive_vector.h"
-#include "vpr_context.h"
 #include "vpr_error.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
@@ -46,17 +44,20 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          const APNetlist& netlist,
                                                          std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                                          const Prepacker& prepacker,
+                                                         const LogicalModels& models,
                                                          int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
         case e_ap_partial_legalizer::FlowBased:
             return std::make_unique<FlowBasedLegalizer>(netlist,
                                                         density_manager,
+                                                        models,
                                                         log_verbosity);
         case e_ap_partial_legalizer::BiPartitioning:
             return std::make_unique<BiPartitioningPartialLegalizer>(netlist,
                                                                     density_manager,
                                                                     prepacker,
+                                                                    models,
                                                                     log_verbosity);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -175,7 +176,8 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
                 continue;
             // If this bin has this model in its capacity, we found a neighbor!
             const PrimitiveVector& target_bin_capacity = density_manager_->get_bin_capacity(target_bin_id);
-            if (target_bin_capacity.get_dim_val((size_t)model_id) > 0) {
+            PrimitiveVectorDim dim = density_manager_->mass_calculator().get_model_dim(model_id);
+            if (target_bin_capacity.get_dim_val(dim) > 0) {
                 dir_found[model_id] = true;
                 neighbors.insert(target_bin_id);
             } else {
@@ -245,6 +247,7 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
 
 FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist,
                                        std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                                       const LogicalModels& models,
                                        int log_verbosity)
     : PartialLegalizer(netlist, log_verbosity)
     , density_manager_(density_manager)
@@ -252,8 +255,7 @@ FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist,
 
     // Connect the bins.
     for (FlatPlacementBinId bin_id : density_manager_->flat_placement_bins().bins()) {
-        // TODO: Pass the models in.
-        compute_neighbors_of_bin(bin_id, g_vpr_ctx.device().arch->models);
+        compute_neighbors_of_bin(bin_id, models);
     }
 }
 
@@ -682,73 +684,195 @@ void FlowBasedLegalizer::legalize(PartialPlacement& p_placement) {
     density_manager_->export_placement_from_bins(p_placement);
 }
 
-PerModelPrefixSum2D::PerModelPrefixSum2D(const FlatPlacementDensityManager& density_manager,
-                                         const LogicalModels& models,
-                                         std::function<float(LogicalModelId, size_t, size_t)> lookup) {
+PerPrimitiveDimPrefixSum2D::PerPrimitiveDimPrefixSum2D(const FlatPlacementDensityManager& density_manager,
+                                                       std::function<float(PrimitiveVectorDim, size_t, size_t)> lookup) {
     // Get the size that the prefix sums should be.
     size_t width, height, layers;
     std::tie(width, height, layers) = density_manager.get_overall_placeable_region_size();
 
     // Create each of the prefix sums.
-    model_prefix_sum_.resize(models.all_models().size());
-    for (LogicalModelId model_id : models.all_models()) {
-        model_prefix_sum_[model_id] = vtr::PrefixSum2D<float>(
+    const PrimitiveDimManager& dim_manager = density_manager.mass_calculator().get_dim_manager();
+    dim_prefix_sum_.resize(dim_manager.dims().size());
+    for (PrimitiveVectorDim dim : density_manager.get_used_dims_mask().get_non_zero_dims()) {
+        dim_prefix_sum_[dim] = vtr::PrefixSum2D<uint64_t>(
             width,
             height,
             [&](size_t x, size_t y) {
-                return lookup(model_id, x, y);
+                // Convert the floating point value into fixed point to prevent
+                // error accumulation in the prefix sum.
+                // Note: We ceil here since we do not want to lose information
+                //       on numbers that get very close to 0.
+                float val = lookup(dim, x, y);
+                VTR_ASSERT_SAFE_MSG(val >= 0.0f,
+                                    "PerPrimitiveDimPrefixSum2D expected to only hold positive values");
+                return std::ceil(val * fractional_scale_);
             });
     }
 }
 
-float PerModelPrefixSum2D::get_model_sum(LogicalModelId model_index,
-                                         const vtr::Rect<double>& region) const {
-    VTR_ASSERT_SAFE(model_index.is_valid());
+float PerPrimitiveDimPrefixSum2D::get_dim_sum(PrimitiveVectorDim dim,
+                                              const vtr::Rect<double>& region) const {
+    VTR_ASSERT_SAFE(dim.is_valid());
     // Get the sum over the given region.
-    return model_prefix_sum_[model_index].get_sum(region.xmin(),
-                                                  region.ymin(),
-                                                  region.xmax() - 1,
-                                                  region.ymax() - 1);
+    uint64_t sum = dim_prefix_sum_[dim].get_sum(region.xmin(),
+                                                region.ymin(),
+                                                region.xmax() - 1,
+                                                region.ymax() - 1);
+
+    // The sum is stored as a fixed point number. Cast into float by casting to
+    // a float and dividing by the fractional scale.
+    return static_cast<float>(sum) / fractional_scale_;
 }
 
-PrimitiveVector PerModelPrefixSum2D::get_sum(const std::vector<LogicalModelId>& model_indices,
-                                             const vtr::Rect<double>& region) const {
+PrimitiveVector PerPrimitiveDimPrefixSum2D::get_sum(const std::vector<PrimitiveVectorDim>& dims,
+                                                    const vtr::Rect<double>& region) const {
     PrimitiveVector res;
-    for (LogicalModelId model_index : model_indices) {
-        VTR_ASSERT_SAFE(res.get_dim_val((size_t)model_index) == 0.0f);
-        res.set_dim_val((size_t)model_index, get_model_sum(model_index, region));
+    for (PrimitiveVectorDim dim : dims) {
+        VTR_ASSERT_SAFE(res.get_dim_val(dim) == 0.0f);
+        res.set_dim_val(dim, get_dim_sum(dim, region));
     }
     return res;
+}
+
+PrimitiveDimGrouper::PrimitiveDimGrouper(const Prepacker& prepacker,
+                                         const LogicalModels& models,
+                                         const FlatPlacementDensityManager& density_manager,
+                                         const PrimitiveDimManager& dim_manager,
+                                         int log_verbosity)
+    : model_grouper_(prepacker, models, log_verbosity) {
+
+    // Models are grouped together by the model grouper based on the pack
+    // patterns provided by the architecture. Different models may be mapped to
+    // the same primitive dim. As such, we need to perform another grouping in
+    // a similar manner to group together the dims which must be spread together.
+    //
+    // We ignore unused dims to prevent them from being used in the spreading
+    // algorithm. Since they are unused, we do not put them into groups.
+
+    // Create an adjacency list connecting dimensions together which share models
+    // that are grouped together.
+    size_t num_dims = dim_manager.dims().size();
+    vtr::vector<PrimitiveVectorDim, std::unordered_set<PrimitiveVectorDim>> adj_list(num_dims);
+    const PrimitiveVector& used_dims_mask = density_manager.get_used_dims_mask();
+    for (ModelGroupId group_id : model_grouper_.groups()) {
+        // Collect all of the models in this group.
+        const auto& models_in_group = model_grouper_.get_models_in_group(group_id);
+
+        // Collect all of the used dimensions of the models in this group.
+        std::unordered_set<PrimitiveVectorDim> dims_in_group;
+        for (LogicalModelId model_id : models_in_group) {
+            PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
+            // If this dim is unused, skip.
+            if (used_dims_mask.get_dim_val(dim) == 0)
+                continue;
+
+            dims_in_group.insert(dim);
+        }
+
+        // If this group is empty (i.e. all dims are unused), pass.
+        if (dims_in_group.empty())
+            continue;
+
+        // Create a bidirectional edge between the first dim and all other
+        // dims in the group.
+        PrimitiveVectorDim first_dim = *dims_in_group.begin();
+        for (PrimitiveVectorDim dim : dims_in_group) {
+            adj_list[dim].insert(first_dim);
+            adj_list[first_dim].insert(dim);
+        }
+    }
+
+    // Perform BFS to group the dims. This BFS will traverse all dims that are
+    // connected to each other and put them into groups. Dims which have no
+    // path between another dim will not be grouped together.
+    std::queue<PrimitiveVectorDim> node_queue;
+    dim_group_id_.resize(num_dims, PrimitiveGroupId::INVALID());
+    for (PrimitiveVectorDim dim : dim_manager.dims()) {
+        // If this dim is unused, skip it.
+        // TODO: Maybe put unused dims into a special group.
+        if (used_dims_mask.get_dim_val(dim) == 0)
+            continue;
+
+        // If this dim is already in a group, skip it.
+        if (dim_group_id_[dim].is_valid()) {
+            continue;
+        }
+
+        // Create a new group ID and put this dim in that group.
+        PrimitiveGroupId group_id = PrimitiveGroupId(group_ids_.size());
+        dim_group_id_[dim] = group_id;
+        // Put this dim into the BFS queue to explore its neighbors.
+        node_queue.push(dim);
+
+        while (!node_queue.empty()) {
+            // Pop the dim from the queue and explore its neighbors.
+            PrimitiveVectorDim node_dim = node_queue.front();
+            node_queue.pop();
+            for (PrimitiveVectorDim neighbor_dim : adj_list[node_dim]) {
+                // If this neighbor dim is already in the group, skip it.
+                if (dim_group_id_[neighbor_dim].is_valid()) {
+                    VTR_ASSERT_SAFE(dim_group_id_[neighbor_dim] == group_id);
+                    continue;
+                }
+                // Put the neighbor in this group and push it to the queue.
+                dim_group_id_[neighbor_dim] = group_id;
+                node_queue.push(neighbor_dim);
+            }
+        }
+
+        // Add this group to the list of all groups.
+        group_ids_.push_back(group_id);
+    }
+
+    // Create a lookup between each group and the dims it contains.
+    groups_.resize(groups().size());
+    for (PrimitiveVectorDim dim : dim_manager.dims()) {
+        // If this dim is unused, skip it.
+        if (!dim_group_id_[dim].is_valid())
+            continue;
+        groups_[dim_group_id_[dim]].push_back(dim);
+    }
 }
 
 BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     const APNetlist& netlist,
     std::shared_ptr<FlatPlacementDensityManager> density_manager,
     const Prepacker& prepacker,
+    const LogicalModels& models,
     int log_verbosity)
     : PartialLegalizer(netlist, log_verbosity)
     , density_manager_(density_manager)
-    , model_grouper_(prepacker,
-                     g_vpr_ctx.device().arch->models,
-                     log_verbosity) {
+    , dim_grouper_(prepacker,
+                   models,
+                   *density_manager,
+                   density_manager->mass_calculator().get_dim_manager(),
+                   log_verbosity) {
     // Compute the capacity prefix sum. Capacity is assumed to not change
     // between iterations of the partial legalizer.
-    capacity_prefix_sum_ = PerModelPrefixSum2D(
+    capacity_prefix_sum_ = PerPrimitiveDimPrefixSum2D(
         *density_manager,
-        g_vpr_ctx.device().arch->models,
-        [&](LogicalModelId model_index, size_t x, size_t y) {
+        [&](PrimitiveVectorDim dim, size_t x, size_t y) {
             // Get the bin at this grid location.
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, 0);
-            // Get the capacity of the bin for this model.
-            float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val((size_t)model_index);
+            // Get the capacity of the bin for this dim.
+            float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val(dim);
             VTR_ASSERT_SAFE(cap >= 0.0f);
+
+            // Update the capacity with the target density. By multiplying by the
+            // target density, we make the capacity appear smaller than it actually
+            // is during partial legalization.
+            float target_density = density_manager_->get_bin_target_density(bin_id);
+            cap *= target_density;
+
             // Bins may be large, but the prefix sum assumes a 1x1 grid of
             // values. Normalize by the area of the bin to turn this into
             // a 1x1 bin equivalent.
             const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
             float bin_area = bin_region.width() * bin_region.height();
-            VTR_ASSERT_SAFE(!vtr::isclose(bin_area, 0.f));
-            return cap / bin_area;
+            VTR_ASSERT_SAFE(!vtr::isclose(bin_area, 0.0f));
+            cap /= bin_area;
+
+            return cap;
         });
 
     num_windows_partitioned_ = 0;
@@ -787,14 +911,14 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
     }
 
     // 1) Identify the groups that need to be spread
-    std::unordered_set<ModelGroupId> groups_to_spread;
+    std::unordered_set<PrimitiveGroupId> groups_to_spread;
     for (FlatPlacementBinId overfilled_bin_id : density_manager_->get_overfilled_bins()) {
-        // Get the overfilled models in this bin.
+        // Get the overfilled dims in this bin.
         const PrimitiveVector& overfill = density_manager_->get_bin_overfill(overfilled_bin_id);
-        std::vector<int> overfilled_models = overfill.get_non_zero_dims();
-        // For each model, insert its group into the set. Set will handle dupes.
-        for (int model_index : overfilled_models) {
-            groups_to_spread.insert(model_grouper_.get_model_group_id((LogicalModelId)model_index));
+        std::vector<PrimitiveVectorDim> overfilled_dims = overfill.get_non_zero_dims();
+        // For each dim, insert its group into the set. Set will handle dupes.
+        for (PrimitiveVectorDim dim : overfilled_dims) {
+            groups_to_spread.insert(dim_grouper_.get_dim_group_id(dim));
         }
     }
 
@@ -802,7 +926,7 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
     vtr::Timer runtime_timer;
     float window_identification_time = 0.0f;
     float window_spreading_time = 0.0f;
-    for (ModelGroupId group_id : groups_to_spread) {
+    for (PrimitiveGroupId group_id : groups_to_spread) {
         VTR_LOGV(log_verbosity_ >= 10, "\tSpreading group %zu\n", group_id);
         // Identify non-overlapping spreading windows.
         float window_identification_start_time = runtime_timer.elapsed_sec();
@@ -836,7 +960,7 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
     density_manager_->export_placement_from_bins(p_placement);
 }
 
-std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::identify_non_overlapping_windows(ModelGroupId group_id) {
+std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::identify_non_overlapping_windows(PrimitiveGroupId group_id) {
 
     // 1) Cluster the overfilled bins. This will make creating minimum spanning
     //    windows more efficient.
@@ -859,18 +983,18 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::identify_non_overla
 
 /**
  * @brief Helper method to check if the given PrimitiveVector has any values
- *        in the model dimensions in the given group.
+ *        in the dim dimensions in the given group.
  *
  * This method assumes the vector is non-negative. If the vector had any negative
  * dimensions, it does not make sense to ask if it is in the group or not.
  */
 static bool is_vector_in_group(const PrimitiveVector& vec,
-                               ModelGroupId group_id,
-                               const ModelGrouper& model_grouper) {
+                               PrimitiveGroupId group_id,
+                               const PrimitiveDimGrouper& dim_grouper) {
     VTR_ASSERT_SAFE(vec.is_non_negative());
-    const std::vector<LogicalModelId>& models_in_group = model_grouper.get_models_in_group(group_id);
-    for (LogicalModelId model_index : models_in_group) {
-        float dim_val = vec.get_dim_val((size_t)model_index);
+    const std::vector<PrimitiveVectorDim>& dims_in_group = dim_grouper.get_dims_in_group(group_id);
+    for (PrimitiveVectorDim dim : dims_in_group) {
+        float dim_val = vec.get_dim_val(dim);
         if (dim_val != 0.0f)
             return true;
     }
@@ -878,46 +1002,46 @@ static bool is_vector_in_group(const PrimitiveVector& vec,
 }
 
 /**
- * @brief Checks if the overfilled models in the given overfilled bin is in the
- *        given model group.
+ * @brief Checks if the overfilled dims in the given overfilled bin is in the
+ *        given dim group.
  *
  * This method does not check if the bin could be in the given group (for
  * example the capacity), this checks if the overfilled blocks are in the group.
  */
 static bool is_overfilled_bin_in_group(FlatPlacementBinId overfilled_bin_id,
-                                       ModelGroupId group_id,
+                                       PrimitiveGroupId group_id,
                                        const FlatPlacementDensityManager& density_manager,
-                                       const ModelGrouper& model_grouper) {
+                                       const PrimitiveDimGrouper& dim_grouper) {
     const PrimitiveVector& bin_overfill = density_manager.get_bin_overfill(overfilled_bin_id);
     VTR_ASSERT_SAFE(bin_overfill.is_non_zero());
-    return is_vector_in_group(bin_overfill, group_id, model_grouper);
+    return is_vector_in_group(bin_overfill, group_id, dim_grouper);
 }
 
 /**
- * @brief Checks if the given AP block is in the given model group.
+ * @brief Checks if the given AP block is in the given dim group.
  *
- * An AP block is in a model group if it contains any models in the model group.
+ * An AP block is in a dim group if it contains any dims in the dim group.
  */
 static bool is_block_in_group(APBlockId blk_id,
-                              ModelGroupId group_id,
+                              PrimitiveGroupId group_id,
                               const FlatPlacementDensityManager& density_manager,
-                              const ModelGrouper& model_grouper) {
+                              const PrimitiveDimGrouper& dim_grouper) {
     const PrimitiveVector& blk_mass = density_manager.mass_calculator().get_block_mass(blk_id);
-    return is_vector_in_group(blk_mass, group_id, model_grouper);
+    return is_vector_in_group(blk_mass, group_id, dim_grouper);
 }
 
 std::vector<FlatPlacementBinCluster> BiPartitioningPartialLegalizer::get_overfilled_bin_clusters(
-    ModelGroupId group_id) {
+    PrimitiveGroupId group_id) {
     // Use BFS over the overfilled bins to cluster them.
     std::vector<FlatPlacementBinCluster> overfilled_bin_clusters;
     // Maintain the distance from the last overfilled bin
     vtr::vector<FlatPlacementBinId, int> dist(density_manager_->flat_placement_bins().bins().size(), -1);
     for (FlatPlacementBinId overfilled_bin_id : density_manager_->get_overfilled_bins()) {
-        // If this bin is not overfilled with the models in the group, skip.
+        // If this bin is not overfilled with the dims in the group, skip.
         if (!is_overfilled_bin_in_group(overfilled_bin_id,
                                         group_id,
                                         *density_manager_,
-                                        model_grouper_)) {
+                                        dim_grouper_)) {
             continue;
         }
         // If this bin is already in a cluster, skip.
@@ -948,7 +1072,7 @@ std::vector<FlatPlacementBinCluster> BiPartitioningPartialLegalizer::get_overfil
                 // If the neighbor is an overfilled bin that we care about, add
                 // it to the list of nearby bins and set its distance to 0.
                 if (density_manager_->bin_is_overfilled(neighbor)
-                    && is_overfilled_bin_in_group(neighbor, group_id, *density_manager_, model_grouper_)) {
+                    && is_overfilled_bin_in_group(neighbor, group_id, *density_manager_, dim_grouper_)) {
                     nearby_bins.push_back(neighbor);
                     dist[neighbor] = 0;
                 } else {
@@ -971,32 +1095,32 @@ std::vector<FlatPlacementBinCluster> BiPartitioningPartialLegalizer::get_overfil
  *        than its capacity.
  */
 static bool is_region_overfilled(const vtr::Rect<double>& region,
-                                 const PerModelPrefixSum2D& capacity_prefix_sum,
-                                 const PerModelPrefixSum2D& utilization_prefix_sum,
-                                 const std::vector<LogicalModelId>& model_indices) {
-    // Go through each model in the model group we are interested in.
-    for (LogicalModelId model_index : model_indices) {
-        // Get the capacity of this region for this model.
-        float region_model_capacity = capacity_prefix_sum.get_model_sum(model_index,
-                                                                        region);
-        // Get the utilization of this region for this model.
-        float region_model_utilization = utilization_prefix_sum.get_model_sum(model_index,
-                                                                              region);
+                                 const PerPrimitiveDimPrefixSum2D& capacity_prefix_sum,
+                                 const PerPrimitiveDimPrefixSum2D& utilization_prefix_sum,
+                                 const std::vector<PrimitiveVectorDim>& dims) {
+    // Go through each dim in the dim group we are interested in.
+    for (PrimitiveVectorDim dim : dims) {
+        // Get the capacity of this region for this dim.
+        float region_dim_capacity = capacity_prefix_sum.get_dim_sum(dim,
+                                                                    region);
+        // Get the utilization of this region for this dim.
+        float region_dim_utilization = utilization_prefix_sum.get_dim_sum(dim,
+                                                                          region);
         // If the utilization is higher than the capacity, then this region is
         // overfilled.
         // TODO: Look into adding some head room to account for rounding.
-        if (region_model_utilization > region_model_capacity)
+        if (region_dim_utilization > region_dim_capacity)
             return true;
     }
 
-    // If the utilization is less than or equal to the capacity for each model
+    // If the utilization is less than or equal to the capacity for each dim
     // then this region is not overfilled.
     return false;
 }
 
 std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_around_clusters(
     const std::vector<FlatPlacementBinCluster>& overfilled_bin_clusters,
-    ModelGroupId group_id) {
+    PrimitiveGroupId group_id) {
     // TODO: Currently, we greedily grow the region by 1 in all directions until
     //       the capacity is larger than the utilization. This may not produce
     //       the minimum window. Should investigate "touching-up" the windows.
@@ -1012,15 +1136,14 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
     // Precompute a prefix sum for the current utilization of each 1x1 region
     // of the device. This needs to be recomputed every time the bins are
     // modified, so it is recomputed here.
-    PerModelPrefixSum2D utilization_prefix_sum(
+    PerPrimitiveDimPrefixSum2D utilization_prefix_sum(
         *density_manager_,
-        g_vpr_ctx.device().arch->models,
-        [&](LogicalModelId model_index, size_t x, size_t y) {
+        [&](PrimitiveVectorDim dim, size_t x, size_t y) {
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, 0);
             // This is computed the same way as the capacity prefix sum above.
             const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
             float bin_area = bin_region.width() * bin_region.height();
-            float util = density_manager_->get_bin_utilization(bin_id).get_dim_val((size_t)model_index);
+            float util = density_manager_->get_bin_utilization(bin_id).get_dim_val(dim);
             VTR_ASSERT_SAFE(util >= 0.0f);
             return util / bin_area;
         });
@@ -1061,7 +1184,7 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
             region.set_ymax(new_ymax);
 
             // If the region is no longer overfilled, stop growing.
-            if (!is_region_overfilled(region, capacity_prefix_sum_, utilization_prefix_sum, model_grouper_.get_models_in_group(group_id)))
+            if (!is_region_overfilled(region, capacity_prefix_sum_, utilization_prefix_sum, dim_grouper_.get_dims_in_group(group_id)))
                 break;
         }
         // Insert this window into the list of windows.
@@ -1128,7 +1251,7 @@ void BiPartitioningPartialLegalizer::merge_overlapping_windows(
 
 void BiPartitioningPartialLegalizer::move_blocks_into_windows(
     std::vector<SpreadingWindow>& non_overlapping_windows,
-    ModelGroupId group_id) {
+    PrimitiveGroupId group_id) {
     // Move the blocks from their bins into the windows that should contain them.
     // TODO: It may be good for debugging to check if the windows have nothing
     //       to move. This may indicate a problem (overfilled bins of fixed
@@ -1152,7 +1275,7 @@ void BiPartitioningPartialLegalizer::move_blocks_into_windows(
                     if (netlist_.block_mobility(blk_id) != APBlockMobility::MOVEABLE)
                         continue;
                     // If this block is not in the group, do not move it.
-                    if (!is_block_in_group(blk_id, group_id, *density_manager_, model_grouper_))
+                    if (!is_block_in_group(blk_id, group_id, *density_manager_, dim_grouper_))
                         continue;
 
                     moveable_blks.push_back(blk_id);
@@ -1170,7 +1293,7 @@ void BiPartitioningPartialLegalizer::move_blocks_into_windows(
 
 void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWindow>& non_overlapping_windows,
                                                          const PartialPlacement& p_placement,
-                                                         ModelGroupId group_id) {
+                                                         PrimitiveGroupId group_id) {
     if (log_verbosity_ >= 10) {
         VTR_LOG("\tIdentified %zu non-overlapping spreading windows.\n",
                 non_overlapping_windows.size());
@@ -1180,7 +1303,7 @@ void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWi
                 VTR_LOG("\t\t[(%.1f, %.1f), (%.1f, %.1f)]\n",
                         window.region.xmin(), window.region.ymin(),
                         window.region.xmax(), window.region.ymax());
-                PrimitiveVector window_capacity = capacity_prefix_sum_.get_sum(model_grouper_.get_models_in_group(group_id),
+                PrimitiveVector window_capacity = capacity_prefix_sum_.get_sum(dim_grouper_.get_dims_in_group(group_id),
                                                                                window.region);
                 VTR_LOG("\t\t\tCapacity: %f\n",
                         window_capacity.manhattan_norm());
@@ -1256,7 +1379,7 @@ void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWi
                 VTR_LOG("\t\t[(%.1f, %.1f), (%.1f, %.1f)]\n",
                         window.region.xmin(), window.region.ymin(),
                         window.region.xmax(), window.region.ymax());
-                PrimitiveVector window_capacity = capacity_prefix_sum_.get_sum(model_grouper_.get_models_in_group(group_id),
+                PrimitiveVector window_capacity = capacity_prefix_sum_.get_sum(dim_grouper_.get_dims_in_group(group_id),
                                                                                window.region);
                 VTR_LOG("\t\t\tCapacity: %f\n",
                         window_capacity.manhattan_norm());
@@ -1275,7 +1398,7 @@ void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWi
 
 PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     SpreadingWindow& window,
-    ModelGroupId group_id) {
+    PrimitiveGroupId group_id) {
 
     // Search for the ideal partition line on the window. Here, we attempt each
     // partition and measure how well this cuts the capacity of the region in
@@ -1291,7 +1414,7 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     // the two partitions are perfectly balanced (equal on both sides).
     float best_score = -1.0f;
     PartitionedWindow partitioned_window;
-    const std::vector<LogicalModelId>& model_indices = model_grouper_.get_models_in_group(group_id);
+    const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
 
     // First, try all of the vertical partitions.
     double min_pivot_x = std::floor(window.region.xmin()) + 1.0;
@@ -1308,13 +1431,13 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
                                               vtr::Point<double>(window.region.xmax(),
                                                                  window.region.ymax()));
 
-        // Compute the capacity of each partition for the models that we care
+        // Compute the capacity of each partition for the dims that we care
         // about.
         // TODO: This can be made better by looking at the mass of all blocks
         //       within the window and scaling the capacity based on that.
-        float lower_window_capacity = capacity_prefix_sum_.get_sum(model_indices, lower_region).manhattan_norm();
+        float lower_window_capacity = capacity_prefix_sum_.get_sum(dims, lower_region).manhattan_norm();
         lower_window_capacity = std::max(lower_window_capacity, 0.0f);
-        float upper_window_capacity = capacity_prefix_sum_.get_sum(model_indices, upper_region).manhattan_norm();
+        float upper_window_capacity = capacity_prefix_sum_.get_sum(dims, upper_region).manhattan_norm();
         upper_window_capacity = std::max(upper_window_capacity, 0.0f);
 
         // Compute the score of this partition line. The score is simply just
@@ -1349,13 +1472,13 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
                                               vtr::Point<double>(window.region.xmax(),
                                                                  window.region.ymax()));
 
-        // Compute the capacity of each partition for the models that we care
+        // Compute the capacity of each partition for the dims that we care
         // about.
         // TODO: This can be made better by looking at the mass of all blocks
         //       within the window and scaling the capacity based on that.
-        float lower_window_capacity = capacity_prefix_sum_.get_sum(model_indices, lower_region).manhattan_norm();
+        float lower_window_capacity = capacity_prefix_sum_.get_sum(dims, lower_region).manhattan_norm();
         lower_window_capacity = std::max(lower_window_capacity, 0.0f);
-        float upper_window_capacity = capacity_prefix_sum_.get_sum(model_indices, upper_region).manhattan_norm();
+        float upper_window_capacity = capacity_prefix_sum_.get_sum(dims, upper_region).manhattan_norm();
         upper_window_capacity = std::max(upper_window_capacity, 0.0f);
 
         // Compute the score of this partition line. The score is simply just
@@ -1384,17 +1507,17 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
 void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     SpreadingWindow& window,
     PartitionedWindow& partitioned_window,
-    ModelGroupId group_id,
+    PrimitiveGroupId group_id,
     const PartialPlacement& p_placement) {
 
     SpreadingWindow& lower_window = partitioned_window.lower_window;
     SpreadingWindow& upper_window = partitioned_window.upper_window;
 
     // Get the capacity of each window partition.
-    const std::vector<LogicalModelId>& model_indices = model_grouper_.get_models_in_group(group_id);
-    PrimitiveVector lower_window_capacity = capacity_prefix_sum_.get_sum(model_indices,
+    const std::vector<PrimitiveVectorDim>& dims = dim_grouper_.get_dims_in_group(group_id);
+    PrimitiveVector lower_window_capacity = capacity_prefix_sum_.get_sum(dims,
                                                                          lower_window.region);
-    PrimitiveVector upper_window_capacity = capacity_prefix_sum_.get_sum(model_indices,
+    PrimitiveVector upper_window_capacity = capacity_prefix_sum_.get_sum(dims,
                                                                          upper_window.region);
 
     // Due to the division by the area, we may get numerical underflows /

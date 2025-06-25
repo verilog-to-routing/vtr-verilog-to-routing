@@ -1,5 +1,4 @@
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_util.h"
 
 #include "vpr_error.h"
@@ -9,7 +8,6 @@
 #include "physical_types_util.h"
 
 #include "describe_rr_node.h"
-#include "rr_graph_utils.h"
 
 /*********************** Subroutines local to this module *******************/
 
@@ -55,9 +53,9 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const t_chan_width& chan_width,
                     const e_graph_type graph_type,
                     bool is_flat) {
-    e_route_type route_type = DETAILED;
+    e_route_type route_type = e_route_type::DETAILED;
     if (graph_type == e_graph_type::GLOBAL) {
-        route_type = GLOBAL;
+        route_type = e_route_type::GLOBAL;
     }
 
     auto total_edges_to_node = std::vector<int>(rr_graph.num_nodes());
@@ -422,7 +420,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
-            if (route_type == GLOBAL && xlow != xhigh) {
+            if (route_type == e_route_type::GLOBAL && xlow != xhigh) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
             }
@@ -433,7 +431,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "Error in check_rr_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
-            if (route_type == GLOBAL && ylow != yhigh) {
+            if (route_type == e_route_type::GLOBAL && ylow != yhigh) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
             }
@@ -482,7 +480,7 @@ void check_rr_node(const RRGraphView& rr_graph,
 
         case e_rr_type::CHANX:
         case e_rr_type::CHANY:
-            if (route_type == DETAILED) {
+            if (route_type == e_route_type::DETAILED) {
                 nodes_per_chan = chan_width.max;
                 tracks_per_node = 1;
             } else {

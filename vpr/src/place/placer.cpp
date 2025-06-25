@@ -5,13 +5,13 @@
 #include <optional>
 #include <utility>
 
+#include "echo_files.h"
 #include "flat_placement_types.h"
 #include "blk_loc_registry.h"
 #include "place_macro.h"
 #include "vtr_time.h"
 #include "draw.h"
 #include "read_place.h"
-#include "analytic_placer.h"
 #include "initial_placement.h"
 #include "load_flat_place.h"
 #include "concrete_timing_info.h"
@@ -22,6 +22,10 @@
 #include "place_checkpoint.h"
 #include "tatum/echo_writer.hpp"
 
+#ifndef NO_GRAPHICS
+#include "draw_global.h"
+#endif // NO_GRAPHICS
+
 Placer::Placer(const Netlist<>& net_list,
                std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
                const t_placer_opts& placer_opts,
@@ -31,6 +35,7 @@ Placer::Placer(const Netlist<>& net_list,
                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
+               float anneal_auto_init_t_scale,
                bool cube_bb,
                bool is_flat,
                bool quiet)
@@ -94,19 +99,6 @@ Placer::Placer(const Netlist<>& net_list,
         print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_state_.block_locs());
     }
 
-#ifdef ENABLE_ANALYTIC_PLACE
-    /*
-     * Cluster-level Analytic Placer:
-     *  Passes in the initial_placement via vpr_context, and passes its placement back via locations marked on
-     *  both the clb_netlist and the gird.
-     *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
-     */
-    if (placer_opts.enable_analytic_placer) {
-        AnalyticPlacer{blk_loc_registry, place_macros}.ap_place();
-    }
-
-#endif /* ENABLE_ANALYTIC_PLACE */
-
     // Update physical pin values
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
         blk_loc_registry.place_sync_external_block_connections(block_id);
@@ -161,6 +153,7 @@ Placer::Placer(const Netlist<>& net_list,
     annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, place_macros, costs_, net_cost_handler_, noc_cost_handler_,
                                                     noc_opts_, rng_, std::move(move_generator), std::move(move_generator2), place_delay_model_.get(),
                                                     placer_criticalities_.get(), placer_setup_slacks_.get(), timing_info_.get(), pin_timing_invalidator_.get(),
+                                                    anneal_auto_init_t_scale,
                                                     move_lim);
 }
 
@@ -291,12 +284,6 @@ void Placer::place() {
     const auto& timing_ctx = g_vpr_ctx.timing();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     bool analytic_place_enabled = false;
-#ifdef ENABLE_ANALYTIC_PLACE
-    // Cluster-level analytic placer: when enabled, skip most of the annealing and go straight to quench
-    if (placer_opts_.enable_analytic_placer) {
-        analytic_place_enabled = true;
-    }
-#endif
 
     if (!analytic_place_enabled && !quench_only_) {
         // Table header
@@ -326,7 +313,7 @@ void Placer::place() {
 
             // Outer loop of the simulated annealing ends
         } while (annealer_->outer_loop_update_state());
-    } //skip_anneal ends
+    } // skip_anneal ends
 
     // Start Quench
     annealer_->start_quench();
@@ -391,12 +378,14 @@ void Placer::place() {
     log_printer_.print_post_placement_stats();
 }
 
-void Placer::copy_locs_to_global_state(PlacementContext& place_ctx) {
+void Placer::update_global_state() {
+    auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
+
     // the placement location variables should be unlocked before being accessed
-    place_ctx.unlock_loc_vars();
+    mutable_palce_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
-    auto& global_blk_loc_registry = place_ctx.mutable_blk_loc_registry();
+    auto& global_blk_loc_registry = mutable_palce_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
 
 #ifndef NO_GRAPHICS

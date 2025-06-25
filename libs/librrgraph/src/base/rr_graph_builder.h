@@ -1,6 +1,4 @@
-#ifndef RR_GRAPH_BUILDER_H
-#define RR_GRAPH_BUILDER_H
-
+#pragma once
 /**
  * @file 
  * @brief This file defines the RRGraphBuilder data structure which allows data modification on a routing resource graph 
@@ -13,6 +11,7 @@
  * - This is the only data structure allowed to modify a routing resource graph
  *
  */
+
 #include "rr_graph_storage.h"
 #include "rr_spatial_lookup.h"
 #include "metadata_storage.h"
@@ -206,11 +205,6 @@ class RRGraphBuilder {
         node_storage_.set_node_layer(id, layer);
     }
 
-    /** @brief set the ptc twist increment number for TILEABLE rr graphs (for more information see rr_graph_storage.h twist increment comment) */
-    inline void set_node_ptc_twist_incr(RRNodeId id, int twist){
-        node_storage_.set_node_ptc_twist_incr(id, twist);
-    }
-
 
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
     inline void set_node_pin_num(RRNodeId id, int new_pin_num) {
@@ -326,11 +320,6 @@ class RRGraphBuilder {
         node_storage_.resize(size);
     }
 
-    /** @brief This function resize node ptc twist increment; Since it is only used for tileable rr-graph, we don't put it in general resize function*/
-    inline void resize_ptc_twist_incr(size_t size){
-        node_storage_.resize(size);
-    }
-
     /** @brief This function resize rr_switch to accomidate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);
@@ -427,5 +416,3 @@ class RRGraphBuilder {
      */
     MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata_;
 };
-
-#endif

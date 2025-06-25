@@ -1,5 +1,4 @@
-#ifndef CONSTANT_NETS_H
-#define CONSTANT_NETS_H
+#pragma once
 
 #include "clustered_netlist_fwd.h"
 #include "atom_netlist_fwd.h"
@@ -10,5 +9,3 @@ enum e_constant_net_method {
 };
 
 void process_constant_nets(AtomNetlist& atom_nlist, const AtomLookup& atom_look_up, ClusteredNetlist& nlist, e_constant_net_method method, int verbosity);
-
-#endif

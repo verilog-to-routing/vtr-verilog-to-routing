@@ -1,7 +1,9 @@
-#ifndef ROUTER_DELAY_PROFILING_H_
-#define ROUTER_DELAY_PROFILING_H_
+#pragma once
 
-#include "vpr_types.h"
+#include "d_ary_heap.h"
+#include "netlist.h"
+#include "router_lookahead.h"
+#include "router_stats.h"
 #include "serial_connection_router.h"
 
 #include <vector>
@@ -17,11 +19,6 @@ class RouterDelayProfiler {
      * way resulted in overuse of resources (congestion).  If there is no way
      * to route this net, even ignoring congestion, it returns false.  In this
      * case the rr_graph is disconnected and you can give up.
-     * @param source_node
-     * @param sink_node
-     * @param router_opts
-     * @param net_delay
-     * @param layer_num
      * @return
      */
     bool calculate_delay(RRNodeId source_node,
@@ -30,11 +27,6 @@ class RouterDelayProfiler {
                          float* net_delay);
 
     /**
-     * @param physical_tile_type_idx
-     * @param from_layer
-     * @param to_layer
-     * @param dx
-     * @param dy
      * @return Return the minimum delay across all output pins (OPINs) on the physical tile identified by "physical_tile_idx" from an
      * instance of the physical type on the "from_layer" to an input pin (IPIN) that is dx and dy away at its location on "to_layer".
      */
@@ -54,11 +46,9 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
 
 void alloc_routing_structs(const t_chan_width& chan_width,
                            const t_router_opts& router_opts,
-                           t_det_routing_arch* det_routing_arch,
-                           std::vector<t_segment_inf>& segment_inf,
+                           t_det_routing_arch& det_routing_arch,
+                           const std::vector<t_segment_inf>& segment_inf,
                            const std::vector<t_direct_inf>& directs,
                            bool is_flat);
 
 void free_routing_structs();
-
-#endif /* ROUTER_DELAY_PROFILING_H_ */

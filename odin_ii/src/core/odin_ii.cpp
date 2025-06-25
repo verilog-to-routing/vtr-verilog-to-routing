@@ -311,7 +311,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
 
         printf("Reading FPGA Architecture file\n");
         try {
-            XmlReadArch(global_args.arch_file.value().c_str(), false, &Arch, physical_tile_types, logical_block_types);
+            xml_read_arch(global_args.arch_file.value().c_str(), false, &Arch, physical_tile_types, logical_block_types);
             set_physical_lut_size();
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load architecture file: %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);

@@ -15,13 +15,21 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include "draw.h"
+#include "timing_info.h"
+#include "physical_types.h"
+
+#include "move_utils.h"
+
+#ifndef NO_GRAPHICS
+
 #include <algorithm>
 #include <array>
 #include <iostream>
 
+#include "draw_debug.h"
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_color_map.h"
 #include "vtr_path.h"
@@ -30,28 +38,19 @@
 
 #include "globals.h"
 #include "draw_color.h"
-#include "draw.h"
 #include "draw_basic.h"
 #include "draw_rr.h"
-#include "draw_toggle_functions.h"
 #include "draw_searchbar.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
-#include "tatum/report/TimingPathCollector.hpp"
 #include "hsl.h"
-#include "route_export.h"
 #include "search_bar.h"
 #include "save_graphics.h"
-#include "timing_info.h"
-#include "physical_types.h"
 #include "manual_moves.h"
 #include "draw_noc.h"
 #include "draw_floorplanning.h"
 
-#include "move_utils.h"
 #include "ui_setup.h"
-
-#ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
@@ -59,10 +58,7 @@
 #include <X11/keysym.h>
 #endif
 
-#include "rr_graph.h"
-#include "route_utilization.h"
 #include "place_macro.h"
-#include "buttons.h"
 #include "draw_rr.h"
 /****************************** Define Macros *******************************/
 
@@ -77,7 +73,7 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* event, double x, 
 
 static void highlight_blocks(double x, double y);
 
-static float get_router_expansion_cost(const t_rr_node_route_inf node_inf,
+static float get_router_expansion_cost(const t_rr_node_route_inf& node_inf,
                                        e_draw_router_expansion_cost draw_router_expansion_cost);
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
@@ -282,7 +278,7 @@ static void default_setup(ezgl::application* app) {
 // Initial Setup functions run default setup if they are a new window. Then, they will run
 // the specific hiding/showing functions that separate them from the other init. setup functions
 
-/* function below intializes the interface window with a set of buttons and links
+/* function below initializes the interface window with a set of buttons and links
  * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_PLACEMENT */
 static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
@@ -294,7 +290,7 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
     hide_widget("RoutingMenuButton", app);
 }
 
-/* function below intializes the interface window with a set of buttons and links
+/* function below initializes the interface window with a set of buttons and links
  * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_PLACEMENT_with_crit_path */
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
@@ -312,7 +308,7 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
     hide_widget("RoutingMenuButton", app);
 }
 
-/* function below intializes the interface window with a set of buttons and links
+/* function below initializes the interface window with a set of buttons and links
  * signals to corresponding functions for situation where the window is opened from
  * PLACEMENT_to_ROUTING */
 static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
@@ -325,7 +321,7 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
     hide_crit_path_routing(app, false);
 }
 
-/* function below intializes the interface window with a set of buttons and links
+/* function below initializes the interface window with a set of buttons and links
  * signals to corresponding functions for situation where the window is opened from
  * ROUTING_to_PLACEMENT */
 static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
@@ -339,7 +335,7 @@ static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
     hide_crit_path_routing(app, false);
 }
 
-/* function below intializes the interface window with a set of buttons and links
+/* function below initializes the interface window with a set of buttons and links
  * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_ROUTING */
 static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
@@ -352,7 +348,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
     hide_crit_path_routing(app, false);
 }
 
-/* function below intializes the interface window with a set of buttons and links
+/* function below initializes the interface window with a set of buttons and links
  * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_ROUTING_with_crit_path */
 static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
@@ -493,6 +489,7 @@ void alloc_draw_structs(const t_arch* arch) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     /* Allocate the structures needed to draw the placement and routing->  Set *
      * up the default colors for blocks and nets.                             */
@@ -502,7 +499,12 @@ void alloc_draw_structs(const t_arch* arch) {
     /* For sub-block drawings inside clbs */
     draw_internal_alloc_blk();
 
-    draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
+    if (draw_state->is_flat) {
+        draw_state->net_color.resize(atom_ctx.netlist().nets().size());
+    } else {
+        draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
+    }
+
     draw_state->block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
     draw_state->use_default_block_color_.resize(
         cluster_ctx.clb_nlist.blocks().size());
@@ -628,7 +630,7 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = RRNodeId(inode);
 
-    if (get_draw_state_vars()->draw_route_type == DETAILED)
+    if (get_draw_state_vars()->draw_route_type == e_route_type::DETAILED)
         return (rr_graph.node_track_num(rr_node));
 
     /* GLOBAL route stuff below. */
@@ -889,19 +891,16 @@ ezgl::color to_ezgl_color(vtr::Color<float> color) {
     return ezgl::color(color.r * 255, color.g * 255, color.b * 255);
 }
 
-static float get_router_expansion_cost(const t_rr_node_route_inf node_inf,
+static float get_router_expansion_cost(const t_rr_node_route_inf& node_inf,
                                        e_draw_router_expansion_cost draw_router_expansion_cost) {
     if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL
-        || draw_router_expansion_cost
-               == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
+        || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
         return node_inf.path_cost;
     } else if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN
-               || draw_router_expansion_cost
-                      == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES) {
+               || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES) {
         return node_inf.backward_path_cost;
     } else if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED
-               || draw_router_expansion_cost
-                      == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES) {
+               || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES) {
         return node_inf.path_cost - node_inf.backward_path_cost;
     }
 
@@ -910,8 +909,7 @@ static float get_router_expansion_cost(const t_rr_node_route_inf node_inf,
 
 static void draw_router_expansion_costs(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->show_router_expansion_cost
-        == DRAW_NO_ROUTER_EXPANSION_COST) {
+    if (draw_state->show_router_expansion_cost == DRAW_NO_ROUTER_EXPANSION_COST) {
         return;
     }
 
@@ -921,9 +919,8 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
     vtr::vector<RRNodeId, float> rr_costs(device_ctx.rr_graph.num_nodes());
 
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
-        float cost = get_router_expansion_cost(
-            routing_ctx.rr_node_route_inf[inode],
-            draw_state->show_router_expansion_cost);
+        float cost = get_router_expansion_cost(routing_ctx.rr_node_route_inf[inode],
+                                               draw_state->show_router_expansion_cost);
         rr_costs[inode] = cost;
     }
 

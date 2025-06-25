@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_types.h
  * 
@@ -15,14 +16,10 @@
  * Author: Long Yu (Mike) Wang, Sebastian Lievano
  */
 
-#ifndef DRAW_TYPES_H
-#define DRAW_TYPES_H
-
 #ifndef NO_GRAPHICS
 
 #include <vector>
 #include <memory>
-#include "clustered_netlist.h"
 #include "timing_info_fwd.h"
 #include "vtr_util.h"
 #include "vpr_types.h"
@@ -31,7 +28,6 @@
 #include "breakpoint.h"
 #include "manual_moves.h"
 
-#include "ezgl/point.hpp"
 #include "ezgl/rectangle.hpp"
 #include "ezgl/color.hpp"
 
@@ -232,13 +228,13 @@ struct t_draw_state {
     bool auto_proceed = false;
 
     ///@brief GLOBAL or DETAILED
-    e_route_type draw_route_type = GLOBAL;
+    e_route_type draw_route_type = e_route_type::GLOBAL;
 
     ///@brief default screen message on screen
     char default_message[vtr::bufsize];
 
     ///@brief color in which each net should be drawn. [0..cluster_ctx.clb_nlist.nets().size()-1]
-    vtr::vector<ClusterNetId, ezgl::color> net_color;
+    vtr::vector<ParentNetId, ezgl::color> net_color;
 
     /**
      * @brief stores the state information of each routing resource.
@@ -457,5 +453,3 @@ struct t_draw_coords {
 };
 
 #endif // NO_GRAPHICS
-
-#endif

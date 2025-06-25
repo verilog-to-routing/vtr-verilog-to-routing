@@ -1,6 +1,4 @@
-#ifndef VTR_SATROUTING_H
-#define VTR_SATROUTING_H
-
+#pragma once
 /**
  * @file
  * @brief SAT formulation of NoC traffic flow routing.
@@ -66,5 +64,4 @@ struct hash<std::pair<NocTrafficFlowId, NocLinkId>> {
 };
 } // namespace std
 
-#endif
 #endif

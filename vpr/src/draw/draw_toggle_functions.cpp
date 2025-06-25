@@ -1,31 +1,22 @@
 
-#include <cstring>
-#include <array>
-#include <iostream>
+#ifndef NO_GRAPHICS
 
-#include "vpr_utils.h"
+#include <cstring>
+
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "draw_color.h"
 #include "draw.h"
 #include "draw_toggle_functions.h"
 
 #include "draw_global.h"
 #include "draw_basic.h"
 
-#ifndef NO_GRAPHICS
-
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
 #if defined(X11) && !defined(__MINGW32__)
 #include <X11/keysym.h>
 #endif
-
-//The arrow head position for turning/straight-thru connections in a switch box
-constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
-constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
-constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
 /**
  * @brief toggles net drawing status based on status of combo box

@@ -1,5 +1,5 @@
-#ifndef VTR_ND_OFFSET_MATRIX_H
-#define VTR_ND_OFFSET_MATRIX_H
+#pragma once
+
 #include <array>
 #include <memory>
 #include <algorithm>
@@ -458,4 +458,3 @@ template<typename T>
 using OffsetMatrix = NdOffsetMatrix<T, 2>;
 
 } // namespace vtr
-#endif

@@ -1,4 +1,5 @@
 #include "grid_tile_lookup.h"
+#include "globals.h"
 #include "physical_types_util.h"
 
 GridTileLookup::GridTileLookup()

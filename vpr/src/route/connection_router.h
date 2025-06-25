@@ -1,5 +1,4 @@
-#ifndef _CONNECTION_ROUTER_H
-#define _CONNECTION_ROUTER_H
+#pragma once
 
 /**
  * @file
@@ -22,12 +21,13 @@
  */
 
 #include "connection_router_interface.h"
+#include "globals.h"
+#include "route_path_manager.h"
 #include "rr_graph_storage.h"
-#include "route_common.h"
 #include "router_lookahead.h"
 #include "route_tree.h"
-#include "rr_rc_data.h"
 #include "router_stats.h"
+#include "rr_graph_view.h"
 #include "spatial_route_tree_lookup.h"
 
 /**
@@ -356,5 +356,3 @@ class ConnectionRouter : public ConnectionRouterInterface {
 };
 
 #include "connection_router.tpp"
-
-#endif /* _CONNECTION_ROUTER_H */

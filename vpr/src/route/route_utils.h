@@ -2,15 +2,13 @@
 
 /** @file Utility functions used in the top-level router (route.cpp). */
 
+#include "clustered_netlist_utils.h"
 #include "netlist_fwd.h"
 #include "router_stats.h"
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
-#include "vpr_types.h"
 
 #include "RoutingDelayCalculator.h"
-
-constexpr float CONGESTED_SLOPE_VAL = -0.04;
 
 /** Identifies the two breakpoint types in routing */
 typedef enum router_breakpoint_type {
@@ -105,7 +103,15 @@ bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router
 
 void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info);
 
-void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats, const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info, std::shared_ptr<const SetupHoldTimingInfo> timing_info, float est_success_iteration);
+void print_route_status(int itry,
+                        double elapsed_sec,
+                        float pres_fac,
+                        int num_bb_updated,
+                        const RouterStats& router_stats,
+                        const OveruseInfo& overuse_info,
+                        const WirelengthInfo& wirelength_info,
+                        std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                        float est_success_iteration);
 
 void print_route_status_header();
 
@@ -143,7 +149,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
 /** Wrapper for create_rr_graph() with extra checks */
 void try_graph(int width_fac,
                const t_router_opts& router_opts,
-               t_det_routing_arch* det_routing_arch,
+               t_det_routing_arch& det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_chan_width_dist chan_width_dist,
                const std::vector<t_direct_inf>& directs,
@@ -157,3 +163,29 @@ void update_draw_pres_fac(const float new_pres_fac);
  * Stops after the specified router iteration or net id is encountered */
 void update_router_info_and_check_bp(bp_router_type type, int net_id);
 #endif
+
+/**
+ * @brief Checks whether a given net has been routed.
+ *
+ * This function determines if the specified net (identified by `net_id`)
+ * has routing information associated with it in the current routing context.
+ *
+ * @param net_id The identifier of the net to check.
+ * @return true if the net is routed; false otherwise.
+ */
+bool is_net_routed(ParentNetId net_id);
+
+/**
+ * @brief Checks whether a given net is fully absorbed within sink nodes.
+ *
+ * This function inspects the route tree of the specified net and determines
+ * whether it is fully absorbed into non-routing resources (i.e., it does not
+ * occupy any routing channels such as CHANX or CHANY).
+ *
+ * A net is considered fully absorbed if all its route tree nodes are of types
+ * other than CHANX or CHANY (e.g., IPIN, SINK, OPIN).
+ *
+ * @param net_id The identifier of the net to be checked.
+ * @return true if the net is fully absorbed (uses no routing channels); false otherwise.
+ */
+bool is_net_fully_absorbed(ParentNetId net_id);

@@ -13,7 +13,6 @@
 
 #include <cstdio>
 #include <cstring>
-#include <cinttypes>
 #include <queue>
 
 #include "vtr_util.h"
@@ -23,7 +22,6 @@
 #include "vtr_token.h"
 
 #include "vpr_error.h"
-#include "vpr_types.h"
 
 #include "physical_types.h"
 #include "globals.h"
@@ -31,8 +29,6 @@
 #include "pb_type_graph.h"
 #include "pb_type_graph_annotations.h"
 #include "cluster_feasibility_filter.h"
-#include "power.h"
-#include "read_xml_arch_file.h"
 
 /* variable global to this section that indexes each pb graph pin within a cluster */
 static vtr::t_linked_vptr* edges_head;
@@ -81,7 +77,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                                       t_pb_graph_node** pb_graph_children_nodes,
                                                       const bool interconnect_error_check,
                                                       const bool is_input_to_interc,
-                                                      const t_token* tokens,
+                                                      const Tokens& tokens,
                                                       int* token_index,
                                                       int* num_pins,
                                                       t_pb_graph_pin*** pb_graph_pins);
@@ -126,12 +122,53 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
                                              int num_output_sets,
                                              int* num_output_pins);
 
+/**
+ * @brief Traverses all pb_nodes in the pb_graph to check for architectural errors.
+ *
+ * This subroutine recursively visits each pb_node within the given pb_graph and
+ * checks for various misspecified architectures, such as repeated edges between
+ * two pins and logically-equivalent pin mismatches.
+ *
+ * @param pb_graph_node Pointer to the pb_graph_node to start the traversal from.
+ */
 static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node);
+
+/**
+ * @brief Checks for repeated edges connected to a single pb_graph_pin.
+ *
+ * This subroutine traverses all the incoming edges associated with a single pb_graph_pin
+ * and checks for repeated edges connected to it. Only incoming edges are checked,
+ * since all edges must land on a pin. By traversing all the incoming edges of all pins,
+ * all edges in the graph are checked exactly once.
+ *
+ * @param cur_pin Pointer to the pb_graph_pin whose incoming edges will be checked.
+ */
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin);
+
+/**
+ * @brief Less-than operator for t_pb_graph_edge_comparator.
+ *
+ * Defines a comparison operator to allow t_pb_graph_edge_comparator objects
+ * to be used as keys in associative containers (such as std::map).
+ * This is used for detecting repeated edges in the pb_graph.
+ *
+ * @return true if edge1 is considered less than edge2, false otherwise.
+ */
 static bool operator<(const t_pb_graph_edge_comparator& edge1,
                       const t_pb_graph_edge_comparator& edge2);
+
+/**
+ * @brief Checks that all pins in a logically-equivalent input port connect to the exact same pins.
+ *
+ * This subroutine verifies that for an input port declared as logically-equivalent,
+ * all of its pins connect to the exact same set of pins (not just a subset).
+ * For the first pin in the port (i_pin == 0), its outgoing edges are used as the reference,
+ * and subsequent pins are compared against this set.
+ *
+ * @return true if all pins in the logically-equivalent port connect to the exact same pins, false otherwise.
+ */
 static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
-                                         const int i_pin,
+                                         int i_pin,
                                          std::map<int, int>& edges_map,
                                          int* line_num);
 
@@ -920,35 +957,27 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                            int* num_sets,
                                                            const bool is_input_to_interc,
                                                            const bool interconnect_error_check) {
-    t_token* tokens;
-    int num_tokens, curr_set;
-    int i;
-    bool in_squig_bracket, success = false;
-
-    t_pb_graph_pin*** pb_graph_pins;
-
-    num_tokens = 0;
-    tokens = GetTokensFromString(port_string, &num_tokens);
+    const Tokens tokens(port_string);
     *num_sets = 0;
-    in_squig_bracket = false;
+    bool in_squig_bracket = false;
 
-    /* count the number of sets available */
-    for (i = 0; i < num_tokens; i++) {
-        VTR_ASSERT(tokens[i].type != TOKEN_NULL);
-        if (tokens[i].type == TOKEN_OPEN_SQUIG_BRACKET) {
+    // count the number of sets available
+    for (size_t i = 0; i < tokens.size(); i++) {
+        VTR_ASSERT(tokens[i].type != e_token_type::NULL_TOKEN);
+        if (tokens[i].type == e_token_type::OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "{ inside { in port %s\n", port_string);
             }
             in_squig_bracket = true;
-        } else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
+        } else if (tokens[i].type == e_token_type::CLOSE_SQUIG_BRACKET) {
             if (!in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "No matching '{' for '}' in port %s\n", port_string);
             }
             (*num_sets)++;
             in_squig_bracket = false;
-        } else if (tokens[i].type == TOKEN_DOT) {
+        } else if (tokens[i].type == e_token_type::DOT) {
             if (!in_squig_bracket) {
                 (*num_sets)++;
             }
@@ -961,23 +990,23 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                   "No matching '{' for '}' in port %s\n", port_string);
     }
 
-    pb_graph_pins = new t_pb_graph_pin**[*num_sets];
+    t_pb_graph_pin*** pb_graph_pins = new t_pb_graph_pin**[*num_sets];
     *num_ptrs = new int[*num_sets];
-    for (i = 0; i < *num_sets; i++) {
+    for (int i = 0; i < *num_sets; i++) {
         pb_graph_pins[i] = nullptr;
         (*num_ptrs)[i] = 0;
     }
 
-    curr_set = 0;
-    for (i = 0; i < num_tokens; i++) {
-        VTR_ASSERT(tokens[i].type != TOKEN_NULL);
-        if (tokens[i].type == TOKEN_OPEN_SQUIG_BRACKET) {
+    int curr_set = 0;
+    for (int i = 0; i < int(tokens.size()); i++) {
+        VTR_ASSERT(tokens[i].type != e_token_type::NULL_TOKEN);
+        if (tokens[i].type == e_token_type::OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "{ inside { in port %s\n", port_string);
             }
             in_squig_bracket = true;
-        } else if (tokens[i].type == TOKEN_CLOSE_SQUIG_BRACKET) {
+        } else if (tokens[i].type == e_token_type::CLOSE_SQUIG_BRACKET) {
             if ((*num_ptrs)[curr_set] == 0) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                           "No data contained in {} in port %s\n", port_string);
@@ -988,7 +1017,8 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
             }
             curr_set++;
             in_squig_bracket = false;
-        } else if (tokens[i].type == TOKEN_STRING) {
+        } else if (tokens[i].type == e_token_type::STRING) {
+            bool success = false;
             try {
                 success = realloc_and_load_pb_graph_pin_ptrs_at_var(line_num,
                                                                     pb_graph_parent_node, pb_graph_children_nodes,
@@ -1006,7 +1036,6 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
         }
     }
     VTR_ASSERT(curr_set == *num_sets);
-    freeTokens(tokens, num_tokens);
     return pb_graph_pins;
 }
 
@@ -1275,126 +1304,118 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                                                       t_pb_graph_node** pb_graph_children_nodes,
                                                       const bool interconnect_error_check,
                                                       const bool is_input_to_interc,
-                                                      const t_token* tokens,
+                                                      const Tokens& tokens,
                                                       int* token_index,
                                                       int* num_pins,
                                                       t_pb_graph_pin*** pb_graph_pins) {
-    int i, j, ipin, ipb;
     int pb_msb, pb_lsb;
     int pin_msb, pin_lsb;
-    int max_pb_node_array;
-    const t_pb_graph_node* pb_node_array;
-    char* port_name;
-    const char* pb_name = tokens[*token_index].data;
+    const char* pb_name = tokens[*token_index].data.c_str();
     t_port* iport;
     int add_or_subtract_pb, add_or_subtract_pin;
-    bool found;
+
+    VTR_ASSERT(tokens[*token_index].type == e_token_type::STRING);
+    const t_pb_graph_node* pb_node_array = nullptr;
+    int max_pb_node_array = 0;
+
     t_mode* mode = nullptr;
-
-    VTR_ASSERT(tokens[*token_index].type == TOKEN_STRING);
-    pb_node_array = nullptr;
-    max_pb_node_array = 0;
-
-    if (pb_graph_children_nodes)
+    if (pb_graph_children_nodes) {
         mode = pb_graph_children_nodes[0][0].pb_type->parent_mode;
+    }
 
     pb_msb = pb_lsb = OPEN;
     pin_msb = pin_lsb = OPEN;
 
-    /* parse pb */
-    found = false;
-    if (0 == strcmp(pb_graph_parent_node->pb_type->name, tokens[*token_index].data)) {
-        //Parent pb_type
+    // parse pb
+    bool found = false;
+    if (pb_graph_parent_node->pb_type->name == tokens[*token_index].data) {
+        // Parent pb_type
         pb_node_array = pb_graph_parent_node;
         max_pb_node_array = 1;
         pb_msb = pb_lsb = 0;
         found = true;
         (*token_index)++;
-        if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
+        if (tokens[*token_index].type == e_token_type::OPEN_SQUARE_BRACKET) {
             (*token_index)++;
-            if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-                return false; //clb[abc
+            if (tokens[*token_index].type != e_token_type::INT) {
+                return false; // clb[abc
             }
             pb_msb = vtr::atoi(tokens[*token_index].data);
             VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-significant-bit must be non-negative");
             (*token_index)++;
-            if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
-                if (!checkTokenType(tokens[*token_index],
-                                    TOKEN_CLOSE_SQUARE_BRACKET)) {
-                    return false; //clb[9abc
+            if (tokens[*token_index].type != e_token_type::COLON) {
+                if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
+                    return false; // clb[9abc
                 }
                 pb_lsb = pb_msb;
                 (*token_index)++;
             } else {
                 (*token_index)++;
-                if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
-                    return false; //clb[9:abc
+                if (tokens[*token_index].type != e_token_type::INT) {
+                    return false; // clb[9:abc
                 }
                 pb_lsb = vtr::atoi(tokens[*token_index].data);
                 VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-significant-bit must be non-negative");
                 (*token_index)++;
-                if (!checkTokenType(tokens[*token_index],
-                                    TOKEN_CLOSE_SQUARE_BRACKET)) {
-                    return false; //clb[9:0abc
+                if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
+                    return false; // clb[9:0abc
                 }
                 (*token_index)++;
             }
-            /* Check to make sure indices from user match internal data structures for the indices of the parent */
+            // Check to make sure indices from user match internal data structures for the indices of the parent
             if ((pb_lsb != pb_msb)
                 && (pb_lsb != pb_graph_parent_node->placement_index)) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "Incorrect placement index for %s, expected index %d", tokens[0].data,
+                          "Incorrect placement index for %s, expected index %d", tokens[0].data.c_str(),
                           pb_graph_parent_node->placement_index);
             }
 
             if ((pb_lsb != pb_msb)) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "Cannot specify range for a parent pb: '%s'", tokens[0].data);
+                          "Cannot specify range for a parent pb: '%s'", tokens[0].data.c_str());
             }
 
-            pb_lsb = pb_msb = 0; /* Internal representation of parent is always 0 */
+            pb_lsb = pb_msb = 0; // Internal representation of parent is always 0
         }
     } else {
-        //Children pb_types
+        // Children pb_types
         if (mode) {
-            for (i = 0; i < mode->num_pb_type_children; i++) {
+            for (int i = 0; i < mode->num_pb_type_children; i++) {
                 VTR_ASSERT(&mode->pb_type_children[i] == pb_graph_children_nodes[i][0].pb_type);
-                if (0 == strcmp(mode->pb_type_children[i].name, tokens[*token_index].data)) {
+                if (mode->pb_type_children[i].name == tokens[*token_index].data) {
                     pb_node_array = pb_graph_children_nodes[i];
                     max_pb_node_array = mode->pb_type_children[i].num_pb;
                     found = true;
                     (*token_index)++;
 
-                    if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
+                    if (tokens[*token_index].type == e_token_type::OPEN_SQUARE_BRACKET) {
                         (*token_index)++;
-                        if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
+                        if (tokens[*token_index].type != e_token_type::INT) {
                             return false;
                         }
                         pb_msb = vtr::atoi(tokens[*token_index].data);
                         VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-significant-bit must be non-negative");
                         (*token_index)++;
-                        if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
-                            if (!checkTokenType(tokens[*token_index],
-                                                TOKEN_CLOSE_SQUARE_BRACKET)) {
+                        if (tokens[*token_index].type != e_token_type::COLON) {
+                            if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                                 return false;
                             }
                             pb_lsb = pb_msb;
                             (*token_index)++;
                         } else {
                             (*token_index)++;
-                            if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
+                            if (tokens[*token_index].type != e_token_type::INT) {
                                 return false;
                             }
                             pb_lsb = vtr::atoi(tokens[*token_index].data);
                             VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-significant-bit must be non-negative");
                             (*token_index)++;
-                            if (!checkTokenType(tokens[*token_index],
-                                                TOKEN_CLOSE_SQUARE_BRACKET)) {
+                            if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                                 return false;
                             }
                             (*token_index)++;
                         }
-                        /* Check range of children pb */
+                        // Check range of children pb
                         if (pb_lsb < 0 || pb_lsb >= max_pb_node_array || pb_msb < 0 || pb_msb >= max_pb_node_array) {
                             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                                       "Mode '%s' -> pb '%s' [%d,%d] out of range [%d,%d]", mode->name,
@@ -1404,7 +1425,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                         pb_msb = pb_node_array[0].pb_type->num_pb - 1;
                         pb_lsb = 0;
                     }
-                    break; //found pb_type_children, no need to keep traversing
+                    break; // found pb_type_children, no need to keep traversing
                 }
             }
         } else {
@@ -1421,53 +1442,49 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
     found = false;
 
-    if (!checkTokenType(tokens[*token_index], TOKEN_DOT)) {
-        return false; //clb[9:0]123
+    if (tokens[*token_index].type != e_token_type::DOT) {
+        return false; // clb[9:0]123
     }
     (*token_index)++;
 
-    bool is_string = !checkTokenType(tokens[*token_index], TOKEN_STRING);
-    bool is_int = !checkTokenType(tokens[*token_index], TOKEN_INT);
+    bool is_string = tokens[*token_index].type == e_token_type::STRING;
+    bool is_int = tokens[*token_index].type == e_token_type::INT;
 
     if (!is_string && !is_int)
         return false;
 
-    /* parse ports and port pins of pb */
-    port_name = tokens[*token_index].data;
+    // parse ports and port pins of pb
+    const char* port_name = tokens[*token_index].data.c_str();
     (*token_index)++;
 
-    if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb],
-                                   0)
-        == nullptr) {
+    if (get_pb_graph_pin_from_name(port_name, &pb_node_array[pb_lsb], 0) == nullptr) {
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                   "Failed to find port name %s", port_name);
     }
 
-    if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
+    if (tokens[*token_index].type == e_token_type::OPEN_SQUARE_BRACKET) {
         (*token_index)++;
-        if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
+        if (tokens[*token_index].type != e_token_type::INT) {
             return false;
         }
         pin_msb = vtr::atoi(tokens[*token_index].data);
         VTR_ASSERT_MSG(pin_msb >= 0, "Pin most-significant-bit must be non-negative");
         (*token_index)++;
-        if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
-            if (!checkTokenType(tokens[*token_index],
-                                TOKEN_CLOSE_SQUARE_BRACKET)) {
+        if (tokens[*token_index].type != e_token_type::COLON) {
+            if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                 return false;
             }
             pin_lsb = pin_msb;
             (*token_index)++;
         } else {
             (*token_index)++;
-            if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
+            if (tokens[*token_index].type != e_token_type::INT) {
                 return false;
             }
             pin_lsb = vtr::atoi(tokens[*token_index].data);
             VTR_ASSERT_MSG(pin_lsb >= 0, "Pin most-significant-bit must be non-negative");
             (*token_index)++;
-            if (!checkTokenType(tokens[*token_index],
-                                TOKEN_CLOSE_SQUARE_BRACKET)) {
+            if (tokens[*token_index].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                 return false;
             }
             (*token_index)++;
@@ -1498,18 +1515,18 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
         std::vector<t_pb_graph_pin*> temp(*pb_graph_pins, *pb_graph_pins + prev_num_pins);
         delete[] *pb_graph_pins;
         *pb_graph_pins = new t_pb_graph_pin*[*num_pins];
-        for (i = 0; i < prev_num_pins; i++)
+        for (int i = 0; i < prev_num_pins; i++)
             (*pb_graph_pins)[i] = temp[i];
     } else {
         *pb_graph_pins = new t_pb_graph_pin*[*num_pins];
     }
 
-    i = j = 0;
-
-    ipb = pb_lsb;
+    int ipb = pb_lsb;
+    int i = 0;
+    int j = 0;
 
     while (ipb != pb_msb + add_or_subtract_pb) {
-        ipin = pin_lsb;
+        int ipin = pin_lsb;
         j = 0;
         while (ipin != pin_msb + add_or_subtract_pin) {
             int idx = prev_num_pins + i * (abs(pin_msb - pin_lsb) + 1) + j;
@@ -1524,7 +1541,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                 return false;
             }
 
-            /* Error checking before assignment */
+            // Error checking before assignment
             if (interconnect_error_check) {
                 if (pb_node_array == pb_graph_parent_node) {
                     if (is_input_to_interc) {
@@ -1553,7 +1570,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                 }
             }
 
-            /* load pb_graph_pin for pin */
+            // load pb_graph_pin for pin
 
             ipin += add_or_subtract_pin;
             j++;
@@ -1763,20 +1780,12 @@ static void echo_pb_pins(t_pb_graph_pin** pb_graph_pins, const int num_ports, co
     }
 }
 
-/* Date:July 10th, 2013
- * Author: Daniel Chen
- * Purpose: This subroutine traverses through all the pb_nodes within
- *			the pb_graph and checks for various misspecified architectures,
- *			such as repeated edges between two pins.
- */
-
 static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node) {
-    int i, j, k;
     int line_num = 0;
     std::map<int, int> logic_equivalent_pins_map;
 
-    for (i = 0; i < pb_graph_node->num_input_ports; i++) {
-        for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
+    for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
+        for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
             check_repeated_edges_at_pb_pin(&pb_graph_node->input_pins[i][j]);
             // Checks the equivalency of pins of an input port
             if (pb_graph_node->input_pins[i][j].port->equivalent != PortEquivalence::NONE) {
@@ -1793,69 +1802,58 @@ static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node) {
         logic_equivalent_pins_map.clear();
     }
 
-    for (i = 0; i < pb_graph_node->num_output_ports; i++) {
-        for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
+    for (int i = 0; i < pb_graph_node->num_output_ports; i++) {
+        for (int j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
             check_repeated_edges_at_pb_pin(&pb_graph_node->output_pins[i][j]);
         }
     }
 
-    for (i = 0; i < pb_graph_node->num_clock_ports; i++) {
-        for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
+    for (int i = 0; i < pb_graph_node->num_clock_ports; i++) {
+        for (int j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
             check_repeated_edges_at_pb_pin(&pb_graph_node->clock_pins[i][j]);
         }
     }
 
-    for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
-        for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
-            for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+    for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
+        for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
+            for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
                 check_pb_node_rec(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
             }
         }
     }
 }
 
-/* Date:July 10th, 2013
- * Author: Daniel Chen
- * Purpose: This subroutine traverses through all the edges associated
- *			 with a single pb_graph_pin and checks for repeated edges connected
- *			 to it. Note: This only checks for incoming edges at a pin, since
- *			 all edges must land on a pin, by traversing all the incoming
- *			 edges of all the pins, all edges are checked exactly once.
- */
 static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin) {
-    int i_edge, i_pin;
-    t_pb_graph_edge* cur_edge;
     t_pb_graph_edge_comparator edges_info;
     std::map<t_pb_graph_edge_comparator, int> edges_map;
-    std::pair<std::map<t_pb_graph_edge_comparator, int>::iterator, bool> ret_edges_map;
 
     // First check the incoming edges into cur_pin
-    for (i_edge = 0; i_edge < cur_pin->num_input_edges; i_edge++) {
-        cur_edge = cur_pin->input_edges[i_edge];
-        for (i_pin = 0; i_pin < cur_edge->num_input_pins; i_pin++) {
+    for (int i_edge = 0; i_edge < cur_pin->num_input_edges; i_edge++) {
+        t_pb_graph_edge* cur_edge = cur_pin->input_edges[i_edge];
+        for (int i_pin = 0; i_pin < cur_edge->num_input_pins; i_pin++) {
             // Populate the edge_comparator struct and attempt to insert it into STL map
             edges_info.parent_edge = cur_edge;
             edges_info.input_pin = cur_edge->input_pins[i_pin];
             edges_info.output_pin = cur_pin;
             edges_info.input_pin_id_in_cluster = cur_edge->input_pins[i_pin]->pin_count_in_cluster;
             edges_info.output_pin_id_in_cluster = cur_pin->pin_count_in_cluster;
-            ret_edges_map = edges_map.insert(std::pair<t_pb_graph_edge_comparator, int>(edges_info, 0));
-            if (!ret_edges_map.second) {
+            auto [it, success] = edges_map.insert(std::pair<t_pb_graph_edge_comparator, int>(edges_info, 0));
+            if (!success) {
                 // Print out the connection that already exists in the map and then the new one
                 // we are trying to insert into the map.
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), cur_edge->interconnect->line_num,
                           "Duplicate edges detected between: \n"
                           "%s[%d].%s[%d]--->%s[%d].%s[%d] \n"
                           "Found edges on line %d and %d.\n",
-                          ret_edges_map.first->first.input_pin->parent_node->pb_type->name,
-                          ret_edges_map.first->first.input_pin->parent_node->placement_index,
-                          ret_edges_map.first->first.input_pin->port->name,
-                          ret_edges_map.first->first.input_pin->pin_number,
-                          ret_edges_map.first->first.output_pin->parent_node->pb_type->name,
-                          ret_edges_map.first->first.output_pin->parent_node->placement_index,
-                          ret_edges_map.first->first.output_pin->port->name,
-                          ret_edges_map.first->first.output_pin->pin_number,
-                          ret_edges_map.first->first.parent_edge->interconnect->line_num,
+                          it->first.input_pin->parent_node->pb_type->name,
+                          it->first.input_pin->parent_node->placement_index,
+                          it->first.input_pin->port->name,
+                          it->first.input_pin->pin_number,
+                          it->first.output_pin->parent_node->pb_type->name,
+                          it->first.output_pin->parent_node->placement_index,
+                          it->first.output_pin->port->name,
+                          it->first.output_pin->pin_number,
+                          it->first.parent_edge->interconnect->line_num,
                           cur_edge->interconnect->line_num);
             }
         }
@@ -1864,41 +1862,25 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin) {
     edges_map.clear();
 }
 
-/* Date:July 9th, 2013
- * Author: Daniel Chen
- * Purpose: Less-than operator for t_pb_graph_edge_comparator,
- *			 used for comparing key types in edges_map that
- *			 checks for repeated edges in the pb_graph
- */
 static bool operator<(const t_pb_graph_edge_comparator& edge1,
                       const t_pb_graph_edge_comparator& edge2) {
     return (edge1.input_pin_id_in_cluster < edge2.input_pin_id_in_cluster) || (edge1.output_pin_id_in_cluster < edge2.output_pin_id_in_cluster);
 }
 
-/* Date:July 19th, 2013
- * Author: Daniel Chen
- * Purpose: This subroutine ensures that an input port declared as
- *			logically-equivalent have pins that connect to the exact (cannot
- *			be a subset) same pins. i_pin == 0 indicates cur_pin is the first
- *			pin of an logically-equivalent port, we use its outgoing edges
- *			to compare with the rest of the pins in the port.
- */
 static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
-                                         const int i_pin,
+                                         int i_pin,
                                          std::map<int, int>& logic_equivalent_pins_map,
                                          int* line_num) {
-    int i, j, edge_count;
-    t_pb_graph_edge* cur_edge;
     bool pins_equivalent = true;
 
     if (i_pin == 0) {
         VTR_ASSERT(logic_equivalent_pins_map.empty());
     }
-    edge_count = 0;
-    for (i = 0; i < cur_pin->num_output_edges; i++) {
-        cur_edge = cur_pin->output_edges[i];
+    int edge_count = 0;
+    for (int i = 0; i < cur_pin->num_output_edges; i++) {
+        t_pb_graph_edge* cur_edge = cur_pin->output_edges[i];
         *line_num = cur_edge->interconnect->line_num;
-        for (j = 0; j < cur_edge->num_output_pins; j++) {
+        for (int j = 0; j < cur_edge->num_output_pins; j++) {
             if (i_pin == 0) {
                 // First pin of an equivalent port, populate edges_map first
                 logic_equivalent_pins_map.insert(std::pair<int, int>(cur_edge->output_pins[j]->pin_count_in_cluster, 0));
@@ -1928,9 +1910,9 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
         return nullptr;
     }
 
-    auto node_index = pin->pin_count_in_cluster;
+    int node_index = pin->pin_count_in_cluster;
     for (int iedge = 0; iedge < driver_pin->num_output_edges; iedge++) {
-        auto* edge = driver_pin->output_edges[iedge];
+        t_pb_graph_edge* edge = driver_pin->output_edges[iedge];
         VTR_ASSERT(edge->num_output_pins == 1);
 
         if (edge->output_pins[0]->pin_count_in_cluster == node_index) {

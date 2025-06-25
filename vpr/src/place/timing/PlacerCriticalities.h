@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "vtr_vec_id_set.h"

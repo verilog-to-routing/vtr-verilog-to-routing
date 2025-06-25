@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -5,8 +6,6 @@
  * @brief   The declarations of the Greedy Clusterer class which is used to
  *          encapsulate the process of greedy clustering.
  */
-
-#pragma once
 
 #include <map>
 #include <unordered_set>
@@ -18,11 +17,11 @@
 #include "vtr_vector.h"
 
 // Forward declarations
-class APPackContext;
+struct APPackContext;
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
-class DeviceContext;
+struct DeviceContext;
 class GreedyCandidateSelector;
 class PreClusterTimingManager;
 class t_pack_high_fanout_thresholds;

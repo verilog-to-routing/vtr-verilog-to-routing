@@ -2,8 +2,6 @@
 
 #include "noc_traffic_flows.h"
 
-#include <random>
-
 #define NUM_OF_ROUTERS 10
 
 namespace {

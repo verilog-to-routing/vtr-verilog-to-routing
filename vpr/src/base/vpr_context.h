@@ -1,5 +1,5 @@
-#ifndef VPR_CONTEXT_H
-#define VPR_CONTEXT_H
+#pragma once
+
 #include <unordered_map>
 #include <memory>
 #include <vector>
@@ -11,6 +11,7 @@
 #include "user_place_constraints.h"
 #include "user_route_constraints.h"
 #include "vpr_types.h"
+#include "vtr_cache.h"
 #include "vtr_optional.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
@@ -44,6 +45,8 @@ class SetupHoldTimingInfo;
 class PostClusterDelayCalculator;
 
 #endif /* NO_SERVER */
+
+struct t_rr_node_route_inf;
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
@@ -267,7 +270,7 @@ struct DeviceContext : public Context {
     /*******************************************************************
      * Clock Network
      ********************************************************************/
-    t_clock_arch* clock_arch;
+    std::shared_ptr<std::vector<t_clock_network>> clock_arch;
 
     /// @brief Name of rrgraph file read (if any).
     ///        Used to determine if the specified rr-graph file is already loaded,
@@ -551,9 +554,7 @@ struct RoutingContext : public Context {
                RouterLookahead>
         cached_router_lookahead_;
 
-    /**
-     * @brief User specified routing constraints
-     */
+    /// @brief User specified routing constraints
     UserRouteConstraints constraints;
 
     /** Is flat routing enabled? */
@@ -846,5 +847,3 @@ class VprContext : public Context {
 
     PackingMultithreadingContext packing_multithreading_;
 };
-
-#endif

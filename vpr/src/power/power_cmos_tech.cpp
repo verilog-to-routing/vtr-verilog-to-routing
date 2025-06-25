@@ -29,17 +29,12 @@
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
-#include "vtr_util.h"
-#include "vtr_memory.h"
-#include "vtr_math.h"
-
 #include "vpr_error.h"
 
 #include "globals.h"
 #include "power_cmos_tech.h"
 #include "power.h"
 #include "power_util.h"
-#include "read_xml_util.h"
 #include "PowerSpicedComponent.h"
 #include "power_callibrate.h"
 

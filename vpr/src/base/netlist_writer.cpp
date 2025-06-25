@@ -645,7 +645,7 @@ class BlackBoxInst : public Instance {
                  std::vector<Arc> timing_arcs,                                      ///<Combinational timing arcs
                  std::map<std::string, sequential_port_delay_pair> ports_tsu,       ///<Port setup checks
                  std::map<std::string, sequential_port_delay_pair> ports_thld,      ///<Port hold checks
-                 std::map<std::string, sequential_port_delay_pair> ports_tcq,       ///<Port clock-to-q delays
+                 std::vector<Arc> cq_timing_arcs,                                   ///<Port clock-to-q timing arcs
                  struct t_analysis_opts opts)
         : type_name_(type_name)
         , inst_name_(inst_name)
@@ -656,7 +656,7 @@ class BlackBoxInst : public Instance {
         , timing_arcs_(timing_arcs)
         , ports_tsu_(ports_tsu)
         , ports_thld_(ports_thld)
-        , ports_tcq_(ports_tcq)
+        , cq_timing_arcs_(cq_timing_arcs)
         , opts_(opts) {}
 
     void print_blif(std::ostream& os, size_t& unconn_count, int depth = 0) override {
@@ -763,17 +763,17 @@ class BlackBoxInst : public Instance {
     }
 
     void print_sdf(std::ostream& os, int depth = 0) override {
-        if (!timing_arcs_.empty() || !ports_tcq_.empty() || !ports_tsu_.empty() || !ports_thld_.empty()) {
+        if (!timing_arcs_.empty() || !cq_timing_arcs_.empty() || !ports_tsu_.empty() || !ports_thld_.empty()) {
             os << indent(depth) << "(CELL\n";
             os << indent(depth + 1) << "(CELLTYPE \"" << type_name_ << "\")\n";
             os << indent(depth + 1) << "(INSTANCE " << escape_sdf_identifier(inst_name_) << ")\n";
             os << indent(depth + 1) << "(DELAY\n";
 
-            if (!timing_arcs_.empty() || !ports_tcq_.empty()) {
+            if (!timing_arcs_.empty() || !cq_timing_arcs_.empty()) {
                 os << indent(depth + 2) << "(ABSOLUTE\n";
 
                 //Combinational paths
-                for (const auto& arc : timing_arcs_) {
+                for (const Arc& arc : timing_arcs_) {
                     //Note that we explicitly do not escape the last array indexing so an SDF
                     //reader will treat the ports as multi-bit
                     //
@@ -794,9 +794,20 @@ class BlackBoxInst : public Instance {
                 }
 
                 //Clock-to-Q delays
-                for (auto kv : ports_tcq_) {
-                    DelayTriple delay_triple = kv.second.first;
-                    os << indent(depth + 3) << "(IOPATH (posedge " << escape_sdf_identifier(kv.second.second) << ") " << escape_sdf_identifier(kv.first) << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                for (const Arc& cq_arc : cq_timing_arcs_) {
+                    os << indent(depth + 3) << "(IOPATH (posedge ";
+                    os << escape_sdf_identifier(cq_arc.source_name());
+                    if (find_port_size(cq_arc.source_name()) > 1) {
+                        os << "[" << cq_arc.source_ipin() << "]";
+                    }
+                    os << ") ";
+                    os << escape_sdf_identifier(cq_arc.sink_name());
+                    if (find_port_size(cq_arc.sink_name()) > 1) {
+                        os << "[" << cq_arc.sink_ipin() << "]";
+                    }
+                    os << " ";
+                    os << cq_arc.delay().str();
+                    os << ")\n";
                 }
                 os << indent(depth + 2) << ")\n"; //ABSOLUTE
             }
@@ -845,7 +856,7 @@ class BlackBoxInst : public Instance {
     std::vector<Arc> timing_arcs_;
     std::map<std::string, sequential_port_delay_pair> ports_tsu_;
     std::map<std::string, sequential_port_delay_pair> ports_thld_;
-    std::map<std::string, sequential_port_delay_pair> ports_tcq_;
+    std::vector<Arc> cq_timing_arcs_;
     struct t_analysis_opts opts_;
 };
 
@@ -1419,7 +1430,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::vector<Arc> timing_arcs;
         std::map<std::string, sequential_port_delay_pair> ports_tsu;
         std::map<std::string, sequential_port_delay_pair> ports_thld;
-        std::map<std::string, sequential_port_delay_pair> ports_tcq;
+        std::vector<Arc> cq_timing_arcs;
 
         params["ADDR_WIDTH"] = "0";
         params["DATA_WIDTH"] = "0";
@@ -1513,7 +1524,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
                 output_port_conns[port_name].push_back(net);
                 DelayTriple delay_triple = get_pin_tco_delay_triple(*pin);
-                ports_tcq[port_name] = std::make_pair(delay_triple, pin->associated_clock_pin->port->name);
+                cq_timing_arcs.emplace_back(pin->associated_clock_pin->port->name,
+                                            pin->associated_clock_pin->pin_number,
+                                            port_name,
+                                            ipin,
+                                            delay_triple);
             }
         }
 
@@ -1544,7 +1559,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
+        return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, cq_timing_arcs, opts_);
     }
 
     ///@brief Returns an Instance object representing a Multiplier
@@ -1564,7 +1579,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::vector<Arc> timing_arcs;
         std::map<std::string, sequential_port_delay_pair> ports_tsu;
         std::map<std::string, sequential_port_delay_pair> ports_thld;
-        std::map<std::string, sequential_port_delay_pair> ports_tcq;
+        std::vector<Arc> cq_timing_arcs;
 
         params["WIDTH"] = "0";
 
@@ -1639,7 +1654,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         VTR_ASSERT(pb_graph_node->num_clock_ports == 0); //No clocks
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, cq_timing_arcs, opts_);
     }
 
     ///@brief Returns an Instance object representing an Adder
@@ -1659,7 +1674,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::vector<Arc> timing_arcs;
         std::map<std::string, sequential_port_delay_pair> ports_tsu;
         std::map<std::string, sequential_port_delay_pair> ports_thld;
-        std::map<std::string, sequential_port_delay_pair> ports_tcq;
+        std::vector<Arc> cq_timing_arcs;
 
         params["WIDTH"] = "0";
 
@@ -1738,7 +1753,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, cq_timing_arcs, opts_);
     }
 
     std::shared_ptr<Instance> make_blackbox_instance(const t_pb* atom) {
@@ -1764,7 +1779,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //  tcq : Clock-to-Q
         std::map<std::string, sequential_port_delay_pair> ports_tsu;
         std::map<std::string, sequential_port_delay_pair> ports_thld;
-        std::map<std::string, sequential_port_delay_pair> ports_tcq;
+        std::vector<Arc> cq_timing_arcs;
 
         //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
         std::map<tatum::NodeId, std::vector<std::tuple<std::string, int, DelayTriple>>> tnode_delay_matrix;
@@ -1844,7 +1859,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 output_port_conns[port->name].push_back(net);
                 if (pin->type == PB_PIN_SEQUENTIAL && !std::isnan(pin->tco_max)) {
                     DelayTriple delay_triple = get_pin_tco_delay_triple(*pin);
-                    ports_tcq[port->name] = std::make_pair(delay_triple, pin->associated_clock_pin->port->name);
+                    cq_timing_arcs.emplace_back(pin->associated_clock_pin->port->name,
+                                                pin->associated_clock_pin->pin_number,
+                                                port->name,
+                                                ipin,
+                                                delay_triple);
                 }
             }
         }
@@ -1884,7 +1903,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             attrs[attr.first] = attr.second;
         }
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq, opts_);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, cq_timing_arcs, opts_);
     }
 
     ///@brief Returns the top level pb_route associated with the given pb
@@ -2689,22 +2708,8 @@ void add_original_sdc_to_post_implemented_sdc_file(std::ofstream& sdc_os,
  *
  *  @param sdc_os
  *      The file stream to add the propagated clock commands to.
- *  @param clock_modeling
- *      The type of clock modeling used by VPR during the CAD flow.
  */
-void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os,
-                                       e_clock_modeling clock_modeling) {
-
-    // Ideal and routed clocks are handled by the code below. Other clock models
-    // like dedicated routing are not supported yet.
-    // TODO: Supporting dedicated routing should be simple; however it should
-    //       be investigated. Tried quickly but found that the delays produced
-    //       were off by 0.003 ns. Need to investigate why.
-    if (clock_modeling != e_clock_modeling::ROUTED_CLOCK && clock_modeling != e_clock_modeling::IDEAL_CLOCK) {
-        VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
-                        "Only ideal and routed clock modeling are currentlt "
-                        "supported for post-implementation SDC file generation");
-    }
+void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os) {
 
     // The timing constraints contain information on all the clocks in the circuit
     // (provided by the user-provided SDC file).
@@ -2730,8 +2735,8 @@ void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os,
     sdc_os << "#******************************************************************************#\n";
     sdc_os << "# The following are clock domains in VPR which have delays on their edges.\n";
     sdc_os << "#\n";
-    sdc_os << "# Any non-virtual clock has its delay determined and written out as part of a";
-    sdc_os << "# propagated clock command. If VPR was instructed not to route the clock, this";
+    sdc_os << "# Any non-virtual clock has its delay determined and written out as part of a\n";
+    sdc_os << "# propagated clock command. If VPR was instructed not to route the clock, this\n";
     sdc_os << "# delay will be an underestimate.\n";
     sdc_os << "#\n";
     sdc_os << "# Note: Virtual clocks do not get routed and are treated as ideal.\n";
@@ -2751,18 +2756,15 @@ void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os,
 
 /**
  * @brief Generates a post-implementation SDC file with the given file name
- *        based on the timing info and clock modeling set for VPR.
+ *        based on the timing info used for VPR.
  *
  *  @param sdc_filename
  *      The file name of the SDC file to generate.
  *  @param timing_info
  *      Information on the timing used in the VPR flow.
- *  @param clock_modeling
- *      The type of clock modeling used by VPR during its flow.
  */
 void generate_post_implementation_sdc(const std::string& sdc_filename,
-                                      const t_timing_inf& timing_info,
-                                      e_clock_modeling clock_modeling) {
+                                      const t_timing_inf& timing_info) {
     if (!timing_info.timing_analysis_enabled) {
         VTR_LOG_WARN("Timing analysis is disabled. Post-implementation SDC file "
                      "will not be generated.\n");
@@ -2783,7 +2785,7 @@ void generate_post_implementation_sdc(const std::string& sdc_filename,
     add_original_sdc_to_post_implemented_sdc_file(sdc_os, timing_info);
 
     // Add propagated clocks to SDC file if needed.
-    add_propagated_clocks_to_sdc_file(sdc_os, clock_modeling);
+    add_propagated_clocks_to_sdc_file(sdc_os);
 }
 
 } // namespace
@@ -2797,7 +2799,6 @@ void netlist_writer(const std::string basename,
                     std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
                     const LogicalModels& models,
                     const t_timing_inf& timing_info,
-                    e_clock_modeling clock_modeling,
                     t_analysis_opts opts) {
     std::string verilog_filename = basename + "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
@@ -2822,8 +2823,7 @@ void netlist_writer(const std::string basename,
         VTR_LOG("Writing Implementation SDC    : %s\n", sdc_filename.c_str());
 
         generate_post_implementation_sdc(sdc_filename,
-                                         timing_info,
-                                         clock_modeling);
+                                         timing_info);
     }
 }
 

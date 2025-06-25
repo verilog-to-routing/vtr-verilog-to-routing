@@ -1,6 +1,8 @@
 #include "PreClusterTimingGraphResolver.h"
+#include "DelayType.h"
 #include "atom_netlist.h"
 #include "atom_lookup.h"
+#include "globals.h"
 
 PreClusterTimingGraphResolver::PreClusterTimingGraphResolver(
     const AtomNetlist& netlist,

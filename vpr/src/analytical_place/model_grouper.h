@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -5,8 +6,6 @@
  * @brief   Declaration of a model grouper class which groups together models
  *          that must be legalized together in a flat placement.
  */
-
-#pragma once
 
 #include <vector>
 #include "logic_types.h"
@@ -19,11 +18,8 @@
 // Forward declarations.
 class Prepacker;
 
-/// @brief Tag for the ModelGroupId
-struct model_group_id_tag;
-
 /// @brief A unique ID of a group of models created by the ModelGrouper class.
-typedef vtr::StrongId<model_group_id_tag, size_t> ModelGroupId;
+typedef vtr::StrongId<struct model_group_id_tag, size_t> ModelGroupId;
 
 /**
  * @brief A manager class for grouping together models that must be legalized
@@ -61,10 +57,8 @@ class ModelGrouper {
      *  @param prepacker
      *      The prepacker used to create molecules in the flat placement. This
      *      provides the pack patterns for forming the groups.
-     *  @param user_models
-     *      Linked list of user-provided models.
-     *  @param library_models
-     *      Linked list of library models.
+     *  @param models
+     *      The logical models found in the architecture.
      *  @param log_verbosity
      *      The verbosity of log messages in the grouper class.
      */

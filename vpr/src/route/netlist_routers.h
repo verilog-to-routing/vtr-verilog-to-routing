@@ -1,5 +1,4 @@
 #pragma once
-
 /** @file Interface for a netlist router.
  *
  * A NetlistRouter manages the required bits of state to complete the netlist routing process,
@@ -19,13 +18,11 @@
 #include "NetPinTimingInvalidator.h"
 #include "clustered_netlist_utils.h"
 #include "connection_based_routing_fwd.h"
-#include "globals.h"
+#include "d_ary_heap.h"
 #include "heap_type.h"
 #include "netlist_fwd.h"
-#include "partition_tree.h"
 #include "routing_predictor.h"
 #include "route_budgets.h"
-#include "route_utils.h"
 #include "router_stats.h"
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"

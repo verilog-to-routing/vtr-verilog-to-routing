@@ -5,7 +5,6 @@
 #include <cmath>
 
 #include "globals.h"
-#include "draw_global.h"
 #include "place_macro.h"
 #include "vpr_types.h"
 #include "place_util.h"
@@ -19,6 +18,11 @@
 #include "RL_agent_util.h"
 #include "PlacerSetupSlacks.h"
 #include "PlacerCriticalities.h"
+#include "vtr_expr_eval.h"
+
+#ifndef NO_GRAPHICS
+#include "draw_global.h"
+#endif // NO_GRAPHICS
 
 /**************************************************************************/
 /*************** Static Function Declarations *****************************/
@@ -202,6 +206,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      PlacerSetupSlacks* setup_slacks,
                                      SetupTimingInfo* timing_info,
                                      NetPinTimingInvalidator* pin_timing_invalidator,
+                                     float auto_init_t_scale,
                                      int move_lim)
     : placer_opts_(placer_opts)
     , placer_state_(placer_state)
@@ -281,7 +286,8 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     move_type_stats_.rejected_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
 
     // Update the starting temperature for placement annealing to a more appropriate value
-    annealing_state_.t = estimate_starting_temperature_();
+    VTR_ASSERT_SAFE_MSG(auto_init_t_scale >= 0, "Initial temperature scale cannot be negative.");
+    annealing_state_.t = estimate_starting_temperature_() * auto_init_t_scale;
 }
 
 float PlacementAnnealer::estimate_starting_temperature_() {

@@ -1,5 +1,4 @@
-#ifndef TELEGRAMHEADER_H
-#define TELEGRAMHEADER_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -141,5 +140,3 @@ class TelegramHeader {
 } // namespace comm
 
 #endif /* NO_SERVER */
-
-#endif /* TELEGRAMHEADER_H */

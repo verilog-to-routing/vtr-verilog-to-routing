@@ -1,5 +1,4 @@
-#ifndef EDGE_GROUPS_H
-#define EDGE_GROUPS_H
+#pragma once
 
 #include <unordered_set>
 #include <unordered_map>
@@ -7,7 +6,8 @@
 #include <cstddef>
 
 #include "vpr_types.h"
-#include "vpr_context.h"
+
+struct DeviceContext;
 
 // Class for identifying the components of a graph as sets of nodes.
 // Each node is reachable from any other node in the same set, and
@@ -56,5 +56,3 @@ class EdgeGroups {
     // Order is arbitrary.
     std::vector<std::vector<RRNodeId>> rr_non_config_node_sets_;
 };
-
-#endif

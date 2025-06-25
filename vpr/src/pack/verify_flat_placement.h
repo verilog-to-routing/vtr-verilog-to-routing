@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -6,8 +7,6 @@
  *          placement that has been passed into the packer. This checks for
  *          invalid data so this does not have to be checked during packing.
  */
-
-#pragma once
 
 // Forward declarations
 class FlatPlacementInfo;

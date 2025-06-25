@@ -45,7 +45,6 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
     for (const NocRouter& phy_router : noc_phy_routers) {
         t_physical_tile_loc phy_loc = phy_router.get_router_physical_location();
 
-        grid_blocks.set_usage(phy_loc, 0);
         auto tile = device_ctx.grid.get_physical_type(phy_loc);
 
         for (const auto& sub_tile : tile->sub_tiles) {

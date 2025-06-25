@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -6,8 +7,6 @@
  *          that ensure that the given clustering is valid and can be used with
  *          the rest of the VPR flow.
  */
-
-#pragma once
 
 #include <unordered_set>
 #include "vtr_vector.h"

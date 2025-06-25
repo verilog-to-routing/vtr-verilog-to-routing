@@ -1,5 +1,5 @@
-#ifndef SETUPVPR_H
-#define SETUPVPR_H
+#pragma once
+
 #include <vector>
 #include "read_options.h"
 #include "physical_types.h"
@@ -18,7 +18,7 @@ void SetupVPR(const t_options* Options,
               t_analysis_opts* AnalysisOpts,
               t_noc_opts* NocOpts,
               t_server_opts* ServerOpts,
-              t_det_routing_arch* RoutingArch,
+              t_det_routing_arch& RoutingArch,
               std::vector<t_lb_type_rr_node>** PackerRRGraphs,
               std::vector<t_segment_inf>& Segments,
               t_timing_inf* Timing,
@@ -28,4 +28,3 @@ void SetupVPR(const t_options* Options,
               std::string* GraphicsCommands,
               t_power_opts* PowerOpts,
               t_vpr_setup* vpr_setup);
-#endif

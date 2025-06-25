@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
  * @date    March 2025
  * @brief   Utility methods for working with flat placements.
  */
-
-#pragma once
 
 #include <cstdlib>
 #include "flat_placement_types.h"

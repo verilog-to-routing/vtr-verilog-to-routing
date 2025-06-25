@@ -1,12 +1,11 @@
-#ifndef SHOWSETUP_H
-#define SHOWSETUP_H
+#pragma once
 
 #include <ostream>
 #include <string>
 #include <vector>
 
-class t_logical_block_type;
-class t_vpr_setup;
+struct t_logical_block_type;
+struct t_vpr_setup;
 
 struct ClusteredNetlistStats {
   private:
@@ -35,5 +34,3 @@ struct ClusteredNetlistStats {
 
 void ShowSetup(const t_vpr_setup& vpr_setup);
 void writeClusteredNetlistStats(const std::string& block_usage_filename);
-
-#endif

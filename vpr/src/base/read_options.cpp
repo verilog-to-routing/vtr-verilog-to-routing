@@ -432,9 +432,9 @@ struct ParseRouteType {
     ConvertedValue<e_route_type> from_str(const std::string& str) {
         ConvertedValue<e_route_type> conv_value;
         if (str == "global")
-            conv_value.set_value(GLOBAL);
+            conv_value.set_value(e_route_type::GLOBAL);
         else if (str == "detailed")
-            conv_value.set_value(DETAILED);
+            conv_value.set_value(e_route_type::DETAILED);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -445,10 +445,10 @@ struct ParseRouteType {
 
     ConvertedValue<std::string> to_str(e_route_type val) {
         ConvertedValue<std::string> conv_value;
-        if (val == GLOBAL)
+        if (val == e_route_type::GLOBAL)
             conv_value.set_value("global");
         else {
-            VTR_ASSERT(val == DETAILED);
+            VTR_ASSERT(val == e_route_type::DETAILED);
             conv_value.set_value("detailed");
         }
         return conv_value;
@@ -1584,6 +1584,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Show version information then exit")
         .action(argparse::Action::VERSION);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.show_arch_resources, "--show_arch_resources")
+        .help("Show architecture resources then exit")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
     gen_grp.add_argument<std::string>(args.device_layout, "--device")
         .help(
             "Controls which device layout/floorplan is used from the architecture file."
@@ -1945,6 +1950,31 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<int>(args.ap_high_fanout_threshold, "--ap_high_fanout_threshold")
+        .help(
+            "Defines the threshold for high fanout nets within AP flow.\n"
+            "Ignores the nets that have higher fanouts than the threshold for the analytical solver.")
+        .default_value("256")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument(args.ap_partial_legalizer_target_density, "--ap_partial_legalizer_target_density")
+        .help(
+            "Sets the target density of different physical tiles on the FPGA device "
+            "for the partial legalizer in the AP flow. The partial legalizer will "
+            "try to fill tiles up to (but not beyond) this target density. This "
+            "is used as a guide, the legalizer may not follow this if it must fill "
+            "the tile more."
+            "\n"
+            "When this option is set ot auto, VPR will select good values for the "
+            "target density of tiles."
+            "\n"
+            "This option is similar to appack_max_dist_th, where a regex string "
+            "is used to set the target density of different physical tiles. See "
+            "the documentation for more information.")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument(args.appack_max_dist_th, "--appack_max_dist_th")
         .help(
             "Sets the maximum candidate distance thresholds for the logical block types"
@@ -1976,6 +2006,15 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "values produce more output (useful for debugging the AP "
             "algorithms).")
         .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<bool, ParseOnOff>(args.ap_generate_mass_report, "--ap_generate_mass_report")
+        .help(
+            "Controls whether to generate a report on how the partial legalizer "
+            "within the AP flow calculates the mass of primitives and the "
+            "capacity of tiles on the device. This report is useful when "
+            "debugging the partial legalizer.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& pack_grp = parser.add_argument_group("packing options");
@@ -2161,6 +2200,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("circuit")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_auto_init_t_scale, "--anneal_auto_init_t_scale")
+        .help(
+            "A scale on the starting temperature of the anneal for the automatic annealing "
+            "schedule.\n"
+            "\n"
+            "When in the automatic annealing schedule, the annealer will select a good "
+            "initial temperature based on the quality of the initial placement. This option "
+            "allows you to scale that initial temperature up or down by multiplying the "
+            "initial temperature by the given scale. Increasing this number "
+            "will increase the initial temperature which will have the annealer potentially "
+            "explore more of the space at the expense of run time. Depending on the quality "
+            "of the initial placement, this may improve or hurt the quality of the final "
+            "placement.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.PlaceInitT, "--init_t")
         .help("Initial temperature for manual annealing schedule")
         .default_value("100.0")
@@ -2242,13 +2297,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls how often VPR saves the current placement to a file per temperature (may be helpful for debugging)."
             " The value specifies how many times the placement should be saved (values less than 1 disable this feature).")
         .default_value("0")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument(args.enable_analytic_placer, "--enable_analytic_placer")
-        .help(
-            "Enables the analytic placer. "
-            "Once analytic placement is done, the result is passed through the quench phase of the annealing placer for local improvement")
-        .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
@@ -2888,6 +2936,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("map")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_threshold, "--router_initial_acc_cost_chan_congestion_threshold")
+        .help("Utilization threshold above which initial accumulated routing cost (acc_cost) "
+              "is increased to penalize congested channels. Used to bias routing away from "
+              "highly utilized regions during early routing iterations.")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_weight, "--router_initial_acc_cost_chan_congestion_weight")
+        .help("Weight applied to the excess channel utilization (above threshold) "
+              "when computing the initial accumulated cost (acc_cost)of routing resources. "
+              "Higher values make the router more sensitive to early congestion.")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
         .help(
             "Controls how many times the router is allowed to converge to a legal routing before halting."
@@ -3086,6 +3148,21 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     analysis_grp.add_argument(args.write_timing_summary, "--write_timing_summary")
         .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<bool, ParseOnOff>(args.skip_sync_clustering_and_routing_results, "--skip_sync_clustering_and_routing_results")
+        .help(
+            "Select to skip the synchronization on clustering results based on routing optimization results."
+            "Note that when this sync-up is disabled, clustering results may be wrong (leading to incorrect bitstreams)!")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<bool, ParseOnOff>(args.generate_net_timing_report, "--generate_net_timing_report")
+        .help(
+            "Generates a net timing report in CSV format, reporting the delay and slack\n"
+            "for every routed connection in the design.\n"
+            "The report is saved as 'report_net_timing.csv'.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");
@@ -3414,14 +3491,14 @@ void set_conditional_defaults(t_options& args) {
      */
     //Base cost type
     if (args.base_cost_type.provenance() != Provenance::SPECIFIED) {
-        if (args.RouteType == DETAILED) {
+        if (args.RouteType == e_route_type::DETAILED) {
             if (args.timing_analysis) {
                 args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
             } else {
                 args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
             }
         } else {
-            VTR_ASSERT(args.RouteType == GLOBAL);
+            VTR_ASSERT(args.RouteType == e_route_type::GLOBAL);
             //Global RR graphs don't have valid timing, so use demand base cost
             args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
         }
@@ -3429,10 +3506,10 @@ void set_conditional_defaults(t_options& args) {
 
     //Bend cost
     if (args.bend_cost.provenance() != Provenance::SPECIFIED) {
-        if (args.RouteType == GLOBAL) {
+        if (args.RouteType == e_route_type::GLOBAL) {
             args.bend_cost.set(1., Provenance::INFERRED);
         } else {
-            VTR_ASSERT(args.RouteType == DETAILED);
+            VTR_ASSERT(args.RouteType == e_route_type::DETAILED);
             args.bend_cost.set(0., Provenance::INFERRED);
         }
     }

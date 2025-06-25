@@ -1,5 +1,4 @@
-#ifndef RL_AGENT_UTIL_H
-#define RL_AGENT_UTIL_H
+#pragma once
 
 #include "move_generator.h"
 
@@ -45,5 +44,3 @@ MoveGenerator& select_move_generator(std::unique_ptr<MoveGenerator>& move_genera
                                      e_agent_state agent_state,
                                      const t_placer_opts& placer_opts,
                                      bool in_quench);
-
-#endif

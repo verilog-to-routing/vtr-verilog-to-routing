@@ -1,5 +1,4 @@
-#ifndef COMMCONSTS_H
-#define COMMCONSTS_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -31,5 +30,3 @@ inline const std::string KEY_HOLD_PATH_LIST{"hold"};
 } // namespace comm
 
 #endif /* NO_SERVER */
-
-#endif /* COMMCONSTS_H */

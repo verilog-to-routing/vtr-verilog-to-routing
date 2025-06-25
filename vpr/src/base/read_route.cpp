@@ -93,7 +93,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     }
 
     /*Allocate necessary routing structures*/
-    alloc_and_load_rr_node_route_structs();
+    alloc_and_load_rr_node_route_structs(router_opts);
     const Netlist<>& router_net_list = (flat_router) ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     init_route_structs(router_net_list,
                        router_opts.bb_factor,
@@ -296,7 +296,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
             /* Verify types and ptc*/
             if (tokens[2] == "SOURCE" || tokens[2] == "SINK" || tokens[2] == "OPIN" || tokens[2] == "IPIN") {
                 const auto& type = device_ctx.grid.get_physical_type({x, y, layer_num});
-                if (tokens[4 + offset] == "Pad:" && !is_io_type(type)) {
+                if (tokens[4 + offset] == "Pad:" && !type->is_io()) {
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "Node %d is of the wrong type", inode);
                 }
@@ -319,7 +319,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
                 auto type = device_ctx.grid.get_physical_type({x, y, layer_num});
-                if (!is_io_type(type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
+                if (!type->is_io() && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
                     int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
                     int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
@@ -592,10 +592,13 @@ void print_route(const Netlist<>& net_list,
                         fprintf(fp, "to (%d,%d,%d) ", rr_graph.node_xhigh(inode),
                                 rr_graph.node_yhigh(inode), layer_num);
 
+                    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_num});
+
                     switch (rr_type) {
                         case e_rr_type::IPIN:
                         case e_rr_type::OPIN:
-                            if (is_io_type(device_ctx.grid.get_physical_type({ilow, jlow, layer_num}))) {
+
+                            if (physical_tile->is_io()) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
                                 fprintf(fp, " Pin: ");
@@ -609,7 +612,7 @@ void print_route(const Netlist<>& net_list,
 
                         case e_rr_type::SOURCE:
                         case e_rr_type::SINK:
-                            if (is_io_type(device_ctx.grid.get_physical_type({ilow, jlow, layer_num}))) {
+                            if (physical_tile->is_io()) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
                                 fprintf(fp, " Class: ");
@@ -625,8 +628,7 @@ void print_route(const Netlist<>& net_list,
 
                     fprintf(fp, "%d  ", rr_graph.node_ptc_num(inode));
 
-                    auto physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_num});
-                    if (!is_io_type(physical_tile) && (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN)) {
+                    if (!physical_tile->is_io() && (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN)) {
                         int pin_num = rr_graph.node_pin_num(inode);
                         int xoffset = device_ctx.grid.get_width_offset({ilow, jlow, layer_num});
                         int yoffset = device_ctx.grid.get_height_offset({ilow, jlow, layer_num});

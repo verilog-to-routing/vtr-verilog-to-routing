@@ -1,6 +1,4 @@
-#ifndef VTR_ASSERT_H
-#define VTR_ASSERT_H
-
+#pragma once
 /**
  * @file
  * @brief The header vtr_assert.h defines useful assertion macros for VTR projects.
@@ -103,7 +101,7 @@
  *
  * Note that to avoid 'unused' variable warnings when assertions are
  * disabled, we pass the expr and msg to sizeof(). We use sizeof specifically
- * since it accepts expressions, and the C++ standard gaurentees sizeof's arguments
+ * since it accepts expressions, and the C++ standard guarantees sizeof's arguments
  * are never evaluated (ensuring any expensive expressions are not evaluated when
  * assertions are disabled). To avoid warnings about the unused result of sizeof()
  * we cast it to void.
@@ -142,10 +140,8 @@ namespace assert {
  * function will never return. This should ensure the
  * compiler won't warn about detected conditions such as
  * dead-code or potential null pointer dereferences
- * which are gaurded against by assertions.
+ * which are guarded against by assertions.
  */
 [[noreturn]] void handle_assert(const char* expr, const char* file, unsigned int line, const char* function, const char* msg);
 } // namespace assert
 } // namespace vtr
-
-#endif //VTR_ASSERT_H

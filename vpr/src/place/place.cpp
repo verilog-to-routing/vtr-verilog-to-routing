@@ -1,10 +1,8 @@
 
 #include <memory>
-#include <optional>
 
 #include "flat_placement_types.h"
 #include "initial_placement.h"
-#include "load_flat_place.h"
 #include "noc_place_utils.h"
 #include "pack.h"
 #include "vpr_context.h"
@@ -33,9 +31,9 @@ void try_place(const Netlist<>& net_list,
                const t_router_opts& router_opts,
                const t_analysis_opts& analysis_opts,
                const t_noc_opts& noc_opts,
-               t_chan_width_dist chan_width_dist,
-               t_det_routing_arch* det_routing_arch,
-               std::vector<t_segment_inf>& segment_inf,
+               const t_chan_width_dist& chan_width_dist,
+               t_det_routing_arch& det_routing_arch,
+               const std::vector<t_segment_inf>& segment_inf,
                const std::vector<t_direct_inf>& directs,
                const FlatPlacementInfo& flat_placement_info,
                bool is_flat) {
@@ -48,18 +46,18 @@ void try_place(const Netlist<>& net_list,
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& atom_ctx = g_vpr_ctx.atom();
+    auto& mutable_placement = g_vpr_ctx.mutable_placement();
+    auto& mutable_floorplanning = g_vpr_ctx.mutable_floorplanning();
 
     // Initialize the variables in the placement context.
-    g_vpr_ctx.mutable_placement().init_placement_context(placer_opts, directs);
+    mutable_placement.init_placement_context(placer_opts, directs);
 
     // Update the floorplanning constraints with the macro information from the
     // placement context.
-    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
-
-    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
+    mutable_floorplanning.update_floorplanning_context_pre_place(*mutable_placement.place_macros);
 
     VTR_LOG("\n");
-    VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
+    VTR_LOG("Bounding box mode is %s\n", (mutable_placement.cube_bb ? "Cube" : "Per-layer"));
     VTR_LOG("\n");
 
     /* To make sure the importance of NoC-related cost terms compared to
@@ -101,7 +99,7 @@ void try_place(const Netlist<>& net_list,
      * placement context. This is done to make sure that the placement stage only accesses its
      * own local instances of BlkLocRegistry.
      */
-    g_vpr_ctx.mutable_placement().lock_loc_vars();
+    mutable_placement.lock_loc_vars();
 
     /* Start measuring placement time. The measured execution time will be printed
      * when this object goes out of scope at the end of this function.
@@ -114,7 +112,8 @@ void try_place(const Netlist<>& net_list,
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist(), pb_gpin_lookup);
 
     Placer placer(net_list, {}, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
-                  flat_placement_info, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
+                  flat_placement_info, place_delay_model, placer_opts.place_auto_init_t_scale,
+                  mutable_placement.cube_bb, is_flat, /*quiet=*/false);
 
     placer.place();
 
@@ -122,13 +121,13 @@ void try_place(const Netlist<>& net_list,
      * the global context directly. We need to copy its internal data structures
      * to the global placement context before it goes out of scope.
      */
-    placer.copy_locs_to_global_state(g_vpr_ctx.mutable_placement());
+    placer.update_global_state();
 
     // Clean the variables in the placement context. This will deallocate memory
     // used by variables which were allocated in the placement context and are
     // never used outside of placement.
-    g_vpr_ctx.mutable_placement().clean_placement_context_post_place();
-    g_vpr_ctx.mutable_floorplanning().clean_floorplanning_context_post_place();
+    mutable_placement.clean_placement_context_post_place();
+    mutable_floorplanning.clean_floorplanning_context_post_place();
 }
 
 #ifdef VERBOSE

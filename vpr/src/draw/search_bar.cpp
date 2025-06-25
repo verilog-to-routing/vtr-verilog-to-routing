@@ -13,44 +13,33 @@
  *
  */
 
-#include "physical_types.h"
 #ifndef NO_GRAPHICS
 #include <cstdio>
 #include <sstream>
 
 #include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
 #include "vtr_log.h"
-#include "vtr_color_map.h"
 
 #include "vpr_utils.h"
-#include "vpr_error.h"
+#include "route_utils.h"
 
 #include "globals.h"
-#include "draw_color.h"
 #include "draw.h"
-#include "draw_basic.h"
 #include "draw_rr.h"
 #include "draw_searchbar.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
 #include "atom_netlist.h"
-#include "tatum/report/TimingPathCollector.hpp"
-#include "hsl.h"
-#include "route_export.h"
 #include "search_bar.h"
+#include "old_traceback.h"
+#include "physical_types.h"
+#include "place_macro.h"
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
 #if defined(X11) && !defined(__MINGW32__)
 #include <X11/keysym.h>
 #endif
-
-#include "rr_graph.h"
-#include "route_utilization.h"
-#include "place_macro.h"
 
 extern std::string rr_highlight_message;
 
@@ -71,6 +60,8 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
 
     // reset
     deselect_all();
+
+    t_draw_state* draw_state = get_draw_state_vars();
 
     if (search_type == "RR Node ID") {
         int rr_node_id = -1;
@@ -135,15 +126,33 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Net ID") {
         int net_id = -1;
         ss >> net_id;
-
-        // valid net id check
-        if (!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
-            warning_dialog_box("Invalid Net ID");
-            app->refresh_drawing();
-            return;
+        if (draw_state->is_flat) {
+            AtomNetId atom_net_id = AtomNetId(net_id);
+            if (!atom_ctx.netlist().valid_net_id(atom_net_id)) {
+                warning_dialog_box("Invalid Net ID");
+                app->refresh_drawing();
+                return;
+            }
+            if (!is_net_routed(atom_net_id)) {
+                warning_dialog_box("Net is unrouted");
+                app->refresh_drawing();
+                return;
+            }
+            if (is_net_fully_absorbed(atom_net_id)) {
+                warning_dialog_box("Net is fully absorbed");
+                app->refresh_drawing();
+                return;
+            }
+            highlight_nets((ClusterNetId)net_id);
+        } else {
+            // valid net id check
+            if (!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
+                warning_dialog_box("Invalid Net ID");
+                app->refresh_drawing();
+                return;
+            }
+            highlight_nets((ClusterNetId)net_id);
         }
-
-        highlight_nets((ClusterNetId)net_id);
     }
 
     else if (search_type == "Net Name") {
@@ -151,16 +160,39 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         //So we only need to search this one
         std::string net_name;
         ss >> net_name;
-        AtomNetId atom_net_id = atom_ctx.netlist().find_net(net_name);
 
-        if (atom_net_id == AtomNetId::INVALID()) {
-            warning_dialog_box("Invalid Net Name");
-            return; //name not exist
-        }
+        if (draw_state->is_flat) {
+            AtomNetId atom_net_id = atom_ctx.netlist().find_net(net_name);
+            if (atom_net_id == AtomNetId::INVALID()) {
+                warning_dialog_box("Invalid Net Name");
+                app->refresh_drawing();
+                return;
+            }
+            if (!is_net_routed(atom_net_id)) {
+                warning_dialog_box("Net is unrouted");
+                app->refresh_drawing();
+                return;
+            }
+            if (is_net_fully_absorbed(atom_net_id)) {
+                warning_dialog_box("Net is fully absorbed");
+                app->refresh_drawing();
+                return;
+            }
+            highlight_nets(convert_to_cluster_net_id(atom_net_id));
+        } else {
+            AtomNetId atom_net_id = atom_ctx.netlist().find_net(net_name);
 
-        const auto clb_nets = atom_ctx.lookup().clb_nets(atom_net_id);
-        for (auto clb_net_id : clb_nets.value()) {
-            highlight_nets(clb_net_id);
+            if (atom_net_id == AtomNetId::INVALID()) {
+                warning_dialog_box("Invalid Net Name");
+                app->refresh_drawing();
+                return;
+            }
+            auto clb_net_ids_opt = atom_ctx.lookup().clb_nets(atom_net_id);
+            if (clb_net_ids_opt.has_value()) {
+                for (auto clb_net_id : clb_net_ids_opt.value()) {
+                    highlight_nets(clb_net_id);
+                }
+            }
         }
     }
 

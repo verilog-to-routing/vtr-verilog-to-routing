@@ -7,9 +7,6 @@
 #include "place_macro.h"
 #include "vtr_random.h"
 
-#include "draw_debug.h"
-#include "draw.h"
-
 #include "place_constraints.h"
 #include "placer_state.h"
 #include "PlacerCriticalities.h"
@@ -18,6 +15,24 @@
 // When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
+
+/**
+ * @brief Adjust the search range based on how many blocks are in the column.
+ * If the number of blocks in the column is less than MIN_NUM_BLOCKS_IN_COLUMN,
+ * expand the search range to cover the entire column.
+ * 
+ * @param block_type The type of the block to move
+ * @param compressed_column_num The compressed column to move the block to
+ * @param to_layer_num The layer that the block is moving to
+ * @param is_range_fixed Whether the search range is fixed (e.g., in case of placement constraints)
+ * @param search_range The search range to adjust
+ * 
+ */
+static void adjust_search_range(t_logical_block_type_ptr block_type,
+                                const int compressed_column_num,
+                                const int to_layer_num,
+                                const bool is_range_fixed,
+                                t_bb& search_range);
 
 //Accessor for f_placer_breakpoint_reached
 bool placer_breakpoint_reached() {
@@ -669,10 +684,9 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                                 rlim);
     int delta_cx = search_range.xmax - search_range.xmin;
 
-    t_physical_tile_loc to_compressed_loc;
-    bool legal = false;
+    bool block_constrained = is_cluster_constrained(b_from);
 
-    if (is_cluster_constrained(b_from)) {
+    if (block_constrained) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
@@ -681,6 +695,9 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
             return false;
         }
     }
+
+    t_physical_tile_loc to_compressed_loc;
+    bool legal = false;
     //TODO: For now, we only move the blocks on the same tile
     legal = find_compatible_compressed_loc_in_range(type,
                                                     delta_cx,
@@ -691,7 +708,8 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
                                                     blk_loc_registry,
-                                                    rng);
+                                                    rng,
+                                                    block_constrained);
 
     if (!legal) {
         //No valid position found
@@ -761,10 +779,9 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                       to_layer_num,
                       to_layer_num);
 
-    t_physical_tile_loc to_compressed_loc;
-    bool legal = false;
+    bool block_constrained = is_cluster_constrained(b_from);
 
-    if (is_cluster_constrained(b_from)) {
+    if (block_constrained) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
@@ -774,6 +791,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
         }
     }
 
+    t_physical_tile_loc to_compressed_loc;
+    bool legal = false;
     legal = find_compatible_compressed_loc_in_range(blk_type,
                                                     delta_cx,
                                                     from_compressed_locs[to_layer_num],
@@ -783,7 +802,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
                                                     blk_loc_registry,
-                                                    rng);
+                                                    rng,
+                                                    block_constrained);
 
     if (!legal) {
         //No valid position found
@@ -850,10 +870,9 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     }
     delta_cx = search_range.xmax - search_range.xmin;
 
-    t_physical_tile_loc to_compressed_loc;
-    bool legal = false;
+    bool block_constrained = is_cluster_constrained(b_from);
 
-    if (is_cluster_constrained(b_from)) {
+    if (block_constrained) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
@@ -863,7 +882,10 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
         }
     }
 
-    //TODO: For now, we only move the blocks on the same tile
+    t_physical_tile_loc to_compressed_loc;
+    bool legal = false;
+
+    //TODO: For now, we only move the blocks on the same layer
     legal = find_compatible_compressed_loc_in_range(blk_type,
                                                     delta_cx,
                                                     from_compressed_loc[to_layer_num],
@@ -873,7 +895,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
                                                     blk_loc_registry,
-                                                    rng);
+                                                    rng,
+                                                    block_constrained);
 
     if (!legal) {
         //No valid position found
@@ -967,7 +990,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              int to_layer_num,
                                              bool search_for_empty,
                                              const BlkLocRegistry& blk_loc_registry,
-                                             vtr::RngContainer& rng) {
+                                             vtr::RngContainer& rng,
+                                             const bool is_range_fixed) {
     //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
     VTR_ASSERT(to_layer_num == from_loc.layer_num);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
@@ -1002,27 +1026,16 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         //The candidates are stored in a flat_map so we can efficiently find the set of valid
         //candidates with upper/lower bound.
         const auto& block_rows = compressed_block_grid.get_column_block_map(to_loc.x, to_layer_num);
+        adjust_search_range(type,
+                            to_loc.x,
+                            to_layer_num,
+                            is_range_fixed,
+                            search_range);
         auto y_lower_iter = block_rows.lower_bound(search_range.ymin);
         if (y_lower_iter == block_rows.end()) {
             continue;
         }
-
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
-
-        if (y_lower_iter->first > search_range.ymin) {
-            //No valid blocks at this x location which are within rlim_y
-            //
-            if (type->index != 1)
-                continue;
-            else {
-                //Fall back to allow the whole y range
-                y_lower_iter = block_rows.begin();
-                y_upper_iter = block_rows.end();
-
-                search_range.ymin = y_lower_iter->first;
-                search_range.ymax = (y_upper_iter - 1)->first;
-            }
-        }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);
         VTR_ASSERT(y_range >= 0);
@@ -1200,6 +1213,25 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
     }
 
     return true;
+}
+
+static void adjust_search_range(t_logical_block_type_ptr block_type,
+                                const int compressed_column_num,
+                                const int to_layer_num,
+                                const bool is_range_fixed,
+                                t_bb& search_range) {
+    // The value is chosen empirically to expand the search range for sparse blocks,
+    // or blocks located on the perimeter of the FPGA (e.g., IO blocks)
+    constexpr int MIN_NUM_BLOCKS_IN_COLUMN = 3;
+
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+
+    size_t num_blocks_in_column = compressed_block_grid.get_column_block_map(compressed_column_num, to_layer_num).size();
+
+    if (num_blocks_in_column < MIN_NUM_BLOCKS_IN_COLUMN && !is_range_fixed) {
+        search_range.ymin = 0;
+        search_range.ymax = compressed_block_grid.get_num_rows(to_layer_num) - 1;
+    }
 }
 
 std::string e_move_result_to_string(e_move_result move_outcome) {

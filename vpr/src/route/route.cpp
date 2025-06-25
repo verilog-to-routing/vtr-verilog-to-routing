@@ -7,16 +7,16 @@
 #include "route.h"
 #include "route_common.h"
 #include "route_debug.h"
-#include "route_export.h"
 #include "route_profiling.h"
 #include "route_utils.h"
+#include "rr_graph.h"
 #include "vtr_time.h"
 
 bool route(const Netlist<>& net_list,
            int width_fac,
            const t_router_opts& router_opts,
            const t_analysis_opts& analysis_opts,
-           t_det_routing_arch* det_routing_arch,
+           t_det_routing_arch& det_routing_arch,
            std::vector<t_segment_inf>& segment_inf,
            NetPinsMatrix<float>& net_delay,
            std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -26,8 +26,8 @@ bool route(const Netlist<>& net_list,
            ScreenUpdatePriority first_iteration_priority,
            bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     if (net_list.nets().empty()) {
@@ -36,12 +36,12 @@ bool route(const Netlist<>& net_list,
 
     e_graph_type graph_type;
     e_graph_type graph_directionality;
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     /* Set the channel widths */
@@ -65,7 +65,7 @@ bool route(const Netlist<>& net_list,
     init_draw_coords(width_fac, g_vpr_ctx.placement().blk_loc_registry());
 
     /* Allocate and load additional rr_graph information needed only by the router. */
-    alloc_and_load_rr_node_route_structs();
+    alloc_and_load_rr_node_route_structs(router_opts);
 
     init_route_structs(net_list,
                        router_opts.bb_factor,
@@ -119,7 +119,7 @@ bool route(const Netlist<>& net_list,
     route_budgets budgeting_inf(net_list, is_flat);
 
     // This needs to be called before filling intra-cluster lookahead maps to ensure that the intra-cluster lookahead maps are initialized.
-    const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+    const RouterLookahead* router_lookahead = get_cached_router_lookahead(det_routing_arch,
                                                                           router_opts.lookahead_type,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
@@ -139,7 +139,7 @@ bool route(const Netlist<>& net_list,
             mut_router_lookahead->compute_intra_tile();
         }
         route_ctx.cached_router_lookahead_.set(cache_key, std::move(mut_router_lookahead));
-        router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+        router_lookahead = get_cached_router_lookahead(det_routing_arch,
                                                        router_opts.lookahead_type,
                                                        router_opts.write_router_lookahead,
                                                        router_opts.read_router_lookahead,

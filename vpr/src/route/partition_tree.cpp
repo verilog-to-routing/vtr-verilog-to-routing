@@ -1,7 +1,9 @@
 #include "partition_tree.h"
 #include <cmath>
 #include <memory>
+#include <stack>
 #include <unordered_set>
+#include "globals.h"
 
 /** Minimum number of nets inside a partition to continue further partitioning.
  * Mostly an arbitrary limit. At a certain point, the quality lost due to disturbed net ordering 

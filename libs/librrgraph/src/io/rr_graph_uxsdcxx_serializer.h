@@ -712,9 +712,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int get_node_loc_layer(const t_rr_node& node) final {
         return rr_graph_->node_layer(node.id());
     }
-    inline int get_node_loc_twist(const t_rr_node& node) final{
-        return rr_graph_->node_ptc_twist(node.id());
-    }
     inline int get_node_loc_xhigh(const t_rr_node& node) final {
         return rr_graph_->node_xhigh(node.id());
     }
@@ -757,12 +754,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 }
             }
         }
-    }
-
-    inline void set_node_loc_twist(int twist, int& inode) final {
-        auto node = (*rr_nodes_)[inode];
-        RRNodeId node_id = node.id();
-        rr_graph_builder_->set_node_ptc_twist_incr(node_id,twist);
     }
 
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {
@@ -1848,16 +1839,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         /* Alloc the lookup table */
         for (e_rr_type rr_type : RR_TYPES) {
-            if (rr_type == e_rr_type::CHANX) {
-                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.height(), grid_.width(), rr_type, NUM_2D_SIDES);
-            } else {
-                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type, NUM_2D_SIDES);
-            }
+            rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type, NUM_2D_SIDES);
         }
 
         /* Add the correct node into the vector */
-        for (size_t inode = 0; inode < rr_nodes_->size(); inode++) {
-            auto node = (*rr_nodes_)[inode];
+        for (const t_rr_node& node : *rr_nodes_) {
             rr_graph_builder.add_node_to_all_locs(node.id());
         }
     }

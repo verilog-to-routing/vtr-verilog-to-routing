@@ -27,14 +27,14 @@
         "Average Path": 5,
         "Estimated LUTs": 1394,
         "Total Node": 1362,
-        "Wires": 1083,
-        "Wire Bits": 1398,
+        "Wires": 1086,
+        "Wire Bits": 1402,
         "Public Wires": 127,
         "Public Wire Bits": 127,
-        "Total Cells": 1206,
+        "Total Cells": 1210,
         "MUX": 538,
         "XOR": 386,
-        "AND": 228,
+        "AND": 232,
         "DFFs": [
             "$_DFF_P_ 54"
         ]
@@ -67,14 +67,14 @@
         "Average Path": 5,
         "Estimated LUTs": 714,
         "Total Node": 693,
-        "Wires": 1083,
-        "Wire Bits": 1395,
+        "Wires": 1086,
+        "Wire Bits": 1399,
         "Public Wires": 127,
         "Public Wire Bits": 127,
-        "Total Cells": 1206,
+        "Total Cells": 1210,
         "MUX": 538,
         "XOR": 386,
-        "AND": 228,
+        "AND": 232,
         "DFFs": [
             "$_DFF_P_ 54"
         ]
@@ -170,14 +170,14 @@
         "Average Path": 6,
         "Estimated LUTs": 1860,
         "Total Node": 1921,
-        "Wires": 1672,
-        "Wire Bits": 2096,
+        "Wires": 1674,
+        "Wire Bits": 2098,
         "Public Wires": 155,
         "Public Wire Bits": 155,
-        "Total Cells": 1785,
+        "Total Cells": 1786,
         "MUX": 760,
         "XOR": 540,
-        "AND": 361,
+        "AND": 362,
         "DFFs": [
             "$_DFF_P_ 46"
         ],
@@ -205,14 +205,14 @@
         "Average Path": 6,
         "Estimated LUTs": 1086,
         "Total Node": 1076,
-        "Wires": 1786,
-        "Wire Bits": 2273,
+        "Wires": 1787,
+        "Wire Bits": 2274,
         "Public Wires": 155,
         "Public Wire Bits": 155,
-        "Total Cells": 2039,
+        "Total Cells": 2040,
         "MUX": 949,
         "XOR": 679,
-        "AND": 365,
+        "AND": 366,
         "DFFs": [
             "$_DFF_P_ 46"
         ]
@@ -240,14 +240,14 @@
         "Average Path": 3,
         "Estimated LUTs": 480,
         "Total Node": 513,
-        "Wires": 562,
-        "Wire Bits": 668,
+        "Wires": 560,
+        "Wire Bits": 666,
         "Public Wires": 110,
         "Public Wire Bits": 110,
-        "Total Cells": 512,
+        "Total Cells": 510,
         "MUX": 190,
         "XOR": 135,
-        "AND": 91,
+        "AND": 89,
         "DFFs": [
             "$_DFF_P_ 46"
         ],
@@ -275,14 +275,14 @@
         "Average Path": 3,
         "Estimated LUTs": 334,
         "Total Node": 324,
-        "Wires": 627,
-        "Wire Bits": 768,
+        "Wires": 625,
+        "Wire Bits": 766,
         "Public Wires": 110,
         "Public Wire Bits": 110,
-        "Total Cells": 665,
+        "Total Cells": 663,
         "MUX": 304,
         "XOR": 221,
-        "AND": 94,
+        "AND": 92,
         "DFFs": [
             "$_DFF_P_ 46"
         ]
@@ -310,8 +310,8 @@
         "Average Path": 4,
         "Estimated LUTs": 1255,
         "Total Node": 1274,
-        "Wires": 1230,
-        "Wire Bits": 1516,
+        "Wires": 1229,
+        "Wire Bits": 1515,
         "Public Wires": 269,
         "Public Wire Bits": 269,
         "Total Cells": 1191,
@@ -346,13 +346,13 @@
         "Estimated LUTs": 710,
         "Total Node": 700,
         "Wires": 1284,
-        "Wire Bits": 1601,
+        "Wire Bits": 1602,
         "Public Wires": 269,
         "Public Wire Bits": 269,
-        "Total Cells": 1317,
+        "Total Cells": 1319,
         "MUX": 598,
         "XOR": 425,
-        "AND": 241,
+        "AND": 243,
         "DFFs": [
             "$_DFF_P_ 53"
         ]
@@ -464,14 +464,14 @@
         "Average Path": 4,
         "Estimated LUTs": 18,
         "Total Node": 18,
-        "Wires": 26,
-        "Wire Bits": 28,
+        "Wires": 24,
+        "Wire Bits": 26,
         "Public Wires": 16,
         "Public Wire Bits": 16,
-        "Total Cells": 20,
+        "Total Cells": 18,
         "MUX": 2,
         "XOR": 4,
-        "AND": 14
+        "AND": 12
     },
     "mults_auto_none/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "mults_auto_none/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -571,14 +571,14 @@
         "Average Path": 5,
         "Estimated LUTs": 1388,
         "Total Node": 1362,
-        "Wires": 1083,
-        "Wire Bits": 1398,
+        "Wires": 1086,
+        "Wire Bits": 1402,
         "Public Wires": 127,
         "Public Wire Bits": 127,
-        "Total Cells": 1206,
+        "Total Cells": 1210,
         "MUX": 538,
         "XOR": 386,
-        "AND": 228,
+        "AND": 232,
         "DFFs": [
             "$_DFF_P_ 54"
         ]
@@ -608,14 +608,14 @@
         "Average Path": 5,
         "Estimated LUTs": 1383,
         "Total Node": 1362,
-        "Wires": 1083,
-        "Wire Bits": 1398,
+        "Wires": 1086,
+        "Wire Bits": 1402,
         "Public Wires": 127,
         "Public Wire Bits": 127,
-        "Total Cells": 1206,
+        "Total Cells": 1210,
         "MUX": 538,
         "XOR": 386,
-        "AND": 228,
+        "AND": 232,
         "DFFs": [
             "$_DFF_P_ 54"
         ]
@@ -701,14 +701,14 @@
         "Average Path": 6,
         "Estimated LUTs": 1995,
         "Total Node": 1984,
-        "Wires": 1786,
-        "Wire Bits": 2246,
+        "Wires": 1787,
+        "Wire Bits": 2247,
         "Public Wires": 155,
         "Public Wire Bits": 155,
-        "Total Cells": 2039,
+        "Total Cells": 2040,
         "MUX": 949,
         "XOR": 679,
-        "AND": 365,
+        "AND": 366,
         "DFFs": [
             "$_DFF_P_ 46"
         ]
@@ -732,14 +732,14 @@
         "Average Path": 6,
         "Estimated LUTs": 1994,
         "Total Node": 1984,
-        "Wires": 1786,
-        "Wire Bits": 2246,
+        "Wires": 1787,
+        "Wire Bits": 2247,
         "Public Wires": 155,
         "Public Wire Bits": 155,
-        "Total Cells": 2039,
+        "Total Cells": 2040,
         "MUX": 949,
         "XOR": 679,
-        "AND": 365,
+        "AND": 366,
         "DFFs": [
             "$_DFF_P_ 46"
         ]
@@ -763,14 +763,14 @@
         "Average Path": 3,
         "Estimated LUTs": 562,
         "Total Node": 551,
-        "Wires": 627,
-        "Wire Bits": 771,
+        "Wires": 625,
+        "Wire Bits": 769,
         "Public Wires": 110,
         "Public Wire Bits": 110,
-        "Total Cells": 665,
+        "Total Cells": 663,
         "MUX": 304,
         "XOR": 221,
-        "AND": 94,
+        "AND": 92,
         "DFFs": [
             "$_DFF_P_ 46"
         ]
@@ -794,14 +794,14 @@
         "Average Path": 3,
         "Estimated LUTs": 561,
         "Total Node": 551,
-        "Wires": 627,
-        "Wire Bits": 771,
+        "Wires": 625,
+        "Wire Bits": 769,
         "Public Wires": 110,
         "Public Wire Bits": 110,
-        "Total Cells": 665,
+        "Total Cells": 663,
         "MUX": 304,
         "XOR": 221,
-        "AND": 94,
+        "AND": 92,
         "DFFs": [
             "$_DFF_P_ 46"
         ]
@@ -826,13 +826,13 @@
         "Estimated LUTs": 1322,
         "Total Node": 1309,
         "Wires": 1284,
-        "Wire Bits": 1601,
+        "Wire Bits": 1602,
         "Public Wires": 269,
         "Public Wire Bits": 269,
-        "Total Cells": 1317,
+        "Total Cells": 1319,
         "MUX": 598,
         "XOR": 425,
-        "AND": 241,
+        "AND": 243,
         "DFFs": [
             "$_DFF_P_ 53"
         ]
@@ -857,13 +857,13 @@
         "Estimated LUTs": 1319,
         "Total Node": 1309,
         "Wires": 1284,
-        "Wire Bits": 1601,
+        "Wire Bits": 1602,
         "Public Wires": 269,
         "Public Wire Bits": 269,
-        "Total Cells": 1317,
+        "Total Cells": 1319,
         "MUX": 598,
         "XOR": 425,
-        "AND": 241,
+        "AND": 243,
         "DFFs": [
             "$_DFF_P_ 53"
         ]
@@ -944,14 +944,14 @@
         "Average Path": 4,
         "Estimated LUTs": 18,
         "Total Node": 18,
-        "Wires": 26,
-        "Wire Bits": 28,
+        "Wires": 24,
+        "Wire Bits": 26,
         "Public Wires": 16,
         "Public Wire Bits": 16,
-        "Total Cells": 20,
+        "Total Cells": 18,
         "MUX": 2,
         "XOR": 4,
-        "AND": 14
+        "AND": 12
     },
     "mults_auto_none/multiply_hard_block/k6_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/multiply_hard_block/k6_N10_mem32K_40nm",
@@ -967,14 +967,14 @@
         "Average Path": 4,
         "Estimated LUTs": 18,
         "Total Node": 18,
-        "Wires": 26,
-        "Wire Bits": 28,
+        "Wires": 24,
+        "Wire Bits": 26,
         "Public Wires": 16,
         "Public Wire Bits": 16,
-        "Total Cells": 20,
+        "Total Cells": 18,
         "MUX": 2,
         "XOR": 4,
-        "AND": 14
+        "AND": 12
     },
     "mults_auto_none/twobits_arithmetic_multiply/k6_frac_N10_mem32K_40nm": {
         "test_name": "mults_auto_none/twobits_arithmetic_multiply/k6_frac_N10_mem32K_40nm",

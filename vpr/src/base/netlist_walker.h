@@ -1,5 +1,5 @@
-#ifndef NETLIST_WALKER_H
-#define NETLIST_WALKER_H
+#pragma once
+
 #include "vpr_types.h"
 
 class NetlistVisitor;
@@ -59,4 +59,3 @@ class NetlistVisitor {
 
     virtual void finish_impl();
 };
-#endif

@@ -1,6 +1,4 @@
-#ifndef NETLIST_H
-#define NETLIST_H
-
+#pragma once
 /**
  * @file
  * @brief This file defines the Netlist class, which stores the connectivity information
@@ -417,13 +415,9 @@
 #include <vector>
 #include <unordered_map>
 #include "vtr_range.h"
-#include "vtr_logic.h"
 #include "vtr_vector_map.h"
 
-#include "logic_types.h"
-
 #include "netlist_fwd.h"
-#include "netlist_utils.h"
 
 //Forward declaration for private methods
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
@@ -945,10 +939,8 @@ class Netlist {
     NetId add_net(const std::string name, PinId driver, std::vector<PinId> sinks);
 
   protected: //Protected Base Types
-    struct string_id_tag;
-
     ///@brief A unique identifier for a string in the netlist
-    typedef vtr::StrongId<string_id_tag> StringId;
+    typedef vtr::StrongId<struct string_id_tag> StringId;
 
   protected: //Protected Base Members
     /*
@@ -1164,4 +1156,3 @@ class Netlist {
 };
 
 #include "netlist.tpp"
-#endif

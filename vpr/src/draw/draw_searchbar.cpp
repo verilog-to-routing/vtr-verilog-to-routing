@@ -1,4 +1,6 @@
 /*draw_searchbar.cpp contains all functions related to searchbar actions.*/
+#ifndef NO_GRAPHICS
+
 #include <cstdio>
 
 #include "netlist_fwd.h"
@@ -13,8 +15,6 @@
 #include "draw_searchbar.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
-
-#ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
@@ -231,6 +231,7 @@ void deselect_all() {
 
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const auto& device_ctx = g_vpr_ctx.device();
 
     /* Create some colour highlighting */
@@ -239,8 +240,13 @@ void deselect_all() {
             draw_reset_blk_color(blk_id);
     }
 
-    for (auto net_id : cluster_ctx.clb_nlist.nets())
-        draw_state->net_color[net_id] = ezgl::BLACK;
+    if (draw_state->is_flat) {
+        for (auto net_id : atom_ctx.netlist().nets())
+            draw_state->net_color[net_id] = ezgl::BLACK;
+    } else {
+        for (auto net_id : cluster_ctx.clb_nlist.nets())
+            draw_state->net_color[net_id] = ezgl::BLACK;
+    }
 
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
         draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
