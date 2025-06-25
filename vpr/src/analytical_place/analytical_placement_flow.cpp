@@ -18,6 +18,7 @@
 #include "gen_ap_netlist_from_atoms.h"
 #include "global_placer.h"
 #include "globals.h"
+#include "load_flat_place.h"
 #include "netlist_fwd.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
@@ -116,9 +117,8 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
             }
         }
         // Ensure that there is a valid atom in the molecule to pass its location.
-        //VTR_ASSERT_MSG(found_valid_atom, "Each molecule must contain at least one valid atom");
         if (!found_valid_atom) {
-            VTR_LOG_WARN("No atoms of molecule ID %zu provided in flat placement. Assigning it to device center.\n", mol_id);
+            VTR_LOG_WARN("No atoms of molecule ID %zu provided in flat placement. Assigning it to the device center.\n", mol_id);
             p_placement.block_x_locs[ap_blk_id] = g_vpr_ctx.device().grid.width()/2.0f;
             p_placement.block_y_locs[ap_blk_id] = g_vpr_ctx.device().grid.height()/2.0f;
             p_placement.block_layer_nums[ap_blk_id] = 0;
@@ -262,6 +262,15 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     print_resource_usage();
     // Print the device utilization
     print_device_utilization(target_device_utilization);
+
+    // Write out a flat placement file at the end of Full Legalization if the
+    // option is specified.
+    if (!vpr_setup.FileNameOpts.write_flat_place_file.empty()) {
+        write_flat_placement(vpr_setup.FileNameOpts.write_flat_place_file.c_str(),
+                             g_vpr_ctx.clustering().clb_nlist,
+                             g_vpr_ctx.placement().block_locs(),
+                             g_vpr_ctx.clustering().atoms_lookup);
+    }
 
     // Run the Detailed Placer.
     std::unique_ptr<DetailedPlacer> detailed_placer = make_detailed_placer(ap_opts.detailed_placer_type,
