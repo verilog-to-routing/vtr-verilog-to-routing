@@ -3323,29 +3323,29 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
      * 5) directionality: NONE (neither incremental nor decremental in 2D space)
      */
     const int start_track = nodes_per_chan.max;
-    int offset = 0;
 
-    while (true) { // Going through allocated nodes until no nodes are found within the RRGraph builder
-        RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, e_rr_type::CHANX, start_track + offset);
-        if (node) {
-            rr_graph_builder.set_node_layer(node, layer);
-            rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
-            rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(
-                                                           const_index_offset + seg_details[start_track - 1].index()));
-            rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
-            float R = 0;
-            float C = 0;
-            rr_graph_builder.set_node_rc_index(node, NodeRCIndex(
-                                                         find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+    // Go through allocated nodes until no nodes are found within the RRGraph builder
+    for (int track_num = 0; /*no condition*/; track_num++) {
+        // Try to find a node with the current track_num
+        RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, e_rr_type::CHANZ, track_num);
 
-            rr_graph_builder.set_node_type(node, e_rr_type::CHANX);
-            rr_graph_builder.set_node_track_num(node, start_track + offset);
-            rr_graph_builder.set_node_direction(node, Direction::NONE);
-
-            offset++;
-        } else {
+        // If the track can't be found, it means we have already processed all tracks
+        if (!node.is_valid()) {
             break;
         }
+
+        rr_graph_builder.set_node_layer(node, layer);
+        rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
+        // TODO: the index doesn't make any sense. We need to an RRIndexedDataId for CHANZ nodes
+        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset + seg_details[start_track - 1].index()));
+        rr_graph_builder.set_node_capacity(node, 1); // GLOBAL routing handled elsewhere
+        float R = 0;
+        float C = 0;
+        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+
+        rr_graph_builder.set_node_type(node, e_rr_type::CHANZ);
+        rr_graph_builder.set_node_track_num(node, track_num);
+        rr_graph_builder.set_node_direction(node, Direction::NONE);
     }
 }
 

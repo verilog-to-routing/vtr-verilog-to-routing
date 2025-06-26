@@ -58,13 +58,13 @@ void check_rr_graph(const RRGraphView& rr_graph,
         route_type = e_route_type::GLOBAL;
     }
 
-    auto total_edges_to_node = std::vector<int>(rr_graph.num_nodes());
-    auto switch_types_from_current_to_node = std::vector<unsigned char>(rr_graph.num_nodes());
+    std::vector<int> total_edges_to_node(rr_graph.num_nodes());
+    std::vector<unsigned char> switch_types_from_current_to_node(rr_graph.num_nodes());
     const int num_rr_switches = rr_graph.num_rr_switches();
 
     std::vector<std::pair<int, int>> edges;
 
-    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+    for (const RRNodeId rr_node : rr_graph.nodes()) {
         size_t inode = (size_t)rr_node;
         rr_graph.validate_node(rr_node);
 
@@ -83,7 +83,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
         check_rr_node(rr_graph, rr_indexed_data, grid, chan_width, route_type, inode, is_flat);
 
-        /* Check all the connectivity (edges, etc.) information.                    */
+        // Check all the connectivity (edges, etc.) information.
         edges.resize(0);
         edges.reserve(num_edges);
 
