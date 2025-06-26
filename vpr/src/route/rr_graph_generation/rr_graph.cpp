@@ -498,14 +498,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                         bool load_rr_graph);
 
 /**
- * @note  Return the minimum delay to the chain's sink since a pin outside of the chain may have connections to multiple pins inside the chain.
- * @param physical_type
- * @param logical_block
- * @param cluster_pins
- * @param chain_pins
- * @param pin_physical_num
- * @param chain_sink_pin
- * @return
+ * @brief Return the minimum delay to the chain's sink since a pin outside of the chain may have connections to multiple pins inside the chain.
  */
 static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
                                     t_logical_block_type_ptr logical_block,
@@ -3136,7 +3129,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
     const auto& device_ctx = g_vpr_ctx.device();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
-    //Initally assumes CHANX
+    // Initially assumes CHANX
     int seg_coord = x_coord;                           //The absolute coordinate of this segment within the channel
     int chan_coord = y_coord;                          //The absolute coordinate of this channel within the device
     int seg_dimension = device_ctx.grid.width() - 2;   //-2 for no perim channels

@@ -64,7 +64,6 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
  *  @param tile_x x-coordinate of the switch block
  *  @param tile_y y-coordinate of the switch block
  *  @param layer layer-coordinate of the switch block
- *  @param max_chan_width number of available tracks within the channel
  *  @param from_side switch block connection source side
  *  @param from_wire switch block connection source wire index (ptc_num) within the channel
  *  @param from_rr_node switch block connection source wire RRNode index
@@ -81,7 +80,6 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int tile_x,
                                    const int tile_y,
                                    const int layer,
-                                   const int max_chan_width,
                                    const e_side from_side,
                                    const int from_wire,
                                    RRNodeId from_rr_node,
@@ -103,7 +101,6 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
  *
  *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
  *  @param layer the channel segment layer-coordinate
- *  @param max_chan_width number of tracks per channel
  *  @param from_track source track index (ptc_num) within the channel
  *  @param to_chan destination coordinate (x or y) based on chan type
  *  @param to_seg destination segment coordinate (x or y) based on chan type
@@ -120,7 +117,6 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
 
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int layer,
-                                 const int max_chan_width,
                                  const int from_track,
                                  const int to_chan,
                                  const int to_seg,
@@ -1371,7 +1367,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         if (sb_seg < end_sb_seg) {
             if (custom_switch_block) {
                 if (Direction::DEC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
-                    num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
+                    num_conn += get_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
                                                       to_type, from_side_a, to_side,
                                                       switch_override, custom_3d_sb_fanin_fanout, delayless_switch,
                                                       *sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
@@ -1409,7 +1405,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         if (sb_seg > start_sb_seg) {
             if (custom_switch_block) {
                 if (Direction::INC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
-                    num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
+                    num_conn += get_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side,
                                                       switch_override, custom_3d_sb_fanin_fanout, delayless_switch,
                                                       *sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
@@ -1515,7 +1511,6 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int tile_x,
                                    const int tile_y,
                                    const int layer,
-                                   const int max_chan_width,
                                    const e_side from_side,
                                    const int from_wire,
                                    RRNodeId from_rr_node,
@@ -1593,9 +1588,9 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 // | (src_layer) |        | (src_layer) |         | (dest_layer) |         | (dest_layer) |
                 // +-------------+        +-------------+         +--------------+         +--------------+
 
-                int offset = num_of_3d_conns_custom_SB[tile_x][tile_y] / custom_3d_sb_fanin_fanout;
-                RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, e_rr_type::CHANX, max_chan_width + offset);
-                RRNodeId diff_layer_chanx_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, e_rr_type::CHANX, max_chan_width + offset);
+                const int chanz_track_num = num_of_3d_conns_custom_SB[tile_x][tile_y] / custom_3d_sb_fanin_fanout;
+                RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, e_rr_type::CHANZ,  chanz_track_num);
+                RRNodeId diff_layer_chanx_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, e_rr_type::CHANZ, chanz_track_num);
                 RRNodeId chanx_to_track_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
 
                 if (!track_to_chanx_node || !diff_layer_chanx_node || !chanx_to_track_node) {
@@ -1630,7 +1625,6 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
 
 static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int layer,
-                                 const int max_chan_width,
                                  const int from_wire,
                                  const int to_chan,
                                  const int to_seg,
@@ -1669,7 +1663,6 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                            tile_x,
                            tile_y,
                            layer,
-                           max_chan_width,
                            from_side,
                            from_wire,
                            from_rr_node,
@@ -1692,7 +1685,6 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                tile_x,
                                tile_y,
                                layer,
-                               max_chan_width,
                                from_side,
                                from_wire,
                                from_rr_node,
