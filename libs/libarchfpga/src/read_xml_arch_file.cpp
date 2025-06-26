@@ -4123,7 +4123,7 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
     const char* tmp;
 
     /* get the number of switchblocks */
-    int num_switchblocks = count_children(Parent, "switchblock", loc_data);
+    const int num_switchblocks = count_children(Parent, "switchblock", loc_data);
     arch->switchblocks.reserve(num_switchblocks);
 
     int layout_index = -1;
@@ -4215,16 +4215,16 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             }
         }
 
-        /* get switchblock permutation functions */
+        // get switchblock permutation functions
         SubElem = get_first_child(Node, "switchfuncs", loc_data);
-        read_sb_switchfuncs(SubElem, &sb, loc_data);
+        read_sb_switchfuncs(SubElem, sb, loc_data);
 
-        read_sb_wireconns(arch->switches, Node, &sb, loc_data);
+        read_sb_wireconns(arch->switches, Node, sb, loc_data);
 
-        /* run error checks on switch blocks */
-        check_switchblock(&sb, arch);
+        // run error checks on switch blocks
+        check_switchblock(sb, arch);
 
-        /* assign the sb to the switchblocks vector */
+        // assign the sb to the switchblocks vector
         arch->switchblocks.push_back(sb);
 
         Node = Node.next_sibling(Node.name());
