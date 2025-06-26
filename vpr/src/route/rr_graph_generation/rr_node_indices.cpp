@@ -325,7 +325,6 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 }
 
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const t_chan_width& nodes_per_chan,
                                               const DeviceGrid& grid,
                                               const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
                                               int* index) {
@@ -355,13 +354,13 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                 }
 
                 // reserve extra nodes for inter-die track-to-track connection
-                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANX, conn_count + nodes_per_chan.max);
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANZ, conn_count);
                 for (int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++) {
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANX, nodes_per_chan.max + rr_node_offset);
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANZ, rr_node_offset);
                     if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANX, nodes_per_chan.max + rr_node_offset);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANZ, rr_node_offset);
                     }
                 }
             }

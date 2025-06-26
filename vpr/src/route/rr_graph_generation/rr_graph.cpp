@@ -1339,7 +1339,7 @@ static void build_rr_graph(e_graph_type graph_type,
         // Keep how many nodes each switchblock requires for each x,y location
         vtr::NdMatrix<int, 2> extra_nodes_per_switchblock = get_number_track_to_track_inter_die_conn(sb_conn_map, custom_3d_sb_fanin_fanout, device_ctx.rr_graph_builder);
         // Allocate new nodes in each switchblocks
-        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, nodes_per_chan, grid, extra_nodes_per_switchblock, &num_rr_nodes);
+        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, grid, extra_nodes_per_switchblock, &num_rr_nodes);
         device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
     }
 
