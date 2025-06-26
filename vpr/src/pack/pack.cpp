@@ -39,19 +39,21 @@ enum class e_packer_state {
     ///        fit on the device (does not exceed number of blocks of each
     ///        type in the grid) and meets floorplanning constraints.
     SUCCESS,
-    /// @brief Standard fallback where there are no region constraints. Turns
-    ///        on unrelated clustering and balanced packing if it can.
-    UNRELATED_AND_BALANCED,
+    /// @brief Turns on the unrelated clustering and balanced block type utilization
+    ///        if they are not on already.
+    SET_UNRELATED_AND_BALANCED,
+    /// @brief Increases the target pin utilization of overused block types if
+    ///        it can.
+    INCREASE_OVERUSED_TARGET_PIN_UTILIZATION,
     /// @brief Region constraints: Turns on attraction groups for overfilled regions.
-    ATTRACTION_GROUPS,
+    CREATE_ATTRACTION_GROUPS,
     /// @brief Region constraints: Turns on more attraction groups for overfilled regions.
-    MORE_ATTRACTION_GROUPS,
+    CREATE_MORE_ATTRACTION_GROUPS,
     /// @brief Region constraints: Turns on more attraction groups for all regions.
-    ATTRACTION_GROUPS_ALL_REGIONS,
+    CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS,
     /// @brief Region constraints: Turns on more attraction groups for all regions
-    ///        and increases the target density of "clb" blocks.
-    ///        TODO: This should increase the target density of all overused blocks.
-    ATTRACTION_GROUPS_ALL_REGIONS_AND_INCREASED_TARGET_DENSITY,
+    ///        and increases the pull on these groups.
+    CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS_AND_INCREASE_PULL,
     /// @brief The failure state.
     FAILURE
 };
@@ -60,6 +62,7 @@ enum class e_packer_state {
 
 static bool try_size_device_grid(const t_arch& arch,
                                  const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
+                                 std::map<t_logical_block_type_ptr, float>& type_util,
                                  float target_device_utilization,
                                  const std::string& device_layout_name);
 
@@ -76,66 +79,91 @@ static bool try_size_device_grid(const t_arch& arch,
  *      Whether the current clustering fits on the device or not.
  *  @param floorplan_regions_overfull
  *      Whether the current clustering has overfilled regions.
- *  @param floorplan_not_fitting
- *      Whether the current clustering is fitting on the current floorplan.
+ *  @param using_unrelated_clustering
+ *      Whether the current clustering used unrelated clustering.
+ *  @param using_balanced_block_type_util
+ *      Whether the current clustering used balanced block type utilizations.
+ *  @param block_type_utils
+ *      The current block type utilizations for the clustering. If any of these
+ *      are larger than 1.0, then fits_on_device will be false.
+ *  @param external_pin_util_targets
+ *      The current external pin utilization targets.
+ *  @param packer_opts
+ *      The options passed into the packer.
  */
 static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
                                             bool fits_on_device,
                                             bool floorplan_regions_overfull,
-                                            bool floorplan_not_fitting) {
-    // Next packer state logic
-    e_packer_state next_packer_state = e_packer_state::FAILURE;
+                                            bool using_unrelated_clustering,
+                                            bool using_balanced_block_type_util,
+                                            const std::map<t_logical_block_type_ptr, float>& block_type_utils,
+                                            const t_ext_pin_util_targets& external_pin_util_targets,
+                                            const t_packer_opts& packer_opts) {
     if (fits_on_device && !floorplan_regions_overfull) {
         // If everything fits on the device and the floorplan regions are
         // not overfilled, the next state is success.
-        next_packer_state = e_packer_state::SUCCESS;
-    } else {
-        if (floorplan_not_fitting) {
-            // If there are overfilled region constraints.
+        return e_packer_state::SUCCESS;
+    }
 
-            // When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
-            // the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
-            // cluster more densely to be able to adhere to the floorplan constraints. However, we do not want to cluster more
-            // densely unnecessarily, as this can negatively impact wirelength. So, we have iterative approach. We check at the end
-            // of every iteration if any floorplan regions are overfull. In the first iteration, we run
-            // with no attraction groups (not packing more densely). If regions are overfull at the end of the first iteration,
-            // we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
-            // until the last iteration, when we create attraction groups for every partition, if needed.
+    // Check if the utilizaion of any block types is over 100%
+    if (!fits_on_device) {
+        // The utilization of some block types are too high. Need to increase the
+        // density of the block types available.
 
-            switch (current_packer_state) {
-                case e_packer_state::DEFAULT:
-                    next_packer_state = e_packer_state::ATTRACTION_GROUPS;
-                    break;
-                case e_packer_state::UNRELATED_AND_BALANCED:
-                case e_packer_state::ATTRACTION_GROUPS:
-                    next_packer_state = e_packer_state::MORE_ATTRACTION_GROUPS;
-                    break;
-                case e_packer_state::MORE_ATTRACTION_GROUPS:
-                    next_packer_state = e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS;
-                    break;
-                case e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS:
-                    next_packer_state = e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS_AND_INCREASED_TARGET_DENSITY;
-                    break;
-                case e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS_AND_INCREASED_TARGET_DENSITY:
-                default:
-                    next_packer_state = e_packer_state::FAILURE;
-                    break;
-            }
-        } else {
-            // If there are no overfilled region constraints, but some block
-            // types on the grid are overfilled.
-            switch (current_packer_state) {
-                case e_packer_state::DEFAULT:
-                    next_packer_state = e_packer_state::UNRELATED_AND_BALANCED;
-                    break;
-                default:
-                    next_packer_state = e_packer_state::FAILURE;
-                    break;
+        // Check if we can turn on unrelated cluster and/or balanced block type
+        // utilization.
+        if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO && packer_opts.balance_block_type_utilization == e_balance_block_type_util::AUTO) {
+
+            // Check if they are not already on. If not, set the next state to turn them on.
+            if (!using_unrelated_clustering || !using_balanced_block_type_util) {
+                return e_packer_state::SET_UNRELATED_AND_BALANCED;
             }
         }
     }
 
-    return next_packer_state;
+    // Check if there are overfilled floorplan regions.
+    if (floorplan_regions_overfull) {
+        // If there are overfilled region constraints, try to use attraction
+        // groups to resolve it.
+
+        // When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
+        // the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
+        // cluster more densely to be able to adhere to the floorplan constraints. However, we do not want to cluster more
+        // densely unnecessarily, as this can negatively impact wirelength. So, we have iterative approach. We check at the end
+        // of every iteration if any floorplan regions are overfull. In the first iteration, we run
+        // with no attraction groups (not packing more densely). If regions are overfull at the end of the first iteration,
+        // we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
+        // until the last iteration, when we create attraction groups for every partition, if needed.
+
+        switch (current_packer_state) {
+            case e_packer_state::DEFAULT:
+            case e_packer_state::SET_UNRELATED_AND_BALANCED:
+            case e_packer_state::INCREASE_OVERUSED_TARGET_PIN_UTILIZATION:
+                return e_packer_state::CREATE_ATTRACTION_GROUPS;
+            case e_packer_state::CREATE_ATTRACTION_GROUPS:
+                return e_packer_state::CREATE_MORE_ATTRACTION_GROUPS;
+            case e_packer_state::CREATE_MORE_ATTRACTION_GROUPS:
+                return e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS;
+            case e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS:
+                return e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS_AND_INCREASE_PULL;
+            case e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS_AND_INCREASE_PULL:
+            default:
+                break;
+        }
+    }
+
+    // Check if we can increase the target density of the overused block types.
+    // This is a last resort since increasing the target pin density can have
+    // bad affects on quality and routability.
+    for (auto& p : block_type_utils) {
+        const t_ext_pin_util& target_pin_util = external_pin_util_targets.get_pin_util(p.first->name);
+        if (p.second > 1.0f && (target_pin_util.input_pin_util < 1.0f || target_pin_util.output_pin_util < 1.0f))
+            return e_packer_state::INCREASE_OVERUSED_TARGET_PIN_UTILIZATION;
+    }
+
+    // If we got down here, that means that we could not find any packer option that would
+    // increase the density further. Fail.
+    return e_packer_state::FAILURE;
 }
 
 bool try_pack(const t_packer_opts& packer_opts,
@@ -234,8 +262,6 @@ bool try_pack(const t_packer_opts& packer_opts,
                                        packer_opts.enable_pin_feasibility_filter,
                                        arch.models,
                                        packer_opts.pack_verbosity);
-    VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
-    VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
 
     // Construct the APPack Context.
     APPackContext appack_ctx(flat_placement_info,
@@ -260,6 +286,8 @@ bool try_pack(const t_packer_opts& packer_opts,
     e_packer_state current_packer_state = e_packer_state::DEFAULT;
 
     while (current_packer_state != e_packer_state::SUCCESS && current_packer_state != e_packer_state::FAILURE) {
+        VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
+        VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
         //Cluster the netlist
         //  num_used_type_instances: A map used to save the number of used
         //                           instances from each logical block type.
@@ -272,7 +300,12 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                           mutable_device_ctx);
 
         // Try to size/find a device
-        bool fits_on_device = try_size_device_grid(arch, num_used_type_instances, packer_opts.target_device_utilization, packer_opts.device_layout);
+        std::map<t_logical_block_type_ptr, float> block_type_utils;
+        bool fits_on_device = try_size_device_grid(arch,
+                                                   num_used_type_instances,
+                                                   block_type_utils,
+                                                   packer_opts.target_device_utilization,
+                                                   packer_opts.device_layout);
 
         /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
@@ -282,26 +315,25 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                                                  cluster_legalizer,
                                                                                  device_ctx.logical_block_types);
 
-        bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.floorplanning().constraints.get_num_partitions() > 0);
-
         // Next packer state logic
         e_packer_state next_packer_state = get_next_packer_state(current_packer_state,
                                                                  fits_on_device,
                                                                  floorplan_regions_overfull,
-                                                                 floorplan_not_fitting);
+                                                                 allow_unrelated_clustering,
+                                                                 balance_block_type_util,
+                                                                 block_type_utils,
+                                                                 cluster_legalizer.get_target_external_pin_util(),
+                                                                 packer_opts);
 
         // Set up for the options used for the next packer state.
         // NOTE: This must be done here (and not at the start of the next packer
         //       iteration) since we need to know information about the current
         //       clustering to change the options for the next iteration.
         switch (next_packer_state) {
-            case e_packer_state::UNRELATED_AND_BALANCED: {
+            case e_packer_state::SET_UNRELATED_AND_BALANCED: {
                 // 1st pack attempt was unsuccessful (i.e. not dense enough) and we have control of unrelated clustering
                 //
                 // Turn it on to increase packing density
-                // TODO: This will have no affect if unrelated clustering and
-                //       balance block type utilization is not auto. Should update
-                //       the next state logic.
                 if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
                     VTR_ASSERT(allow_unrelated_clustering == false);
                     allow_unrelated_clustering = true;
@@ -313,39 +345,61 @@ bool try_pack(const t_packer_opts& packer_opts,
                 VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s\n",
                         (allow_unrelated_clustering ? "true" : "false"),
                         (balance_block_type_util ? "true" : "false"));
+                VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 break;
             }
-            case e_packer_state::ATTRACTION_GROUPS: {
+            case e_packer_state::INCREASE_OVERUSED_TARGET_PIN_UTILIZATION: {
+                // Get the names of the block types to increase the pin utilization of.
+                std::vector<std::string> block_types_to_increase;
+                for (const auto& p : block_type_utils) {
+                    t_ext_pin_util current_util = cluster_legalizer.get_target_external_pin_util().get_pin_util(p.first->name);
+                    if (p.second > 1.0f && (current_util.input_pin_util < 1.0f || current_util.output_pin_util < 1.0f)) {
+                        block_types_to_increase.push_back(p.first->name);
+                    }
+                }
+                // If something does not increase, then we may get an infinite
+                // loop in this state. This assert checks to ensure that does
+                // not happen.
+                VTR_ASSERT_OPT(!block_types_to_increase.empty());
+
+                // Increase the target pin utilization of over-utilized block types.
+                VTR_LOG("Packing failed to fit on device. Increasing the target pin utilizations of overused block types: ");
+                t_ext_pin_util pin_util(1.0, 1.0);
+                for (size_t i = 0; i < block_types_to_increase.size(); i++) {
+                    const std::string& block_type_name = block_types_to_increase[i];
+                    cluster_legalizer.get_target_external_pin_util().set_block_pin_util(block_type_name, pin_util);
+                    VTR_LOG("%s", block_type_name.c_str());
+                    if (i < block_types_to_increase.size() - 1)
+                        VTR_LOG(", ");
+                }
+                VTR_LOG("\n");
+                VTR_LOG("Pack iteration is %d\n", pack_iteration);
+                break;
+            }
+            case e_packer_state::CREATE_ATTRACTION_GROUPS: {
                 VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
                 attraction_groups.create_att_groups_for_overfull_regions(overfull_partition_regions);
                 attraction_groups.set_att_group_pulls(1);
+                VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 break;
             }
-            case e_packer_state::MORE_ATTRACTION_GROUPS: {
+            case e_packer_state::CREATE_MORE_ATTRACTION_GROUPS: {
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 attraction_groups.create_att_groups_for_overfull_regions(overfull_partition_regions);
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 break;
             }
-            case e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS: {
+            case e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS: {
                 attraction_groups.create_att_groups_for_all_regions();
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 break;
             }
-            case e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS_AND_INCREASED_TARGET_DENSITY: {
+            case e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS_AND_INCREASE_PULL: {
                 attraction_groups.create_att_groups_for_all_regions();
-                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher target pin utilization. \n");
+                VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher pull. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 attraction_groups.set_att_group_pulls(4);
-                t_ext_pin_util pin_util(1.0, 1.0);
-                // TODO: This line assumes the logic block name is "clb" which
-                //       may not be the case. This may need to be investigated.
-                //       Probably we should do this update of ext_pin_util for
-                //       all types that were overused. Or if that is hard, just
-                //       do it for all block types. Doing it only for a clb
-                //       string is dangerous -VB.
-                cluster_legalizer.get_target_external_pin_util().set_block_pin_util("clb", pin_util);
                 break;
             }
             case e_packer_state::DEFAULT:
@@ -453,6 +507,7 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
 
 static bool try_size_device_grid(const t_arch& arch,
                                  const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
+                                 std::map<t_logical_block_type_ptr, float>& type_util,
                                  float target_device_utilization,
                                  const std::string& device_layout_name) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -469,7 +524,6 @@ static bool try_size_device_grid(const t_arch& arch,
 
     float device_utilization = calculate_device_utilization(grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
-    std::map<t_logical_block_type_ptr, float> type_util;
     for (const auto& type : device_ctx.logical_block_types) {
         if (is_empty_type(&type)) continue;
 
