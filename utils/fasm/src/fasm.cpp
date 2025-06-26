@@ -67,7 +67,7 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
       VTR_ASSERT(value != nullptr);
 
       // Parse placeholder definition
-      std::vector<std::string> tag_defs = vtr::split(value->front().as_string().get(strings_), "\n");
+      std::vector<std::string> tag_defs = vtr::StringToken(value->front().as_string().get(strings_)).split("\n");
       for (auto& tag_def: tag_defs) {
         auto parts = split_fasm_entry(tag_def, "=:", "\t ");
         if (parts.empty()) {
@@ -93,7 +93,7 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
       auto* value = grid_meta->get(fasm_prefix);
       VTR_ASSERT(value != nullptr);
       std::string prefix_unsplit = value->front().as_string().get(strings_);
-      std::vector<std::string> fasm_prefixes = vtr::split(prefix_unsplit, " \t\n");
+      std::vector<std::string> fasm_prefixes = vtr::StringToken(prefix_unsplit).split(" \t\n");
       if(fasm_prefixes.size() != static_cast<size_t>(physical_tile_->capacity)) {
         vpr_throw(VPR_ERROR_OTHER,
                   __FILE__, __LINE__,
@@ -152,7 +152,7 @@ std::string FasmWriterVisitor::handle_fasm_prefix(const t_metadata_dict *meta,
   auto* value = meta->one(fasm_prefix);
   VTR_ASSERT(value != nullptr);
   auto fasm_prefix_unsplit = value->as_string().get(strings_);
-  auto fasm_prefixes = vtr::split(fasm_prefix_unsplit, " \t\n");
+  auto fasm_prefixes = vtr::StringToken(fasm_prefix_unsplit).split(" \t\n");
   VTR_ASSERT(pb_type->num_pb >= 0);
   if(fasm_prefixes.size() != static_cast<size_t>(pb_type->num_pb)) {
     vpr_throw(VPR_ERROR_OTHER,
@@ -553,7 +553,7 @@ const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
         std::vector<std::pair<std::string, LutOutputDefinition>> luts;
         luts.reserve(lut_parts.size());
         for(const auto &part : lut_parts) {
-          auto parts = vtr::split(part, "=");
+          auto parts = vtr::StringToken(part).split("=");
           if(parts.size() != 2) {
             vpr_throw(VPR_ERROR_OTHER,
                       __FILE__, __LINE__,
@@ -624,7 +624,7 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
         VTR_ASSERT(value != nullptr);
 
         std::string fasm_params_str = value->as_string().get(strings_);
-        for(const auto& param : vtr::split(fasm_params_str, "\n")) {
+        for(const auto& param : vtr::StringToken(fasm_params_str).split("\n")) {
           auto param_parts = split_fasm_entry(param, "=", "\t ");
             if(param_parts.empty()) {
                 continue;
@@ -732,7 +732,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string_view fasm_mux_str,
     auto pb_index = mux_input_pin->parent_node->placement_index;
     auto *port_name = mux_input_pin->port->name;
     auto pin_index = mux_input_pin->pin_number;
-    auto mux_inputs = vtr::split(fasm_mux_str, "\n");
+    auto mux_inputs = vtr::StringToken(fasm_mux_str).split("\n");
 
     bool have_prefix = false;
     std::string clb_prefix;
@@ -765,7 +765,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string_view fasm_mux_str,
             mux_input.c_str(), mux_parts.size());
       }
 
-      auto vtr_parts = vtr::split(mux_parts[0], ".");
+      auto vtr_parts = vtr::StringToken(mux_parts[0]).split(".");
       if(vtr_parts.size() != 2) {
         vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
             "fasm_mux line %s does not have 2 parts, has %d parts.\n",
@@ -782,7 +782,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string_view fasm_mux_str,
       bool root_level_connection = interconnect->parent_mode->parent_pb_type ==
           mux_input_pin->parent_node->pb_type;
 
-      auto fasm_features_str = vtr::join(vtr::split(mux_parts[1], ","), "\n");
+      auto fasm_features_str = vtr::join(vtr::StringToken(mux_parts[1]).split(","), "\n");
 
 
       if(root_level_connection) {

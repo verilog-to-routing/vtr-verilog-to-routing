@@ -6,7 +6,7 @@
 namespace fasm {
 
 void parse_name_with_optional_index(std::string_view in, std::string *name, int *index) {
-  auto in_parts = vtr::split(in, "[]");
+  auto in_parts = vtr::StringToken(in).split("[]");
 
   if(in_parts.size() == 1) {
     *name = in;
@@ -29,7 +29,7 @@ std::vector<std::string> split_fasm_entry(std::string entry,
     }
   }
 
-  return vtr::split(entry, delims);
+  return vtr::StringToken(entry).split(std::string(delims));
 }
 
 std::vector<std::string> find_tags_in_feature (std::string_view a_String) {

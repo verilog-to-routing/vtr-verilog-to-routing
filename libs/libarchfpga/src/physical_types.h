@@ -42,6 +42,8 @@
 #include "logic_types.h"
 #include "clock_types.h"
 
+#include "vib_inf.h"
+
 //Forward declarations
 struct t_clock_network;
 struct t_power_arch;
@@ -1822,6 +1824,24 @@ struct t_segment_inf {
     std::vector<bool> sb;
 
     /**
+     *  @brief This segment is bend or not
+     */
+    bool is_bend;
+
+    /**
+     *  @brief The bend type of the segment, "-"-0, "U"-1, "D"-2
+     *  For example: bend pattern <- - U ->; corresponding bend: [0,0,1,0]
+     */
+    std::vector<int> bend;
+
+    /**
+     *  @brief Divide the segment into several parts based on bend position.
+     *  For example: length-5 bend segment: <- - U ->;
+     *  Corresponding part_len: [3,2]
+     */
+    std::vector<int> part_len;
+
+    /**
      *  @brief The index of the segment as stored in the appropriate Segs list.
      * Upon loading the architecture, we use this field to keep track of the
      * segment's index in the unified segment_inf vector. This is useful when
@@ -2262,7 +2282,7 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-/*   Detailed routing architecture */
+/* Detailed routing architecture */
 struct t_arch {
     /** Stores unique strings used as key and values in <metadata> tags,
      * i.e. implements a flyweight pattern to save memory.*/
@@ -2272,12 +2292,43 @@ struct t_arch {
     /// Secure hash digest of the architecture file to uniquely identify this architecture
     char* architecture_id;
 
+    // Options for tileable routing architectures
+
+    /// Whether the routing architecture is tileable
+    bool tileable;
+
+    /// Allow connection blocks to appear around the perimeter programmable block
+    bool perimeter_cb;
+
+    /// Remove all the routing wires in empty regions
+    bool shrink_boundary;
+
+    /// Allow routing channels to pass through multi-width and
+    /// multi-height programable blocks
+    bool through_channel;
+
+    /// Allow each output pin of a programmable block to drive the
+    /// routing tracks on all the sides of its adjacent switch block
+    bool opin2all_sides;
+
+    /// Whether the routing architecture has concat wire
+    /// For further detail, please refer to documentation
+    bool concat_wire;
+
+    /// Whether the routing architecture has concat pass wire
+    /// For further detail, please refer to documentation
+    bool concat_pass_wire;
+
+    // End of tileable architecture options
+
     t_chan_width_dist Chans;
     enum e_switch_block_type SBType;
+    enum e_switch_block_type SBSubType;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;
     int Fs;
+    int sub_fs;
     float grid_logic_tile_area;
     std::vector<t_segment_inf> Segments;
 
@@ -2323,21 +2374,27 @@ struct t_arch {
     std::vector<t_lut_cell> lut_cells;
     std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
-    //The name of the switch used for the input connection block (i.e. to
-    //connect routing tracks to block pins). tracks can be connected to
+    // The name of the switch used for the input connection block (i.e. to
+    // connect routing tracks to block pins). tracks can be connected to
     // ipins through the same die or from other dice, each of these
-    //types of connections requires a different switch, all names should correspond to a switch in Switches.
+    // types of connections requires a different switch, all names should correspond to a switch in Switches.
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 
-    //the layout that is chosen to be used with command line options
-    //It is used to generate custom SB for a specific locations within the device
-    //If the layout is not specified in the command line options, this variable will be set to "auto"
+    // the layout that is chosen to be used with command line options
+    // It is used to generate custom SB for a specific locations within the device
+    // If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout;
+
+    /// VIB grid layouts
+    std::vector<t_vib_grid_def> vib_grid_layouts;
 
     t_clock_arch_spec clock_arch; // Clock related data types
 
     /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
+
+    // added for vib
+    std::vector<VibInf> vib_infs;
 };

@@ -3,7 +3,7 @@
 
 #include <unordered_set>
 #include "PreClusterTimingManager.h"
-#include "SetupGrid.h"
+#include "setup_grid.h"
 #include "appack_context.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"

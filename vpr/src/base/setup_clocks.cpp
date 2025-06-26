@@ -136,7 +136,7 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
             if (RoutingToClockConnection* routing_to_clock = dynamic_cast<RoutingToClockConnection*>(clock_connections_device.back().get())) {
                 //TODO: Add error check to check that clock name and tap name exist and that only
                 //      two names are returned by the below function
-                auto names = vtr::split(clock_connection_arch.to, ".");
+                auto names = vtr::StringToken(clock_connection_arch.to).split(".");
                 VTR_ASSERT_MSG(names.size() == 2, "Invalid clock name.\n");
                 routing_to_clock->set_clock_name_to_connect_to(names[0]);
                 routing_to_clock->set_clock_switch_point_name(names[1]);
@@ -153,7 +153,7 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
             if (ClockToPinsConnection* clock_to_pins = dynamic_cast<ClockToPinsConnection*>(clock_connections_device.back().get())) {
                 //TODO: Add error check to check that clock name and tap name exist and that only
                 //      two names are returned by the below function
-                auto names = vtr::split(clock_connection_arch.from, ".");
+                auto names = vtr::StringToken(clock_connection_arch.from).split(".");
                 VTR_ASSERT_MSG(names.size() == 2, "Invalid clock name.\n");
                 clock_to_pins->set_clock_name_to_connect_from(names[0]);
                 clock_to_pins->set_clock_switch_point_name(names[1]);
@@ -166,8 +166,8 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
             if (ClockToClockConneciton* clock_to_clock = dynamic_cast<ClockToClockConneciton*>(clock_connections_device.back().get())) {
                 //TODO: Add error check to check that clock name and tap name exist and that only
                 //      two names are returned by the below function
-                auto to_names = vtr::split(clock_connection_arch.to, ".");
-                auto from_names = vtr::split(clock_connection_arch.from, ".");
+                auto to_names = vtr::StringToken(clock_connection_arch.to).split(".");
+                auto from_names = vtr::StringToken(clock_connection_arch.from).split(".");
                 VTR_ASSERT_MSG(to_names.size() == 2, "Invalid clock name.\n");
                 clock_to_clock->set_to_clock_name(to_names[0]);
                 clock_to_clock->set_to_clock_switch_point_name(to_names[1]);

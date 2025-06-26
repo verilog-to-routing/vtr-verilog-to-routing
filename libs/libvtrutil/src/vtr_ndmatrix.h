@@ -248,7 +248,9 @@ class NdMatrixBase {
   public: //Mutators
     ///@brief Set all elements to 'value'
     void fill(T value) {
-        std::fill(data_.get(), data_.get() + size(), value);
+        if (size() > 0) {
+            std::fill(data_.get(), data_.get() + size(), value);
+        }
     }
 
     /**

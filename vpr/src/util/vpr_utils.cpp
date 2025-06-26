@@ -1355,7 +1355,7 @@ void free_pb_stats(t_pb* pb) {
  ***************************************************************************************/
 std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line) {
 
-    if (vtr::split(src_string).size() > 1) {
+    if (vtr::StringToken(src_string).split(" \t\n").size() > 1) {
         VPR_THROW(VPR_ERROR_ARCH,
                   "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
     }
@@ -1645,7 +1645,7 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id) {
     auto node_type = rr_graph_view.node_type(node_id);
-    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
+    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::MUX) {
         return true;
     } else {
         int x_low = rr_graph_view.node_xlow(node_id);

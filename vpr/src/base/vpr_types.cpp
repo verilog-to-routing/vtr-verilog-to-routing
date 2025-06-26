@@ -58,7 +58,7 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(const std::vector<std::string>& s
         for (const auto& spec : specs) {
             t_ext_pin_util target_ext_pin_util(1., 1.);
 
-            auto block_values = vtr::split(spec, ":");
+            auto block_values = vtr::StringToken(spec).split(":");
             std::string block_type;
             std::string values;
             if (block_values.size() == 2) {
@@ -72,7 +72,7 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(const std::vector<std::string>& s
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
 
-            auto elements = vtr::split(values, ",");
+            auto elements = vtr::StringToken(values).split(",");
             if (elements.size() == 1) {
                 target_ext_pin_util.input_pin_util = vtr::atof(elements[0]);
             } else if (elements.size() == 2) {
@@ -196,7 +196,7 @@ t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(const std::vector<s
         std::set<std::string> seen_block_types;
 
         for (const auto& spec : specs) {
-            auto block_values = vtr::split(spec, ":");
+            auto block_values = vtr::StringToken(spec).split(":");
             std::string block_type;
             std::string value;
             if (block_values.size() == 1) {

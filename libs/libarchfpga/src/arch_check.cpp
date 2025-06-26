@@ -168,9 +168,9 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
 
                 //Annotations always put the pin in the input_pins field
                 VTR_ASSERT(annotation.input_pins);
-                for (const std::string& input_pin : vtr::split(annotation.input_pins)) {
+                for (const std::string& input_pin : vtr::StringToken(annotation.input_pins).split(" \t\n")) {
                     InstPort annot_port(input_pin);
-                    for (const std::string& clock : vtr::split(annotation.clock)) {
+                    for (const std::string& clock : vtr::StringToken(annotation.clock).split(" \t\n")) {
                         InstPort annot_clock(clock);
 
                         //Find the model port
@@ -210,9 +210,9 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
             } else if (annotation.input_pins && annotation.output_pins) {
                 //Combinational annotation
                 VTR_ASSERT_MSG(!annotation.clock, "Combinational annotations should have no clock");
-                for (const std::string& input_pin : vtr::split(annotation.input_pins)) {
+                for (const std::string& input_pin : vtr::StringToken(annotation.input_pins).split(" \t\n")) {
                     InstPort annot_in(input_pin);
-                    for (const std::string& output_pin : vtr::split(annotation.output_pins)) {
+                    for (const std::string& output_pin : vtr::StringToken(annotation.output_pins).split(" \t\n")) {
                         InstPort annot_out(output_pin);
 
                         //Find the input model port
