@@ -22,10 +22,121 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
+namespace {
+
+/**
+ * @brief Enumeration for the state of the packer.
+ *
+ * If the packer fails to find a dense enough packing, depending on how the
+ * packer failed, the packer may iteratively retry packing with different
+ * settings to try and find a denser packing. These states represent a
+ * different type of iteration.
+ */
+enum class e_packer_state {
+    /// @brief Default packer state.
+    DEFAULT,
+    /// @brief Succcess state for the packer. The packing looks feasible to
+    ///        fit on the device (does not exceed number of blocks of each
+    ///        type in the grid) and meets floorplanning constraints.
+    SUCCESS,
+    /// @brief Standard fallback where there are no region constraints. Turns
+    ///        on unrelated clustering and balanced packing if it can.
+    UNRELATED_AND_BALANCED,
+    /// @brief Region constraints: Turns on attraction groups for overfilled regions.
+    ATTRACTION_GROUPS,
+    /// @brief Region constraints: Turns on more attraction groups for overfilled regions.
+    MORE_ATTRACTION_GROUPS,
+    /// @brief Region constraints: Turns on more attraction groups for all regions.
+    ATTRACTION_GROUPS_ALL_REGIONS,
+    /// @brief Region constraints: Turns on more attraction groups for all regions
+    ///        and increases the target density of "clb" blocks.
+    ///        TODO: This should increase the target density of all overused blocks.
+    ATTRACTION_GROUPS_ALL_REGIONS_AND_INCREASED_TARGET_DENSITY,
+    /// @brief The failure state.
+    FAILURE
+};
+
+} // namespace
+
 static bool try_size_device_grid(const t_arch& arch,
                                  const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
                                  float target_device_utilization,
                                  const std::string& device_layout_name);
+
+/**
+ * @brief The packer iteratively re-packes the netlist if it fails to find a
+ *        valid clustering. Each iteration is a state the packer is in, where
+ *        each state uses a different set of options. This method gets the next
+ *        state of the packer given the current state of the packer.
+ *
+ *  @param current_packer_state
+ *      The current state of the packer (the state used to make the most recent
+ *      clustering).
+ *  @param fits_on_device
+ *      Whether the current clustering fits on the device or not.
+ *  @param floorplan_regions_overfull
+ *      Whether the current clustering has overfilled regions.
+ *  @param floorplan_not_fitting
+ *      Whether the current clustering is fitting on the current floorplan.
+ */
+static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
+                                            bool fits_on_device,
+                                            bool floorplan_regions_overfull,
+                                            bool floorplan_not_fitting) {
+    // Next packer state logic
+    e_packer_state next_packer_state = e_packer_state::FAILURE;
+    if (fits_on_device && !floorplan_regions_overfull) {
+        // If everything fits on the device and the floorplan regions are
+        // not overfilled, the next state is success.
+        next_packer_state = e_packer_state::SUCCESS;
+    } else {
+        if (floorplan_not_fitting) {
+            // If there are overfilled region constraints.
+
+            // When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
+            // the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
+            // cluster more densely to be able to adhere to the floorplan constraints. However, we do not want to cluster more
+            // densely unnecessarily, as this can negatively impact wirelength. So, we have iterative approach. We check at the end
+            // of every iteration if any floorplan regions are overfull. In the first iteration, we run
+            // with no attraction groups (not packing more densely). If regions are overfull at the end of the first iteration,
+            // we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
+            // until the last iteration, when we create attraction groups for every partition, if needed.
+
+            switch (current_packer_state) {
+                case e_packer_state::DEFAULT:
+                    next_packer_state = e_packer_state::ATTRACTION_GROUPS;
+                    break;
+                case e_packer_state::UNRELATED_AND_BALANCED:
+                case e_packer_state::ATTRACTION_GROUPS:
+                    next_packer_state = e_packer_state::MORE_ATTRACTION_GROUPS;
+                    break;
+                case e_packer_state::MORE_ATTRACTION_GROUPS:
+                    next_packer_state = e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS;
+                    break;
+                case e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS:
+                    next_packer_state = e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS_AND_INCREASED_TARGET_DENSITY;
+                    break;
+                case e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS_AND_INCREASED_TARGET_DENSITY:
+                default:
+                    next_packer_state = e_packer_state::FAILURE;
+                    break;
+            }
+        } else {
+            // If there are no overfilled region constraints, but some block
+            // types on the grid are overfilled.
+            switch (current_packer_state) {
+                case e_packer_state::DEFAULT:
+                    next_packer_state = e_packer_state::UNRELATED_AND_BALANCED;
+                    break;
+                default:
+                    next_packer_state = e_packer_state::FAILURE;
+                    break;
+            }
+        }
+    }
+
+    return next_packer_state;
+}
 
 bool try_pack(const t_packer_opts& packer_opts,
               const t_analysis_opts& analysis_opts,
@@ -145,35 +256,6 @@ bool try_pack(const t_packer_opts& packer_opts,
 
     g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(true);
 
-    /**
-     * @brief Enumeration for the state of the packer.
-     *
-     * If the packer fails to find a dense enough packing, depending on how the
-     * packer failed, the packer may iteratively retry packing with different
-     * setting to try and find a denser packing. These states represent a
-     * different type of iteration.
-     */
-    enum class e_packer_state {
-        /// @brief Default packer state.
-        DEFAULT,
-        /// @brief Succcess state for the packer.
-        SUCCESS,
-        /// @brief Standard fallback where there is not region constraints. Turns
-        ///        on unrelated clustering and balanced packing if it can.
-        UNRELATED_AND_BALANCED,
-        /// @brief Region constraints: Turns on attraction groups for overfilled regions.
-        ATTRACTION_GROUPS,
-        /// @brief Region constraints: Turns on more attraction groups for overfilled regions.
-        MORE_ATTRACTION_GROUPS,
-        /// @brief Region constraints: Turns on more attraction groups for all regions.
-        ATTRACTION_GROUPS_ALL_REGIONS,
-        /// @brief Region constraints: Turns on more attraction groups for all regions
-        ///        and increases the target density of clb blocks.
-        ATTRACTION_GROUPS_ALL_REGIONS_AND_INCREASED_TARGET_DENSITY,
-        /// @brief The failure state.
-        FAILURE
-    };
-
     // The current state of the packer during iterative packing.
     e_packer_state current_packer_state = e_packer_state::DEFAULT;
 
@@ -189,7 +271,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                           attraction_groups,
                                                           mutable_device_ctx);
 
-        //Try to size/find a device
+        // Try to size/find a device
         bool fits_on_device = try_size_device_grid(arch, num_used_type_instances, packer_opts.target_device_utilization, packer_opts.device_layout);
 
         /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
@@ -203,62 +285,20 @@ bool try_pack(const t_packer_opts& packer_opts,
         bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.floorplanning().constraints.get_num_partitions() > 0);
 
         // Next packer state logic
-        e_packer_state next_packer_state = e_packer_state::FAILURE;
-        if (fits_on_device && !floorplan_regions_overfull) {
-            // If everything fits on the device and the floorplan regions are
-            // not overfilled, the next state is success.
-            next_packer_state = e_packer_state::SUCCESS;
-        } else {
-            if (floorplan_not_fitting) {
-                // If there are overfilled region constraints.
-                /*
-                 * When running with tight floorplan constraints, some regions may become overfull with clusters (i.e.
-                 * the number of blocks assigned to the region exceeds the number of blocks available). When this occurs, we
-                 * cluster more densely to be able to adhere to the floorplan constraints. However, we do not want to cluster more
-                 * densely unnecessarily, as this can negatively impact wirelength. So, we have iterative approach. We check at the end
-                 * of every iteration if any floorplan regions are overfull. In the first iteration, we run
-                 * with no attraction groups (not packing more densely). If regions are overfull at the end of the first iteration,
-                 * we create attraction groups for partitions with overfull regions (pack those atoms more densely). We continue this way
-                 * until the last iteration, when we create attraction groups for every partition, if needed.
-                 */
-                switch (current_packer_state) {
-                    case e_packer_state::DEFAULT:
-                        next_packer_state = e_packer_state::ATTRACTION_GROUPS;
-                        break;
-                    case e_packer_state::UNRELATED_AND_BALANCED:
-                    case e_packer_state::ATTRACTION_GROUPS:
-                        next_packer_state = e_packer_state::MORE_ATTRACTION_GROUPS;
-                        break;
-                    case e_packer_state::MORE_ATTRACTION_GROUPS:
-                        next_packer_state = e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS;
-                        break;
-                    case e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS:
-                        next_packer_state = e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS_AND_INCREASED_TARGET_DENSITY;
-                        break;
-                    case e_packer_state::ATTRACTION_GROUPS_ALL_REGIONS_AND_INCREASED_TARGET_DENSITY:
-                    default:
-                        next_packer_state = e_packer_state::FAILURE;
-                        break;
-                }
-            } else {
-                // If there are no overfilled region constraints.
-                switch (current_packer_state) {
-                    case e_packer_state::DEFAULT:
-                        next_packer_state = e_packer_state::UNRELATED_AND_BALANCED;
-                        break;
-                    default:
-                        next_packer_state = e_packer_state::FAILURE;
-                        break;
-                }
-            }
-        }
+        e_packer_state next_packer_state = get_next_packer_state(current_packer_state,
+                                                                 fits_on_device,
+                                                                 floorplan_regions_overfull,
+                                                                 floorplan_not_fitting);
 
-        // Set up for the next packer state.
+        // Set up for the options used for the next packer state.
+        // NOTE: This must be done here (and not at the start of the next packer
+        //       iteration) since we need to know information about the current
+        //       clustering to change the options for the next iteration.
         switch (next_packer_state) {
             case e_packer_state::UNRELATED_AND_BALANCED: {
-                //1st pack attempt was unsuccessful (i.e. not dense enough) and we have control of unrelated clustering
+                // 1st pack attempt was unsuccessful (i.e. not dense enough) and we have control of unrelated clustering
                 //
-                //Turn it on to increase packing density
+                // Turn it on to increase packing density
                 // TODO: This will have no affect if unrelated clustering and
                 //       balance block type utilization is not auto. Should update
                 //       the next state logic.
@@ -348,7 +388,7 @@ bool try_pack(const t_packer_opts& packer_opts,
 
         // If the packer was unsuccessful, reset the packed solution and try again.
         if (next_packer_state != e_packer_state::SUCCESS) {
-            //Reset floorplanning constraints for re-packing
+            // Reset floorplanning constraints for re-packing
             g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
 
             // Reset the cluster legalizer for re-clustering.
