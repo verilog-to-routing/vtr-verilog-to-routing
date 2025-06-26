@@ -821,7 +821,7 @@ static void compute_wire_connections(int x_coord,
     }
 
     const t_wire_type_sizes& wire_type_sizes_from = (from_chan_type == e_rr_type::CHANY) ? wire_type_sizes_y : wire_type_sizes_x;
-    const t_wire_type_sizes& wire_type_sizes_to = (to_chan_type   == e_rr_type::CHANY) ? wire_type_sizes_y : wire_type_sizes_x;
+    const t_wire_type_sizes& wire_type_sizes_to = (to_chan_type == e_rr_type::CHANY) ? wire_type_sizes_y : wire_type_sizes_x;
 
     // Iterate over all the wire connections specified for this switch block
     for (int iconn = 0; iconn < (int)sb.wireconns.size(); iconn++) {

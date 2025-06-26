@@ -43,8 +43,6 @@ class string_view {
         return *this;
     }
 
-
-
     ///@brief indexing [] operator (immutable)
     constexpr char operator[](size_t pos) const {
         return data_[pos];

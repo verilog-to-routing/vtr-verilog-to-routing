@@ -150,7 +150,6 @@ static t_wireconn_inf parse_wireconn(pugi::xml_node node,
         VTR_ASSERT(num_children > 0);
         return parse_wireconn_multinode(node, loc_data, switches);
     }
-
 }
 
 static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
