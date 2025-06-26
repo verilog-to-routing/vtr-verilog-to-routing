@@ -29,18 +29,22 @@ enum class e_rr_type : unsigned char {
     OPIN,       ///<Output pin of a block
     CHANX,      ///<x-directed routing wire, or an x-directed segment of a channel for global routing
     CHANY,      ///<y-directed routing wire, or a y-directed segment of a channel for global routing
+    CHANZ,
     NUM_RR_TYPES
 };
 
 /// Used to iterate for different e_rr_type values in range-based for loops.
-constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_rr_type::SOURCE, e_rr_type::SINK, e_rr_type::IPIN,
-                                                                      e_rr_type::OPIN, e_rr_type::CHANX, e_rr_type::CHANY}};
+constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_rr_type::SOURCE, e_rr_type::SINK,
+                                                                              e_rr_type::IPIN, e_rr_type::OPIN,
+                                                                              e_rr_type::CHANX, e_rr_type::CHANY, e_rr_type::CHANZ}};
 
 /**
  * @brief Lookup for the string representation of the given node type. This is useful
  *        for logging the type of an RR node.
  */
-constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename {"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"};
+constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename {"SOURCE", "SINK",
+                                                                                               "IPIN", "OPIN",
+                                                                                               "CHANX", "CHANY", "CHANZ"};
 
 /**
  * @enum Direction
