@@ -92,7 +92,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int switch_override,
                                    const int custom_3d_sb_fanin_fanout,
                                    const int delayless_switch,
-                                   t_sb_connection_map* sb_conn_map,
+                                   const t_sb_connection_map& sb_conn_map,
                                    vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    t_rr_edge_info_set& des_3d_rr_edges_to_create,
@@ -130,7 +130,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int swtich_override,
                                  const int custom_3d_sb_fanin_fanout,
                                  const int delayless_switch,
-                                 t_sb_connection_map* sb_conn_map,
+                                 const t_sb_connection_map& sb_conn_map,
                                  vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
                                  RRNodeId from_rr_node,
                                  t_rr_edge_info_set& rr_edges_to_create,
@@ -1245,7 +1245,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const int custom_3d_sb_fanin_fanout,
                         const int delayless_switch,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                        t_sb_connection_map* sb_conn_map) {
+                        const t_sb_connection_map* sb_conn_map) {
     int to_chan, to_sb;
     std::vector<int> conn_tracks;
     bool from_is_sblock, is_behind, Fs_clipped;
@@ -1253,7 +1253,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
 
     /* check whether a custom switch block will be used */
     bool custom_switch_block = false;
-    if (sb_conn_map) {
+    if (sb_conn_map != nullptr) {
         custom_switch_block = true;
         VTR_ASSERT(switch_block_conn.empty());
     }
@@ -1375,7 +1375,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                     num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
                                                       to_type, from_side_a, to_side,
                                                       switch_override, custom_3d_sb_fanin_fanout, delayless_switch,
-                                                      sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
+                                                      *sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
                 }
             } else {
                 if (BI_DIRECTIONAL == directionality) {
@@ -1413,7 +1413,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                     num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side,
                                                       switch_override, custom_3d_sb_fanin_fanout, delayless_switch,
-                                                      sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
+                                                      *sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
                 }
             } else {
                 if (BI_DIRECTIONAL == directionality) {
@@ -1527,38 +1527,39 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int switch_override,
                                    const int custom_3d_sb_fanin_fanout,
                                    const int delayless_switch,
-                                   t_sb_connection_map* sb_conn_map,
+                                   const t_sb_connection_map& sb_conn_map,
                                    vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    t_rr_edge_info_set& des_3d_rr_edges_to_create,
                                    int& edge_count) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
-    /* get coordinate to index into the SB map */
+    // Coordinate to index into the SB map
     SwitchblockLookupKey sb_coord(tile_x, tile_y, layer, from_side, to_side);
-    if (sb_conn_map->count(sb_coord) > 0) {
-        /* get reference to the connections vector which lists all destination wires for a given source wire
-         * at a specific coordinate sb_coord */
-        std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
+    if (sb_conn_map.count(sb_coord) > 0) {
+        // Reference to the connections vector which lists all destination wires for a given source wire
+        // at a specific coordinate sb_coord
+        const std::vector<t_switchblock_edge>& sb_edges = sb_conn_map.at(sb_coord);
 
-        /* go through the connections... */
-        for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
-            if (conn_vector.at(iconn).from_wire != from_wire) continue;
+        // Go through the connections...
+        for (const t_switchblock_edge& sb_edge : sb_edges) {
+            if (sb_edge.from_wire != from_wire) continue;
 
-            int to_wire = conn_vector.at(iconn).to_wire;
-            int to_layer = conn_vector.at(iconn).to_wire_layer;
-            /* Get the index of the switch connecting the two wires */
-            int src_switch = conn_vector[iconn].switch_ind;
-            /* Get the index of the switch connecting the two wires in two layers */
-            int src_switch_betwen_layers = conn_vector[iconn].switch_ind_between_layers;
+            int to_wire = sb_edge.to_wire;
+            int to_layer = sb_edge.to_wire_layer;
+            // Get the index of the switch connecting the two wires
+            int src_switch = sb_edge.switch_ind;
+            // Get the index of the switch connecting the two wires in two layers
+            int src_switch_betwen_layers = sb_edge.switch_ind_between_layers;
 
-            if (to_layer == layer) { //track-to-track connection within the same layer
+            if (to_layer == layer) { // track-to-track connection within the same layer
                 RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
 
                 if (!to_node) {
                     continue;
                 }
-                //Apply any switch overrides
+
+                // Apply any switch overrides
                 if (should_apply_switch_override(switch_override)) {
                     src_switch = switch_override;
                 }
@@ -1567,15 +1568,16 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 ++edge_count;
 
                 if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
-                    //Add reverse edge since bi-directional
+                    // Add reverse edge since bidirectional
                     rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch, false);
                     ++edge_count;
                 }
-            } else { //track-to_track connection crossing layer
+            } else { // track-to_track connection crossing layer
                 VTR_ASSERT(to_layer != layer);
-                //check if current connection is valid, since switch block pattern is very general,
-                //we might see invalid layer in connection, so we just skip those
-                if ((layer < 0 || layer >= device_ctx.grid.get_num_layers()) || (to_layer < 0 || to_layer >= device_ctx.grid.get_num_layers())) {
+                // Check if current connection is valid, since switch block pattern is very general,
+                // we might see invalid layer in connection, so we just skip those
+                if ((layer < 0 || layer >= device_ctx.grid.get_num_layers())
+                    || (to_layer < 0 || to_layer >= device_ctx.grid.get_num_layers())) {
                     continue;
                 }
 
@@ -1583,18 +1585,15 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                     continue;
                 }
 
-                /*
-                 * In order to connect two tracks in different layers, we need to follow these three steps:
-                 * 1) connect "from_tracks" to extra "chanx" node in the same switch blocks
-                 * 2) connect extra "chanx" node located in from_layer to another extra "chanx" node located in to_layer
-                 * 3) connect "chanx" node located in to_layer to "to_track"
-                 *
-                 *  +-------------+        +-------------+         +--------------+         +--------------+
-                 *  | from_wire   | -----> | extra_chanx | ------> | extra_chanx  | ------> | to_wire      |
-                 *  | (src_layer) |        | (src_layer) |         | (dest_layer) |         | (dest_layer) |
-                 *  +-------------+        +-------------+         +--------------+         +--------------+
-                 *
-                 * */
+                // In order to connect two tracks in different layers, we need to follow these three steps:
+                // 1) connect "from_tracks" to extra "chanx" node in the same switch blocks
+                // 2) connect extra "chanx" node located in from_layer to another extra "chanx" node located in to_layer
+                // 3) connect "chanx" node located in to_layer to "to_track"
+                // +-------------+        +-------------+         +--------------+         +--------------+
+                // | from_wire   | -----> | extra_chanx | ------> | extra_chanx  | ------> | to_wire      |
+                // | (src_layer) |        | (src_layer) |         | (dest_layer) |         | (dest_layer) |
+                // +-------------+        +-------------+         +--------------+         +--------------+
+
                 int offset = num_of_3d_conns_custom_SB[tile_x][tile_y] / custom_3d_sb_fanin_fanout;
                 RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, e_rr_type::CHANX, max_chan_width + offset);
                 RRNodeId diff_layer_chanx_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, e_rr_type::CHANX, max_chan_width + offset);
@@ -1604,21 +1603,21 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                     continue;
                 }
 
-                //Apply any switch overrides
+                // Apply any switch overrides
                 if (should_apply_switch_override(switch_override)) {
                     src_switch = switch_override;
                 }
 
-                //add edge between source node at from layer to intermediate node
+                // Add edge between source node at from layer to intermediate node
                 rr_edges_to_create.emplace_back(from_rr_node, track_to_chanx_node, delayless_switch, false);
                 ++edge_count;
 
-                //add edge between intermediate node to destination node at to layer
-                //might add the same edge more than once
+                // Add edge between intermediate node to destination node at to layer
+                // might add the same edge more than once, but redundant edges will be removed before updating the RR graph
                 des_3d_rr_edges_to_create.emplace_back(diff_layer_chanx_node, chanx_to_track_node, src_switch_betwen_layers, false);
                 ++edge_count;
 
-                //we only add the following edge between intermediate nodes once for the first 3D connection for each pair of intermediate nodes
+                // We only add the following edge between intermediate nodes once for the first 3D connection for each pair of intermediate nodes
                 if (num_of_3d_conns_custom_SB[tile_x][tile_y] % custom_3d_sb_fanin_fanout == 0) {
                     rr_edges_to_create.emplace_back(track_to_chanx_node, diff_layer_chanx_node, delayless_switch, false);
                     ++edge_count;
@@ -1642,7 +1641,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int switch_override,
                                  const int custom_3d_sb_fanin_fanout,
                                  const int delayless_switch,
-                                 t_sb_connection_map* sb_conn_map,
+                                 const t_sb_connection_map& sb_conn_map,
                                  vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
                                  RRNodeId from_rr_node,
                                  t_rr_edge_info_set& rr_edges_to_create,
@@ -1651,7 +1650,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
     int to_x, to_y;
     int tile_x, tile_y;
 
-    /* get x/y coordinates from seg/chan coordinates */
+    // Get x/y coordinates from seg/chan coordinates
     if (e_rr_type::CHANX == to_chan_type) {
         to_x = tile_x = to_seg;
         to_y = tile_y = to_chan;
@@ -1688,7 +1687,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                            des_3d_rr_edges_to_create,
                            edge_count);
 
-    //check sb_conn_map for connections between two layers
+    // Check sb_conn_map for connections between two layers
     for (e_side to_another_die_side : {ABOVE, UNDER}) {
         get_switchblocks_edges(rr_graph_builder,
                                tile_x,
@@ -1798,9 +1797,9 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
             rr_edges_to_create.emplace_back(from_rr_node, to_node, iswitch, false);
             ++count;
 
-            auto& device_ctx = g_vpr_ctx.device();
+            const auto& device_ctx = g_vpr_ctx.device();
             if (device_ctx.arch_switch_inf[iswitch].directionality() == BI_DIRECTIONAL) {
-                //Add reverse edge since bi-directional
+                // Add reverse edge since bidirectional
                 rr_edges_to_create.emplace_back(to_node, from_rr_node, iswitch, false);
                 ++count;
             }

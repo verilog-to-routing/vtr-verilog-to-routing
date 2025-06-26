@@ -233,6 +233,8 @@ static t_wireconn_inf parse_wireconn_multinode(pugi::xml_node node,
                            node.name(), child.name());
         }
     }
+
+    return wc;
 }
 
 static t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
