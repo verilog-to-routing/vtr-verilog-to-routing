@@ -73,6 +73,7 @@ struct t_options {
     argparse::ArgValue<e_timing_update_type> timing_update_type;
     argparse::ArgValue<bool> CreateEchoFile;
     argparse::ArgValue<bool> verify_file_digests;
+    argparse::ArgValue<bool> verify_rr_switch_id;
     argparse::ArgValue<std::string> device_layout;
     argparse::ArgValue<float> target_device_utilization;
     argparse::ArgValue<e_constant_net_method> constant_net_method;
