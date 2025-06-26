@@ -1840,6 +1840,17 @@ The following options are only valid when the router is in timing-driven mode (t
 
      **Default:** ``map``
 
+.. option:: --generate_router_lookahead_report {on | off}
+
+   If turned on, generates a detailed report on the router lookahead: report_router_lookahead.rpt
+
+   This report contains information on how accurate the router lookahead is and
+   if and when it overestimates the cost from a node to a target node. It does
+   this by doing a set of trial routes and comparing the estimated cost from the
+   router lookahead to the actual cost of the route path.
+
+   **Default:** ``off``
+
 .. option:: --router_initial_acc_cost_chan_congestion_threshold <float>
 
     Utilization threshold above which initial accumulated routing cost (acc_cost) is increased to penalize congested channels.

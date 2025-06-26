@@ -516,6 +516,8 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->has_choke_point = Options.router_opt_choke_points;
     RouterOpts->custom_3d_sb_fanin_fanout = Options.custom_3d_sb_fanin_fanout;
     RouterOpts->with_timing_analysis = Options.timing_analysis;
+
+    RouterOpts->generate_router_lookahead_report = Options.generate_router_lookahead_report.value();
 }
 
 static void SetupAnnealSched(const t_options& Options,
