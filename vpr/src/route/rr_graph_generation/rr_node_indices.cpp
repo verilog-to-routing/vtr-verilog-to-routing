@@ -466,7 +466,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                 for (e_rr_type rr_type : RR_TYPES) {
                     // Get the list of nodes at a specific location (x, y)
                     std::vector<RRNodeId> nodes_from_lookup;
-                    if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
+                    if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::CHANZ) {
                         nodes_from_lookup = rr_graph.node_lookup().find_channel_nodes(l, x, y, rr_type);
                     } else {
                         nodes_from_lookup = rr_graph.node_lookup().find_grid_nodes_at_all_sides(l, x, y, rr_type);
@@ -515,6 +515,24 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                           y,
                                           describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                             }
+                        } else if (rr_graph.node_type(inode) == e_rr_type::CHANZ) {
+                            VTR_ASSERT_MSG(rr_graph.node_xlow(inode) == rr_graph.node_xhigh(inode), "CHANZ should move only along layers");
+                            VTR_ASSERT_MSG(rr_graph.node_ylow(inode) == rr_graph.node_yhigh(inode), "CHANZ should move only along layers");
+
+                            if (x != rr_graph.node_xlow(inode)) {
+                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node x position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
+                                          rr_graph.node_xlow(inode),
+                                          x,
+                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                            }
+
+                            if (y != rr_graph.node_ylow(inode)) {
+                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node y position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
+                                          rr_graph.node_xlow(inode),
+                                          y,
+                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                            }
+                            
                         } else if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK) {
                             // Sources have co-ordinates covering the entire block they are in, but not sinks
                             if (!rr_graph.x_in_node_range(x, inode)) {

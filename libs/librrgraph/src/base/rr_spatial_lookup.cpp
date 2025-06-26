@@ -196,7 +196,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
     }
 
     std::vector<RRNodeId> nodes;
-    /* Reserve space to avoid memory fragmentation */
+    // Reserve space to avoid memory fragmentation
     size_t num_nodes = 0;
     for (e_side node_side : TOTAL_2D_SIDES) {
         num_nodes += find_nodes(layer,x, y, rr_type, node_side).size();
