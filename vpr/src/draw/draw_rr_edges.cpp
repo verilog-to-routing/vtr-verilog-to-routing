@@ -279,6 +279,73 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_e
     }
 }
 
+void draw_intra_cluster_edge(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    if (!draw_state->is_flat) {
+        return;
+    }
+
+    auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+    auto [prev_blk_id, prev_pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
+
+    ezgl::point2d icoord = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+    ezgl::point2d prev_coord = draw_coords->get_absolute_pin_location(prev_blk_id, prev_pin_id);
+
+    g->draw_line(prev_coord, icoord);
+
+    float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
+    float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
+    draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
+}
+
+void draw_intra_cluster_pin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    if (!draw_state->is_flat) {
+        return;
+    }
+
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    ezgl::point2d prev_coord, icoord;
+    float temp_x, temp_y; // temporary variables to hold coordinates to cast into ezgl::point2d
+
+    // get the location of the nodes based on whether inode is an inter-cluster or intra-cluster pin.
+    if (!is_inter_cluster_node(rr_graph, inode)) {
+
+        auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+        icoord = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+
+        for (const e_side& pin_side : TOTAL_2D_SIDES) {
+            if (!rr_graph.is_node_on_specific_side(RRNodeId(prev_node), pin_side)) {
+                continue;
+            }
+            draw_get_rr_pin_coords(prev_node, &temp_x, &temp_y, pin_side);
+            prev_coord = {temp_x, temp_y};
+        }
+    } else {
+
+        auto [prev_blk_id, prev_pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
+        prev_coord = draw_coords->get_absolute_pin_location(prev_blk_id, prev_pin_id);
+
+        for (const e_side& pin_side : TOTAL_2D_SIDES) {
+            if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
+                continue;
+            }
+            draw_get_rr_pin_coords(inode, &temp_x, &temp_y, pin_side);
+            icoord = {temp_x, temp_y};
+        }
+    }
+
+    g->draw_line(prev_coord, icoord);
+    float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
+    float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
+    draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
+}
+
 void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) {
     /* This routine draws an edge from the opin rr node to the ipin rr node */
     const auto& device_ctx = g_vpr_ctx.device();
