@@ -113,8 +113,6 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
 
     vtr::vector<RRNodeId, int> num_inputs_to_cblock(rr_graph.num_nodes(), 0); // entries not corresponding to IPINs will be 0
 
-
-
     bool* cblock_counted;                                   /* [0..max(device_ctx.grid.width(),device_ctx.grid.height())] -- 0th element unused. */
     float* shared_buffer_trans;                             /* [0..max(device_ctx.grid.width(),device_ctx.grid.height())] */
     float *unsharable_switch_trans, *sharable_switch_trans; /* [0..num_switch-1] */
@@ -311,7 +309,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    bool* cblock_counted;      /* [0..max(device_ctx.grid.width(),device_ctx.grid.height())] -- 0th element unused. */
+    bool* cblock_counted;                                                     /* [0..max(device_ctx.grid.width(),device_ctx.grid.height())] -- 0th element unused. */
     vtr::vector<RRNodeId, int> num_inputs_to_cblock(rr_graph.num_nodes(), 0); // entries not corresponding to IPINs will be 0
 
     e_rr_type from_rr_type, to_rr_type;

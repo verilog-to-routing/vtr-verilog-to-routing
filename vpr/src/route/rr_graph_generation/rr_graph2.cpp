@@ -1589,7 +1589,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 // +-------------+        +-------------+         +--------------+         +--------------+
 
                 const int chanz_track_num = num_of_3d_conns_custom_SB[tile_x][tile_y] / custom_3d_sb_fanin_fanout;
-                RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, e_rr_type::CHANZ,  chanz_track_num);
+                RRNodeId track_to_chanx_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, e_rr_type::CHANZ, chanz_track_num);
                 RRNodeId diff_layer_chanx_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, e_rr_type::CHANZ, chanz_track_num);
                 RRNodeId chanx_to_track_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
 

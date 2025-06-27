@@ -346,7 +346,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
     t_physical_tile_type_ptr from_grid_type, to_grid_type;
 
-        // Layer numbers are should not be more than one layer apart for connected nodes
+    // Layer numbers are should not be more than one layer apart for connected nodes
     VTR_ASSERT(abs(from_layer - to_layer) <= 1);
     switch (from_type) {
         case e_rr_type::SOURCE:
