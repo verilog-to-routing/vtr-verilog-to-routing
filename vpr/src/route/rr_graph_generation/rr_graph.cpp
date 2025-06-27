@@ -3255,7 +3255,7 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
     // 1) type: CHANZ
     // 2) ptc_num: [0:num_of_3d_connections - 1]
     // 3) xhigh=xlow, yhigh=ylow
-    // 5) directionality: NONE (neither incremental nor decremental in 2D space)
+    // 4) directionality: NONE (neither incremental nor decremental in 2D space)
 
     const int start_track = nodes_per_chan.max;
 
