@@ -36,9 +36,34 @@
 
 /************************* Subroutines local to this file. *******************************/
 
+/**
+ * @brief A recursive function which traverses through each sub-block of a pb_graph_node, calculates bounding boxes for each sub-block, and stores the bounding boxes in the global draw_coords variable.
+ * @param type_descrip_index The index of the logical block type.
+ * @param pb_graph_node The pb_graph_node.
+ * @param parent_width The width of the parent block.
+ * @param parent_height The height of the parent block.
+ */
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height);
+
+/**
+ * @brief Finds the maximum depth of sub-blocks for a given pb_type.
+ * @param pb_type The top-level pb_type.
+ * @return The maximum level for the given pb_type.
+ */
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
-static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_block, int num_columns, int num_rows, float parent_width, float parent_height, float* blk_width, float* blk_height);
+/**
+ * @brief A helper function for draw_internal_load_coords. Calculates the coordinates of a internal block and stores its bounding box inside global variables. The calculated width and height of the block are also assigned to the pointers blk_width and blk_height.
+ * @param type_descrip_index The index of the logical block type.
+ * @param pb_graph_node The pb_graph_node of the logical block type.
+ * @param blk_num Each logical block type has num_modes * num_pb_type_children sub-blocks. blk_num is the index of the sub-block within the logical block type.
+ * @param num_columns Number of columns of blocks to draw in the parent block type.
+ * @param num_rows Number of rows of blocks to draw in the parent block type.
+ * @param parent_width The width of the parent block.
+ * @param parent_height The height of the parent block.
+ * @param blk_width Pointer to store the calculated width of the block.
+ * @param blk_height Pointer to store the calculated height of the block.
+ */
+static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int blk_num, int num_columns, int num_rows, float parent_width, float parent_height, float* blk_width, float* blk_height);
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
@@ -237,9 +262,11 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
             /* Find the number of instances for each child pb_type. */
             int num_pb = mode.pb_type_children[j].num_pb;
 
+            // Determine how we want to arrange the sub-blocks in the parent block. We want the blocks to be squarish, and not too wide or too tall. In other words, we want the number of rows to be as close to the number of columns as possible such that num_rows * num_columns =  num_blocks. 
+
             int num_blocks = num_pb * num_children;
 
-            // determine an optimal number of columns
+            // determine central factor for the number of columns
             int num_columns = 1;
             for (int k = 1; k * k <= num_blocks; ++k) {
                 if (num_blocks % k == 0) {
@@ -247,7 +274,9 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
                 }
             }
             int num_rows = num_blocks / num_columns;
+            // Currently num_rows >= num_columns
 
+            // If blocks are too wide, swap num_rows and num_columns, so that num_rows <= num_columns.
             const int MAX_WIDTH_HEIGHT_RATIO = 2;
             if (parent_width > parent_height * MAX_WIDTH_HEIGHT_RATIO) {
                 std::swap(num_columns, num_rows);
@@ -255,12 +284,12 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
 
             for (int k = 0; k < num_pb; ++k) {
 
-                int num_block = j * num_pb + k;
+                int blk_num = j * num_pb + k;
 
                 /* Compute bound box for block. Don't call if pb_type is root-level pb. */
                 draw_internal_calc_coords(type_descrip_index,
                                           &pb_graph_node->child_pb_graph_nodes[i][j][k],
-                                          num_block, num_columns, num_rows,
+                                          blk_num, num_columns, num_rows,
                                           parent_width, parent_height,
                                           &blk_width, &blk_height);
 
@@ -277,7 +306,7 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
  * are relative to the left and bottom corner of the parent block.
  */
 static void
-draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_block, int num_columns, int num_rows, float parent_width, float parent_height, float* blk_width, float* blk_height) {
+draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int blk_num, int num_columns, int num_rows, float parent_width, float parent_height, float* blk_width, float* blk_height) {
 
     // get the bbox for this pb type
     ezgl::rectangle& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
@@ -299,7 +328,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
         abs_text_padding = 0;
     }
 
-    /* Draw all child-level blocks in just most of the space inside their parent block. */
+    /* Draw all child-level blocks using most of the space inside their parent block. */
     float parent_drawing_width = parent_width - 2 * abs_parent_padding;
     float parent_drawing_height = parent_height - 2 * abs_parent_padding - abs_text_padding;
 
@@ -307,8 +336,8 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
         parent_drawing_height /= 2;
     }
 
-    int x_index = num_block % num_columns;
-    int y_index = num_block / num_columns;
+    int x_index = blk_num % num_columns;
+    int y_index = blk_num / num_columns;
 
     float child_width = parent_drawing_width / num_columns;
     float child_height = parent_drawing_height / num_rows;

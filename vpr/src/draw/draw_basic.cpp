@@ -612,7 +612,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    // Draw Pins
+    // Draw RR Nodes
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
         RRNodeId inode = rr_nodes_to_draw[i];
         auto rr_type = rr_graph.node_type(inode);
@@ -637,7 +637,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             continue;
         }
 
-        // Draw IO Pins
+        // Draw cluster-level IO Pins
         if (rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN) {
             draw_rr_pin(inode, color, g);
             continue;
@@ -671,7 +671,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             continue;
         }
 
-        // Skip drawing sources and sinks
+        // Skip drawing edges to or from sources and sinks
         if (rr_type == e_rr_type::SINK || rr_type == e_rr_type::SOURCE || prev_type == e_rr_type::SINK || prev_type == e_rr_type::SOURCE) {
             continue;
         }
@@ -688,71 +688,78 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             continue;
         }
 
-        auto iedge = find_edge(prev_node, inode);
-        auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
+        draw_inter_cluster_rr_edge(inode, prev_node, rr_type, prev_type, rr_graph, g);
 
-        switch (rr_type) {
-            case e_rr_type::IPIN: {
-                if (rr_graph.node_type(prev_node) == e_rr_type::OPIN) {
-                    draw_pin_to_pin(prev_node, inode, g);
-                } else {
-                    draw_pin_to_chan_edge(inode, prev_node, g);
-                }
-                break;
-            }
-            case e_rr_type::CHANX: {
-                switch (prev_type) {
-                    case e_rr_type::CHANX: {
-                        draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
-                        break;
-                    }
-                    case e_rr_type::CHANY: {
-                        draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
-                        break;
-                    }
-                    case e_rr_type::OPIN: {
-                        draw_pin_to_chan_edge(prev_node, inode, g);
-                        break;
-                    }
-                    default: {
-                        VPR_ERROR(VPR_ERROR_OTHER,
-                                  "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                  prev_type, rr_type);
-                    }
-                }
-                break;
-            }
-            case e_rr_type::CHANY: {
-                switch (prev_type) {
-                    case e_rr_type::CHANX: {
-                        draw_chanx_to_chany_edge(prev_node, inode,
-                                                 FROM_X_TO_Y, switch_type, g);
-                        break;
-                    }
-                    case e_rr_type::CHANY: {
-                        draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                 switch_type, g);
-                        break;
-                    }
-                    case e_rr_type::OPIN: {
-                        draw_pin_to_chan_edge(prev_node, inode, g);
+    }
+}
 
-                        break;
-                    }
-                    default: {
-                        VPR_ERROR(VPR_ERROR_OTHER,
-                                  "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                  prev_type, rr_type);
-                    }
+void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr_type, e_rr_type prev_type, const RRGraphView& rr_graph, ezgl::renderer* g) {
+
+    auto iedge = find_edge(prev_node, inode);
+    auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
+
+    switch (rr_type) {
+        case e_rr_type::IPIN: {
+            if (prev_type == e_rr_type::OPIN) {
+                draw_pin_to_pin(prev_node, inode, g);
+            } else {
+                draw_pin_to_chan_edge(inode, prev_node, g);
+            }
+            break;
+        }
+        case e_rr_type::CHANX: {
+            switch (prev_type) {
+                case e_rr_type::CHANX: {
+                    draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
+                    break;
                 }
-                break;
+                case e_rr_type::CHANY: {
+                    draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
+                    break;
+                }
+                case e_rr_type::OPIN: {
+                    draw_pin_to_chan_edge(prev_node, inode, g);
+                    break;
+                }
+                default: {
+                    VPR_ERROR(VPR_ERROR_OTHER,
+                                "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                prev_type, rr_type);
+                }
             }
-            default: {
-                break;
+            break;
+        }
+        case e_rr_type::CHANY: {
+            switch (prev_type) {
+                case e_rr_type::CHANX: {
+                    draw_chanx_to_chany_edge(prev_node, inode,
+                                                FROM_X_TO_Y, switch_type, g);
+                    break;
+                }
+                case e_rr_type::CHANY: {
+                    draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
+                                                switch_type, g);
+                    break;
+                }
+                case e_rr_type::OPIN: {
+                    draw_pin_to_chan_edge(prev_node, inode, g);
+
+                    break;
+                }
+                default: {
+                    VPR_ERROR(VPR_ERROR_OTHER,
+                                "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                                prev_type, rr_type);
+                }
             }
+            break;
+        }
+        default: {
+            break;
         }
     }
 }
+    
 
 /* Helper function that checks whether the edges between the current and previous nodes can be drawn
  * based on whether the cross-layer connections option is enabled and whether the layer on which the

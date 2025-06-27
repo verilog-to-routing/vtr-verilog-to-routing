@@ -857,8 +857,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
     return nullptr;
 }
 
-//Retrieves the atom pin associated with a specific CLB and pb_graph_pin
-// Warning: Not all pb_graph_pins are associated with an atom pin!
+
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
@@ -1782,11 +1781,12 @@ std::pair<ClusterBlockId, t_pb_graph_pin*> get_rr_node_cluster_blk_id_pb_graph_p
 }
 
 AtomPinId get_rr_node_atom_pin_id(RRNodeId rr_node_id) {
-    ClusterBlockId blk_id;
-    t_pb_graph_pin* pb_graph_pin;
-    std::tie(blk_id, pb_graph_pin) = get_rr_node_cluster_blk_id_pb_graph_pin(rr_node_id);
+
+    auto [blk_id, pb_graph_pin] = get_rr_node_cluster_blk_id_pb_graph_pin(rr_node_id);
 
     AtomPinId atom_pin_id = find_atom_pin(blk_id, pb_graph_pin);
+
+    VTR_ASSERT_SAFE(atom_pin_id != AtomPinId::INVALID());
 
     return atom_pin_id;
 }

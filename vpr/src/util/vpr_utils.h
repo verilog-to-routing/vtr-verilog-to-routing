@@ -166,6 +166,9 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
 
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id);
 
+/**
+ * @brief Retrieves the atom pin associated with a specific CLB and pb_graph_pin. Warning: Not all pb_graph_pins are associated with an atom pin! Only pb_graph_pins on primatives are associated with an AtomPinId.
+ */
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
 //Returns the logical block type which is most common in the device grid
@@ -258,16 +261,23 @@ RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id);
 
 /**
  * @brief Returns the cluster block ID and pb_graph_pin for the given RR node ID.
+ * @note  Use structured bindings for clarity:
+ * ```cpp
+ * auto [blk_id, pb_graph_pin] = get_rr_node_cluster_blk_id_pb_graph_pin ( ... );
+ * ```
  * **Warning**: This function should be called only if flat-router is enabled,
  * since, otherwise, the routing resources inside clusters are not added to the RR graph.
  * @param rr_node_id The RR node ID.
+ * @return A pair containing the ClusterBlockId and the corresponding t_pb_graph_pin pointer.
  */
 std::pair<ClusterBlockId, t_pb_graph_pin*> get_rr_node_cluster_blk_id_pb_graph_pin(RRNodeId rr_node_id);
 
 /**
  * @brief Returns the atom pin ID for the given RR node ID.
  * **Warning**: This function should be called only if flat-router is enabled,
- * since, otherwise, the routing resources inside clusters are not added to the RR graph. Also, not all RRNodes have an AtomPinId associated with them.
+ * since, otherwise, the routing resources inside clusters are not added to the RR graph.
+ * Not all RRNodes have an AtomPinId associated with them.
+ * See also: find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin).
  * @param rr_node_id The RR node ID.
  */
 AtomPinId get_rr_node_atom_pin_id(RRNodeId rr_node_id);

@@ -287,17 +287,17 @@ void draw_intrapin_to_intrapin(RRNodeId inode, RRNodeId prev_node, ezgl::rendere
         return;
     }
 
-    auto blk_id_pin_id1 = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
-    auto blk_id_pin_id2 = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
+    auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+    auto [prev_blk_id, prev_pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
 
-    ezgl::point2d p2 = draw_coords->get_absolute_pin_location(blk_id_pin_id1.first, blk_id_pin_id1.second);
-    ezgl::point2d p1 = draw_coords->get_absolute_pin_location(blk_id_pin_id2.first, blk_id_pin_id2.second);
+    ezgl::point2d icoord = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+    ezgl::point2d prev_coord = draw_coords->get_absolute_pin_location(prev_blk_id, prev_pin_id);
 
-    g->draw_line(p1, p2);
+    g->draw_line(prev_coord, icoord);
 
-    float xend = p2.x + (p1.x - p2.x) / 10.;
-    float yend = p2.y + (p1.y - p2.y) / 10.;
-    draw_triangle_along_line(g, xend, yend, p1.x, p2.x, p1.y, p2.y);
+    float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
+    float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
+    draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
 }
 
 void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
@@ -307,35 +307,44 @@ void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g)
     if (!draw_state->is_flat) {
         return;
     }
+
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
-    bool swapped = false;
-    if (!is_inter_cluster_node(rr_graph, inode) && is_inter_cluster_node(rr_graph, prev_node)) {
-        //Swap the nodes so that the inter-cluster node is always the current node
-        std::swap(inode, prev_node);
-        swapped = true;
+    ezgl::point2d prev_coord, icoord;
+    float temp_x, temp_y; // temporary variables to hold coordinates to cast into ezgl::point2d
+
+    // get the location of the nodes based on whether inode is an inter-cluster or intra-cluster pin.
+    if (!is_inter_cluster_node(rr_graph, inode)) {
+
+        auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+        icoord = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+
+        for (const e_side& pin_side : TOTAL_2D_SIDES) {
+            if (!rr_graph.is_node_on_specific_side(RRNodeId(prev_node), pin_side)) {
+                continue;
+            }
+            draw_get_rr_pin_coords(prev_node, &temp_x, &temp_y, pin_side);
+            prev_coord = {temp_x, temp_y};
+        }
+    } else {
+
+        auto [prev_blk_id, prev_pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
+        prev_coord = draw_coords->get_absolute_pin_location(prev_blk_id, prev_pin_id);
+
+        for (const e_side& pin_side : TOTAL_2D_SIDES) {
+            if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
+                continue;
+            }
+            draw_get_rr_pin_coords(inode, &temp_x, &temp_y, pin_side);
+            icoord = {temp_x, temp_y};
+        }
     }
 
-    auto blk_id_pin_id = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
-    float x1, y1;
-    ezgl::point2d p2 = draw_coords->get_absolute_pin_location(blk_id_pin_id.first, blk_id_pin_id.second);
-
-    for (const e_side& pin_side : TOTAL_2D_SIDES) {
-        if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
-            continue;
-        }
-        draw_get_rr_pin_coords(inode, &x1, &y1, pin_side);
-        ezgl::point2d p1 = {x1, y1};
-
-        if (!swapped) {
-            std::swap(p1, p2);
-        }
-
-        g->draw_line(p1, p2);
-        float xend = p2.x + (p1.x - p2.x) / 10.;
-        float yend = p2.y + (p1.y - p2.y) / 10.;
-        draw_triangle_along_line(g, xend, yend, p1.x, p2.x, p1.y, p2.y);
-    }
+    g->draw_line(prev_coord, icoord);
+    float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
+    float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
+    draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
+    
 }
 
 void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) {

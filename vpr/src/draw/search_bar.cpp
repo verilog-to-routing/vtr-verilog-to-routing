@@ -247,9 +247,9 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
     }
 
     if (draw_state->show_nets)
-        highlight_net(message, hit_node);
-    else
-        application.update_message(message);
+        highlight_nets(message, hit_node);
+    
+    application.update_message(message);
 
     application.refresh_drawing();
     return true;

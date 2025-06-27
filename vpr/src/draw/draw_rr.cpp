@@ -727,6 +727,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
 
             continue;
         }
+
+        // Check for inter cluster nodes
         switch (rr_graph.node_type(inode)) {
             case e_rr_type::IPIN:
             case e_rr_type::OPIN: {

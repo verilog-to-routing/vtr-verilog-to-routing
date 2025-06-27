@@ -433,7 +433,10 @@ struct t_draw_coords {
     ezgl::rectangle get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode);
 
     /**
-     * @brief returns a 2D point for the absolute location of the given pb_graph_pin
+     * @brief returns a 2D point for the absolute location of the given pb_graph_pin in the entire graphics context.
+     * @param clb_index The index of the cluster block containing the pin.
+     * @param pb_graph_pin The pin for which the absolute location is requested.
+     * @return A point2d representing the absolute coordinates of the pin.
      */
     ezgl::point2d get_absolute_pin_location(const ClusterBlockId clb_index, const t_pb_graph_pin* pb_graph_pin);
 
