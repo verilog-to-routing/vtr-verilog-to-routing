@@ -888,22 +888,22 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
         if (is_pin_on_tile(physical_tile, pin_physical_num)) {
             continue;
         }
-        auto pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
-                                                 physical_tile,
-                                                 layer,
-                                                 i,
-                                                 j,
-                                                 pin_physical_num);
+        RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
+                                                     physical_tile,
+                                                     layer,
+                                                     i,
+                                                     j,
+                                                     pin_physical_num);
         VTR_ASSERT(pin_rr_node_id != RRNodeId::INVALID());
-        auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, pin_physical_num);
-        auto driving_pins = get_physical_pin_src_pins(physical_tile, logical_block, pin_physical_num);
-        for (auto driving_pin : driving_pins) {
-            auto driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
-                                                          physical_tile,
-                                                          layer,
-                                                          i,
-                                                          j,
-                                                          driving_pin);
+        t_logical_block_type_ptr logical_block = get_logical_block_from_pin_physical_num(physical_tile, pin_physical_num);
+        std::vector<int> driving_pins = get_physical_pin_src_pins(physical_tile, logical_block, pin_physical_num);
+        for (int driving_pin : driving_pins) {
+            RRNodeId driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
+                                                              physical_tile,
+                                                              layer,
+                                                              i,
+                                                              j,
+                                                              driving_pin);
             VTR_ASSERT(driving_pin_node_id != RRNodeId::INVALID());
 
             int sw_idx = get_edge_sw_arch_idx(physical_tile,
@@ -918,12 +918,10 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
 }
 
 void print_rr_graph_stats() {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    const auto& rr_graph = device_ctx.rr_graph;
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     size_t num_rr_edges = 0;
-    for (auto& rr_node : rr_graph.rr_nodes()) {
+    for (const t_rr_node& rr_node : rr_graph.rr_nodes()) {
         num_rr_edges += rr_graph.edges(rr_node.id()).size();
     }
 

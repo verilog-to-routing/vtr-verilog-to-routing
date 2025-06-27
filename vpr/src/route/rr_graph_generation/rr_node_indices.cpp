@@ -532,7 +532,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                           y,
                                           describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                             }
-                            
+
                         } else if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK) {
                             // Sources have co-ordinates covering the entire block they are in, but not sinks
                             if (!rr_graph.x_in_node_range(x, inode)) {

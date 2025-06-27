@@ -329,14 +329,9 @@ void check_rr_node(const RRGraphView& rr_graph,
                    const enum e_route_type route_type, 
                    const int inode,
                    bool is_flat) {
-    /* This routine checks that the rr_node is inside the grid and has a valid
-     * pin number, etc.
-     */
-
     //Make sure over-flow doesn't happen
     VTR_ASSERT(inode >= 0);
     int nodes_per_chan, tracks_per_node;
-    float C, R;
     RRNodeId rr_node = RRNodeId(inode);
 
     e_rr_type rr_type = rr_graph.node_type(rr_node);
@@ -437,6 +432,14 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
 
+        case e_rr_type::CHANZ:
+            if (xhigh != xlow || yhigh != ylow || xhigh > int(grid.width()) - 2 || ylow < 1 || yhigh > int(grid.height()) - 2) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "Error in check_rr_node: CHANZ out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
+            }
+            // TODO: handle global routing case
+            break;
+
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_rr_node: Unexpected segment type: %d\n", rr_type);
@@ -488,19 +491,14 @@ void check_rr_node(const RRGraphView& rr_graph,
                 tracks_per_node = ((rr_type == e_rr_type::CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow]);
             }
 
-            //if a chanx/chany has length 0, it means it is used to connect different dice together
-            //hence, the ptc number can be larger than nodes_per_chan
-            if(xlow != xhigh || ylow != yhigh) {
-                if (ptc_num >= nodes_per_chan) {
-                    VPR_ERROR(VPR_ERROR_ROUTE,
-                              "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-                }
-            }
-
             if (capacity != tracks_per_node) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
+            break;
+
+        case e_rr_type::CHANZ:
+            // TODO: do checks for CHANZ type
             break;
 
         default:
@@ -508,9 +506,9 @@ void check_rr_node(const RRGraphView& rr_graph,
                             "in check_rr_node: Unexpected segment type: %d\n", rr_type);
     }
 
-    /* Check that the capacitance and resistance are reasonable. */
-    C = rr_graph.node_C(rr_node);
-    R = rr_graph.node_R(rr_node);
+    // Check that the capacitance and resistance are reasonable.
+    float C = rr_graph.node_C(rr_node);
+    float R = rr_graph.node_R(rr_node);
 
     if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
         if (C < 0. || R < 0.) {
