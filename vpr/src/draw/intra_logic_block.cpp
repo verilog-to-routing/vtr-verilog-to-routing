@@ -421,43 +421,38 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
     /// then draw text ///
 
-    if (pb->name != nullptr) {
-        g->set_font_size(16); // note: calc_text_xbound(...) assumes this is 16
-        if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
-            // If this pb is at the lowest displayed level, or has no more children, then
-            // label it in the center with its type and name
+    std::string pb_type_name(pb_type->name);
 
-            std::string pb_type_name(pb_type->name);
-            std::string pb_name(pb->name);
+    pb_type_name += "[" + std::to_string(pb->pb_graph_node->placement_index) + "]";
 
-            std::string blk_tag = pb_type_name + pb_name;
+    //get the mode of the physical block
+    if (!pb->is_primitive()) {
+        // primitives have no modes
+        std::string mode_name = pb->pb_graph_node->pb_type->modes[pb->mode].name;
+        pb_type_name += "[" + mode_name + "]";
+    }
 
-            if (draw_state->draw_block_text) {
-                g->draw_text(
-                    abs_bbox.center(),
-                    blk_tag.c_str(),
-                    abs_bbox.width(),
-                    abs_bbox.height());
-            }
+    g->set_font_size(16); // note: calc_text_xbound(...) assumes this is 16
+    if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
+        // If this pb is at the lowest displayed level, or has no more children, then
+        // label it in the center with its type and name
 
-        } else {
-            // else (ie. has chilren, and isn't at the lowest displayed level)
-            // just label its type, and put it up at the top so we can see it
-            if (draw_state->draw_block_text) {
-                g->draw_text(
-                    ezgl::point2d(abs_bbox.center_x(),
-                                  abs_bbox.top() - draw_coords->get_tile_height() * FRACTION_TEXT_PADDING),
-                    pb_type->name,
-                    abs_bbox.width(),
-                    abs_bbox.height());
-            }
-        }
-    } else {
-        // If child block is not used, label it only by its type
         if (draw_state->draw_block_text) {
             g->draw_text(
                 abs_bbox.center(),
-                pb_type->name,
+                pb_type_name.c_str(),
+                abs_bbox.width(),
+                abs_bbox.height());
+        }
+
+    } else {
+        // else (ie. has chilren, and isn't at the lowest displayed level)
+        // just label its type, and put it up at the top so we can see it
+        if (draw_state->draw_block_text) {
+            g->draw_text(
+                ezgl::point2d(abs_bbox.center_x(),
+                              abs_bbox.top() - draw_coords->get_tile_height() * FRACTION_TEXT_PADDING),
+                pb_type_name.c_str(),
                 abs_bbox.width(),
                 abs_bbox.height());
         }
