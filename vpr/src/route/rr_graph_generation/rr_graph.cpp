@@ -3246,18 +3246,17 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const t_chan_seg_details* seg_details = chan_details_x[x_coord][y_coord].data();
 
-    /* 3D connections within the switch blocks use some extra length-0 CHANX node to allow a single 3D connection to be driven
-     * by multiple tracks in the source layer, and drives multiple tracks in the destination layer.
-     * These nodes have already been added to RRGraph builder, this function will go through all added nodes
-     * with specific location (layer, x_coord, y_coord) and sets their attributes.
-     *
-     * The extra length-0 nodes have the following attributes to make them distinguishable form normal chanx wires (e.g., length-4):
-     * 1) type: CHANX (could have used either CHANX or CHANY, we used CHANX)
-     * 2) ptc_num: [max_chan_width : max_chan_width + num_of_3d_connections - 1]
-     * 3) length: 0
-     * 4) xhigh=xlow, yhigh=ylow
-     * 5) directionality: NONE (neither incremental nor decremental in 2D space)
-     */
+    // 3D connections within the switch blocks use some CHANZ nodes to allow a single 3D connection to be driven
+    // by multiple tracks in the source layer, and drives multiple tracks in the destination layer.
+    // These nodes have already been added to RRGraph builder, this function will go through all added nodes
+    // with specific location (layer, x_coord, y_coord) and sets their attributes.
+
+    // These nodes have the following attributes:
+    // 1) type: CHANZ
+    // 2) ptc_num: [0:num_of_3d_connections - 1]
+    // 3) xhigh=xlow, yhigh=ylow
+    // 5) directionality: NONE (neither incremental nor decremental in 2D space)
+
     const int start_track = nodes_per_chan.max;
 
     // Go through allocated nodes until no nodes are found within the RRGraph builder

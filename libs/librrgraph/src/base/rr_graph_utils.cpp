@@ -54,19 +54,18 @@ static void rr_walk_cluster_recursive(const RRGraphView& rr_graph,
 }
 
 std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
-                                               const RRNodeId& from_node,
-                                               const RRNodeId& to_node) {
+                                               RRNodeId from_node,
+                                               RRNodeId to_node) {
     std::vector<RRSwitchId> switches;
     std::vector<RREdgeId> edges = rr_graph.find_edges(from_node, to_node);
-    if (true == edges.empty()) {
+    if (edges.empty()) {
         /* edge is open, we return an empty vector of switches */
         return switches;
     }
 
-    /* Reach here, edge list is not empty, find switch id one by one
-     * and update the switch list
-     */
-    for (auto edge : edges) {
+    // Reach here, edge list is not empty, find switch id one by one
+    // and update the switch list
+    for (RREdgeId edge : edges) {
         switches.push_back(rr_graph.edge_switch(edge));
     }
 
@@ -82,10 +81,8 @@ int seg_index_of_cblock(const RRGraphView& rr_graph, e_rr_type from_rr_type, int
 }
 
 int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node) {
-    e_rr_type from_rr_type, to_rr_type;
-
-    from_rr_type = rr_graph.node_type(RRNodeId(from_node));
-    to_rr_type = rr_graph.node_type(RRNodeId(to_node));
+    e_rr_type from_rr_type = rr_graph.node_type(RRNodeId(from_node));
+    e_rr_type to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
     if (from_rr_type == e_rr_type::CHANX) {
         if (to_rr_type == e_rr_type::CHANY) {
@@ -135,7 +132,7 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
     node_fan_in_list.resize(rr_graph.num_nodes(), std::vector<RREdgeId>(0));
     node_fan_in_list.shrink_to_fit();
 
-    //Walk the graph and increment fanin on all downstream nodes
+    // Walk the graph and increment fanin on all downstream nodes
     rr_graph.rr_nodes().for_each_edge(
         [&](RREdgeId edge, RRNodeId src, RRNodeId sink) -> void {
             (void) src;
@@ -238,7 +235,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
 
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph) {
     bool limited_to_opin = true;
-    for (const auto& from_node : rr_graph.nodes()) {
+    for (const RRNodeId from_node : rr_graph.nodes()) {
         for (t_edge_size edge : rr_graph.edges(from_node)) {
             RRNodeId to_node = rr_graph.edge_sink_node(from_node, edge);
             int from_layer = rr_graph.node_layer(from_node);

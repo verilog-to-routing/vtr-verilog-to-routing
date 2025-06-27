@@ -328,12 +328,12 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               const DeviceGrid& grid,
                                               const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
                                               int* index) {
-    // In case of multi-die FPGAs, we add extra nodes (could have used either CHANX or CHANY; we chose to use all CHANX) to
+    // In case of multi-die FPGAs, we add extra nodes of type CHANZ to
     // support inter-die communication coming from switch blocks (connection between two tracks in different layers)
     // The extra nodes have the following attribute:
-    // 1) type = CHANX
-    // 2) length = 0 (xhigh = xlow, yhigh = ylow)
-    // 3) ptc = [max_chanx_width:max_chanx_width+number_of_connection-1]
+    // 1) type = CHANZ
+    // 2) xhigh == xlow, yhigh == ylow
+    // 3) ptc = [0:number_of_connection-1]
     // 4) direction = NONE
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -345,7 +345,7 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
         for (size_t y = 0; y < grid.height() - 1; ++y) {
             for (size_t x = 1; x < grid.width() - 1; ++x) {
-                // count how many track-to-track connection go from current layer to other layers
+                // how many track-to-track connection go from current layer to other layers
                 int conn_count = extra_nodes_per_switchblock[x][y];
 
                 // skip if no connection is required

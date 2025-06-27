@@ -240,10 +240,15 @@ class RRGraphView {
      */
     inline int node_length(RRNodeId node) const {
         VTR_ASSERT(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY || node_type(node) == e_rr_type::CHANZ);
+
+        if (node_type(node) == e_rr_type::CHANZ) {
+            return 1;
+        }
+
         if (node_direction(node) == Direction::NONE) {
             return 0; //length zero wire
         }
-        // TODO: handle chanz nodes
+
         int length = 1 + node_xhigh(node) - node_xlow(node) + node_yhigh(node) - node_ylow(node);
         VTR_ASSERT_SAFE(length > 0);
         return length;
