@@ -149,9 +149,9 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int layer,
                                                           int x,
                                                           int y,
                                                           e_rr_type type) const {
-    /* Pre-check: node type should be routing tracks! */
-    if (type != e_rr_type::CHANX && type != e_rr_type::CHANY) {
-        return std::vector<RRNodeId>();
+    // Pre-check: node type should be routing tracks.
+    if (type != e_rr_type::CHANX && type != e_rr_type::CHANY && type != e_rr_type::CHANZ) {
+        return {};
     }
 
     return find_nodes(layer, x, y, type);
@@ -167,7 +167,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int layer,
     /* TODO: Consider to access the raw data like find_node() rather than calling find_node() many times, which hurts runtime */
     if (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN) {
         indices.reserve(NUM_2D_SIDES);
-        //For pins, we need to look at all the sides of the current grid tile
+        // For pins, we need to look at all the sides of the current grid tile
         for (e_side side : TOTAL_2D_SIDES) {
             RRNodeId rr_node_index = find_node(layer, x, y, rr_type, ptc, side);
             if (rr_node_index) {
@@ -176,7 +176,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int layer,
         }
         indices.shrink_to_fit();
     } else {
-        //Sides do not affect non-pins so there should only be one per ptc
+        // Sides do not affect non-pins so there should only be one per ptc
         RRNodeId rr_node_index = find_node(layer, x, y, rr_type, ptc);
         if (rr_node_index) {
             indices.push_back(rr_node_index);
