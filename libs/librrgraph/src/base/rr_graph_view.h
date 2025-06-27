@@ -236,13 +236,14 @@ class RRGraphView {
     }
 
     /** @brief Return the length (number of grid tile units spanned by the wire, including the endpoints) of a specified node.
-     * @note node_length() only applies to CHANX or CHANY and is always a positive number
+     * @note node_length() only applies to CHANX or CHANY or CHANZ and is always a positive number
      */
     inline int node_length(RRNodeId node) const {
-        VTR_ASSERT(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY);
+        VTR_ASSERT(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY || node_type(node) == e_rr_type::CHANZ);
         if (node_direction(node) == Direction::NONE) {
             return 0; //length zero wire
         }
+        // TODO: handle chanz nodes
         int length = 1 + node_xhigh(node) - node_xlow(node) + node_yhigh(node) - node_ylow(node);
         VTR_ASSERT_SAFE(length > 0);
         return length;
@@ -257,7 +258,8 @@ class RRGraphView {
     }
 
     /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). 
-     * @note This function performs error checking by determining whether two nodes are physically adjacent based on their geometry. It does not verify the routing edges to confirm if a connection is feasible within the current routing graph.
+     * @note This function performs error checking by determining whether two nodes are physically adjacent based on their geometry.
+     * It does not verify the routing edges to confirm if a connection is feasible within the current routing graph.
      */
     inline bool nodes_are_adjacent(RRNodeId chanx_node, RRNodeId chany_node) const {
         VTR_ASSERT(node_type(chanx_node) == e_rr_type::CHANX && node_type(chany_node) == e_rr_type::CHANY);
@@ -332,7 +334,7 @@ class RRGraphView {
             start_x = " (" + std::to_string(node_xhigh(node)) + ",";
             start_y = std::to_string(node_yhigh(node)) + ",";
             start_layer_str = std::to_string(node_layer_num) + ")";
-        } else if (node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY) { //for channels, we would like to describe the component with segment specific information
+        } else if (node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY || node_type(node) == e_rr_type::CHANZ) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
             coordinate_string += rr_segments(RRSegmentId(seg_index)).name;       //Write the segment name

@@ -159,9 +159,6 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
                                        const std::vector<t_segment_inf>& segment_inf_x,
                                        const std::vector<t_segment_inf>& segment_inf_y,
                                        e_parallel_axis parallel_axis) {
-    const std::vector<t_segment_inf>& segment_inf_parallel = parallel_axis == X_AXIS ? segment_inf_x : segment_inf_y;
-    const std::vector<t_segment_inf>& segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
-
     size_t num_segments = segment_inf_x.size() + segment_inf_y.size();
     std::vector<std::vector<size_t>> dest_nodes_count;
 
@@ -179,8 +176,8 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
 
     std::vector<int> ortho_cost_indices(dest_nodes_count.size(), 0);
 
-    //Go through all rr_Nodes. Look at the ones with CHAN type. Count all outgoing edges to CHAN typed nodes from each CHAN type node.
-    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+    // Go through all rr_Nodes. Look at the ones with CHAN type. Count all outgoing edges to CHAN typed nodes from each CHAN type node.
+    for (const RRNodeId rr_node : rr_graph.nodes()) {
         for (size_t iedge = 0; iedge < rr_graph.num_edges(rr_node); ++iedge) {
             RRNodeId to_node = rr_graph.edge_sink_node(rr_node, iedge);
             e_rr_type from_node_type = rr_graph.node_type(rr_node);
@@ -189,7 +186,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
             size_t from_node_cost_index = (size_t)rr_graph.node_cost_index(rr_node);
             size_t to_node_cost_index = (size_t)rr_graph.node_cost_index(to_node);
 
-            //if the type  is smaller than start index, means destination is not a CHAN type node.
+            // if the type  is smaller than start index, means destination is not a CHAN type node.
 
             if ((from_node_type == e_rr_type::CHANX && to_node_type == e_rr_type::CHANY) || (from_node_type == e_rr_type::CHANY && to_node_type == e_rr_type::CHANX)) {
                 if (to_node_type == e_rr_type::CHANY) {
@@ -222,7 +219,8 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
     /*Update seg_index */
 
 #ifdef FREQ_LENGTH_ORTHO_COSTS
-
+    const std::vector<t_segment_inf>& segment_inf_parallel = parallel_axis == X_AXIS ? segment_inf_x : segment_inf_y;
+    const std::vector<t_segment_inf>& segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
     for (int i = 0; i < (int)segment_inf_perp.size(); ++i)
         segment_inf_perp[i].seg_index = i;
 
@@ -321,6 +319,9 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
 #    endif
 
     return ortho_costs_indices;
+
+#else
+    (void)parallel_axis;
 #endif
 }
 

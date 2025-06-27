@@ -331,7 +331,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                    bool is_flat) {
     //Make sure over-flow doesn't happen
     VTR_ASSERT(inode >= 0);
-    int nodes_per_chan, tracks_per_node;
+    int tracks_per_node;
     RRNodeId rr_node = RRNodeId(inode);
 
     e_rr_type rr_type = rr_graph.node_type(rr_node);
@@ -484,11 +484,9 @@ void check_rr_node(const RRGraphView& rr_graph,
         case e_rr_type::CHANX:
         case e_rr_type::CHANY:
             if (route_type == e_route_type::DETAILED) {
-                nodes_per_chan = chan_width.max;
                 tracks_per_node = 1;
             } else {
-                nodes_per_chan = 1;
-                tracks_per_node = ((rr_type == e_rr_type::CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow]);
+                tracks_per_node = (rr_type == e_rr_type::CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow];
             }
 
             if (capacity != tracks_per_node) {
