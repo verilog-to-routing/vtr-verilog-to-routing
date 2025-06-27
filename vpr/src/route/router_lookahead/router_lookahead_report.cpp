@@ -239,6 +239,34 @@ static void profile_lookahead_overestimation(std::ofstream& os,
 
     print_header(os, "Lookeahead Overestimation Report");
 
+    // To make the report file itself self-documenting, adding a preamble section
+    // describing what is happening and why.
+    os << "\n";
+    os << "The following section of the report will profile the router lookahead\n";
+    os << "by performing a set of trial routes from different source RR nodes to\n";
+    os << "all target nodes. These routes are performed using no heuristic, thus\n";
+    os << "they perform a Dijkstra path search.\n";
+    os << "\n";
+    os << "Each \'trial\' below performs a single-source-all-destination Dijkstra\n";
+    os << "search from a random source node to all reachable targets. The routes\n";
+    os << "produced by this search are analyzed to see how good the router lookahead\n";
+    os << "is at estimating the cost of the paths (the heuristic cost) compared to\n";
+    os << "the cost returned by the Dijkstra search (the \'actual\' path cost).\n";
+    os << "\n";
+    os << "Important metrics in the data below include the Mean Squared Error (MSE)\n";
+    os << "between the estimated cost of the path and the actual cost of the path, and\n";
+    os << "the worst overestimation of the cost of the path. The MSE measures how\n";
+    os << "acccurate the router lookahead is. The more accurate the router lookahead\n";
+    os << "is, the faster the router will be while maintaining good quality. The\n";
+    os << "max overestimation is a measure of how admissible the router lookahead is\n";
+    os << "as a heuristic in the router. The higher this number is, the worse the\n";
+    os << "router results may be (in theory).\n";
+    os << "\n";
+    os << "The routes performed by this profiling use a fixed criticality of 1.0, so\n";
+    os << "be aware that these results entirely focus on the delay component of the\n";
+    os << "costs of the paths.\n";
+    os << "\n";
+
     // Variables for the profiling.
     //  The target number of random source (sample) nodes to use.
     constexpr size_t target_num_trials = 100;
@@ -337,7 +365,7 @@ static void profile_lookahead_overestimation(std::ofstream& os,
     os << "=================================================================\n";
 
     // Print the total maximum difference.
-    os << vtr::string_fmt("Max difference between heuristic and actual: %.3g\n", max_difference);
+    os << vtr::string_fmt("Worst overestimation between heuristic and actual: %.3g\n", max_difference);
 
     // Print the overestimation per node type.
     for (size_t l = 0; l < max_overestimation_per_type.size(); l++) {
