@@ -22,7 +22,8 @@ FILE_TYPES = {
     ".ys": "RTLIL",
 }
 
-YOSYS_PARSERS = ["default", "surelog", "system-verilog"]
+#YOSYS_PARSERS = ["default", "surelog", "system-verilog"]
+YOSYS_PARSERS = ["default", "slang"]
 
 
 def create_circuits_list(main_circuit, include_files):
@@ -246,7 +247,7 @@ def run(
         del parmys_args["parser"]
     else:
         raise vtr.VtrError(
-            "Invalid parser is specified for Yosys, available parsers are [{}]".format(
+            parmys_args["parser"] + "Invalid parser is specified for Yosys, available parsers are [{}]".format(
                 " ".join(str(x) for x in YOSYS_PARSERS)
             )
         )

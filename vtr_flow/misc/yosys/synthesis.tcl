@@ -1,6 +1,7 @@
 yosys -import
 
 plugin -i parmys
+plugin -i slang
 yosys -import
 
 read_verilog -nomem2reg +/parmys/vtr_primitives.v
@@ -24,17 +25,20 @@ if {[catch {set synlig $::env(synlig_exe_path)} err]} {
 # output file: ZZZ
 
 parmys_arch -a QQQ
+if {$env(PARSER) == "slang" } {
+	puts "Using yosys-slang read_slang command"
+	read_slang XXX
+}
 
-if {$env(PARSER) == "surelog" } {
-	puts "Using Synlig read_uhdm command"
+#if {$env(PARSER) == "surelog" } {
+#	puts "Using Synlig read_uhdm command"
+#	exec $synlig -p "read_uhdm XXX"
 	
-	exec $synlig -p "read_uhdm XXX"
-	
-} elseif {$env(PARSER) == "system-verilog" } {
-	puts "Using Synlig read_systemverilog "
-	exec $synlig -p "read_systemverilog XXX"
-	
-} elseif {$env(PARSER) == "default" } {
+#} elseif {$env(PARSER) == "system-verilog" } {
+#	puts "Using Synlig read_systemverilog "
+#	exec $synlig -p "read_systemverilog XXX"
+#	} 
+elseif {$env(PARSER) == "default" } {
 	puts "Using Yosys read_verilog command"
 	read_verilog -sv -nolatches XXX
 } else {
@@ -74,13 +78,17 @@ techmap -map +/parmys/aldffe2dff.v
 opt -full
 
 # Separate options for Parmys execution (Verilog or SystemVerilog)
-if {$env(PARSER) == "default"} {
+if {$env(PARSER) == "default" || $env(PARSER) == "slang"} {
     # For Verilog, use -nopass for a simpler, faster flow
     parmys -a QQQ -nopass -c CCC YYY
-} elseif {$env(PARSER) == "system-verilog" || $env(PARSER) == "surelog"} {
-    # For Synlig SystemVerilog, run additional passes to handle complexity
-    parmys -a QQQ -c CCC YYY
-}
+} #elseif {$env(PARSER) == "slang"} {
+    # For Slang, run additional passes to handle complexity
+#    parmys -a QQQ -c CCC YYY
+#}
+#elseif {$env(PARSER) == "system-verilog" || $env(PARSER) == "surelog"} {
+#    # For Synlig SystemVerilog, run additional passes to handle complexity
+#    parmys -a QQQ -c CCC YYY
+#}
 
 opt -full
 
