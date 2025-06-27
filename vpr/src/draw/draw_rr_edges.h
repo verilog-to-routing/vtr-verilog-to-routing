@@ -43,14 +43,14 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_e
  * @param prev_node The previous node to draw from
  * @param g The ezgl renderer
  */
-void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g);
+void draw_intra_cluster_pin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g);
 /**
  * @brief Draws the edge between two intra-cluster pins when flat routing is enabled.
  * @param inode The current node to draw to
  * @param prev_node The previous node to draw from
  * @param g The ezgl renderer
  */
-void draw_intrapin_to_intrapin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g);
+void draw_intra_cluster_edge(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g);
 
 /**
  * @brief This routine directly draws an edge from an inter-cluster output pin to an inter-cluster input pin.

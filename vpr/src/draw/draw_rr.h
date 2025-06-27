@@ -30,11 +30,11 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g);
 /**
  * @brief Draws the intra-cluster pin for a given RRNodeId when flat routing is enabled.
  */
-void draw_rr_intrapin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g);
+void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g);
 /* Draws an IPIN or OPIN rr_node.  Note that the pin can appear on more
  * than one side of a clb.  Also note that this routine can change the
  * current color to BLACK. */
-void draw_rr_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g);
+void draw_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g);
 
 void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g);
 void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen);

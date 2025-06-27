@@ -26,7 +26,6 @@ ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode);
 /* Highlights a block and its fanout/fanin. */
 void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId blk_id);
 
-
 /**
  * @brief Highlights the net associated with the specified RRNodeId in Magenta. De-highlights all other nets. Also appends relevant net information to the provided message char pointer.
  *

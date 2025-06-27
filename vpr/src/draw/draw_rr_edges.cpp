@@ -279,7 +279,7 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_e
     }
 }
 
-void draw_intrapin_to_intrapin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
+void draw_intra_cluster_edge(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
@@ -300,7 +300,7 @@ void draw_intrapin_to_intrapin(RRNodeId inode, RRNodeId prev_node, ezgl::rendere
     draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
 }
 
-void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
+void draw_intra_cluster_pin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
@@ -344,7 +344,6 @@ void draw_intrapin_to_pin(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g)
     float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
     float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
     draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
-    
 }
 
 void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) {

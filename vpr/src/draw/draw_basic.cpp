@@ -357,7 +357,7 @@ void draw_congestion(ezgl::renderer* g) {
 
             case e_rr_type::IPIN: //fallthrough
             case e_rr_type::OPIN:
-                draw_rr_pin(inode, color, g);
+                draw_cluster_pin(inode, color, g);
                 break;
             default:
                 break;
@@ -633,13 +633,13 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         // Draw intra-cluster nodes
         if (!is_inode_inter_cluster) {
-            draw_rr_intrapin(inode, color, g);
+            draw_rr_intra_cluster_pin(inode, color, g);
             continue;
         }
 
         // Draw cluster-level IO Pins
         if (rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN) {
-            draw_rr_pin(inode, color, g);
+            draw_cluster_pin(inode, color, g);
             continue;
         }
 
@@ -655,12 +655,12 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         RRNodeId inode = rr_nodes_to_draw[i];
         auto rr_type = rr_graph.node_type(inode);
-        bool is_inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
+        bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
         int current_node_layer = rr_graph.node_layer(inode);
 
         RRNodeId prev_node = rr_nodes_to_draw[i - 1];
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
-        bool is_prev_node_inter_cluster = is_inter_cluster_node(rr_graph, prev_node);
+        bool prev_node_inter_cluster = is_inter_cluster_node(rr_graph, prev_node);
         int prev_node_layer = rr_graph.node_layer(prev_node);
 
         t_draw_layer_display edge_visibility = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
@@ -678,18 +678,17 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         g->set_color(color, edge_visibility.alpha);
 
-        if (!is_inode_inter_cluster && !is_prev_node_inter_cluster) {
-            draw_intrapin_to_intrapin(inode, prev_node, g);
+        if (!inode_inter_cluster && !prev_node_inter_cluster) {
+            draw_intra_cluster_edge(inode, prev_node, g);
             continue;
         }
 
-        if (!is_inode_inter_cluster || !is_prev_node_inter_cluster) {
-            draw_intrapin_to_pin(inode, prev_node, g);
+        if (!inode_inter_cluster || !prev_node_inter_cluster) {
+            draw_intra_cluster_pin_to_pin(inode, prev_node, g);
             continue;
         }
 
         draw_inter_cluster_rr_edge(inode, prev_node, rr_type, prev_type, rr_graph, g);
-
     }
 }
 
@@ -723,8 +722,8 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
                 }
                 default: {
                     VPR_ERROR(VPR_ERROR_OTHER,
-                                "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                prev_type, rr_type);
+                              "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                              prev_type, rr_type);
                 }
             }
             break;
@@ -733,12 +732,12 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
             switch (prev_type) {
                 case e_rr_type::CHANX: {
                     draw_chanx_to_chany_edge(prev_node, inode,
-                                                FROM_X_TO_Y, switch_type, g);
+                                             FROM_X_TO_Y, switch_type, g);
                     break;
                 }
                 case e_rr_type::CHANY: {
                     draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                                switch_type, g);
+                                             switch_type, g);
                     break;
                 }
                 case e_rr_type::OPIN: {
@@ -748,8 +747,8 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
                 }
                 default: {
                     VPR_ERROR(VPR_ERROR_OTHER,
-                                "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                                prev_type, rr_type);
+                              "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                              prev_type, rr_type);
                 }
             }
             break;
@@ -759,7 +758,6 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
         }
     }
 }
-    
 
 /* Helper function that checks whether the edges between the current and previous nodes can be drawn
  * based on whether the cross-layer connections option is enabled and whether the layer on which the

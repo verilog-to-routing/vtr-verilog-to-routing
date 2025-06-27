@@ -107,12 +107,12 @@ void draw_rr(ezgl::renderer* g) {
                 break;
 
             case e_rr_type::IPIN:
-                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
+                draw_cluster_pin(inode, draw_state->draw_rr_node[inode].color, g);
                 draw_rr_edges(inode, g);
                 break;
 
             case e_rr_type::OPIN:
-                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
+                draw_cluster_pin(inode, draw_state->draw_rr_node[inode].color, g);
                 draw_rr_edges(inode, g);
                 break;
 
@@ -513,7 +513,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     } /* End of for each edge loop */
 }
 
-void draw_rr_intrapin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
+void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
@@ -536,7 +536,7 @@ void draw_rr_intrapin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* 
 /* Draws an IPIN or OPIN rr_node.  Note that the pin can appear on more    *
  * than one side of a clb.  Also note that this routine can change the     *
  * current color to BLACK.                                                 */
-void draw_rr_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
+void draw_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     float xcen, ycen;
@@ -866,11 +866,11 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
                 break;
 
             case e_rr_type::IPIN: //fallthrough
-                draw_rr_pin(inode, color, g);
+                draw_cluster_pin(inode, color, g);
                 if (with_edges) draw_rr_edges(inode, g);
                 break;
             case e_rr_type::OPIN:
-                draw_rr_pin(inode, color, g);
+                draw_cluster_pin(inode, color, g);
                 if (with_edges) draw_rr_edges(inode, g);
                 break;
             case e_rr_type::SOURCE:

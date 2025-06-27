@@ -34,6 +34,8 @@
 #include "draw.h"
 #include "draw_triangle.h"
 
+constexpr float FRACTION_TEXT_PADDING = 0.01;
+
 /************************* Subroutines local to this file. *******************************/
 
 /**
@@ -262,7 +264,7 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
             /* Find the number of instances for each child pb_type. */
             int num_pb = mode.pb_type_children[j].num_pb;
 
-            // Determine how we want to arrange the sub-blocks in the parent block. We want the blocks to be squarish, and not too wide or too tall. In other words, we want the number of rows to be as close to the number of columns as possible such that num_rows * num_columns =  num_blocks. 
+            // Determine how we want to arrange the sub-blocks in the parent block. We want the blocks to be squarish, and not too wide or too tall. In other words, we want the number of rows to be as close to the number of columns as possible such that num_rows * num_columns =  num_blocks.
 
             int num_blocks = num_pb * num_children;
 
@@ -313,10 +315,9 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 
     float tile_width = get_draw_coords_vars()->get_tile_width();
 
-    const float FRACTION_PARENT_PADDING = 0.005;
-    const float FRACTION_CHILD_MARGIN = 0.003;
-    const float FRACTION_TEXT_PADDING = 0.01;
-    const int MIN_WIDTH_HEIGHT_RATIO = 2;
+    constexpr float FRACTION_PARENT_PADDING = 0.005;
+    constexpr float FRACTION_CHILD_MARGIN = 0.003;
+    constexpr int MIN_WIDTH_HEIGHT_RATIO = 2;
 
     float abs_parent_padding = tile_width * FRACTION_PARENT_PADDING;
     float abs_text_padding = tile_width * FRACTION_TEXT_PADDING;
@@ -445,7 +446,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             if (draw_state->draw_block_text) {
                 g->draw_text(
                     ezgl::point2d(abs_bbox.center_x(),
-                                  abs_bbox.top() - draw_coords->get_tile_height() * 0.01),
+                                  abs_bbox.top() - draw_coords->get_tile_height() * FRACTION_TEXT_PADDING),
                     pb_type->name,
                     abs_bbox.width(),
                     abs_bbox.height());

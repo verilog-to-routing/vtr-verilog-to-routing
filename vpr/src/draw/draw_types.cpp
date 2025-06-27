@@ -152,7 +152,7 @@ ezgl::rectangle t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_ind
 }
 
 ezgl::point2d t_draw_coords::get_absolute_pin_location(const ClusterBlockId clb_index, const t_pb_graph_pin* pb_graph_pin) {
-    // Pins are positioned on a horizontal row at the top of each internal block. 
+    // Pins are positioned on a horizontal row at the top of each internal block.
 
     t_pb_graph_node* pb_gnode = pb_graph_pin->parent_node;
     ezgl::rectangle pb_bbox = this->get_absolute_pb_bbox(clb_index, pb_gnode);
