@@ -462,9 +462,11 @@ class RRGraphView {
         return node_storage_.edge_sink_node(edge);
     }
 
-    /** @brief Get the source node for the iedge'th edge from specified RRNodeId.
-     *  This method should generally not be used, and instead first_edge and
-     * last_edge should be used.*/
+    /** 
+     * @brief Get the source node for the iedge'th edge from specified RRNodeId.
+     * @note This method should generally not be used, and instead first_edge and
+     * last_edge should be used.
+     */
     inline RRNodeId edge_source_node(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_source_node(id, iedge);
     }

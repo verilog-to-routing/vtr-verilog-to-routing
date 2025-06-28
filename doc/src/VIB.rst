@@ -2,7 +2,7 @@
 
 VIB Architecture
 ============
-The VIB architecture adds modeling support for double-level MUX topology and bent wires. In past, switch blocks have only one level of routing MUXes, whose inputs are driven by outputs of programmable blocks and routing tracks. Now outputs of programmable blocks can shape the first level of routing MUXes, while the inputs of second level involves the outputs of first level and other routing tracks. This can reduce the number and input sizes of routing MUXes.
+The Versatile Interconnect Block (VIB) architecture adds modeling support for double-level MUX topology and bent wires. In the past, switch blocks had only one level of routing MUXes, whose inputs were driven by outputs of programmable blocks and routing tracks. Now outputs of programmable blocks can shape the first level of routing MUXes, while the inputs of second level involves the outputs of first level and other routing tracks. This can reduce the number and input sizes of routing MUXes.
 
 Figure 1 shows the proposed VIB architecture which is tile-based. Each tile is composed of a CLB and a VIB. Each CLB can interact with the corresponding VIB which contains all the routing programmable switches in one tile. Figure 2 shows an example of the detailed interconnect architecture in VIB. The CLB input muxes and the driving muxes of wire segments can share the same fanins. A routing path of a net with two sinks is presented red in the Figure.
 
@@ -26,7 +26,7 @@ Figure 3 shows the modeling for bent wires. A bent L-length wire is modeled as t
 
 FPGA Architecture File Modification (.xml)
 --------------------------
-For original tags of FPGA architecture file see :ref:`fpga_architecture_description`.
+For the original tags available for the standard FPGA architecture file see :ref:`fpga_architecture_description`.
 
 Modification for ``<segmentlist>`` Tag
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -115,7 +115,7 @@ For example:
 .. arch:tag:: <multistage_muxs>content</multistage_muxs>
 
     :req_param content:
-    	The detaild information for first and second MUXes.
+    	The detailed information for first and second MUXes.
     	
 The ``content`` of ``<multistage_muxs>`` tag consists of a ``<first_stage>`` tag and a ``<secong_stage>`` tag.
 
@@ -248,7 +248,7 @@ For example:
         </fixed_layout>
     </vib_layout>
 
-In this VIB grid layout, ``perimeter``, ``fill``, ``col`` and so on are tags in original ``<layout>`` tag to describe positions of each type of VIB block. The attibute ``type`` should correspond to the ``name`` of a ``<vib>`` tag in ``<vib_arch>``.
+In this VIB grid layout, ``perimeter``, ``fill``, ``col`` and so on are tags in original ``<layout>`` tag to describe positions of each type of VIB block. The attribute ``type`` should correspond to the ``name`` of a ``<vib>`` tag in ``<vib_arch>``.
 Besides, the ``pbtype_name`` of corresponding ``<vib>`` must be the same as the physical block type at this position. 
 
 In this example, IO blocks are located on the perimeter of the layout. Memory blocks are on column 5 and CLBs are on the rest positions. The ``vib_io``, ``vib_clb`` and ``vib_memory`` are different types of vib blocks corresponding to IO, CLB and memory blocks respectively.

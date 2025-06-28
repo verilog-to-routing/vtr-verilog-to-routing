@@ -302,11 +302,10 @@ static void set_vib_grid_block_type(int priority,
 
     if (priority < max_priority_type_loc.priority) {
         //Lower priority, do not override
-#ifdef VERBOSE
-        VTR_LOG("Not creating block '%s' at (%zu,%zu) since overlaps block '%s' at (%zu,%zu) with higher priority (%d > %d)\n",
-                type->name.c_str(), x_root, y_root, max_priority_type_loc.type->name, max_priority_type_loc.x, max_priority_type_loc.y,
-                max_priority_type_loc.priority, priority);
-#endif
+        std::string msg = vtr::string_fmt("Not creating block '%s' at (%zu,%zu) since overlaps block '%s' at (%zu,%zu) with higher priority (%d > %d)\n",
+                                          type->get_name().c_str(), x_root, y_root, max_priority_type_loc.type->get_name().c_str(), max_priority_type_loc.x, max_priority_type_loc.y,
+                                          max_priority_type_loc.priority, priority);
+        VTR_LOG_DEBUG(msg.c_str());
         return;
     }
 

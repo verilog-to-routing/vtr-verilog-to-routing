@@ -2695,13 +2695,13 @@ Layout
 
 .. option:: tileable="<bool>"
 
-  Turn ``on``/``off`` tileable routing resource graph generator.
+  Turn ``on``/ ``off`` the tileable routing resource graph generator.
   
-  Tileable routing architecture can minimize the number of unique modules in FPGA fabric to be physically implemented.
+  The tileable routing architecture can minimize the number of unique modules in FPGA fabric to be physically implemented.
 
   Technical details can be found in :cite:`XTang_FPT_2019`. 
 
-  .. note:: It is strongly recommended to to enable the tileable routing architecture when you want to PnR large FPGA fabrics, which can effectively reduce the runtime.
+  .. note:: It is strongly recommended to enable the tileable routing architecture when you want to PnR large FPGA fabrics, which can effectively reduce the runtime.
 
 .. option:: through_channel="<bool>"
   
@@ -2718,11 +2718,11 @@ Layout
 
   .. warning:: Do NOT enable ``through_channel`` if you are not using the tileable routing resource graph generator!
   
-  .. warning:: You cannot use ``spread`` pin location for the ``height > 1`` or ``width >1`` tiles when using the tileable routing resource graph!!! Otherwise, it will cause undriven pins in your device!!!
+  .. warning:: You cannot use ``spread`` pin location for the ``height > 1`` or ``width >1`` tiles when using the tileable routing resource graph. Otherwise, it will cause undriven pins in your device!!!
 
 .. option:: shrink_boundary="<bool>"
   
-  Remove all the routing wires in empty regions. This is mainly used in non-rectangle FPGAs to avoid redundant routing wires in blank area, as illustrated in :numref:`fig_shrink_boundary`.
+  Remove all the routing wires in empty regions. This is mainly used in non-rectangular FPGAs to avoid redundant routing wires in blank area, as illustrated in :numref:`fig_shrink_boundary`.
   By default, it is ``false``.
 
   .. _fig_shrink_boundary:
@@ -2737,10 +2737,11 @@ Layout
 
 .. option:: perimeter_cb="<bool>"
   
-  Allow connection blocks to appear around the perimeter programmable block (mainly I/Os). This is designed to enhance routability of I/Os on perimeter. Also strongly recommended when programmable clock network is required to touch clock pins on I/Os. As illustrated in :numref:`fig_perimeter_cb`, routing tracks can access three sides of each I/O when perimeter connection blocks are created. 
-  By default, it is ``false``.
+  Allow connection blocks to appear around the blocks on the perimeter of the device (mainly I/Os). This is designed to enhance routability of I/Os on perimeter. It is also strongly recommended when a programmable clock network is required to touch clock pins on I/Os. As illustrated in :numref:`fig_perimeter_cb`, routing tracks can access three sides of each I/O when perimeter connection blocks are created. 
 
-.. warning:: When enabled, please only place outputs at one side of I/Os. For example, outputs of an I/O on the top side can only occur on the bottom side of the I/O tile. Otherwise, routability loss may be expected, leading to some pins cannot be reachable. Enable the ``opin2all_sides`` to recover routability loss. 
+  **Default:** ``false``
+
+.. warning:: When enabled, please only place outputs at one side of I/Os. For example, outputs of an I/O on the top side can only occur on the bottom side of the I/O tile. Otherwise, routability loss may be expected, leading to some pins being unreachable. Enable the ``opin2all_sides`` to recover routability loss. 
 
   .. _fig_perimeter_cb:
   
@@ -2755,7 +2756,8 @@ Layout
 .. option:: opin2all_sides="<bool>"
 
   Allow each output pin of a programmable block to drive the routing tracks on all the sides of its adjacent switch block (see an illustrative example in :numref:`fig_opin2all_sides`). This can improve the routability of an FPGA fabric with an increase in the sizes of routing multiplexers in each switch block. 
-  By default, it is ``false``.
+  
+  **Default:** ``false``
 
   .. _fig_opin2all_sides:
   
@@ -2770,7 +2772,8 @@ Layout
 .. option:: concat_wire="<bool>"
 
   In each switch block, allow each routing track which ends to drive another routing track on the opposite side, as such a wire can be continued in the same direction (see an illustrative example in :numref:`fig_concat_wire`). In other words, routing wires can be concatenated in the same direction across an FPGA fabric. This can improve the routability of an FPGA fabric with an increase in the sizes of routing multiplexers in each switch block. 
-  By default, it is ``false``.
+  
+  **Default:** ``false``
 
   .. _fig_concat_wire:
   
@@ -2785,9 +2788,8 @@ Layout
 .. option:: concat_pass_wire="<bool>"
 
   In each switch block, allow each routing track which passes to drive another routing track on the opposite side, as such a pass wire can be continued in the same direction (see an illustrative example in :numref:`fig_concat_pass_wire`). This can improve the routability of an FPGA fabric with an increase in the sizes of routing multiplexers in each switch block. 
-  By default, it is ``false``.
-
-  .. warning:: Please enable this option if you are looking for device support which is created by any release which is before v1.1.541!!!
+  
+  **Default:** ``false``
 
   .. _fig_concat_wire:
   
@@ -2813,14 +2815,14 @@ Switch Block
 
 .. option:: sub_type="<string>"
   
-  Connecting type for pass tracks in each switch block
-  The supported connecting patterns are ``subset``, ``universal`` and ``wilton``, being the same as VPR capability
-  If not specified, the pass tracks will the same connecting patterns as start/end tracks, which are defined in ``type``
+  Connecting type for pass tracks in each switch block.
+  The supported connecting patterns are ``subset``, ``universal`` and ``wilton``, being the same as the capability of VPR.
+  If not specified, the pass tracks will have the same connecting patterns as start/end tracks, which are defined in ``type``
 
 .. option:: sub_Fs="<int>"
 
   Connectivity parameter for pass tracks in each switch block. Must be a multiple of 3.
-  If not specified, the pass tracks will the same connectivity as start/end tracks, which are defined in ``fs``
+  If not specified, the pass tracks will have the same connectivity as start/end tracks, which are defined in ``fs``.
 
 A quick example which defines a switch block
   - Starting/ending routing tracks are connected in the ``wilton`` pattern
@@ -2837,7 +2839,8 @@ A quick example which defines a switch block
 Routing Segments
 ~~~~~~~~~~~~~~~~
 
-OpenFPGA suggests users to give explicit names for each routing segement in ``<segmentlist>`` 
+When using tileable architecture, it is strongly recommended to give explicit names
+for each routing segment in ``<segmentlist>``.
 This is used to link ``circuit_model`` to routing segments.
 
 A quick example which defines a length-4 uni-directional routing segment called ``L4`` :
@@ -2848,7 +2851,7 @@ A quick example which defines a length-4 uni-directional routing segment called 
     <segment name="L4" freq="1" length="4" type="undir"/>
   </segmentlist>
 
-.. note:: Currently, OpenFPGA only supports uni-directional routing architectures
+.. note:: Currently, tileable architecture only supports uni-directional routing architectures.
 
 Direct Interconnect
 ~~~~~~~~~~~~~~~~~~~
@@ -2868,7 +2871,7 @@ The original direct connections in the directlist section are documented in :ref
 
 .. note:: These options are required
 
-In the OpenFPGA architecture file, you may define additional attributes for each VPR's direct connection:
+In the tileable architecture file, you may define additional attributes for each VPR's direct connection:
 
 .. code-block:: xml
 
@@ -2926,7 +2929,7 @@ In the OpenFPGA architecture file, you may define additional attributes for each
 Enhanced Connection Block
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The direct connection can also drive routing multiplexers of connection blocks. When such connection occures in a connection block, it is called enhanced connection block.
+A direct connection can also drive routing multiplexers of connection blocks. When such connection occurs in a connection block, it is called an enhanced connection block.
 :numref:`fig_ecb` illustrates the difference between a regular connection block and an enhanced connection block.
 
 .. _fig_ecb:
@@ -2956,7 +2959,7 @@ Direct connections can be inside a tile or across two tiles. Currently, across m
 
     Example of feedback connections inside a tile for enhanced connection block
 
-For instance, VPR architecture defines feedback connections like:
+For instance, a non-tileable VPR architecture defines:
 
 .. code-block:: xml
 
@@ -2987,7 +2990,7 @@ Inter-tile Connections
 
 For this example, we will study a scan-chain implementation. The description could be:
 
-In VPR architecture:
+In a non-tileable architecture:
 
 .. code-block:: xml
 
@@ -2995,7 +2998,7 @@ In VPR architecture:
     <direct name="scff_chain" from_pin="clb.sc_out" to_pin="clb.sc_in" x_offset="0" y_offset="-1" z_offset="0"/>
   </directlist>
 
-In OpenFPGA architecture:
+In a tileable architecture:
 
 .. code-block:: xml
 
@@ -3014,7 +3017,7 @@ In OpenFPGA architecture:
 
 In this figure, the red arrows represent the initial direct connection. The green arrows represent the point to point connection to connect all the columns of CLB.
 
-A point to point connection can be applied in different ways than showed in the example section. To help the designer implement his point to point connection, a truth table with our new parameters id provided below.
+A point to point connection can be applied in different ways than showed in the example section. To help the designer implement their point to point connection, a truth table with our new parameters is provided below.
 
 :numref:`fig_p2p_trtable` provides all possible variable combination and the connection it will generate.
 
