@@ -201,7 +201,7 @@ void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors) 
 }
 
 static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_descriptors) {
-    for (auto& type : type_descriptors) {
+    for (t_logical_block_type& type : type_descriptors) {
         if (type.pb_type) {
             if (type.pb_graph_head) {
                 free_pb_graph(type.pb_graph_head);
@@ -428,8 +428,8 @@ t_logical_block_type get_empty_logical_type(const char* name /*=EMPTY_BLOCK_NAME
 std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical_tile_type_ptr type) {
     std::unordered_set<t_logical_block_type_ptr> equivalent_sites;
 
-    for (auto& sub_tile : type->sub_tiles) {
-        for (auto logical_block : sub_tile.equivalent_sites) {
+    for (const t_sub_tile& sub_tile : type->sub_tiles) {
+        for (t_logical_block_type_ptr logical_block : sub_tile.equivalent_sites) {
             equivalent_sites.insert(logical_block);
         }
     }
@@ -841,7 +841,7 @@ e_power_estimation_method power_method_inherited(e_power_estimation_method paren
 
 void SyncModelsPbTypes(t_arch* arch,
                        const std::vector<t_logical_block_type>& Types) {
-    for (auto& Type : Types) {
+    for (const t_logical_block_type& Type : Types) {
         if (Type.pb_type != nullptr) {
             SyncModelsPbTypes_rec(arch, Type.pb_type);
         }
@@ -977,7 +977,7 @@ void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
 }
 
 const t_segment_inf* find_segment(const t_arch* arch, std::string_view name) {
-    for (const auto& segment : arch->Segments) {
+    for (const t_segment_inf& segment : arch->Segments) {
         if (segment.name == name) {
             return &segment;
         }
@@ -1038,7 +1038,7 @@ bool has_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* po
     for (const t_pin_to_pin_annotation& annotation : pb_type->annotations) {
         InstPort annot_in(annotation.input_pins);
         if (annot_in.port_name() == port->name) {
-            for (const auto& [key, val] : annotation.annotation_entries) {
+            for (const auto& [key, _] : annotation.annotation_entries) {
                 if (key == annot_type) {
                     return true;
                 }
@@ -1051,12 +1051,12 @@ bool has_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* po
 
 bool has_combinational_annotation(const t_pb_type* pb_type, std::string_view in_port, std::string_view out_port) {
     for (const t_pin_to_pin_annotation& annotation : pb_type->annotations) {
-        for (const auto& annot_in_str : vtr::StringToken(annotation.input_pins).split(" \t\n")) {
+        for (const std::string& annot_in_str : vtr::StringToken(annotation.input_pins).split(" \t\n")) {
             InstPort in_pins(annot_in_str);
-            for (const auto& annot_out_str : vtr::StringToken(annotation.output_pins).split(" \t\n")) {
+            for (const std::string& annot_out_str : vtr::StringToken(annotation.output_pins).split(" \t\n")) {
                 InstPort out_pins(annot_out_str);
                 if (in_pins.port_name() == in_port && out_pins.port_name() == out_port) {
-                    for (const auto& [key, val] : annotation.annotation_entries) {
+                    for (const auto& [key, _] : annotation.annotation_entries) {
                         if (key == E_ANNOT_PIN_TO_PIN_DELAY_MAX
                             || key == E_ANNOT_PIN_TO_PIN_DELAY_MIN) {
                             return true;
@@ -1072,7 +1072,7 @@ bool has_combinational_annotation(const t_pb_type* pb_type, std::string_view in_
 
 void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
                                  std::vector<t_logical_block_type>& LogicalBlockTypes) {
-    for (auto& physical_tile : PhysicalTileTypes) {
+    for (t_physical_tile_type& physical_tile : PhysicalTileTypes) {
         if (physical_tile.index == EMPTY_TYPE_INDEX) continue;
 
         auto eq_sites_set = get_equivalent_sites_set(&physical_tile);
@@ -1093,7 +1093,7 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
         std::sort(equivalent_sites.begin(), equivalent_sites.end(), criteria);
 
         for (t_logical_block_type& logical_block : LogicalBlockTypes) {
-            for (auto site : equivalent_sites) {
+            for (t_logical_block_type_ptr site : equivalent_sites) {
                 if (logical_block.name == site->pb_type->name) {
                     logical_block.equivalent_tiles.push_back(&physical_tile);
                     break;

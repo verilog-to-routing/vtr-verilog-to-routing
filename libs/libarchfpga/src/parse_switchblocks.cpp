@@ -200,8 +200,8 @@ t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiu
     t_wire_switchpoints wire_switchpoints;
     wire_switchpoints.segment_name = get_attribute(node, "type", loc_data).value();
 
-    auto points_str = get_attribute(node, "switchpoint", loc_data).value();
-    for (const auto& point_str : vtr::StringToken(points_str).split(",")) {
+    std::string points_str = get_attribute(node, "switchpoint", loc_data).value();
+    for (const std::string& point_str : vtr::StringToken(points_str).split(",")) {
         int switchpoint = vtr::atoi(point_str);
         wire_switchpoints.switchpoints.push_back(switchpoint);
     }
@@ -229,13 +229,13 @@ static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchp
 /* parses the wire types specified in the comma-separated 'ch' char array into the vector wire_points_vec.
  * Spaces are trimmed off */
 static void parse_comma_separated_wire_types(const char* ch, std::vector<t_wire_switchpoints>& wire_switchpoints) {
-    auto types = vtr::StringToken(ch).split(",");
+    std::vector<std::string> types = vtr::StringToken(ch).split(",");
 
     if (types.empty()) {
         archfpga_throw(__FILE__, __LINE__, "parse_comma_separated_wire_types: found empty wireconn wire type entry\n");
     }
 
-    for (const auto& type : types) {
+    for (const std::string& type : types) {
         t_wire_switchpoints wsp;
         wsp.segment_name = type;
 
@@ -245,15 +245,15 @@ static void parse_comma_separated_wire_types(const char* ch, std::vector<t_wire_
 
 /* parses the wirepoints specified in the comma-separated 'ch' char array into the vector wire_points_vec */
 static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire_switchpoints>& wire_switchpoints) {
-    auto points = vtr::StringToken(ch).split(",");
+    std::vector<std::string> points = vtr::StringToken(ch).split(",");
     if (points.empty()) {
         archfpga_throw(__FILE__, __LINE__, "parse_comma_separated_wire_points: found empty wireconn wire point entry\n");
     }
 
-    for (const auto& point_str : points) {
+    for (const std::string& point_str : points) {
         int point = vtr::atoi(point_str);
 
-        for (auto& wire_switchpoint : wire_switchpoints) {
+        for (t_wire_switchpoints& wire_switchpoint : wire_switchpoints) {
             wire_switchpoint.switchpoints.push_back(point);
         }
     }
@@ -404,7 +404,7 @@ void check_switchblock(const t_switchblock_inf* sb, const t_arch* arch) {
     }
 
     /* check that specified wires exist */
-    for (const auto& wireconn : sb->wireconns) {
+    for (const t_wireconn_inf& wireconn : sb->wireconns) {
         check_wireconn(arch, wireconn);
     }
 
@@ -464,7 +464,7 @@ static void check_bidir_switchblock(const t_permutation_map* permutation_map) {
 
 static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn) {
     for (const t_wire_switchpoints& wire_switchpoints : wireconn.from_switchpoint_set) {
-        auto seg_name = wire_switchpoints.segment_name;
+        std::string seg_name = wire_switchpoints.segment_name;
 
         //Make sure the segment exists
         const t_segment_inf* seg_info = find_segment(arch, seg_name);
@@ -485,7 +485,7 @@ static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn) {
     }
 
     for (const t_wire_switchpoints& wire_switchpoints : wireconn.to_switchpoint_set) {
-        auto seg_name = wire_switchpoints.segment_name;
+        std::string seg_name = wire_switchpoints.segment_name;
 
         //Make sure the segment exists
         const t_segment_inf* seg_info = find_segment(arch, seg_name);

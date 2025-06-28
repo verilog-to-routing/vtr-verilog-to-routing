@@ -451,7 +451,7 @@ void xml_read_arch(const char* ArchFile,
         arch->switches = process_switches(Next, timing_enabled, loc_data);
 
         /* Process switchblocks. This depends on switches */
-        bool switchblocklist_required = (arch->SBType == CUSTOM); //require this section only if custom switchblocks are used
+        bool switchblocklist_required = (arch->sb_type == CUSTOM); //require this section only if custom switchblocks are used
         SWITCHBLOCKLIST_REQD = BoolToReqOpt(switchblocklist_required);
 
         /* Process segments. This depends on switches */
@@ -2923,13 +2923,13 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
     Prop = get_attribute(Cur, "type", loc_data).value();
     /* Parse attribute 'type', representing the major connectivity pattern for switch blocks */
     if (strcmp(Prop, "wilton") == 0) {
-        arch->SBType = WILTON;
+        arch->sb_type = WILTON;
     } else if (strcmp(Prop, "universal") == 0) {
-        arch->SBType = UNIVERSAL;
+        arch->sb_type = UNIVERSAL;
     } else if (strcmp(Prop, "subset") == 0) {
-        arch->SBType = SUBSET;
+        arch->sb_type = SUBSET;
     } else if (strcmp(Prop, "custom") == 0) {
-        arch->SBType = CUSTOM;
+        arch->sb_type = CUSTOM;
         custom_switch_block = true;
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
@@ -2944,17 +2944,17 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
     std::string sub_type_str = get_attribute(Cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
     if (!sub_type_str.empty()) {
         if (sub_type_str == std::string("wilton")) {
-            arch->SBSubType = WILTON;
+            arch->sb_sub_type = WILTON;
         } else if (sub_type_str == std::string("universal")) {
-            arch->SBSubType = UNIVERSAL;
+            arch->sb_sub_type = UNIVERSAL;
         } else if (sub_type_str == std::string("subset")) {
-            arch->SBSubType = SUBSET;
+            arch->sb_sub_type = SUBSET;
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                            "Unknown property %s for switch block subtype x\n", sub_type_str.c_str());
         }
     } else {
-        arch->SBSubType = arch->SBType;
+        arch->sb_sub_type = arch->sb_type;
     }
 
     ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);

@@ -2327,7 +2327,7 @@ struct ArchReader {
         arch_->Chans.chan_y_dist.xpeak = 0;
         arch_->Chans.chan_y_dist.dc = 0;
         arch_->ipin_cblock_switch_name.push_back(std::string("generic"));
-        arch_->SBType = WILTON;
+        arch_->sb_type = WILTON;
         arch_->Fs = 3;
         default_fc_.specified = true;
         default_fc_.in_value_type = e_fc_value_type::FRACTIONAL;

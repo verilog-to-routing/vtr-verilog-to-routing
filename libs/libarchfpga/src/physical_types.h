@@ -2282,10 +2282,10 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-/* Detailed routing architecture */
+// Detailed routing architecture
 struct t_arch {
-    /** Stores unique strings used as key and values in <metadata> tags,
-     * i.e. implements a flyweight pattern to save memory.*/
+    /// Stores unique strings used as key and values in <metadata> tags,
+    /// i.e. implements a flyweight pattern to save memory.
     mutable vtr::string_internment strings;
     std::vector<vtr::interned_string> interned_strings;
 
@@ -2322,8 +2322,8 @@ struct t_arch {
     // End of tileable architecture options
 
     t_chan_width_dist Chans;
-    enum e_switch_block_type SBType;
-    enum e_switch_block_type SBSubType;
+    enum e_switch_block_type sb_type;
+    enum e_switch_block_type sb_sub_type;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;
