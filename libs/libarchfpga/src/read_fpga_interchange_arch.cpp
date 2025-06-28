@@ -1845,13 +1845,13 @@ struct ArchReader {
         auto site_pins = site.getBelPins();
 
         std::string endpoint = direction == BACKWARD ? ic->input_string : ic->output_string;
-        auto ic_endpoints = vtr::StringToken(endpoint).split(" ");
+        std::vector<std::string> ic_endpoints = vtr::StringToken(endpoint).split(" ");
 
         std::unordered_map<t_interconnect*, std::set<std::string>> pps_map;
 
         bool is_backward = direction == BACKWARD;
 
-        for (auto ep : ic_endpoints) {
+        for (const std::string& ep : ic_endpoints) {
             auto parts = vtr::StringToken(ep).split(".");
             auto bel = parts[0];
             auto pin = parts[1];
@@ -1875,7 +1875,7 @@ struct ArchReader {
             if (bel_reader.getCategory() == ROUTING) {
                 for (auto bel_pin : bel_reader.getPins()) {
                     auto pin_reader = site_pins[bel_pin];
-                    auto pin_name = str(pin_reader.getName());
+                    std::string pin_name = str(pin_reader.getName());
 
                     if (pin_reader.getDir() != (is_backward ? INPUT : OUTPUT))
                         continue;
@@ -1889,7 +1889,7 @@ struct ArchReader {
                         std::string ic_to_find = bel + "." + pin_name;
 
                         bool found = false;
-                        for (auto out : vtr::StringToken(is_backward ? other_ic->output_string : other_ic->input_string).split(" "))
+                        for (const std::string& out : vtr::StringToken(is_backward ? other_ic->output_string : other_ic->input_string).split(" "))
                             found |= out == ic_to_find;
 
                         if (found) {
@@ -1911,7 +1911,7 @@ struct ArchReader {
                         t_interconnect* other_ic = &mode->interconnect[iic];
 
                         bool found = false;
-                        for (auto other_ep : vtr::StringToken(is_backward ? other_ic->output_string : other_ic->input_string).split(" ")) {
+                        for (const std::string& other_ep : vtr::StringToken(is_backward ? other_ic->output_string : other_ic->input_string).split(" ")) {
                             found |= other_ep == ep;
                         }
 

@@ -436,7 +436,7 @@ void xml_read_arch(const char* ArchFile,
         Next = get_single_child(architecture, "layout", loc_data);
         process_layout(Next, arch, loc_data, num_of_avail_layers);
 
-        /* Precess vib_layout */
+        // Precess vib_layout
         Next = get_single_child(architecture, "vib_layout", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
             process_vib_layout(Next, arch, loc_data);
@@ -480,13 +480,13 @@ void xml_read_arch(const char* ArchFile,
             arch->directs = process_directs(Next, arch->switches, loc_data);
         }
 
-        /* Process vib_arch */
+        // Process vib_arch
         Next = get_single_child(architecture, "vib_arch", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
             process_vib_arch(Next, PhysicalTileTypes, arch, loc_data);
         }
 
-        /* Process Clock Networks */
+        // Process Clock Networks
         Next = get_single_child(architecture, "clocknetworks", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
             std::vector<std::string> expected_children = {"metal_layers", "clock_network", "clock_routing"};
@@ -505,11 +505,10 @@ void xml_read_arch(const char* ArchFile,
                                   loc_data);
         }
 
-        /* Process architecture power information */
+        // Process architecture power information
 
-        /* If arch->power has been initialized, meaning the user has requested power estimation,
-         * then the power architecture information is required.
-         */
+        // If arch->power has been initialized, meaning the user has requested power estimation,
+        // then the power architecture information is required.
         if (arch->power) {
             POWER_REQD = ReqOpt::REQUIRED;
         } else {
@@ -521,9 +520,7 @@ void xml_read_arch(const char* ArchFile,
             if (arch->power) {
                 process_power(Next, arch->power, loc_data);
             } else {
-                /* This information still needs to be read, even if it is just
-                 * thrown away.
-                 */
+                // This information still needs to be read, even if it is just thrown away.
                 t_power_arch* power_arch_fake = new t_power_arch();
                 process_power(Next, power_arch_fake, loc_data);
                 delete power_arch_fake;
@@ -536,9 +533,7 @@ void xml_read_arch(const char* ArchFile,
             if (arch->clocks) {
                 process_clocks(Next, *arch->clocks, loc_data);
             } else {
-                /* This information still needs to be read, even if it is just
-                 * thrown away.
-                 */
+                // This information still needs to be read, even if it is just thrown away.
                 std::vector<t_clock_network> clocks_fake;
                 process_clocks(Next, clocks_fake, loc_data);
             }
@@ -2921,7 +2916,7 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
     Cur = get_single_child(Node, "switch_block", loc_data);
     expect_only_attributes(Cur, {"type", "fs", "sub_type", "sub_fs"}, loc_data);
     Prop = get_attribute(Cur, "type", loc_data).value();
-    /* Parse attribute 'type', representing the major connectivity pattern for switch blocks */
+    // Parse attribute 'type', representing the major connectivity pattern for switch blocks
     if (strcmp(Prop, "wilton") == 0) {
         arch->sb_type = WILTON;
     } else if (strcmp(Prop, "universal") == 0) {
@@ -2935,19 +2930,18 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                        vtr::string_fmt("Unknown property %s for switch block type x\n", Prop).c_str());
     }
-    /* Parse attribute 'sub_type', representing the minor connectivity pattern for switch blocks 
-     * If not specified, the 'sub_type' is the same as major type
-     * This option is only valid for tileable routing resource graph builder
-     * Note that sub_type does not support custom switch block pattern!!!
-     * If 'sub_type' is specified, the custom switch block for 'type' is not allowed! 
-     */
+    // Parse attribute 'sub_type', representing the minor connectivity pattern for switch blocks 
+    // If not specified, the 'sub_type' is the same as major type
+    // This option is only valid for tileable routing resource graph builder
+    // Note that sub_type does not support custom switch block pattern!!!
+    // If 'sub_type' is specified, the custom switch block for 'type' is not allowed! 
     std::string sub_type_str = get_attribute(Cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
     if (!sub_type_str.empty()) {
-        if (sub_type_str == std::string("wilton")) {
+        if (sub_type_str == "wilton") {
             arch->sb_sub_type = WILTON;
-        } else if (sub_type_str == std::string("universal")) {
+        } else if (sub_type_str == "universal") {
             arch->sb_sub_type = UNIVERSAL;
-        } else if (sub_type_str == std::string("subset")) {
+        } else if (sub_type_str == "subset") {
             arch->sb_sub_type = SUBSET;
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
@@ -2957,8 +2951,8 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
         arch->sb_sub_type = arch->sb_type;
     }
 
-    ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);
-    arch->Fs = get_attribute(Cur, "fs", loc_data, CUSTOM_SWITCHBLOCK_REQD).as_int(3);
+    ReqOpt custom_switchblock_reqd = BoolToReqOpt(!custom_switch_block);
+    arch->Fs = get_attribute(Cur, "fs", loc_data, custom_switchblock_reqd).as_int(3);
     arch->sub_fs = get_attribute(Cur, "sub_fs", loc_data, BoolToReqOpt(false)).as_int(arch->Fs);
 
     Cur = get_single_child(Node, "default_fc", loc_data, ReqOpt::OPTIONAL);
@@ -4056,7 +4050,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             process_cb_sb(SubElem, Segs[i].sb, loc_data);
         }
 
-        /* Setup the bend list if they give one, otherwise use default */
+        // Setup the bend list if they give one, otherwise use default
         if (length > 1) {
             Segs[i].is_bend = false;
             SubElem = get_single_child(Node, "bend", loc_data, ReqOpt::OPTIONAL);
@@ -4065,12 +4059,12 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             }
         }
 
-        /*Store the index of this segment in Segs vector*/
+        // Store the index of this segment in Segs vector
         Segs[i].seg_index = i;
-        /* Get next Node */
+        // Get next Node
         Node = Node.next_sibling(Node.name());
     }
-    /*We need at least one type of segment that applies to each of x- and y-directed wiring.*/
+    // We need at least one type of segment that applies to each of x- and y-directed wiring.
 
     if (!x_axis_seg_found || !y_axis_seg_found) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
