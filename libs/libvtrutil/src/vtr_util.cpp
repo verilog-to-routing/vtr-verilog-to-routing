@@ -18,7 +18,7 @@
 namespace vtr {
 
 /// @brief used by fopen
-static std::string out_file_prefix;
+std::string out_file_prefix;
 
 /// @brief file in line number being parsed (used by fgets)
 static int file_line_number = 0;
