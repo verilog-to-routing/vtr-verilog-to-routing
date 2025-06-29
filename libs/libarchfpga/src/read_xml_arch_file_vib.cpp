@@ -1,6 +1,5 @@
 #include "read_xml_arch_file_vib.h"
 
-#include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "arch_error.h"
@@ -9,11 +8,11 @@
 
 using pugiutil::ReqOpt;
 
-static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
+static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& physical_tile_types, t_arch* arch, const pugiutil::loc_data& loc_data);
 
-static void process_first_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data);
+static void process_first_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& physical_tile_types, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data);
 
-static void process_second_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
+static void process_second_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& physical_tile_types, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
 
 static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
                                         int die_number,
@@ -21,18 +20,18 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
                                         pugi::xml_node layout_block_type_tag,
                                         const pugiutil::loc_data& loc_data);
 
-void process_vib_arch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data) {
+void process_vib_arch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& physical_tile_types, t_arch* arch, const pugiutil::loc_data& loc_data) {
     int num_vibs = count_children(Parent, "vib", loc_data);
     arch->vib_infs.reserve(num_vibs);
-    pugi::xml_node Node = get_first_child(Parent, "vib", loc_data);
+    pugi::xml_node node = get_first_child(Parent, "vib", loc_data);
 
     for (int i_vib = 0; i_vib < num_vibs; i_vib++) {
-        process_vib(Node, PhysicalTileTypes, arch, loc_data);
-        Node = Node.next_sibling(Node.name());
+        process_vib(node, physical_tile_types, arch, loc_data);
+        node = node.next_sibling(node.name());
     }
 }
 
-static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data) {
+static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& physical_tile_types, t_arch* arch, const pugiutil::loc_data& loc_data) {
     VibInf vib;
 
     std::string tmp = get_attribute(Vib_node, "name", loc_data).as_string("");
@@ -68,21 +67,21 @@ static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_typ
 
     int group_num = count_children(Vib_node, "seg_group", loc_data);
     VTR_ASSERT(vib.get_seg_group_num() == group_num);
-    pugi::xml_node Node = get_first_child(Vib_node, "seg_group", loc_data);
+    pugi::xml_node node = get_first_child(Vib_node, "seg_group", loc_data);
     for (int i_group = 0; i_group < group_num; i_group++) {
         t_seg_group seg_group;
 
-        tmp = get_attribute(Node, "name", loc_data).as_string("");
+        tmp = get_attribute(node, "name", loc_data).as_string("");
 
         if (!tmp.empty()) {
             seg_group.name = tmp;
         } else {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                            "No name specified for the vib seg group!\n");
         }
 
         seg_group.axis = e_parallel_axis_vib::BOTH_DIR; /*DEFAULT value if no axis is specified*/
-        tmp = get_attribute(Node, "axis", loc_data, ReqOpt::OPTIONAL).as_string("");
+        tmp = get_attribute(node, "axis", loc_data, ReqOpt::OPTIONAL).as_string("");
 
         if (!tmp.empty()) {
             if (tmp == "x") {
@@ -90,40 +89,40 @@ static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_typ
             } else if (tmp == "y") {
                 seg_group.axis = e_parallel_axis_vib::Y;
             } else {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp.c_str());
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "Unsopported parralel axis type: %s\n", tmp.c_str());
             }
         }
 
-        int track_num = get_attribute(Node, "track_nums", loc_data).as_int();
+        int track_num = get_attribute(node, "track_nums", loc_data).as_int();
         if (track_num > 0) {
             seg_group.track_num = track_num;
         } else {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                            "No track_num specified for the vib seg group!\n");
         }
 
         vib.push_seg_group(seg_group);
 
-        Node = Node.next_sibling(Node.name());
+        node = node.next_sibling(node.name());
     }
 
-    Node = get_single_child(Vib_node, "multistage_muxs", loc_data);
-    expect_only_children(Node, {"first_stage", "second_stage"}, loc_data);
+    node = get_single_child(Vib_node, "multistage_muxs", loc_data);
+    expect_only_children(node, {"first_stage", "second_stage"}, loc_data);
 
-    pugi::xml_node SubElem = get_single_child(Node, "first_stage", loc_data);
-    if (SubElem) {
+    pugi::xml_node sub_elem = get_single_child(node, "first_stage", loc_data);
+    if (sub_elem) {
         std::vector<t_first_stage_mux_inf> first_stages;
-        process_first_stage(SubElem, PhysicalTileTypes, first_stages, loc_data);
+        process_first_stage(sub_elem, physical_tile_types, first_stages, loc_data);
 
         for (auto first_stage : first_stages) {
             vib.push_first_stage(first_stage);
         }
     }
 
-    SubElem = get_single_child(Node, "second_stage", loc_data);
-    if (SubElem) {
+    sub_elem = get_single_child(node, "second_stage", loc_data);
+    if (sub_elem) {
         std::vector<t_second_stage_mux_inf> second_stages;
-        process_second_stage(SubElem, PhysicalTileTypes, second_stages, loc_data);
+        process_second_stage(sub_elem, physical_tile_types, second_stages, loc_data);
 
         for (auto second_stage : second_stages) {
             vib.push_second_stage(second_stage);
@@ -133,58 +132,58 @@ static void process_vib(pugi::xml_node Vib_node, std::vector<t_physical_tile_typ
     arch->vib_infs.push_back(vib);
 }
 
-static void process_first_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
+static void process_first_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*physical_tile_types*/, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
     expect_only_children(Stage_node, {"mux"}, loc_data);
     int num_mux = count_children(Stage_node, "mux", loc_data);
     first_stages.reserve(num_mux);
-    pugi::xml_node Node = get_first_child(Stage_node, "mux", loc_data);
+    pugi::xml_node node = get_first_child(Stage_node, "mux", loc_data);
     for (int i_mux = 0; i_mux < num_mux; i_mux++) {
         t_first_stage_mux_inf first_stage_mux;
-        first_stage_mux.mux_name = get_attribute(Node, "name", loc_data).as_string();
+        first_stage_mux.mux_name = get_attribute(node, "name", loc_data).as_string();
 
-        expect_only_children(Node, {"from"}, loc_data);
-        pugi::xml_node SubElem = get_first_child(Node, "from", loc_data);
-        int from_num = count_children(Node, "from", loc_data);
+        expect_only_children(node, {"from"}, loc_data);
+        pugi::xml_node sub_elem = get_first_child(node, "from", loc_data);
+        int from_num = count_children(node, "from", loc_data);
         for (int i_from = 0; i_from < from_num; i_from++) {
-            std::vector<std::string> from_tokens = vtr::StringToken(SubElem.child_value()).split(" \t\n");
+            std::vector<std::string> from_tokens = vtr::StringToken(sub_elem.child_value()).split(" \t\n");
             first_stage_mux.from_tokens.push_back(from_tokens);
-            SubElem = SubElem.next_sibling(SubElem.name());
+            sub_elem = sub_elem.next_sibling(sub_elem.name());
         }
         first_stages.push_back(first_stage_mux);
 
-        Node = Node.next_sibling(Node.name());
+        node = node.next_sibling(node.name());
     }
 }
 
-static void process_second_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
+static void process_second_stage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*physical_tile_types*/, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
     expect_only_children(Stage_node, {"mux"}, loc_data);
     int num_mux = count_children(Stage_node, "mux", loc_data);
     second_stages.reserve(num_mux);
-    pugi::xml_node Node = get_first_child(Stage_node, "mux", loc_data);
+    pugi::xml_node node = get_first_child(Stage_node, "mux", loc_data);
     for (int i_mux = 0; i_mux < num_mux; i_mux++) {
         t_second_stage_mux_inf second_stage_mux;
-        second_stage_mux.mux_name = get_attribute(Node, "name", loc_data).as_string();
+        second_stage_mux.mux_name = get_attribute(node, "name", loc_data).as_string();
 
-        expect_only_children(Node, {"to", "from"}, loc_data);
+        expect_only_children(node, {"to", "from"}, loc_data);
 
-        pugi::xml_node SubElem = get_first_child(Node, "to", loc_data);
-        int to_num = count_children(Node, "to", loc_data);
+        pugi::xml_node sub_elem = get_first_child(node, "to", loc_data);
+        int to_num = count_children(node, "to", loc_data);
         VTR_ASSERT(to_num == 1);
-        std::vector<std::string> to_tokens = vtr::StringToken(SubElem.child_value()).split(" \t\n");
+        std::vector<std::string> to_tokens = vtr::StringToken(sub_elem.child_value()).split(" \t\n");
         VTR_ASSERT(to_tokens.size() == 1);
         second_stage_mux.to_tokens = to_tokens;
 
-        SubElem = get_first_child(Node, "from", loc_data);
-        int from_num = count_children(Node, "from", loc_data);
+        sub_elem = get_first_child(node, "from", loc_data);
+        int from_num = count_children(node, "from", loc_data);
         for (int i_from = 0; i_from < from_num; i_from++) {
-            std::vector<std::string> from_tokens = vtr::StringToken(SubElem.child_value()).split(" \t\n");
+            std::vector<std::string> from_tokens = vtr::StringToken(sub_elem.child_value()).split(" \t\n");
             second_stage_mux.from_tokens.push_back(from_tokens);
-            SubElem = SubElem.next_sibling(SubElem.name());
+            sub_elem = sub_elem.next_sibling(sub_elem.name());
         }
 
         second_stages.push_back(second_stage_mux);
 
-        Node = Node.next_sibling(Node.name());
+        node = node.next_sibling(node.name());
     }
 }
 

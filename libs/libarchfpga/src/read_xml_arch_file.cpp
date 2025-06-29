@@ -375,7 +375,7 @@ static e_side string_to_side(const std::string& side_str);
 template<typename T>
 static T* get_type_by_name(std::string_view type_name, std::vector<T>& types);
 
-static void process_bend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& is_bend, const int len, const pugiutil::loc_data& loc_data);
+static void process_bend(pugi::xml_node Node, t_segment_inf& segment, const int len, const pugiutil::loc_data& loc_data);
 
 /*
  *
@@ -4055,7 +4055,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             Segs[i].is_bend = false;
             SubElem = get_single_child(Node, "bend", loc_data, ReqOpt::OPTIONAL);
             if (SubElem) {
-                process_bend(SubElem, Segs[i].bend, Segs[i].part_len, Segs[i].is_bend, (length - 1), loc_data);
+                process_bend(SubElem, Segs[i], (length - 1), loc_data);
             }
         }
 
@@ -4074,7 +4074,10 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
     return Segs;
 }
 
-static void process_bend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& is_bend, const int len, const pugiutil::loc_data& loc_data) {
+static void process_bend(pugi::xml_node Node, t_segment_inf& segment, const int len, const pugiutil::loc_data& loc_data) {
+    std::vector<int>& list = segment.bend;
+    std::vector<int>& part_len = segment.part_len;
+    bool& is_bend = segment.is_bend;
 
     std::string tmp = std::string(get_attribute(Node, "type", loc_data).value());
     if (tmp == "pattern") {
@@ -4293,13 +4296,14 @@ static void process_cb_sb(pugi::xml_node Node, std::vector<bool>& list, const pu
     const char* tmp = nullptr;
     int i;
     int len = list.size();
-    /* Check the type. We only support 'pattern' for now.
-     * Should add frac back eventually. */
+
+    // Check the type. We only support 'pattern' for now.
+    // Should add frac back eventually.
     tmp = get_attribute(Node, "type", loc_data).value();
     if (0 == strcmp(tmp, "pattern")) {
         i = 0;
 
-        /* Get the content string */
+        // Get the content string
         tmp = Node.child_value();
         while (*tmp) {
             switch (*tmp) {
