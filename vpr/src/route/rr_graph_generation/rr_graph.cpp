@@ -256,15 +256,6 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
  * the delay of these edges is not necessarily zero. If the primitive block which a SINK/SRC belongs to is a combinational block, the delay of
  * the edge is equal to the pin delay. This is done in order to make the router lookahead aware of the different IPIN delays. In this way, more critical
  * nets are routed to the pins with less delay.
- * @param rr_graph_builder
- * @param arch_sw_inf_map
- * @param class_num_vec
- * @param layer
- * @param i
- * @param j
- * @param rr_edges_to_create
- * @param delayless_switch
- * @param physical_type_ptr
  */
 static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                                           std::map<int, t_arch_switch_inf>& arch_sw_inf_map,
@@ -436,17 +427,6 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
 
 /**
  * Edges going in/out of collapse nodes are not added by the normal routine. This function add those edges
- * @param rr_graph_builder
- * @param rr_edges_to_create
- * @param physical_type
- * @param logical_block
- * @param cluster_pins
- * @param nodes_to_collapse
- * @param R_minW_nmos
- * @param R_minW_pmos
- * @param layer
- * @param i
- * @param j
  * @return Number of the collapsed nodes
  */
 static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
@@ -462,23 +442,7 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          int j,
                                          bool load_rr_graph);
 /**
- * @note This function is used to add the fan-in edges of the given chain node to the chain's sink with the modified delay
- * @param rr_graph_builder
- * @param rr_edges_to_create
- * @param num_collapsed_pins
- * @param physical_type
- * @param logical_block
- * @param nodes_to_collapse
- * @param cluster_pins
- * @param chain_pins
- * @param R_minW_nmos
- * @param R_minW_pmos
- * @param chain_idx
- * @param node_idx
- * @param sink_pin_num
- * @param layer
- * @param i
- * @param j
+ * @brief This function is used to add the fan-in edges of the given chain node to the chain's sink with the modified delay
  */
 static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                         t_rr_edge_info_set& rr_edges_to_create,
@@ -498,14 +462,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                         bool load_rr_graph);
 
 /**
- * @note  Return the minimum delay to the chain's sink since a pin outside of the chain may have connections to multiple pins inside the chain.
- * @param physical_type
- * @param logical_block
- * @param cluster_pins
- * @param chain_pins
- * @param pin_physical_num
- * @param chain_sink_pin
- * @return
+ * @brief Return the minimum delay to the chain's sink since a pin outside of the chain may have connections to multiple pins inside the chain.
  */
 static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
                                     t_logical_block_type_ptr logical_block,
@@ -611,26 +568,12 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
                                                         RRNodeId from_rr,
                                                         const std::vector<RRNodeId>& candidate_rr_nodes);
 
-/**
- *
- * @param cluster_pins
- * @param physical_type
- * @param logical_block
- * @param is_flat
- * @return A structure containing
- */
 static t_cluster_pin_chain get_cluster_directly_connected_nodes(const std::vector<int>& cluster_pins,
                                                                 t_physical_tile_type_ptr physical_type,
                                                                 t_logical_block_type_ptr logical_block,
                                                                 bool is_flat);
 
 /**
- *
- * @param physical_type
- * @param logical_block
- * @param pins_in_cluster
- * @param pin_physical_num
- * @param is_flat
  * @return A chain of nodes starting from pin_physcical_num. All of the pins in this chain has a fan-out of 1
  */
 static std::vector<int> get_directly_connected_nodes(t_physical_tile_type_ptr physical_type,
@@ -661,11 +604,6 @@ static int get_chain_idx(const std::vector<int>& pin_idx_vec, const std::vector<
 
 /**
  * If pin chain is a part of a chain already added to all_chains, add the new parts to the corresponding chain. Otherwise, add pin_chain as a new chain to all_chains.
- * @param pin_chain
- * @param chain_idx
- * @param pin_index_vec
- * @param all_chains
- * @param is_new_chain
  */
 static void add_pin_chain(const std::vector<int>& pin_chain,
                           int chain_idx,
@@ -945,27 +883,27 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
                                           int layer,
                                           int i,
                                           int j) {
-    auto pin_num_vec = get_flat_tile_pins(physical_tile);
+    std::vector<int> pin_num_vec = get_flat_tile_pins(physical_tile);
     for (int pin_physical_num : pin_num_vec) {
         if (is_pin_on_tile(physical_tile, pin_physical_num)) {
             continue;
         }
-        auto pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
-                                                 physical_tile,
-                                                 layer,
-                                                 i,
-                                                 j,
-                                                 pin_physical_num);
+        RRNodeId pin_rr_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
+                                                     physical_tile,
+                                                     layer,
+                                                     i,
+                                                     j,
+                                                     pin_physical_num);
         VTR_ASSERT(pin_rr_node_id != RRNodeId::INVALID());
-        auto logical_block = get_logical_block_from_pin_physical_num(physical_tile, pin_physical_num);
-        auto driving_pins = get_physical_pin_src_pins(physical_tile, logical_block, pin_physical_num);
-        for (auto driving_pin : driving_pins) {
-            auto driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
-                                                          physical_tile,
-                                                          layer,
-                                                          i,
-                                                          j,
-                                                          driving_pin);
+        t_logical_block_type_ptr logical_block = get_logical_block_from_pin_physical_num(physical_tile, pin_physical_num);
+        std::vector<int> driving_pins = get_physical_pin_src_pins(physical_tile, logical_block, pin_physical_num);
+        for (int driving_pin : driving_pins) {
+            RRNodeId driving_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
+                                                              physical_tile,
+                                                              layer,
+                                                              i,
+                                                              j,
+                                                              driving_pin);
             VTR_ASSERT(driving_pin_node_id != RRNodeId::INVALID());
 
             int sw_idx = get_edge_sw_arch_idx(physical_tile,
@@ -980,12 +918,10 @@ static void add_intra_tile_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
 }
 
 void print_rr_graph_stats() {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    const auto& rr_graph = device_ctx.rr_graph;
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     size_t num_rr_edges = 0;
-    for (auto& rr_node : rr_graph.rr_nodes()) {
+    for (const t_rr_node& rr_node : rr_graph.rr_nodes()) {
         num_rr_edges += rr_graph.edges(rr_node.id()).size();
     }
 
@@ -1339,7 +1275,7 @@ static void build_rr_graph(e_graph_type graph_type,
         // Keep how many nodes each switchblock requires for each x,y location
         vtr::NdMatrix<int, 2> extra_nodes_per_switchblock = get_number_track_to_track_inter_die_conn(sb_conn_map, custom_3d_sb_fanin_fanout, device_ctx.rr_graph_builder);
         // Allocate new nodes in each switchblocks
-        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, nodes_per_chan, grid, extra_nodes_per_switchblock, &num_rr_nodes);
+        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, grid, extra_nodes_per_switchblock, &num_rr_nodes);
         device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
     }
 
@@ -3136,7 +3072,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
     const auto& device_ctx = g_vpr_ctx.device();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
-    //Initally assumes CHANX
+    // Initially assumes CHANX
     int seg_coord = x_coord;                           //The absolute coordinate of this segment within the channel
     int chan_coord = y_coord;                          //The absolute coordinate of this channel within the device
     int seg_dimension = device_ctx.grid.width() - 2;   //-2 for no perim channels
@@ -3310,42 +3246,41 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const t_chan_seg_details* seg_details = chan_details_x[x_coord][y_coord].data();
 
-    /* 3D connections within the switch blocks use some extra length-0 CHANX node to allow a single 3D connection to be driven
-     * by multiple tracks in the source layer, and drives multiple tracks in the destination layer.
-     * These nodes have already been added to RRGraph builder, this function will go through all added nodes
-     * with specific location (layer, x_coord, y_coord) and sets their attributes.
-     *
-     * The extra length-0 nodes have the following attributes to make them distinguishable form normal chanx wires (e.g., length-4):
-     * 1) type: CHANX (could have used either CHANX or CHANY, we used CHANX)
-     * 2) ptc_num: [max_chan_width : max_chan_width + num_of_3d_connections - 1]
-     * 3) length: 0
-     * 4) xhigh=xlow, yhigh=ylow
-     * 5) directionality: NONE (neither incremental nor decremental in 2D space)
-     */
+    // 3D connections within the switch blocks use some CHANZ nodes to allow a single 3D connection to be driven
+    // by multiple tracks in the source layer, and drives multiple tracks in the destination layer.
+    // These nodes have already been added to RRGraph builder, this function will go through all added nodes
+    // with specific location (layer, x_coord, y_coord) and sets their attributes.
+
+    // These nodes have the following attributes:
+    // 1) type: CHANZ
+    // 2) ptc_num: [0:num_of_3d_connections - 1]
+    // 3) xhigh=xlow, yhigh=ylow
+    // 4) directionality: NONE (neither incremental nor decremental in 2D space)
+
     const int start_track = nodes_per_chan.max;
-    int offset = 0;
 
-    while (true) { // Going through allocated nodes until no nodes are found within the RRGraph builder
-        RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, e_rr_type::CHANX, start_track + offset);
-        if (node) {
-            rr_graph_builder.set_node_layer(node, layer);
-            rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
-            rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(
-                                                           const_index_offset + seg_details[start_track - 1].index()));
-            rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
-            float R = 0;
-            float C = 0;
-            rr_graph_builder.set_node_rc_index(node, NodeRCIndex(
-                                                         find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+    // Go through allocated nodes until no nodes are found within the RRGraph builder
+    for (int track_num = 0; /*no condition*/; track_num++) {
+        // Try to find a node with the current track_num
+        RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, e_rr_type::CHANZ, track_num);
 
-            rr_graph_builder.set_node_type(node, e_rr_type::CHANX);
-            rr_graph_builder.set_node_track_num(node, start_track + offset);
-            rr_graph_builder.set_node_direction(node, Direction::NONE);
-
-            offset++;
-        } else {
+        // If the track can't be found, it means we have already processed all tracks
+        if (!node.is_valid()) {
             break;
         }
+
+        rr_graph_builder.set_node_layer(node, layer);
+        rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
+        // TODO: the index doesn't make any sense. We need to an RRIndexedDataId for CHANZ nodes
+        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset + seg_details[start_track - 1].index()));
+        rr_graph_builder.set_node_capacity(node, 1); // GLOBAL routing handled elsewhere
+        float R = 0;
+        float C = 0;
+        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+
+        rr_graph_builder.set_node_type(node, e_rr_type::CHANZ);
+        rr_graph_builder.set_node_track_num(node, track_num);
+        rr_graph_builder.set_node_direction(node, Direction::NONE);
     }
 }
 

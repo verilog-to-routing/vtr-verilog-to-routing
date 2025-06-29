@@ -51,8 +51,8 @@ struct t_cluster_pin_chain {
  * @return A vector of switch IDs
  */
 std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
-                                               const RRNodeId& from_node,
-                                               const RRNodeId& to_node);
+                                               RRNodeId from_node,
+                                               RRNodeId to_node);
 
 /**
  * @brief This function generates and returns a vector indexed by RRNodeId containing a vector of fan-in edges for each node.
