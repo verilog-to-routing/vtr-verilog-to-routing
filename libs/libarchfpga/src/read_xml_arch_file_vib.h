@@ -6,7 +6,7 @@
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
-void process_vib_arch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
+void process_vib_arch(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data);
 
 void process_vib_layout(pugi::xml_node vib_layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data);
 

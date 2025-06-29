@@ -1088,8 +1088,8 @@ static void build_rr_graph(e_graph_type graph_type,
     }
 
     t_unified_to_parallel_seg_index segment_index_map;
-    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
-    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS);
+    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, e_parallel_axis::X_AXIS);
+    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, e_parallel_axis::Y_AXIS);
 
     std::vector<t_seg_details> seg_details_x;
     std::vector<t_seg_details> seg_details_y;
@@ -4212,7 +4212,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             int chan = (vert ? (j) : (i));
             int seg = (vert ? (i) : (j));
             int max_len = (vert ? grid.width() : grid.height());
-            e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? X_AXIS : Y_AXIS;
+            e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? e_parallel_axis::X_AXIS : e_parallel_axis::Y_AXIS;
             int seg_index = get_parallel_seg_index(iseg, seg_index_map, wanted_axis);
 
             /*The segment at index iseg doesn't have the proper adjacency so skip building Fc_out conenctions for it*/

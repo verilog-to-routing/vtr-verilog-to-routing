@@ -21,13 +21,13 @@
 #include "logic_types.h"
 #include "clock_types.h"
 
-/**
- * @brief The parallel axis of the VIB segment group.
- */
-enum class e_parallel_axis_vib {
-    X,
-    Y,
-    BOTH_DIR
+/* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
+ * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
+ * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
+enum class e_parallel_axis {
+    X_AXIS,
+    Y_AXIS,
+    BOTH_AXIS
 };
 
 /**
@@ -35,7 +35,7 @@ enum class e_parallel_axis_vib {
  */
 struct t_seg_group {
     std::string name;
-    e_parallel_axis_vib axis;
+    e_parallel_axis axis;
     int seg_index;
     int track_num;
 };

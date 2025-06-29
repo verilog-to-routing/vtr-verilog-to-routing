@@ -1675,15 +1675,6 @@ enum e_directionality {
     BI_DIRECTIONAL
 };
 
-/* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
- * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
- * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
-enum e_parallel_axis {
-    X_AXIS,
-    Y_AXIS,
-    BOTH_AXIS
-};
-
 /**
  * @brief An attribute of a segment that defines the general category of the wire segment type.
  *
@@ -1811,7 +1802,7 @@ struct t_segment_inf {
      *  @brief Defines what axis the segment is parallel to. See e_parallel_axis
      * comments for more details on the values.
      */
-    enum e_parallel_axis parallel_axis;
+    e_parallel_axis parallel_axis;
 
     /**
      *  @brief A vector of booleans indicating whether the segment can connect to a logic block.

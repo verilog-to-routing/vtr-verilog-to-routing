@@ -483,7 +483,7 @@ void xml_read_arch(const char* ArchFile,
         // Process vib_arch
         Next = get_single_child(architecture, "vib_arch", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
-            process_vib_arch(Next, PhysicalTileTypes, arch, loc_data);
+            process_vib_arch(Next, arch, loc_data);
         }
 
         // Process Clock Networks
@@ -3854,15 +3854,15 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
 
         /*Get parallel axis*/
 
-        Segs[i].parallel_axis = BOTH_AXIS; /*DEFAULT value if no axis is specified*/
+        Segs[i].parallel_axis = e_parallel_axis::BOTH_AXIS; // DEFAULT value if no axis is specified
         tmp = get_attribute(Node, "axis", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
         if (tmp) {
             if (strcmp(tmp, "x") == 0) {
-                Segs[i].parallel_axis = X_AXIS;
+                Segs[i].parallel_axis = e_parallel_axis::X_AXIS;
                 x_axis_seg_found = true;
             } else if (strcmp(tmp, "y") == 0) {
-                Segs[i].parallel_axis = Y_AXIS;
+                Segs[i].parallel_axis = e_parallel_axis::Y_AXIS;
                 y_axis_seg_found = true;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),

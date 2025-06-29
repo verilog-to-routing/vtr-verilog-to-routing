@@ -39,7 +39,7 @@ void alloc_and_load_chan_details(const DeviceGrid& grid,
 t_chan_details init_chan_details(const DeviceGrid& grid,
                                  const t_chan_width& nodes_per_chan,
                                  const std::vector<t_seg_details>& seg_details,
-                                 const enum e_parallel_axis seg_details_type);
+                                 const e_parallel_axis seg_details_type);
 
 void adjust_chan_details(const DeviceGrid& grid,
                          const t_chan_width& nodes_per_chan,
@@ -51,7 +51,7 @@ void adjust_seg_details(const int x,
                         const DeviceGrid& grid,
                         const t_chan_width& nodes_per_chan,
                         t_chan_details& chan_details,
-                        const enum e_parallel_axis seg_details_type);
+                        const e_parallel_axis seg_details_type);
 
 int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,

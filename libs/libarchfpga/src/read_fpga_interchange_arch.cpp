@@ -2465,7 +2465,7 @@ struct ArchReader {
             arch_->Segments[index].frequency = 1;
             arch_->Segments[index].Rmetal = 1e-12;
             arch_->Segments[index].Cmetal = 1e-12;
-            arch_->Segments[index].parallel_axis = BOTH_AXIS;
+            arch_->Segments[index].parallel_axis = e_parallel_axis::BOTH_AXIS;
 
             // TODO: Only bi-directional segments are created, but it the interchange format
             //       has directionality information on PIPs, which may be used to infer the

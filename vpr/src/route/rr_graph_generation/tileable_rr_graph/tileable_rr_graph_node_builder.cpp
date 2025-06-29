@@ -881,7 +881,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
 
             /* assign switch id */
             size_t seg_id = chan_details.get_track_segment_id(itrack);
-            e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? X_AXIS : Y_AXIS;
+            e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? e_parallel_axis::X_AXIS : e_parallel_axis::Y_AXIS;
             size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
             rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch);
 
@@ -928,7 +928,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             }
             /* Finish node RC attributes */
             size_t seg_id = chan_details.get_track_segment_id(itrack);
-            e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? X_AXIS : Y_AXIS;
+            e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? e_parallel_axis::X_AXIS : e_parallel_axis::Y_AXIS;
             size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
             float node_R = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Rmetal;
             float node_C = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Cmetal;

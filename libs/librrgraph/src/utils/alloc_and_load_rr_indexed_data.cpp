@@ -89,7 +89,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
 
     std::vector<int> ortho_costs;
 
-    ortho_costs = find_ortho_cost_index(rr_graph, segment_inf_x, segment_inf_y, X_AXIS);
+    ortho_costs = find_ortho_cost_index(rr_graph, segment_inf_x, segment_inf_y, e_parallel_axis::X_AXIS);
 
     /* AA: The code below should replace find_ortho_cost_index call once we deprecate the CLASSIC lookahead as it is the only lookahead
      * that actively uses the orthogonal cost indices. To avoid complicated dependencies with the rr_graph reader, regardless of the lookahead,
@@ -164,8 +164,8 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
                                        const std::vector<t_segment_inf> segment_inf_x,
                                        const std::vector<t_segment_inf> segment_inf_y,
                                        e_parallel_axis parallel_axis) {
-    auto segment_inf_parallel = parallel_axis == X_AXIS ? segment_inf_x : segment_inf_y;
-    auto segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
+    auto segment_inf_parallel = parallel_axis == e_parallel_axis::X_AXIS ? segment_inf_x : segment_inf_y;
+    auto segment_inf_perp = parallel_axis == e_parallel_axis::X_AXIS ? segment_inf_y : segment_inf_x;
 
     size_t num_segments = segment_inf_x.size() + segment_inf_y.size();
     std::vector<std::vector<size_t>> dest_nodes_count;
@@ -269,7 +269,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
         /* The compartor behaves as operator< mostly, so the first element in the 
          * sorted vector will have the lowest cost difference from segment. */
         ortho_costs_indices[seg_index] = segment_inf_perp[0].seg_index + start_channel_cost;
-        ortho_costs_indices[seg_index] = parallel_axis == X_AXIS ? ortho_costs_indices[seg_index] + num_segments : ortho_costs_indices[seg_index];
+        ortho_costs_indices[seg_index] = parallel_axis == e_parallel_axis::X_AXIS ? ortho_costs_indices[seg_index] + num_segments : ortho_costs_indices[seg_index];
     }
 
     /*Pertubate indices to make sure all perp seg types have a corresponding perp segment.*/
@@ -290,7 +290,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
     perp_segments.resize(segment_inf_perp.size(), 0);
 
     for (int i = 0; i < num_segments; ++i) {
-        int index = parallel_axis == X_AXIS ? ortho_costs_indices[i] - num_segments - start_channel_cost : ortho_costs_indices[i] - start_channel_cost;
+        int index = parallel_axis == e_parallel_axis::X_AXIS ? ortho_costs_indices[i] - num_segments - start_channel_cost : ortho_costs_indices[i] - start_channel_cost;
         indices_map.insert(std::make_pair(index, i));
         perp_segments[index]++;
     }
@@ -316,7 +316,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
         auto itr_to_change = indices_map.find(g_index_pair.first);
         VTR_ASSERT(itr_to_change != indices_map.end());
         int index = l_index_pair.first + start_channel_cost;
-        index = parallel_axis == X_AXIS ? index + num_segments : index;
+        index = parallel_axis == e_parallel_axis::X_AXIS ? index + num_segments : index;
         ortho_costs_indices[itr_to_change->second] = index;
         indices_map.erase(itr_to_change);
 

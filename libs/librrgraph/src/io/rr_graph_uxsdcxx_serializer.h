@@ -406,8 +406,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
 
         t_unified_to_parallel_seg_index seg_index_map;
-        segment_inf_x_ = get_parallel_segs(rr_segs, seg_index_map, X_AXIS);
-        segment_inf_y_ = get_parallel_segs(rr_segs, seg_index_map, Y_AXIS);
+        segment_inf_x_ = get_parallel_segs(rr_segs, seg_index_map, e_parallel_axis::X_AXIS);
+        segment_inf_y_ = get_parallel_segs(rr_segs, seg_index_map, e_parallel_axis::Y_AXIS);
 
     }
 
@@ -421,7 +421,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     int find_segment_index_along_axis(int segment_id, e_parallel_axis axis) const {
         const std::vector<t_segment_inf>* segment_inf_vec_ptr;
 
-        if (axis == X_AXIS)
+        if (axis == e_parallel_axis::X_AXIS)
             segment_inf_vec_ptr = &segment_inf_x_;
         else
             segment_inf_vec_ptr = &segment_inf_y_;
@@ -431,7 +431,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return static_cast<int>(i);
         }
 
-        if (axis == X_AXIS)
+        if (axis == e_parallel_axis::X_AXIS)
             VTR_LOG_ERROR("Segment ID %d not found in the list of segments along X axis.\n", segment_id);
         else
             VTR_LOG_ERROR("Segment ID %d not found in the list of segments along Y axis.\n", segment_id);
@@ -823,11 +823,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         if (e_graph_type::GLOBAL == graph_type_) {
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(0));
         } else if (rr_graph.node_type(node.id()) == e_rr_type::CHANX) {
-            int seg_ind_x = find_segment_index_along_axis(segment_id, X_AXIS);
+            int seg_ind_x = find_segment_index_along_axis(segment_id, e_parallel_axis::X_AXIS);
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + seg_ind_x));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         } else if (rr_graph.node_type(node.id()) == e_rr_type::CHANY) {
-            int seg_ind_y = find_segment_index_along_axis(segment_id, Y_AXIS);
+            int seg_ind_y = find_segment_index_along_axis(segment_id, e_parallel_axis::Y_AXIS);
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_x_.size() + seg_ind_y));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         }

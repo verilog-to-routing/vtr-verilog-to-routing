@@ -442,8 +442,8 @@ void alloc_and_load_chan_details(const DeviceGrid& grid,
                                  const std::vector<t_seg_details>& seg_details_y,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y) {
-    chan_details_x = init_chan_details(grid, nodes_per_chan, seg_details_x, X_AXIS);
-    chan_details_y = init_chan_details(grid, nodes_per_chan, seg_details_y, Y_AXIS);
+    chan_details_x = init_chan_details(grid, nodes_per_chan, seg_details_x, e_parallel_axis::X_AXIS);
+    chan_details_y = init_chan_details(grid, nodes_per_chan, seg_details_y, e_parallel_axis::Y_AXIS);
 
     /* Adjust segment start/end based on obstructed channels, if any */
     adjust_chan_details(grid, nodes_per_chan, chan_details_x, chan_details_y);
@@ -452,11 +452,11 @@ void alloc_and_load_chan_details(const DeviceGrid& grid,
 t_chan_details init_chan_details(const DeviceGrid& grid,
                                  const t_chan_width& nodes_per_chan,
                                  const std::vector<t_seg_details>& seg_details,
-                                 const enum e_parallel_axis seg_parallel_axis) {
+                                 const e_parallel_axis seg_parallel_axis) {
     const int num_seg_details = (int)seg_details.size();
-    if (seg_parallel_axis == X_AXIS) {
+    if (seg_parallel_axis == e_parallel_axis::X_AXIS) {
         VTR_ASSERT(num_seg_details <= nodes_per_chan.x_max);
-    } else if (seg_parallel_axis == Y_AXIS) {
+    } else if (seg_parallel_axis == e_parallel_axis::Y_AXIS) {
         VTR_ASSERT(num_seg_details <= nodes_per_chan.y_max);
     }
 
@@ -471,10 +471,10 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                 int seg_start = -1;
                 int seg_end = -1;
 
-                if (seg_parallel_axis == X_AXIS) {
+                if (seg_parallel_axis == e_parallel_axis::X_AXIS) {
                     seg_start = get_seg_start(p_seg_details, i, y, x);
                     seg_end = get_seg_end(p_seg_details, i, seg_start, y, grid.width() - 2); //-2 for no perim channels
-                } else if (seg_parallel_axis == Y_AXIS) {
+                } else if (seg_parallel_axis == e_parallel_axis::Y_AXIS) {
                     seg_start = get_seg_start(p_seg_details, i, x, y);
                     seg_end = get_seg_end(p_seg_details, i, seg_start, x, grid.height() - 2); //-2 for no perim channels
                 }
@@ -482,11 +482,11 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                 p_seg_details[i].set_seg_start(seg_start);
                 p_seg_details[i].set_seg_end(seg_end);
 
-                if (seg_parallel_axis == X_AXIS) {
+                if (seg_parallel_axis == e_parallel_axis::X_AXIS) {
                     if (i >= nodes_per_chan.x_list[y]) {
                         p_seg_details[i].set_length(0);
                     }
-                } else if (seg_parallel_axis == Y_AXIS) {
+                } else if (seg_parallel_axis == e_parallel_axis::Y_AXIS) {
                     if (i >= nodes_per_chan.y_list[x]) {
                         p_seg_details[i].set_length(0);
                     }
@@ -509,7 +509,7 @@ void adjust_chan_details(const DeviceGrid& grid,
                 continue;
 
             adjust_seg_details(x, y, grid, nodes_per_chan,
-                               chan_details_x, X_AXIS);
+                               chan_details_x, e_parallel_axis::X_AXIS);
         }
     }
 
@@ -521,7 +521,7 @@ void adjust_chan_details(const DeviceGrid& grid,
                 continue;
 
             adjust_seg_details(x, y, grid, nodes_per_chan,
-                               chan_details_y, Y_AXIS);
+                               chan_details_y, e_parallel_axis::Y_AXIS);
         }
     }
 }
@@ -531,43 +531,43 @@ void adjust_seg_details(const int x,
                         const DeviceGrid& grid,
                         const t_chan_width& nodes_per_chan,
                         t_chan_details& chan_details,
-                        const enum e_parallel_axis seg_parallel_axis) {
-    int seg_index = (seg_parallel_axis == X_AXIS ? x : y);
+                        const e_parallel_axis seg_parallel_axis) {
+    int seg_index = (seg_parallel_axis == e_parallel_axis::X_AXIS ? x : y);
     int max_chan_width = 0;
-    if (seg_parallel_axis == X_AXIS) {
+    if (seg_parallel_axis == e_parallel_axis::X_AXIS) {
         max_chan_width = nodes_per_chan.x_max;
-    } else if (seg_parallel_axis == Y_AXIS) {
+    } else if (seg_parallel_axis == e_parallel_axis::Y_AXIS) {
         max_chan_width = nodes_per_chan.y_max;
     } else {
-        VTR_ASSERT(seg_parallel_axis == BOTH_AXIS);
+        VTR_ASSERT(seg_parallel_axis == e_parallel_axis::BOTH_AXIS);
         max_chan_width = nodes_per_chan.max;
     }
 
     for (int track = 0; track < max_chan_width; ++track) {
-        int lx = (seg_parallel_axis == X_AXIS ? x - 1 : x);
-        int ly = (seg_parallel_axis == X_AXIS ? y : y - 1);
+        int lx = (seg_parallel_axis == e_parallel_axis::X_AXIS ? x - 1 : x);
+        int ly = (seg_parallel_axis == e_parallel_axis::X_AXIS ? y : y - 1);
         if (lx < 0 || ly < 0 || chan_details[lx][ly][track].length() == 0)
             continue;
 
         while (chan_details[lx][ly][track].seg_end() >= seg_index) {
             chan_details[lx][ly][track].set_seg_end(seg_index - 1);
-            lx = (seg_parallel_axis == X_AXIS ? lx - 1 : lx);
-            ly = (seg_parallel_axis == X_AXIS ? ly : ly - 1);
+            lx = (seg_parallel_axis == e_parallel_axis::X_AXIS ? lx - 1 : lx);
+            ly = (seg_parallel_axis == e_parallel_axis::X_AXIS ? ly : ly - 1);
             if (lx < 0 || ly < 0 || chan_details[lx][ly][track].length() == 0)
                 break;
         }
     }
 
     for (int track = 0; track < max_chan_width; ++track) {
-        size_t lx = (seg_parallel_axis == X_AXIS ? x + 1 : x);
-        size_t ly = (seg_parallel_axis == X_AXIS ? y : y + 1);
+        size_t lx = (seg_parallel_axis == e_parallel_axis::X_AXIS ? x + 1 : x);
+        size_t ly = (seg_parallel_axis == e_parallel_axis::X_AXIS ? y : y + 1);
         if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length() == 0) //-2 for no perim channels
             continue;
 
         while (chan_details[lx][ly][track].seg_start() <= seg_index) {
             chan_details[lx][ly][track].set_seg_start(seg_index + 1);
-            lx = (seg_parallel_axis == X_AXIS ? lx + 1 : lx);
-            ly = (seg_parallel_axis == X_AXIS ? ly : ly + 1);
+            lx = (seg_parallel_axis == e_parallel_axis::X_AXIS ? lx + 1 : lx);
+            ly = (seg_parallel_axis == e_parallel_axis::X_AXIS ? ly : ly + 1);
             if (lx > grid.width() - 2 || ly > grid.height() - 2 || chan_details[lx][ly][track].length() == 0) //-2 for no perim channels
                 break;
         }

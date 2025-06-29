@@ -167,15 +167,15 @@ t_metadata_dict process_meta_data(vtr::string_internment& strings,
     //	  <meta>CLBLL_L_</meta>
     //	</metadata>
     t_metadata_dict data;
-    auto metadata = get_single_child(Parent, "metadata", loc_data, ReqOpt::OPTIONAL);
+    pugi::xml_node metadata = get_single_child(Parent, "metadata", loc_data, ReqOpt::OPTIONAL);
     if (metadata) {
-        auto meta_tag = get_first_child(metadata, "meta", loc_data);
+        pugi::xml_node meta_tag = get_first_child(metadata, "meta", loc_data);
         while (meta_tag) {
-            auto key = get_attribute(meta_tag, "name", loc_data).as_string();
+            std::string key = get_attribute(meta_tag, "name", loc_data).as_string();
 
-            auto value = meta_tag.child_value();
-            data.add(strings.intern_string(vtr::string_view(key)),
-                     strings.intern_string(vtr::string_view(value)));
+            std::string value = meta_tag.child_value();
+            data.add(strings.intern_string(vtr::string_view(key.c_str())),
+                     strings.intern_string(vtr::string_view(value.c_str())));
             meta_tag = meta_tag.next_sibling(meta_tag.name());
         }
     }
