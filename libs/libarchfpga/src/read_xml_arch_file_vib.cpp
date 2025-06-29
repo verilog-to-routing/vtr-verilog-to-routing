@@ -231,7 +231,7 @@ t_vib_grid_def process_vib_grid_layout(vtr::string_internment& strings, pugi::xm
 
     // Determine the grid specification type
     if (std::string(layout_type_tag.name()) == "auto_layout") {
-        grid_def.grid_type = VibGridDefType::VIB_AUTO;
+        grid_def.grid_type = e_vib_grid_def_type::VIB_AUTO;
         grid_def.name = "auto";
 
         for (size_t i = 0; i < arch->grid_layouts.size(); i++) {
@@ -243,7 +243,7 @@ t_vib_grid_def process_vib_grid_layout(vtr::string_internment& strings, pugi::xm
     } else if (std::string(layout_type_tag.name()) == "fixed_layout") {
         expect_only_attributes(layout_type_tag, {"name"}, loc_data);
 
-        grid_def.grid_type = VibGridDefType::VIB_FIXED;
+        grid_def.grid_type = e_vib_grid_def_type::VIB_FIXED;
         std::string name = get_attribute(layout_type_tag, "name", loc_data).value();
 
         if (name == "auto") {

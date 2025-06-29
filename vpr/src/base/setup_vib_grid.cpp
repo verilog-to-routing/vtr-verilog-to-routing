@@ -63,7 +63,7 @@ VibDeviceGrid create_vib_device_grid(std::string_view layout_name, const std::ve
 
 ///@brief Build the specified device grid
 static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range) {
-    if (grid_def.grid_type == VibGridDefType::VIB_FIXED) {
+    if (grid_def.grid_type == e_vib_grid_def_type::VIB_FIXED) {
         if (grid_def.width != int(grid_width) || grid_def.height != int(grid_height)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Requested grid size (%zu%zu) does not match fixed device size (%dx%d)",

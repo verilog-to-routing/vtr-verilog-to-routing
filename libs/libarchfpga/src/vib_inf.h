@@ -69,8 +69,10 @@ struct t_second_stage_mux_inf : t_first_stage_mux_inf {
     std::vector<t_from_or_to_inf> to; // for io type, port[pin] may map to several sinks
 };
 
-/* VibInf is used to reserve the VIB information.                     *
- * For example, a VIB is described:                                   *
+/* 
+ * @brief VibInf is used to reserve the VIB information.
+ * 
+ * @details For example, a VIB is described:
  *  <vib name="vib0" pbtype_name="clb" vib_seg_group="4" arch_vib_switch="mux0">
  * <seg_group name="l1" track_nums="20"/>
  * <seg_group name="l2" track_nums="20"/>
@@ -88,7 +90,7 @@ struct t_second_stage_mux_inf : t_first_stage_mux_inf {
  * </multistage_muxs>
  * </vib>
  *
- * Its corresponding figure is shown:
+ * @details Its corresponding figure is shown:
  *
  *                                                 | L1.N0
  *                               +-----------------|-------+
@@ -111,15 +113,7 @@ struct t_second_stage_mux_inf : t_first_stage_mux_inf {
  *  |    clb      | I[0]             
  *  +-------------+                                                          
  * 
- * Attributes:  
- * name_: The name of the VIB type, "vib0" in the example. 
- * pbtype_name_: The pbtype of the VIB, "clb" in the example. 
- * seg_group_num_: The number of segment groups. 
- * seg_groups_: The segments applied in the VIB. Their names correspond to segment names in <segmentlist>.
- * switch_name_:The name of the switch type used in the VIB, "mux0" in the example.
- * switch_idx_: The index of corresponding switch in <switchlist>.
- * first_stages_: The info of first stage MUXes, including the names of the MUXes and their from info. 
- * second_stages_: The info of second stage MUXes, including the names of the MUXes and their from/to info.*/
+ */
 
 class VibInf {
   public:
@@ -149,13 +143,28 @@ class VibInf {
     size_t mux_index_by_name(const std::string& name) const;
 
   private:
-    std::string name_;        /* vib name */
-    std::string pbtype_name_; /* pbtype name of vib */
-    int seg_group_num_;       /* seg group number of vib */
-    int switch_idx_;          /* vib switch index */
-    std::string switch_name_; /* vib switch name */
+    /// The name of the VIB type, "vib0" in the example. 
+    std::string name_;
+
+    /// The pbtype of the VIB, "clb" in the example. 
+    std::string pbtype_name_;
+
+    /// The number of segment groups.
+    int seg_group_num_;
+
+    /// The index of corresponding switch in <switchlist>.
+    int switch_idx_;
+
+    /// The name of the switch type used in the VIB, "mux0" in the example.
+    std::string switch_name_;
+
+    /// The segments applied in the VIB. Their names correspond to segment names in <segmentlist>.
     std::vector<t_seg_group> seg_groups_;
+
+    /// The info of first stage MUXes, including the names of the MUXes and their from info.
     std::vector<t_first_stage_mux_inf> first_stages_;
+
+    /// The info of second stage MUXes, including the names of the MUXes and their from/to info.
     std::vector<t_second_stage_mux_inf> second_stages_;
 };
 
@@ -169,17 +178,20 @@ struct t_vib_grid_loc_spec {
         , repeat_expr(std::move(repeat))
         , incr_expr(std::move(incr)) {}
 
-    std::string start_expr; //Starting position (inclusive)
-    std::string end_expr;   //Ending position (inclusive)
+    /// Starting position (inclusive)
+    std::string start_expr;
 
-    std::string repeat_expr; //Distance between repeated
-                             // region instances
+    /// Ending position (inclusive)
+    std::string end_expr;
 
-    std::string incr_expr; //Distance between block instantiations
-                           // with the region
+    /// Distance between repeated region instances
+    std::string repeat_expr;
+
+    /// Distance between block instantiations with the region
+    std::string incr_expr;
 };
 
-enum VibGridDefType {
+enum class e_vib_grid_def_type {
     VIB_AUTO,
     VIB_FIXED
 };
@@ -207,7 +219,7 @@ struct t_vib_layer_def {
 };
 
 struct t_vib_grid_def {
-    VibGridDefType grid_type = VibGridDefType::VIB_AUTO; //The type of this grid specification
+    e_vib_grid_def_type grid_type = e_vib_grid_def_type::VIB_AUTO; //The type of this grid specification
 
     std::string name = ""; //The name of this device
 

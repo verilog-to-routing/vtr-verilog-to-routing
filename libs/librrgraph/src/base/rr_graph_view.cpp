@@ -79,7 +79,7 @@ RRSegmentId RRGraphView::node_segment(RRNodeId node) const {
 
 size_t RRGraphView::in_edges_count() const {
     size_t edge_count = 0;
-    for (auto edge_list : node_in_edges_) {
+    for (const std::vector<RREdgeId>& edge_list : node_in_edges_) {
         edge_count += edge_list.size();
     }
     return edge_count;
@@ -95,10 +95,10 @@ bool RRGraphView::validate_in_edges() const {
         /* curr_node ---> des_node 
          *           <-?-            check if the incoming edge is correct or not
          */
-        for (auto iedge : node_storage_.edges(curr_node)) {
+        for (t_edge_size iedge : node_storage_.edges(curr_node)) {
             RRNodeId des_node = node_storage_.edge_sink_node(node_storage_.edge_id(curr_node, iedge));
             std::vector<RRNodeId> des_fanin_nodes;
-            for (auto next_edge : node_in_edges(des_node)) {
+            for (RREdgeId next_edge : node_in_edges(des_node)) {
                 RRNodeId prev_edge_des_node = node_storage_.edge_source_node(next_edge);
                 des_fanin_nodes.push_back(prev_edge_des_node);
             }
@@ -111,10 +111,10 @@ bool RRGraphView::validate_in_edges() const {
         /* src_node -?-> curr_node
          *          <---           check if the fan-out edge is correct or not
          */
-        for (auto iedge : node_in_edges(curr_node)) {
+        for (RREdgeId iedge : node_in_edges(curr_node)) {
             RRNodeId src_node = node_storage_.edge_source_node(iedge);
             std::vector<RRNodeId> src_fanout_nodes;
-            for (auto prev_edge : node_storage_.edges(src_node)) {
+            for (t_edge_size prev_edge : node_storage_.edges(src_node)) {
                 RRNodeId prev_edge_des_node = node_storage_.edge_sink_node(node_storage_.edge_id(src_node, prev_edge));
                 src_fanout_nodes.push_back(prev_edge_des_node);
             }

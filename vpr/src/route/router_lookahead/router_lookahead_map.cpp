@@ -516,9 +516,9 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
         for (const auto& segment_inf : segment_inf_vec) {
             std::vector<e_rr_type> chan_types;
-            if (segment_inf.parallel_axis == X_AXIS)
+            if (segment_inf.parallel_axis == e_parallel_axis::X_AXIS)
                 chan_types.push_back(e_rr_type::CHANX);
-            else if (segment_inf.parallel_axis == Y_AXIS)
+            else if (segment_inf.parallel_axis == e_parallel_axis::Y_AXIS)
                 chan_types.push_back(e_rr_type::CHANY);
             else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
                 chan_types.insert(chan_types.end(), {e_rr_type::CHANX, e_rr_type::CHANY});

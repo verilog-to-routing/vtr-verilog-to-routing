@@ -17,11 +17,15 @@
 
 namespace vtr {
 
-std::string out_file_prefix;     /* used by fopen */
-static int file_line_number = 0; /* file in line number being parsed (used by fgets) */
-static int cont;                 /* line continued? (used by strtok)*/
+/// @brief used by fopen
+static std::string out_file_prefix;
 
-///@brief Returns 'input' with the first instance of 'search' replaced with 'replace'
+/// @brief file in line number being parsed (used by fgets)
+static int file_line_number = 0;
+
+/// @brief line continued? (used by strtok)
+static int cont;
+
 std::string replace_first(std::string_view input, std::string_view search, std::string_view replace) {
     auto pos = input.find(search);
 
@@ -32,7 +36,6 @@ std::string replace_first(std::string_view input, std::string_view search, std::
     return output;
 }
 
-///@brief Returns 'input' with all instances of 'search' replaced with 'replace'
 std::string replace_all(std::string_view input, std::string_view search, std::string_view replace) {
     std::string output;
 
@@ -51,12 +54,10 @@ std::string replace_all(std::string_view input, std::string_view search, std::st
     return output;
 }
 
-///@brief Returns true if str starts with prefix
 bool starts_with(const std::string& str, std::string_view prefix) {
     return str.find(prefix) == 0;
 }
 
-///@brief Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...) {
     // Make a variable argument list
     va_list va_args;
@@ -73,7 +74,6 @@ std::string string_fmt(const char* fmt, ...) {
     return str;
 }
 
-///@brief Returns a std::string formatted using a printf-style format string taking an explicit va_list
 std::string vstring_fmt(const char* fmt, va_list args) {
     // We need to copy the args so we don't change them before the true formatting
     va_list va_args_copy;
@@ -103,30 +103,23 @@ std::string vstring_fmt(const char* fmt, va_list args) {
     return std::string(buf.get(), len);
 }
 
-///@brief An alternate for strncpy since strncpy doesn't work as most people would expect. This ensures null termination
 char* strncpy(char* dest, const char* src, size_t size) {
-    /* Find string's length */
+    // Find string's length
     size_t len = std::strlen(src);
 
-    /* Cap length at (num - 1) to leave room for \0 */
+    // Cap length at (num - 1) to leave room for \0
     if (size <= len)
         len = (size - 1);
 
-    /* Copy as much of string as we can fit */
+    // Copy as much of string as we can fit
     std::memcpy(dest, src, len);
 
-    /* explicit null termination */
+    // explicit null termination
     dest[len] = '\0';
 
     return dest;
 }
 
-/**
- * @brief Legacy c-style function replacements.
- *
- * Typically these add extra error checking
- * and/or correct 'unexpected' behaviour of the standard c-functions
- */
 char* strdup(const char* str) {
     if (str == nullptr) {
         return nullptr;
@@ -164,57 +157,22 @@ T atoT(const std::string& value, std::string_view type_name) {
     return val;
 }
 
-/**
- * @brief Legacy c-style function replacements.
- *
- * Typically these add extra error checking
- * and/or correct 'unexpected' behaviour of the standard c-functions
- */
 int atoi(const std::string& value) {
     return atoT<int>(value, "int");
 }
 
-/**
- * @brief Legacy c-style function replacements.
- *
- * Typically these add extra error checking
- * and/or correct 'unexpected' behaviour of the standard c-functions
- */
 double atod(const std::string& value) {
     return atoT<double>(value, "double");
 }
 
-/**
- * @brief Legacy c-style function replacements.
- *
- * Typically these add extra error checking
- * and/or correct 'unexpected' behaviour of the standard c-functions
- */
 float atof(const std::string& value) {
     return atoT<float>(value, "float");
 }
 
-/**
- * @brief Legacy c-style function replacements.
- *
- * Typically these add extra error checking
- * and/or correct 'unexpected' behaviour of the standard c-functions
- */
 unsigned atou(const std::string& value) {
     return atoT<unsigned>(value, "unsigned int");
 }
 
-/**
- * @brief Get next token, and wrap to next line if \ at end of line.    
- *
- * There is a bit of a "gotcha" in strtok.  It does not make a   *
- * copy of the character array which you pass by pointer on the  
- * first call.  Thus, you must make sure this array exists for   
- * as long as you are using strtok to parse that line.  Don't    
- * use local buffers in a bunch of subroutines calling each      
- * other; the local buffer may be overwritten when the stack is  
- * restored after return from the subroutine.                    
- */
 char* strtok(char* ptr, const char* tokens, FILE* fp, char* buf) {
     char* val;
 
@@ -223,7 +181,7 @@ char* strtok(char* ptr, const char* tokens, FILE* fp, char* buf) {
         if (val != nullptr || cont == 0)
             return (val);
 
-        /* return unless we have a null value and a continuation line */
+        // return unless we have a null value and a continuation line
         if (vtr::fgets(buf, bufsize, fp) == nullptr)
             return (nullptr);
 
@@ -231,17 +189,16 @@ char* strtok(char* ptr, const char* tokens, FILE* fp, char* buf) {
     }
 }
 
-///@brief The legacy fopen function with extra error checking
 FILE* fopen(const char* fname, const char* flag) {
     FILE* fp;
     size_t Len;
     char* new_fname = nullptr;
     file_line_number = 0;
 
-    /* Appends a prefix string for output files */
+    // Appends a prefix string for output files
     if (!out_file_prefix.empty()) {
         if (std::strchr(flag, 'w')) {
-            Len = 1; /* NULL char */
+            Len = 1; // NULL char
             Len += std::strlen(out_file_prefix.c_str());
             Len += std::strlen(fname);
             new_fname = (char*)vtr::malloc(Len * sizeof(char));
@@ -261,51 +218,41 @@ FILE* fopen(const char* fname, const char* flag) {
     return (fp);
 }
 
-///@brief The legacy fclose function
 int fclose(FILE* f) {
     return std::fclose(f);
 }
 
-/**
- * @brief Get an input line, update the line number and cut off any comment part.
- *
- * A \ at the end of a line with no comment part (#) means continue. 
- * vtr::fgets should give
- * identical results for Windows (\r\n) and Linux (\n) 
- * newlines, since it replaces each carriage return \r
- * by a newline character \n.  Returns NULL after EOF.
- */
 char* fgets(char* buf, int max_size, FILE* fp) {
     int ch;
     int i;
 
-    cont = 0;           /* line continued? */
-    file_line_number++; /* global variable */
+    cont = 0;           // line continued?
+    file_line_number++; // global variable
 
-    for (i = 0; i < max_size - 1; i++) { /* Keep going until the line finishes or the buffer is full */
+    for (i = 0; i < max_size - 1; i++) { // Keep going until the line finishes or the buffer is full
 
         ch = std::fgetc(fp);
 
-        if (std::feof(fp)) { /* end of file */
+        if (std::feof(fp)) { // end of file
             if (i == 0) {
-                return nullptr; /* required so we can write while (vtr::fgets(...) != NULL) */
-            } else {            /* no newline before end of file - last line must be returned */
+                return nullptr; // required so we can write while (vtr::fgets(...) != NULL)
+            } else {            // no newline before end of file - last line must be returned
                 buf[i] = '\0';
                 return buf;
             }
         }
 
-        if (ch == '#') { /* comment */
+        if (ch == '#') { // comment
             buf[i] = '\0';
             while ((ch = std::fgetc(fp)) != '\n' && !std::feof(fp))
-                ; /* skip the rest of the line */
+                ; // skip the rest of the line
             return buf;
         }
 
-        if (ch == '\r' || ch == '\n') {         /* newline (cross-platform) */
-            if (i != 0 && buf[i - 1] == '\\') { /* if \ at end of line, line continued */
+        if (ch == '\r' || ch == '\n') {         // newline (cross-platform)
+            if (i != 0 && buf[i - 1] == '\\') { // if \ at end of line, line continued
                 cont = 1;
-                buf[i - 1] = '\n'; /* May need this for tokens */
+                buf[i - 1] = '\n'; // May need this for tokens
                 buf[i] = '\0';
             } else {
                 buf[i] = '\n';
@@ -314,10 +261,10 @@ char* fgets(char* buf, int max_size, FILE* fp) {
             return buf;
         }
 
-        buf[i] = ch; /* copy character into the buffer */
+        buf[i] = ch; // copy character into the buffer
     }
 
-    /* Buffer is full but line has not terminated, so error */
+    // Buffer is full but line has not terminated, so error
     throw VtrError(string_fmt("Error on line %d -- line is too long for input buffer.\n"
                               "All lines must be at most %d characters long.\n",
                               bufsize - 2),
@@ -325,7 +272,6 @@ char* fgets(char* buf, int max_size, FILE* fp) {
     return nullptr;
 }
 
-///@brief Returns line number of last opened and read file
 int get_file_line_number_of_last_opened_file() {
     return file_line_number;
 }
@@ -345,20 +291,12 @@ bool file_exists(const char* filename) {
     return false;
 }
 
-/**
- * @brief Checks the file extension of an file to ensure correct file format. 
- *
- * Returns true if the extension is correct, and false otherwise.
- */
 bool check_file_name_extension(std::string_view file_name,
                                std::string_view file_extension) {
     auto ext = std::filesystem::path(file_name).extension();
     return ext == file_extension;
 }
 
-/**
- * @brief Legacy ReadLine Tokening
- */
 std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum) {
     std::unique_ptr<char[]> buf(new char[vtr::bufsize]);
 
@@ -369,7 +307,6 @@ std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum) {
     return vtr::StringToken(line).split(" \t\n");
 }
 
-///@brief Returns pid if os is unix, -1 otherwise.
 int get_pid() {
 #if defined(__unix__)
     return getpid();
@@ -396,56 +333,51 @@ StringToken::StringToken(const char* data) {
 /************************************************************************
  * Public Accessors
  ***********************************************************************/
-/* Get the data string */
 std::string StringToken::data() const {
     return data_;
 }
 
-/* Split the string using a given delim */
 std::vector<std::string> StringToken::split(const std::string& delims) const {
-    /* Return vector */
+    // Return vector
     std::vector<std::string> ret;
 
-    /* Get a writable char array */
+    // Get a writable char array
     char* tmp = new char[data_.size() + 1];
     std::copy(data_.begin(), data_.end(), tmp);
     tmp[data_.size()] = '\0';
-    /* Split using strtok */
+    // Split using strtok
     char* result = std::strtok(tmp, delims.c_str());
     while (nullptr != result) {
         std::string result_str(result);
-        /* Store the token */
+        // Store the token
         ret.push_back(result_str);
-        /* Got to next */
+        // Got to next
         result = std::strtok(nullptr, delims.c_str());
     }
 
-    /* Free the tmp */
+    // Free the tmp
     delete[] tmp;
 
     return ret;
 }
 
-/* Split the string using a given delim */
 std::vector<std::string> StringToken::split(const char& delim) const {
-    /* Create delims */
+    // Create delims
     std::string delims(1, delim);
 
     return split(delims);
 }
 
-/* Split the string using a given delim */
 std::vector<std::string> StringToken::split(const char* delim) const {
-    /* Create delims */
+    // Create delims
     std::string delims(delim);
 
     return split(delims);
 }
 
-/* Split the string using a given delim */
 std::vector<std::string> StringToken::split(
     const std::vector<char>& delims) const {
-    /* Create delims */
+    // Create delims
     std::string delims_str;
     for (const auto& delim : delims) {
         delims_str.push_back(delim);
@@ -454,13 +386,12 @@ std::vector<std::string> StringToken::split(
     return split(delims_str);
 }
 
-/* Split the string */
 std::vector<std::string> StringToken::split() {
-    /* Add a default delim */
+    // Add a default delim
     if (true == delims_.empty()) {
         add_default_delim();
     }
-    /* Create delims */
+    // Create delims
     std::string delims;
     for (const auto& delim : delims_) {
         delims.push_back(delim);
@@ -487,7 +418,7 @@ std::vector<std::string> StringToken::split_by_chunks(
         chunk_idx_mod = 1;
     }
     std::vector<std::string> tokens;
-    /* There are pairs of quotes, identify the chunk which should be split*/
+    // There are pairs of quotes, identify the chunk which should be split
     std::vector<std::string> token_chunks = split(chunk_delim);
     for (size_t ichunk = 0; ichunk < token_chunks.size(); ichunk++) {
         // Chunk with even index (including the first) is always out of two quote ->
@@ -511,18 +442,15 @@ void StringToken::set_data(const std::string& data) {
     data_ = data;
 }
 
-/* Add a delima to the list */
 void StringToken::add_delim(const char& delim) {
     delims_.push_back(delim);
 }
 
-/* Remove the string repeated at the beginning of string */
 void StringToken::ltrim(const std::string& sensitive_word) {
     size_t start = data_.find_first_not_of(sensitive_word);
     data_ = (start == std::string::npos) ? "" : data_.substr(start);
 }
 
-/* Remove the string repeated at the end of string */
 void StringToken::rtrim(const std::string& sensitive_word) {
     size_t end = data_.find_last_not_of(sensitive_word);
     data_ = (end == std::string::npos) ? "" : data_.substr(0, end + 1);

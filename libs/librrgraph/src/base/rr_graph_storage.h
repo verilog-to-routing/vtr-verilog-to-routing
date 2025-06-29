@@ -411,24 +411,32 @@ class t_rr_graph_storage {
         return RREdgeId::INVALID();
     }
 
-    /** @brief Get the source node for the specified edge. */
+    /** 
+     * @brief Get the source node for the specified edge. 
+     */
     RRNodeId edge_src_node(const RREdgeId edge) const {
         VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_src_node_[edge];
     }
 
-    /** @brief Get the destination node for the specified edge. */
+    /** 
+     * @brief Get the destination node for the specified edge. 
+     */
     RRNodeId edge_sink_node(const RREdgeId edge) const {
         VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_dest_node_[edge];
     }
 
-    // Get the source node for the specified edge.
+    /** 
+     * @brief Get the source node for the specified edge. 
+     */
     RRNodeId edge_source_node(const RREdgeId edge) const {
         return edge_src_node_[edge];
     }
 
-    /** @brief Call the `apply` function with the edge id, source, and sink nodes of every edge. */
+    /** 
+     * @brief Call the `apply` function with the edge id, source, and sink nodes of every edge. 
+     */
     void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
         for (size_t i = 0; i < edge_dest_node_.size(); i++) {
             RREdgeId edge(i);
@@ -436,7 +444,8 @@ class t_rr_graph_storage {
         }
     }
 
-    /** @brief Get the destination node for the iedge'th edge from specified RRNodeId.
+    /** 
+     * @brief Get the destination node for the iedge'th edge from specified RRNodeId.
      *
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
@@ -445,17 +454,22 @@ class t_rr_graph_storage {
         return edge_sink_node(edge_id(id, iedge));
     }
 
-    // Get the source node for the iedge'th edge from specified RRNodeId.
+    /** 
+     * @brief Get the source node for the iedge'th edge from specified RRNodeId.
+     */
     RRNodeId edge_source_node(const RRNodeId id, t_edge_size iedge) const {
         return edge_source_node(edge_id(id, iedge));
     }
 
-    /** @brief Get the switch used for the specified edge. */
+    /** 
+     * @brief Get the switch used for the specified edge. 
+     */
     short edge_switch(const RREdgeId edge) const {
         return edge_switch_[edge];
     }
 
-    /** @brief Get the switch used for the iedge'th edge from specified RRNodeId.
+    /** 
+     * @brief Get the switch used for the iedge'th edge from specified RRNodeId.
      *
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
@@ -464,7 +478,8 @@ class t_rr_graph_storage {
         return edge_switch(edge_id(id, iedge));
     }
 
-    /** @brief
+    /** 
+     * @brief
      * Node proxy methods
      *
      * The following methods implement an interface that appears to be
@@ -484,7 +499,6 @@ class t_rr_graph_storage {
      * methods that use RRNodeId and RREdgeId should be used.
      *
      */
-
     node_idx_iterator begin() const;
 
     node_idx_iterator end() const;
@@ -804,7 +818,6 @@ class t_rr_graph_storage {
         return side_tt[size_t(side)];
     }
 
-  public:
     inline void clear_node_first_edge() {
         node_first_edge_.clear();
     }
