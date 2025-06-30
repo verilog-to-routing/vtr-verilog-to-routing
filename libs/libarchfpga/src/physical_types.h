@@ -2284,6 +2284,8 @@ struct t_arch {
     char* architecture_id;
 
     // Options for tileable routing architectures
+    // These are used for an alternative, tilable, rr-graph generator that can produce 
+    // OpenFPGA-compatible FPGAs that can be implemented to silicon via the OpenFPGA flow
 
     /// Whether the routing architecture is tileable
     bool tileable;
@@ -2310,16 +2312,20 @@ struct t_arch {
     /// For further detail, please refer to documentation
     bool concat_pass_wire;
 
+    /// Connectivity parameter for pass tracks in each switch block
+    int sub_fs;
+
+    /// Connecting type for pass tracks in each switch block
+    enum e_switch_block_type sb_sub_type;
+
     // End of tileable architecture options
 
     t_chan_width_dist Chans;
     enum e_switch_block_type sb_type;
-    enum e_switch_block_type sb_sub_type;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;
     int Fs;
-    int sub_fs;
     float grid_logic_tile_area;
     std::vector<t_segment_inf> Segments;
 
@@ -2378,13 +2384,13 @@ struct t_arch {
     // If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout;
 
-    /// VIB grid layouts
-    std::vector<t_vib_grid_def> vib_grid_layouts;
-
     t_clock_arch_spec clock_arch; // Clock related data types
 
     /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
+
+    /// VIB grid layouts
+    std::vector<t_vib_grid_def> vib_grid_layouts;
 
     // added for vib
     std::vector<VibInf> vib_infs;

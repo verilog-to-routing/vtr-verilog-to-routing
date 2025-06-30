@@ -297,6 +297,11 @@ static void process_block_type_locs(t_grid_def& grid_def, int die_number, vtr::s
 static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
 
 /**
+ * @brief Parses tags related to tileable rr graph under <device> tag in the architecture file.
+ */
+static void process_tileable_device_parameters(t_arch* arch, const pugiutil::loc_data& loc_data);
+
+/**
  * @brief Parses <complexblocklist> tag in the architecture file.
  *
  * @param Node The xml node referring to <complexblocklist> tag
@@ -2930,30 +2935,11 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                        vtr::string_fmt("Unknown property %s for switch block type x\n", Prop).c_str());
     }
-    // Parse attribute 'sub_type', representing the minor connectivity pattern for switch blocks 
-    // If not specified, the 'sub_type' is the same as major type
-    // This option is only valid for tileable routing resource graph builder
-    // Note that sub_type does not support custom switch block pattern!!!
-    // If 'sub_type' is specified, the custom switch block for 'type' is not allowed! 
-    std::string sub_type_str = get_attribute(Cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
-    if (!sub_type_str.empty()) {
-        if (sub_type_str == "wilton") {
-            arch->sb_sub_type = WILTON;
-        } else if (sub_type_str == "universal") {
-            arch->sb_sub_type = UNIVERSAL;
-        } else if (sub_type_str == "subset") {
-            arch->sb_sub_type = SUBSET;
-        } else {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-                           "Unknown property %s for switch block subtype x\n", sub_type_str.c_str());
-        }
-    } else {
-        arch->sb_sub_type = arch->sb_type;
-    }
 
+    process_tileable_device_parameters(arch, loc_data);
+    
     ReqOpt custom_switchblock_reqd = BoolToReqOpt(!custom_switch_block);
     arch->Fs = get_attribute(Cur, "fs", loc_data, custom_switchblock_reqd).as_int(3);
-    arch->sub_fs = get_attribute(Cur, "sub_fs", loc_data, BoolToReqOpt(false)).as_int(arch->Fs);
 
     Cur = get_single_child(Node, "default_fc", loc_data, ReqOpt::OPTIONAL);
     if (Cur) {
@@ -2963,6 +2949,33 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
     } else {
         arch_def_fc.specified = false;
     }
+}
+
+static void process_tileable_device_parameters(t_arch* arch, const pugiutil::loc_data& loc_data) {
+    pugi::xml_node cur;
+
+    // Parse attribute 'sub_type', representing the minor connectivity pattern for switch blocks 
+    // If not specified, the 'sub_type' is the same as major type
+    // This option is only valid for tileable routing resource graph builder
+    // Note that sub_type does not support custom switch block pattern!!!
+    // If 'sub_type' is specified, the custom switch block for 'type' is not allowed! 
+    std::string sub_type_str = get_attribute(cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
+    if (!sub_type_str.empty()) {
+        if (sub_type_str == "wilton") {
+            arch->sb_sub_type = WILTON;
+        } else if (sub_type_str == "universal") {
+            arch->sb_sub_type = UNIVERSAL;
+        } else if (sub_type_str == "subset") {
+            arch->sb_sub_type = SUBSET;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                           "Unknown property %s for switch block subtype x\n", sub_type_str.c_str());
+        }
+    } else {
+        arch->sb_sub_type = arch->sb_type;
+    }
+
+    arch->sub_fs = get_attribute(cur, "sub_fs", loc_data, BoolToReqOpt(false)).as_int(arch->Fs);
 }
 
 /* Takes in node pointing to <chan_width_distr> and loads all the
