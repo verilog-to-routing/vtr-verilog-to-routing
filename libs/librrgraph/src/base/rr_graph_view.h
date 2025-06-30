@@ -614,17 +614,19 @@ class RRGraphView {
 
     /** 
      * @brief Return incoming edges for a given routing resource node 
-     * Require build_in_edges() to be called first
+     *        Requires build_in_edges() to be called first
      */
     std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
 
     /** 
-     * @brief Return configurable incoming edges for a given routing resource node 
+     * @brief Return configurable incoming edges for a given routing resource node
+     *        Requires build_in_edges() to be called first
      */
     std::vector<RREdgeId> node_configurable_in_edges(RRNodeId node) const;
 
     /** 
-     * @brief Return non-configurable incoming edges for a given routing resource node 
+     * @brief Return non-configurable incoming edges for a given routing resource node
+     *        Requires build_in_edges() to be called first
      */
     std::vector<RREdgeId> node_non_configurable_in_edges(RRNodeId node) const;
 
@@ -712,9 +714,14 @@ class RRGraphView {
         return (size_t(switch_id) < rr_switch_inf_.size());
     }
 
-    /** @brief Validate if all the fan-in edge lists are valid */
+    /** @brief Validate if all the fan-in edge lists are valid. This
+     *         function should be called only if build_in_edges() is called before.
+    */
     bool validate_in_edges() const;
-    /** @brief Count the number of incoming edges for all the nodes */
+    
+    /** @brief Count the number of incoming edges for all the nodes. This
+     *         function should be called only if build_in_edges() is called before.
+    */
     size_t in_edges_count() const;
 
     /* -- Internal data storage -- */
@@ -760,10 +767,11 @@ class RRGraphView {
     /// switch info for rr nodes
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
 
-    /** A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
-     *  By default, it is empty! Call build_in_edges() to construct it!!! */
+    /// A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
+    /// By default, it is empty. Call build_in_edges() to construct it.
     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges_;
 
-    /** A list of extra ptc numbers for each routing resource node. See details in RRGraphBuilder class */
-    const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums_;
+    /// A list of extra ptc numbers for each routing resource node. This is only used for tileable architecture.
+    /// See details in RRGraphBuilder class
+    const vtr::vector<RRNodeId, std::vector<short>>& node_tileable_track_nums_;
 };

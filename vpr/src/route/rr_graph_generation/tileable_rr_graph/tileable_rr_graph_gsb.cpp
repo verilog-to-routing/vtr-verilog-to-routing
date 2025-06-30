@@ -1196,7 +1196,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                 /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
                 /* add edges to the opin_node */
                 for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side]) {
-                    rr_graph_builder.create_edge(opin_node, track_node, rr_node_driver_switches[track_node], false);
+                    rr_graph_builder.create_edge_in_cache(opin_node, track_node, rr_node_driver_switches[track_node], false);
                     edge_count++;
                 }
             }
@@ -1212,7 +1212,7 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
             for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
                 const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
                 for (const RRNodeId& ipin_node : track2ipin_map[gsb_side][inode]) {
-                    rr_graph_builder.create_edge(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
+                    rr_graph_builder.create_edge_in_cache(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
                     edge_count++;
                 }
             }
@@ -1222,16 +1222,12 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
             const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
             for (const RRNodeId& track_node : track2track_map[gsb_side][inode]) {
-                rr_graph_builder.create_edge(chan_node, track_node, rr_node_driver_switches[track_node], false);
+                rr_graph_builder.create_edge_in_cache(chan_node, track_node, rr_node_driver_switches[track_node], false);
                 edge_count++;
             }
         }
     }
-    // /* Create edges between bend nodes */
-    // for (auto iter = sb_bend_conn.begin(); iter != sb_bend_conn.end(); ++iter) {
-    //     rr_graph_builder.create_edge(iter->first, iter->second, rr_node_driver_switches[iter->second], false);
-    //     edge_count++;
-    // }
+
     num_edges_to_create += edge_count;
 }
 
@@ -1257,7 +1253,7 @@ void build_edges_for_one_tileable_rr_gsb_vib(RRGraphBuilder& rr_graph_builder,
                 /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
                 /* add edges to the opin_node */
                 for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side]) {
-                    rr_graph_builder.create_edge(opin_node, track_node, rr_node_driver_switches[track_node], false);
+                    rr_graph_builder.create_edge_in_cache(opin_node, track_node, rr_node_driver_switches[track_node], false);
                     edge_count++;
                 }
             }
@@ -1273,7 +1269,7 @@ void build_edges_for_one_tileable_rr_gsb_vib(RRGraphBuilder& rr_graph_builder,
             for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
                 const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
                 for (const RRNodeId& ipin_node : track2ipin_map[gsb_side][inode]) {
-                    rr_graph_builder.create_edge(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
+                    rr_graph_builder.create_edge_in_cache(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
                     edge_count++;
                 }
             }
@@ -1283,14 +1279,14 @@ void build_edges_for_one_tileable_rr_gsb_vib(RRGraphBuilder& rr_graph_builder,
         for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
             const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
             for (const RRNodeId& track_node : track2track_map[gsb_side][inode]) {
-                rr_graph_builder.create_edge(chan_node, track_node, rr_node_driver_switches[track_node], false);
+                rr_graph_builder.create_edge_in_cache(chan_node, track_node, rr_node_driver_switches[track_node], false);
                 edge_count++;
             }
         }
     }
     /* Create edges between bend nodes */
     for (auto iter = sb_bend_conn.begin(); iter != sb_bend_conn.end(); ++iter) {
-        rr_graph_builder.create_edge(iter->first, iter->second, rr_node_driver_switches[iter->second], false);
+        rr_graph_builder.create_edge_in_cache(iter->first, iter->second, rr_node_driver_switches[iter->second], false);
         edge_count++;
     }
     num_edges_to_create += edge_count;
@@ -1774,7 +1770,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
                 /* add edges to the opin_node */
                 VTR_ASSERT(opin_node_id && ipin_node_id);
-                rr_graph_builder.create_edge(opin_node_id, ipin_node_id, RRSwitchId(clb_to_clb_directs[i].switch_index), false);
+                rr_graph_builder.create_edge_in_cache(opin_node_id, ipin_node_id, RRSwitchId(clb_to_clb_directs[i].switch_index), false);
             }
         }
     }
@@ -2101,12 +2097,12 @@ void build_edges_for_one_tileable_vib(RRGraphBuilder& rr_graph_builder,
     size_t edge_count = 0;
     for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
         for (auto to_node : iter->second) {
-            rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
+            rr_graph_builder.create_edge_in_cache(iter->first, to_node, rr_node_driver_switches[to_node], false);
             edge_count++;
         }
     }
     for (auto iter = sb_bend_conn.begin(); iter != sb_bend_conn.end(); ++iter) {
-        rr_graph_builder.create_edge(iter->first, iter->second, rr_node_driver_switches[iter->second], false);
+        rr_graph_builder.create_edge_in_cache(iter->first, iter->second, rr_node_driver_switches[iter->second], false);
         edge_count++;
     }
     num_edges_to_create += edge_count;

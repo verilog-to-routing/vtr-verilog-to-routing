@@ -36,16 +36,21 @@ class RRGraphBuilder {
   public:
     /** @brief Return a writable object for rr_nodes */
     t_rr_graph_storage& rr_nodes();
+    
     /** @brief Return a writable object for update the fast look-up of rr_node */
     RRSpatialLookup& node_lookup();
+    
     /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
     /** @brief Return a writable object for the meta data on the nodes */
     MetadataStorage<int>& rr_node_metadata();
+    
     /** @brief Return a writable object for the meta data on the edge */
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
+    
     /** @brief Return a writable object fo the incoming edge storage */
     vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edge_storage();
+    
     /** @brief Return a writable object of the node ptc storage (for tileable routing resource graph) */
     vtr::vector<RRNodeId, std::vector<short>>& node_ptc_storage();
 
@@ -241,9 +246,16 @@ class RRGraphBuilder {
         node_storage_.set_node_track_num(id, new_track_num);
     }
 
+    // ** The following functions are only used for tileable routing resource graph generator **
+
     /** @brief Add a track id for a given node base on the offset in coordinate, applicable only to CHANX and CHANY nodes.
      * This API is used by tileable routing resource graph generator, which requires each routing track has a different
      * track id depending their location in FPGA fabric.
+     * 
+     * @param node The node to add the track id to.
+     * @param node_offset Location of the portion of the node being considered. It is used
+     *                    to calculate the relative location from the beginning of the node.
+     * @param track_id The track id to add to the node.
      */
     void add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id);
 
@@ -256,17 +268,17 @@ class RRGraphBuilder {
     }
 
     /** @brief set_node_mux_num() is designed for routing mux nodes */
-    inline void set_node_mux_num(RRNodeId id, int new_class_num) {
-        node_storage_.set_node_mux_num(id, new_class_num);
+    inline void set_node_mux_num(RRNodeId id, int new_mux_num) {
+        node_storage_.set_node_mux_num(id, new_mux_num);
     }
 
-    /** @brief Add a list of ptc number in string (split by comma) to a given node. This function is used by rr graph reader only. Not suggested for internal builder!!! */
+    /** @brief Add a list of ptc number in string (split by comma) to a given node. This function is used by rr graph reader only. */
     void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str);
 
-    /** @brief With a given node, output ptc numbers into a string (use comma as delima). This function is used by rr graph writer only. Not suggested for internal builder!!! */
+    /** @brief With a given node, output ptc numbers into a string (use comma as delima). This function is used by rr graph writer only. */
     std::string node_ptc_nums_to_string(RRNodeId node) const;
 
-    /** @brief Identify if a node contains multiple ptc numbers. Mainly used by I/O reader only. Not suggest for internal builder */
+    /** @brief Identify if a node contains multiple ptc numbers. It is used for tileable RR Graph and mainly used by I/O reader only. */
     bool node_contain_multiple_ptc(RRNodeId node) const;
 
     /** @brief Set the node direction; The node direction is only available of routing channel nodes, such as x-direction routing tracks (CHANX) and y-direction routing tracks (CHANY). For other nodes types, this value is not meaningful and should be set to NONE. */
@@ -275,8 +287,8 @@ class RRGraphBuilder {
     }
 
     /** @brief Add a new edge to the cache of edges to be built 
-     *  .. note:: This will not add an edge to storage! You need to call build_edges() after all the edges are cached! */
-    void create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped);
+     *  @note This will not add an edge to storage. You need to call build_edges() after all the edges are cached. */
+    void create_edge_in_cache(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped);
 
     /** @brief Allocate and build actual edges in storage. 
      * Once called, the cached edges will be uniquified and added to routing resource nodes, 
@@ -294,6 +306,8 @@ class RRGraphBuilder {
      *  Require build_in_edges() to be called first
      */
     std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
+
+    // ** End of functions for tileable routing resource graph generator **
 
     /** @brief Set the node id for clock network virtual sink */
     inline void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
@@ -370,11 +384,6 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(arch_switch_inf, arch_switch_fanins);
     }
 
-    /** 
-     * @brief Unlock storage; required to modify an routing resource graph after edge is read 
-     */
-    inline void unlock_storage() { node_storage_.edges_read_ = false; node_storage_.partitioned_ = false; node_storage_.clear_node_first_edge();}
-
     /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
      * when adding a large number of nodes/edge/switches/segments,
@@ -393,9 +402,9 @@ class RRGraphBuilder {
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
-    /** @brief This function resize node ptc nums. Only used by RR graph I/O reader and writers. Do not use for internal builder */
+    /** @brief This function resize node ptc nums. Only used by RR graph I/O reader and writers. */
     inline void resize_node_ptc_nums(size_t size) {
-        node_ptc_nums_.resize(size);
+        node_tilable_track_nums_.resize(size);
     }
 
 
@@ -404,7 +413,8 @@ class RRGraphBuilder {
         rr_switch_inf_.resize(size);
     }
 
-    /** @brief Validate that edge data is partitioned correctly. Also there are no edges left to be built!
+    /** @brief Validate that edge data is partitioned correctly. This function should be called
+     * when all edges in cache are added.
      * @note This function is used to validate the correctness of the routing resource graph in terms
      * of graph attributes. Strongly recommend to call it when you finish the building a routing resource
      * graph. If you need more advance checks, which are related to architecture features, you should
@@ -459,8 +469,13 @@ class RRGraphBuilder {
 
     /** 
      * @brief A cache for edge-related information, required to build edges for routing resource nodes.
-     * @note It is used when building a routing resource graph by considering memory efficiency.
-     * It will be clear up after calling build_edges().
+     * @note It is used when building a routing resource graph. It is a set of edges that have not yet been 
+     * added to the main rr-graph edge storage to avoid an expensive edge-by-edge reallocation or re-shuffling 
+     * of edges in the main rr-graph edge storage.
+     * 
+     * @note It will be cleared after calling build_edges().
+     * 
+     * @note This data structure is only used for tileable routing resource graph generator.
      *
      * @warning This is a temporary data which is used to collect edges to be built for nodes
      */
@@ -490,15 +505,16 @@ class RRGraphBuilder {
     /** 
      * @brief A list of incoming edges for each routing resource node. 
      * @note This can be built optionally, as required by applications.
-     * By default, it is empty! Call build_in_edges() to construct it!!! 
+     * By default, it is empty! Call build_in_edges() to construct it.
      */
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
 
     /** 
      * @brief Extra ptc number for each routing resource node. 
-     * @note This is required by tileable routing resource graph.
+     * @note This is required by tileable routing resource graphs. The first index is the node id, and
+     * the second index is is the relative distance from the starting point of the node.
      * @details 
-     * In a tileable routing architecture, routing tracks, e.g., CHANX and CHANY, follows a staggered organization.
+     * In a tileable routing architecture, routing tracks, e.g., CHANX and CHANY, follow a staggered organization.
      * Hence, a routing track may appear in different routing channels, representing different ptc/track id.
      * Here is an illustrative example of a X-direction routing track (CHANX) in INC direction, which is organized in staggered way.
      *    
@@ -514,7 +530,7 @@ class RRGraphBuilder {
      *           |                               |
      *     starting point                   ending point
      */
-    vtr::vector<RRNodeId, std::vector<short>> node_ptc_nums_;
+    vtr::vector<RRNodeId, std::vector<short>> node_tilable_track_nums_;
 
     /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
@@ -542,8 +558,15 @@ class RRGraphBuilder {
      */
     MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata_;
 
-    /** @brief a flag to mark the status of edge storage
-     *  dirty means that the edge storage is not complete, should call related APIs to build */
+    /** 
+     * @brief This flag indicates if all the edges in cache are added to the main rr-graph edge storage.
+     * To add all edges in cache to the main rr-graph edge storage, call build_edges().
+     */
     bool is_edge_dirty_;
+
+    /**
+     * @brief This flag indicates whether node_in_edges_ is updated with 
+     * edges in the main rr-graph edge storage.
+     */
     bool is_incoming_edge_dirty_;
 };

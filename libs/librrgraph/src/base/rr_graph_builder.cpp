@@ -32,7 +32,7 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>>& RRGraphBuilder::node_in_edge_stora
 }
 
 vtr::vector<RRNodeId, std::vector<short>>& RRGraphBuilder::node_ptc_storage() {
-    return node_ptc_nums_;
+    return node_tilable_track_nums_;
 }
 
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
@@ -75,7 +75,7 @@ RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, e_rr_type type, in
         node_side = side;
     }
     node_storage_.emplace_back();
-    node_ptc_nums_.emplace_back();
+    node_tilable_track_nums_.emplace_back();
     RRNodeId new_node = RRNodeId(node_storage_.size() - 1);
     node_storage_.set_node_layer(new_node, layer);
     node_storage_.set_node_type(new_node, type);
@@ -84,7 +84,6 @@ RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, e_rr_type type, in
     if (e_rr_type::OPIN == type || e_rr_type::IPIN == type) {
         node_storage_.add_node_side(new_node, node_side);
     }
-    // Special for CHANX, being consistent with the rule in find_node()
     node_lookup_.add_node(new_node, layer, x, y, type, ptc, node_side);
 
     return new_node;
@@ -102,7 +101,7 @@ void RRGraphBuilder::clear() {
     node_lookup_.clear();
     node_storage_.clear();
     node_in_edges_.clear();
-    node_ptc_nums_.clear();
+    node_tilable_track_nums_.clear();
     rr_node_metadata_.clear();
     rr_edge_metadata_.clear();
     rr_segments_.clear();
@@ -182,7 +181,7 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
     });
 }
 
-void RRGraphBuilder::create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped) {
+void RRGraphBuilder::create_edge_in_cache(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped) {
     edges_to_build_.emplace_back(src, dest, size_t(edge_switch), remapped);
     is_edge_dirty_ = true; // Adding a new edge revokes the flag
     is_incoming_edge_dirty_ = true;
@@ -231,25 +230,25 @@ void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str
     VTR_ASSERT(ptc_tokens.size() >= 1);
     set_node_ptc_num(node, std::stoi(ptc_tokens[0]));
     if (ptc_tokens.size() > 1) {
-        VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
-        node_ptc_nums_[node].resize(ptc_tokens.size());
+        VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
+        node_tilable_track_nums_[node].resize(ptc_tokens.size());
         for (size_t iptc = 0; iptc < ptc_tokens.size(); iptc++) {
-          node_ptc_nums_[node][iptc] = std::stoi(ptc_tokens[iptc]);
+          node_tilable_track_nums_[node][iptc] = std::stoi(ptc_tokens[iptc]);
         }
     }
 }
 
 std::string RRGraphBuilder::node_ptc_nums_to_string(RRNodeId node) const {
-    if (node_ptc_nums_.empty()) {
+    if (node_tilable_track_nums_.empty()) {
         return std::to_string(size_t(node_storage_.node_ptc_num(node)));
     }
-    VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
-    if (node_ptc_nums_[node].empty()) {
+    VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
+    if (node_tilable_track_nums_[node].empty()) {
         return std::to_string(size_t(node_storage_.node_ptc_num(node)));
     }
     std::string ret;
-    for (size_t iptc = 0; iptc < node_ptc_nums_[node].size(); iptc++) {
-        ret += std::to_string(size_t(node_ptc_nums_[node][iptc])) + ",";
+    for (size_t iptc = 0; iptc < node_tilable_track_nums_[node].size(); iptc++) {
+        ret += std::to_string(size_t(node_tilable_track_nums_[node][iptc])) + ",";
     }
     // Remove the last comma
     ret.pop_back();
@@ -257,27 +256,27 @@ std::string RRGraphBuilder::node_ptc_nums_to_string(RRNodeId node) const {
 }
 
 bool RRGraphBuilder::node_contain_multiple_ptc(RRNodeId node) const {
-    if (node_ptc_nums_.empty()) {
+    if (node_tilable_track_nums_.empty()) {
         return false;
     }
-    return node_ptc_nums_[node].size() > 1;
+    return node_tilable_track_nums_[node].size() > 1;
 }
 
 void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id) {
     VTR_ASSERT(size_t(node) < node_storage_.size());
-    VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
+    VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
     VTR_ASSERT_MSG(node_storage_.node_type(node) == e_rr_type::CHANX || node_storage_.node_type(node) == e_rr_type::CHANY, "Track number valid only for CHANX/CHANY RR nodes");
 
     size_t node_length = std::abs(node_storage_.node_xhigh(node) - node_storage_.node_xlow(node))
                        + std::abs(node_storage_.node_yhigh(node) - node_storage_.node_ylow(node));
-    if (node_length + 1 != node_ptc_nums_[node].size()) {
-        node_ptc_nums_[node].resize(node_length + 1);
+    if (node_length + 1 != node_tilable_track_nums_[node].size()) {
+        node_tilable_track_nums_[node].resize(node_length + 1);
     }
 
     size_t offset = node_offset.x() - node_storage_.node_xlow(node) + node_offset.y() - node_storage_.node_ylow(node);
-    VTR_ASSERT(offset < node_ptc_nums_[node].size());
+    VTR_ASSERT(offset < node_tilable_track_nums_[node].size());
 
-    node_ptc_nums_[node][offset] = track_id;
+    node_tilable_track_nums_[node][offset] = track_id;
 }
 
 void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
@@ -301,9 +300,9 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
             e_rr_type node_type = node_storage_.node_type(node);
             // Routing channel nodes may have different ptc num 
             // Find the track ids using the x/y offset  
-            // FIXME: Special case on assigning CHANX (x,y) should be changed to a natural way!
             if (e_rr_type::CHANX == node_type || e_rr_type::CHANY == node_type) {
-                ptc = node_type == e_rr_type::CHANX ? node_ptc_nums_[node][x - node_storage_.node_xlow(node)] : node_ptc_nums_[node][y - node_storage_.node_ylow(node)];
+                ptc = (node_type == e_rr_type::CHANX) ? node_tilable_track_nums_[node][x - node_storage_.node_xlow(node)] : 
+                    node_tilable_track_nums_[node][y - node_storage_.node_ylow(node)];
                 node_lookup_.add_node(node, node_storage_.node_layer(node), x, y, node_type, ptc); 
             }
         }

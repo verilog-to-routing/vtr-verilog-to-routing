@@ -4137,6 +4137,7 @@ static void process_bend(pugi::xml_node Node, t_segment_inf& segment, const int 
                        tmp.c_str());
     }
 
+    // TODO: Add a comment to explain this and this function overall
     int tmp_len = 1;
     int sum_len = 0;
     for (size_t i_len = 0; i_len < list.size(); i_len++) {

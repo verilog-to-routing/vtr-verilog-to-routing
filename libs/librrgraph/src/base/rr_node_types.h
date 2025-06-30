@@ -29,7 +29,8 @@ enum class e_rr_type : unsigned char {
     OPIN,       ///<Output pin of a block
     CHANX,      ///<x-directed routing wire, or an x-directed segment of a channel for global routing
     CHANY,      ///<y-directed routing wire, or a y-directed segment of a channel for global routing
-    MUX,        ///<mux node used for two-stage mux in switch block. This node type is currently only used in tileable RR Graph.
+    MUX,        ///<a routing multiplexer that does not traverse a significant distance before feeding
+                /// other rr-nodes. E.g. the first node in a 2-stage mux in a switch block.
     NUM_RR_TYPES
 };
 

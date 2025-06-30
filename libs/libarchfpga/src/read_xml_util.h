@@ -24,6 +24,12 @@ void bad_attribute_value(const pugi::xml_attribute attr,
 InstPort make_inst_port(std::string str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 InstPort make_inst_port(pugi::xml_attribute attr, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 
+/**
+ * @brief Returns the number of layers in the device layout.
+ * 
+ * @param layout_type_tag The XML node pointing to the <layout> tag.
+ * @param loc_data Points to the location in the architecture file where the parser is reading.
+ */
 int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 
 /**

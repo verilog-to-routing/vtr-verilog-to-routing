@@ -11,7 +11,7 @@ RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
                          const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                          const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
                          const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges,
-                         const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums)
+                         const vtr::vector<RRNodeId, std::vector<short>>& node_tileable_track_nums)
     : node_storage_(node_storage)
     , node_lookup_(node_lookup)
     , rr_node_metadata_(rr_node_metadata)
@@ -21,7 +21,7 @@ RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
     , rr_segments_(rr_segments)
     , rr_switch_inf_(rr_switch_inf) 
     , node_in_edges_(node_in_edges)
-    , node_ptc_nums_(node_ptc_nums) {
+    , node_tileable_track_nums_(node_tileable_track_nums) {
 }
 
 std::vector<RREdgeId> RRGraphView::node_in_edges(RRNodeId node) const {
@@ -33,7 +33,7 @@ std::vector<RREdgeId> RRGraphView::node_in_edges(RRNodeId node) const {
 }
 
 std::vector<RREdgeId> RRGraphView::node_configurable_in_edges(RRNodeId node) const {
-    /* Note: This is not efficient in runtime, should sort edges by configurability when allocating the array! */
+    // Note: Should sort edges by configurability when allocating the array!
     VTR_ASSERT(size_t(node) < node_storage_.size());
     std::vector<RREdgeId> ret_edges;
     if (node_in_edges_.empty()) {
@@ -48,7 +48,7 @@ std::vector<RREdgeId> RRGraphView::node_configurable_in_edges(RRNodeId node) con
 }
 
 std::vector<RREdgeId> RRGraphView::node_non_configurable_in_edges(RRNodeId node) const {
-    /* Note: This is not efficient in runtime, should sort edges by configurability when allocating the array! */
+    // Note: Should sort edges by configurability when allocating the array!
     VTR_ASSERT(size_t(node) < node_storage_.size());
     std::vector<RREdgeId> ret_edges;
     if (node_in_edges_.empty()) {
@@ -79,22 +79,21 @@ RRSegmentId RRGraphView::node_segment(RRNodeId node) const {
 
 size_t RRGraphView::in_edges_count() const {
     size_t edge_count = 0;
-    for (const std::vector<RREdgeId>& edge_list : node_in_edges_) {
+    for (const std::vector<RRwEdgeId>& edge_list : node_in_edges_) {
         edge_count += edge_list.size();
     }
     return edge_count;
 }
 
 bool RRGraphView::validate_in_edges() const {
+    VTR_ASSERT(node_in_edges_.size() == node_storage_.size());
     size_t num_err = 0;
-    /* For each edge, validate that
-     * - The source node is in the fan-in edge list of the destination node
-     * - The sink node is in the fan-out edge list of the source node
-     */
+    // For each edge, validate that
+    // - The source node is in the fan-in edge list of the destination node
+    // - The sink node is in the fan-out edge list of the source node
     for (RRNodeId curr_node : vtr::StrongIdRange<RRNodeId>(RRNodeId(0), RRNodeId(node_storage_.size()))) {
-        /* curr_node ---> des_node 
-         *           <-?-            check if the incoming edge is correct or not
-         */
+        // curr_node ---> des_node 
+        //           <-?-            check if the incoming edge is correct or not
         for (t_edge_size iedge : node_storage_.edges(curr_node)) {
             RRNodeId des_node = node_storage_.edge_sink_node(node_storage_.edge_id(curr_node, iedge));
             std::vector<RRNodeId> des_fanin_nodes;
@@ -108,9 +107,8 @@ bool RRGraphView::validate_in_edges() const {
                 num_err++;
             }
         }
-        /* src_node -?-> curr_node
-         *          <---           check if the fan-out edge is correct or not
-         */
+        // src_node -?-> curr_node
+        //          <---           check if the fan-out edge is correct or not
         for (RREdgeId iedge : node_in_edges(curr_node)) {
             RRNodeId src_node = node_storage_.edge_source_node(iedge);
             std::vector<RRNodeId> src_fanout_nodes;

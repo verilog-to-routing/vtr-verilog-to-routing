@@ -1,4 +1,12 @@
 #pragma once
+/**
+ * @file
+ * @brief   Methods and classes related to the Versatile Interconnect Blocks (VIB) architecture.
+ *          VIB is an alternative approach for creating the Routing Resource (RR) graph, where the connection block,
+ *          switch block, and intra-cluster crossbar are combined into a single block. This means that each tile has
+ *          only two blocks: a VIB block and a functional block. For further details, please refer to the following paper:
+ *          https://doi.org/10.1109/ICFPT59805.2023.00014
+ */
 
 #include <functional>
 #include <utility>

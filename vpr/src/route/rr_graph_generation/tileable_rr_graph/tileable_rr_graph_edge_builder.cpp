@@ -45,7 +45,7 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
         VTR_ASSERT(true == rr_graph.valid_node(src_node));
 
         /* add edges to the src_node */
-        rr_graph_builder.create_edge(src_node, node, rr_node_driver_switches[node], false);
+        rr_graph_builder.create_edge_in_cache(src_node, node, rr_node_driver_switches[node], false);
         edge_count++;
     }
     /* Allocate edges for all the source nodes */
@@ -83,7 +83,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
         VTR_ASSERT(true == rr_graph.valid_node(sink_node));
 
         /* add edges to connect the IPIN node to SINK nodes */
-        rr_graph_builder.create_edge(node, sink_node, rr_node_driver_switches[sink_node], false);
+        rr_graph_builder.create_edge_in_cache(node, sink_node, rr_node_driver_switches[sink_node], false);
         edge_count++;
     }
     /* Allocate edges for all the source nodes */
@@ -257,7 +257,7 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
         size_t edge_count = 0;
         for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
             for (auto to_node : iter->second) {
-                rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
+                rr_graph_builder.create_edge_in_cache(iter->first, to_node, rr_node_driver_switches[to_node], false);
                 edge_count++;
             }
         }
@@ -282,7 +282,7 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
         size_t edge_count = 0;
         for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
             for (auto to_node : iter->second) {
-                rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
+                rr_graph_builder.create_edge_in_cache(iter->first, to_node, rr_node_driver_switches[to_node], false);
                 edge_count++;
             }
         }
