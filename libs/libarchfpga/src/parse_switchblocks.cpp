@@ -445,7 +445,7 @@ void check_switchblock(const t_switchblock_inf& sb, const t_arch* arch) {
     }
 
     /* check that specified wires exist */
-    for (const t_wireconn_inf& wireconn : sb->wireconns) {
+    for (const t_wireconn_inf& wireconn : sb.wireconns) {
         check_wireconn(arch, wireconn);
     }
 

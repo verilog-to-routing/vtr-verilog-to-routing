@@ -1630,11 +1630,6 @@ struct t_chan_width_dist {
     t_chan chan_y_dist;
 };
 
-enum e_directionality {
-    UNI_DIRECTIONAL,
-    BI_DIRECTIONAL
-};
-
 /**
  * @brief An attribute of a segment that defines the general category of the wire segment type.
  *
