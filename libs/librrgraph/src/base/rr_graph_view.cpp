@@ -79,7 +79,7 @@ RRSegmentId RRGraphView::node_segment(RRNodeId node) const {
 
 size_t RRGraphView::in_edges_count() const {
     size_t edge_count = 0;
-    for (const std::vector<RRwEdgeId>& edge_list : node_in_edges_) {
+    for (const std::vector<RREdgeId>& edge_list : node_in_edges_) {
         edge_count += edge_list.size();
     }
     return edge_count;

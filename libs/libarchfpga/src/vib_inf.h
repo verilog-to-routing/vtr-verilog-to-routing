@@ -151,10 +151,10 @@ class VibInf {
     size_t mux_index_by_name(const std::string& name) const;
 
   private:
-    /// The name of the VIB type, "vib0" in the example. 
+    /// The name of the VIB type, "vib0" in the example.
     std::string name_;
 
-    /// The pbtype of the VIB, "clb" in the example. 
+    /// The pbtype of the VIB, "clb" in the example.
     std::string pbtype_name_;
 
     /// The number of segment groups.

@@ -2937,7 +2937,7 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
     }
 
     process_tileable_device_parameters(arch, loc_data);
-    
+
     ReqOpt custom_switchblock_reqd = BoolToReqOpt(!custom_switch_block);
     arch->Fs = get_attribute(Cur, "fs", loc_data, custom_switchblock_reqd).as_int(3);
 
@@ -2954,11 +2954,11 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
 static void process_tileable_device_parameters(t_arch* arch, const pugiutil::loc_data& loc_data) {
     pugi::xml_node cur;
 
-    // Parse attribute 'sub_type', representing the minor connectivity pattern for switch blocks 
+    // Parse attribute 'sub_type', representing the minor connectivity pattern for switch blocks
     // If not specified, the 'sub_type' is the same as major type
     // This option is only valid for tileable routing resource graph builder
     // Note that sub_type does not support custom switch block pattern!!!
-    // If 'sub_type' is specified, the custom switch block for 'type' is not allowed! 
+    // If 'sub_type' is specified, the custom switch block for 'type' is not allowed!
     std::string sub_type_str = get_attribute(cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
     if (!sub_type_str.empty()) {
         if (sub_type_str == "wilton") {

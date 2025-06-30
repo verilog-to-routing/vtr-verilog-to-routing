@@ -287,9 +287,9 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
     // The binary search above occasionally does not find the minimum routeable channel width.
     // Sometimes a circuit that will not route in 19 channels will route in 18, due to router flukiness.
-    // If verify_binary_search is set, the code below will ensure that FPGAs with channel widths of 
+    // If verify_binary_search is set, the code below will ensure that FPGAs with channel widths of
     // final-2 and final-3 wil not route successfully.
-    // If one does route successfully, the router keeps trying smaller channel widths until two in a 
+    // If one does route successfully, the router keeps trying smaller channel widths until two in a
     // row (e.g. 8 and 9) fail.
 
     if (verify_binary_search) {

@@ -2284,7 +2284,7 @@ struct t_arch {
     char* architecture_id;
 
     // Options for tileable routing architectures
-    // These are used for an alternative, tilable, rr-graph generator that can produce 
+    // These are used for an alternative, tilable, rr-graph generator that can produce
     // OpenFPGA-compatible FPGAs that can be implemented to silicon via the OpenFPGA flow
 
     /// Whether the routing architecture is tileable
