@@ -463,7 +463,7 @@ static void process_vib_block_type_locs(t_vib_grid_def& grid_def,
             loc_defs.push_back(std::move(region_def));
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
-                           "Unrecognized grid location specification type '%s'\n", loc_type);
+                           "Unrecognized grid location specification type '%s'\n", loc_type.c_str());
         }
     }
 }
