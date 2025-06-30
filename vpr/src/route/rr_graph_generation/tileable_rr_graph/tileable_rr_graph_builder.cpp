@@ -152,8 +152,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 
     /* Get the routing segments on X-axis and Y-axis separately */
     t_unified_to_parallel_seg_index segment_index_map;
-    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS, true);
-    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS, true);
+    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, e_parallel_axis::X_AXIS, true);
+    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, e_parallel_axis::Y_AXIS, true);
 
     /* Get vib grid */
     const auto& vib_grid = device_ctx.vib_grid;
