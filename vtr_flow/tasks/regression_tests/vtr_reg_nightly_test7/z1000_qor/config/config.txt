@@ -18,27 +18,27 @@ additional_files_list_add=--read_rr_graph,z1000_rr_graph.xml
 
 # Add circuits to list to sweep
 # These are the MCNC circuits which could theoretically fit on the Z1000 architecture.
-#       The Z1000 architecture has 1024 4-LUTs, 1024 registers, and 1024 GPIOs
+#       The Z1000 architecture has 2048 4-LUTs, 2048 registers, and 1024 GPIOs
 #       It can support up to 4 clock domains.
 # NOTE: Some of these circuit have been disabled due to the packer not packing
-#       densely enough and is giving up too early.
-# circuit_list_add=alu4.blif
+#       densely enough.
+circuit_list_add=alu4.blif
 # circuit_list_add=apex2.blif
 circuit_list_add=apex4.blif
-# circuit_list_add=bigkey.blif
-# circuit_list_add=des.blif
-# circuit_list_add=diffeq.blif
-# circuit_list_add=dsip.blif
+circuit_list_add=bigkey.blif
+circuit_list_add=des.blif
+circuit_list_add=diffeq.blif
+circuit_list_add=dsip.blif
 circuit_list_add=ex5p.blif
 circuit_list_add=misex3.blif
 # circuit_list_add=s298.blif
-# circuit_list_add=seq.blif
+circuit_list_add=seq.blif
 circuit_list_add=tseng.blif
 
 # Constrain the clocks
-# circuit_constraint_list_add=(bigkey.blif, constraints=../../../../constraints/bigkey_clk_constraints.xml)
-# circuit_constraint_list_add=(diffeq.blif, constraints=../../../../constraints/diffeq_clk_constraints.xml)
-# circuit_constraint_list_add=(dsip.blif,   constraints=../../../../constraints/dsip_clk_constraints.xml)
+circuit_constraint_list_add=(bigkey.blif, constraints=../../../../constraints/bigkey_clk_constraints.xml)
+circuit_constraint_list_add=(diffeq.blif, constraints=../../../../constraints/diffeq_clk_constraints.xml)
+circuit_constraint_list_add=(dsip.blif,   constraints=../../../../constraints/dsip_clk_constraints.xml)
 # circuit_constraint_list_add=(s298.blif,   constraints=../../../../constraints/s298_clk_constraints.xml)
 circuit_constraint_list_add=(tseng.blif,  constraints=../../../../constraints/tseng_clk_constraints.xml)
 

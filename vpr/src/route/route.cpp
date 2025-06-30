@@ -10,6 +10,7 @@
 #include "route_profiling.h"
 #include "route_utils.h"
 #include "rr_graph.h"
+#include "router_lookahead_report.h"
 #include "vtr_time.h"
 
 bool route(const Netlist<>& net_list,
@@ -154,6 +155,12 @@ bool route(const Netlist<>& net_list,
     }
 
     VTR_ASSERT(router_lookahead != nullptr);
+
+    // After the router lookahead has been fully created, generate the router
+    // lookahead report if requested.
+    if (router_opts.generate_router_lookahead_report) {
+        generate_router_lookahead_report(router_lookahead, router_opts);
+    }
 
     /* Routing parameters */
     float pres_fac = router_opts.first_iter_pres_fac;

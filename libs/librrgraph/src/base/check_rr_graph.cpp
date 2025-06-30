@@ -166,7 +166,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                           inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_to_node);
             }
 
-            //Between two wire segments
+            // Between two wire segments
             VTR_ASSERT_MSG(to_rr_type == e_rr_type::CHANX || to_rr_type == e_rr_type::CHANY || to_rr_type == e_rr_type::IPIN, "Expect channel type or input pin type");
             VTR_ASSERT_MSG(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::OPIN, "Expect channel type or output pin type");
 
@@ -191,7 +191,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                  */
                 if ((to_rr_type == e_rr_type::CHANX || to_rr_type == e_rr_type::CHANY)
                     && (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY)) {
-                    auto switch_type = rr_graph.rr_switch_inf(RRSwitchId(kv.first)).type();
+                    SwitchType switch_type = rr_graph.rr_switch_inf(RRSwitchId(kv.first)).type();
 
                     VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
                               inode, kv.second, to_node, kv.first, SWITCH_TYPE_STRINGS[size_t(switch_type)]);
@@ -203,14 +203,14 @@ void check_rr_graph(const RRGraphView& rr_graph,
         check_unbuffered_edges(rr_graph, inode);
 
         //Check that all config/non-config edges are appropriately organized
-        for (auto edge : rr_graph.configurable_edges(RRNodeId(inode))) {
+        for (t_edge_size edge : rr_graph.configurable_edges(RRNodeId(inode))) {
             if (!rr_graph.edge_is_configurable(RRNodeId(inode), edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is non-configurable, but in configurable edges",
                                 inode, edge);
             }
         }
 
-        for (auto edge : rr_graph.non_configurable_edges(RRNodeId(inode))) {
+        for (t_edge_size edge : rr_graph.non_configurable_edges(RRNodeId(inode))) {
             if (rr_graph.edge_is_configurable(RRNodeId(inode), edge)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d edge %d is configurable, but in non-configurable edges",
                                 inode, edge);
@@ -556,40 +556,33 @@ void check_rr_node(const RRGraphView& rr_graph,
 static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node) {
     /* This routine checks that all pass transistors in the routing truly are  *
      * bidirectional.  It may be a slow check, so don't use it all the time.   */
-
-    int from_edge, to_node, to_edge, from_num_edges, to_num_edges;
-    e_rr_type from_rr_type, to_rr_type;
-    short from_switch_type;
-    bool trans_matched;
-
-    from_rr_type = rr_graph.node_type(RRNodeId(from_node));
+    e_rr_type from_rr_type = rr_graph.node_type(RRNodeId(from_node));
     if (from_rr_type != e_rr_type::CHANX && from_rr_type != e_rr_type::CHANY)
         return;
 
-    from_num_edges = rr_graph.num_edges(RRNodeId(from_node));
+    int from_num_edges = rr_graph.num_edges(RRNodeId(from_node));
 
-    for (from_edge = 0; from_edge < from_num_edges; from_edge++) {
-        to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), from_edge));
-        to_rr_type = rr_graph.node_type(RRNodeId(to_node));
+    for (int from_edge = 0; from_edge < from_num_edges; from_edge++) {
+        RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), from_edge);
+        e_rr_type to_rr_type = rr_graph.node_type(to_node);
 
         if (to_rr_type != e_rr_type::CHANX && to_rr_type != e_rr_type::CHANY)
             continue;
 
-        from_switch_type = rr_graph.edge_switch(RRNodeId(from_node), from_edge);
+        short from_switch_type = rr_graph.edge_switch(RRNodeId(from_node), from_edge);
 
         if (rr_graph.rr_switch_inf(RRSwitchId(from_switch_type)).buffered())
             continue;
 
-        /* We know that we have a pass transistor from from_node to to_node. Now *
-         * check that there is a corresponding edge from to_node back to         *
-         * from_node.                                                            */
+        // We know that we have a pass transistor from from_node to to_node. Now
+        // check that there is a corresponding edge from to_node back to from_node.
 
-        to_num_edges = rr_graph.num_edges(RRNodeId(to_node));
-        trans_matched = false;
+        int to_num_edges = rr_graph.num_edges(to_node);
+        bool trans_matched = false;
 
-        for (to_edge = 0; to_edge < to_num_edges; to_edge++) {
-            if (size_t(rr_graph.edge_sink_node(RRNodeId(to_node), to_edge)) == size_t(from_node)
-                && rr_graph.edge_switch(RRNodeId(to_node), to_edge) == from_switch_type) {
+        for (int to_edge = 0; to_edge < to_num_edges; to_edge++) {
+            if (size_t(rr_graph.edge_sink_node(to_node, to_edge)) == size_t(from_node)
+                && rr_graph.edge_switch(to_node, to_edge) == from_switch_type) {
                 trans_matched = true;
                 break;
             }

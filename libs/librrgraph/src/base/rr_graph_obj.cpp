@@ -152,7 +152,7 @@ RRIndexedDataId RRGraph::node_cost_index(const RRNodeId& node) const {
     return RRIndexedDataId(node_cost_indices_[node]);
 }
 
-Direction RRGraph::node_direction(const RRNodeId& node) const {
+Direction RRGraph::node_direction(RRNodeId node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     VTR_ASSERT_MSG(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY, "Direction valid only for CHANX/CHANY RR nodes");
     return node_directions_[node];

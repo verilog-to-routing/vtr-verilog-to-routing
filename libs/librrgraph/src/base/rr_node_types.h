@@ -38,6 +38,10 @@ enum class e_rr_type : unsigned char {
 constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_rr_type::SOURCE, e_rr_type::SINK, e_rr_type::IPIN,
                                                                       e_rr_type::OPIN, e_rr_type::CHANX, e_rr_type::CHANY, e_rr_type::MUX}};
 
+/**
+ * @brief Lookup for the string representation of the given node type. This is useful
+ *        for logging the type of an RR node.
+ */
 constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename {"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "MUX"};
 
 /**
