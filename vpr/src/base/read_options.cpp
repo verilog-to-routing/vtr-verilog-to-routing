@@ -1639,11 +1639,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     gen_grp.add_argument<bool, ParseOnOff>(args.verify_rr_switch_id, "--verify_rr_switch_id")
         .help(
-            "Verify that the switch IDs in the routing file are consistent with those in the RR Graph."
-            "Set this to false when switch IDs in the routing file may differ from the RR Graph."
-            "For example, when analyzing different timing corners using the same netlist, placement, and routing files,"
-            "the RR switch IDs in the RR Graph may differ due to changes in delays."
-            "In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.")
+            "Verify that the switch IDs in the routing file are consistent with those in the RR Graph. "
+            "Set this to false when switch IDs in the routing file may differ from the RR Graph. "
+            "For example, when analyzing different timing corners using the same netlist, placement, and routing files, "
+            "the RR switch IDs in the RR Graph may differ due to changes in delays. "
+            "In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.\n")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

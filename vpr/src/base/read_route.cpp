@@ -39,6 +39,17 @@
 #include "old_traceback.h"
 
 /*************Functions local to this module*************/
+
+/**
+ * @brief Read the routing file and create the routing tree for each net.
+ *
+ * @param net_list The netlist to process.
+ * @param fp The file stream to read from.
+ * @param filename The name of the file to read from.
+ * @param lineno The line number currently being processed.
+ * @param verify_rr_switch_id Whether to verify the RR switch IDs in the routing file.
+ * @param is_flat Whether flat-router is enabled.
+ */
 static void process_route(const Netlist<>& net_list,
                           std::ifstream& fp,
                           const char* filename,
@@ -46,6 +57,15 @@ static void process_route(const Netlist<>& net_list,
                           bool verify_rr_switch_id,
                           bool is_flat);
 
+/**
+ * @brief Create the routing tree for the net at the given line number in the routing file.
+ *
+ * @param net_list The netlist to process.
+ * @param fp The file stream to read from.
+ * @param inet The net ID to process.
+ * @param filename The name of the file to read from.
+ * @param verify_rr_switch_id Whether to verify the RR switch IDs in the routing file.
+ */
 static void process_nodes(const Netlist<>& net_list,
                           std::ifstream& fp,
                           ClusterNetId inet,
@@ -53,6 +73,19 @@ static void process_nodes(const Netlist<>& net_list,
                           bool verify_rr_switch_id,
                           int& lineno);
 
+/**
+ * @brief Process the net at the given line number in the routing file.
+ *
+ * @param net_list The netlist to process.
+ * @param fp The file stream to read from.
+ * @param inet The net ID to process.
+ * @param name The name of the net.
+ * @param input_tokens The tokens of the net.
+ * @param filename The name of the file to read from.
+ * @param lineno The line number currently being processed.
+ * @param verify_rr_switch_id Whether to verify the RR switch IDs in the routing file.
+ * @param is_flat Whether flat-router is enabled.
+ */
 static void process_nets(const Netlist<>& net_list,
                          std::ifstream& fp,
                          ClusterNetId inet,
@@ -63,14 +96,49 @@ static void process_nets(const Netlist<>& net_list,
                          bool verify_rr_switch_id,
                          bool is_flat);
 
-static void update_rr_switch_id(t_trace* trace, std::set<int>& seen_rr_nodes);
+/**
+ * @brief Update the switch IDs in the routing trace to match the RR Graph.
+ *
+ * @note This function is called recursively to update the switch IDs in the routing trace.
+ *
+ * @param trace Pointer to the head of the routing trace of the net to update.
+ * @param seen_rr_nodes A set of seen RR nodes to avoid duplicate updates.
+ */
+static void update_rr_switch_id(t_trace* trace,
+                                std::set<int>& seen_rr_nodes);
 
-static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat);
-static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
-static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input);
+/**
+ * @brief This function goes through all the blocks in a global net and verify
+ *        it with the clustered netlist and the placement
+ */
+static void process_global_blocks(const Netlist<>& net_list,
+                                  std::ifstream& fp,
+                                  ClusterNetId inet,
+                                  const char* filename,
+                                  int& lineno,
+                                  bool is_flat);
+
+static void format_coordinates(int& layer_num,
+                               int& x,
+                               int& y,
+                               std::string coord,
+                               ClusterNetId net,
+                               const char* filename,
+                               const int lineno);
+
+static void format_pin_info(std::string& pb_name,
+                            std::string& port_name,
+                            int& pb_pin_num,
+                            const std::string& input);
+
 static std::string format_name(std::string name);
-static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node);
-void print_route(const Netlist<>& net_list, FILE* fp, bool is_flat);
+
+static bool check_rr_graph_connectivity(RRNodeId prev_node,
+                                        RRNodeId node);
+
+void print_route(const Netlist<>& net_list,
+                 FILE* fp,
+                 bool is_flat);
 
 /*************Global Functions****************************/
 
@@ -80,7 +148,10 @@ void print_route(const Netlist<>& net_list, FILE* fp, bool is_flat);
  * Perform a series of verification tests to ensure the netlist,
  * placement, and routing files match
  */
-bool read_route(const char* route_file, const t_router_opts& router_opts, bool verify_file_digests, bool is_flat) {
+bool read_route(const char* route_file,
+                const t_router_opts& router_opts,
+                bool verify_file_digests,
+                bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& place_ctx = g_vpr_ctx.placement();
     bool flat_router = router_opts.flat_routing;
@@ -167,7 +238,6 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     return is_feasible;
 }
 
-///@brief Walks through every net and add the routing appropriately
 static void process_route(const Netlist<>& net_list,
                           std::ifstream& fp,
                           const char* filename,
@@ -186,15 +256,30 @@ static void process_route(const Netlist<>& net_list,
             continue; //Skip commented lines
         } else if (tokens[0] == "Net") {
             ClusterNetId inet(atoi(tokens[1].c_str()));
-            process_nets(net_list, fp, inet, tokens[2], tokens, filename, lineno, verify_rr_switch_id, is_flat);
+            process_nets(net_list,
+                         fp,
+                         inet,
+                         tokens[2],
+                         tokens,
+                         filename,
+                         lineno,
+                         verify_rr_switch_id,
+                         is_flat);
         }
     }
 
     tokens.clear();
 }
 
-///@brief Check if the net is global or not, and process appropriately
-static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool verify_rr_switch_id, bool is_flat) {
+static void process_nets(const Netlist<>& net_list,
+                         std::ifstream& fp,
+                         ClusterNetId inet,
+                         std::string name,
+                         std::vector<std::string> input_tokens,
+                         const char* filename,
+                         int& lineno,
+                         bool verify_rr_switch_id,
+                         bool is_flat) {
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
         && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
         /* Global net.  Never routed. */
@@ -227,12 +312,22 @@ static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNe
                       name.c_str(), size_t(inet), net_list.net_name(inet).c_str());
         }
 
-        process_nodes(net_list, fp, inet, filename, verify_rr_switch_id, lineno);
+        process_nodes(net_list,
+                      fp,
+                      inet,
+                      filename,
+                      verify_rr_switch_id,
+                      lineno);
     }
     input_tokens.clear();
 }
 
-static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, bool verify_rr_switch_id, int& lineno) {
+static void process_nodes(const Netlist<>& net_list,
+                          std::ifstream& fp,
+                          ClusterNetId inet,
+                          const char* filename,
+                          bool verify_rr_switch_id,
+                          int& lineno) {
     /* Not a global net. Goes through every node and add it into trace.head*/
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -437,7 +532,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
 }
 
 static void update_rr_switch_id(t_trace* trace, std::set<int>& seen_rr_nodes) {
-    if (!trace) {
+    if (trace == nullptr) {
         return;
     }
 
@@ -445,50 +540,39 @@ static void update_rr_switch_id(t_trace* trace, std::set<int>& seen_rr_nodes) {
 
     t_trace* next = trace->next;
 
-    if (next) {
-        if (trace->iswitch == OPEN) { //End of a branch
+    if (next == nullptr) {
+        return;
+    }
 
-            //Verify that the next element (branch point) has been already seen in the traceback so far
-            if (!seen_rr_nodes.count(next->index)) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
-            } else {
-                //Recurse along the new branch
-                update_rr_switch_id(next, seen_rr_nodes);
-                return;
+    if (trace->iswitch == OPEN) { //End of a branch
+        //Verify that the next element (branch point) has been already seen in the traceback so far
+        if (!seen_rr_nodes.count(next->index)) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
+        }
+    } else { //Midway along branch
+        //Check there is an edge connecting trace and next
+        auto& device_ctx = g_vpr_ctx.device();
+        const auto& rr_graph = device_ctx.rr_graph;
+        bool found = false;
+        for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(trace->index)); ++iedge) {
+            int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), iedge));
+            if (to_node == next->index) {
+                found = true;
+
+                //Verify that the switch matches
+                int rr_iswitch = rr_graph.edge_switch(RRNodeId(trace->index), iedge);
+                trace->iswitch = rr_iswitch;
+                break;
             }
-        } else { //Midway along branch
-
-            //Check there is an edge connecting trace and next
-
-            auto& device_ctx = g_vpr_ctx.device();
-            const auto& rr_graph = device_ctx.rr_graph;
-            bool found = false;
-            for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(trace->index)); ++iedge) {
-                int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), iedge));
-                if (to_node == next->index) {
-                    found = true;
-
-                    //Verify that the switch matches
-                    int rr_iswitch = rr_graph.edge_switch(RRNodeId(trace->index), iedge);
-                    trace->iswitch = rr_iswitch;
-                    break;
-                }
-            }
-            if (!found) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
-            }
-            //Recurse
-            update_rr_switch_id(next, seen_rr_nodes);
-            return;
+        }
+        if (!found) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
         }
     }
-    VTR_ASSERT(!next);
+    //Recurse
+    update_rr_switch_id(next, seen_rr_nodes);
 }
 
-/**
- * @brief This function goes through all the blocks in a global net and verify
- *        it with the clustered netlist and the placement
- */
 static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat) {
     std::string block, bnum_str;
     int layer_num, x, y;
