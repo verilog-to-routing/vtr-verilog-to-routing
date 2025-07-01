@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <sstream>
 #include <string>
+#include <stack>
 
 #include "physical_types_util.h"
 #include "vtr_assert.h"
@@ -99,13 +100,9 @@ static void process_nets(const Netlist<>& net_list,
 /**
  * @brief Update the switch IDs in the routing trace to match the RR Graph.
  *
- * @note This function is called recursively to update the switch IDs in the routing trace.
- *
  * @param trace Pointer to the head of the routing trace of the net to update.
- * @param seen_rr_nodes A set of seen RR nodes to avoid duplicate updates.
  */
-static void update_rr_switch_id(t_trace* trace,
-                                std::set<int>& seen_rr_nodes);
+static void update_rr_switch_id(t_trace* trace);
 
 /**
  * @brief This function goes through all the blocks in a global net and verify
@@ -522,8 +519,7 @@ static void process_nodes(const Netlist<>& net_list,
     if (verify_route_file_switch_id ) {
         VTR_ASSERT(validate_traceback(head_ptr));
     } else {
-        std::set<int> seen_rr_nodes;
-        update_rr_switch_id(head_ptr, seen_rr_nodes);
+        update_rr_switch_id(head_ptr);
     }
 
     /* Convert to route_tree after reading */
@@ -531,45 +527,53 @@ static void process_nodes(const Netlist<>& net_list,
     free_traceback(head_ptr);
 }
 
-static void update_rr_switch_id(t_trace* trace, std::set<int>& seen_rr_nodes) {
+static void update_rr_switch_id(t_trace* trace) {
     if (trace == nullptr) {
         return;
     }
 
-    seen_rr_nodes.insert(trace->index);
+    std::set<int> seen_rr_nodes;
 
-    t_trace* next = trace->next;
+    std::stack<t_trace*> trace_stack;
+    trace_stack.push(trace);
 
-    if (next == nullptr) {
-        return;
-    }
 
-    if (trace->iswitch == OPEN) { // End of a branch
-        // Verify that the next element (branch point) has been already seen in the traceback so far
-        if (!seen_rr_nodes.count(next->index)) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
+    while (!trace_stack.empty()) {
+        trace = trace_stack.top();
+        trace_stack.pop();
+        seen_rr_nodes.insert(trace->index);
+        t_trace* next = trace->next;
+
+        if (next == nullptr) {
+            continue;
         }
-    } else { // Midway along branch
-        // Check there is an edge connecting trace and next
-        const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-        bool found = false;
-        for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(trace->index)); ++iedge) {
-            int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), iedge));
-            if (to_node == next->index) {
-                found = true;
 
-                // Verify that the switch matches
-                int rr_iswitch = rr_graph.edge_switch(RRNodeId(trace->index), iedge);
-                trace->iswitch = rr_iswitch;
-                break;
+        if (trace->iswitch == OPEN) { // End of a branch
+            // Verify that the next element (branch point) has been already seen in the traceback so far
+            if (!seen_rr_nodes.count(next->index)) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
+            }
+        } else { // Midway along branch
+            // Check there is an edge connecting trace and next
+            const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+            bool found = false;
+            for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(trace->index)); ++iedge) {
+                int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), iedge));
+                if (to_node == next->index) {
+                    found = true;
+
+                    // Verify that the switch matches
+                    int rr_iswitch = rr_graph.edge_switch(RRNodeId(trace->index), iedge);
+                    trace->iswitch = rr_iswitch;
+                    break;
+                }
+            }
+            if (!found) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
             }
         }
-        if (!found) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
-        }
+        trace_stack.push(next);
     }
-    // Recurse
-    update_rr_switch_id(next, seen_rr_nodes);
 }
 
 static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat) {
