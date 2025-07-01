@@ -148,6 +148,7 @@ bool validate_and_update_traceback(t_trace* trace, bool verify_switch_id /* = tr
 
     std::set<int> seen_rr_nodes;
     std::stack<t_trace*> trace_stack;
+    trace_stack.push(trace);
 
     while (!trace_stack.empty()) {
         trace = trace_stack.top();
@@ -159,13 +160,13 @@ bool validate_and_update_traceback(t_trace* trace, bool verify_switch_id /* = tr
             continue;
         }
 
-        if (trace->iswitch == OPEN) { //End of a branch
-            //Verify that the next element (branch point) has been already seen in the traceback so far
+        if (trace->iswitch == OPEN) { // End of a branch
+            // Verify that the next element (branch point) has been already seen in the traceback so far
             if (!seen_rr_nodes.count(next->index)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
             }
-        } else { //Midway along branch
-            //Check there is an edge connecting trace and next
+        } else { // Midway along branch
+            // Check there is an edge connecting trace and next
             const auto& rr_graph = g_vpr_ctx.device().rr_graph;
             bool found = false;
             for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(trace->index)); ++iedge) {
