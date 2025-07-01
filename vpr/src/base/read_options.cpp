@@ -1637,7 +1637,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    gen_grp.add_argument<bool, ParseOnOff>(args.verify_rr_switch_id, "--verify_rr_switch_id")
+    gen_grp.add_argument<bool, ParseOnOff>(args.verify_route_file_switch_id , "--verify_route_file_switch_id")
         .help(
             "Verify that the switch IDs in the routing file are consistent with those in the RR Graph. "
             "Set this to false when switch IDs in the routing file may differ from the RR Graph. "
