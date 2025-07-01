@@ -46,4 +46,14 @@ class TracebackCompat {
 t_trace* alloc_trace_data();
 void free_traceback(t_trace* trace);
 void print_traceback(const t_trace* trace);
-bool validate_traceback(t_trace* trace);
+
+/**
+ * @brief Validate the routing traceback if verify_switch_id is true, otherwise update the 
+ *        switch IDs in the traceback to match the RR Graph.
+ * 
+ * @param trace Pointer to the head of the routing trace of the net to validate and update.
+ * @param verify_switch_id Whether to verify the switch IDs in the traceback.
+ * 
+ * @return true if the traceback is valid, false otherwise.
+ */
+bool validate_and_update_traceback(t_trace* trace, bool verify_switch_id = true);

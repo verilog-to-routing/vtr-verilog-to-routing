@@ -6,9 +6,9 @@
 #include "route_common.h"
 
 #include <vector>
+#include <stack>
 
 std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const RouteTreeNode& node);
-bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 void free_trace_data(t_trace* tptr);
 
 /** Build a route tree from a traceback */
@@ -109,7 +109,7 @@ t_trace* TracebackCompat::traceback_from_route_tree(const RouteTree& tree) {
 
     std::tie(head, tail) = traceback_from_route_tree_recurr(nullptr, nullptr, tree.root());
 
-    VTR_ASSERT(validate_traceback(head));
+    VTR_ASSERT(validate_and_update_traceback(head));
 
     return head;
 }
@@ -141,70 +141,64 @@ void print_traceback(const t_trace* trace) {
     VTR_LOG("\n");
 }
 
-bool validate_traceback(t_trace* trace) {
-    std::set<int> seen_rr_nodes;
-
-    return validate_traceback_recurr(trace, seen_rr_nodes);
-}
-
-bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
+bool validate_and_update_traceback(t_trace* trace, bool verify_switch_id /* = true */) {
     if (!trace) {
         return true;
     }
 
-    seen_rr_nodes.insert(trace->index);
+    std::set<int> seen_rr_nodes;
+    std::stack<t_trace*> trace_stack;
 
-    t_trace* next = trace->next;
+    while (!trace_stack.empty()) {
+        trace = trace_stack.top();
+        trace_stack.pop();
+        seen_rr_nodes.insert(trace->index);
+        t_trace* next = trace->next;
 
-    if (next) {
+        if (next == nullptr) {
+            continue;
+        }
+
         if (trace->iswitch == OPEN) { //End of a branch
-
             //Verify that the next element (branch point) has been already seen in the traceback so far
             if (!seen_rr_nodes.count(next->index)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);
-            } else {
-                //Recurse along the new branch
-                return validate_traceback_recurr(next, seen_rr_nodes);
             }
         } else { //Midway along branch
-
             //Check there is an edge connecting trace and next
-
-            auto& device_ctx = g_vpr_ctx.device();
-            const auto& rr_graph = device_ctx.rr_graph;
+            const auto& rr_graph = g_vpr_ctx.device().rr_graph;
             bool found = false;
             for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(RRNodeId(trace->index)); ++iedge) {
                 int to_node = size_t(rr_graph.edge_sink_node(RRNodeId(trace->index), iedge));
-
                 if (to_node == next->index) {
                     found = true;
-
-                    //Verify that the switch matches
                     int rr_iswitch = rr_graph.edge_switch(RRNodeId(trace->index), iedge);
-                    if (trace->iswitch != rr_iswitch) {
-                        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback mismatched switch type: traceback %d rr_graph %d (RR nodes %d -> %d)\n",
-                                        trace->iswitch, rr_iswitch,
-                                        trace->index, to_node);
+                    if (verify_switch_id) {
+                        // Verify that the switch matches
+                        if (trace->iswitch != rr_iswitch) {
+                            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback mismatched switch type: traceback %d rr_graph %d (RR nodes %d -> %d)\n",
+                                            trace->iswitch, rr_iswitch,
+                                            trace->index, to_node);
+                        }
+                    } else {
+                        // Update the switch ID in the traceback to match the RR Graph
+                        trace->iswitch = rr_iswitch;
                     }
                     break;
                 }
             }
-
             if (!found) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback no RR edge between RR nodes %d -> %d\n", trace->index, next->index);
             }
-
-            //Recurse
-            return validate_traceback_recurr(next, seen_rr_nodes);
         }
+        // Recurse
+        trace_stack.push(next);
     }
 
-    VTR_ASSERT(!next);
-    return true; //End of traceback
+    return true;
 }
 
-t_trace*
-alloc_trace_data() {
+t_trace* alloc_trace_data() {
     return (t_trace*)malloc(sizeof(t_trace));
 }
 
