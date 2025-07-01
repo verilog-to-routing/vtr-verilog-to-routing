@@ -2946,6 +2946,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("map")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.generate_router_lookahead_report, "--generate_router_lookahead_report")
+        .help("If turned on, generates a detailed report on the router lookahead: report_router_lookahead.rpt\n"
+              "\n"
+              "This report contains information on how accurate the router lookahead is and "
+              "if and when it overestimates the cost from a node to a target node. It does "
+              "this by doing a set of trial routes and comparing the estimated cost from the "
+              "router lookahead to the actual cost of the route path.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_threshold, "--router_initial_acc_cost_chan_congestion_threshold")
         .help("Utilization threshold above which initial accumulated routing cost (acc_cost) "
               "is increased to penalize congested channels. Used to bias routing away from "

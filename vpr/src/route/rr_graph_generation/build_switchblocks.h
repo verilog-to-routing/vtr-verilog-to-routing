@@ -10,33 +10,36 @@
 
 /************ Classes, structs, typedefs ************/
 
-/* Holds the coordinates of a switch block source connection. Used to index into a
- * map which specifies which destination wire segments this source wire should		//TODO: what data structure does this index to?
- * connect to */
-class Switchblock_Lookup {
+/**
+ * @brief Holds the coordinates of a switch block source connection.
+ *
+ * Used to index into a map which specifies which destination wire segments this source wire should
+ * connect to.
+ */
+class SwitchblockLookupKey {
   public:
-    int x_coord; /* x coordinate of switchblock connection */ //TODO: redundant comment?? add range
-    int y_coord;                                              /* y coordinate of switchblock connection */
-    int layer_coord;                                          /* layer number of switchblock */
-    e_side from_side;                                         /* source side of switchblock connection */
-    e_side to_side;                                           /* destination side of switchblock connection */
+    int x_coord;      ///< x coordinate of switchblock connection
+    int y_coord;      ///< y coordinate of switchblock connection
+    int layer_coord;  ///< layer number of switchblock
+    e_side from_side; ///< source side of switchblock connection
+    e_side to_side;   ///< destination side of switchblock connection
 
-    /* Empty constructor initializes everything to 0 */
-    Switchblock_Lookup() {
+    /// @brief Empty constructor initializes everything to 0
+    SwitchblockLookupKey() {
         x_coord = y_coord = layer_coord = -1; //TODO: use set function
     }
 
-    /* Constructor for initializing member variables */
-    Switchblock_Lookup(int set_x, int set_y, int set_layer, e_side set_from, e_side set_to) {
-        this->set_coords(set_x, set_y, set_layer, set_from, set_to); //TODO: use set function
+    /// @brief Constructor for initializing member variables
+    SwitchblockLookupKey(int set_x, int set_y, int set_layer, e_side set_from, e_side set_to) {
+        this->set_coords(set_x, set_y, set_layer, set_from, set_to);
     }
 
-    /* Constructor for initializing member variables with default layer number (0), used for single die FPGA */
-    Switchblock_Lookup(int set_x, int set_y, e_side set_from, e_side set_to) {
+    /// @brief Constructor for initializing member variables with default layer number (0), used for single die FPGA
+    SwitchblockLookupKey(int set_x, int set_y, e_side set_from, e_side set_to) {
         this->set_coords(set_x, set_y, 0, set_from, set_to);
     }
 
-    /* Function for setting the segment coordinates */
+    /// @brief Sets the coordinates
     void set_coords(int set_x, int set_y, int set_layer, e_side set_from, e_side set_to) {
         x_coord = set_x;
         y_coord = set_y;
@@ -45,8 +48,8 @@ class Switchblock_Lookup {
         to_side = set_to;
     }
 
-    /* Overload == operator which is used by std::unordered_map */
-    bool operator==(const Switchblock_Lookup& obj) const {
+    /// @brief Overload == operator which is used by std::unordered_map
+    bool operator==(const SwitchblockLookupKey& obj) const {
         bool result;
         if (x_coord == obj.x_coord && y_coord == obj.y_coord
             && from_side == obj.from_side && to_side == obj.to_side
@@ -60,7 +63,7 @@ class Switchblock_Lookup {
 };
 
 struct t_hash_Switchblock_Lookup {
-    size_t operator()(const Switchblock_Lookup& obj) const noexcept {
+    size_t operator()(const SwitchblockLookupKey& obj) const noexcept {
         std::size_t hash = std::hash<int>{}(obj.x_coord);
         vtr::hash_combine(hash, obj.y_coord);
         vtr::hash_combine(hash, obj.layer_coord);
@@ -71,37 +74,44 @@ struct t_hash_Switchblock_Lookup {
 };
 
 /**
- * @brief contains the required information to build an RR graph edge for a switch block connection
- *
- *  @from_wire source wire ptc_num index in a channel
- *  @to_wire destination wire ptc_num index in a channel
- *  @switch_ind RR graph switch index that connects the source wire to the destination wire that connect two tracks in same layer
- *  @switch_ind_between_layers RR graph switch index that connects two tracks in different layers
- *  @from_wire_layer the layer index that the source wire is located at
- *  @to_wire_layer the layer index that the destination wire is located at
- *
+ * @brief Contains the required information to build an RR graph edge for a switch block connection
  */
 struct t_switchblock_edge {
+    /// Source wire ptc_num index in a channel
     short from_wire;
+
+    /// Destination wire ptc_num index in a channel
     short to_wire;
+
+    /// RR graph switch index that connects the source wire to the destination wire that connect two tracks in same layer
     short switch_ind;
+
+    /// RR graph switch index that connects two tracks in different layers
     short switch_ind_between_layers;
+
+    /// The layer index that the source wire is located at
     short from_wire_layer;
+
+    /// The layer index that the destination wire is located at
     short to_wire_layer;
 };
 
-/* Switchblock connections are made as [x][y][from_layer][from_side][to_side][from_wire_idx].
+/**
+ * @brief Switchblock connections are made as [x][y][from_layer][from_side][to_side][from_wire_idx].
+ *
  * The Switchblock_Lookup class specifies these dimensions.
- * Furthermore, a source_wire at a given 6-d coordinate may connect to multiple destination wires so the value
- * of the map is a vector of destination wires.
- * A matrix specifying connections for all switchblocks in an FPGA would be sparse and possibly very large
- * so we use an unordered map to take advantage of the sparsity. */
-typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, t_hash_Switchblock_Lookup> t_sb_connection_map;
+ * Furthermore, a source_wire at a given 6-d coordinate may connect to multiple destination wires
+ * so the value of the map is a vector of destination wires.
+ *
+ * A matrix specifying connections for all switchblocks in an FPGA would be sparse and possibly very large,
+ * so we use an unordered map to take advantage of the sparsity.
+ */
+typedef std::unordered_map<SwitchblockLookupKey, std::vector<t_switchblock_edge>, t_hash_Switchblock_Lookup> t_sb_connection_map;
 
 /************ Functions ************/
 
 /**
- * @brief allocates and builds switch block permutation map
+ * @brief Allocates and builds switch block permutation map
  *
  *   @param chan_details_x channel-x details (length, start and end points, ...)
  *   @param chan_details_y channel-y details (length, start and end points, ...)
@@ -119,7 +129,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                                                              const DeviceGrid& grid,
                                                              const std::vector<bool>& inter_cluster_rr,
                                                              const std::vector<t_switchblock_inf>& switchblocks,
-                                                             t_chan_width* nodes_per_chan,
+                                                             const t_chan_width& nodes_per_chan,
                                                              enum e_directionality directionality,
                                                              vtr::RngContainer& rng);
 
