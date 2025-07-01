@@ -518,7 +518,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->with_timing_analysis = Options.timing_analysis;
 
     RouterOpts->verify_route_file_switch_id = Options.verify_route_file_switch_id;
-    
+
     RouterOpts->generate_router_lookahead_report = Options.generate_router_lookahead_report.value();
 }
 
