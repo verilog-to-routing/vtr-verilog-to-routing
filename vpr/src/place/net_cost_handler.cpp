@@ -96,7 +96,9 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     , placer_opts_(placer_opts) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    const int num_layers = device_ctx.grid.get_num_layers();
+    const size_t grid_width = device_ctx.grid.width();
+    const size_t grid_height = device_ctx.grid.height();
+    const size_t num_layers = device_ctx.grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
     is_multi_layer_ = num_layers > 1;
@@ -147,25 +149,20 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 
     alloc_and_load_chan_w_factors_for_place_cost_();
 
-    chanx_util_ = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
-                                             device_ctx.grid.width(),
-                                             device_ctx.grid.height()}},
-                                           0);
+    chanx_util_ = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
+    chany_util_ = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
 
-    chany_util_ = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
-                                             device_ctx.grid.width(),
-                                             device_ctx.grid.height()}},
-                                           0);
+    acc_chanx_util_ = vtr::PrefixSum2D<double>(grid_width,
+                                               grid_height,
+                                               [&](size_t x, size_t y) {
+                                                   return chanx_util_[0][x][y];
+                                               });
 
-    acc_chanx_util_ = vtr::PrefixSum2D<double>(chanx_util_.dim_size(1), chanx_util_.dim_size(2),
-        [&](size_t x, size_t y) -> double {
-            return chanx_util_[0][x][y];
-        }, 0);
-
-    acc_chany_util_ = vtr::PrefixSum2D<double>(chany_util_.dim_size(1), chany_util_.dim_size(2),
-        [&](size_t x, size_t y) -> double {
-            return chany_util_[0][x][y];
-        }, 0);
+    acc_chany_util_ = vtr::PrefixSum2D<double>(grid_width,
+                                               grid_height,
+                                               [&](size_t x, size_t y) {
+                                                   return chany_util_[0][x][y];
+                                               });
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
@@ -1426,8 +1423,8 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
 
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
 
-//    int distance_x = bb.xmax - bb.xmin + 1;
-//    int distance_y = bb.ymax - bb.ymin + 1;
+    //    int distance_x = bb.xmax - bb.xmin + 1;
+    //    int distance_y = bb.ymax - bb.ymin + 1;
 
     const float threshold = placer_opts_.congestion_chan_util_threshold;
 
@@ -1730,6 +1727,11 @@ double NetCostHandler::get_total_wirelength_estimate() const {
 
 double NetCostHandler::estimate_routing_chan_util() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    const size_t grid_width = device_ctx.grid.width();
+    const size_t grid_height = device_ctx.grid.height();
+    const size_t num_layers = device_ctx.grid.get_num_layers();
 
     chanx_util_.fill(0.);
     chany_util_.fill(0.);
@@ -1831,15 +1833,17 @@ double NetCostHandler::estimate_routing_chan_util() {
 
     // For now, congestion modeling in the placement stage is limited to a single die
     // TODO: extend it to multiple dice
-    acc_chanx_util_ = vtr::PrefixSum2D<double>(chanx_util_.dim_size(1), chanx_util_.dim_size(2),
-        [&](size_t x, size_t y) -> double {
-            return chanx_util_[0][x][y];
-        }, 0);
+    acc_chanx_util_ = vtr::PrefixSum2D<double>(grid_width,
+                                               grid_height,
+                                               [&](size_t x, size_t y) {
+                                                   return chanx_util_[0][x][y];
+                                               });
 
-    acc_chany_util_ = vtr::PrefixSum2D<double>(chany_util_.dim_size(1), chany_util_.dim_size(2),
-        [&](size_t x, size_t y) -> double {
-            return chany_util_[0][x][y];
-        }, 0);
+    acc_chany_util_ = vtr::PrefixSum2D<double>(grid_width,
+                                               grid_height,
+                                               [&](size_t x, size_t y) {
+                                                   return chany_util_[0][x][y];
+                                               });
 
     congestion_modeling_started_ = true;
 
