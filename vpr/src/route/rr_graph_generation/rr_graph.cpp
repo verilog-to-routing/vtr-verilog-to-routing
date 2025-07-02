@@ -3272,7 +3272,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         }
 
         // Edge arrays have now been built up.  Do everything else.
-        // AA: The cost_index should be w.r.t the index of the segment to its **parallel** segment_inf vector. 
+        // AA: The cost_index should be w.r.t the index of the segment to its **parallel** segment_inf vector.
         // Note that when building channels, we use the indices w.r.t segment_inf_x and segment_inf_y as
         // computed earlier in build_rr_graph so it's fine to use .index() for to get the correct index.
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + seg_details[track].index()));
@@ -3445,7 +3445,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     // Note: currently a single value of Fc is used across each pin. In the future the looping below will
     // have to be modified if we want to account for pin-based Fc values
 
-    // NB:  This wastes some space.  Could set tracks_..._pin[ipin][ioff][iside] = NULL if there is 
+    // NB:  This wastes some space.  Could set tracks_..._pin[ipin][ioff][iside] = NULL if there is
     // no pin on that side, or that pin is of the wrong type.
     // Probably not enough memory to worry about, esp. as it's temporary.
     // If pin ipin on side iside does not exist or is of the wrong type,

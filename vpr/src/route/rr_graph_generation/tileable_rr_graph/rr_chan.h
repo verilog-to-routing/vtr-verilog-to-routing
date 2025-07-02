@@ -35,7 +35,7 @@ class RRChan {
 
   public: // Accessors
     e_rr_type get_type() const;
-    
+
     /**
      * @brief Get the number of tracks in this channel
      */
@@ -64,6 +64,7 @@ class RRChan {
      * @brief Get a list of segments used in this routing channel
      */
     std::vector<size_t> get_node_ids_by_segment_ids(const RRSegmentId seg_id) const;
+
   public:
     void set(const RRChan&);
 
