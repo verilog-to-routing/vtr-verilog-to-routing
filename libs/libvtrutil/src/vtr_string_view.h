@@ -31,6 +31,10 @@ class string_view {
         : data_(str)
         , size_(size) {}
 
+    explicit string_view(const std::string& other)
+        : data_(other.c_str())
+        , size_(other.size()) {}
+
     constexpr string_view(const string_view& other) noexcept = default;
     ///@brief copy constructor
     constexpr string_view& operator=(const string_view& view) noexcept {

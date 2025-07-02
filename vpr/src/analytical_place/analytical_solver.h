@@ -11,6 +11,7 @@
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
 #include "device_grid.h"
+#include "place_delay_model.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
@@ -62,7 +63,7 @@ class AnalyticalSolver {
      */
     AnalyticalSolver(const APNetlist& netlist,
                      const AtomNetlist& atom_netlist,
-                     const PreClusterTimingManager& pre_cluster_timing_manager,
+                     const DeviceGrid& device_grid,
                      float ap_timing_tradeoff,
                      int log_verbosity);
 
@@ -100,7 +101,7 @@ class AnalyticalSolver {
      *  @param pre_cluster_timing_manager
      *      The timing manager which manages the criticalities of the nets.
      */
-    void update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager);
+    virtual void update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager) = 0;
 
   protected:
     /// @brief The APNetlist the solver is optimizing over. It is implied that
@@ -136,6 +137,21 @@ class AnalyticalSolver {
     ///        between 0 and 1.
     vtr::vector<APNetId, float> net_weights_;
 
+    /// @brief A vector of blocks in the netlist which are not connected to any
+    ///        non-ignored nets. Since the blocks have no connection to any
+    ///        other blocks in the netlist, the are not considered movable or
+    ///        fixed. The solver will just leave these blocks wherever they were
+    ///        legalized.
+    std::vector<APBlockId> disconnected_blocks_;
+
+    /// @brief The width of the device grid. Used for randomly generating points
+    ///        on the grid.
+    size_t device_grid_width_;
+
+    /// @brief The height of the device grid. Used for randomly generating points
+    ///        on the grid.
+    size_t device_grid_height_;
+
     /// @brief The AP timing tradeoff term used during global placement. Decides
     ///        how much the solver cares about timing vs wirelength.
     float ap_timing_tradeoff_;
@@ -152,6 +168,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const DeviceGrid& device_grid,
                                                          const AtomNetlist& atom_netlist,
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                         std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                          float ap_timing_tradeoff,
                                                          unsigned num_threads,
                                                          int log_verbosity);
@@ -313,10 +330,20 @@ class QPHybridSolver : public AnalyticalSolver {
                    const PreClusterTimingManager& pre_cluster_timing_manager,
                    float ap_timing_tradeoff,
                    int log_verbosity)
-        : AnalyticalSolver(netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, log_verbosity) {
+        : AnalyticalSolver(netlist,
+                           atom_netlist,
+                           device_grid,
+                           ap_timing_tradeoff,
+                           log_verbosity) {
+        // Update the net weights. These net weights are used when the linear
+        // system is initialized.
+        update_net_weights(pre_cluster_timing_manager);
+
         // Initializing the linear system only depends on the netlist and fixed
         // block locations. Both are provided by the netlist, allowing this to
         // be initialized in the constructor.
+        // TODO: Investigate re-initializing the linear system every so often
+        //       given changes in the net weights / timing.
         init_linear_system();
 
         // Initialize the guesses for the first iteration.
@@ -344,6 +371,14 @@ class QPHybridSolver : public AnalyticalSolver {
      *                      this object.
      */
     void solve(unsigned iteration, PartialPlacement& p_placement) final;
+
+    /**
+     * @brief Update the net weights according to the criticality of the nets.
+     *
+     *  @param pre_cluster_timing_manager
+     *      The timing manager which manages the criticalities of the nets.
+     */
+    void update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager) final;
 
     /**
      * @brief Print statistics of the solver.
@@ -442,16 +477,26 @@ class B2BSolver : public AnalyticalSolver {
     ///        weights to grow slower.
     static constexpr double anchor_weight_exp_fac_ = 5.0;
 
+    /// @brief Factor for controlling the strength of the timing term in the
+    ///        objective relative to the wirelength term. By increasing this
+    ///        number, the solver will focus more on timing and less on wirelength.
+    static constexpr double timing_slope_fac_ = 0.75;
+
   public:
     B2BSolver(const APNetlist& ap_netlist,
               const DeviceGrid& device_grid,
               const AtomNetlist& atom_netlist,
               const PreClusterTimingManager& pre_cluster_timing_manager,
+              std::shared_ptr<PlaceDelayModel> place_delay_model,
               float ap_timing_tradeoff,
               int log_verbosity)
-        : AnalyticalSolver(ap_netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, log_verbosity)
-        , device_grid_width_(device_grid.width())
-        , device_grid_height_(device_grid.height()) {}
+        : AnalyticalSolver(ap_netlist,
+                           atom_netlist,
+                           device_grid,
+                           ap_timing_tradeoff,
+                           log_verbosity)
+        , pre_cluster_timing_manager_(pre_cluster_timing_manager)
+        , place_delay_model_(place_delay_model) {}
 
     /**
      * @brief Perform an iteration of the B2B solver, storing the result into
@@ -478,6 +523,13 @@ class B2BSolver : public AnalyticalSolver {
      *      as anchor-points in the system.
      */
     void solve(unsigned iteration, PartialPlacement& p_placement) final;
+
+    /**
+     * @brief Update the net weights. Currently unused by the B2B solver.
+     *
+     * TODO: Investigate weighting by some factor of fanout.
+     */
+    void update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager);
 
     /**
      * @brief Print overall statistics on this solver.
@@ -546,6 +598,39 @@ class B2BSolver : public AnalyticalSolver {
                                   Eigen::VectorXd& b);
 
     /**
+     * @brief Get the instantaneous derivative of delay for the given driver
+     *        and sink pair.
+     *
+     * The instantaneous derivative gives the amount delay would increase or
+     * decrease for a change in distance by one unit. This is passed into the
+     * objective function to help guide the solver to trading off timing and
+     * wirelength.
+     *
+     *  @param driver_blk
+     *      The driver block for the edge to get the derivative of.
+     *  @param sink_blk
+     *      The sink block for the edge to get the derivative of.
+     *  @param p_placement
+     *      The current placement of the AP blocks. Used to get the current
+     *      distance from the driver to the sink.
+     *
+     *  @return The instantaneous derivative of delay with respect to distance
+     *          in the x and y dimensions respectively.
+     */
+    std::pair<double, double> get_delay_derivative(APBlockId driver_blk,
+                                                   APBlockId sink_blk,
+                                                   const PartialPlacement& p_placement);
+
+    /**
+     * @brief Get normalization factors to normalize away time units out of the
+     *        objective.
+     *
+     *  @param driver_blk
+     *      The driver block of the edge to normalize the objecive for.
+     */
+    std::pair<double, double> get_delay_normalization_facs(APBlockId driver_blk);
+
+    /**
      * @brief Initializes the linear system with the given partial placement.
      *
      * Blocks will be connected to the bounding blocks of their nets using
@@ -556,7 +641,7 @@ class B2BSolver : public AnalyticalSolver {
      * This will set the connectivity matrices (A) and constant vectors (b) to
      * be solved by B2B.
      */
-    void init_linear_system(PartialPlacement& p_placement);
+    void init_linear_system(PartialPlacement& p_placement, unsigned iteration);
 
     /**
      * @brief Updates the linear system with anchor-blocks from the legalized
@@ -603,13 +688,6 @@ class B2BSolver : public AnalyticalSolver {
     vtr::vector<APBlockId, double> block_x_locs_legalized;
     vtr::vector<APBlockId, double> block_y_locs_legalized;
 
-    /// @brief The width of the device grid. Used for randomly generating points
-    ///        on the grid.
-    size_t device_grid_width_;
-    /// @brief The height of the device grid. Used for randomly generating points
-    ///        on the grid.
-    size_t device_grid_height_;
-
     /// @brief The total number of CG iterations that this solver has performed
     ///        so far. This can be a useful metric for the amount of work the
     ///        solver performs.
@@ -625,6 +703,14 @@ class B2BSolver : public AnalyticalSolver {
     ///        loop so far. This includes creating the CG solver object and
     ///        actually solving for a solution.
     float total_time_spent_solving_linear_system_ = 0.0f;
+
+    /// @brief Timing manager object used for calculating the criticality of
+    ///        edges in the graph.
+    const PreClusterTimingManager& pre_cluster_timing_manager_;
+
+    /// @brief The place delay model used for calculating the delay between
+    ///        two tiles on the FPGA. Used for computing the timing terms.
+    std::shared_ptr<PlaceDelayModel> place_delay_model_;
 };
 
 #endif // EIGEN_INSTALLED

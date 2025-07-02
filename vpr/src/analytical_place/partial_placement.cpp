@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <limits>
 #include "ap_netlist.h"
+#include "net_cost_handler.h"
 
 double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
     double hpwl = 0.0;
@@ -27,6 +28,11 @@ double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
             min_y = std::min(min_y, block_y_locs[blk_id]);
             max_y = std::max(max_y, block_y_locs[blk_id]);
         }
+        // TODO: In the placer, the x and y dimensions are multiplied by cost
+        //       factors based on the channel width. Should somehow bring these
+        //       in here.
+        //       Vaughn thinks these may make sense in the objective HPWL, but
+        //       not the in the estimated post-placement wirelength.
         VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y);
         hpwl += max_x - min_x + max_y - min_y;
     }
@@ -38,23 +44,26 @@ double PartialPlacement::estimate_post_placement_wirelength(const APNetlist& net
     // we want to estimate the post-placement wirelength, we do not want the
     // flat placement positions of the blocks. Instead we compute the HPWL over
     // the tiles that the flat placement is placing the blocks over.
-    unsigned total_hpwl = 0;
+    double total_hpwl = 0;
     for (APNetId net_id : netlist.nets()) {
-        // Note: Other wirelength estimates in VTR ignore global nets; however
-        //       it is not known if a net is global or not until packing is
-        //       complete. For now, we just approximate post-placement wirelength
-        //       using the HPWL (in tile space).
-        // TODO: The reason we do not know what nets are ignored / global is
-        //       because the pin on the tile that the net connects to is what
-        //       decides if a net is global / ignored for place and route. Since
-        //       we have not packed anything yet, we do not know what pin each
-        //       net will go to; however, we can probably get a good idea based
-        //       on some properties of the net and the tile its going to / from.
-        //       Should investigate this to get a better estimate of wirelength.
-        double min_x = std::numeric_limits<unsigned>::max();
-        double max_x = std::numeric_limits<unsigned>::lowest();
-        double min_y = std::numeric_limits<unsigned>::max();
-        double max_y = std::numeric_limits<unsigned>::lowest();
+        // To align with other wirelength estimators in VTR (for example in the
+        // placer), we do not include global nets (clocks, etc.) in the wirelength
+        // calculation.
+        if (netlist.net_is_global(net_id))
+            continue;
+
+        // Similar to the placer, weight the wirelength of this net as a function
+        // of its fanout. Since these fanouts are at the AP netlist (unclustered)
+        // level, the correction factor may lead to a somewhat higher HPWL prediction
+        // than after clustering.
+        // TODO: Investigate the clustered vs unclustered factors further.
+        // TODO: Should update the costs to 3D.
+        double crossing = wirelength_crossing_count(netlist.net_pins(net_id).size());
+
+        double min_x = std::numeric_limits<double>::max();
+        double max_x = std::numeric_limits<double>::lowest();
+        double min_y = std::numeric_limits<double>::max();
+        double max_y = std::numeric_limits<double>::lowest();
         for (APPinId pin_id : netlist.net_pins(net_id)) {
             APBlockId blk_id = netlist.pin_block(pin_id);
             min_x = std::min(min_x, block_x_locs[blk_id]);
@@ -66,10 +75,10 @@ double PartialPlacement::estimate_post_placement_wirelength(const APNetlist& net
 
         // Floor the positions to get the x and y coordinates of the tiles each
         // block belongs to.
-        unsigned tile_dx = std::floor(max_x) - std::floor(min_x);
-        unsigned tile_dy = std::floor(max_y) - std::floor(min_y);
+        double tile_dx = std::floor(max_x) - std::floor(min_x);
+        double tile_dy = std::floor(max_y) - std::floor(min_y);
 
-        total_hpwl += tile_dx + tile_dy;
+        total_hpwl += (tile_dx + tile_dy) * crossing;
     }
 
     return total_hpwl;

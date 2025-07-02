@@ -432,9 +432,9 @@ struct ParseRouteType {
     ConvertedValue<e_route_type> from_str(const std::string& str) {
         ConvertedValue<e_route_type> conv_value;
         if (str == "global")
-            conv_value.set_value(GLOBAL);
+            conv_value.set_value(e_route_type::GLOBAL);
         else if (str == "detailed")
-            conv_value.set_value(DETAILED);
+            conv_value.set_value(e_route_type::DETAILED);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -445,10 +445,10 @@ struct ParseRouteType {
 
     ConvertedValue<std::string> to_str(e_route_type val) {
         ConvertedValue<std::string> conv_value;
-        if (val == GLOBAL)
+        if (val == e_route_type::GLOBAL)
             conv_value.set_value("global");
         else {
-            VTR_ASSERT(val == DETAILED);
+            VTR_ASSERT(val == e_route_type::DETAILED);
             conv_value.set_value("detailed");
         }
         return conv_value;
@@ -1637,6 +1637,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.verify_route_file_switch_id, "--verify_route_file_switch_id")
+        .help(
+            "Verify that the switch IDs in the routing file are consistent with those in the RR Graph. "
+            "Set this to false when switch IDs in the routing file may differ from the RR Graph. "
+            "For example, when analyzing different timing corners using the same netlist, placement, and routing files, "
+            "the RR switch IDs in the RR Graph may differ due to changes in delays. "
+            "In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.\n")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     gen_grp.add_argument(args.target_device_utilization, "--target_utilization")
         .help(
             "Sets the target device utilization."
@@ -1957,6 +1967,24 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("256")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument(args.ap_partial_legalizer_target_density, "--ap_partial_legalizer_target_density")
+        .help(
+            "Sets the target density of different physical tiles on the FPGA device "
+            "for the partial legalizer in the AP flow. The partial legalizer will "
+            "try to fill tiles up to (but not beyond) this target density. This "
+            "is used as a guide, the legalizer may not follow this if it must fill "
+            "the tile more."
+            "\n"
+            "When this option is set ot auto, VPR will select good values for the "
+            "target density of tiles."
+            "\n"
+            "This option is similar to appack_max_dist_th, where a regex string "
+            "is used to set the target density of different physical tiles. See "
+            "the documentation for more information.")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument(args.appack_max_dist_th, "--appack_max_dist_th")
         .help(
             "Sets the maximum candidate distance thresholds for the logical block types"
@@ -2180,6 +2208,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "  * device_circuit: proportional to device and circuit size\n"
             "                    (grid_size ^ 2/3 * num_blocks ^ 2/3)\n")
         .default_value("circuit")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_auto_init_t_scale, "--anneal_auto_init_t_scale")
+        .help(
+            "A scale on the starting temperature of the anneal for the automatic annealing "
+            "schedule.\n"
+            "\n"
+            "When in the automatic annealing schedule, the annealer will select a good "
+            "initial temperature based on the quality of the initial placement. This option "
+            "allows you to scale that initial temperature up or down by multiplying the "
+            "initial temperature by the given scale. Increasing this number "
+            "will increase the initial temperature which will have the annealer potentially "
+            "explore more of the space at the expense of run time. Depending on the quality "
+            "of the initial placement, this may improve or hurt the quality of the final "
+            "placement.")
+        .default_value("1.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceInitT, "--init_t")
@@ -2916,6 +2960,30 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("map")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.generate_router_lookahead_report, "--generate_router_lookahead_report")
+        .help("If turned on, generates a detailed report on the router lookahead: report_router_lookahead.rpt\n"
+              "\n"
+              "This report contains information on how accurate the router lookahead is and "
+              "if and when it overestimates the cost from a node to a target node. It does "
+              "this by doing a set of trial routes and comparing the estimated cost from the "
+              "router lookahead to the actual cost of the route path.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_threshold, "--router_initial_acc_cost_chan_congestion_threshold")
+        .help("Utilization threshold above which initial accumulated routing cost (acc_cost) "
+              "is increased to penalize congested channels. Used to bias routing away from "
+              "highly utilized regions during early routing iterations.")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_weight, "--router_initial_acc_cost_chan_congestion_weight")
+        .help("Weight applied to the excess channel utilization (above threshold) "
+              "when computing the initial accumulated cost (acc_cost)of routing resources. "
+              "Higher values make the router more sensitive to early congestion.")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
         .help(
             "Controls how many times the router is allowed to converge to a legal routing before halting."
@@ -3457,14 +3525,14 @@ void set_conditional_defaults(t_options& args) {
      */
     //Base cost type
     if (args.base_cost_type.provenance() != Provenance::SPECIFIED) {
-        if (args.RouteType == DETAILED) {
+        if (args.RouteType == e_route_type::DETAILED) {
             if (args.timing_analysis) {
                 args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
             } else {
                 args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
             }
         } else {
-            VTR_ASSERT(args.RouteType == GLOBAL);
+            VTR_ASSERT(args.RouteType == e_route_type::GLOBAL);
             //Global RR graphs don't have valid timing, so use demand base cost
             args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
         }
@@ -3472,10 +3540,10 @@ void set_conditional_defaults(t_options& args) {
 
     //Bend cost
     if (args.bend_cost.provenance() != Provenance::SPECIFIED) {
-        if (args.RouteType == GLOBAL) {
+        if (args.RouteType == e_route_type::GLOBAL) {
             args.bend_cost.set(1., Provenance::INFERRED);
         } else {
-            VTR_ASSERT(args.RouteType == DETAILED);
+            VTR_ASSERT(args.RouteType == e_route_type::DETAILED);
             args.bend_cost.set(0., Provenance::INFERRED);
         }
     }

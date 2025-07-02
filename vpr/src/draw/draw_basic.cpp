@@ -593,6 +593,11 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
             draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
         }
 
+        // When drawing a new branch, add the parent node to the vector to ensure that the conenction is drawn.
+        if (rr_nodes_to_draw.empty() && rt_node.parent().has_value()) {
+            rr_nodes_to_draw.push_back(rt_node.parent().value().inode);
+        }
+
         rr_nodes_to_draw.push_back(inode);
 
         if (rt_node.is_leaf()) { // End of branch
@@ -613,7 +618,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
     static vtr::OffsetMatrix<int> chanx_track; /* [1..device_ctx.grid.width() - 2][0..device_ctx.grid.height() - 2] */
     static vtr::OffsetMatrix<int> chany_track; /* [0..device_ctx.grid.width() - 2][1..device_ctx.grid.height() - 2] */
-    if (draw_state->draw_route_type == GLOBAL) {
+    if (draw_state->draw_route_type == e_route_type::GLOBAL) {
         /* Allocate some temporary storage if it's not already available. */
         int width = (int)device_ctx.grid.width();
         int height = (int)device_ctx.grid.height();
@@ -677,7 +682,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 break;
             }
             case e_rr_type::CHANX: {
-                if (draw_state->draw_route_type == GLOBAL)
+                if (draw_state->draw_route_type == e_route_type::GLOBAL)
                     chanx_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
                 draw_rr_chan(inode, color, g);
@@ -707,7 +712,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 break;
             }
             case e_rr_type::CHANY: {
-                if (draw_state->draw_route_type == GLOBAL)
+                if (draw_state->draw_route_type == e_route_type::GLOBAL)
                     chany_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
                 draw_rr_chan(inode, color, g);

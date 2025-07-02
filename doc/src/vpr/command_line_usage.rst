@@ -256,6 +256,16 @@ General Options
 
     **Default:** ``on``
 
+.. option:: --verify_route_file_switch_id {on | off}
+
+    Verify that the switch IDs in the routing file are consistent with those in the RR Graph.
+    Set this to false when switch IDs in the routing file may differ from the RR Graph.
+    For example, when analyzing different timing corners using the same netlist, placement, and routing files,
+    the RR switch IDs in the RR Graph may differ due to changes in delays.
+    In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.
+
+    **Default:** ``on``
+
 .. option:: --target_utilization <float>
 
     Sets the target device utilization.
@@ -810,6 +820,22 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``circuit``
 
+.. option:: --anneal_auto_init_t_scale <float>
+
+    A scale on the starting temperature of the anneal for the automatic annealing
+    schedule.
+
+    When in the automatic annealing schedule, the annealer will select a good
+    initial temperature based on the quality of the initial placement. This option
+    allows you to scale that initial temperature up or down by multiplying the
+    initial temperature by the given scale. Increasing this number
+    will increase the initial temperature which will have the annealer potentially
+    explore more of the space at the expense of run time. Depending on the quality
+    of the initial placement, this may improve or hurt the quality of the final
+    placement.
+
+    **Default:** ``1.0``
+
 .. option:: --init_t <float>
 
     The starting temperature of the anneal for the manual annealing schedule.
@@ -1280,6 +1306,40 @@ Analytical Placement is generally split into three stages:
     while a value of 1.0 makes the AP flow focus completely on timing optimization.
 
     **Default:** ``0.5``
+
+.. option:: --ap_partial_legalizer_target_density { auto | <regex>:<float>,<float> }
+
+   Sets the target density of different physical tiles on the FPGA device
+   for the partial legalizer in the AP flow. The partial legalizer will
+   try to fill tiles up to (but not beyond) this target density. This
+   is used as a guide, the legalizer may not follow this if it must fill
+   the tile more.
+
+   The partial legalizer uses an abstraction called "mass" to describe the resources
+   used by a set of primitives in the netlist and the capacity of resources in a
+   given tile. For primitives like LUTs, FFs, and DSPs this mass can be thought of
+   as the number of pins used (but not exactly). For memories, this mass can be
+   thought of as the number of bits stored. This target density parameter lowers
+   the mass capacity of tiles.
+
+   When this option is set ot auto, VPR will select good values for the
+   target density of tiles.
+
+   reasonable values are between 0.0 and 1.0, with negative values not being allowed.
+
+   This option is similar to appack_max_dist_th, where a regex string
+   is used to set the target density of different physical tiles.
+
+   For example:
+
+     .. code-block:: none
+
+        --ap_partial_legalizer_target_density .*:0.9 "clb|memory:0.8"
+
+   Would set the target density of all physical tiles to be 0.9, except for the clb and
+   memory tiles, which will be set to a target density of 0.8.
+
+    **Default:** ``auto``
 
 .. option:: --appack_max_dist_th { auto | <regex>:<float>,<float> }
 
@@ -1789,6 +1849,31 @@ The following options are only valid when the router is in timing-driven mode (t
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
 
      **Default:** ``map``
+
+.. option:: --generate_router_lookahead_report {on | off}
+
+   If turned on, generates a detailed report on the router lookahead: report_router_lookahead.rpt
+
+   This report contains information on how accurate the router lookahead is and
+   if and when it overestimates the cost from a node to a target node. It does
+   this by doing a set of trial routes and comparing the estimated cost from the
+   router lookahead to the actual cost of the route path.
+
+   **Default:** ``off``
+
+.. option:: --router_initial_acc_cost_chan_congestion_threshold <float>
+
+    Utilization threshold above which initial accumulated routing cost (acc_cost) is increased to penalize congested channels.
+    Used to bias routing away from highly utilized regions during early routing iterations.
+
+    **Default:** ``0.5``
+
+.. option:: --router_initial_acc_cost_chan_congestion_weight <float>
+    Weight applied to the excess channel utilization (above threshold) when computing the initial accumulated cost (acc_cost)of routing resources.
+
+    Higher values make the router more sensitive to early congestion.
+
+    **Default:** ``0.5``
 
 .. option:: --router_max_convergence_count <float>
 

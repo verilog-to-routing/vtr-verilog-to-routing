@@ -185,6 +185,7 @@ class PlacementAnnealer {
                       PlacerSetupSlacks* setup_slacks,
                       SetupTimingInfo* timing_info,
                       NetPinTimingInvalidator* pin_timing_invalidator,
+                      float auto_init_t_scale,
                       int move_lim);
 
     /**

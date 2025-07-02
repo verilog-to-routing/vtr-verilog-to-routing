@@ -101,7 +101,7 @@ void routing_stats(const Netlist<>& net_list,
     }
     VTR_LOG("\tTotal used logic block area: %g\n", used_area);
 
-    if (route_type == DETAILED) {
+    if (route_type == e_route_type::DETAILED) {
         count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch,
                                   segment_inf, R_minW_nmos, R_minW_pmos, is_flat);
         get_segment_usage_stats(segment_inf);
@@ -133,13 +133,13 @@ std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width(
             int y = rr_graph.node_ylow(node_id);
             int layer = rr_graph.node_layer(node_id);
             for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
-                chanx_width[layer][x][y]++;
+                chanx_width[layer][x][y] += rr_graph.node_capacity(node_id);
             }
         } else if (rr_type == e_rr_type::CHANY) {
             int x = rr_graph.node_xlow(node_id);
             int layer = rr_graph.node_layer(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
-                chany_width[layer][x][y]++;
+                chany_width[layer][x][y] += rr_graph.node_capacity(node_id);
             }
         }
     }
@@ -158,7 +158,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int num_clb_opins_reserved = 0;
     int num_absorbed_nets = 0;
 
-    for (auto net_id : net_list.nets()) {
+    for (ParentNetId net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             int bends, length, segments;
             bool is_absorbed;

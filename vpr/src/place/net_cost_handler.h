@@ -16,6 +16,13 @@ class PlacerState;
 class PlacerCriticalities;
 
 /**
+ * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter
+ * bounding box wirelength's underestimate of wiring for nets with fanout greater than 2.
+ * @return Multiplicative wirelength correction factor
+ */
+double wirelength_crossing_count(size_t fanout);
+
+/**
  * @brief The method used to calculate placement cost
  * @details For comp_cost. NORMAL means use the method that generates updatable bounding boxes for speed.
  * CHECK means compute all bounding boxes from scratch using a very simple routine to allow checks
@@ -126,7 +133,19 @@ class NetCostHandler {
      */
     double get_total_wirelength_estimate() const;
 
-    double estimate_routing_chann_util();
+    /**
+     * @brief Estimates routing channel utilization and computes the congestion cost
+     * for each net.
+     *
+     * For each net, distributes estimated wirelength across its bounding box
+     * and accumulates demand for different routing channels. Normalizes by channel widths
+     * (e.g. a value of 0.5 means 50% of the wiring in a channel is expected to be used).
+     *
+     * @return Total congestion cost.
+     */
+    double estimate_routing_chan_util();
+
+    std::pair<const vtr::NdMatrix<double, 3>&, const vtr::NdMatrix<double, 3>&> get_chanxy_util() const;
 
   private:
     bool congestion_modeling_started_;
@@ -245,8 +264,8 @@ class NetCostHandler {
     vtr::PrefixSum2D<double> acc_chanx_util_;
     vtr::PrefixSum2D<double> acc_chany_util_;
 
-    vtr::Matrix<double> chanx_util_;
-    vtr::Matrix<double> chany_util_;
+    vtr::NdMatrix<double, 3> chanx_util_;
+    vtr::NdMatrix<double, 3> chany_util_;
 
     vtr::NdMatrix<int, 3> chanx_width_;
     vtr::NdMatrix<int, 3> chany_width_;
