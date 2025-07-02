@@ -1,8 +1,5 @@
 #pragma once
 
-/********************************************************************
- * Include header files required by the data structure definition
- *******************************************************************/
 #include <array>
 #include "vtr_geometry.h"
 #include "vtr_ndmatrix.h"
@@ -13,14 +10,14 @@
  * - Border of the device grid (check where the empty types cover the perimeters)
  */
 class DeviceGridAnnotation {
-  public: /* Constructor */
-    DeviceGridAnnotation(const DeviceGrid& grid, const bool& perimeter_cb);
+  public: // Constructor
+    DeviceGridAnnotation(const DeviceGrid& grid, const bool perimeter_cb);
 
-  private: /* Private mutators */
+  private: // Private mutators
     void alloc(const DeviceGrid& grid);
-    void init(const DeviceGrid& grid, const bool& perimeter_cb);
+    void init(const DeviceGrid& grid, const bool perimeter_cb);
 
-  public: /* Public accessors */
+  public: // Public accessors
     /** @brief Check if at a given coordinate, a X-direction routing channel should exist or not */
     bool is_chanx_exist(const vtr::Point<size_t>& coord) const;
     bool is_chanx_start(const vtr::Point<size_t>& coord) const;
@@ -30,10 +27,10 @@ class DeviceGridAnnotation {
     bool is_chany_start(const vtr::Point<size_t>& coord) const;
     bool is_chany_end(const vtr::Point<size_t>& coord) const;
 
-  private: /* Private validators */
+  private: // Private validators
     vtr::Point<size_t> get_neighbor_coord(const vtr::Point<size_t>& coord, const e_side& side) const;
 
-  private: /* Internal data */
+  private: // Internal data
     vtr::NdMatrix<bool, 2> chanx_existence_;
     vtr::NdMatrix<bool, 2> chany_existence_;
 };

@@ -2,19 +2,19 @@
 #include "vtr_log.h"
 #include "vpr_utils.h"
 
-DeviceGridAnnotation::DeviceGridAnnotation(const DeviceGrid& grid, const bool& perimeter_cb) {
+DeviceGridAnnotation::DeviceGridAnnotation(const DeviceGrid& grid, const bool perimeter_cb) {
     alloc(grid);
     init(grid, perimeter_cb);
 }
 
 void DeviceGridAnnotation::alloc(const DeviceGrid& grid) {
-    /* Allocate */
+    // Allocate
     chanx_existence_.resize({grid.width(), grid.height()}, false);
     chany_existence_.resize({grid.width(), grid.height()}, false);
 }
 
-void DeviceGridAnnotation::init(const DeviceGrid& grid, const bool& perimeter_cb) {
-    /* If shrink is not considered, perimeters are the borderlines */
+void DeviceGridAnnotation::init(const DeviceGrid& grid, const bool perimeter_cb) {
+    // If shrink is not considered, perimeters are the borderlines
     size_t start_x = 1;
     size_t end_x = grid.width() - 1;
     if (perimeter_cb) {

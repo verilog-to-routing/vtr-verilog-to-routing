@@ -1,9 +1,5 @@
 #pragma once
 
-/********************************************************************
- * Include header files required by the data structure definition
- *******************************************************************/
-/* Headers from vtrutil library */
 #include "vtr_geometry.h"
 
 #include "rr_chan.h"

@@ -1846,14 +1846,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     void process_rr_node_indices() {
         auto& rr_graph_builder = (*rr_graph_builder_);
 
-        /* Alloc the lookup table */
+        // Alloc the lookup table
         for (e_rr_type rr_type : RR_TYPES) {
             rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type, NUM_2D_SIDES);
         }
 
-        /* Add the correct node into the vector */
+        // Add the correct node into the vector
         for (const t_rr_node& node : *rr_nodes_) {
-            /* Set track numbers as a node may have multiple ptc */
+            // Set track numbers as a node may have multiple ptc
             if (rr_graph_builder.node_contain_multiple_ptc(node.id())) {
                 if (rr_graph_->node_type(node.id()) == e_rr_type::CHANX || rr_graph_->node_type(node.id()) == e_rr_type::CHANY) {
                     rr_graph_builder.add_track_node_to_lookup(node.id());

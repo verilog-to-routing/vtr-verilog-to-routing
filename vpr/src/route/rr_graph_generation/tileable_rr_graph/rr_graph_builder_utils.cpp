@@ -16,7 +16,7 @@
  * Correct number of routing channel width to be compatible to 
  * uni-directional routing architecture
  ***********************************************************************/
-size_t find_unidir_routing_channel_width(const size_t& chan_width) {
+size_t find_unidir_routing_channel_width(const size_t chan_width) {
     size_t actual_chan_width = chan_width;
     /* Correct the chan_width: it should be an even number */
     if (0 != actual_chan_width % 2) {
@@ -31,9 +31,9 @@ size_t find_unidir_routing_channel_width(const size_t& chan_width) {
  * Get the class index of a grid pin 
  ***********************************************************************/
 int get_grid_pin_class_index(const DeviceGrid& grids,
-                             const size_t& layer,
-                             const size_t& x,
-                             const size_t& y,
+                             const size_t layer,
+                             const size_t x,
+                             const size_t y,
                              const int pin_index) {
     /* check */
     t_physical_tile_loc tile_loc(x, y, layer);
@@ -45,7 +45,7 @@ int get_grid_pin_class_index(const DeviceGrid& grids,
 /* Deteremine the side of a io grid */
 std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_size,
                                                const vtr::Point<size_t>& grid_coordinate,
-                                               const bool& perimeter_cb) {
+                                               const bool perimeter_cb) {
     std::vector<e_side> pin_sides;
     /* TOP side IO of FPGA */
     if (device_size.y() == grid_coordinate.y()) {
@@ -94,17 +94,17 @@ std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_
 
 /* Deteremine the side of a pin of a grid */
 std::vector<e_side> find_grid_pin_sides(const DeviceGrid& grids,
-                                        const size_t& layer,
-                                        const size_t& x,
-                                        const size_t& y,
-                                        const size_t& pin_id) {
+                                        const size_t layer,
+                                        const size_t x,
+                                        const size_t y,
+                                        const size_t pin_id) {
     std::vector<e_side> pin_sides;
 
     t_physical_tile_loc tile_loc(x, y, layer);
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
     int width_offset = grids.get_width_offset(tile_loc);
     int height_offset = grids.get_height_offset(tile_loc);
-    for (const e_side& side : {TOP, RIGHT, BOTTOM, LEFT}) {
+    for (const e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
         if (true == phy_tile_type->pinloc[width_offset][height_offset][size_t(side)][pin_id]) {
             pin_sides.push_back(side);
         }
@@ -113,22 +113,15 @@ std::vector<e_side> find_grid_pin_sides(const DeviceGrid& grids,
     return pin_sides;
 }
 
-/************************************************************************
- * Get a list of pin_index for a grid (either OPIN or IPIN)
- * For IO_TYPE, only one side will be used, we consider one side of pins 
- * For others, we consider all the sides  
- ***********************************************************************/
 std::vector<int> get_grid_side_pins(const DeviceGrid& grids,
-                                    const size_t& layer,
-                                    const size_t& x,
-                                    const size_t& y,
-                                    const e_pin_type& pin_type,
-                                    const e_side& pin_side,
-                                    const int& pin_width,
-                                    const int& pin_height) {
+                                    const size_t layer,
+                                    const size_t x,
+                                    const size_t y,
+                                    const e_pin_type pin_type,
+                                    const e_side pin_side,
+                                    const int pin_width,
+                                    const int pin_height) {
     std::vector<int> pin_list;
-    /* Make sure a clear start */
-    pin_list.clear();
 
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(t_physical_tile_loc(x, y, layer));
     for (int ipin = 0; ipin < phy_tile_type->num_pins; ++ipin) {
@@ -147,16 +140,16 @@ std::vector<int> get_grid_side_pins(const DeviceGrid& grids,
  * For others, we consider all the sides  
  ***********************************************************************/
 size_t get_grid_num_pins(const DeviceGrid& grids,
-                         const size_t& layer,
-                         const size_t& x,
-                         const size_t& y,
-                         const e_pin_type& pin_type,
+                         const size_t layer,
+                         const size_t x,
+                         const size_t y,
+                         const e_pin_type pin_type,
                          const std::vector<e_side>& io_side) {
     size_t num_pins = 0;
 
     /* For IO_TYPE sides */
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(t_physical_tile_loc(x, y, layer));
-    for (const e_side& side : io_side) {
+    for (const e_side side : io_side) {
         /* Get pin list */
         for (int width = 0; width < phy_tile_type->width; ++width) {
             for (int height = 0; height < phy_tile_type->height; ++height) {
@@ -175,10 +168,10 @@ size_t get_grid_num_pins(const DeviceGrid& grids,
  * For others, we consider all the sides  
  ***********************************************************************/
 size_t get_grid_num_classes(const DeviceGrid& grids,
-                            const size_t& layer,
-                            const size_t& x,
-                            const size_t& y,
-                            const e_pin_type& pin_type) {
+                            const size_t layer,
+                            const size_t x,
+                            const size_t y,
+                            const e_pin_type pin_type) {
     size_t num_classes = 0;
 
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(t_physical_tile_loc(x, y, layer));
@@ -194,7 +187,7 @@ size_t get_grid_num_classes(const DeviceGrid& grids,
 }
 
 /************************************************************************
- * Idenfity if a X-direction routing channel exist in the fabric
+ * Identify if a X-direction routing channel exist in the fabric
  * This could be entirely possible that a routig channel
  * is in the middle of a multi-width and multi-height grid
  *
@@ -219,10 +212,10 @@ size_t get_grid_num_classes(const DeviceGrid& grids,
  *  When height_offset == height - 1, it means that the grid is at the top side of this multi-width and multi-height block
  ***********************************************************************/
 bool is_chanx_exist(const DeviceGrid& grids,
-                    const size_t& layer,
+                    const size_t layer,
                     const vtr::Point<size_t>& chanx_coord,
-                    const bool& perimeter_cb,
-                    const bool& through_channel) {
+                    const bool perimeter_cb,
+                    const bool through_channel) {
     size_t chanx_start = 1;
     size_t chanx_end = grids.width() - 2;
     if (perimeter_cb) {
@@ -265,10 +258,10 @@ bool is_chanx_exist(const DeviceGrid& grids,
  *  unless it falls out of the grid array
  ***********************************************************************/
 bool is_chany_exist(const DeviceGrid& grids,
-                    const size_t& layer,
+                    const size_t layer,
                     const vtr::Point<size_t>& chany_coord,
-                    const bool& perimeter_cb,
-                    const bool& through_channel) {
+                    const bool perimeter_cb,
+                    const bool through_channel) {
     size_t chany_start = 1;
     size_t chany_end = grids.height() - 2;
     if (perimeter_cb) {
@@ -304,10 +297,10 @@ bool is_chany_exist(const DeviceGrid& grids,
  *     +-----------------+
  ***********************************************************************/
 bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
-                                         const size_t& layer,
+                                         const size_t layer,
                                          const vtr::Point<size_t>& chanx_coord,
-                                         const bool& perimeter_cb,
-                                         const bool& through_channel) {
+                                         const bool perimeter_cb,
+                                         const bool through_channel) {
     size_t start_x = 1;
     if (perimeter_cb) {
         start_x = 0;
@@ -346,10 +339,10 @@ bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
  *                            +-----------------+
  ***********************************************************************/
 bool is_chanx_left_to_multi_height_grid(const DeviceGrid& grids,
-                                        const size_t& layer,
+                                        const size_t layer,
                                         const vtr::Point<size_t>& chanx_coord,
-                                        const bool& perimeter_cb,
-                                        const bool& through_channel) {
+                                        const bool perimeter_cb,
+                                        const bool through_channel) {
     VTR_ASSERT(chanx_coord.x() <= grids.width() - 1);
     size_t end_x = grids.width() - 2;
     if (perimeter_cb) {
@@ -393,10 +386,10 @@ bool is_chanx_left_to_multi_height_grid(const DeviceGrid& grids,
  *     +-----------------+
  ***********************************************************************/
 bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
-                                      const size_t& layer,
+                                      const size_t layer,
                                       const vtr::Point<size_t>& chany_coord,
-                                      const bool& perimeter_cb,
-                                      const bool& through_channel) {
+                                      const bool perimeter_cb,
+                                      const bool through_channel) {
     size_t start_y = 1;
     if (perimeter_cb) {
         start_y = 0;
@@ -440,10 +433,10 @@ bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
  *
  ***********************************************************************/
 bool is_chany_bottom_to_multi_width_grid(const DeviceGrid& grids,
-                                         const size_t& layer,
+                                         const size_t layer,
                                          const vtr::Point<size_t>& chany_coord,
-                                         const bool& perimeter_cb,
-                                         const bool& through_channel) {
+                                         const bool perimeter_cb,
+                                         const bool through_channel) {
     VTR_ASSERT(chany_coord.y() <= grids.height() - 1);
     size_t end_y = grids.height() - 2;
     if (perimeter_cb) {
@@ -488,7 +481,7 @@ bool is_chany_bottom_to_multi_width_grid(const DeviceGrid& grids,
  *
  ***********************************************************************/
 short get_rr_node_actual_track_id(const RRGraph& rr_graph,
-                                  const RRNodeId& track_rr_node,
+                                  const RRNodeId track_rr_node,
                                   const vtr::Point<size_t>& coord,
                                   const vtr::vector<RRNodeId, std::vector<size_t>>& tileable_rr_graph_node_track_ids) {
     vtr::Point<size_t> low_coord(rr_graph.node_xlow(track_rr_node), rr_graph.node_ylow(track_rr_node));
@@ -505,7 +498,7 @@ short get_rr_node_actual_track_id(const RRGraph& rr_graph,
  * the ptc is the first of track_ids
  ***********************************************************************/
 short get_track_rr_node_end_track_id(const RRGraph& rr_graph,
-                                     const RRNodeId& track_rr_node,
+                                     const RRNodeId track_rr_node,
                                      const vtr::vector<RRNodeId, std::vector<size_t>>& tileable_rr_graph_node_track_ids) {
     /* Make sure we have CHANX or CHANY */
     VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(track_rr_node))
@@ -527,7 +520,7 @@ short find_rr_graph_num_nodes(const RRGraph& rr_graph,
                               const std::vector<e_rr_type>& node_types) {
     short counter = 0;
 
-    for (const RRNodeId& node : rr_graph.nodes()) {
+    for (const RRNodeId node : rr_graph.nodes()) {
         /* Bypass the nodes not in the class */
         if (node_types.end() == std::find(node_types.begin(), node_types.end(), rr_graph.node_type(node))) {
             continue;
@@ -546,7 +539,7 @@ short find_rr_graph_max_fan_in(const RRGraph& rr_graph,
                                const std::vector<e_rr_type>& node_types) {
     short max_fan_in = 0;
 
-    for (const RRNodeId& node : rr_graph.nodes()) {
+    for (const RRNodeId node : rr_graph.nodes()) {
         /* Bypass the nodes not in the class */
         if (node_types.end() == std::find(node_types.begin(), node_types.end(), rr_graph.node_type(node))) {
             continue;
@@ -557,15 +550,11 @@ short find_rr_graph_max_fan_in(const RRGraph& rr_graph,
     return max_fan_in;
 }
 
-/************************************************************************
- * Find the minimum fan-in for a given class of nodes
- * in a routing resource graph
- ************************************************************************/
 short find_rr_graph_min_fan_in(const RRGraph& rr_graph,
                                const std::vector<e_rr_type>& node_types) {
-    short min_fan_in = 0;
+    short min_fan_in = std::numeric_limits<short>::max();
 
-    for (const RRNodeId& node : rr_graph.nodes()) {
+    for (const RRNodeId node : rr_graph.nodes()) {
         /* Bypass the nodes not in the class */
         if (node_types.end() == std::find(node_types.begin(), node_types.end(), rr_graph.node_type(node))) {
             continue;
@@ -586,7 +575,7 @@ short find_rr_graph_average_fan_in(const RRGraph& rr_graph,
     size_t sum = 0;
     size_t counter = 0;
 
-    for (const RRNodeId& node : rr_graph.nodes()) {
+    for (const RRNodeId node : rr_graph.nodes()) {
         /* Bypass the nodes not in the class */
         if (node_types.end() == std::find(node_types.begin(), node_types.end(), rr_graph.node_type(node))) {
             continue;

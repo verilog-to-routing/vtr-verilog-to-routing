@@ -254,9 +254,7 @@ struct DeviceContext : public Context {
                          rr_graph_builder.node_in_edge_storage(),
                          rr_graph_builder.node_ptc_storage()};
 
-    /* Track ids for each rr_node in the rr_graph.
-     * This is used by drawer for tileable routing resource graph
-     */
+    ///@brief Track ids for each rr_node in the rr_graph. This is used by drawer for tileable routing resource graph
     std::map<RRNodeId, std::vector<size_t>> rr_node_track_ids;
 
     std::vector<t_arch_switch_inf> arch_switch_inf; // [0..(num_arch_switches-1)]

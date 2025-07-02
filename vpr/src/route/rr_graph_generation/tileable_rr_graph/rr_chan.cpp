@@ -28,7 +28,7 @@ size_t RRChan::get_chan_width() const {
 }
 
 /* get the track_id of a node */
-int RRChan::get_node_track_id(const RRNodeId& node) const {
+int RRChan::get_node_track_id(const RRNodeId node) const {
     /* if the given node is NULL, we return an invalid id */
     if (RRNodeId::INVALID() == node) {
         return -1;
@@ -42,7 +42,7 @@ int RRChan::get_node_track_id(const RRNodeId& node) const {
 }
 
 /* get the rr_node with the track_id */
-RRNodeId RRChan::get_node(const size_t& track_num) const {
+RRNodeId RRChan::get_node(const size_t track_num) const {
     if (false == valid_node_id(track_num)) {
         return RRNodeId::INVALID();
     }
@@ -50,7 +50,7 @@ RRNodeId RRChan::get_node(const size_t& track_num) const {
 }
 
 /* get the segment id of a node */
-RRSegmentId RRChan::get_node_segment(const RRNodeId& node) const {
+RRSegmentId RRChan::get_node_segment(const RRNodeId node) const {
     int node_id = get_node_track_id(node);
     if (false == valid_node_id(node_id)) {
         return RRSegmentId::INVALID();
@@ -59,7 +59,7 @@ RRSegmentId RRChan::get_node_segment(const RRNodeId& node) const {
 }
 
 /* get the segment id of a node */
-RRSegmentId RRChan::get_node_segment(const size_t& track_num) const {
+RRSegmentId RRChan::get_node_segment(const size_t track_num) const {
     if (false == valid_node_id(track_num)) {
         return RRSegmentId::INVALID();
     }
@@ -70,14 +70,10 @@ RRSegmentId RRChan::get_node_segment(const size_t& track_num) const {
 std::vector<RRSegmentId> RRChan::get_segment_ids() const {
     std::vector<RRSegmentId> seg_list;
 
-    /* make sure a clean start */
-    seg_list.clear();
-
     /* Traverse node_segments */
     for (size_t inode = 0; inode < get_chan_width(); ++inode) {
-        std::vector<RRSegmentId>::iterator it;
         /* Try to find the node_segment id in the list */
-        it = find(seg_list.begin(), seg_list.end(), node_segments_[inode]);
+        auto it = find(seg_list.begin(), seg_list.end(), node_segments_[inode]);
         if (it == seg_list.end()) {
             /* Not found, add it to the list */
             seg_list.push_back(node_segments_[inode]);
@@ -88,15 +84,12 @@ std::vector<RRSegmentId> RRChan::get_segment_ids() const {
 }
 
 /* Get a list of nodes whose segment_id is specified  */
-std::vector<size_t> RRChan::get_node_ids_by_segment_ids(const RRSegmentId& seg_id) const {
+std::vector<size_t> RRChan::get_node_ids_by_segment_ids(const RRSegmentId seg_id) const {
     std::vector<size_t> node_list;
 
-    /* make sure a clean start */
-    node_list.clear();
-
-    /* Traverse node_segments */
+    // Traverse node_segments
     for (size_t inode = 0; inode < get_chan_width(); ++inode) {
-        /* Try to find the node_segment id in the list */
+        // Try to find the node_segment id in the list
         if (seg_id == node_segments_[inode]) {
             node_list.push_back(inode);
         }
@@ -109,35 +102,34 @@ std::vector<size_t> RRChan::get_node_ids_by_segment_ids(const RRSegmentId& seg_i
  * Mutators
  ***********************************************************************/
 void RRChan::set(const RRChan& rr_chan) {
-    /* Ensure a clean start */
-    this->clear();
-    /* Assign type of this routing channel */
-    this->type_ = rr_chan.get_type();
-    /* Copy node and node_segments */
-    this->nodes_.resize(rr_chan.get_chan_width());
-    this->node_segments_.resize(rr_chan.get_chan_width());
+    // Ensure a clean start
+    clear();
+    // Assign type of this routing channel
+    type_ = rr_chan.get_type();
+    // Copy node and node_segments
+    nodes_.resize(rr_chan.get_chan_width());
+    node_segments_.resize(rr_chan.get_chan_width());
     for (size_t inode = 0; inode < rr_chan.get_chan_width(); ++inode) {
-        this->nodes_[inode] = rr_chan.get_node(inode);
-        this->node_segments_[inode] = rr_chan.get_node_segment(inode);
+        nodes_[inode] = rr_chan.get_node(inode);
+        node_segments_[inode] = rr_chan.get_node_segment(inode);
     }
-    return;
 }
 
 /* modify type */
-void RRChan::set_type(const e_rr_type& type) {
-    VTR_ASSERT(valid_type(type));
+void RRChan::set_type(const e_rr_type type) {
+    VTR_ASSERT(is_rr_type_valid(type));
     type_ = type;
 }
 
 /* Reserve node list */
-void RRChan::reserve_node(const size_t& node_size) {
-    nodes_.reserve(node_size);         /* reserve to the maximum */
-    node_segments_.reserve(node_size); /* reserve to the maximum */
+void RRChan::reserve_node(const size_t node_size) {
+    nodes_.reserve(node_size);
+    node_segments_.reserve(node_size);
 }
 
 /* add a node to the array */
-void RRChan::add_node(const RRGraphView& rr_graph, const RRNodeId& node, const RRSegmentId& node_segment) {
-    /* fill the dedicated element in the vector */
+void RRChan::add_node(const RRGraphView& rr_graph, const RRNodeId node, const RRSegmentId node_segment) {
+    // fill the dedicated element in the vector
     nodes_.push_back(node);
     node_segments_.push_back(node_segment);
 
@@ -160,7 +152,7 @@ void RRChan::clear() {
  * Internal validators
  ***********************************************************************/
 /* for type, only valid type is CHANX and CHANY */
-bool RRChan::valid_type(const e_rr_type& type) const {
+bool RRChan::is_rr_type_valid(const e_rr_type type) const {
     if ((e_rr_type::CHANX == type) || (e_rr_type::CHANY == type)) {
         return true;
     }
@@ -168,12 +160,12 @@ bool RRChan::valid_type(const e_rr_type& type) const {
 }
 
 /* Check each node, see if the node type is consistent with the type */
-bool RRChan::valid_node_type(const RRGraphView& rr_graph, const RRNodeId& node) const {
-    valid_type(rr_graph.node_type(node));
+bool RRChan::valid_node_type(const RRGraphView& rr_graph, const RRNodeId node) const {
+    is_rr_type_valid(rr_graph.node_type(node));
     if (e_rr_type::NUM_RR_TYPES == type_) {
         return true;
     }
-    valid_type(type_);
+    is_rr_type_valid(type_);
     if (type_ != rr_graph.node_type(node)) {
         return false;
     }
@@ -181,7 +173,7 @@ bool RRChan::valid_node_type(const RRGraphView& rr_graph, const RRNodeId& node) 
 }
 
 /* check if the node id is valid */
-bool RRChan::valid_node_id(const size_t& node_id) const {
+bool RRChan::valid_node_id(const size_t node_id) const {
     if (node_id < nodes_.size()) {
         return true;
     }
