@@ -14,3 +14,13 @@ struct t_clb_to_clb_directs {
     int to_clb_pin_end_index;
     int switch_index; //The switch type used by this direct connection
 };
+
+/**
+ * @brief Parse out which CLB pins should connect directly to which other CLB pins then store that in a clb_to_clb_directs data structure
+ * This data structure supplements the the info in the "directs" data structure
+ * 
+ * @param directs The direct connections to parse
+ * @param delayless_switch The switch index to use for delayless connections
+ * @return A vector of clb_to_clb_directs structures
+ */
+std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, const int delayless_switch);
