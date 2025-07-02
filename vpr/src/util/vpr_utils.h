@@ -167,7 +167,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id);
 
 /**
- * @brief Retrieves the atom pin associated with a specific CLB and pb_graph_pin. Warning: Not all pb_graph_pins are associated with an atom pin! Only pb_graph_pins on primatives are associated with an AtomPinId.
+ * @brief Retrieves the atom pin associated with a specific CLB and pb_graph_pin. Warning: Not all pb_graph_pins are associated with an atom pin! Only pb_graph_pins on primatives are associated with an AtomPinId. Returns AtomPinId::INVALID() if no atom pin is found.
  */
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 

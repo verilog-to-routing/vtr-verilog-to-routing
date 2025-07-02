@@ -865,7 +865,7 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
     AtomNetId atom_net = cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route[pb_route_id].atom_net_id;
     VTR_ASSERT(atom_net);
 
-    AtomPinId atom_pin;
+    AtomPinId atom_pin = AtomPinId::INVALID();
 
     //Look through all the pins on this net, looking for the matching pin
     for (AtomPinId pin : atom_ctx.netlist().net_pins(atom_net)) {
@@ -877,8 +877,6 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
                 atom_pin = pin;
         }
     }
-
-    VTR_ASSERT(atom_pin);
 
     return atom_pin;
 }

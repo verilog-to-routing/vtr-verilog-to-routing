@@ -34,6 +34,7 @@
 #include "draw.h"
 #include "draw_triangle.h"
 
+// Vertical padding (as a fraction of tile height) added to leave space for text inside internal logic blocks
 constexpr float FRACTION_TEXT_PADDING = 0.01;
 
 /************************* Subroutines local to this file. *******************************/
@@ -54,7 +55,15 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
  */
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
 /**
- * @brief A helper function for draw_internal_load_coords. Calculates the coordinates of a internal block and stores its bounding box inside global variables. The calculated width and height of the block are also assigned to the pointers blk_width and blk_height.
+ * @brief A helper function to calculate the number of child blocks for a given t_mode.
+ * @param mode The mode of the parent pb_type.
+ * @return The number of child blocks for the given t_mode.
+ */
+static int get_num_child_blocks(const t_mode& mode);
+/**
+ * @brief A helper function for draw_internal_load_coords. 
+ * Calculates the coordinates of a internal block and stores its bounding box inside global variables. 
+ * The calculated width and height of the block are also assigned to the pointers blk_width and blk_height.
  * @param type_descrip_index The index of the logical block type.
  * @param pb_graph_node The pb_graph_node of the logical block type.
  * @param blk_num Each logical block type has num_modes * num_pb_type_children sub-blocks. blk_num is the index of the sub-block within the logical block type.
@@ -241,6 +250,15 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
     return max_levels;
 }
 
+static int get_num_child_blocks(const t_mode& mode) {
+    // not all child_pb_types have the same number of physical blocks, so we have to manually loop through and count the physical blocks
+    int num_blocks = 0;
+    for (int j=0;j<mode.num_pb_type_children;++j) {
+        num_blocks += mode.pb_type_children[j].num_pb;
+    }
+    return num_blocks;
+}
+
 /* Helper function for initializing bounding box values for each sub-block. This function
  * traverses through the pb_graph for a descriptor_type (given by type_descrip_index), and
  * calls helper function to compute bounding box values.
@@ -259,16 +277,18 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
     for (int i = 0; i < num_modes; ++i) {
         t_mode mode = pb_type->modes[i];
         int num_children = mode.num_pb_type_children;
+        int num_blocks = get_num_child_blocks(mode);
+        int blk_num = 0;
 
         for (int j = 0; j < num_children; ++j) {
-            /* Find the number of instances for each child pb_type. */
+            // Find the number of instances for each child pb_type.
             int num_pb = mode.pb_type_children[j].num_pb;
 
-            // Determine how we want to arrange the sub-blocks in the parent block. We want the blocks to be squarish, and not too wide or too tall. In other words, we want the number of rows to be as close to the number of columns as possible such that num_rows * num_columns =  num_blocks.
-
-            int num_blocks = num_pb * num_children;
-
-            // determine central factor for the number of columns
+            // Determine how we want to arrange the sub-blocks in the parent block. 
+            // We want the blocks to be squarish, and not too wide or too tall. 
+            // In other words, we want the number of rows to be as close to the number of columns as possible such that 
+            // num_rows * num_columns =  num_blocks.
+            // first, determine the "middle" factor for the number of columns
             int num_columns = 1;
             for (int k = 1; k * k <= num_blocks; ++k) {
                 if (num_blocks % k == 0) {
@@ -286,19 +306,19 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
 
             for (int k = 0; k < num_pb; ++k) {
 
-                int blk_num = j * num_pb + k;
-
-                /* Compute bound box for block. Don't call if pb_type is root-level pb. */
+                // Compute bound box for block. Don't call if pb_type is root-level pb.
                 draw_internal_calc_coords(type_descrip_index,
                                           &pb_graph_node->child_pb_graph_nodes[i][j][k],
                                           blk_num, num_columns, num_rows,
                                           parent_width, parent_height,
                                           &blk_width, &blk_height);
 
-                /* Traverse to next level in the pb_graph */
+                // Traverse to next level in the pb_graph
                 draw_internal_load_coords(type_descrip_index,
                                           &pb_graph_node->child_pb_graph_nodes[i][j][k],
                                           blk_width, blk_height);
+                
+                blk_num++;
             }
         }
     }
@@ -317,7 +337,6 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
 
     constexpr float FRACTION_PARENT_PADDING = 0.005;
     constexpr float FRACTION_CHILD_MARGIN = 0.003;
-    constexpr int MIN_WIDTH_HEIGHT_RATIO = 2;
 
     float abs_parent_padding = tile_width * FRACTION_PARENT_PADDING;
     float abs_text_padding = tile_width * FRACTION_TEXT_PADDING;
@@ -333,10 +352,6 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     float parent_drawing_width = parent_width - 2 * abs_parent_padding;
     float parent_drawing_height = parent_height - 2 * abs_parent_padding - abs_text_padding;
 
-    if (parent_drawing_height > MIN_WIDTH_HEIGHT_RATIO * parent_drawing_width) {
-        parent_drawing_height /= 2;
-    }
-
     int x_index = blk_num % num_columns;
     int y_index = blk_num / num_columns;
 
@@ -348,7 +363,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
         abs_child_margin = 0;
     }
 
-    /* The starting point to draw the physical block. */
+    // The starting point to draw the physical block.
     double left = child_width * x_index + abs_parent_padding + abs_child_margin;
     double bot = child_height * y_index + abs_parent_padding + abs_child_margin;
 
@@ -389,7 +404,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         return;
     }
 
-    /// first draw box ///
+    // first draw box
 
     if (pb->name != nullptr) {
         // If block is used, draw it in colour with solid border.
@@ -419,20 +434,20 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         g->draw_rectangle(abs_bbox);
     }
 
-    /// then draw text ///
-
+    // draw text for each physical block.
+    // format: <block_type_name>:<mode_name>[<placement_index>]
     std::string pb_type_name(pb_type->name);
 
-    pb_type_name += "[" + std::to_string(pb->pb_graph_node->placement_index) + "]";
-
-    //get the mode of the physical block
+    // get the mode of the physical block
     if (!pb->is_primitive()) {
         // primitives have no modes
         std::string mode_name = pb->pb_graph_node->pb_type->modes[pb->mode].name;
-        pb_type_name += "[" + mode_name + "]";
+        pb_type_name += ":" + mode_name;
     }
 
-    g->set_font_size(16); // note: calc_text_xbound(...) assumes this is 16
+    pb_type_name += "[" + std::to_string(pb->pb_graph_node->placement_index) + "]";
+
+    g->set_font_size(16);
     if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
         // If this pb is at the lowest displayed level, or has no more children, then
         // label it in the center with its type and name
@@ -458,7 +473,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         }
     }
 
-    /// now recurse on the child pbs. ///
+    // now recurse on the child pbs.
 
     // return if no children, or this is an unusused pb,
     // or if going down will be too far down (this one is redundant, but for optimazition)
