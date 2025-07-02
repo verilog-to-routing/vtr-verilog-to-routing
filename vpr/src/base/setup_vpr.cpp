@@ -541,6 +541,8 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->custom_3d_sb_fanin_fanout = Options.custom_3d_sb_fanin_fanout;
     RouterOpts->with_timing_analysis = Options.timing_analysis;
 
+    RouterOpts->verify_route_file_switch_id = Options.verify_route_file_switch_id;
+
     RouterOpts->generate_router_lookahead_report = Options.generate_router_lookahead_report.value();
 }
 

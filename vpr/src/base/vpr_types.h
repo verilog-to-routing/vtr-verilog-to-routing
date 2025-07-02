@@ -1343,7 +1343,10 @@ struct t_router_opts {
 
     bool with_timing_analysis;
 
-    // Options related to rr_node reordering, for testing and possible cache optimization
+    /// Whether to verify the switch IDs in the route file with the RR Graph.
+    bool verify_route_file_switch_id;
+
+    /// Options related to rr_node reordering, for testing and possible cache optimization
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
     int reorder_rr_graph_nodes_seed = 1;
