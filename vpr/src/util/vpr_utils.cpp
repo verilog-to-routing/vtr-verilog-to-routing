@@ -522,15 +522,6 @@ std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id) {
     return {pin_low, pin_high};
 }
 
-t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types) {
-    for (auto const& type : types) {
-        if (type.name == name) {
-            return &type;
-        }
-    }
-    return nullptr; //Not found
-}
-
 t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat) {
     auto& place_ctx = g_vpr_ctx.placement();
     ClusterBlockId cluster_block_id = ClusterBlockId::INVALID();
