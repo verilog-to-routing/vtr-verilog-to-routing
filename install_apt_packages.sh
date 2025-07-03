@@ -41,10 +41,6 @@ sudo apt-get install -y \
     default-jre \
     zlib1g-dev
 
-# Required to build the documentation
-sudo apt-get install -y \
-    sphinx-common
-
 # Required for code formatting
 # NOTE: clang-format-18 may only be found on specific distributions. Only
 #       install it if the distribution has this version of clang format.
