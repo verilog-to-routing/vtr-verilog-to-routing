@@ -91,10 +91,16 @@ if (${WITH_PARMYS})
 	        COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive git\ submodule\ update\ --init
 	        WORKING_DIRECTORY ${SLANG_SRC_DIR}
 	    )
+        set(SLANG_FE "${SLANG_SRC_DIR}/src/slang_frontend.cc")
         ExternalProject_Add(
             yosys-slang
             SOURCE_DIR ${SLANG_SRC_DIR}
             BINARY_DIR ${SLANG_BUILD_DIR}
+
+            PATCH_COMMAND
+                ${CMAKE_COMMAND} -E echo "Patching slang_frontend.cc to disable UndrivenPass" &&
+                ${CMAKE_COMMAND} -DIN=${SLANG_FE} -P ${CMAKE_CURRENT_SOURCE_DIR}/patch_slang.cmake
+                
 
             CONFIGURE_COMMAND
                 ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release
