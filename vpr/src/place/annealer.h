@@ -105,6 +105,7 @@ class t_annealing_state {
      * @return True->continues the annealing. False->exits the annealing.
      */
     bool outer_loop_update(float success_rate,
+                           bool congestion_modeling_enabled,
                            const t_placer_costs& costs,
                            const t_placer_opts& placer_opts);
 
@@ -269,8 +270,7 @@ class PlacementAnnealer {
     float estimate_starting_temperature_();
 
   private:
-    t_placer_opts placer_opts_;
-    float congestion_factor_;
+    const t_placer_opts& placer_opts_;
 
     PlacerState& placer_state_;
     const PlaceMacros& place_macros_;

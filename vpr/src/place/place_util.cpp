@@ -42,7 +42,7 @@ double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_
         total_cost = bb_cost * bb_cost_norm;
     } else if (placer_opts.place_algorithm.is_timing_driven()) {
         // in timing mode we include both wirelength and timing costs
-        total_cost = (1 - placer_opts.timing_tradeoff - placer_opts.congestion_factor) * (bb_cost * bb_cost_norm) + (placer_opts.timing_tradeoff) * (timing_cost * timing_cost_norm);
+        total_cost = (1 - placer_opts.timing_tradeoff) * (bb_cost * bb_cost_norm) + (placer_opts.timing_tradeoff) * (timing_cost * timing_cost_norm);
     }
 
     total_cost += placer_opts.congestion_factor * congestion_cost * congestion_cost_norm;

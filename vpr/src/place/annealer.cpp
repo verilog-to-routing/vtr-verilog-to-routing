@@ -118,6 +118,7 @@ t_annealing_state::t_annealing_state(float first_t,
 }
 
 bool t_annealing_state::outer_loop_update(float success_rate,
+                                          bool congestion_modeling_enabled,
                                           const t_placer_costs& costs,
                                           const t_placer_opts& placer_opts) {
 #ifndef NO_GRAPHICS
@@ -140,7 +141,12 @@ bool t_annealing_state::outer_loop_update(float success_rate,
 
     // Automatically determine exit temperature.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-    float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
+    float t_exit;
+    if (congestion_modeling_enabled) {
+        t_exit = 0.005 * (1. + placer_opts.congestion_factor) * costs.cost / cluster_ctx.clb_nlist.nets().size();
+    } else {
+        t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
+    }
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
     // Automatically adjust alpha according to success rate.
@@ -232,8 +238,6 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , congestion_modeling_started_(false) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    congestion_factor_ = placer_opts_.congestion_factor;
-    placer_opts_.congestion_factor = 0.;
 
     float first_crit_exponent;
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -474,7 +478,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            placer_opts_.timing_tradeoff,
                            timing_delta_c,
                            costs_.timing_cost_norm);
-            delta_c = (1 - placer_opts_.timing_tradeoff - placer_opts_.congestion_factor) * bb_delta_c * costs_.bb_cost_norm
+            delta_c = (1 - placer_opts_.timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
                       + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
                       + placer_opts_.congestion_factor * congestion_delta_c * costs_.congestion_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
@@ -683,12 +687,7 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
         costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util();
 
         if (!congestion_modeling_started_) {
-            VTR_LOG("Congestion modeling started. %f %f\n", placer_opts_.congestion_factor, placer_opts_.timing_tradeoff);
-            placer_opts_.congestion_factor = congestion_factor_;
-            placer_opts_.congestion_factor /= 1.f + congestion_factor_;
-            //            placer_opts_.congestion_factor /= 1.f + placer_opts_.congestion_factor;
-            placer_opts_.timing_tradeoff /= 1.f + congestion_factor_;
-            VTR_LOG("Congestion modeling started. %f %f\n", placer_opts_.congestion_factor, placer_opts_.timing_tradeoff);
+            VTR_LOG("Congestion modeling started.\n");
             congestion_modeling_started_ = true;
         }
     }
@@ -803,7 +802,7 @@ const t_annealing_state& PlacementAnnealer::get_annealing_state() const {
 }
 
 bool PlacementAnnealer::outer_loop_update_state() {
-    return annealing_state_.outer_loop_update(placer_stats_.success_rate, costs_, placer_opts_);
+    return annealing_state_.outer_loop_update(placer_stats_.success_rate, congestion_modeling_started_, costs_, placer_opts_);
 }
 
 void PlacementAnnealer::start_quench() {
