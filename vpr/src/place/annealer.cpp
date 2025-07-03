@@ -141,11 +141,9 @@ bool t_annealing_state::outer_loop_update(float success_rate,
 
     // Automatically determine exit temperature.
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-    float t_exit;
+    float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
     if (congestion_modeling_enabled) {
-        t_exit = 0.005 * (1. + placer_opts.congestion_factor) * costs.cost / cluster_ctx.clb_nlist.nets().size();
-    } else {
-        t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
+        t_exit *= (1. + placer_opts.congestion_factor);
     }
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
@@ -237,7 +235,6 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , quench_started_(false)
     , congestion_modeling_started_(false) {
     const auto& device_ctx = g_vpr_ctx.device();
-
 
     float first_crit_exponent;
     if (placer_opts.place_algorithm.is_timing_driven()) {

@@ -271,7 +271,6 @@ class PlacementAnnealer {
 
   private:
     const t_placer_opts& placer_opts_;
-
     PlacerState& placer_state_;
     const PlaceMacros& place_macros_;
     /// Stores different placement cost terms
