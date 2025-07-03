@@ -82,7 +82,7 @@ void block_button_setup(ezgl::application* app) {
     GtkSpinButton* blk_internals_button = GTK_SPIN_BUTTON(app->get_object("ToggleBlkInternals"));
     g_signal_connect(blk_internals_button, "value-changed", G_CALLBACK(toggle_blk_internal_cbk), app);
     gtk_spin_button_set_increments(blk_internals_button, 1, 1);
-    gtk_spin_button_set_range(blk_internals_button, 0., (double)(draw_state->max_sub_blk_lvl - 1));
+    gtk_spin_button_set_range(blk_internals_button, 0., (double)(draw_state->max_sub_blk_lvl));
 
     //Toggle Block Pin Util
     GtkComboBoxText* blk_pin_util = GTK_COMBO_BOX_TEXT(app->get_object("ToggleBlkPinUtil"));

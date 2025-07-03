@@ -205,7 +205,7 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch
     }
 }
 
-void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_edge_dir edge_dir, short switch_type, ezgl::renderer* g) {
+void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_chan_edge_dir edge_dir, short switch_type, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -277,6 +277,62 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_e
                            rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
         }
     }
+}
+
+void draw_intra_cluster_edge(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    if (!draw_state->is_flat) {
+        return;
+    }
+
+    auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+    auto [prev_blk_id, prev_pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
+
+    ezgl::point2d icoord = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+    ezgl::point2d prev_coord = draw_coords->get_absolute_pin_location(prev_blk_id, prev_pin_id);
+
+    g->draw_line(prev_coord, icoord);
+
+    float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
+    float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
+    draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
+}
+
+void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_cluster_node, e_pin_edge_dir pin_edge_dir, e_side pin_side, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    if (!draw_state->is_flat) {
+        return;
+    }
+
+    // determine the location of the pins
+    float inter_cluster_x, inter_cluster_y;
+    ezgl::point2d intra_cluster_coord;
+
+    draw_get_rr_pin_coords(inter_cluster_node, &inter_cluster_x, &inter_cluster_y, pin_side);
+
+    auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(intra_cluster_node);
+    intra_cluster_coord = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+
+    // determine which coord is first based on the pin edge direction
+    ezgl::point2d prev_coord, icoord;
+    if (pin_edge_dir == FROM_INTRA_CLUSTER_TO_INTER_CLUSTER) {
+        prev_coord = intra_cluster_coord;
+        icoord = {inter_cluster_x, inter_cluster_y};
+    } else if (pin_edge_dir == FROM_INTER_CLUSTER_TO_INTRA_CLUSTER) {
+        prev_coord = {inter_cluster_x, inter_cluster_y};
+        icoord = intra_cluster_coord;
+    } else {
+        VPR_ERROR(VPR_ERROR_DRAW, "Invalid pin edge direction: %d", pin_edge_dir);
+    }
+
+    g->draw_line(prev_coord, icoord);
+    float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
+    float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
+    draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
 }
 
 void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) {
@@ -366,14 +422,8 @@ void draw_source_to_pin(RRNodeId source_node, RRNodeId opin_node, ezgl::renderer
     }
 }
 
-void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer* g) {
-    /* This routine draws an edge from the pin_node to the chan_node (CHANX or   *
-     * CHANY).  The connection is made to the nearest end of the track instead   *
-     * of perpendicular to the track to symbolize a single-drive connection.     */
+e_side get_pin_side(RRNodeId pin_node, RRNodeId chan_node) {
 
-    /* TODO: Fix this for global routing, currently for detailed only */
-
-    t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -386,7 +436,6 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
     int width_offset = device_ctx.grid.get_width_offset(tile_loc);
     int height_offset = device_ctx.grid.get_height_offset(tile_loc);
 
-    float x1 = 0, y1 = 0;
     /* If there is only one side, no need for the following inference!!!
      * When a node may have multiple sides,
      * we lack direct information about which side of the node drives the channel node
@@ -454,6 +503,30 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
     /* Sanity check */
     VTR_ASSERT(NUM_2D_SIDES != pin_side);
 
+    return pin_side;
+}
+
+void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer* g) {
+    /* This routine draws an edge from the pin_node to the chan_node (CHANX or   *
+     * CHANY).  The connection is made to the nearest end of the track instead   *
+     * of perpendicular to the track to symbolize a single-drive connection.     */
+
+    /* TODO: Fix this for global routing, currently for detailed only */
+
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    t_physical_tile_loc tile_loc = {
+        rr_graph.node_xlow(pin_node),
+        rr_graph.node_ylow(pin_node),
+        rr_graph.node_layer(pin_node)};
+
+    const auto& grid_type = device_ctx.grid.get_physical_type(tile_loc);
+    const e_rr_type channel_type = rr_graph.node_type(chan_node);
+    e_side pin_side = get_pin_side(pin_node, chan_node);
+
+    float x1 = 0, y1 = 0;
     /* Now we determine which side to be used, calculate the offset for the pin to be drawn
      * - For the pin locates above/right to the grid (at the top/right side),
      *   a positive offset (+ve) is required

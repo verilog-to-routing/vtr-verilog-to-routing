@@ -658,7 +658,7 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
  * could be caused by the user clicking on a routing resource, toggled, or
  * fan-in/fan-out of a highlighted node.
  */
-bool draw_if_net_highlighted(ClusterNetId inet) {
+bool draw_if_net_highlighted(ParentNetId inet) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (draw_state->net_color[inet] != DEFAULT_RR_NODE_COLOR) {

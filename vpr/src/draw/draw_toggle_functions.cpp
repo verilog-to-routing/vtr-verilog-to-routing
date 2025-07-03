@@ -235,7 +235,7 @@ void toggle_blk_internal_cbk(GtkSpinButton* self, ezgl::application* app) {
     if (new_value < 0)
         draw_state->show_blk_internal = 0;
     else if (new_value >= draw_state->max_sub_blk_lvl)
-        draw_state->show_blk_internal = draw_state->max_sub_blk_lvl - 1;
+        draw_state->show_blk_internal = draw_state->max_sub_blk_lvl;
     else
         draw_state->show_blk_internal = new_value;
     app->refresh_drawing();
