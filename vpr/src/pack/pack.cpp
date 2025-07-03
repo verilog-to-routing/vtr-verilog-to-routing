@@ -110,21 +110,6 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
         return e_packer_state::SUCCESS;
     }
 
-    // Check if the utilizaion of any block types is over 100%
-    if (!fits_on_device) {
-        // The utilization of some block types are too high. Need to increase the
-        // density of the block types available.
-
-        // Check if we can turn on unrelated cluster and/or balanced block type
-        // utilization and they have not been turned on already.
-        if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO && !using_unrelated_clustering) {
-            return e_packer_state::SET_UNRELATED_AND_BALANCED;
-        }
-        if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::AUTO && !using_balanced_block_type_util) {
-            return e_packer_state::SET_UNRELATED_AND_BALANCED;
-        }
-    }
-
     // Check if there are overfilled floorplan regions.
     if (floorplan_regions_overfull) {
         // If there are overfilled region constraints, try to use attraction
@@ -153,6 +138,21 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
             case e_packer_state::CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS_AND_INCREASE_PULL:
             default:
                 break;
+        }
+    }
+
+    // Check if the utilizaion of any block types is over 100%
+    if (!fits_on_device) {
+        // The utilization of some block types are too high. Need to increase the
+        // density of the block types available.
+
+        // Check if we can turn on unrelated cluster and/or balanced block type
+        // utilization and they have not been turned on already.
+        if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO && !using_unrelated_clustering) {
+            return e_packer_state::SET_UNRELATED_AND_BALANCED;
+        }
+        if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::AUTO && !using_balanced_block_type_util) {
+            return e_packer_state::SET_UNRELATED_AND_BALANCED;
         }
     }
 

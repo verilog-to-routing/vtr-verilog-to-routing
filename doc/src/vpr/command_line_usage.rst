@@ -256,6 +256,16 @@ General Options
 
     **Default:** ``on``
 
+.. option:: --verify_route_file_switch_id {on | off}
+
+    Verify that the switch IDs in the routing file are consistent with those in the RR Graph.
+    Set this to false when switch IDs in the routing file may differ from the RR Graph.
+    For example, when analyzing different timing corners using the same netlist, placement, and routing files,
+    the RR switch IDs in the RR Graph may differ due to changes in delays.
+    In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.
+
+    **Default:** ``on``
+
 .. option:: --target_utilization <float>
 
     Sets the target device utilization.
