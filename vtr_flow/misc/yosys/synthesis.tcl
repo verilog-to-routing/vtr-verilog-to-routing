@@ -1,5 +1,4 @@
 yosys -import
-#puts "Files in here: [glob -nocomplain *]"
 plugin -i parmys
 
 read_verilog -nomem2reg +/parmys/vtr_primitives.v
@@ -38,7 +37,7 @@ parmys_arch -a QQQ
 #	}
 
 if {$env(PARSER) == "slang" } {
-	# Create a file list containing the name(s) of file(s)
+	# Create a file list containing the name(s) of file(s) \
 	# to read together with read_slang
 	set sv_files {}
 	set v_files {}
@@ -57,10 +56,10 @@ if {$env(PARSER) == "slang" } {
 		}
 	}
 	close $fh
-	if {[llength $sv_files] > 0} {
+	#if {[llength $sv_files] > 0} {
 		#puts "Using Yosys read_slang command"
 		#read_slang -C $readfile
-	}
+	#}
 	puts "Using Yosys read_slang command"
 	read_slang -C $readfile
 } elseif {$env(PARSER) == "default" } {

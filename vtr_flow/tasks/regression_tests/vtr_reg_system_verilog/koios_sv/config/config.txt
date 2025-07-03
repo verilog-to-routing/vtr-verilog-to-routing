@@ -4,22 +4,21 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/system_verilog/f4pga/timer
-includes_dir=benchmarks/system_verilog/f4pga/timer
+circuits_dir=benchmarks/system_verilog/koios_sv
+includes_dir=benchmarks/system_verilog/koios_sv
 
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
 
 # Add circuits to list to sweep
-include_list_add=modify_count.sv
-include_list_add=display_control.sv
-include_list_add=time_counter.sv
-include_list_add=timer.sv
+#include_list_add=display_control.sv
+#include_list_add=timer.sv
+#include_list_add=debounce.sv
 
 # Add circuits to list to sweep
-#circuit_list_add=flattened_timer.sv
-circuit_list_add=clock.sv
+circuit_list_add=deepfreeze.style1.sv
+
 
 
 # Add architectures to list to sweep
