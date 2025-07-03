@@ -414,7 +414,7 @@ class RRGraph {
      * see node coordinate for details 
      * only matters the routing track nodes (CHANX and CHANY) 
      */
-    Direction node_direction(const RRNodeId& node) const;
+    Direction node_direction(RRNodeId node) const;
 
     /* Get the side where the node physically locates on a logic block. 
      * Mainly applicable to IPIN and OPIN nodes, which locates on the perimeter of logic block 

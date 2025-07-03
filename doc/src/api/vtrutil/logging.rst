@@ -14,6 +14,8 @@ vtr_error
    :project: vtr
    :sections: briefdescription detaileddescription innernamespace innerclass user-defined public-func
 
+.. _vtr_assertion:
+
 vtr_assertion
 -------------
 .. doxygenfile:: vtr_assert.h
