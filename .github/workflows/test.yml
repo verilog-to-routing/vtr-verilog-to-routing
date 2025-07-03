@@ -426,11 +426,9 @@ jobs:
         with:
           python-version: 3.12.3
 
-      # NOTE: This is using recursive on purpose. In order to use the System
-      #       Verilog feature, need submodules inside of a submodule.
-      # - uses: actions/checkout@v4
-      #   with:
-      #     submodules: 'recursive'
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
 
       - name: Get number of CPU cores
         uses: SimenB/github-actions-cpu-cores@v2
