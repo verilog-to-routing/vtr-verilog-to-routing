@@ -169,7 +169,7 @@ void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId
     if (!route_ctx.route_trees[parent_net_id])
         return;
 
-    for (RouteTreeNode& rt_node : route_ctx.route_trees[parent_net_id].value().all_nodes()) {
+    for (const RouteTreeNode& rt_node : route_ctx.route_trees[parent_net_id].value().all_nodes()) {
         RRNodeId inode = rt_node.inode;
         if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
             draw_state->net_color[parent_net_id] = draw_state->draw_rr_node[inode].color;
