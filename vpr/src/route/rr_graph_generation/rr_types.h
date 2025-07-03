@@ -13,15 +13,13 @@
  *
  * The matrix should be accessed as follows as a result after allocation in rr_graph.cpp: alloc_pin_to_track_lookup (used by unidir and bidir)
  * [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width][0..height][0..layer-1][0..3][0..Fc-1] */
-
 typedef std::vector<vtr::NdMatrix<std::vector<int>, 5>> t_pin_to_track_lookup;
 
 /* AA: t_pin_to_track_lookup is alloacted first and is then converted to t_track_to_pin lookup by simply redefining the accessing order.
  * As a result, the matrix should be accessed as follow as a result after allocation in rr_graph.cpp: alloc_track_to_pin_lookup (used by unidir and bidir)
  * [0..device_ctx.physical_tile_types.size()-1][0..max_chan_width-1][0..width][0..height][0..layer-1][0..3]
  * 
- * Note that when we modell different channels based on position not axis, we can't use this anymore and need to have a lookup for each grid location. */
-
+ * Note that when we model different channels based on position not axis, we can't use this anymore and need to have a lookup for each grid location. */
 typedef std::vector<vtr::NdMatrix<std::vector<int>, 5>> t_track_to_pin_lookup;
 
 /**
@@ -157,13 +155,12 @@ class t_chan_seg_details {
     void set_seg_end(int new_end) { seg_end_ = new_end; }
 
   private:
-    //The only unique information about a channel segment is it's start/end
-    //and length.  All other information is shared across segment types,
-    //so we use a flyweight to the t_seg_details which defines that info.
-    //
-    //To preserve the illusion of uniqueness we wrap all t_seg_details members
-    //so it appears transparent -- client code of this class doesn't need to
-    //know about t_seg_details.
+    // The only unique information about a channel segment is its start/end
+    // and length.  All other information is shared across segment types,
+    // so we use a flyweight to the t_seg_details which defines that info.
+    // To preserve the illusion of uniqueness we wrap all t_seg_details members
+    // so it appears transparent -- client code of this class doesn't need to
+    // know about t_seg_details.
     int length_ = -1;
     int seg_start_ = -1;
     int seg_end_ = -1;

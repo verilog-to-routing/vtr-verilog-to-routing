@@ -112,7 +112,8 @@ void try_place(const Netlist<>& net_list,
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist(), pb_gpin_lookup);
 
     Placer placer(net_list, {}, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
-                  flat_placement_info, place_delay_model, mutable_placement.cube_bb, is_flat, /*quiet=*/false);
+                  flat_placement_info, place_delay_model, placer_opts.place_auto_init_t_scale,
+                  mutable_placement.cube_bb, is_flat, /*quiet=*/false);
 
     placer.place();
 

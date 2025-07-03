@@ -1637,6 +1637,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.verify_route_file_switch_id, "--verify_route_file_switch_id")
+        .help(
+            "Verify that the switch IDs in the routing file are consistent with those in the RR Graph. "
+            "Set this to false when switch IDs in the routing file may differ from the RR Graph. "
+            "For example, when analyzing different timing corners using the same netlist, placement, and routing files, "
+            "the RR switch IDs in the RR Graph may differ due to changes in delays. "
+            "In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.\n")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     gen_grp.add_argument(args.target_device_utilization, "--target_utilization")
         .help(
             "Sets the target device utilization."
@@ -2198,6 +2208,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "  * device_circuit: proportional to device and circuit size\n"
             "                    (grid_size ^ 2/3 * num_blocks ^ 2/3)\n")
         .default_value("circuit")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_auto_init_t_scale, "--anneal_auto_init_t_scale")
+        .help(
+            "A scale on the starting temperature of the anneal for the automatic annealing "
+            "schedule.\n"
+            "\n"
+            "When in the automatic annealing schedule, the annealer will select a good "
+            "initial temperature based on the quality of the initial placement. This option "
+            "allows you to scale that initial temperature up or down by multiplying the "
+            "initial temperature by the given scale. Increasing this number "
+            "will increase the initial temperature which will have the annealer potentially "
+            "explore more of the space at the expense of run time. Depending on the quality "
+            "of the initial placement, this may improve or hurt the quality of the final "
+            "placement.")
+        .default_value("1.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceInitT, "--init_t")
@@ -2918,6 +2944,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " kinds of connections, but note that the time and memory necessary to compute the\n"
             " extended lookahead map are greater than the basic lookahead map.\n")
         .default_value("map")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.generate_router_lookahead_report, "--generate_router_lookahead_report")
+        .help("If turned on, generates a detailed report on the router lookahead: report_router_lookahead.rpt\n"
+              "\n"
+              "This report contains information on how accurate the router lookahead is and "
+              "if and when it overestimates the cost from a node to a target node. It does "
+              "this by doing a set of trial routes and comparing the estimated cost from the "
+              "router lookahead to the actual cost of the route path.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_threshold, "--router_initial_acc_cost_chan_congestion_threshold")

@@ -73,6 +73,7 @@ struct t_options {
     argparse::ArgValue<e_timing_update_type> timing_update_type;
     argparse::ArgValue<bool> CreateEchoFile;
     argparse::ArgValue<bool> verify_file_digests;
+    argparse::ArgValue<bool> verify_route_file_switch_id;
     argparse::ArgValue<std::string> device_layout;
     argparse::ArgValue<float> target_device_utilization;
     argparse::ArgValue<e_constant_net_method> constant_net_method;
@@ -129,6 +130,7 @@ struct t_options {
     argparse::ArgValue<int> Seed;
     argparse::ArgValue<bool> ShowPlaceTiming;
     argparse::ArgValue<float> PlaceInnerNum;
+    argparse::ArgValue<float> place_auto_init_t_scale;
     argparse::ArgValue<float> PlaceInitT;
     argparse::ArgValue<float> PlaceExitT;
     argparse::ArgValue<float> PlaceAlphaT;
@@ -255,6 +257,7 @@ struct t_options {
     argparse::ArgValue<int> router_debug_sink_rr;
     argparse::ArgValue<int> router_debug_iteration;
     argparse::ArgValue<e_router_lookahead> router_lookahead_type;
+    argparse::ArgValue<bool> generate_router_lookahead_report;
     argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_threshold;
     argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_weight;
     argparse::ArgValue<int> router_max_convergence_count;

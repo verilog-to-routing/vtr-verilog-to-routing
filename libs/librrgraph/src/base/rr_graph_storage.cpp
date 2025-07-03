@@ -45,7 +45,7 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
         edge_remapped_.reserve(new_capacity);
     }
 
-    for (const auto& new_edge : *rr_edges_to_create) {
+    for (const t_rr_edge_info& new_edge : *rr_edges_to_create) {
         emplace_back_edge(
             new_edge.from_node,
             new_edge.to_node,

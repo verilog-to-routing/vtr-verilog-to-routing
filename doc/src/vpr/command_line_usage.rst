@@ -256,6 +256,16 @@ General Options
 
     **Default:** ``on``
 
+.. option:: --verify_route_file_switch_id {on | off}
+
+    Verify that the switch IDs in the routing file are consistent with those in the RR Graph.
+    Set this to false when switch IDs in the routing file may differ from the RR Graph.
+    For example, when analyzing different timing corners using the same netlist, placement, and routing files,
+    the RR switch IDs in the RR Graph may differ due to changes in delays.
+    In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.
+
+    **Default:** ``on``
+
 .. option:: --target_utilization <float>
 
     Sets the target device utilization.
@@ -809,6 +819,22 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     The number of blocks in a circuit is the number of pads plus the number of clbs.
 
     **Default:** ``circuit``
+
+.. option:: --anneal_auto_init_t_scale <float>
+
+    A scale on the starting temperature of the anneal for the automatic annealing
+    schedule.
+
+    When in the automatic annealing schedule, the annealer will select a good
+    initial temperature based on the quality of the initial placement. This option
+    allows you to scale that initial temperature up or down by multiplying the
+    initial temperature by the given scale. Increasing this number
+    will increase the initial temperature which will have the annealer potentially
+    explore more of the space at the expense of run time. Depending on the quality
+    of the initial placement, this may improve or hurt the quality of the final
+    placement.
+
+    **Default:** ``1.0``
 
 .. option:: --init_t <float>
 
@@ -1823,6 +1849,17 @@ The following options are only valid when the router is in timing-driven mode (t
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
 
      **Default:** ``map``
+
+.. option:: --generate_router_lookahead_report {on | off}
+
+   If turned on, generates a detailed report on the router lookahead: report_router_lookahead.rpt
+
+   This report contains information on how accurate the router lookahead is and
+   if and when it overestimates the cost from a node to a target node. It does
+   this by doing a set of trial routes and comparing the estimated cost from the
+   router lookahead to the actual cost of the route path.
+
+   **Default:** ``off``
 
 .. option:: --router_initial_acc_cost_chan_congestion_threshold <float>
 

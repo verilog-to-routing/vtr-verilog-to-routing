@@ -38,6 +38,52 @@ endif ()
 # The VTR root CMakeFile initializes the WITH_PARMYS
 if (${WITH_PARMYS})
 
+	cmake_minimum_required(VERSION 3.16)
+
+	#project(yosys)
+
+	# Create a target out of the library compilation result
+	SET(YOSYS_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys)
+	SET(YOSYS_BUILD_DIR ${CMAKE_BINARY_DIR}/bin/yosys)
+
+    add_definitions("-D_YOSYS_")
+    if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+        set(MAKE_PROGRAM "$$MAKE") # Escaped for Ninja
+    else()
+        set(MAKE_PROGRAM "$(MAKE)")
+    endif()
+
+    set(CURRENT_CPPFLAGS "$(CPPFLAGS)-w")
+	if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+	    set(CURRENT_CPPFLAGS "-w")
+	endif()
+
+	#Initialize yosys submodules
+	execute_process(
+	 COMMAND git submodule update --init
+	 WORKING_DIRECTORY ${YOSYS_SRC_DIR}
+	)
+	execute_process(
+	  COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive git\ submodule\ update\ --init
+	  WORKING_DIRECTORY ${YOSYS_SRC_DIR}
+	)
+
+	# how to build the result of the library
+	add_custom_command(OUTPUT ${YOSYS_BUILD_DIR}
+		COMMAND ${MAKE_PROGRAM} -C ${YOSYS_SRC_DIR}
+		    ENABLE_ABC=0
+		    PREFIX=${CMAKE_BINARY_DIR}
+
+		 COMMAND ${MAKE_PROGRAM} 
+		    -C ${YOSYS_SRC_DIR}
+		    install
+		    ENABLE_ABC=0
+		    PREFIX=${CMAKE_BINARY_DIR}
+
+		WORKING_DIRECTORY ${YOSYS_SRC_DIR})
+
+	add_custom_target(yosys ALL DEPENDS ${YOSYS_BUILD_DIR})
+
     if (${SYNLIG_SYSTEMVERILOG})
 
         set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)

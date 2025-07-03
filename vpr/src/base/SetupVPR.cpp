@@ -516,6 +516,10 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->has_choke_point = Options.router_opt_choke_points;
     RouterOpts->custom_3d_sb_fanin_fanout = Options.custom_3d_sb_fanin_fanout;
     RouterOpts->with_timing_analysis = Options.timing_analysis;
+
+    RouterOpts->verify_route_file_switch_id = Options.verify_route_file_switch_id;
+
+    RouterOpts->generate_router_lookahead_report = Options.generate_router_lookahead_report.value();
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -703,6 +707,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->placer_debug_block = Options.placer_debug_block;
     PlacerOpts->placer_debug_net = Options.placer_debug_net;
+
+    PlacerOpts->place_auto_init_t_scale = Options.place_auto_init_t_scale.value();
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

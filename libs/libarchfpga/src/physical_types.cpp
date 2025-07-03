@@ -126,8 +126,7 @@ static bool switch_type_is_configurable(SwitchType type) {
 }
 
 static e_directionality switch_type_directionality(SwitchType type) {
-    if (type == SwitchType::SHORT
-        || type == SwitchType::PASS_GATE) {
+    if (type == SwitchType::SHORT || type == SwitchType::PASS_GATE) {
         //Shorts and pass gates can conduct in either direction
         return e_directionality::BI_DIRECTIONAL;
     } else {

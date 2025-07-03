@@ -69,6 +69,11 @@ void CheckSetup(const t_packer_opts& packer_opts,
                         NUM_PL_MOVE_TYPES);
     }
 
+    if (placer_opts.place_auto_init_t_scale < 0.0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Cannot have negative annealer auto initial temperature scale.\n");
+    }
+
     // Rules for doing Analytical Placement
     if (ap_opts.doAP) {
         // Make sure that the --place option was not set.

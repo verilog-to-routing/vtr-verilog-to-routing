@@ -1004,8 +1004,9 @@ enum class e_move_type;
  *   @param place_constraint_subtile
  *              True if subtiles should be specified when printing floorplan
  *              constraints. False if not.
- *
- *
+ *   @param place_auto_init_t_scale
+ *              When the annealer is using the automatic schedule, this option
+ *              scales the initial temperature selected.
  */
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
@@ -1077,6 +1078,8 @@ struct t_placer_opts {
     std::string allowed_tiles_for_delay_model;
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
+
+    float place_auto_init_t_scale;
 };
 
 /******************************************************************
@@ -1340,10 +1343,15 @@ struct t_router_opts {
 
     bool with_timing_analysis;
 
-    // Options related to rr_node reordering, for testing and possible cache optimization
+    /// Whether to verify the switch IDs in the route file with the RR Graph.
+    bool verify_route_file_switch_id;
+
+    /// Options related to rr_node reordering, for testing and possible cache optimization
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
     int reorder_rr_graph_nodes_seed = 1;
+
+    bool generate_router_lookahead_report;
 };
 
 struct t_analysis_opts {
