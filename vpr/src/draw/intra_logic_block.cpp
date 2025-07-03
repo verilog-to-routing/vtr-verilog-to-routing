@@ -253,7 +253,7 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
 static int get_num_child_blocks(const t_mode& mode) {
     // not all child_pb_types have the same number of physical blocks, so we have to manually loop through and count the physical blocks
     int num_blocks = 0;
-    for (int j=0;j<mode.num_pb_type_children;++j) {
+    for (int j = 0; j < mode.num_pb_type_children; ++j) {
         num_blocks += mode.pb_type_children[j].num_pb;
     }
     return num_blocks;
@@ -284,9 +284,9 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
             // Find the number of instances for each child pb_type.
             int num_pb = mode.pb_type_children[j].num_pb;
 
-            // Determine how we want to arrange the sub-blocks in the parent block. 
-            // We want the blocks to be squarish, and not too wide or too tall. 
-            // In other words, we want the number of rows to be as close to the number of columns as possible such that 
+            // Determine how we want to arrange the sub-blocks in the parent block.
+            // We want the blocks to be squarish, and not too wide or too tall.
+            // In other words, we want the number of rows to be as close to the number of columns as possible such that
             // num_rows * num_columns =  num_blocks.
             // first, determine the "middle" factor for the number of columns
             int num_columns = 1;
@@ -317,7 +317,7 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
                 draw_internal_load_coords(type_descrip_index,
                                           &pb_graph_node->child_pb_graph_nodes[i][j][k],
                                           blk_width, blk_height);
-                
+
                 blk_num++;
             }
         }

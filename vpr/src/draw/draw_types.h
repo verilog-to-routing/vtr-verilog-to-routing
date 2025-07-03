@@ -109,11 +109,16 @@ enum e_draw_net_type {
     ALL_NETS,
     HIGHLIGHTED
 };
-
-/* Chanx to chany or vice versa? */
-enum e_edge_dir {
+/// Chanx to chany or vice versa?
+enum e_chan_edge_dir {
     FROM_X_TO_Y,
     FROM_Y_TO_X
+};
+
+/// From inter-cluster pin to intra-cluster pin or vice versa?
+enum e_pin_edge_dir {
+    FROM_INTER_CLUSTER_TO_INTRA_CLUSTER,
+    FROM_INTRA_CLUSTER_TO_INTER_CLUSTER
 };
 
 /*
