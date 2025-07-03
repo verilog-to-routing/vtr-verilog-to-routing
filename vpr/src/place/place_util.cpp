@@ -11,7 +11,7 @@
 #include "noc_place_utils.h"
 
 void t_placer_costs::update_norm_factors() {
-    const auto& clustered_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const ClusteredNetlist& clustered_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     bb_cost_norm = 1 / bb_cost;
 
@@ -76,7 +76,7 @@ int get_place_inner_loop_num_move(const t_placer_opts& placer_opts, const t_anne
         move_lim = int(annealing_sched.inner_num * pow(device_size, 2. / 3.) * pow(num_blocks, 2. / 3.));
     }
 
-    /* Avoid having a non-positive move_lim */
+    // Avoid having a non-positive move_lim
     move_lim = std::max(move_lim, 1);
 
     return move_lim;

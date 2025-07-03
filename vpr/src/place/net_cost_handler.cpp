@@ -1421,7 +1421,7 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
     VTR_ASSERT_SAFE(congestion_modeling_started_);
     const auto [x_chan_util, y_chan_util] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
 
-    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
+    //    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
 
     //    int distance_x = bb.xmax - bb.xmin + 1;
     //    int distance_y = bb.ymax - bb.ymin + 1;
@@ -1802,6 +1802,7 @@ double NetCostHandler::estimate_routing_chan_util() {
         }
     }
 
+    // Channel width is computed only once and reused in later calls.
     if (chanx_width_.empty()) {
         VTR_ASSERT(chany_width_.empty());
         std::tie(chanx_width_, chany_width_) = calculate_channel_width();
@@ -1811,9 +1812,9 @@ double NetCostHandler::estimate_routing_chan_util() {
     VTR_ASSERT(chanx_util_.size() == chanx_width_.size());
     VTR_ASSERT(chany_util_.size() == chany_width_.size());
 
-    for (size_t layer = 0; layer < chanx_util_.dim_size(0); ++layer) {
-        for (size_t x = 0; x < chanx_util_.dim_size(1); ++x) {
-            for (size_t y = 0; y < chanx_util_.dim_size(2); ++y) {
+    for (size_t layer = 0; layer < num_layers; ++layer) {
+        for (size_t x = 0; x < grid_width; ++x) {
+            for (size_t y = 0; y < grid_height; ++y) {
                 if (chanx_width_[layer][x][y] > 0) {
                     chanx_util_[layer][x][y] /= chanx_width_[layer][x][y];
                 } else {

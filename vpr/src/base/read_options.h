@@ -188,7 +188,7 @@ struct t_options {
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
     argparse::ArgValue<float> place_congestion_factor;
-    argparse::ArgValue<float> place_congestion_acceptance_rate_trigger;
+    argparse::ArgValue<float> place_congestion_rlim_trigger_ratio;
     argparse::ArgValue<float> place_congestion_chan_util_threshold;
 
     argparse::ArgValue<int> RecomputeCritIter;

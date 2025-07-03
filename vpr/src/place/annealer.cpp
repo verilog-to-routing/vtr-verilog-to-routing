@@ -139,7 +139,7 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     }
 
     // Automatically determine exit temperature.
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
@@ -377,15 +377,13 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
     MoveOutcomeStats move_outcome_stats;
 
-    /* I'm using negative values of proposed_net_cost as a flag,
-     * so DO NOT use cost functions that can go negative. */
-    double delta_c = 0.;        //Change in cost due to this swap.
-    double bb_delta_c = 0.;     //Change in the bounding box (wiring) cost.
-    double timing_delta_c = 0.; //Change in the timing cost (delay * criticality).
-    double congestion_delta_c = 0.;
+    double delta_c = 0.;            // Change in cost due to this swap.
+    double bb_delta_c = 0.;         // Change in the bounding box (wiring) cost.
+    double timing_delta_c = 0.;     // Change in the timing cost (delay * criticality).
+    double congestion_delta_c = 0.; // Change in the congestion cost
 
-    /* Allow some fraction of moves to not be restricted by rlim,
-     * in the hopes of better escaping local minima. */
+    // Allow some fraction of moves to not be restricted by rlim,
+    // in the hopes of better escaping local minima.
     float rlim;
     if (placer_opts_.rlim_escape_fraction > 0. && rng_.frand() < placer_opts_.rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
@@ -401,19 +399,19 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         router_block_move = check_for_router_swap(noc_opts_.noc_swap_percentage, rng_);
     }
 
-    //When manual move toggle button is active, the manual move window asks the user for input.
+    // When manual move toggle button is active, the manual move window asks the user for input.
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator_, blocks_affected_,
                                                               proposed_action.move_type, rlim,
                                                               placer_opts_, criticalities_);
-#endif //NO_GRAPHICS
+#endif // NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
         create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry, place_macros_, rng_);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
-        //Generate a new move (perturbation) used to explore the space of possible placements
+        // Generate a new move (perturbation) used to explore the space of possible placements
         create_move_outcome = move_generator.propose_move(blocks_affected_, proposed_action, rlim, placer_opts_, criticalities_);
     }
 
@@ -681,7 +679,7 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
     }
 
     if (congestion_modeling_started_
-        || (annealing_state_.rlim / MoveGenerator::first_rlim) < placer_opts_.congestion_acceptance_rate_trigger) {
+        || (annealing_state_.rlim / MoveGenerator::first_rlim) < placer_opts_.congestion_rlim_trigger_ratio) {
         costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util();
 
         if (!congestion_modeling_started_) {
