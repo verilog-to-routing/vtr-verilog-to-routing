@@ -63,39 +63,33 @@ struct NocCostTerms {
  * values of the previous iteration. However, the divisions are expensive,
  * so we store their multiplicative inverses when they are updated in
  * the outer loop routines to speed up the normalization process.
- *
- *   @param cost The weighted average of the wiring cost and the timing cost.
- *   @param bb_cost The bounding box cost, aka the wiring cost.
- *   @param timing_cost The timing cost, which is connection delay * criticality.
- *
- *   @param bb_cost_norm The normalization factor for the wiring cost.
- *   @param timing_cost_norm The normalization factor for the timing cost, which
- *              is upper-bounded by the value of MAX_INV_TIMING_COST.
- *
- *   @param noc_cost_terms NoC-related cost terms
- *   @param noc_cost_norm_factors Normalization factors for NoC-related cost terms.
- *
- *   @param MAX_INV_TIMING_COST Stops inverse timing cost from going to infinity
- *              with very lax timing constraints, which avoids multiplying by a
- *              gigantic timing_cost_norm when auto-normalizing. The exact value
- *              of this cost has relatively little impact, but should be large
- *              enough to not affect the timing costs computation for normal
- *              constraints.
- *
- *   @param place_algorithm Determines how the member values are updated upon
- *              each temperature change during the placer annealing process.
  */
 class t_placer_costs {
   public: //members
+    /// The weighted average of the wiring cost, the timing cost, and the congestion cost (if enabled)
     double cost = 0.;
+
+    /// The bounding box cost, aka the wiring cost.
     double bb_cost = 0.;
+
+    /// The timing cost, which is connection delay * criticality.
     double timing_cost = 0.;
+
+    /// The congestion cost, which estimates how much routing channels are over-utilized.
     double congestion_cost = 0.;
+
+    /// The normalization factor for the wiring cost.
     double bb_cost_norm = 0.;
+
+    /// The normalization factor for the timing cost, which is upper-bounded by the value of MAX_INV_TIMING_COST.
     double timing_cost_norm = 0.;
+
+    /// The normalization factor for the congestion cost.
     double congestion_cost_norm = 0.;
 
+    /// NoC-related cost terms.
     NocCostTerms noc_cost_terms;
+    /// Normalization factors for NoC-related cost terms.
     NocCostTerms noc_cost_norm_factors;
 
   public: //Constructor
@@ -133,7 +127,18 @@ class t_placer_costs {
     t_placer_costs& operator+=(const NocCostTerms& noc_delta_cost);
 
   private:
+    /**
+     * @brief Stops inverse timing cost from going to infinity
+     *         with very lax timing constraints, which avoids multiplying by a
+     *         gigantic timing_cost_norm when auto-normalizing. The exact value
+     *         of this cost has relatively little impact, but should be large
+     *         enough to not affect the timing costs computation for normal
+     *         constraints.
+     */
     static constexpr double MAX_INV_TIMING_COST = 1.e12;
+
+    /// Determines how the member values are updated upon
+    /// each temperature change during the placer annealing process.
     t_place_algorithm place_algorithm;
     bool noc_enabled;
 };
@@ -150,39 +155,30 @@ class t_placer_costs {
  * In terms of calculating statistics for total cost, we mean that we
  * operate upon the set of placer cost values gathered after every
  * accepted block move.
- *
- *   @param av_cost
- *              Average total cost. Cost formulation depends on
- *              the place algorithm currently being used.
- *   @param av_bb_cost
- *              Average bounding box (wiring) cost.
- *   @param av_timing_cost
- *              Average timing cost (delay * criticality).
- *   @param sum_of_squares
- *              Sum of squares of the total cost.
- *   @param success_num
- *              Number of accepted block swaps for the current iteration.
- *   @param success_rate
- *              num_accepted / total_trials for the current iteration.
- *   @param std_dev
- *              Standard deviation of the total cost.
- *
  */
 class t_placer_statistics {
   public:
+    /// Average total cost. Cost formulation depends on the place algorithm currently being used.
     double av_cost;
+    /// Average bounding box (wiring) cost.
     double av_bb_cost;
+    /// Average timing cost (delay * criticality).
     double av_timing_cost;
+    /// Average congestion cost.
     double av_cong_cost;
+    /// Sum of squares of the total cost.
     double sum_of_squares;
+    /// Number of accepted block swaps for the current iteration.
     int success_sum;
+    /// num_accepted / total_trials for the current iteration.
     float success_rate;
+    /// Standard deviation of the total cost.
     double std_dev;
 
-  public: //Constructor
+  public: // Constructor
     t_placer_statistics() { reset(); }
 
-  public: //Mutator
+  public: // Mutator
     ///@brief Clear all data fields.
     void reset();
 
