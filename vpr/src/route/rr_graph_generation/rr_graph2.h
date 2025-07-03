@@ -12,7 +12,7 @@
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 /**
- * @brief goes through 3D custom switch blocks and counts how many connections are crossing dice for each switch block.
+ * @brief Goes through 3D custom switch blocks and counts how many connections are crossing dice for each switch block.
  *
  *  @param sb_conn_map switch block permutation map
  *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
@@ -143,7 +143,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const int custom_3d_sb_fanin_fanout,
                         const int delayless_switch,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                        t_sb_connection_map* sb_conn_map);
+                        const t_sb_connection_map* sb_conn_map);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
                                              const t_chan_width& nodes_per_chan);

@@ -1637,6 +1637,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.verify_route_file_switch_id, "--verify_route_file_switch_id")
+        .help(
+            "Verify that the switch IDs in the routing file are consistent with those in the RR Graph. "
+            "Set this to false when switch IDs in the routing file may differ from the RR Graph. "
+            "For example, when analyzing different timing corners using the same netlist, placement, and routing files, "
+            "the RR switch IDs in the RR Graph may differ due to changes in delays. "
+            "In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.\n")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     gen_grp.add_argument(args.target_device_utilization, "--target_utilization")
         .help(
             "Sets the target device utilization."
@@ -2934,6 +2944,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " kinds of connections, but note that the time and memory necessary to compute the\n"
             " extended lookahead map are greater than the basic lookahead map.\n")
         .default_value("map")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.generate_router_lookahead_report, "--generate_router_lookahead_report")
+        .help("If turned on, generates a detailed report on the router lookahead: report_router_lookahead.rpt\n"
+              "\n"
+              "This report contains information on how accurate the router lookahead is and "
+              "if and when it overestimates the cost from a node to a target node. It does "
+              "this by doing a set of trial routes and comparing the estimated cost from the "
+              "router lookahead to the actual cost of the route path.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_threshold, "--router_initial_acc_cost_chan_congestion_threshold")

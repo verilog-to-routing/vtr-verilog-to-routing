@@ -47,8 +47,13 @@ if (${WITH_PARMYS})
 	SET(YOSYS_BUILD_DIR ${CMAKE_BINARY_DIR}/bin/yosys)
 
     add_definitions("-D_YOSYS_")
-    set(MAKE_PROGRAM "$(MAKE)")
-	set(CURRENT_CPPFLAGS "$(CPPFLAGS)-w")
+    if(${CMAKE_GENERATOR} STREQUAL "Ninja")
+        set(MAKE_PROGRAM "$$MAKE") # Escaped for Ninja
+    else()
+        set(MAKE_PROGRAM "$(MAKE)")
+    endif()
+
+    set(CURRENT_CPPFLAGS "$(CPPFLAGS)-w")
 	if(${CMAKE_GENERATOR} STREQUAL "Ninja")
 	    set(CURRENT_CPPFLAGS "-w")
 	endif()

@@ -46,4 +46,17 @@ class TracebackCompat {
 t_trace* alloc_trace_data();
 void free_traceback(t_trace* trace);
 void print_traceback(const t_trace* trace);
-bool validate_traceback(t_trace* trace);
+
+/**
+ * @brief Validate the integrity of the traceback rooted a trace: it should contain only valid rr nodes, branches in the routing tree
+ *        should link to existing routing, and edges in the traceback should exist in the RRGraph.
+ *        If verify_switch_id is true, this routine also checks that the switch types used in the traceback match those in the
+ *        RRGraph. If verify_switch_id is false, the switch ids (types) are remapped to those in the RRGraph. This switch remapping is
+ *        useful when an RRGraph with a more detailed delay model (and hence more switch types) is used with a prior routing.
+ * 
+ * @param trace Pointer to the head of the routing trace of the net to validate and update.
+ * @param verify_switch_id Whether to verify the switch IDs in the traceback.
+ * 
+ * @return true if the traceback is valid, false otherwise.
+ */
+bool validate_and_update_traceback(t_trace* trace, bool verify_switch_id = true);

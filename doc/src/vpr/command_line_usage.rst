@@ -256,6 +256,16 @@ General Options
 
     **Default:** ``on``
 
+.. option:: --verify_route_file_switch_id {on | off}
+
+    Verify that the switch IDs in the routing file are consistent with those in the RR Graph.
+    Set this to false when switch IDs in the routing file may differ from the RR Graph.
+    For example, when analyzing different timing corners using the same netlist, placement, and routing files,
+    the RR switch IDs in the RR Graph may differ due to changes in delays.
+    In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.
+
+    **Default:** ``on``
+
 .. option:: --target_utilization <float>
 
     Sets the target device utilization.
@@ -1839,6 +1849,17 @@ The following options are only valid when the router is in timing-driven mode (t
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
 
      **Default:** ``map``
+
+.. option:: --generate_router_lookahead_report {on | off}
+
+   If turned on, generates a detailed report on the router lookahead: report_router_lookahead.rpt
+
+   This report contains information on how accurate the router lookahead is and
+   if and when it overestimates the cost from a node to a target node. It does
+   this by doing a set of trial routes and comparing the estimated cost from the
+   router lookahead to the actual cost of the route path.
+
+   **Default:** ``off``
 
 .. option:: --router_initial_acc_cost_chan_congestion_threshold <float>
 
