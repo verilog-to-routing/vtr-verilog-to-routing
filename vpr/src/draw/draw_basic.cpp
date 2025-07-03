@@ -615,7 +615,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
     // Draw RR Nodes
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
         RRNodeId inode = rr_nodes_to_draw[i];
-        auto rr_type = rr_graph.node_type(inode);
+        e_rr_type rr_type = rr_graph.node_type(inode);
         bool is_inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
         int node_layer = rr_graph.node_layer(inode);
 
@@ -707,14 +707,14 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             continue;
         }
 
-        draw_inter_cluster_rr_edge(inode, prev_node, rr_type, prev_type, rr_graph, g);
+        draw_inter_cluster_rr_edge(inode, prev_node, rr_type, prev_type, g);
     }
 }
 
-void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr_type, e_rr_type prev_type, const RRGraphView& rr_graph, ezgl::renderer* g) {
-
-    auto iedge = find_edge(prev_node, inode);
-    auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
+void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr_type, e_rr_type prev_type, ezgl::renderer* g) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    t_edge_size iedge = find_edge(prev_node, inode);
+    short switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
 
     switch (rr_type) {
         case e_rr_type::IPIN: {

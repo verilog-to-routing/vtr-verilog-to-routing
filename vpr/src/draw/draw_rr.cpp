@@ -521,9 +521,9 @@ void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::r
         return;
     }
 
-    auto blk_id_pin_id = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+    auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
 
-    ezgl::point2d p = draw_coords->get_absolute_pin_location(blk_id_pin_id.first, blk_id_pin_id.second);
+    ezgl::point2d p = draw_coords->get_absolute_pin_location(blk_id, pin_id);
 
     int transparency_factor = get_rr_node_transparency(inode);
 
@@ -717,8 +717,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
                 continue;
             }
 
-            auto blk_id_pin_id = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
-            ezgl::point2d p = draw_coords->get_absolute_pin_location(blk_id_pin_id.first, blk_id_pin_id.second);
+            auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+            ezgl::point2d p = draw_coords->get_absolute_pin_location(blk_id, pin_id);
 
             if (click_x >= p.x - draw_coords->pin_size && click_x <= p.x + draw_coords->pin_size && click_y >= p.y - draw_coords->pin_size && click_y <= p.y + draw_coords->pin_size) {
                 hit_node = inode;

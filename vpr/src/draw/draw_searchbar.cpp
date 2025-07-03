@@ -136,17 +136,17 @@ void highlight_nets(char* message, RRNodeId hit_node) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    /* Don't crash if there's no routing */
+    // Don't crash if there's no routing
     if (route_ctx.route_trees.empty())
         return;
 
     if (route_ctx.is_flat) {
-        for (auto net_id : atom_ctx.netlist().nets()) {
+        for (AtomNetId net_id : atom_ctx.netlist().nets()) {
             check_node_highlight_net(message, net_id, hit_node);
         }
 
     } else {
-        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
             check_node_highlight_net(message, net_id, hit_node);
         }
     }
@@ -169,7 +169,7 @@ void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId
     if (!route_ctx.route_trees[parent_net_id])
         return;
 
-    for (auto& rt_node : route_ctx.route_trees[parent_net_id].value().all_nodes()) {
+    for (RouteTreeNode& rt_node : route_ctx.route_trees[parent_net_id].value().all_nodes()) {
         RRNodeId inode = rt_node.inode;
         if (draw_state->draw_rr_node[inode].color == ezgl::MAGENTA) {
             draw_state->net_color[parent_net_id] = draw_state->draw_rr_node[inode].color;
@@ -179,8 +179,7 @@ void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId
                         size_t(parent_net_id),
                         draw_get_net_name(parent_net_id).c_str());
             }
-        } else if (draw_state->draw_rr_node[inode].color
-                   == ezgl::WHITE) {
+        } else if (draw_state->draw_rr_node[inode].color == ezgl::WHITE) {
             // If node is de-selected.
             draw_state->net_color[parent_net_id] = ezgl::BLACK;
             break;

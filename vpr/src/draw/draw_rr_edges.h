@@ -46,6 +46,7 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_c
  * @param g The ezgl renderer
  */
 void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_cluster_node, e_pin_edge_dir pin_edge_dir, e_side pin_side, ezgl::renderer* g);
+
 /**
  * @brief Draws the edge between two intra-cluster pins when flat routing is enabled.
  * @param inode The current node to draw to
@@ -61,6 +62,7 @@ void draw_pin_to_pin(RRNodeId opin, RRNodeId ipin, ezgl::renderer* g);
 
 //TODO: These two functions currently do not draw correctly after rearranging the block locations. They need an update.
 void draw_pin_to_sink(RRNodeId ipin_node, RRNodeId sink_node, ezgl::renderer* g);
+
 void draw_source_to_pin(RRNodeId source_node, RRNodeId opin_node, ezgl::renderer* g);
 
 /**
@@ -70,6 +72,7 @@ void draw_source_to_pin(RRNodeId source_node, RRNodeId opin_node, ezgl::renderer
  * @return The side of the clb that the pin is located on (e.g. TOP, RIGHT, BOTTOM, LEFT)
  */
 e_side get_pin_side(RRNodeId pin_node, RRNodeId chan_node);
+
 /**
  * @brief Draws an edge from a inter-cluster pin node to a channel node (CHANX or CHANY).
  */
