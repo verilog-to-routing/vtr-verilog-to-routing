@@ -1227,8 +1227,8 @@ static void run_graphics_commands(const std::string& commands) {
     t_draw_state backup_draw_state = *draw_state;
 
     std::vector<std::vector<std::string>> cmds;
-    for (std::string raw_cmd : vtr::split(commands, ";")) {
-        cmds.push_back(vtr::split(raw_cmd));
+    for (const std::string& raw_cmd : vtr::StringToken(commands).split(";")) {
+        cmds.push_back(vtr::StringToken(raw_cmd).split(" \t\n"));
     }
 
     for (auto& cmd : cmds) {

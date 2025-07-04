@@ -19,6 +19,7 @@
 #include <ctime>
 #include <sstream>
 #include <cctype> //std::isdigit
+#include <regex>  //std::regex
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"
@@ -643,66 +644,63 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
 }
 
 bool is_string_param(const std::string& param) {
-    /* Empty param is considered a string */
+    // Empty param is considered a string
     if (param.empty()) {
         return true;
     }
 
-    /* There have to be at least 2 characters (the quotes) */
+    // There have to be at least 2 characters (the quotes)
     if (param.length() < 2) {
         return false;
     }
 
-    /* The first and the last characters must be quotes */
+    // The first and the last characters must be quotes
     size_t len = param.length();
     if (param[0] != '"' || param[len - 1] != '"') {
         return false;
     }
 
-    /* There mustn't be any other quotes except for escaped ones */
+    // There mustn't be any other quotes except for escaped ones
     for (size_t i = 1; i < (len - 1); ++i) {
         if (param[i] == '"' && param[i - 1] != '\\') {
             return false;
         }
     }
 
-    /* This is a string param */
+    // This is a string param
     return true;
 }
 
 bool is_binary_param(const std::string& param) {
-    /* Must be non-empty */
+    // Must be non-empty
     if (param.empty()) {
         return false;
     }
 
-    /* The string must contain only '0' and '1' */
+    // The string must contain only '0' and '1'
     for (size_t i = 0; i < param.length(); ++i) {
         if (param[i] != '0' && param[i] != '1') {
             return false;
         }
     }
 
-    /* This is a binary word param */
+    // This is a binary word param
     return true;
 }
 
 bool is_real_param(const std::string& param) {
-    const std::string chars = "012345678.";
-
     /* Must be non-empty */
     if (param.empty()) {
         return false;
     }
 
-    /* The string mustn't contain any other chars that the expected ones */
-    for (size_t i = 0; i < param.length(); ++i) {
-        if (chars.find(param[i]) == std::string::npos) {
-            return false;
-        }
+    // The string must match the regular expression
+    const std::regex real_number_expr("[+-]?([0-9]*\\.[0-9]+)|([0-9]+\\.[0-9]*)");
+    if (!std::regex_match(param, real_number_expr)) {
+        return false;
     }
 
-    /* This is a real number param */
+    // This is a real number param
     return true;
 }
 

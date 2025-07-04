@@ -165,13 +165,13 @@ ClusteredNetlist read_netlist(const char* net_file,
 
         //Collect top level I/Os
         auto top_inputs = pugiutil::get_single_child(top, "inputs", loc_data);
-        circuit_inputs = vtr::split(top_inputs.text().get());
+        circuit_inputs = vtr::StringToken(top_inputs.text().get()).split(" \t\n");
 
         auto top_outputs = pugiutil::get_single_child(top, "outputs", loc_data);
-        circuit_outputs = vtr::split(top_outputs.text().get());
+        circuit_outputs = vtr::StringToken(top_outputs.text().get()).split(" \t\n");
 
         auto top_clocks = pugiutil::get_single_child(top, "clocks", loc_data);
-        circuit_clocks = vtr::split(top_clocks.text().get());
+        circuit_clocks = vtr::StringToken(top_clocks.text().get()).split(" \t\n");
 
         /* Parse all CLB blocks and all nets*/
 
@@ -634,7 +634,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
         }
 
         //Extract all the pins for this port
-        pins = vtr::split(Cur.text().get());
+        pins = vtr::StringToken(Cur.text().get()).split(" \t\n");
         num_tokens = pins.size();
 
         //Check that the number of pins from the netlist file matches the pb port's number of pins
@@ -839,7 +839,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                       pb->pb_graph_node->pb_type->name, pb->pb_graph_node->placement_index);
         }
 
-        auto pin_mapping = vtr::split(pin_rot_map.text().get());
+        auto pin_mapping = vtr::StringToken(pin_rot_map.text().get()).split(" \t\n");
 
         if (size_t(pb_gport->num_pins) != pin_mapping.size()) {
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(pin_rot_map),

@@ -167,7 +167,7 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
 
     /*AA: ClockRibs are assumed to be horizontal currently. */
 
-    populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf, X_AXIS);
+    populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf, e_parallel_axis::X_AXIS);
 
     // Segment to the right of the drive point
     segment_inf.emplace_back();
@@ -177,7 +177,7 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
     name = clock_name_ + "_right";
     length = (x_chan_wire.length - drive.offset) - 1;
 
-    populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf, X_AXIS);
+    populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf, e_parallel_axis::X_AXIS);
 
     // Segment to the left of the drive point
     segment_inf.emplace_back();
@@ -187,7 +187,7 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
     name = clock_name_ + "_left";
     length = drive.offset - 1;
 
-    populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf, X_AXIS);
+    populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf, e_parallel_axis::X_AXIS);
 }
 
 size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
@@ -394,7 +394,7 @@ void ClockRib::record_tap_locations(unsigned x_start,
     }
 }
 
-static void get_parallel_seg_index(int& unified_seg_index, enum e_parallel_axis axis, const t_unified_to_parallel_seg_index& indices_map) {
+static void get_parallel_seg_index(int& unified_seg_index, e_parallel_axis axis, const t_unified_to_parallel_seg_index& indices_map) {
     auto itr_pair = indices_map.equal_range(unified_seg_index);
 
     for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
@@ -409,11 +409,11 @@ static void get_parallel_seg_index(int& unified_seg_index, enum e_parallel_axis 
 void ClockRib::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
     /*We have horizontal segments in clock-ribs so we search for X_AXIS*/
 
-    get_parallel_seg_index(drive_seg_idx, X_AXIS, indices_map);
+    get_parallel_seg_index(drive_seg_idx, e_parallel_axis::X_AXIS, indices_map);
 
-    get_parallel_seg_index(left_seg_idx, X_AXIS, indices_map);
+    get_parallel_seg_index(left_seg_idx, e_parallel_axis::X_AXIS, indices_map);
 
-    get_parallel_seg_index(right_seg_idx, X_AXIS, indices_map);
+    get_parallel_seg_index(right_seg_idx, e_parallel_axis::X_AXIS, indices_map);
 }
 
 /*********************************************************************************
@@ -506,7 +506,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     length = 1; // Since drive segment has one length, the left and right segments have length - 1
 
     /* AA: ClockSpines are assumed to be vertical currently. */
-    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, Y_AXIS);
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS);
 
     // Segment to the right of the drive point
     segment_inf.emplace_back();
@@ -516,7 +516,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     name = clock_name_ + "_right";
     length = (y_chan_wire.length - drive.offset) - 1;
 
-    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, Y_AXIS);
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS);
 
     // Segment to the left of the drive point
     segment_inf.emplace_back();
@@ -526,7 +526,7 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     name = clock_name_ + "_left";
     length = drive.offset - 1;
 
-    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, Y_AXIS);
+    populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf, e_parallel_axis::Y_AXIS);
 }
 
 size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
@@ -739,11 +739,11 @@ void ClockSpine::record_tap_locations(unsigned y_start,
 void ClockSpine::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
     /*We have vertical segments in clock-spines so we search for Y_AXIS*/
 
-    get_parallel_seg_index(drive_seg_idx, Y_AXIS, indices_map);
+    get_parallel_seg_index(drive_seg_idx, e_parallel_axis::Y_AXIS, indices_map);
 
-    get_parallel_seg_index(left_seg_idx, Y_AXIS, indices_map);
+    get_parallel_seg_index(left_seg_idx, e_parallel_axis::Y_AXIS, indices_map);
 
-    get_parallel_seg_index(right_seg_idx, Y_AXIS, indices_map);
+    get_parallel_seg_index(right_seg_idx, e_parallel_axis::Y_AXIS, indices_map);
 }
 
 /*********************************************************************************
