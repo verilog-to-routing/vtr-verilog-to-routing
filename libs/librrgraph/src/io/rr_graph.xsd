@@ -229,6 +229,7 @@
     <xs:restriction base="xs:string">
       <xs:enumeration value="CHANX"/>
       <xs:enumeration value="CHANY"/>
+      <xs:enumeration value="CHANZ"/>
       <xs:enumeration value="SOURCE"/>
       <xs:enumeration value="SINK"/>
       <xs:enumeration value="OPIN"/>

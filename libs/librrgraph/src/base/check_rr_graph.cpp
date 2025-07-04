@@ -58,13 +58,13 @@ void check_rr_graph(const RRGraphView& rr_graph,
         route_type = e_route_type::GLOBAL;
     }
 
-    auto total_edges_to_node = std::vector<int>(rr_graph.num_nodes());
-    auto switch_types_from_current_to_node = std::vector<unsigned char>(rr_graph.num_nodes());
+    std::vector<int> total_edges_to_node(rr_graph.num_nodes());
+    std::vector<unsigned char> switch_types_from_current_to_node(rr_graph.num_nodes());
     const int num_rr_switches = rr_graph.num_rr_switches();
 
     std::vector<std::pair<int, int>> edges;
 
-    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+    for (const RRNodeId rr_node : rr_graph.nodes()) {
         size_t inode = (size_t)rr_node;
         rr_graph.validate_node(rr_node);
 
@@ -83,7 +83,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
         check_rr_node(rr_graph, rr_indexed_data, grid, chan_width, route_type, inode, is_flat);
 
-        /* Check all the connectivity (edges, etc.) information.                    */
+        // Check all the connectivity (edges, etc.) information.
         edges.resize(0);
         edges.reserve(num_edges);
 
@@ -329,14 +329,9 @@ void check_rr_node(const RRGraphView& rr_graph,
                    const enum e_route_type route_type, 
                    const int inode,
                    bool is_flat) {
-    /* This routine checks that the rr_node is inside the grid and has a valid
-     * pin number, etc.
-     */
-
     //Make sure over-flow doesn't happen
     VTR_ASSERT(inode >= 0);
-    int nodes_per_chan, tracks_per_node;
-    float C, R;
+    int tracks_per_node;
     RRNodeId rr_node = RRNodeId(inode);
 
     e_rr_type rr_type = rr_graph.node_type(rr_node);
@@ -437,6 +432,14 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
 
+        case e_rr_type::CHANZ:
+            if (xhigh != xlow || yhigh != ylow || xhigh > int(grid.width()) - 2 || ylow < 1 || yhigh > int(grid.height()) - 2) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "Error in check_rr_node: CHANZ out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
+            }
+            // TODO: handle global routing case
+            break;
+
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_rr_node: Unexpected segment type: %d\n", rr_type);
@@ -481,20 +484,9 @@ void check_rr_node(const RRGraphView& rr_graph,
         case e_rr_type::CHANX:
         case e_rr_type::CHANY:
             if (route_type == e_route_type::DETAILED) {
-                nodes_per_chan = chan_width.max;
                 tracks_per_node = 1;
             } else {
-                nodes_per_chan = 1;
-                tracks_per_node = ((rr_type == e_rr_type::CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow]);
-            }
-
-            //if a chanx/chany has length 0, it means it is used to connect different dice together
-            //hence, the ptc number can be larger than nodes_per_chan
-            if(xlow != xhigh || ylow != yhigh) {
-                if (ptc_num >= nodes_per_chan) {
-                    VPR_ERROR(VPR_ERROR_ROUTE,
-                              "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-                }
+                tracks_per_node = (rr_type == e_rr_type::CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow];
             }
 
             if (capacity != tracks_per_node) {
@@ -503,14 +495,18 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
 
+        case e_rr_type::CHANZ:
+            // TODO: do checks for CHANZ type
+            break;
+
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_rr_node: Unexpected segment type: %d\n", rr_type);
     }
 
-    /* Check that the capacitance and resistance are reasonable. */
-    C = rr_graph.node_C(rr_node);
-    R = rr_graph.node_R(rr_node);
+    // Check that the capacitance and resistance are reasonable.
+    float C = rr_graph.node_C(rr_node);
+    float R = rr_graph.node_R(rr_node);
 
     if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
         if (C < 0. || R < 0.) {

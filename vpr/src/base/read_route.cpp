@@ -673,9 +673,9 @@ void print_route(const Netlist<>& net_list,
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     if (route_ctx.route_trees.empty())
-        return; //Only if routing exists
+        return; // Only if routing exists
 
-    for (auto net_id : net_list.nets()) {
+    for (ParentNetId net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id)) {
             fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), net_list.net_name(net_id).c_str());
             if (net_list.net_sinks(net_id).size() == false) {
@@ -697,8 +697,8 @@ void print_route(const Netlist<>& net_list,
                     fprintf(fp, "Node:\t%zu\t%6s (%d,%d,%d) ", size_t(inode),
                             rr_graph.node_type_string(inode), ilow, jlow, layer_num);
 
-                    if ((ilow != rr_graph.node_xhigh(inode))
-                        || (jlow != rr_graph.node_yhigh(inode)))
+                    if (ilow != rr_graph.node_xhigh(inode)
+                        || jlow != rr_graph.node_yhigh(inode))
                         fprintf(fp, "to (%d,%d,%d) ", rr_graph.node_xhigh(inode),
                                 rr_graph.node_yhigh(inode), layer_num);
 
@@ -710,13 +710,14 @@ void print_route(const Netlist<>& net_list,
 
                             if (physical_tile->is_io()) {
                                 fprintf(fp, " Pad: ");
-                            } else { /* IO Pad. */
+                            } else { // IO Pad
                                 fprintf(fp, " Pin: ");
                             }
                             break;
 
                         case e_rr_type::CHANX:
                         case e_rr_type::CHANY:
+                        case e_rr_type::CHANZ:
                             fprintf(fp, " Track: ");
                             break;
 
@@ -724,7 +725,7 @@ void print_route(const Netlist<>& net_list,
                         case e_rr_type::SINK:
                             if (physical_tile->is_io()) {
                                 fprintf(fp, " Pad: ");
-                            } else { /* IO Pad. */
+                            } else { // IO Pad
                                 fprintf(fp, " Class: ");
                             }
                             break;
