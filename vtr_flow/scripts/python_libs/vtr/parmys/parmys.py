@@ -22,7 +22,8 @@ FILE_TYPES = {
     ".ys": "RTLIL",
 }
 
-YOSYS_PARSERS = ["default", "surelog", "system-verilog"]
+#YOSYS_PARSERS = ["default", "surelog", "system-verilog"]
+YOSYS_PARSERS = ["default", "slang"]
 
 
 def create_circuits_list(main_circuit, include_files):
@@ -235,10 +236,15 @@ def run(
 
     # Set the synlig exe script path in the environment variable
     # (handle if it is not set or system-verilog OFF)
+    # try:
+    #     os.environ["synlig_exe_path"] = str(vtr.paths.synlig_exe_path)
+    # except KeyError:
+    #     os.environ["synlig_exe_path"] = "/dummy/path"
+
     try:
-        os.environ["synlig_exe_path"] = str(vtr.paths.synlig_exe_path)
+        os.environ["yosys_slang_path"] = str(vtr.paths.yosys_slang_path)
     except KeyError:
-        os.environ["synlig_exe_path"] = "/dummy/path"
+        os.environ["yosys_slang_path"] = "/dummy/path"
 
     # set the parser
     if parmys_args["parser"] in YOSYS_PARSERS:
@@ -246,7 +252,7 @@ def run(
         del parmys_args["parser"]
     else:
         raise vtr.VtrError(
-            "Invalid parser is specified for Yosys, available parsers are [{}]".format(
+            parmys_args["parser"] + "Invalid parser is specified for Yosys, available parsers are [{}]".format(
                 " ".join(str(x) for x in YOSYS_PARSERS)
             )
         )

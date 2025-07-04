@@ -21,6 +21,7 @@ yosys_path = root_path / "build" / "bin"
 yosys_exe_path = yosys_path / "yosys"
 yosys_tcl_path = vtr_flow_path / "misc" / "yosys"
 yosys_script_path = yosys_tcl_path / "synthesis.tcl"
+yosys_slang_path = root_path / "build" / "share" / "yosys" / "plugins" / "slang.so"
 
 # Synlig paths
 synlig_path = root_path / "build" / "bin" / "synlig_install"
