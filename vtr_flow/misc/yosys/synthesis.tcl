@@ -6,16 +6,32 @@ setattr -mod -set keep_hierarchy 1 single_port_ram
 setattr -mod -set keep_hierarchy 1 dual_port_ram
 setattr -mod -set keep 1 dual_port_ram
 
-plugin -i slang
-yosys -import
-
 # synlig path error handling
-if {[catch {set synlig $::env(synlig_exe_path)} err]} {
-	puts "Error: $err"
-	puts "synlig_exe_path is not set"
+#if {[catch {set synlig $::env(synlig_exe_path)} err]} {
+#	puts "Error: $err"
+#	puts "synlig_exe_path is not set"
+#} else {
+#	set synlig $::env(synlig_exe_path)
+#	puts "Using parmys as partial mapper"
+#}
+
+# yosys-slang plugin error handling
+if {$env(PARSER) == "slang" } {
+	if {![info exists ::env(yosys_slang_path)]} {
+		puts "Error: $err"
+		puts "yosys_slang_path is not set"
+	} elseif {![file exists $::env(yosys_slang_path)]} {
+		error "Error: cannot find plugin at '$::env(yosys_slang_path)'. Run make with CMake param -DSLANG_SYSTEMVERILOG=ON to enable yosys-slang plugin."
+	} else {
+		plugin -i slang
+		yosys -import
+		puts "Using yosys-slang as yosys frontend"
+	}
+} elseif {$env(PARSER) == "default" } {
+	yosys -import
+	puts "Using Yosys read_verilog as yosys frontend"
 } else {
-	set synlig $::env(synlig_exe_path)
-	puts "Using parmys as partial mapper"
+	error "Invalid PARSER"
 }
 
 
@@ -50,7 +66,14 @@ if {$env(PARSER) == "slang" } {
 				lappend $sv_files $f
 				puts $fh $f
 			}
+			.svh {
+				lappend $sv_files $f
+				puts $fh $f
+			}
 			.v {
+				error "Use default parser to parse .v files."
+			}
+			.vh {
 				error "Use default parser to parse .v files."
 			}
 		}
