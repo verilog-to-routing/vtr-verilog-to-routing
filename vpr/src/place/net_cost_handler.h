@@ -68,7 +68,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::pair<double, double> comp_bb_cost(e_cost_methods method);
+    std::tuple<double, double, double> comp_bb_cong_cost(e_cost_methods method);
 
     /**
      * @brief Find all the nets and pins affected by this swap and update costs.
@@ -97,7 +97,8 @@ class NetCostHandler {
                                              const PlacerCriticalities* criticalities,
                                              t_pl_blocks_to_be_moved& blocks_affected,
                                              double& bb_delta_c,
-                                             double& timing_delta_c);
+                                             double& timing_delta_c,
+                                             double& congestion_delta_c);
 
     /**
      * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
@@ -133,18 +134,21 @@ class NetCostHandler {
     double get_total_wirelength_estimate() const;
 
     /**
-     * @brief Estimates routing channel utilization.
+     * @brief Estimates routing channel utilization and computes the congestion cost
+     * for each net.
      *
      * For each net, distributes estimated wirelength across its bounding box
      * and accumulates demand for different routing channels. Normalizes by channel widths
      * (e.g. a value of 0.5 means 50% of the wiring in a channel is expected to be used).
      *
-     * @return Pair of matrices with relative CHANX and CHANY utilization.
-     *         The dimension order for each matrix is [layer][x][y].
+     * @return Total congestion cost.
      */
-    std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> estimate_routing_chan_util() const;
+    double estimate_routing_chan_util();
+
+    std::pair<const vtr::NdMatrix<double, 3>&, const vtr::NdMatrix<double, 3>&> get_chanxy_util() const;
 
   private:
+    bool congestion_modeling_started_;
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;
     ///@brief Determines whether the FPGA has multiple dies (layers)
@@ -154,7 +158,7 @@ class NetCostHandler {
     ///@brief Contains some parameter that determine how the placement cost is computed.
     const t_placer_opts& placer_opts_;
     ///@brief Points to the proper method for computing the bounding box cost from scratch.
-    std::function<std::pair<double, double>(e_cost_methods method)> comp_bb_cost_functor_;
+    std::function<std::tuple<double, double, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
     ///@brief Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
     ///@brief Points to the proper method for getting the bounding box cost of a net
@@ -195,19 +199,28 @@ class NetCostHandler {
     /* [0...num_affected_nets] -> net_id of the affected nets */
     std::vector<ClusterNetId> ts_nets_to_update_;
 
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    vtr::vector<ClusterNetId, std::pair<float, float>> ts_avg_chann_util_new_;
+
+    /// Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, t_bb> bb_num_on_edges_;
 
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
+    /// Store the bounding box coordinates of a net's bounding box
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, t_bb> bb_coords_;
 
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    vtr::vector<ClusterNetId, std::pair<float, float>> avg_chann_util_;
+
+    /// Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_num_on_edges_;
 
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
+    /// Store the bounding box coordinates of a net's bounding box
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_coords_;
 
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each layer ()
+    /// Store the number of blocks on each layer ()
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::Matrix<int> num_sink_pin_layer_;
 
     /**
@@ -230,6 +243,10 @@ class NetCostHandler {
      */
     vtr::vector<ClusterNetId, double> net_cost_;
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
+
+    vtr::vector<ClusterNetId, double> net_cong_cost_;
+    vtr::vector<ClusterNetId, double> proposed_net_cong_cost_;
+
     vtr::vector<ClusterNetId, NetUpdateState> bb_update_status_;
 
     /**
@@ -243,6 +260,15 @@ class NetCostHandler {
      */
     vtr::PrefixSum1D<int> acc_chanx_width_; // [0..device_ctx.grid.width()-1]
     vtr::PrefixSum1D<int> acc_chany_width_; // [0..device_ctx.grid.height()-1]
+
+    vtr::PrefixSum2D<double> acc_chanx_util_;
+    vtr::PrefixSum2D<double> acc_chany_util_;
+
+    vtr::NdMatrix<double, 3> chanx_util_;
+    vtr::NdMatrix<double, 3> chany_util_;
+
+    vtr::NdMatrix<int, 3> chanx_width_;
+    vtr::NdMatrix<int, 3> chany_width_;
 
     /**
      * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 
@@ -289,7 +315,7 @@ class NetCostHandler {
      * indicated in the blocks_affected data structure.
      * @param bb_delta_c Cost difference after and before moving the block
      */
-    void set_bb_delta_cost_(double& bb_delta_c);
+    void set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c);
 
     /**
      * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac arrays with the inverse of
@@ -500,7 +526,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::pair<double, double> comp_per_layer_bb_cost_(e_cost_methods method);
+    std::tuple<double, double, double> comp_per_layer_bb_cost_(e_cost_methods method);
 
     /**
      * @brief Computes the bounding box from scratch using 3D bounding boxes (cube mode)
@@ -510,7 +536,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::pair<double, double> comp_cube_bb_cost_(e_cost_methods method);
+    std::tuple<double, double, double> comp_cube_bb_cong_cost_(e_cost_methods method);
 
     /**
      * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
@@ -523,7 +549,7 @@ class NetCostHandler {
      * This functions is called to do that for bb cost. It doesn't calculate the BBs from scratch, it would only add the costs again.
      * @return Total bb (wirelength) cost for the placement
      */
-    double recompute_bb_cost_();
+    std::pair<double, double> recompute_bb_cong_cost_();
 
     /**
      * @brief Given the 3D BB, calculate the wire-length cost of the net
@@ -533,6 +559,8 @@ class NetCostHandler {
      * @return Wirelength cost of the net
      */
     double get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts);
+
+    double get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts);
 
     /**
      * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
