@@ -21,9 +21,9 @@ static void rr_walk_cluster_recursive(const RRGraphView& rr_graph,
 
 static void rr_walk_cluster_recursive(const RRGraphView& rr_graph,
                                       const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fanins,
-                                   std::unordered_set<RRNodeId>& sink_ipins,
-                                   const RRNodeId curr,
-                                   const RRNodeId origin) {
+                                      std::unordered_set<RRNodeId>& sink_ipins,
+                                      const RRNodeId curr,
+                                      const RRNodeId origin) {
     // Make sure SINK in the same cluster as origin
     int curr_x = rr_graph.node_xlow(curr);
     int curr_y = rr_graph.node_ylow(curr);
