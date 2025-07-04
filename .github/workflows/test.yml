@@ -517,7 +517,7 @@ jobs:
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on -DVTR_IPO_BUILD=off"
         MATRIX_EVAL: ${{ matrix.eval }}
-        BUILD_TYPE: debug
+        BUILD_TYPE: debug # Note: We use the debug build here to make the build time faster since we do not care about run time.
         NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -548,7 +548,7 @@ jobs:
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off"
         MATRIX_EVAL: 'CC=gcc-11 && CXX=g++-11'
-        BUILD_TYPE: debug
+        BUILD_TYPE: debug # Note: We use the debug build here to make the build time faster since we do not care about run time.
         NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
