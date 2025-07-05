@@ -37,11 +37,11 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
     VTR_LOG("\n");
 
-    VTR_LOG("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Analytical Placer: %s\n", (vpr_setup.APOpts.doAP ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Analysis: %s\n", (vpr_setup.AnalysisOpts.doAnalysis ? "ENABLED" : "DISABLED"));
+    VTR_LOG("Packer: %s\n", stage_action_to_string(vpr_setup.PackerOpts.doPacking).c_str());
+    VTR_LOG("Placer: %s\n", stage_action_to_string(vpr_setup.PlacerOpts.doPlacement).c_str());
+    VTR_LOG("Analytical Placer: %s\n", stage_action_to_string(vpr_setup.APOpts.doAP).c_str());
+    VTR_LOG("Router: %s\n", stage_action_to_string(vpr_setup.RouterOpts.doRouting).c_str());
+    VTR_LOG("Analysis: %s\n", stage_action_to_string(vpr_setup.AnalysisOpts.doAnalysis).c_str());
     VTR_LOG("\n");
 
     VTR_LOG("VPR was run with the following options:\n\n");
@@ -65,6 +65,21 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
     if (vpr_setup.NocOpts.noc) {
         ShowNocOpts(vpr_setup.NocOpts);
+    }
+}
+
+std::string stage_action_to_string(e_stage_action action) {
+    switch (action) {
+        case STAGE_SKIP:
+            return "DISABLED";
+        case STAGE_LOAD:
+            return "LOAD";
+        case STAGE_DO:
+            return "ENABLED";
+        case STAGE_AUTO:
+            return "AUTO";
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Invalid e_stage_action.\n");
     }
 }
 
