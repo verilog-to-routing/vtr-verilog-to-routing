@@ -1,6 +1,7 @@
 #include "clustered_netlist.h"
 #include "flat_placement_types.h"
 #include "atom_netlist_fwd.h"
+#include "flat_placement_utils.h"
 #include "physical_types_util.h"
 #include "place_macro.h"
 #include "vtr_assert.h"
@@ -639,34 +640,6 @@ static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_
 }
 
 /**
- * @brief Returns the L1 distance a cluster at the given flat location would
- *        need to move to be within the bounds of a tile at the given tile loc.
- */
-static inline float get_dist_to_tile(const t_flat_pl_loc& src_flat_loc,
-                                     const t_physical_tile_loc& tile_loc,
-                                     const DeviceGrid& device_grid) {
-    // Get the bounds of the tile.
-    // Note: The get_tile_bb function will not work in this case since it
-    //       subtracts 1 from the width and height.
-    auto tile_type = device_grid.get_physical_type(tile_loc);
-    float tile_xmin = tile_loc.x - device_grid.get_width_offset(tile_loc);
-    float tile_xmax = tile_xmin + tile_type->width;
-    float tile_ymin = tile_loc.y - device_grid.get_height_offset(tile_loc);
-    float tile_ymax = tile_ymin + tile_type->height;
-
-    // Get the closest point in the bounding box (including the edges) to
-    // the src_flat_loc. To do this, we project the point in L1 space.
-    float proj_x = std::clamp(src_flat_loc.x, tile_xmin, tile_xmax);
-    float proj_y = std::clamp(src_flat_loc.y, tile_ymin, tile_ymax);
-
-    // Then compute the L1 distance from the src_flat_loc to the projected
-    // position. This will be the minimum distance this point needs to move.
-    float dx = std::abs(proj_x - src_flat_loc.x);
-    float dy = std::abs(proj_y - src_flat_loc.y);
-    return dx + dy;
-}
-
-/**
  * @brief Returns the first available sub_tile (both compatible with the given
  *        compressed grid and is empty according the the blk_loc_registry) in
  *        the tile at the given grid_loc. Returns OPEN if no such sub_tile exists.
@@ -760,7 +733,9 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
         // Note: In compressed space, distances are not what they appear. We are
         //       using the true grid positions to get the truly closest loc.
         auto grid_loc = compressed_block_grid.compressed_loc_to_grid_loc(loc);
-        float grid_dist = get_dist_to_tile(src_flat_loc, grid_loc, device_grid);
+        float grid_dist = get_manhattan_distance_to_tile(src_flat_loc,
+                                                         grid_loc,
+                                                         device_grid);
         // If this distance is worst than the best we have seen.
         // NOTE: This prune is always safe (i.e. it will never remove a better
         //       solution) since this is a spatial graph and our objective is
@@ -1580,7 +1555,9 @@ static inline float get_flat_variance(const t_pl_macro& macro,
 
             // Get the amount this atom needs to be displaced in order to be
             // within the same tile as the centroid.
-            float dist = get_dist_to_tile(atom_pos, centroid_grid_loc, g_vpr_ctx.device().grid);
+            float dist = get_manhattan_distance_to_tile(atom_pos,
+                                                        centroid_grid_loc,
+                                                        g_vpr_ctx.device().grid);
 
             // Accumulate the variance.
             variance += (dist * dist);
