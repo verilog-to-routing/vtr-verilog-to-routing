@@ -1551,7 +1551,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 if (port_class == "clock") {
                     VTR_ASSERT(pb_graph_node->num_clock_pins[iport] == 1); //Expect a single clock pin
-                    input_port_conns["clock"].push_back(net);
+                    input_port_conns[port->name].push_back(net);
                 } else {
                     VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
                                     "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
