@@ -13,7 +13,8 @@ sudo apt-get install -y \
 
 # Packages for more complex features of VTR that most people will use.
 sudo apt-get install -y \
-    libtbb-dev
+    libtbb-dev \
+    libeigen3-dev
 
 # Required for graphics
 sudo apt-get install -y \
