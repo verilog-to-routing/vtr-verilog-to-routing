@@ -425,23 +425,17 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 from_xhigh = rr_graph.node_xhigh(from_node);
                 to_xhigh = rr_graph.node_xhigh(to_node);
                 if (from_ylow == to_ylow) {
-                    /* UDSD Modification by WMF Begin */
                     /*For Fs > 3, can connect to overlapping wire segment */
                     if (to_xhigh == from_xlow - 1 || from_xhigh == to_xlow - 1) {
                         num_adj++;
-                    }
-                    /* Overlapping */
-                    else {
-                        int i;
-
-                        for (i = from_xlow; i <= from_xhigh; i++) {
+                    } else { // Overlapping
+                        for (int i = from_xlow; i <= from_xhigh; i++) {
                             if (i >= to_xlow && i <= to_xhigh) {
                                 num_adj++;
                                 break;
                             }
                         }
                     }
-                    /* UDSD Modification by WMF End */
                 }
             } else if (to_type == e_rr_type::CHANY) {
                 num_adj += rr_graph.nodes_are_adjacent(from_node, to_node);
@@ -460,22 +454,16 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 from_yhigh = rr_graph.node_yhigh(from_node);
                 to_yhigh = rr_graph.node_yhigh(to_node);
                 if (from_xlow == to_xlow) {
-                    /* UDSD Modification by WMF Begin */
                     if (to_yhigh == from_ylow - 1 || from_yhigh == to_ylow - 1) {
                         num_adj++;
-                    }
-                    /* Overlapping */
-                    else {
-                        int j;
-
-                        for (j = from_ylow; j <= from_yhigh; j++) {
+                    } else { // Overlapping
+                        for (int j = from_ylow; j <= from_yhigh; j++) {
                             if (j >= to_ylow && j <= to_yhigh) {
                                 num_adj++;
                                 break;
                             }
                         }
                     }
-                    /* UDSD Modification by WMF End */
                 }
             } else if (to_type == e_rr_type::CHANX) {
                 num_adj += rr_graph.nodes_are_adjacent(to_node, from_node);
@@ -495,9 +483,6 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                     num_adj++;
                 }
             } else {
-                std::cout << describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, from_node, is_flat) << std::endl;
-                std::cout << describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, is_flat) << std::endl;
-
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
             }

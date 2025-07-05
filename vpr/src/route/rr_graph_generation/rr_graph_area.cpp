@@ -364,14 +364,15 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
         switch (from_rr_type) {
             case e_rr_type::CHANX:
             case e_rr_type::CHANY:
+            case e_rr_type::CHANZ:
                 num_edges = rr_graph.num_edges(RRNodeId(from_node));
 
-                /* Increment number of inputs per cblock if IPIN */
+                // Increment number of inputs per cblock if IPIN
                 for (iedge = 0; iedge < num_edges; iedge++) {
                     RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iedge);
                     to_rr_type = rr_graph.node_type(to_node);
 
-                    /* Ignore any uninitialized rr_graph nodes */
+                    // Ignore any uninitialized rr_graph nodes
                     if (!rr_graph.node_is_initialized(to_node)) {
                         continue;
                     }
@@ -379,6 +380,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                     switch (to_rr_type) {
                         case e_rr_type::CHANX:
                         case e_rr_type::CHANY:
+                        case e_rr_type::CHANZ:
                             if (!chan_node_switch_done[size_t(to_node)]) {
                                 int switch_index = rr_graph.edge_switch(RRNodeId(from_node), iedge);
                                 SwitchType switch_type = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type();
@@ -433,10 +435,6 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                         case e_rr_type::SINK:
                             break; //ignore virtual sinks
 
-                        case e_rr_type::CHANZ:
-                            // TODO: handle chanz
-                            break;
-
                         default:
                             VPR_ERROR(VPR_ERROR_ROUTE,
                                       "in count_routing_transistors:\n"
@@ -461,10 +459,6 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                 break;
 
             case e_rr_type::OPIN:
-                break;
-
-            case e_rr_type::CHANZ:
-                // TODO: handle chanz
                 break;
 
             default:
