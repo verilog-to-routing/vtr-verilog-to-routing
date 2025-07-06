@@ -433,7 +433,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANZ:
-            if (xhigh != xlow || yhigh != ylow || xhigh > int(grid.width()) - 2 || ylow < 1 || yhigh > int(grid.height()) - 2) {
+            if (xhigh != xlow || yhigh != ylow || xhigh > int(grid.width()) - 1 || ylow < 1 || yhigh > int(grid.height()) - 1) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "Error in check_rr_node: CHANZ out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
