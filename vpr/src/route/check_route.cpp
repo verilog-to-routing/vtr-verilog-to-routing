@@ -84,12 +84,6 @@ static void check_net_for_stubs(const Netlist<>& net_list,
                                 ParentNetId net,
                                 bool is_flat);
 
-/**
- * @brief Returns true if the given CHANX or CHANY node is adjacent to the given CHANZ node.
- * @note Only performs geometric adjacency check; does not validate routing connectivity.
- */
-static bool chanxy_chanz_adjacent(RRNodeId chanxy_node, RRNodeId chanz_node);
-
 /************************ Subroutine definitions ****************************/
 
 void check_route(const Netlist<>& net_list,
@@ -420,27 +414,9 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
         case e_rr_type::CHANX:
             if (to_type == e_rr_type::IPIN) {
-                num_adj += 1; //adjacent
-            } else if (to_type == e_rr_type::CHANX) {
-                from_xhigh = rr_graph.node_xhigh(from_node);
-                to_xhigh = rr_graph.node_xhigh(to_node);
-                if (from_ylow == to_ylow) {
-                    /*For Fs > 3, can connect to overlapping wire segment */
-                    if (to_xhigh == from_xlow - 1 || from_xhigh == to_xlow - 1) {
-                        num_adj++;
-                    } else { // Overlapping
-                        for (int i = from_xlow; i <= from_xhigh; i++) {
-                            if (i >= to_xlow && i <= to_xhigh) {
-                                num_adj++;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } else if (to_type == e_rr_type::CHANY) {
-                num_adj += rr_graph.nodes_are_adjacent(from_node, to_node);
-            } else if (to_type == e_rr_type::CHANZ) {
-                num_adj += chanxy_chanz_adjacent(from_node, to_node);
+                num_adj += 1; // adjacent
+            } else if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ) {
+                num_adj += rr_graph.chan_nodes_are_adjacent(from_node, to_node);
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
@@ -449,26 +425,9 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
         case e_rr_type::CHANY:
             if (to_type == e_rr_type::IPIN) {
-                num_adj += 1; //adjacent
-            } else if (to_type == e_rr_type::CHANY) {
-                from_yhigh = rr_graph.node_yhigh(from_node);
-                to_yhigh = rr_graph.node_yhigh(to_node);
-                if (from_xlow == to_xlow) {
-                    if (to_yhigh == from_ylow - 1 || from_yhigh == to_ylow - 1) {
-                        num_adj++;
-                    } else { // Overlapping
-                        for (int j = from_ylow; j <= from_yhigh; j++) {
-                            if (j >= to_ylow && j <= to_yhigh) {
-                                num_adj++;
-                                break;
-                            }
-                        }
-                    }
-                }
-            } else if (to_type == e_rr_type::CHANX) {
-                num_adj += rr_graph.nodes_are_adjacent(to_node, from_node);
-            } else if (to_type == e_rr_type::CHANZ) {
-                num_adj += chanxy_chanz_adjacent(from_node, to_node);
+                num_adj += 1; // adjacent
+            } else if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ) {
+                num_adj += rr_graph.chan_nodes_are_adjacent(from_node, to_node);
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
@@ -476,12 +435,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             break;
 
         case e_rr_type::CHANZ:
-            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
-                num_adj += chanxy_chanz_adjacent(to_node, from_node);
-            } else if (to_type == e_rr_type::CHANZ) {
-                if (from_xlow == to_xlow && from_xhigh == to_xhigh && from_ylow == to_ylow && from_yhigh == to_yhigh && std::abs(from_layer - to_layer) == 1) {
-                    num_adj++;
-                }
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ) {
+                num_adj += rr_graph.chan_nodes_are_adjacent(from_node, to_node);
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
@@ -501,7 +456,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
     VPR_ERROR(VPR_ERROR_ROUTE,
               "in check_adjacent: num_adj = %d. Expected 0 or 1.\n", num_adj);
-    return false; //Should not reach here once thrown
+    return false; // Should not reach here once thrown
 }
 
 void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
@@ -869,30 +824,6 @@ void check_net_for_stubs(const Netlist<>& net_list,
         }
 
         VPR_THROW(VPR_ERROR_ROUTE, msg.c_str());
-    }
-}
-
-static bool chanxy_chanz_adjacent(RRNodeId chanxy_node, RRNodeId chanz_node) {
-    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
-    VTR_ASSERT(rr_graph.node_type(chanz_node) == e_rr_type::CHANZ);
-    e_rr_type chanxy_node_type = rr_graph.node_type(chanxy_node);
-    VTR_ASSERT(chanxy_node_type == e_rr_type::CHANX || chanxy_node_type == e_rr_type::CHANY);
-
-    int chanz_x = rr_graph.node_xlow(chanz_node);
-    int chanz_y = rr_graph.node_ylow(chanz_node);
-    VTR_ASSERT_SAFE(chanz_x == rr_graph.node_xhigh(chanz_node));
-    VTR_ASSERT_SAFE(chanz_y == rr_graph.node_yhigh(chanz_node));
-
-    if (chanxy_node_type == e_rr_type::CHANX) {
-        // CHANX runs horizontally, so y must match and x must overlap
-        return chanz_y == rr_graph.node_ylow(chanxy_node)
-               && chanz_x >= rr_graph.node_xlow(chanxy_node) - 1
-               && chanz_x <= rr_graph.node_xhigh(chanxy_node) + 1;
-    } else {
-        // CHANY runs vertically, so x must match and y must overlap
-        return chanz_x == rr_graph.node_xlow(chanxy_node)
-               && chanz_y >= rr_graph.node_ylow(chanxy_node) - 1
-               && chanz_y <= rr_graph.node_yhigh(chanxy_node) + 1;
     }
 }
 

@@ -3,6 +3,7 @@
 #include "vpr_error.h"
 #include "rr_graph_obj.h"
 #include "rr_graph_builder.h"
+#include "rr_graph_view.h"
 
 /*
  * @brief Walk backwards from origin SINK, and insert all cluster-edge IPINs to which origin is connected to sink_ipins
@@ -254,4 +255,131 @@ bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph) {
     }
 
     return limited_to_opin;
+}
+
+bool chanx_chany_nodes_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RRNodeId node2) {
+    e_rr_type type1 = rr_graph.node_type(node1);
+    e_rr_type type2 = rr_graph.node_type(node2);
+    VTR_ASSERT((type1 == e_rr_type::CHANX && type2 == e_rr_type::CHANY) || (type1 == e_rr_type::CHANY && type2 == e_rr_type::CHANX));
+
+    // Make sure node1 is CHANX for consistency
+    if (type1 == e_rr_type::CHANY) {
+        std::swap(node1, node2);
+        std::swap(type1, type2);
+    }
+
+    RRNodeId chanx_node = node1;
+    RRNodeId chany_node = node2;
+
+    // Check vertical (Y) adjacency
+    if (rr_graph.node_ylow(chany_node) > rr_graph.node_ylow(chanx_node) + 1 ||
+        rr_graph.node_yhigh(chany_node) < rr_graph.node_ylow(chanx_node)) {
+        return false;
+    }
+
+    // Check horizontal (X) adjacency
+    if (rr_graph.node_xlow(chanx_node) > rr_graph.node_xlow(chany_node) + 1 ||
+        rr_graph.node_xhigh(chanx_node) < rr_graph.node_xlow(chany_node)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool chanxy_chanz_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RRNodeId node2) {
+    e_rr_type type1 = rr_graph.node_type(node1);
+    e_rr_type type2 = rr_graph.node_type(node2);
+
+    // Ensure one is CHANZ, the other is CHANX or CHANY
+    VTR_ASSERT((type1 == e_rr_type::CHANZ && (type2 == e_rr_type::CHANX || type2 == e_rr_type::CHANY))
+               || (type2 == e_rr_type::CHANZ && (type1 == e_rr_type::CHANX || type1 == e_rr_type::CHANY)));
+
+    // Make sure chanz_node is second for unified handling
+    if (type1 == e_rr_type::CHANZ) {
+        std::swap(node1, node2);
+        std::swap(type1, type2);
+    }
+
+    // node1 is CHANX or CHANY, node2 is CHANZ
+    RRNodeId chanxy_node = node1;
+    RRNodeId chanz_node = node2;
+    e_rr_type chanxy_node_type = type1;
+
+    int chanz_x = rr_graph.node_xlow(chanz_node);
+    int chanz_y = rr_graph.node_ylow(chanz_node);
+    VTR_ASSERT_SAFE(chanz_x == rr_graph.node_xhigh(chanz_node));
+    VTR_ASSERT_SAFE(chanz_y == rr_graph.node_yhigh(chanz_node));
+
+    if (chanxy_node_type == e_rr_type::CHANX) {
+        // CHANX runs horizontally: match Y, overlap X
+        return chanz_y == rr_graph.node_ylow(chanxy_node)
+               && chanz_x >= rr_graph.node_xlow(chanxy_node) - 1
+               && chanz_x <= rr_graph.node_xhigh(chanxy_node) + 1;
+    } else {
+        // CHANY runs vertically: match X, overlap Y
+        return chanz_x == rr_graph.node_xlow(chanxy_node)
+               && chanz_y >= rr_graph.node_ylow(chanxy_node) - 1
+               && chanz_y <= rr_graph.node_yhigh(chanxy_node) + 1;
+    }
+}
+
+bool chan_same_type_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RRNodeId node2) {
+    e_rr_type type = rr_graph.node_type(node1);
+    VTR_ASSERT(type == rr_graph.node_type(node2));
+
+    int xlow1 = rr_graph.node_xlow(node1);
+    int xhigh1 = rr_graph.node_xhigh(node1);
+    int ylow1 = rr_graph.node_ylow(node1);
+    int yhigh1 = rr_graph.node_yhigh(node1);
+    int layer1 = rr_graph.node_layer(node1);
+
+    int xlow2 = rr_graph.node_xlow(node2);
+    int xhigh2 = rr_graph.node_xhigh(node2);
+    int ylow2 = rr_graph.node_ylow(node2);
+    int yhigh2 = rr_graph.node_yhigh(node2);
+    int layer2 = rr_graph.node_layer(node2);
+
+    if (type == e_rr_type::CHANX) {
+        if (ylow1 != ylow2) {
+            return false;
+        }
+
+        // Adjacent ends or overlapping segments
+        if (xhigh1 == xlow2 - 1 || xhigh2 == xlow1 - 1) {
+            return true;
+        }
+
+        for (int x = xlow1; x <= xhigh1; ++x) {
+            if (x >= xlow2 && x <= xhigh2) {
+                return true;
+            }
+        }
+        return false;
+
+    } else if (type == e_rr_type::CHANY) {
+        if (xlow1 != xlow2) {
+            return false;
+        }
+
+        if (yhigh1 == ylow2 - 1 || yhigh2 == ylow1 - 1) {
+            return true;
+        }
+
+        for (int y = ylow1; y <= yhigh1; ++y) {
+            if (y >= ylow2 && y <= yhigh2) {
+                return true;
+            }
+        }
+        return false;
+
+    } else if (type == e_rr_type::CHANZ) {
+        // Same X/Y span, adjacent layer
+        bool same_xy = (xlow1 == xlow2 && xhigh1 == xhigh2 && ylow1 == ylow2 && yhigh1 == yhigh2);
+        bool adjacent_layer = std::abs(layer1 - layer2) == 1;
+        return same_xy && adjacent_layer;
+    } else {
+        VTR_ASSERT_MSG(false, "Unexpected RR node type in chan_same_type_are_adjacent().\n");
+    }
+
+    return false; // unreachable
 }

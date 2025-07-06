@@ -59,6 +59,7 @@
 #include "physical_types.h"
 #include "rr_spatial_lookup.h"
 #include "vtr_geometry.h"
+#include "rr_graph_utils.h"
 
 class RRGraphView {
     /* -- Constructors -- */
@@ -262,19 +263,37 @@ class RRGraphView {
                  && (node_xhigh(node) == -1) && (node_yhigh(node) == -1));
     }
 
-    /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). 
-     * @note This function performs error checking by determining whether two nodes are physically adjacent based on their geometry.
-     * It does not verify the routing edges to confirm if a connection is feasible within the current routing graph.
+    /**
+     * @brief Check if two CHANX, CHANY, or CHANZ nodes are spatially adjacent.
+     * @param node1 First routing resource node
+     * @param node2 Second routing resource node
+     * @return true if the nodes are adjacent, false otherwise
      */
-    inline bool nodes_are_adjacent(RRNodeId chanx_node, RRNodeId chany_node) const {
-        VTR_ASSERT(node_type(chanx_node) == e_rr_type::CHANX && node_type(chany_node) == e_rr_type::CHANY);
-        if (node_ylow(chany_node) > node_ylow(chanx_node) + 1 || // verifies that chany_node is not more than one unit above chanx_node
-            node_yhigh(chany_node) < node_ylow(chanx_node))      // verifies that chany_node is not more than one unit beneath chanx_node
-            return false;
-        if (node_xlow(chanx_node) > node_xlow(chany_node) + 1 || // verifies that chany_node is not more than one unit to the left of chanx_node
-            node_xhigh(chanx_node) < node_xlow(chany_node))      // verifies that chany_node is not more than one unit to the right of chanx_node
-            return false;
-        return true;
+    inline bool chan_nodes_are_adjacent(RRNodeId node1, RRNodeId node2) const {
+        e_rr_type type1 = node_type(node1);
+        e_rr_type type2 = node_type(node2);
+        VTR_ASSERT(type1 == e_rr_type::CHANX || type1 == e_rr_type::CHANY || type1 == e_rr_type::CHANZ);
+        VTR_ASSERT(type2 == e_rr_type::CHANX || type2 == e_rr_type::CHANY || type2 == e_rr_type::CHANZ);
+
+        if ((type1 == e_rr_type::CHANX && type2 == e_rr_type::CHANY)
+            || (type1 == e_rr_type::CHANY && type2 == e_rr_type::CHANX)) {
+            return chanx_chany_nodes_are_adjacent(*this, node1, node2);
+        }
+
+        // CHANX/CHANY to CHANZ (in any order)
+        if ((type1 == e_rr_type::CHANZ || type2 == e_rr_type::CHANZ) &&
+            (type1 == e_rr_type::CHANX || type1 == e_rr_type::CHANY ||
+             type2 == e_rr_type::CHANX || type2 == e_rr_type::CHANY)) {
+            return chanxy_chanz_adjacent(*this, node1, node2);
+        }
+
+        // Same-type channel nodes (CHANX–CHANX, CHANY–CHANY, CHANZ–CHANZ)
+        if (type1 == type2) {
+            return chan_same_type_are_adjacent(*this, node1, node2);
+        }
+
+        VTR_ASSERT_MSG(false, "Invalid CHAN node combination passed to chan_nodes_are_adjacent()");
+        return false;
     }
 
     /**
