@@ -81,7 +81,6 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
  * to be generated on ap_netlist or have the same blocks.
  */
 static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, const Prepacker& prepacker, PartialPlacement& p_placement) {
-    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
         // Get the molecule that AP block represents
         PackMoleculeId mol_id = ap_netlist.block_molecule(ap_blk_id);
@@ -116,9 +115,11 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                 }
             }
         }
-        // Ensure that there is a valid atom in the molecule to pass its location.
+        // If any atom in the molecule has a location assigned, use that location 
+        // for the entire AP block. Otherwise, assign the AP block to the center
+        // of the device grid and update the flat placement info for all its atoms accordingly.
         if (!found_valid_atom) {
-            VTR_LOG_WARN("No atoms of molecule ID %zu provided in flat placement. Assigning it to the device center.\n", mol_id);
+            VTR_LOG_WARN("No atoms of molecule ID %zu provided in the flat placement. Assigning it to the device center.\n", mol_id);
             p_placement.block_x_locs[ap_blk_id] = g_vpr_ctx.device().grid.width()/2.0f;
             p_placement.block_y_locs[ap_blk_id] = g_vpr_ctx.device().grid.height()/2.0f;
             p_placement.block_layer_nums[ap_blk_id] = 0;
