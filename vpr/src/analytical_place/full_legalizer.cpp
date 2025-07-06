@@ -286,37 +286,33 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
     return LegalizationClusterId();
 }
 
-// Idea is to get the logical block type of a molecule and implementation is inspired by the create_new_cluster function
-static t_logical_block_type_ptr get_molecule_logical_block_type(
-    PackMoleculeId mol_id,
-    const Prepacker& prepacker,
-    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
-    
+/**
+ * @brief Get the logical block type of a given molecule.
+ *
+ *  @param mol_id                           The molecule id to get its logical block type.
+ *  @param prepacker                        The prepacker used to get molecule from its id.
+ *  @param primitive_candidate_block_types  Candidate logical block types for the given molecule.
+ *
+ */
+static t_logical_block_type_ptr get_molecule_logical_block_type(PackMoleculeId mol_id,
+                                                                const Prepacker& prepacker,
+                                                                const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+    // Get the root atom and its model id. Ensure that both is valid.
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const t_pack_molecule& molecule = prepacker.get_molecule(mol_id);
-
     AtomBlockId root_atom = molecule.atom_block_ids[molecule.root];
-
-    if (!root_atom.is_valid()) {
-        VTR_LOG_WARN("Molecule ID %zu does not have a valid root atom!\n", size_t(mol_id));
-        return nullptr;
-    }
-
-    // Use LogicalModelId (not t_model*)
+    VTR_ASSERT(root_atom.is_valid());
     LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);
-    if (!root_model_id.is_valid()) {
-        VTR_LOG_WARN("Molecule ID %zu has an invalid root model ID!\n", size_t(mol_id));
-        return nullptr;
-    }
+    VTR_ASSERT(root_model_id.is_valid());
 
-    // Access by index, not .find()
+    // Get the candidate type.
     const auto& candidate_types = primitive_candidate_block_types[root_model_id];
     if (!candidate_types.empty()) {
         return candidate_types.front();
     }
 
-    VTR_LOG_WARN("Molecule ID %zu has no valid logical block type!\n", size_t(mol_id));
-    return nullptr;
+    // A valid block type should have been found at that point.
+    VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
 }
 
 std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>
@@ -383,9 +379,6 @@ void BasicMinDisturbance::cluster_molecules_in_tile(
     for (PackMoleculeId mol_id: tile_molecules) {
         // Get the block type for compatibility check.
         const auto block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
-        if (!block_type) {
-            VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
-        }
 
         // Try all subtiles in a single loop
         bool placed = false;
@@ -443,7 +436,6 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
                                   tile_type,
                                   tile_molecules,
                                   cluster_legalizer,
-                                  device_grid,
                                   primitive_candidate_block_types,
                                   unclustered_blocks,
                                   cluster_ids_to_check);
@@ -471,7 +463,6 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
                                   tile_type,
                                   illegal_cluster_mols,
                                   cluster_legalizer,
-                                  device_grid,
                                   primitive_candidate_block_types,
                                   unclustered_blocks,
                                   cluster_ids_to_check);
