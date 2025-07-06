@@ -115,7 +115,7 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                 }
             }
         }
-        // If any atom in the molecule has a location assigned, use that location 
+        // If any atom in the molecule has a location assigned, use that location
         // for the entire AP block. Otherwise, assign the AP block to the center
         // of the device grid and update the flat placement info for all its atoms accordingly.
         if (!found_valid_atom) {

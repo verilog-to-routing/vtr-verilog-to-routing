@@ -15,7 +15,6 @@
 #include <optional>
 #include <unordered_set>
 #include <vector>
-#include <queue>
 #include <execution>
 
 #include "PreClusterTimingManager.h"
@@ -37,6 +36,7 @@
 #include "pack.h"
 #include "partial_placement.h"
 #include "physical_types.h"
+#include "physical_types_util.h"
 #include "place.h"
 #include "place_and_route.h"
 #include "place_constraints.h"
@@ -56,8 +56,6 @@
 #include "vtr_strong_id.h"
 #include "vtr_time.h"
 #include "vtr_vector.h"
-
-#include "physical_types_util.h"
 
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
@@ -378,7 +376,6 @@ void BasicMinDisturbance::cluster_molecules_in_tile(
     const t_physical_tile_type_ptr& tile_type,
     const std::vector<PackMoleculeId>& tile_molecules,
     ClusterLegalizer& cluster_legalizer,
-    const DeviceGrid& device_grid,
     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
     std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check)

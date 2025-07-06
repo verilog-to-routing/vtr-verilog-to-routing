@@ -125,7 +125,6 @@ public:
         const t_physical_tile_type_ptr& tile_type,
         const std::vector<PackMoleculeId>& tile_molecules,
         ClusterLegalizer& cluster_legalizer,
-        const DeviceGrid& device_grid,
         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
         std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
         std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check);
