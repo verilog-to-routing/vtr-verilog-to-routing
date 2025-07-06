@@ -66,6 +66,19 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                     int* index,
                                     const std::vector<e_side>& wanted_sides);
 
+/**
+ * @brief Check consistency between RR node count and expected coverage from RR nodes
+ *
+ * This helper validates that each RR node appears the correct number of times
+ * in the node lookup structure based on its span or area.
+ */
+static void check_rr_node_counts(const std::unordered_map<RRNodeId, int>& rr_node_counts,
+                                 const RRGraphView& rr_graph,
+                                 const t_rr_graph_storage& rr_nodes,
+                                 const DeviceGrid& grid,
+                                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                                 bool is_flat);
+
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder
  * TODO: these building functions should only talk to a RRGraphBuilder object
  */
@@ -596,33 +609,40 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
         }
     }
 
+    check_rr_node_counts(rr_node_counts, rr_graph, rr_nodes, grid, rr_indexed_data, is_flat);
+
+    return true;
+}
+
+static void check_rr_node_counts(const std::unordered_map<RRNodeId, int>& rr_node_counts,
+                                 const RRGraphView& rr_graph,
+                                 const t_rr_graph_storage& rr_nodes,
+                                 const DeviceGrid& grid,
+                                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
+                                 bool is_flat) {
     if (rr_node_counts.size() != rr_nodes.size()) {
         VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch in number of unique RR nodes in rr_nodes (%zu) and rr_node_indices (%zu)",
                   rr_nodes.size(),
                   rr_node_counts.size());
     }
 
-    for (auto kv : rr_node_counts) {
-        RRNodeId inode = kv.first;
-        int count = kv.second;
-
+    for (const auto& [inode, count] : rr_node_counts) {
         const t_rr_node& rr_node = rr_nodes[size_t(inode)];
+        e_rr_type node_type = rr_graph.node_type(inode);
 
-        if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK) {
-            int rr_width = (rr_graph.node_xhigh(rr_node.id()) - rr_graph.node_xlow(rr_node.id()) + 1);
-            int rr_height = (rr_graph.node_yhigh(rr_node.id()) - rr_graph.node_ylow(rr_node.id()) + 1);
+        if (node_type == e_rr_type::SOURCE || node_type == e_rr_type::SINK) {
+            int rr_width = rr_graph.node_xhigh(inode) - rr_graph.node_xlow(inode) + 1;
+            int rr_height = rr_graph.node_yhigh(inode) - rr_graph.node_ylow(inode) + 1;
             int rr_area = rr_width * rr_height;
+
             if (count != rr_area) {
-                VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node size (%d) and count within rr_node_indices (%d): %s",
+                VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node area (%d) and count within rr_node_indices (%d): %s",
                           rr_area,
-                          rr_node.length(),
                           count,
                           describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
             }
-            // As we allow a pin to be indexable on multiple sides,
-            // This check code should not be applied to input and output pins
 
-        } else if ((e_rr_type::OPIN != rr_graph.node_type(inode)) && (e_rr_type::IPIN != rr_graph.node_type(inode))) {
+        } else if (node_type != e_rr_type::OPIN && node_type != e_rr_type::IPIN) {
             if (count != rr_node.length() + 1) {
                 VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node length (%d) and count within rr_node_indices (%d, should be length + 1): %s",
                           rr_node.length(),
@@ -631,6 +651,4 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
             }
         }
     }
-
-    return true;
 }
