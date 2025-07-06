@@ -1447,10 +1447,6 @@ struct t_det_routing_arch {
     std::string read_rr_edge_override_filename;
 };
 
-constexpr bool is_pin(e_rr_type type) { return (type == e_rr_type::IPIN || type == e_rr_type::OPIN); }
-constexpr bool is_chan(e_rr_type type) { return (type == e_rr_type::CHANX || type == e_rr_type::CHANY); }
-constexpr bool is_src_sink(e_rr_type type) { return (type == e_rr_type::SOURCE || type == e_rr_type::SINK); }
-
 /**
  * @brief Information about the current status of a particular
  *        net as pertains to routing
