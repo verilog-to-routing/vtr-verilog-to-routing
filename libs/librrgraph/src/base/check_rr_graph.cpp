@@ -445,7 +445,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                             "in check_rr_node: Unexpected segment type: %d\n", rr_type);
     }
 
-    /* Check that it's capacities and such make sense. */
+    // Check that its capacities and such make sense.
 
     int class_max_ptc = get_tile_class_max_ptc(type, is_flat);
     int pin_max_ptc = get_tile_pin_max_ptc(type, is_flat);
@@ -496,7 +496,15 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANZ:
-            // TODO: do checks for CHANZ type
+            if (route_type == e_route_type::DETAILED) {
+                tracks_per_node = 1;
+            } else {
+                // TODO: do checks for CHANZ type when global routing is enabled
+                //       This can be done once we have a way to specify how many chanz
+                //       nodes per switch block exist.
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: Global routing is not supported in 3D architectures.\n");
+            }
             break;
 
         default:

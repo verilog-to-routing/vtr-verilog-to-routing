@@ -29,7 +29,8 @@ enum class e_rr_type : unsigned char {
     OPIN,       ///<Output pin of a block
     CHANX,      ///<x-directed routing wire, or an x-directed segment of a channel for global routing
     CHANY,      ///<y-directed routing wire, or a y-directed segment of a channel for global routing
-    CHANZ,      ///<z-directed routing wire used to connect two different layers
+    CHANZ,      ///<z-directed routing wire used to connect two different layers.
+                ///< For CHANZ nodes, xlow == xhigh and yhigh == ylow
     NUM_RR_TYPES
 };
 
