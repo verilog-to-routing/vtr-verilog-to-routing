@@ -242,6 +242,11 @@ class RRGraphView {
     inline int node_length(RRNodeId node) const {
         VTR_ASSERT(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY || node_type(node) == e_rr_type::CHANZ);
 
+        // Inter-layer wires travel only one layer
+        // For now, we decided to set the length of an inter-layer wire to 1
+        // TODO: The user should be able to set a parameter to say how long inter-layer wires are
+        // TODO: inter-layer wires are modeled with two CHANZ nodes on two different layer
+        //       In the future, we should remove one of them and give a direction to CHANZ nodes
         if (node_type(node) == e_rr_type::CHANZ) {
             return 1;
         }
