@@ -435,18 +435,23 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
 
     // Display text for each physical block.
+    std::string pb_display_text(pb_type->name);
     std::string pb_type_name(pb_type->name);
 
     if (!pb->is_primitive()) {
         // Format for non-primitives: <block_type_name>[<placement_index>]:<mode_name>
-        pb_type_name += "[" + std::to_string(pb->pb_graph_node->placement_index) + "]";
         std::string mode_name = pb->pb_graph_node->pb_type->modes[pb->mode].name;
-        pb_type_name += ":" + mode_name;
+        pb_display_text += "[" + std::to_string(pb->pb_graph_node->placement_index) + "]";
+
+        // Don't display mode name if it is the same as the pb_type name
+        if (mode_name != pb_type_name) {
+            pb_display_text += ":" + mode_name;
+        }
     } else {
         // Format for primitives: <block_type_name>(<block_name>)
         if (pb->name != nullptr) {
             std::string pb_name(pb->name);
-            pb_type_name += "(" + pb_name + ")";
+            pb_display_text += "(" + pb_name + ")";
         }
     }
 
@@ -458,7 +463,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         if (draw_state->draw_block_text) {
             g->draw_text(
                 abs_bbox.center(),
-                pb_type_name.c_str(),
+                pb_display_text.c_str(),
                 abs_bbox.width(),
                 abs_bbox.height());
         }
@@ -470,7 +475,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             g->draw_text(
                 ezgl::point2d(abs_bbox.center_x(),
                               abs_bbox.top() - draw_coords->get_tile_height() * FRACTION_TEXT_PADDING),
-                pb_type_name.c_str(),
+                pb_display_text.c_str(),
                 abs_bbox.width(),
                 abs_bbox.height());
         }
