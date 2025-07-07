@@ -235,7 +235,6 @@ def run(
 
     # Set the synlig exe script path in the environment variable
     # (handle if it is not set or system-verilog OFF)
-    
     try:
         os.environ["yosys_slang_path"] = str(vtr.paths.yosys_slang_path)
     except KeyError:
@@ -247,7 +246,7 @@ def run(
         del parmys_args["parser"]
     else:
         raise vtr.VtrError(
-            parmys_args["parser"] + "Invalid parser is specified for Yosys, available parsers are [{}]".format(
+            parmys_args["parser"]+"Invalid parser is specified for Yosys, available parsers are [{}]".format(
                 " ".join(str(x) for x in YOSYS_PARSERS)
             )
         )
