@@ -318,8 +318,7 @@ static t_logical_block_type_ptr get_molecule_logical_block_type(PackMoleculeId m
 std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>
 BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer pack_reconstruction_timer("Sorting and Grouping Blocks by Tile");
-    // Block sorting information. This can be altered easily to try 
-    // different sorting strategies.
+    // Block sorting information. This can be altered easily to try different sorting strategies.
     struct BlockInformation {
         PackMoleculeId mol_id;
         int ext_inps;
@@ -341,8 +340,8 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
         sorted_blocks.push_back({mol_id, num_ext_inputs, long_chain, tile_loc});
     }
 
-    // Sort the blocks: molecules of a long chain should come first, then 
-    // sort by descending external input count 
+    // Sort the blocks: molecules of a long chain should come first, then
+    // sort by descending external input pin counts.
     std::sort(std::execution::par_unseq, sorted_blocks.begin(), sorted_blocks.end(),
               [](const BlockInformation& a, const BlockInformation& b) {
                   if (a.is_long_chain != b.is_long_chain) {
@@ -367,15 +366,13 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
     return tile_blocks;
 }
 
-void BasicMinDisturbance::cluster_molecules_in_tile(
-    const t_physical_tile_loc& tile_loc,
-    const t_physical_tile_type_ptr& tile_type,
-    const std::vector<PackMoleculeId>& tile_molecules,
-    ClusterLegalizer& cluster_legalizer,
-    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-    std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check)
-{
+void BasicMinDisturbance::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
+                                                    const t_physical_tile_type_ptr& tile_type,
+                                                    const std::vector<PackMoleculeId>& tile_molecules,
+                                                    ClusterLegalizer& cluster_legalizer,
+                                                    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                                    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                                                    std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check) {
     for (PackMoleculeId mol_id: tile_molecules) {
         // Get the block type for compatibility check.
         const auto block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
@@ -391,7 +388,7 @@ void BasicMinDisturbance::cluster_molecules_in_tile(
                 LegalizationClusterId cluster_id = cluster_it->second;
                 if (!cluster_legalizer.is_molecule_compatible(mol_id, cluster_id))
                     continue;
-                
+
                 if (cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id) == e_block_pack_status::BLK_PASSED) {
                     placed = true;
                     break;
@@ -414,13 +411,11 @@ void BasicMinDisturbance::cluster_molecules_in_tile(
 
 
 
-void BasicMinDisturbance::reconstruction_cluster_pass(
-    ClusterLegalizer& cluster_legalizer,
-    const DeviceGrid& device_grid,
-    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-    std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks)
-{
+void BasicMinDisturbance::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
+                                                      const DeviceGrid& device_grid,
+                                                      const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                                      std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
+                                                      std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks) {
     vtr::ScopedStartFinishTimer reconstruction_pass_clustering("Reconstruction Pass Clustering");
     for (const auto& [key, value] : tile_blocks) {
         // Get tile and molecules aimed to be placed in that tile
@@ -428,7 +423,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
         t_physical_tile_loc tile_loc = key;
         std::vector<PackMoleculeId> tile_molecules = value;
         const t_physical_tile_type_ptr tile_type = device_grid.get_physical_type(tile_loc);
-        
+
         // Try to create clusters with fast strategy checking the compatibility
         // with tile and its capacity. Store the cluster ids to check their legality.
         std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_ids_to_check;
@@ -477,12 +472,10 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
     VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu .\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
 }
 
-void BasicMinDisturbance::neighbor_cluster_pass(
-    ClusterLegalizer& cluster_legalizer,
-    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-    int search_radius)
-{
+void BasicMinDisturbance::neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
+                                                const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                                std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                                                int search_radius) {
     std::string timer_label = "Neighbor Pass Clustering with search radius " + std::to_string(search_radius);
     vtr::ScopedStartFinishTimer neighbor_pass_clustering(timer_label);
     // For each unclustered molecule
@@ -525,27 +518,26 @@ void BasicMinDisturbance::neighbor_cluster_pass(
 
 
 ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_legalizer,
-                                                  const PartialPlacement& p_placement) 
-{
+                                                      const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer creating_clusters("Creating Clusters");
-    
+
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid.width(), device_grid.height());
-    
-    // Sort the blocks according to their used external pin numbers while 
+
+    // Sort the blocks according to their used external pin numbers while
     // prioritizing the long carry chain molecules respectively. Then,
     // group the sorted blocks by each tile.
-    auto tile_blocks = sort_and_group_blocks_by_tile(p_placement); 
+    auto tile_blocks = sort_and_group_blocks_by_tile(p_placement);
 
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
         primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
 
-    reconstruction_cluster_pass(cluster_legalizer, 
-                                device_grid, 
-                                primitive_candidate_block_types, 
-                                tile_blocks, 
+    reconstruction_cluster_pass(cluster_legalizer,
+                                device_grid,
+                                primitive_candidate_block_types,
+                                tile_blocks,
                                 unclustered_blocks);
 
     // Get rid off the invalid cluster ids before reporting.
@@ -599,7 +591,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
 
     // Get rid off the invalid cluster ids before reporting.
     cluster_legalizer.compress();
-    
+
     // Neighbor pass clustering statistics collection
     std::unordered_map<std::string, size_t> cluster_type_count_second_pass;
     size_t total_atoms_in_second_pass_clusters = 0;
@@ -633,7 +625,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
         static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_clusters_in_second_pass);
     float avg_mol_number_in_neighbor_pass =
         static_cast<float>(total_molecules_in_second_pass_clusters) / static_cast<float>(total_clusters_in_second_pass);
-    
+
     // Report clustering summary. If there are any type with non-zero clusters,
     // their individual cluster number will also be printed.
     VTR_LOG("-------------------------------------------------------\n");
@@ -653,7 +645,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     VTR_LOG("Avg molecules per cluster (Reconstruction pass) : %.2f\n", avg_mol_number_in_first_pass);
     VTR_LOG("Avg molecules per cluster (Neighbor pass)       : %.2f\n", avg_mol_number_in_neighbor_pass);
     VTR_LOG("Percent of atoms clustered in Neighbor pass     : %.2f%%\n",
-            100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) / 
+            100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) /
             static_cast<float>(total_atoms_in_first_pass_clusters + total_atoms_in_second_pass_clusters));
     VTR_LOG("Percent of molecules clustered in Neighbor pass : %.2f%%\n",
             100.0f * static_cast<float>(total_molecules_in_second_pass_clusters) /
@@ -662,7 +654,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
             100.0f * static_cast<float>(total_clusters_in_second_pass) /
             static_cast<float>(total_clusters_in_first_pass + total_clusters_in_second_pass));
     VTR_LOG("-------------------------------------------------------\n\n");
-    
+
     // Check and output the clustering.
     cluster_legalizer.compress();
     std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock();
@@ -679,7 +671,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     // Verify the packing
     check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
     writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
-    
+
     return clb_nlist;
 }
 
@@ -794,7 +786,7 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     // strategy speeds up reconstruction by skipping intra-LB routing checks.
     std::vector<std::string> target_ext_pin_util = {"1.0"};
     t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
-    
+
     ClusterLegalizer cluster_legalizer(
         atom_netlist_,
         prepacker_,
@@ -807,8 +799,8 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
         vpr_setup_.PackerOpts.pack_verbosity);
 
     // Perform clustering using partial placement
-    const ClusteredNetlist& clb_nlist = create_clusters(cluster_legalizer, p_placement); 
-    
+    const ClusteredNetlist& clb_nlist = create_clusters(cluster_legalizer, p_placement);
+
     // Verify that the clustering created by the full legalizer is valid.
     unsigned num_clustering_errors = verify_clustering(g_vpr_ctx);
     if (num_clustering_errors == 0) {
@@ -925,8 +917,6 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
     writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
     print_pb_type_count(clb_nlist);
-
-    //VPR_FATAL_ERROR(VPR_ERROR_AP, "Stopped to compare cluster creation with the BMD.\n");
 }
 
 void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
@@ -997,20 +987,6 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     // Create a scoped timer for the full legalizer
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
-    FlatPlacementInfo flat_placement_info(atom_netlist_);
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
-        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-            if (!atom_blk_id.is_valid())
-                continue;
-            flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
-            flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
-            flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
-            flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
-        }
-    }
-
     // Pack the atoms into clusters based on the partial placement.
     create_clusters(p_placement);
     // Verify that the clustering created by the full legalizer is valid.
@@ -1038,15 +1014,6 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
 
     // Place the clusters based on where the atoms want to be placed.
     place_clusters(clb_nlist, place_macros, p_placement);
-
-    // Log some information on how good the reconstruction was.
-    BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
-    log_flat_placement_reconstruction_info(flat_placement_info,
-                                           blk_loc_registry.block_locs(),
-                                           g_vpr_ctx.clustering().atoms_lookup,
-                                           g_vpr_ctx.atom().lookup(),
-                                           atom_netlist_,
-                                           g_vpr_ctx.clustering().clb_nlist);
 
     // Verify that the placement created by the full legalizer is valid.
     unsigned num_placement_errors = verify_placement(g_vpr_ctx);
@@ -1116,7 +1083,6 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // Run the initial placer on the clusters created by the packer, using the
     // flat placement information from the global placer to guide where to place
     // the clusters.
-    std::vector<ClusterBlockId> reconstruction_pass_clusters;
     initial_placement(vpr_setup_.PlacerOpts,
                       vpr_setup_.PlacerOpts.constraints_file.c_str(),
                       vpr_setup_.NocOpts,
