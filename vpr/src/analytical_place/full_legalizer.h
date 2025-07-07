@@ -9,7 +9,9 @@
  */
 
 #include <memory>
+#include <unordered_set>
 #include "ap_flow_enums.h"
+#include "cluster_legalizer.h"
 
 // Forward declarations
 class APNetlist;
