@@ -729,6 +729,10 @@ void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist, cons
                                             atom_netlist_,
                                             g_vpr_ctx.clustering().clb_nlist);
     } else {
+        // If a flat placement is not being read or casted at that point, cast
+        // the partial placement to flat placement here. So that it can be used
+        // to guide the initial placer and for logging results. This part is
+        // added for using the FlatRecon with GP output.
         FlatPlacementInfo flat_placement_info(atom_netlist_);
         for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
             PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);

@@ -100,7 +100,34 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
 /**
  * @brief FlatRecon: The Flat Placement Reconstruction Full Legalizer.
  *
- * EXPLAIN THE IDEA and HOW IT WORKS (Big Picture)
+ * The idea of the FlatRecon is to reconstruct (pack and place) a given flat
+ * placement with minimum disturbance. It can be used with the flat placement
+ * either being read from an '.fplace' file or with the GP output. However, in
+ * both cases it expects the given flat placement to be close to legal.
+ *
+ * Before packing, it sorts the molecules such that long carry chain elements
+ * are being first, and then molecules with highest external input pin numbers
+ * becoming first among long carry chain elements and the others. It then
+ * groups the molecules according to the tiles that they want to be placed.
+ *
+ * The packing consists of two passes: reconstruction and neighbor. In the
+ * reconstruction pass, it iterates over each tile and tries to create least
+ * amount of clusters with the molecules that want to be in that tile. It
+ * first tries to cluster with SKIP_INTRA_LB_ROUTE strategy and then tries with
+ * the FULL strategy with the failing molecules in that tile. Any molecule that
+ * could not clustered in tha pass (either by not being compatible with the
+ * desired tile or not being able to add created clusters) is passed to neighbor
+ * pass. In the neighbor pass, the first molecule inserted in the reconstruction
+ * pass is popped and selected as the seed molecule. Then, its N-neighboring
+ * molecules that are at most N tiles away (in Manhattan distance) are selected
+ * to be candidate molecules. If candidate molecules are added successfully,
+ * they are pooped as well. Then, next unclustered molecule is popped and it
+ * continues until no all molecules are clustered. The neighbor search radius
+ * is set to 8 based on experiments on Titan benchmarks. Radius 8 was giving
+ * the least amount of clusterd without hurting the maximum displacement.
+ *
+ * The placement uses the initial placement in the AP flow. It is guided to
+ * place the clusters according to where its atoms are desired to be placed.
  *
  */
 class BasicMinDisturbance : public FullLegalizer {
