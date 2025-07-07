@@ -20,8 +20,8 @@
 #include "timing_util.h"
 
 #ifdef VPR_USE_TBB
-#include <oneapi/tbb/combinable.h>
-#include <oneapi/tbb/parallel_for_each.h>
+#include <tbb/combinable.h>
+#include <tbb/parallel_for_each.h>
 #endif // VPR_USE_TBB
 
 #ifndef NO_GRAPHICS
