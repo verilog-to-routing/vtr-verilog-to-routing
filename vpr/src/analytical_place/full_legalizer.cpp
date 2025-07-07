@@ -305,7 +305,7 @@ static t_logical_block_type_ptr get_molecule_logical_block_type(PackMoleculeId m
     LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);
     VTR_ASSERT(root_model_id.is_valid());
 
-    // Get the candidate type.
+    // Get the first candidate type.
     const auto& candidate_types = primitive_candidate_block_types[root_model_id];
     if (!candidate_types.empty()) {
         return candidate_types.front();
@@ -477,7 +477,6 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
     VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu .\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
 }
 
-// neighbor clustering function
 void BasicMinDisturbance::neighbor_cluster_pass(
     ClusterLegalizer& cluster_legalizer,
     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
