@@ -559,7 +559,6 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
             for (AtomBlockId atom_id: prepacker_.get_molecule(mol_id).atom_block_ids) {
                 if (atom_id.is_valid()) {
                     total_atoms_in_first_pass_clusters++;
-                    first_pass_atoms.insert(atom_id);
                 }
             }
             // Set block type only once per cluster
@@ -675,7 +674,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     return clb_nlist;
 }
 
-void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist, const PartialPlacement& p_placement) {
+void BasicMinDisturbance::place_clusters(const PartialPlacement& p_placement) {
     // Setup the global variables for placement.
     g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
@@ -691,23 +690,9 @@ void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist, cons
     // Create the RNG container for the initial placer.
     vtr::RngContainer rng(vpr_setup_.PlacerOpts.seed);
 
-    // Get the clusters created in first pass to prioritize them in initial placement
-    std::vector<ClusterBlockId> reconstruction_pass_clusters;
-    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup = g_vpr_ctx.clustering().atoms_lookup;
-    for (ClusterBlockId clb_blk_id : clb_nlist.blocks()) {
-        // Get the centroid of the cluster
-        const auto& clb_atoms = atoms_lookup[clb_blk_id];
-        for (AtomBlockId atom_blk_id : clb_atoms) {
-            if (first_pass_atoms.count(atom_blk_id)) {
-                reconstruction_pass_clusters.push_back(clb_blk_id);
-                break;
-            }
-        }
-    }
-
     // Run the initial placer on the clusters created by the packer, using the
-    // flat placement information from the global placer to guide where to place
-    // the clusters.
+    // flat placement information from the global placer or using the read flat
+    // placement to guide where to place the clusters.
     // TODO: Currently, the way initial placer sort the blocks to place is aligned
     //       how reconstruction pass clusters created, so there is no need to explicitely
     //       prioritize these clusters. However, if it changes in time, the atoms clustered
@@ -817,7 +802,7 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     }
 
     // Perform the initial placement on created clusters
-    place_clusters(clb_nlist, p_placement);
+    place_clusters(p_placement);
 }
 
 void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {

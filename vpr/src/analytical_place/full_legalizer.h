@@ -140,11 +140,9 @@ public:
     void legalize(const PartialPlacement& p_placement) final;
 
 private:
-    /// @brief TBD
+    /// @brief Mapping from subtile location to legalization cluster id to keep
+    ///        track of clusters created.
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
-
-    /// @brief TBD
-    std::unordered_set<AtomBlockId> first_pass_atoms;
 
     /**
      * @brief TBD
@@ -188,8 +186,7 @@ private:
     /**
      * @brief TBD
      */
-    void place_clusters(const ClusteredNetlist& clb_nlist,
-                        const PartialPlacement& p_placement);
+    void place_clusters(const PartialPlacement& p_placement);
 };
 
 /**
