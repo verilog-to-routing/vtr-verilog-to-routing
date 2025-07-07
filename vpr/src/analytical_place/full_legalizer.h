@@ -145,13 +145,23 @@ private:
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
 
     /**
-     * @brief TBD
+     * @brief Helper method to sort and group molecules by desired tile location.
+     *        It first sorts by being in a long carry chain, then by external input
+     *        pin count.
+     * @return Mapping from tile location to sorted vector of molecules that
+     *         wants to be in that tile.
      */
     std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>
     sort_and_group_blocks_by_tile(const PartialPlacement& p_placement);
 
     /**
-     * @brief TBD
+     * @brief Helper method to create clusters at a given tile location using
+     *        given vector of molecules.
+     *
+     * Iterates over each subtile in the same order each time, hence trying to
+     * create least amount of clusters in that tile. It also checks the compatibility
+     * of the molecules with the tile before creating a cluster. Stores the cluster
+     * ids' to check their legality or clean afterwards if needed.
      */
     void cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
                                    const t_physical_tile_type_ptr& tile_type,
@@ -162,7 +172,11 @@ private:
                                    std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check);
 
     /**
-     * @brief TBD
+     * @brief Helper method to perform reconstruction clustering pass.
+     *
+     * Iterates over each tile and first tries to create least amount of
+     * cluster in that tile with SKIP_INTRA_LB_ROUTE strategy. For the illegal
+     * cluster molecules, tries with FULL strategy once before going to next tile.
      */
     void reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                                      const DeviceGrid& device_grid,
@@ -170,7 +184,13 @@ private:
                                      std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
                                      std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks);
     /**
-     * @brief TBD
+     * @brief Helper method to perform neighbor clustering pass.
+     *
+     * Pops and selects the first molecule as seed for the cluster. Selects seed
+     * molecule's neighboring molecules that are at most N tiles away (in Manhattan
+     * distance) from it. Starting from the nearest neighbor, tries to add neighbor
+     * molecules to the cluster created by seed molecule. Continues until no
+     * unclustered molecules left.
      */
     void neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
                               const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
@@ -178,13 +198,22 @@ private:
                               int search_radius);
 
     /**
-     * @brief TBD
+     * @brief Helper method to create clusters with reconstruction and neighbor pass.
+     *
+     * This will call sorting and grouping molecules by tile, reconstruction
+     * clustering pass, and neighbor clustering pass.
+     *
+     * @return The generated clustered netlist.
      */
     ClusteredNetlist create_clusters(ClusterLegalizer& cluster_legalizer,
                                      const PartialPlacement& p_placement);
 
     /**
-     * @brief TBD
+     * @brief Helper method to perform initial placement on clusters created.
+     *
+     * It uses the initial placement in the AP flow. It is guided to place the
+     * clusters according to where its atoms are desired to be placed and can
+     * also be used with GP output.
      */
     void place_clusters(const PartialPlacement& p_placement);
 };
