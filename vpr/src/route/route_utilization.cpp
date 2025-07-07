@@ -5,12 +5,12 @@
 #include "vpr_utils.h"
 #include "route_common.h"
 
-RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc_registry, bool cube_bb) {
+RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc_registry) {
     placer_state_ = std::make_unique<PlacerState>(/*placement_is_timing_driven=*/false);
     placer_state_->mutable_blk_loc_registry() = blk_loc_registry;
 
     placer_opts_.place_algorithm = e_place_algorithm::BOUNDING_BOX_PLACE;
-    net_cost_handler_ = std::make_unique<NetCostHandler>(placer_opts_, *placer_state_, cube_bb);
+    net_cost_handler_ = std::make_unique<NetCostHandler>(placer_opts_, *placer_state_, /*cube_bb=*/true);
 }
 
 std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing_chan_util() {

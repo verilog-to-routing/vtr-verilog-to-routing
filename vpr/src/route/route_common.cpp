@@ -481,11 +481,10 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
-    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
 
     VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_graph.num_nodes()));
 
-    RoutingChanUtilEstimator routing_chan_util_estimator(blk_loc_registry, cube_bb);
+    RoutingChanUtilEstimator routing_chan_util_estimator(blk_loc_registry);
     const auto [chanx_util, chany_util] = routing_chan_util_estimator.estimate_routing_chan_util();
 
     for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
