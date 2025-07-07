@@ -10,7 +10,6 @@
 #include <cstddef>
 #include <limits>
 #include "ap_netlist.h"
-#include "globals.h"
 #include "net_cost_handler.h"
 
 double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
@@ -97,12 +96,6 @@ bool PartialPlacement::verify_locs(const APNetlist& netlist,
     for (APBlockId blk_id : netlist.blocks()) {
         double x_pos = block_x_locs[blk_id];
         double y_pos = block_y_locs[blk_id];
-        /*
-        In gen_ap_netlist_from_atoms, we add 0.5f to each atom but do not consider it 
-        here. As a temporary solution I add these buffers here as well if the flat placement 
-        provided.
-        TODO: This should be handled more explicitely.
-        */
         if (std::isnan(x_pos) || x_pos < 0.0 || x_pos >= grid_width)
             return false;
         if (std::isnan(y_pos) || y_pos < 0.0 || y_pos >= grid_height)
@@ -110,6 +103,11 @@ bool PartialPlacement::verify_locs(const APNetlist& netlist,
         if (netlist.block_mobility(blk_id) == APBlockMobility::FIXED) {
             const APFixedBlockLoc& fixed_loc = netlist.block_loc(blk_id);
             if (g_vpr_ctx.atom().flat_placement_info().valid) {
+                /*
+                In gen_ap_netlist_from_atoms, we add 0.5f to each atom but do not consider
+                it here. Adding these buffers here as well if the flat placement provided.
+                TODO: This should be handled more explicitely.
+                */
                 x_pos += 0.5f;
                 y_pos += 0.5f;
             }

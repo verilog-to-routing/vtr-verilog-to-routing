@@ -409,8 +409,6 @@ void BasicMinDisturbance::cluster_molecules_in_tile(const t_physical_tile_loc& t
     }
 }
 
-
-
 void BasicMinDisturbance::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                                                       const DeviceGrid& device_grid,
                                                       const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
@@ -515,7 +513,6 @@ void BasicMinDisturbance::neighbor_cluster_pass(ClusterLegalizer& cluster_legali
         }
     }
 }
-
 
 ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_legalizer,
                                                       const PartialPlacement& p_placement) {
@@ -764,7 +761,6 @@ void BasicMinDisturbance::place_clusters(const PartialPlacement& p_placement) {
     // Synchronize the pins in the clusters after placement.
     post_place_sync();
 }
-
 
 void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     // Start a scoped timer for the Full Legalizer stage.
