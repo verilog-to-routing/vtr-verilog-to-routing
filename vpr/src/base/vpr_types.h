@@ -700,11 +700,9 @@ enum class e_stage_action {
     NUM_STAGE_ACTIONS
 };
 
-
 ///@brief String representations of e_stage_action
-constexpr vtr::array<e_stage_action, const char*, (size_t)e_stage_action::NUM_STAGE_ACTIONS> stage_action_strings {
-    "DISABLED", "LOAD", "ENABLED", "AUTO"
-};
+constexpr vtr::array<e_stage_action, const char*, (size_t)e_stage_action::NUM_STAGE_ACTIONS> stage_action_strings{
+    "DISABLED", "LOAD", "ENABLED", "AUTO"};
 
 /**
  * @brief Options for packing
