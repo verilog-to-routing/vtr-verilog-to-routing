@@ -34,21 +34,10 @@ env:
   MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
 
 jobs:
-  Build:
-    name: 'B: Building VtR'
+  BuildVTR:
+    name: 'B: Building VTR Release'
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - { build_type: 'release', verbose: '0' }
-        - { build_type: 'debug',   verbose: '0' }
-        - { build_type: 'debug',   verbose: '1' }
     steps:
-
-    - uses: actions/setup-python@v5
-      with:
-        python-version: 3.12.3
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
@@ -61,14 +50,70 @@ jobs:
       run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}
 
-    - name: Test
+    - name: Build
       env:
-        BUILD_TYPE: ${{ matrix.build_type }}
+        CMAKE_PARAMS: "-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3"
+        BUILD_TYPE: release
         NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh VERBOSE=${{ matrix.verbose }}
+        make -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: Pack Build
+      shell: bash
+      run: |
+        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
+
+    - name: Store Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-release.tar.gz
+        path: build.tar.gz
+        retention-days: 1
+
+
+  BuildVTRWithOdin:
+    name: 'B: Building VTR Release With Odin'
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
+
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}
+
+    - name: Build
+      env:
+        CMAKE_PARAMS: "-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on"
+        BUILD_TYPE: release
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: Pack Build
+      shell: bash
+      run: |
+        tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
+
+    - name: Store Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-release-with-odin.tar.gz
+        path: build.tar.gz
+        retention-days: 1
 
 
   Format:
@@ -88,6 +133,7 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: 3.10.10
+
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
@@ -121,11 +167,9 @@ jobs:
   UnitTests:
     name: 'U: C++ Unit Tests'
     runs-on: ubuntu-24.04
+    needs: [BuildVTR]
     steps:
 
-    - uses: actions/setup-python@v5
-      with:
-        python-version: 3.12.3
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
@@ -137,11 +181,20 @@ jobs:
     - name: Install dependencies
       run: ./.github/scripts/install_dependencies.sh
 
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: build-release.tar.gz
+
+    - name: Unpack Build
+      shell: bash
+      run: |
+        tar -xvzf build.tar.gz
+
     - name: Test
-      env:
-        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
-        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
-      run: ./.github/scripts/unittest.sh
+      run: |
+        cd build
+        make test -j${{ steps.cpu-cores.outputs.count }}
 
 
   # This test builds different variations of VTR (with different CMake Params)
@@ -173,6 +226,8 @@ jobs:
 
     - name: 'ccache'
       uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}
 
     - name: 'Test with VTR_ASSERT_LEVEL 4'
       if: success() || failure()
@@ -229,54 +284,36 @@ jobs:
         make -j${{ steps.cpu-cores.outputs.count}}
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
+    - name: 'Test with VTR_ENABLE_DEBUG_LOGGING enabled'
+      if: success() || failure()
+      env:
+        CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVTR_ENABLE_DEBUG_LOGGING=on"
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+      run: |
+        rm -f build/CMakeCache.txt
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        make -j${{ steps.cpu-cores.outputs.count}}
+        ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
 
   Regression:
     runs-on: ubuntu-24.04
+    needs: [BuildVTR]
     strategy:
       fail-fast: false
       matrix:
         include: [
           {
             name: 'Basic',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
-            suite: 'vtr_reg_basic',
-            extra_pkgs: ""
-          },
-          {
-            name: 'Basic_odin',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
-            suite: 'vtr_reg_basic_odin',
-            extra_pkgs: ""
-          },
-          {
-            name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
-            suite: 'vtr_reg_basic',
-            extra_pkgs: ""
-          },
-          {
-            name: 'Basic_odin with VTR_ENABLE_DEBUG_LOGGING',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
-            suite: 'vtr_reg_basic_odin',
-            extra_pkgs: ""
+            suite: 'vtr_reg_basic'
           },
           {
             name: 'Strong',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on',
-            suite: 'vtr_reg_strong',
-            extra_pkgs: "libeigen3-dev"
-          },
-          {
-            name: 'Strong_odin',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
-            suite: 'vtr_reg_strong_odin',
-            extra_pkgs: ""
+            suite: 'vtr_reg_strong'
           },
           {
             name: 'Valgrind Memory',
-            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on',
-            suite: 'vtr_reg_valgrind_small',
-            extra_pkgs: ""
+            suite: 'vtr_reg_valgrind_small'
           }
         ]
     name: 'R: ${{ matrix.name }}'
@@ -297,19 +334,18 @@ jobs:
     - name: Install dependencies
       run: ./.github/scripts/install_dependencies.sh
 
-    - name: Install external libraries
-      run: sudo apt install -y ${{ matrix.extra_pkgs }}
-      if: ${{ matrix.extra_pkgs }}
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: build-release.tar.gz
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - name: Unpack Build
+      shell: bash
+      run: |
+        tar -xvzf build.tar.gz
 
     - name: Test
-      env:
-        CMAKE_PARAMS: ${{ matrix.params }}
-        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: Upload regression run files
@@ -332,6 +368,81 @@ jobs:
         path: |
           vtr_flow/**/*.log
           vtr_flow/**/parse_results*.txt
+
+
+  RegressionWithOdin:
+    runs-on: ubuntu-24.04
+    needs: [BuildVTRWithOdin]
+    strategy:
+      fail-fast: false
+      matrix:
+        include: [
+          {
+            name: 'Basic_odin',
+            suite: 'vtr_reg_basic_odin'
+          },
+          {
+            name: 'Strong_odin',
+            suite: 'vtr_reg_strong_odin'
+          },
+          {
+            name: 'Valgrind Memory Odin',
+            suite: 'vtr_reg_valgrind_small_odin'
+          }
+        ]
+    name: 'R: ${{ matrix.name }}'
+    steps:
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.12.3
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
+
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: build-release-with-odin.tar.gz
+
+    - name: Unpack Build
+      shell: bash
+      run: |
+        tar -xvzf build.tar.gz
+
+    - name: Test
+      run: |
+        ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
+
+    - name: Upload regression run files
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{matrix.name}}_run_files
+        path: |
+          vtr_flow/**/*.out
+          # vtr_flow/**/*.blif  # Removed since it was taking too much space and was hardly used.
+          vtr_flow/**/*.p
+          vtr_flow/**/*.net
+          vtr_flow/**/*.r
+
+    - name: Upload regression results
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{matrix.name}}_results
+        path: |
+          vtr_flow/**/*.log
+          vtr_flow/**/parse_results*.txt
+
 
   Sanitized:
     runs-on: ubuntu-24.04
@@ -366,6 +477,8 @@ jobs:
       run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ matrix.suite }}
 
     - name: Test
       env:
@@ -389,6 +502,7 @@ jobs:
   Parmys:
     name: 'Parmys Basic Test'
     runs-on: ubuntu-24.04
+    needs: [BuildVTR]
     steps:
 
       - uses: actions/setup-python@v5
@@ -405,52 +519,25 @@ jobs:
       - name: Install dependencies
         run: ./.github/scripts/install_dependencies.sh
 
-      - uses: hendrikmuhs/ccache-action@v1.2
+      - name: Download Build Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: build-release.tar.gz
+
+      - name: Unpack Build
+        shell: bash
+        run: |
+          tar -xvzf build.tar.gz
 
       - name: Test
-        env:
-          CMAKE_PARAMS: '-DVTR_IPO_BUILD=off'
-          BUILD_TYPE: debug
-          NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
         run: |
-          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-          ./.github/scripts/build.sh
           ./run_reg_test.py parmys_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count }}
 
-  SystemVerilog:
-      name: 'System Verilog Regression'
-      runs-on: ubuntu-24.04
-      steps:
-
-      - uses: actions/setup-python@v5
-        with:
-          python-version: 3.12.3
-
-      - uses: actions/checkout@v4
-        with:
-          submodules: 'true'
-
-      - name: Get number of CPU cores
-        uses: SimenB/github-actions-cpu-cores@v2
-        id: cpu-cores
-
-      - name: Install dependencies
-        run: ./.github/scripts/install_dependencies.sh
-
-      - uses: hendrikmuhs/ccache-action@v1.2
-
-      - name: Test
-        env:
-          CMAKE_PARAMS: '-DSLANG_SYSTEMVERILOG=ON'
-          NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
-        run: |
-          export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-          ./.github/scripts/build.sh
-          ./run_reg_test.py vtr_reg_system_verilog -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
   ODINII:
     name: 'ODIN-II Basic Test'
     runs-on: ubuntu-24.04
+    needs: [BuildVTRWithOdin]
     steps:
 
     - uses: actions/setup-python@v5
@@ -467,23 +554,26 @@ jobs:
     - name: Install dependencies
       run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: build-release-with-odin.tar.gz
+
+    - name: Unpack Build
+      shell: bash
+      run: |
+        tar -xvzf build.tar.gz
 
     - name: Test
-      env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on'
-        BUILD_TYPE: debug
-        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         sudo sysctl -w vm.mmap_rnd_bits=28
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
         ./run_reg_test.py odin_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count }}
 
 
   VQM2BLIF:
     name: 'VQM2BLIF Basic Tests'
     runs-on: ubuntu-24.04
+    needs: [BuildVTR]
     steps:
 
     - uses: actions/setup-python@v5
@@ -500,29 +590,33 @@ jobs:
     - name: Install dependencies
       run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+    - name: Download Build Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: build-release.tar.gz
+
+    - name: Unpack Build
+      shell: bash
+      run: |
+        tar -xvzf build.tar.gz
 
     - name: Test
-      env:
-        BUILD_TYPE: release
-        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
         ./utils/vqm2blif/test/scripts/test_vqm2blif.sh
 
   Compatibility:
     runs-on: ubuntu-24.04
+    needs: [BuildVTR]
     strategy:
       fail-fast: false
       matrix:
         include:
-        - { name: 'GCC 11 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-11 && CXX=g++-11',           }
-        - { name: 'GCC 12 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-12 && CXX=g++-12',         }
-        - { name: 'GCC 14 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-14 && CXX=g++-14',         }
-        - { name: 'Clang 16 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-16 && CXX=clang++-16',   }
-        - { name: 'Clang 17 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-17 && CXX=clang++-17',   }
-        - { name: 'Clang 18 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-18 && CXX=clang++-18',   }
+        - { name: 'GCC 11 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-11 && CXX=g++-11',       key: 'gcc-11', }
+        - { name: 'GCC 12 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-12 && CXX=g++-12',       key: 'gcc-12', }
+        - { name: 'GCC 14 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-14 && CXX=g++-14',       key: 'gcc-14', }
+        - { name: 'Clang 16 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-16 && CXX=clang++-16', key: 'clang-16', }
+        - { name: 'Clang 17 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-17 && CXX=clang++-17', key: 'clang-17', }
+        - { name: 'Clang 18 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-18 && CXX=clang++-18', key: 'clang-18', }
         # Note: We do not include GCC-13 since it is the default and is already tested.
     name: 'B: ${{ matrix.name }}'
     steps:
@@ -542,12 +636,14 @@ jobs:
       run: ./.github/scripts/install_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}-${{ matrix.key }}
 
     - name: Test
       env:
-        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on"
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on -DVTR_IPO_BUILD=off"
         MATRIX_EVAL: ${{ matrix.eval }}
-        BUILD_TYPE: release
+        BUILD_TYPE: debug # Note: We use the debug build here to make the build time faster since we do not care about run time.
         NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
@@ -556,6 +652,7 @@ jobs:
   JammyCompatibility:
     name: 'Ubuntu Jammy - 22.04 Compatibility Test'
     runs-on: ubuntu-22.04
+    needs: [BuildVTR]
     steps:
     - uses: actions/setup-python@v5
       with:
@@ -573,58 +670,15 @@ jobs:
       run: ./.github/scripts/install_jammy_dependencies.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}
 
     - name: Test
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off"
         MATRIX_EVAL: 'CC=gcc-11 && CXX=g++-11'
-        BUILD_TYPE: release
+        BUILD_TYPE: debug # Note: We use the debug build here to make the build time faster since we do not care about run time.
         NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
-
-  Coverity:
-    name: 'Coverity Scan'
-    needs:
-      - Build
-      - Format
-      - VerifyTestSuites
-      - UnitTests
-      - BuildVariations
-      - Regression
-      - Sanitized
-      - Parmys
-      - SystemVerilog
-      - ODINII
-      - VQM2BLIF
-      - Compatibility
-    runs-on: ubuntu-24.04
-    steps:
-
-    - uses: actions/setup-python@v5
-      with:
-        python-version: 3.12.3
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
-
-    - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
-      id: cpu-cores
-
-    - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
-
-    - uses: hendrikmuhs/ccache-action@v1.2
-
-    - name: Test
-      env:
-        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on'
-        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
-        _COVERITY_URL: 'https://scan.coverity.com/download/linux64'
-        _COVERITY_MD5: 'd0d7d7df9d6609e578f85096a755fb8f'
-      run: |
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
-
