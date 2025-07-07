@@ -246,7 +246,8 @@ def run(
         del parmys_args["parser"]
     else:
         raise vtr.VtrError(
-            parmys_args["parser"]+"Invalid parser is specified for Yosys. Parsers are [{}]".format(
+            parmys_args["parser"]
+            + "Invalid parser is specified for Yosys. Parsers are [{}]".format(
                 " ".join(str(x) for x in YOSYS_PARSERS)
             )
         )
