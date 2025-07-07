@@ -334,6 +334,10 @@ void check_rr_node(const RRGraphView& rr_graph,
     int tracks_per_node;
     RRNodeId rr_node = RRNodeId(inode);
 
+    const int grid_width = grid.width();
+    const int grid_height = grid.height();
+    const int grid_layers = grid.get_num_layers();
+
     e_rr_type rr_type = rr_graph.node_type(rr_node);
     int xlow = rr_graph.node_xlow(rr_node);
     int xhigh = rr_graph.node_xhigh(rr_node);
@@ -343,19 +347,18 @@ void check_rr_node(const RRGraphView& rr_graph,
     int ptc_num = rr_graph.node_ptc_num(rr_node);
     int capacity = rr_graph.node_capacity(rr_node);
     RRIndexedDataId cost_index = rr_graph.node_cost_index(rr_node);
-    t_physical_tile_type_ptr type = nullptr;
 
     if (xlow > xhigh || ylow > yhigh) {
         VPR_ERROR(VPR_ERROR_ROUTE,
                   "in check_rr_node: rr endpoints are (%d,%d) and (%d,%d).\n", xlow, ylow, xhigh, yhigh);
     }
 
-    if (xlow < 0 || xhigh > int(grid.width()) - 1 || ylow < 0 || yhigh > int(grid.height()) - 1) {
+    if (xlow < 0 || xhigh > grid_width - 1 || ylow < 0 || yhigh > grid_height - 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_rr_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n", xlow, ylow, xhigh, yhigh);
     }
 
-    if (layer_num < 0 || layer_num > int(grid.get_num_layers()) - 1) {
+    if (layer_num < 0 || layer_num > grid_layers - 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_rr_node: rr endpoints layer_num (%d) is out of range.\n", layer_num);
     }
@@ -370,8 +373,8 @@ void check_rr_node(const RRGraphView& rr_graph,
                         "in check_rr_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
     }
 
-    /* Check that the segment is within the array and such. */
-    type = grid.get_physical_type({xlow, ylow, layer_num});
+    // Check that the segment is within the array and such.
+    t_physical_tile_type_ptr type = grid.get_physical_type({xlow, ylow, layer_num});
 
     switch (rr_type) {
         case e_rr_type::SOURCE:
@@ -411,7 +414,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANX:
-            if (xlow < 1 || xhigh > int(grid.width()) - 2 || yhigh > int(grid.height()) - 2 || yhigh != ylow) {
+            if (xlow < 1 || xhigh > grid_width - 1 || yhigh > grid_height - 1 || yhigh != ylow) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
@@ -422,7 +425,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANY:
-            if (xhigh > int(grid.width()) - 2 || ylow < 1 || yhigh > int(grid.height()) - 2 || xlow != xhigh) {
+            if (xhigh > grid_width - 1 || ylow < 1 || yhigh > grid_height - 1 || xlow != xhigh) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "Error in check_rr_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
@@ -433,7 +436,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANZ:
-            if (xhigh != xlow || yhigh != ylow || xhigh > int(grid.width()) - 1 || ylow < 1 || yhigh > int(grid.height()) - 1) {
+            if (xhigh != xlow || yhigh != ylow || xhigh > grid_width - 1 || ylow < 1 || yhigh > grid_height - 1) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "Error in check_rr_node: CHANZ out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
