@@ -50,7 +50,7 @@ void CheckSetup(const t_packer_opts& packer_opts,
                         "Timing analysis must be enabled for timing-driven placement.\n");
     }
 
-    if (placer_opts.doPlacement == e_stage_action::STAGE_SKIP && (!placer_opts.constraints_file.empty())) {
+    if (placer_opts.doPlacement == e_stage_action::SKIP && (!placer_opts.constraints_file.empty())) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "A block location file requires that placement is enabled.\n");
     }
@@ -75,14 +75,14 @@ void CheckSetup(const t_packer_opts& packer_opts,
     }
 
     // Rules for doing Analytical Placement
-    if (ap_opts.doAP != e_stage_action::STAGE_SKIP) {
+    if (ap_opts.doAP != e_stage_action::SKIP) {
         // Make sure that the --place option was not set.
-        if (placer_opts.doPlacement != e_stage_action::STAGE_SKIP) {
+        if (placer_opts.doPlacement != e_stage_action::SKIP) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Cannot perform both analytical and non-analytical placement.\n");
         }
         // Make sure that the --pack option was not set.
-        if (packer_opts.doPacking != e_stage_action::STAGE_SKIP) {
+        if (packer_opts.doPacking != e_stage_action::SKIP) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Analytical placement should skip packing.\n");
         }
@@ -103,7 +103,7 @@ void CheckSetup(const t_packer_opts& packer_opts,
         //       goes with ensuring that some blocks are fixed.
     }
 
-    if (router_opts.doRouting != e_stage_action::STAGE_SKIP) {
+    if (router_opts.doRouting != e_stage_action::SKIP) {
         if (!timing.timing_analysis_enabled
             && (DEMAND_ONLY != router_opts.base_cost_type && DEMAND_ONLY_NORMALIZED_LENGTH != router_opts.base_cost_type)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,

@@ -48,19 +48,19 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
 
     ShowNetlistOpts(vpr_setup.NetlistOpts);
 
-    if (vpr_setup.PackerOpts.doPacking != e_stage_action::STAGE_SKIP) {
+    if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
         ShowPackerOpts(vpr_setup.PackerOpts);
     }
-    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::STAGE_SKIP) {
+    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::SKIP) {
         ShowPlacerOpts(vpr_setup.PlacerOpts);
     }
-    if (vpr_setup.APOpts.doAP != e_stage_action::STAGE_SKIP) {
+    if (vpr_setup.APOpts.doAP != e_stage_action::SKIP) {
         ShowAnalyticalPlacerOpts(vpr_setup.APOpts);
     }
-    if (vpr_setup.RouterOpts.doRouting != e_stage_action::STAGE_SKIP) {
+    if (vpr_setup.RouterOpts.doRouting != e_stage_action::SKIP) {
         ShowRouterOpts(vpr_setup.RouterOpts);
     }
-    if (vpr_setup.AnalysisOpts.doAnalysis != e_stage_action::STAGE_SKIP) {
+    if (vpr_setup.AnalysisOpts.doAnalysis != e_stage_action::SKIP) {
         ShowAnalysisOpts(vpr_setup.AnalysisOpts);
     }
     if (vpr_setup.NocOpts.noc) {
