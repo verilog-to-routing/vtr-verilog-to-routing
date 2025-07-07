@@ -367,11 +367,11 @@ bool try_pack(const t_packer_opts& packer_opts,
                 if (appack_ctx.appack_options.use_appack) {
                     // Only do unrelated clustering on the overused type instances.
                     for (const auto& p : block_type_utils) {
-                        // Any overutalized block types will use the default options.
+                        // Any overutilized block types will use the default options.
                         if (p.second > 1.0f)
                             continue;
 
-                        // Any underutalized block types should not do unrelated clustering.
+                        // Any underutilized block types should not do unrelated clustering.
                         // We can turn this off by just setting the max attempts to 0.
                         // TODO: These may become over-utilized in the future. Should
                         //       investigate turning these on if needed.

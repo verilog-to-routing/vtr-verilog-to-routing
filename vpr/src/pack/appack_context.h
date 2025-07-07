@@ -87,9 +87,11 @@ struct t_appack_options {
     std::vector<float> max_unrelated_tile_distance;
 
     // Unrelated clustering occurs after all other candidate selection methods
-    // have failed. This parameter sets how many time we will attempt unrelated
-    // clustering between failures of unrelated clustering. If this is set to
-    // 1, and unrelated clustering failed for a cluster, it will not be attempted
+    // have failed. This attempts to cluster in molecules that are not attracted
+    // (using the packer's heuristics) to the molecules within a given cluster.
+    // This parameter sets how many times we will attempt unrelated
+    // clustering between failures of unrelated clustering. If a molecule used
+    // for unrelated clustering failed to cluster it will not be attempted
     // again for that cluster (note: if it succeeds, the number of attempts get
     // reset).
     // NOTE: A similar option exists in the candidate selector class. This was
@@ -131,8 +133,9 @@ struct APPackContext : public Context {
                                                 device_grid);
         }
 
-        // By default, when unrelated clustering is on, search for unrelated molecules
-        // that are within 1 tile from the centroid of the cluster.
+        // Set the max unrelated tile distances for all logical block types.
+        // By default, we set this to a low value to only allow unrelated molecules
+        // that are very close to the cluster being created.
         // NOTE: Molecules within the same tile as the centroid are considered to have
         //       0 distance. The distance is computed relative to the bounds of the
         //       tile containing the centroid.

@@ -1296,6 +1296,15 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
             continue;
         }
 
+        // If the distance from the cluster to the current tile is larger than
+        // the best molecule's distance plus the farthest distance within the
+        // 1x1 tile (2.0), there cannot exist a molecule within the tile with a
+        // better distance than what we have found.
+        if (dist >= best_distance + 2.0) {
+            search_queue.pop();
+            break;
+        }
+
         // If this position has been visited, skip it.
         if (visited[node_loc.x][node_loc.y]) {
             search_queue.pop();
@@ -1352,11 +1361,11 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
         //       since they should be closer.
         if (node_loc.x >= 1)
             search_queue.push({node_loc.x - 1, node_loc.y, node_loc.layer_num});
-        if (node_loc.x <= (int)visited.dim_size(0) - 2)
+        if (node_loc.x <= (int)appack_unrelated_clustering_data_.dim_size(0) - 2)
             search_queue.push({node_loc.x + 1, node_loc.y, node_loc.layer_num});
         if (node_loc.y >= 1)
             search_queue.push({node_loc.x, node_loc.y - 1, node_loc.layer_num});
-        if (node_loc.y <= (int)visited.dim_size(1) - 2)
+        if (node_loc.y <= (int)appack_unrelated_clustering_data_.dim_size(1) - 2)
             search_queue.push({node_loc.x, node_loc.y + 1, node_loc.layer_num});
 
         // Pop the position off the queue.

@@ -139,7 +139,7 @@ class APPackMaxDistThManager {
     ///        This is initialized in the constructor and accessed during packing.
     std::vector<float> logical_block_dist_thresholds_;
 
-    /// @brief This is the maximum minhattan distance possible on the device. This
+    /// @brief This is the maximum manhattan distance possible on the device. This
     ///        is the distance of traveling from the bottom-left corner of the device
     ///        to the top right.
     float max_distance_on_device_;
