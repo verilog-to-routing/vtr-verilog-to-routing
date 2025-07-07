@@ -37,49 +37,34 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
     VTR_LOG("\n");
 
-    VTR_LOG("Packer: %s\n", stage_action_to_string(vpr_setup.PackerOpts.doPacking).c_str());
-    VTR_LOG("Placer: %s\n", stage_action_to_string(vpr_setup.PlacerOpts.doPlacement).c_str());
-    VTR_LOG("Analytical Placer: %s\n", stage_action_to_string(vpr_setup.APOpts.doAP).c_str());
-    VTR_LOG("Router: %s\n", stage_action_to_string(vpr_setup.RouterOpts.doRouting).c_str());
-    VTR_LOG("Analysis: %s\n", stage_action_to_string(vpr_setup.AnalysisOpts.doAnalysis).c_str());
+    VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
+    VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.doPlacement]);
+    VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
+    VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
+    VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
     VTR_LOG("\n");
 
     VTR_LOG("VPR was run with the following options:\n\n");
 
     ShowNetlistOpts(vpr_setup.NetlistOpts);
 
-    if (vpr_setup.PackerOpts.doPacking) {
+    if (vpr_setup.PackerOpts.doPacking != e_stage_action::STAGE_SKIP) {
         ShowPackerOpts(vpr_setup.PackerOpts);
     }
-    if (vpr_setup.PlacerOpts.doPlacement) {
+    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::STAGE_SKIP) {
         ShowPlacerOpts(vpr_setup.PlacerOpts);
     }
-    if (vpr_setup.APOpts.doAP) {
+    if (vpr_setup.APOpts.doAP != e_stage_action::STAGE_SKIP) {
         ShowAnalyticalPlacerOpts(vpr_setup.APOpts);
     }
-    if (vpr_setup.RouterOpts.doRouting) {
+    if (vpr_setup.RouterOpts.doRouting != e_stage_action::STAGE_SKIP) {
         ShowRouterOpts(vpr_setup.RouterOpts);
     }
-    if (vpr_setup.AnalysisOpts.doAnalysis) {
+    if (vpr_setup.AnalysisOpts.doAnalysis != e_stage_action::STAGE_SKIP) {
         ShowAnalysisOpts(vpr_setup.AnalysisOpts);
     }
     if (vpr_setup.NocOpts.noc) {
         ShowNocOpts(vpr_setup.NocOpts);
-    }
-}
-
-std::string stage_action_to_string(e_stage_action action) {
-    switch (action) {
-        case STAGE_SKIP:
-            return "DISABLED";
-        case STAGE_LOAD:
-            return "LOAD";
-        case STAGE_DO:
-            return "ENABLED";
-        case STAGE_AUTO:
-            return "AUTO";
-        default:
-            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Invalid e_stage_action.\n");
     }
 }
 

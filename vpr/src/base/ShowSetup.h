@@ -35,11 +35,4 @@ struct ClusteredNetlistStats {
 
 void ShowSetup(const t_vpr_setup& vpr_setup);
 
-/**
- * @brief Converts the enum e_stage_action to a string.
- * @param action The stage action to convert.
- * @return A string representation of the stage action.
- */
-std::string stage_action_to_string(e_stage_action action);
-
 void writeClusteredNetlistStats(const std::string& block_usage_filename);
