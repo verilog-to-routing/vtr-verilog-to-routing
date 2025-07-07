@@ -434,18 +434,21 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         g->draw_rectangle(abs_bbox);
     }
 
-    // draw text for each physical block.
-    // format: <block_type_name>:<mode_name>[<placement_index>]
+    // Display text for each physical block.
     std::string pb_type_name(pb_type->name);
 
-    // get the mode of the physical block
     if (!pb->is_primitive()) {
-        // primitives have no modes
+        // Format for non-primitives: <block_type_name>[<placement_index>]:<mode_name>
+        pb_type_name += "[" + std::to_string(pb->pb_graph_node->placement_index) + "]";
         std::string mode_name = pb->pb_graph_node->pb_type->modes[pb->mode].name;
         pb_type_name += ":" + mode_name;
+    } else {
+        // Format for primitives: <block_type_name>(<block_name>)
+        if (pb->name != nullptr) {
+            std::string pb_name(pb->name);
+            pb_type_name += "(" + pb_name + ")";
+        }
     }
-
-    pb_type_name += "[" + std::to_string(pb->pb_graph_node->placement_index) + "]";
 
     g->set_font_size(16);
     if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
