@@ -9,10 +9,7 @@
  */
 
 #include <memory>
-#include <unordered_set>
 #include "ap_flow_enums.h"
-#include "vtr_ndmatrix.h"
-#include "cluster_legalizer.h"
 
 // Forward declarations
 class APNetlist;
@@ -25,8 +22,6 @@ class PreClusterTimingManager;
 class Prepacker;
 struct t_arch;
 struct t_vpr_setup;
-struct t_pl_loc;
-class APBlockId;
 
 /**
  * @brief The full legalizer in an AP flow
@@ -113,7 +108,7 @@ public:
     /**
      * @brief Perform the FlatRecon full legalization.
      */
-    void legalize(const PartialPlacement& p_placement) final; 
+    void legalize(const PartialPlacement& p_placement) final;
 
 private:
     /// @brief TBD
@@ -138,7 +133,7 @@ private:
                                    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                                    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                                    std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check);
-    
+
     /**
      * @brief TBD
      */
@@ -154,13 +149,13 @@ private:
                               const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                               std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                               int search_radius);
-    
+
     /**
      * @brief TBD
      */
     ClusteredNetlist create_clusters(ClusterLegalizer& cluster_legalizer,
                                      const PartialPlacement& p_placement);
-    
+
     /**
      * @brief TBD
      */
