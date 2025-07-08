@@ -6,15 +6,6 @@ setattr -mod -set keep_hierarchy 1 single_port_ram
 setattr -mod -set keep_hierarchy 1 dual_port_ram
 setattr -mod -set keep 1 dual_port_ram
 
-# synlig path error handling
-#if {[catch {set synlig $::env(synlig_exe_path)} err]} {
-#	puts "Error: $err"
-#	puts "synlig_exe_path is not set"
-#} else {
-#	set synlig $::env(synlig_exe_path)
-#	puts "Using parmys as partial mapper"
-#}
-
 # yosys-slang plugin error handling
 if {$env(PARSER) == "slang" } {
 	if {![info exists ::env(yosys_slang_path)]} {
@@ -34,7 +25,6 @@ if {$env(PARSER) == "slang" } {
 	error "Invalid PARSER"
 }
 
-
 # arch file: QQQ
 # input files: [XXX]
 # other args: [YYY]
@@ -46,43 +36,22 @@ parmys_arch -a QQQ
 #if {$env(PARSER) == "surelog" } {
 #	puts "Using Synlig read_uhdm command"
 #	exec $synlig -p "read_uhdm XXX"
-	
-#} elseif {$env(PARSER) == "system-verilog" } {
-#	puts "Using Synlig read_systemverilog "
-#	exec $synlig -p "read_systemverilog XXX"
-#	}
+#}
 
 if {$env(PARSER) == "slang" } {
 	# Create a file list containing the name(s) of file(s) \
 	# to read together with read_slang
-	set sv_files {}
-	set v_files {}
 	set readfile [file join [pwd] "filelist.txt"]
 	set fh [open $readfile "w"]
 	foreach f {XXX} {
 		set ext [string tolower [file extension $f]]
-		switch -- $ext {
-			.sv {
-				lappend $sv_files $f
-				puts $fh $f
-			}
-			.svh {
-				lappend $sv_files $f
-				puts $fh $f
-			}
-			.v {
-				error "Use default parser to parse .v files."
-			}
-			.vh {
-				error "Use default parser to parse .v files."
-			}
+		if {$ext == ".sv" || $ext == ".svh" || $ext == ".v" || $ext == ".vh"} {
+			puts $fh $f
+		} else {
+			error "Unsupported file type. Yosys-Slang accepts .sv .svh .v .vh"
 		}
 	}
 	close $fh
-	#if {[llength $sv_files] > 0} {
-		#puts "Using Yosys read_slang command"
-		#read_slang -C $readfile
-	#}
 	puts "Using Yosys read_slang command"
 	read_slang -C $readfile
 } elseif {$env(PARSER) == "default" } {
