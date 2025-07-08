@@ -872,7 +872,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             ((true == chan_details.is_track_start(itrack))
              && (Direction::DEC == chan_details.get_track_direction(itrack)))) {
             // Get the node_id
-            const RRNodeId& rr_node_id = RRNodeId(chan_details.get_track_node_id(itrack));
+            const RRNodeId rr_node_id = RRNodeId(chan_details.get_track_node_id(itrack));
 
             // Do a quick check, make sure we do not mistakenly modify other nodes
             VTR_ASSERT(chan_type == rr_graph.node_type(rr_node_id));
@@ -920,7 +920,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
                    && (false == chan_details.is_track_end(itrack)));
 
         // Get the node_id
-        const RRNodeId& rr_node_id = RRNodeId(chan_details.get_track_node_id(itrack));
+        const RRNodeId rr_node_id = RRNodeId(chan_details.get_track_node_id(itrack));
 
         // Do a quick check, make sure we do not mistakenly modify other nodes
         VTR_ASSERT(chan_type == rr_graph.node_type(rr_node_id));
@@ -1215,7 +1215,7 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
 static void reverse_dec_chan_rr_node_track_ids(const RRGraphView& rr_graph,
                                                std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids) {
     // this should call rr_graph_builder to do the job
-    for (const RRNodeId& node : rr_graph.nodes()) {
+    for (const RRNodeId node : rr_graph.nodes()) {
         // Bypass condition: only focus on CHANX and CHANY in DEC_DIRECTION
         if (e_rr_type::CHANX != rr_graph.node_type(node) && e_rr_type::CHANY != rr_graph.node_type(node)) {
             continue;
@@ -1301,7 +1301,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                        rr_node_track_ids);
 
     // Update node look-up for CHANX and CHANY nodes
-    for (const RRNodeId& rr_node_id : rr_graph.nodes()) {
+    for (const RRNodeId rr_node_id : rr_graph.nodes()) {
         if (e_rr_type::CHANX == rr_graph.node_type(rr_node_id) || e_rr_type::CHANY == rr_graph.node_type(rr_node_id)) {
             rr_graph_builder.add_track_node_to_lookup(rr_node_id);
         }
