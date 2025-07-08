@@ -13,7 +13,8 @@ sudo apt-get install -y \
 
 # Packages for more complex features of VTR that most people will use.
 sudo apt-get install -y \
-    libtbb-dev
+    libtbb-dev \
+    libeigen3-dev
 
 # Required for graphics
 sudo apt-get install -y \
@@ -40,10 +41,6 @@ sudo apt-get install -y \
     libboost-filesystem-dev \
     default-jre \
     zlib1g-dev
-
-# Required to build the documentation
-sudo apt-get install -y \
-    sphinx-common
 
 # Required for code formatting
 # NOTE: clang-format-18 may only be found on specific distributions. Only

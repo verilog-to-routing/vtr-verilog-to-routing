@@ -16,6 +16,10 @@
         "ignored_tasks": []
     },
     {
+        "name": "vtr_reg_valgrind_small_odin",
+        "ignored_tasks": []
+    },
+    {
         "name": "vtr_reg_strong",
         "ignored_tasks": [
             "strong_router_heap",

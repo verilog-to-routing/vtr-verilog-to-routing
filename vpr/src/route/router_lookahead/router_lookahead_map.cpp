@@ -175,13 +175,14 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     if (is_flat_) {
         return get_expected_cost_flat_router(current_node, target_node, params, R_upstream);
     } else {
-        if (from_rr_type == e_rr_type::CHANX || from_rr_type == e_rr_type::CHANY || from_rr_type == e_rr_type::SOURCE || from_rr_type == e_rr_type::OPIN) {
+        if (from_rr_type == e_rr_type::CHANX || from_rr_type == e_rr_type::CHANY || from_rr_type == e_rr_type::CHANZ
+            || from_rr_type == e_rr_type::SOURCE || from_rr_type == e_rr_type::OPIN) {
             // Get the total cost using the combined delay and congestion costs
             auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
             return delay_cost + cong_cost;
-        } else if (from_rr_type == e_rr_type::IPIN) { /* Change if you're allowing route-throughs */
+        } else if (from_rr_type == e_rr_type::IPIN) { // Change if you're allowing route-throughs
             return (device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
-        } else { /* Change this if you want to investigate route-throughs */
+        } else { // Change this if you want to investigate route-throughs
             return (0.);
         }
     }

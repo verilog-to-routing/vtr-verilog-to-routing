@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /home/smahmoudi/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/smahmoudi/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: dcf32619cae0c49d168a2575bdb00896
+# Cmdline: uxsdcxx/uxsdcap.py /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
+# md5sum of input file: 5d51b89242fe6e463629ac43a72e4606
 
-@0xbc43d9d3589ccc58;
+@0x8fe58c48975cfaf0;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -36,10 +36,11 @@ enum NodeType {
 	uxsdInvalid @0;
 	chanx @1;
 	chany @2;
-	source @3;
-	sink @4;
-	opin @5;
-	ipin @6;
+	chanz @3;
+	source @4;
+	sink @5;
+	opin @6;
+	ipin @7;
 }
 
 enum NodeDirection {

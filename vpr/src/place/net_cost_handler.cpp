@@ -20,8 +20,6 @@
  * To get a delay estimation of a connection (from a source to a sink), first, dx and dy between these two points should be calculated,
  * and these two numbers are the indices to access this 2D array. By default, the placement delay model is created by iterating over the router lookahead
  * to get the minimum cost for each dx and dy.
- *
- * @date July 12, 2024
  */
 #include "net_cost_handler.h"
 

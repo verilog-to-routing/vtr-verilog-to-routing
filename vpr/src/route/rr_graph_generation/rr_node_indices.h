@@ -39,7 +39,6 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
  * @param index Pointer to the global RR node index counter; incremented as new RR nodes are assigned.
  */
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const t_chan_width& nodes_per_chan,
                                               const DeviceGrid& grid,
                                               const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
                                               int* index);
