@@ -342,7 +342,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
 
     // Sort the blocks: molecules of a long chain should come first, then
     // sort by descending external input pin counts.
-    std::sort(std::execution::par_unseq, sorted_blocks.begin(), sorted_blocks.end(),
+    std::sort(sorted_blocks.begin(), sorted_blocks.end(),
               [](const BlockInformation& a, const BlockInformation& b) {
                   if (a.is_long_chain != b.is_long_chain) {
                       return a.is_long_chain > b.is_long_chain; // Long chains first
