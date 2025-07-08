@@ -691,13 +691,27 @@ struct t_netlist_opts {
     int netlist_verbosity = 1; ///<Verbose output during netlist cleaning
 };
 
-///@brief Should a stage in the CAD flow be skipped, loaded from a file, or performed
-enum e_stage_action {
-    STAGE_SKIP = 0,
-    STAGE_LOAD,
-    STAGE_DO,
-    STAGE_AUTO
+/**
+ * @brief Specifies the action to take for a CAD flow stage.
+ * 
+ * @details
+ * SKIP - Do not perform this algorithm at all (End flow early).
+ * LOAD - Load previous result from file.
+ * DO - Run the specified algorithm.
+ * SKIP_IF_PRIOR_FAIL - Run the specified algorithm if possible. 
+ * Currently used to avoid analysis if we don't succeed at routing.
+ */
+enum class e_stage_action {
+    SKIP = 0,
+    LOAD,
+    DO,
+    SKIP_IF_PRIOR_FAIL,
+    NUM_STAGE_ACTIONS
 };
+
+///@brief String representations of e_stage_action
+constexpr vtr::array<e_stage_action, const char*, (size_t)e_stage_action::NUM_STAGE_ACTIONS> stage_action_strings{
+    "DISABLED", "LOAD", "ENABLED", "SKIP IF PRIOR FAIL"};
 
 /**
  * @brief Options for packing
