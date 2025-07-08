@@ -13,7 +13,7 @@ RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc
     net_cost_handler_ = std::make_unique<NetCostHandler>(placer_opts_, *placer_state_, /*cube_bb=*/true);
 }
 
-std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing_chan_util() {
+ChannelData<vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing_chan_util() {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const auto& block_locs = placer_state_->block_locs();
 
@@ -26,21 +26,23 @@ std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> RoutingChanUtilEst
         // Estimate routing channel utilization using
         net_cost_handler_->estimate_routing_chan_util(/*compute_congestion_cost=*/false);
 
-        return net_cost_handler_->get_chanxy_util();
+        return net_cost_handler_->get_chan_util();
     } else {
         const auto& device_ctx = g_vpr_ctx.device();
 
-        auto chanx_util = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
-                                                     device_ctx.grid.width(),
-                                                     device_ctx.grid.height()}},
-                                                   0);
+        ChannelData<vtr::NdMatrix<double, 3>> chan_util;
 
-        auto chany_util = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
-                                                     device_ctx.grid.width(),
-                                                     device_ctx.grid.height()}},
-                                                   0);
+        chan_util.x = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                                 device_ctx.grid.width(),
+                                                 device_ctx.grid.height()}},
+                                               0);
 
-        return {chanx_util, chany_util};
+        chan_util.y = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                                 device_ctx.grid.width(),
+                                                 device_ctx.grid.height()}},
+                                               0);
+
+        return chan_util;
     }
 }
 

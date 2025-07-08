@@ -16,7 +16,7 @@ class RoutingChanUtilEstimator {
   public:
     RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc_registry);
 
-    std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> estimate_routing_chan_util();
+    ChannelData<vtr::NdMatrix<double, 3>> estimate_routing_chan_util();
 
   private:
     std::unique_ptr<PlacerState> placer_state_;

@@ -152,7 +152,7 @@ class NetCostHandler {
      */
     double estimate_routing_chan_util(bool compute_congestion_cost = true);
 
-    std::pair<const vtr::NdMatrix<double, 3>&, const vtr::NdMatrix<double, 3>&> get_chanxy_util() const;
+    const ChannelData<vtr::NdMatrix<double, 3>>& get_chan_util() const;
 
   private:
     /// Indicates whether congestion cost modeling is enabled.
