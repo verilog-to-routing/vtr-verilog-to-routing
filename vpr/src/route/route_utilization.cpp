@@ -24,7 +24,7 @@ std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> RoutingChanUtilEst
         net_cost_handler_->comp_bb_cong_cost(e_cost_methods::NORMAL);
 
         // Estimate routing channel utilization using
-        net_cost_handler_->estimate_routing_chan_util();
+        net_cost_handler_->estimate_routing_chan_util(/*compute_congestion_cost=*/false);
 
         return net_cost_handler_->get_chanxy_util();
     } else {
