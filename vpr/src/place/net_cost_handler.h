@@ -35,6 +35,13 @@ enum class e_cost_methods {
     CHECK
 };
 
+template<typename T>
+struct ChannelData {
+    T x;
+    T y;
+    // TODO: add Z dimension
+};
+
 class NetCostHandler {
   public:
     NetCostHandler() = delete;
@@ -259,17 +266,13 @@ class NetCostHandler {
      * number of tracks in that direction; for other cost functions they
      * will never be used.
      */
-    vtr::PrefixSum1D<int> acc_chanx_width_; // [0..device_ctx.grid.width()-1]
-    vtr::PrefixSum1D<int> acc_chany_width_; // [0..device_ctx.grid.height()-1]
+     ChannelData<vtr::PrefixSum1D<int>> acc_chan_width_;
 
-    vtr::PrefixSum2D<double> acc_chanx_util_;
-    vtr::PrefixSum2D<double> acc_chany_util_;
+     ChannelData<vtr::PrefixSum2D<double>> acc_chan_util_;
 
-    vtr::NdMatrix<double, 3> chanx_util_;
-    vtr::NdMatrix<double, 3> chany_util_;
+     ChannelData<vtr::NdMatrix<double, 3>> chan_util_;
 
-    vtr::NdMatrix<int, 3> chanx_width_;
-    vtr::NdMatrix<int, 3> chany_width_;
+     ChannelData<vtr::NdMatrix<int, 3>> chan_width_;
 
     /**
      * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 
@@ -585,10 +588,10 @@ class NetCostHandler {
      */
     template<typename BBT>
     std::pair<double, double> get_chanxy_cost_fac_(const BBT& bb) {
-        const int total_chanx_width = acc_chanx_width_.get_sum(bb.ymin, bb.ymax);
+        const int total_chanx_width = acc_chan_width_.x.get_sum(bb.ymin, bb.ymax);
         const double inverse_average_chanx_width = (bb.ymax - bb.ymin + 1.0) / total_chanx_width;
 
-        const int total_chany_width = acc_chany_width_.get_sum(bb.xmin, bb.xmax);
+        const int total_chany_width = acc_chan_width_.y.get_sum(bb.xmin, bb.xmax);
         const double inverse_average_chany_width = (bb.xmax - bb.xmin + 1.0) / total_chany_width;
 
         return {inverse_average_chanx_width, inverse_average_chany_width};

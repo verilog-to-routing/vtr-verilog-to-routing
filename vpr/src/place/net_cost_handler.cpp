@@ -128,7 +128,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
         get_non_updatable_bb_functor_ = std::bind(&NetCostHandler::get_non_updatable_per_layer_bb_, this, std::placeholders::_1, /*use_ts=*/true);
     }
 
-    /* This initializes the whole matrix to OPEN which is an invalid value*/
+    // This initializes the whole matrix to OPEN which is an invalid value
     ts_layer_sink_pin_count_.resize({num_nets, size_t(num_layers)}, OPEN);
     num_sink_pin_layer_.resize({num_nets, size_t(num_layers)}, OPEN);
 
@@ -140,27 +140,27 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     net_cong_cost_.resize(num_nets, -1.);
     proposed_net_cong_cost_.resize(num_nets, -1.);
 
-    /* Used to store costs for moves not yet made and to indicate when a net's
-     * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
-     * been recomputed. */
+    // Used to store costs for moves not yet made and to indicate when a net's
+    // cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
+    // been recomputed.
     bb_update_status_.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
 
     alloc_and_load_chan_w_factors_for_place_cost_();
 
-    chanx_util_ = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
-    chany_util_ = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
+    chan_util_.x = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
+    chan_util_.y = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
 
-    acc_chanx_util_ = vtr::PrefixSum2D<double>(grid_width,
-                                               grid_height,
-                                               [&](size_t x, size_t y) {
-                                                   return chanx_util_[0][x][y];
-                                               });
+    acc_chan_util_.x = vtr::PrefixSum2D<double>(grid_width,
+                                                grid_height,
+                                                [&](size_t x, size_t y) {
+                                                    return chan_util_.x[0][x][y];
+                                                });
 
-    acc_chany_util_ = vtr::PrefixSum2D<double>(grid_width,
-                                               grid_height,
-                                               [&](size_t x, size_t y) {
-                                                   return chany_util_[0][x][y];
-                                               });
+    acc_chan_util_.y = vtr::PrefixSum2D<double>(grid_width,
+                                                grid_height,
+                                                [&](size_t x, size_t y) {
+                                                    return chan_util_.y[0][x][y];
+                                                });
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
@@ -178,25 +178,26 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
      * This returns the total number of tracks between channels 'low' and 'high',
      * including tracks in these channels.
      */
-    acc_chanx_width_ = vtr::PrefixSum1D<int>(grid_height, [&](size_t y) noexcept {
+    acc_chan_width_.x = vtr::PrefixSum1D<int>(grid_height, [&](size_t y) noexcept {
         int chan_x_width = device_ctx.chan_width.x_list[y];
 
-        /* If the number of tracks in a channel is zero, two consecutive elements take the same
-         * value. This can lead to a division by zero in get_chanxy_cost_fac_(). To avoid this
-         * potential issue, we assume that the channel width is at least 1.
-         */
-        if (chan_x_width == 0)
+        // If the number of tracks in a channel is zero, two consecutive elements take the same
+        // value. This can lead to a division by zero in get_chanxy_cost_fac_(). To avoid this
+        // potential issue, we assume that the channel width is at least 1.
+        if (chan_x_width == 0) {
             return 1;
+        }
 
         return chan_x_width;
     });
 
-    acc_chany_width_ = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
+    acc_chan_width_.y = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
         int chan_y_width = device_ctx.chan_width.y_list[x];
 
         // to avoid a division by zero
-        if (chan_y_width == 0)
+        if (chan_y_width == 0) {
             return 1;
+        }
 
         return chan_y_width;
     });
@@ -276,8 +277,8 @@ std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cos
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-            /* Small nets don't use incremental updating on their bounding boxes,
-             * so they can use a fast bounding box calculator. */
+            // Small nets don't use incremental updating on their bounding boxes,
+            // so they can use a fast bounding box calculator.
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
                 get_bb_from_scratch_(net_id, /*use_ts=*/false);
             } else {
@@ -564,8 +565,8 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
     if (congestion_modeling_started_) {
         auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
         const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
-        x_chan_util = acc_chanx_util_.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
-        y_chan_util = acc_chany_util_.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
+        x_chan_util = acc_chan_util_.x.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
+        y_chan_util = acc_chan_util_.y.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
     }
 }
 
@@ -877,8 +878,8 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     if (congestion_modeling_started_) {
         auto& [x_chan_util, y_chan_util] = ts_avg_chann_util_new_[net_id];
         const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
-        x_chan_util = acc_chanx_util_.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
-        y_chan_util = acc_chany_util_.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
+        x_chan_util = acc_chan_util_.x.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
+        y_chan_util = acc_chan_util_.y.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
     }
 }
 
@@ -1318,8 +1319,8 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     if (congestion_modeling_started_) {
         auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
         const int total_channels = (coords.xmax - coords.xmin + 1) * (coords.ymax - coords.ymin + 1);
-        x_chan_util = acc_chanx_util_.get_sum(coords.xmin, coords.ymin, coords.xmax, coords.ymax) / total_channels;
-        y_chan_util = acc_chany_util_.get_sum(coords.xmin, coords.ymin, coords.xmax, coords.ymax) / total_channels;
+        x_chan_util = acc_chan_util_.x.get_sum(coords.xmin, coords.ymin, coords.xmax, coords.ymax) / total_channels;
+        y_chan_util = acc_chan_util_.y.get_sum(coords.xmin, coords.ymin, coords.xmax, coords.ymax) / total_channels;
     }
 }
 
@@ -1725,8 +1726,8 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     const size_t grid_height = device_ctx.grid.height();
     const size_t num_layers = device_ctx.grid.get_num_layers();
 
-    chanx_util_.fill(0.);
-    chany_util_.fill(0.);
+    chan_util_.x.fill(0.);
+    chan_util_.y.fill(0.);
 
     // For each net, this function estimates routing channel utilization by distributing
     // the net's expected wirelength across its bounding box. The expected wirelength
@@ -1756,8 +1757,8 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
                 for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
                     for (int x = bb.xmin; x <= bb.xmax; x++) {
                         for (int y = bb.ymin; y <= bb.ymax; y++) {
-                            chanx_util_[layer][x][y] += expected_per_x_segment_wl;
-                            chany_util_[layer][x][y] += expected_per_y_segment_wl;
+                            chan_util_.x[layer][x][y] += expected_per_x_segment_wl;
+                            chan_util_.y[layer][x][y] += expected_per_y_segment_wl;
                         }
                     }
                 }
@@ -1785,8 +1786,8 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
 
                     for (int x = bb[layer].xmin; x <= bb[layer].xmax; x++) {
                         for (int y = bb[layer].ymin; y <= bb[layer].ymax; y++) {
-                            chanx_util_[layer][x][y] += expected_per_x_segment_wl;
-                            chany_util_[layer][x][y] += expected_per_y_segment_wl;
+                            chan_util_.x[layer][x][y] += expected_per_x_segment_wl;
+                            chan_util_.y[layer][x][y] += expected_per_y_segment_wl;
                         }
                     }
                 }
@@ -1795,30 +1796,30 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     }
 
     // Channel width is computed only once and reused in later calls.
-    if (chanx_width_.empty()) {
-        VTR_ASSERT(chany_width_.empty());
-        std::tie(chanx_width_, chany_width_) = calculate_channel_width();
+    if (chan_width_.x.empty()) {
+        VTR_ASSERT(chan_width_.y.empty());
+        std::tie(chan_width_.x, chan_width_.y) = calculate_channel_width();
     }
 
-    VTR_ASSERT(chanx_util_.size() == chany_util_.size());
-    VTR_ASSERT(chanx_util_.size() == chanx_width_.size());
-    VTR_ASSERT(chany_util_.size() == chany_width_.size());
+    VTR_ASSERT(chan_util_.x.size() == chan_util_.y.size());
+    VTR_ASSERT(chan_util_.x.size() == chan_width_.x.size());
+    VTR_ASSERT(chan_util_.y.size() == chan_width_.y.size());
 
     for (size_t layer = 0; layer < num_layers; ++layer) {
         for (size_t x = 0; x < grid_width; ++x) {
             for (size_t y = 0; y < grid_height; ++y) {
-                if (chanx_width_[layer][x][y] > 0) {
-                    chanx_util_[layer][x][y] /= chanx_width_[layer][x][y];
+                if (chan_width_.x[layer][x][y] > 0) {
+                    chan_util_.x[layer][x][y] /= chan_width_.x[layer][x][y];
                 } else {
-                    VTR_ASSERT_SAFE(chanx_width_[layer][x][y] == 0);
-                    chanx_util_[layer][x][y] = 1.;
+                    VTR_ASSERT_SAFE(chan_width_.x[layer][x][y] == 0);
+                    chan_util_.x[layer][x][y] = 1.;
                 }
 
-                if (chany_width_[layer][x][y] > 0) {
-                    chany_util_[layer][x][y] /= chany_width_[layer][x][y];
+                if (chan_width_.y[layer][x][y] > 0) {
+                    chan_util_.y[layer][x][y] /= chan_width_.y[layer][x][y];
                 } else {
-                    VTR_ASSERT_SAFE(chany_width_[layer][x][y] == 0);
-                    chany_util_[layer][x][y] = 1.;
+                    VTR_ASSERT_SAFE(chan_width_.y[layer][x][y] == 0);
+                    chan_util_.y[layer][x][y] = 1.;
                 }
             }
         }
@@ -1826,16 +1827,16 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
 
     // For now, congestion modeling in the placement stage is limited to a single die
     // TODO: extend it to multiple dice
-    acc_chanx_util_ = vtr::PrefixSum2D<double>(grid_width,
-                                               grid_height,
-                                               [&](size_t x, size_t y) {
-                                                   return chanx_util_[0][x][y];
-                                               });
+    acc_chan_util_.x = vtr::PrefixSum2D<double>(grid_width,
+                                                grid_height,
+                                                [&](size_t x, size_t y) {
+                                                    return chan_util_.x[0][x][y];
+                                                });
 
-    acc_chany_util_ = vtr::PrefixSum2D<double>(grid_width,
+    acc_chan_util_.y = vtr::PrefixSum2D<double>(grid_width,
                                                grid_height,
                                                [&](size_t x, size_t y) {
-                                                   return chany_util_[0][x][y];
+                                                   return chan_util_.y[0][x][y];
                                                });
 
     congestion_modeling_started_ = true;
@@ -1855,7 +1856,7 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
 }
 
 std::pair<const vtr::NdMatrix<double, 3>&, const vtr::NdMatrix<double, 3>&> NetCostHandler::get_chanxy_util() const {
-    return {chanx_util_, chany_util_};
+    return {chan_util_.x, chan_util_.y};
 }
 
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
