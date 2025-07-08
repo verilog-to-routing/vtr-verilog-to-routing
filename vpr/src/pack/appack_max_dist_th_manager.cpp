@@ -29,6 +29,10 @@ static bool has_memory_pbs(const t_pb_type* pb_type);
 void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
                                   const std::vector<t_logical_block_type>& logical_block_types,
                                   const DeviceGrid& device_grid) {
+    // Compute the max device distance based on the width and height of the
+    // device. This is the L1 (manhattan) distance.
+    max_distance_on_device_ = device_grid.width() + device_grid.height();
+
     // Automatically set the max distance thresholds.
     auto_set_max_distance_thresholds(logical_block_types, device_grid);
 
@@ -36,7 +40,7 @@ void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
     // auto), set the max distance thresholds based on the user-provided strings.
     VTR_ASSERT(!max_dist_ths.empty());
     if (max_dist_ths.size() != 1 || max_dist_ths[0] != "auto") {
-        set_max_distance_thresholds_from_strings(max_dist_ths, logical_block_types, device_grid);
+        set_max_distance_thresholds_from_strings(max_dist_ths, logical_block_types);
     }
 
     // Set the initilized flag to true.
@@ -57,18 +61,15 @@ void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
 
 void APPackMaxDistThManager::auto_set_max_distance_thresholds(const std::vector<t_logical_block_type>& logical_block_types,
                                                               const DeviceGrid& device_grid) {
-    // Compute the max device distance based on the width and height of the
-    // device. This is the L1 (manhattan) distance.
-    float max_device_distance = device_grid.width() + device_grid.height();
 
     // Compute the max distance thresholds of the different logical block types.
-    float default_max_distance_th = std::max(default_max_dist_th_scale_ * max_device_distance,
+    float default_max_distance_th = std::max(default_max_dist_th_scale_ * max_distance_on_device_,
                                              default_max_dist_th_offset_);
-    float logic_block_max_distance_th = std::max(logic_block_max_dist_th_scale_ * max_device_distance,
+    float logic_block_max_distance_th = std::max(logic_block_max_dist_th_scale_ * max_distance_on_device_,
                                                  logic_block_max_dist_th_offset_);
-    float memory_max_distance_th = std::max(memory_max_dist_th_scale_ * max_device_distance,
+    float memory_max_distance_th = std::max(memory_max_dist_th_scale_ * max_distance_on_device_,
                                             memory_max_dist_th_offset_);
-    float io_block_max_distance_th = std::max(io_max_dist_th_scale_ * max_device_distance,
+    float io_block_max_distance_th = std::max(io_max_dist_th_scale_ * max_distance_on_device_,
                                               io_max_dist_th_offset_);
 
     // Set all logical block types to have the default max distance threshold.
@@ -138,8 +139,7 @@ static bool has_memory_pbs(const t_pb_type* pb_type) {
 
 void APPackMaxDistThManager::set_max_distance_thresholds_from_strings(
     const std::vector<std::string>& max_dist_ths,
-    const std::vector<t_logical_block_type>& logical_block_types,
-    const DeviceGrid& device_grid) {
+    const std::vector<t_logical_block_type>& logical_block_types) {
 
     std::vector<std::string> lb_type_names;
     std::unordered_map<std::string, int> lb_type_name_to_index;
@@ -167,8 +167,7 @@ void APPackMaxDistThManager::set_max_distance_thresholds_from_strings(
         }
 
         // Compute the max distance threshold the user selected.
-        float max_device_distance = device_grid.width() + device_grid.height();
-        float logical_block_max_dist_th = std::max(max_device_distance * logical_block_max_dist_th_scale,
+        float logical_block_max_dist_th = std::max(max_distance_on_device_ * logical_block_max_dist_th_scale,
                                                    logical_block_max_dist_th_offset);
 
         int lb_ty_index = lb_type_name_to_index[lb_name];

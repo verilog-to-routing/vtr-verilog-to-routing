@@ -56,9 +56,9 @@ struct t_appack_options {
     // Distance threshold which decides when to use quadratic decay or inverted
     // sqrt decay. If the distance is less than this threshold, quadratic decay
     // is used. Inverted sqrt is used otherwise.
-    static constexpr float dist_th = 1.75f;
+    static constexpr float dist_th = 2.0f;
     // Attenuation value at the threshold.
-    static constexpr float attenuation_th = 0.35f;
+    static constexpr float attenuation_th = 0.25f;
 
     // Using the distance threshold and the attenuation value at that point, we
     // can compute the other two terms. This is to keep the attenuation function
@@ -82,18 +82,28 @@ struct t_appack_options {
     // search within the cluster's tile. Setting this to a higher number would
     // allow APPack to search farther away; but may bring in molecules which
     // do not "want" to be in the cluster.
-    static constexpr float max_unrelated_tile_distance = 5.0f;
+    //
+    //      [block_type_index] -> unrelated_tile_distance
+    std::vector<float> max_unrelated_tile_distance;
 
     // Unrelated clustering occurs after all other candidate selection methods
-    // have failed. This parameter sets how many time we will attempt unrelated
-    // clustering between failures of unrelated clustering. If this is set to
-    // 1, and unrelated clustering failed for a cluster, it will not be attempted
+    // have failed. This attempts to cluster in molecules that are not attracted
+    // (using the packer's heuristics) to the molecules within a given cluster.
+    // This parameter sets how many times we will attempt unrelated
+    // clustering between failures of unrelated clustering. If a molecule used
+    // for unrelated clustering failed to cluster it will not be attempted
     // again for that cluster (note: if it succeeds, the number of attempts get
     // reset).
     // NOTE: A similar option exists in the candidate selector class. This was
     //       duplicated since it is very likely that APPack would need a
     //       different value for this option than the non-APPack flow.
-    static constexpr int max_unrelated_clustering_attempts = 10;
+    //
+    //      [block_type_index] -> max_unrelated_attempts
+    std::vector<int> max_unrelated_clustering_attempts;
+    // By default, we perform 10 unrelated clustering attempts. This is used
+    // to aggresivly resolve density while adhering to the GP solution as much
+    // as possible.
+    static constexpr int default_max_unrelated_clustering_attempts = 10;
 
     // TODO: Investigate adding flat placement info to seed selection.
 };
@@ -122,6 +132,16 @@ struct APPackContext : public Context {
                                                 logical_block_types,
                                                 device_grid);
         }
+
+        // Set the max unrelated tile distances for all logical block types.
+        // By default, we set this to a low value to only allow unrelated molecules
+        // that are very close to the cluster being created.
+        // NOTE: Molecules within the same tile as the centroid are considered to have
+        //       0 distance. The distance is computed relative to the bounds of the
+        //       tile containing the centroid.
+        appack_options.max_unrelated_tile_distance.resize(logical_block_types.size(), 1.0);
+        appack_options.max_unrelated_clustering_attempts.resize(logical_block_types.size(),
+                                                                appack_options.default_max_unrelated_clustering_attempts);
     }
 
     /**
