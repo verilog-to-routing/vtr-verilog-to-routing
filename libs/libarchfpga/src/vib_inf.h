@@ -29,12 +29,15 @@
 #include "logic_types.h"
 #include "clock_types.h"
 
-/* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
- * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
- * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
+/**
+ * @brief The type of the parallel axis.
+ */
 enum class e_parallel_axis {
-    X_AXIS,
+    /** X_AXIS: Data that describes an x-directed wire segment (CHANX) */
+    X_AXIS, 
+    /** Y_AXIS: Data that describes an y-directed wire segment (CHANY) */
     Y_AXIS,
+    /** BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
     BOTH_AXIS
 };
 

@@ -1,10 +1,5 @@
-/********************************************************************
- * This file includes most utilized functions for the rr_graph
- * data structure in the OpenFPGA context
- *******************************************************************/
 #include <algorithm>
 
-/* Headers from vtrutil library */
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
@@ -13,17 +8,9 @@
 #include "rr_graph_view.h"
 #include "vtr_geometry.h"
 
-/************************************************************************
- * Get the coordinator of a starting point of a routing track 
- * For routing tracks in INC_DIRECTION
- * (xlow, ylow) should be the starting point 
- *
- * For routing tracks in DEC_DIRECTION
- * (xhigh, yhigh) should be the starting point 
- ***********************************************************************/
 vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraphView& rr_graph,
                                                       const RRNodeId& track_rr_node) {
-    /* Make sure we have CHANX or CHANY */
+    // Make sure we have CHANX or CHANY
     VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(track_rr_node))
                || (e_rr_type::CHANY == rr_graph.node_type(track_rr_node)));
 
@@ -39,17 +26,9 @@ vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraphView& rr_grap
     return start_coordinator;
 }
 
-/************************************************************************
- * Get the coordinator of a end point of a routing track 
- * For routing tracks in INC_DIRECTION
- * (xhigh, yhigh) should be the starting point 
- *
- * For routing tracks in DEC_DIRECTION
- * (xlow, ylow) should be the starting point 
- ***********************************************************************/
 vtr::Point<size_t> get_track_rr_node_end_coordinate(const RRGraphView& rr_graph,
                                                     const RRNodeId& track_rr_node) {
-    /* Make sure we have CHANX or CHANY */
+    // Make sure we have CHANX or CHANY
     VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(track_rr_node))
                || (e_rr_type::CHANY == rr_graph.node_type(track_rr_node)));
 
@@ -65,15 +44,11 @@ vtr::Point<size_t> get_track_rr_node_end_coordinate(const RRGraphView& rr_graph,
     return end_coordinator;
 }
 
-/************************************************************************
- * Find the driver switches for a node in the rr_graph
- * This function only return unique driver switches
- ***********************************************************************/
 std::vector<RRSwitchId> get_rr_graph_driver_switches(const RRGraphView& rr_graph,
-                                                     const RRNodeId& node) {
+                                                     const RRNodeId node) {
     std::vector<RRSwitchId> driver_switches;
 
-    for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
+    for (const RREdgeId edge : rr_graph.node_in_edges(node)) {
         if (driver_switches.end() == std::find(driver_switches.begin(), driver_switches.end(), RRSwitchId(rr_graph.edge_switch(edge)))) {
             driver_switches.push_back(RRSwitchId(rr_graph.edge_switch(edge)));
         }
@@ -82,29 +57,23 @@ std::vector<RRSwitchId> get_rr_graph_driver_switches(const RRGraphView& rr_graph
     return driver_switches;
 }
 
-/************************************************************************
- * Find the driver nodes for a node in the rr_graph
- ***********************************************************************/
 std::vector<RRNodeId> get_rr_graph_driver_nodes(const RRGraphView& rr_graph,
-                                                const RRNodeId& node) {
+                                                const RRNodeId node) {
     std::vector<RRNodeId> driver_nodes;
 
-    for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
+    for (const RREdgeId edge : rr_graph.node_in_edges(node)) {
         driver_nodes.push_back(rr_graph.edge_src_node(edge));
     }
 
     return driver_nodes;
 }
 
-/************************************************************************
- * Find the configurable driver nodes for a node in the rr_graph
- ***********************************************************************/
 std::vector<RRNodeId> get_rr_graph_configurable_driver_nodes(const RRGraphView& rr_graph,
-                                                             const RRNodeId& node) {
+                                                             const RRNodeId node) {
     std::vector<RRNodeId> driver_nodes;
 
-    for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
-        /* Bypass non-configurable edges */
+    for (const RREdgeId edge : rr_graph.node_in_edges(node)) {
+        // Bypass non-configurable edges
         if (false == rr_graph.edge_is_configurable(edge)) {
             continue;
         }
@@ -114,15 +83,12 @@ std::vector<RRNodeId> get_rr_graph_configurable_driver_nodes(const RRGraphView& 
     return driver_nodes;
 }
 
-/************************************************************************
- * Find the configurable driver nodes for a node in the rr_graph
- ***********************************************************************/
 std::vector<RRNodeId> get_rr_graph_non_configurable_driver_nodes(const RRGraphView& rr_graph,
-                                                                 const RRNodeId& node) {
+                                                                 const RRNodeId node) {
     std::vector<RRNodeId> driver_nodes;
 
-    for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
-        /* Bypass configurable edges */
+    for (const RREdgeId edge : rr_graph.node_in_edges(node)) {
+        // Bypass configurable edges
         if (true == rr_graph.edge_is_configurable(edge)) {
             continue;
         }
@@ -132,15 +98,9 @@ std::vector<RRNodeId> get_rr_graph_non_configurable_driver_nodes(const RRGraphVi
     return driver_nodes;
 }
 
-/************************************************************************
- * Check if an OPIN of a rr_graph is directly driving an IPIN
- * To meet this requirement, the OPIN must:
- *   - Have only 1 fan-out
- *   - The only fan-out is an IPIN
- ***********************************************************************/
 bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
-                                   const RRNodeId& node) {
-    /* We only accept OPIN */
+                                   const RRNodeId node) {
+    // We only accept OPIN
     VTR_ASSERT(e_rr_type::OPIN == rr_graph.node_type(node));
 
     if (1 != rr_graph.node_out_edges(node).size()) {
@@ -158,15 +118,9 @@ bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
     return true;
 }
 
-/************************************************************************
- * Check if an IPIN of a rr_graph is directly connected to an OPIN
- * To meet this requirement, the IPIN must:
- *   - Have only 1 fan-in
- *   - The only fan-in is an OPIN
- ***********************************************************************/
 bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
-                                   const RRNodeId& node) {
-    /* We only accept IPIN */
+                                   const RRNodeId node) {
+    // We only accept IPIN
     VTR_ASSERT(e_rr_type::IPIN == rr_graph.node_type(node));
 
     if (1 != rr_graph.node_in_edges(node).size()) {
@@ -174,7 +128,7 @@ bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
     }
 
     VTR_ASSERT(1 == rr_graph.node_in_edges(node).size());
-    for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
+    for (const RREdgeId edge : rr_graph.node_in_edges(node)) {
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
         if (e_rr_type::OPIN != rr_graph.node_type(src_node)) {
             return false;
@@ -184,10 +138,8 @@ bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
     return true;
 }
 
-/** @brief Get a side of a given node in a routing resource graph.
- * Note that this function expect one valid side to be got. Otherwise, it will fail! */
 e_side get_rr_graph_single_node_side(const RRGraphView& rr_graph,
-                                     const RRNodeId& node) {
+                                     const RRNodeId node) {
     e_side node_side = NUM_2D_SIDES;
     int num_sides = 0;
     for (e_side candidate_side : TOTAL_2D_SIDES) {

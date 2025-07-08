@@ -773,12 +773,12 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
 }
 
 t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types) {
-    for (auto const& type : types) {
+    for (t_physical_tile_type const& type : types) {
         if (type.name == name) {
             return &type;
         }
     }
-    return nullptr; //Not found
+    return nullptr; // Not found
 }
 
 /* Access information related to pin classes */
