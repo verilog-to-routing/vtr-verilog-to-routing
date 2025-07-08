@@ -39,12 +39,12 @@ class APPackMaxDistThManager {
 
     // This is the default scale and offset. Logical blocks that we do not
     // recognize as being of the special categories will have this threshold.
-    static constexpr float default_max_dist_th_scale_ = 0.35f;
-    static constexpr float default_max_dist_th_offset_ = 15.0f;
+    static constexpr float default_max_dist_th_scale_ = 0.1f;
+    static constexpr float default_max_dist_th_offset_ = 10.0f;
 
     // Logic blocks (such as CLBs and LABs) tend to have more resources on the
     // device, thus they have tighter thresholds. This was found to work well.
-    static constexpr float logic_block_max_dist_th_scale_ = 0.1f;
+    static constexpr float logic_block_max_dist_th_scale_ = 0.06f;
     static constexpr float logic_block_max_dist_th_offset_ = 15.0f;
 
     // Memory blocks (i.e. blocks that contain pb_types of the memory class)
@@ -80,7 +80,7 @@ class APPackMaxDistThManager {
               const DeviceGrid& device_grid);
 
     /**
-     * @brief Get the max distance threshold of the given lobical block type.
+     * @brief Get the max distance threshold of the given logical block type.
      */
     inline float get_max_dist_threshold(const t_logical_block_type& logical_block_ty) const {
         VTR_ASSERT_SAFE_MSG(is_initialized_,
@@ -89,6 +89,31 @@ class APPackMaxDistThManager {
                             "Logical block type does not have a max distance threshold");
 
         return logical_block_dist_thresholds_[logical_block_ty.index];
+    }
+
+    /**
+     * @brief Get the maximum distance possible on the device. This is the
+     *        manhattan distance from the bottom-left corner of the device to
+     *        the top-right.
+     */
+    inline float get_max_device_distance() const {
+        VTR_ASSERT_SAFE_MSG(is_initialized_,
+                            "APPackMaxDistThManager has not been initialized, cannot call this method");
+
+        return max_distance_on_device_;
+    }
+
+    /**
+     * @brief Set the max distance threshold of the given logical block type.
+     */
+    inline void set_max_dist_threshold(const t_logical_block_type& logical_block_ty,
+                                       float new_threshold) {
+        VTR_ASSERT_SAFE_MSG(is_initialized_,
+                            "APPackMaxDistThManager has not been initialized, cannot call this method");
+        VTR_ASSERT_SAFE_MSG((size_t)logical_block_ty.index < logical_block_dist_thresholds_.size(),
+                            "Logical block type does not have a max distance threshold");
+
+        logical_block_dist_thresholds_[logical_block_ty.index] = new_threshold;
     }
 
   private:
@@ -105,8 +130,7 @@ class APPackMaxDistThManager {
      *        strings.
      */
     void set_max_distance_thresholds_from_strings(const std::vector<std::string>& max_dist_ths,
-                                                  const std::vector<t_logical_block_type>& logical_block_types,
-                                                  const DeviceGrid& device_grid);
+                                                  const std::vector<t_logical_block_type>& logical_block_types);
 
     /// @brief A flag which shows if the thesholds have been computed or not.
     bool is_initialized_ = false;
@@ -114,4 +138,9 @@ class APPackMaxDistThManager {
     /// @brief The max distance thresholds of all logical blocks in the architecture.
     ///        This is initialized in the constructor and accessed during packing.
     std::vector<float> logical_block_dist_thresholds_;
+
+    /// @brief This is the maximum manhattan distance possible on the device. This
+    ///        is the distance of traveling from the bottom-left corner of the device
+    ///        to the top right.
+    float max_distance_on_device_;
 };
