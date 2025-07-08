@@ -105,10 +105,10 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     if (cube_bb_) {
         ts_bb_edge_new_.resize(num_nets, t_bb());
         ts_bb_coord_new_.resize(num_nets, t_bb());
-        ts_avg_chann_util_new_.resize(num_nets, {0., 0.});
+        ts_avg_chan_util_new_.resize(num_nets, {0., 0.});
 
         bb_coords_.resize(num_nets, t_bb());
-        avg_chann_util_.resize(num_nets, {0., 0.});
+        avg_chan_util_.resize(num_nets, {0., 0.});
 
         bb_num_on_edges_.resize(num_nets, t_bb());
         comp_bb_cong_cost_functor_ = std::bind(&NetCostHandler::comp_cube_bb_cong_cost_, this, std::placeholders::_1);
@@ -563,7 +563,7 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
     }
 
     if (congestion_modeling_started_) {
-        auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
+        auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
         const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
         x_chan_util = acc_chan_util_.x.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
         y_chan_util = acc_chan_util_.y.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
@@ -876,7 +876,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     }
 
     if (congestion_modeling_started_) {
-        auto& [x_chan_util, y_chan_util] = ts_avg_chann_util_new_[net_id];
+        auto& [x_chan_util, y_chan_util] = ts_avg_chan_util_new_[net_id];
         const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
         x_chan_util = acc_chan_util_.x.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
         y_chan_util = acc_chan_util_.y.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
@@ -1317,7 +1317,7 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     num_on_edges.layer_max = layer_max_edge;
 
     if (congestion_modeling_started_) {
-        auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
+        auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
         const int total_channels = (coords.xmax - coords.xmin + 1) * (coords.ymax - coords.ymin + 1);
         x_chan_util = acc_chan_util_.x.get_sum(coords.xmin, coords.ymin, coords.xmax, coords.ymax) / total_channels;
         y_chan_util = acc_chan_util_.y.get_sum(coords.xmin, coords.ymin, coords.xmax, coords.ymax) / total_channels;
@@ -1418,7 +1418,7 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 
 double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts) {
     VTR_ASSERT_SAFE(congestion_modeling_started_);
-    const auto [x_chan_util, y_chan_util] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
+    const auto [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
 
     const float threshold = placer_opts_.congestion_chan_util_threshold;
 
@@ -1862,7 +1862,7 @@ const ChannelData<vtr::NdMatrix<double, 3>>& NetCostHandler::get_chan_util() con
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
     if (cube_bb_) {
         bb_coords_[net_id] = ts_bb_coord_new_[net_id];
-        avg_chann_util_[net_id] = ts_avg_chann_util_new_[net_id];
+        avg_chan_util_[net_id] = ts_avg_chan_util_new_[net_id];
     } else {
         layer_bb_coords_[net_id] = layer_ts_bb_coord_new_[net_id];
     }
