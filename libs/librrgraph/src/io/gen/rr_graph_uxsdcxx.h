@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/smahmoudi/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/smahmoudi/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: dcf32619cae0c49d168a2575bdb00896
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 5d51b89242fe6e463629ac43a72e4606
  */
 
 #include <functional>
@@ -1611,7 +1611,7 @@ template<std::size_t N>
 constexpr const char *lookup_switch_type[] = {"UXSD_INVALID", "mux", "tristate", "pass_gate", "short", "buffer"};
 constexpr const char *lookup_segment_res_type[] = {"UXSD_INVALID", "GENERAL", "GCLK"};
 constexpr const char *lookup_pin_type[] = {"UXSD_INVALID", "OPEN", "OUTPUT", "INPUT"};
-constexpr const char *lookup_node_type[] = {"UXSD_INVALID", "CHANX", "CHANY", "SOURCE", "SINK", "OPIN", "IPIN"};
+constexpr const char *lookup_node_type[] = {"UXSD_INVALID", "CHANX", "CHANY", "CHANZ", "SOURCE", "SINK", "OPIN", "IPIN"};
 constexpr const char *lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC_DIR", "BI_DIR", "NONE"};
 constexpr const char *lookup_node_clk_res_type[] = {"UXSD_INVALID", "VIRTUAL_SINK"};
 constexpr const char *lookup_loc_side[] = {"UXSD_INVALID", "LEFT", "RIGHT", "TOP", "BOTTOM", "RIGHT_LEFT", "RIGHT_BOTTOM", "RIGHT_BOTTOM_LEFT", "TOP_RIGHT", "TOP_BOTTOM", "TOP_LEFT", "TOP_RIGHT_BOTTOM", "TOP_RIGHT_LEFT", "TOP_BOTTOM_LEFT", "TOP_RIGHT_BOTTOM_LEFT", "BOTTOM_LEFT"};
@@ -1813,6 +1813,9 @@ inline enum_node_type lex_enum_node_type(const char *in, bool throw_on_invalid, 
 			break;
 			case onechar('Y', 0, 8):
 				return enum_node_type::CHANY;
+			break;
+			case onechar('Z', 0, 8):
+				return enum_node_type::CHANZ;
 			break;
 			default: break;
 			}

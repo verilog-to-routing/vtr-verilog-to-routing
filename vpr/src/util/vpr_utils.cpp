@@ -1645,7 +1645,7 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id) {
     auto node_type = rr_graph_view.node_type(node_id);
-    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
+    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::CHANZ) {
         return true;
     } else {
         int x_low = rr_graph_view.node_xlow(node_id);

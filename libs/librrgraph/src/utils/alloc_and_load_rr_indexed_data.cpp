@@ -1,10 +1,10 @@
+#include "alloc_and_load_rr_indexed_data.h"
+
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
 #include <fstream>
 #include <iomanip>
 #include <numeric>
 #include <sstream>
-
-#include "alloc_and_load_rr_indexed_data.h"
 
 #include "arch_types.h"
 #include "vtr_assert.h"
@@ -12,11 +12,8 @@
 #include "vtr_math.h"
 
 #include "vpr_error.h"
-
 #include "rr_graph_utils.h"
-
 #include "rr_graph_cost.h"
-
 #include "histogram.h"
 
 /******************* Subroutines local to this module ************************/
@@ -60,8 +57,6 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     enum e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name) {
-    int length, i, index;
-
     (void)segment_inf;
     int total_num_segment = segment_inf_x.size() + segment_inf_y.size();
     /*CHAX & CHANY segment lsit sizes may differ. but if we're using uniform channels, they
@@ -75,7 +70,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
      * * other than base_cost are invalid. Mark invalid fields as OPEN for safety. */
 
     constexpr float nan = std::numeric_limits<float>::quiet_NaN();
-    for (i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
+    for (int i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
         rr_indexed_data[RRIndexedDataId(i)].ortho_cost_index = OPEN;
         rr_indexed_data[RRIndexedDataId(i)].seg_index = OPEN;
         rr_indexed_data[RRIndexedDataId(i)].inv_length = nan;
@@ -87,9 +82,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     //TODO: SM: IPIN t_linear assumes wire_to_ipin_switch which corresponds to within die switch connection
     rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
 
-    std::vector<int> ortho_costs;
-
-    ortho_costs = find_ortho_cost_index(rr_graph, segment_inf_x, segment_inf_y, X_AXIS);
+    std::vector<int> ortho_costs = find_ortho_cost_index(rr_graph, segment_inf_x, segment_inf_y, X_AXIS);
 
     /* AA: The code below should replace find_ortho_cost_index call once we deprecate the CLASSIC lookahead as it is the only lookahead
      * that actively uses the orthogonal cost indices. To avoid complicated dependencies with the rr_graph reader, regardless of the lookahead,
@@ -106,10 +99,11 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     /* X-directed segments*/
 
     for (size_t iseg = 0; iseg < segment_inf_x.size(); ++iseg) {
-        index = iseg + CHANX_COST_INDEX_START;
+        int index = iseg + CHANX_COST_INDEX_START;
 
         rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = ortho_costs[iseg];
 
+        int length;
         if (segment_inf_x[iseg].longline)
             length = grid.width();
         else
@@ -124,9 +118,10 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     /* Y-directed segments*/
 
     for (size_t iseg = segment_inf_x.size(); iseg < ortho_costs.size(); ++iseg) {
-        index = iseg + CHANX_COST_INDEX_START;
+        int index = iseg + CHANX_COST_INDEX_START;
         rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = ortho_costs[iseg];
 
+        int length;
         if (segment_inf_x[iseg - segment_inf_x.size()].longline)
             length = grid.width();
         else
@@ -153,20 +148,17 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
 
 /*  AA: We use a normalized product of frequency and length to find the segment that is most likely
  * to connect to in the perpendicular axis. Note that the size of segment_inf_x & segment_inf_y is not 
- * the same necessarly. The result vector will contain the indices in segment_inf_perp 
+ * the same necessarily. The result vector will contain the indices in segment_inf_perp
  * of the most likely perp segments for each segment at index i in segment_inf_parallel.   
  * 
  * Note: We use the seg_index field of t_segment_inf to store the segment index  
- * in the **unified** t_segment_inf vector. We will temporarly use this field in 
+ * in the **unified** t_segment_inf vector. We will temporarily use this field in
  * a copy passed to the function to store the index w.r.t the parallel axis segment list.*/
 
 std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
-                                       const std::vector<t_segment_inf> segment_inf_x,
-                                       const std::vector<t_segment_inf> segment_inf_y,
+                                       const std::vector<t_segment_inf>& segment_inf_x,
+                                       const std::vector<t_segment_inf>& segment_inf_y,
                                        e_parallel_axis parallel_axis) {
-    auto segment_inf_parallel = parallel_axis == X_AXIS ? segment_inf_x : segment_inf_y;
-    auto segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
-
     size_t num_segments = segment_inf_x.size() + segment_inf_y.size();
     std::vector<std::vector<size_t>> dest_nodes_count;
 
@@ -184,8 +176,8 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
 
     std::vector<int> ortho_cost_indices(dest_nodes_count.size(), 0);
 
-    //Go through all rr_Nodes. Look at the ones with CHAN type. Count all outgoing edges to CHAN typed nodes from each CHAN type node.
-    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+    // Go through all rr_Nodes. Look at the ones with CHAN type. Count all outgoing edges to CHAN typed nodes from each CHAN type node.
+    for (const RRNodeId rr_node : rr_graph.nodes()) {
         for (size_t iedge = 0; iedge < rr_graph.num_edges(rr_node); ++iedge) {
             RRNodeId to_node = rr_graph.edge_sink_node(rr_node, iedge);
             e_rr_type from_node_type = rr_graph.node_type(rr_node);
@@ -194,7 +186,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
             size_t from_node_cost_index = (size_t)rr_graph.node_cost_index(rr_node);
             size_t to_node_cost_index = (size_t)rr_graph.node_cost_index(to_node);
 
-            //if the type  is smaller than start index, means destination is not a CHAN type node.
+            // if the type  is smaller than start index, means destination is not a CHAN type node.
 
             if ((from_node_type == e_rr_type::CHANX && to_node_type == e_rr_type::CHANY) || (from_node_type == e_rr_type::CHANY && to_node_type == e_rr_type::CHANX)) {
                 if (to_node_type == e_rr_type::CHANY) {
@@ -227,7 +219,8 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
     /*Update seg_index */
 
 #ifdef FREQ_LENGTH_ORTHO_COSTS
-
+    const std::vector<t_segment_inf>& segment_inf_parallel = parallel_axis == X_AXIS ? segment_inf_x : segment_inf_y;
+    const std::vector<t_segment_inf>& segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
     for (int i = 0; i < (int)segment_inf_perp.size(); ++i)
         segment_inf_perp[i].seg_index = i;
 
@@ -326,6 +319,9 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
 #    endif
 
     return ortho_costs_indices;
+
+#else
+    (void)parallel_axis;
 #endif
 }
 
@@ -427,10 +423,10 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 static std::vector<size_t> count_rr_segment_types(const RRGraphView& rr_graph, const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data) {
     std::vector<size_t> rr_segment_type_counts;
 
-    for (const RRNodeId& id : rr_graph.nodes()) {
+    for (const RRNodeId id : rr_graph.nodes()) {
         if (rr_graph.node_type(id) != e_rr_type::CHANX && rr_graph.node_type(id) != e_rr_type::CHANY) continue;
 
-        auto cost_index = rr_graph.node_cost_index(id);
+        RRIndexedDataId cost_index = rr_graph.node_cost_index(id);
 
         int seg_index = rr_indexed_data[cost_index].seg_index;
 
@@ -498,7 +494,7 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
  */
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
                                           vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data) {
-    auto fan_in_list = get_fan_in_list(rr_graph);
+    vtr::vector<RRNodeId, std::vector<RREdgeId>> fan_in_list = get_fan_in_list(rr_graph);
 
     vtr::vector<RRIndexedDataId, int> num_nodes_of_index(rr_indexed_data.size(), 0);
     vtr::vector<RRIndexedDataId, std::vector<float>> C_total(rr_indexed_data.size());
@@ -523,7 +519,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
      * The median of R and C values for each cost index is assigned to the indexed
      * data.
      */
-    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+    for (const RRNodeId rr_id : rr_graph.nodes()) {
         e_rr_type rr_type = rr_graph.node_type(rr_id);
 
         if (rr_type != e_rr_type::CHANX && rr_type != e_rr_type::CHANY) {
