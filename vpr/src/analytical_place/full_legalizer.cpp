@@ -82,8 +82,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                             vpr_setup,
                                             arch,
                                             device_grid);
-        case e_ap_full_legalizer::Basic_Min_Disturbance:
-            return std::make_unique<BasicMinDisturbance>(ap_netlist,
+        case e_ap_full_legalizer::FlatRecon:
+            return std::make_unique<FlatRecon>(ap_netlist,
                                                         atom_netlist,
                                                         prepacker,
                                                         pre_cluster_timing_manager,
@@ -316,7 +316,7 @@ static t_logical_block_type_ptr get_molecule_logical_block_type(PackMoleculeId m
 }
 
 std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>
-BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
+FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer pack_reconstruction_timer("Sorting and Grouping Blocks by Tile");
     // Block sorting information. This can be altered easily to try different sorting strategies.
     struct BlockInformation {
@@ -366,7 +366,7 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
     return tile_blocks;
 }
 
-void BasicMinDisturbance::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
+void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
                                                     const t_physical_tile_type_ptr& tile_type,
                                                     const std::vector<PackMoleculeId>& tile_molecules,
                                                     ClusterLegalizer& cluster_legalizer,
@@ -409,7 +409,7 @@ void BasicMinDisturbance::cluster_molecules_in_tile(const t_physical_tile_loc& t
     }
 }
 
-void BasicMinDisturbance::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
+void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                                                       const DeviceGrid& device_grid,
                                                       const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                                                       std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
@@ -470,7 +470,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(ClusterLegalizer& cluster_
     VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu .\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
 }
 
-void BasicMinDisturbance::neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
+void FlatRecon::neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
                                                 const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                                                 std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                                                 int search_radius) {
@@ -514,7 +514,7 @@ void BasicMinDisturbance::neighbor_cluster_pass(ClusterLegalizer& cluster_legali
     }
 }
 
-ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_legalizer,
+ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                                                       const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer creating_clusters("Creating Clusters");
 
@@ -671,7 +671,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     return clb_nlist;
 }
 
-void BasicMinDisturbance::place_clusters(const PartialPlacement& p_placement) {
+void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     // Setup the global variables for placement.
     g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
@@ -762,7 +762,7 @@ void BasicMinDisturbance::place_clusters(const PartialPlacement& p_placement) {
     post_place_sync();
 }
 
-void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
+void FlatRecon::legalize(const PartialPlacement& p_placement) {
     // Start a scoped timer for the Full Legalizer stage.
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 

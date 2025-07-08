@@ -130,7 +130,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
  * place the clusters according to where its atoms are desired to be placed.
  *
  */
-class BasicMinDisturbance : public FullLegalizer {
+class FlatRecon : public FullLegalizer {
 public:
     using FullLegalizer::FullLegalizer;
 
