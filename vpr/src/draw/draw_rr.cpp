@@ -107,12 +107,12 @@ void draw_rr(ezgl::renderer* g) {
                 break;
 
             case e_rr_type::IPIN:
-                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
+                draw_cluster_pin(inode, draw_state->draw_rr_node[inode].color, g);
                 draw_rr_edges(inode, g);
                 break;
 
             case e_rr_type::OPIN:
-                draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
+                draw_cluster_pin(inode, draw_state->draw_rr_node[inode].color, g);
                 draw_rr_edges(inode, g);
                 break;
 
@@ -513,10 +513,30 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     } /* End of for each edge loop */
 }
 
+void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+    if (!draw_state->is_flat) {
+        return;
+    }
+
+    auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+
+    ezgl::point2d p = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+
+    int transparency_factor = get_rr_node_transparency(inode);
+
+    g->set_color(color, transparency_factor);
+    g->fill_rectangle(
+        {p.x - draw_coords->pin_size, p.y - draw_coords->pin_size},
+        {p.x + draw_coords->pin_size, p.y + draw_coords->pin_size});
+}
+
 /* Draws an IPIN or OPIN rr_node.  Note that the pin can appear on more    *
  * than one side of a clb.  Also note that this routine can change the     *
  * current color to BLACK.                                                 */
-void draw_rr_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
+void draw_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     float xcen, ycen;
@@ -683,6 +703,32 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
         if (!draw_state->draw_layer_display[layer_num].visible) {
             continue; /* Don't check RR nodes on currently invisible layers*/
         }
+
+        // Skip Source and Sink Nodes
+        if (rr_graph.node_type(inode) == e_rr_type::SOURCE
+            || rr_graph.node_type(inode) == e_rr_type::SINK) {
+            continue;
+        }
+
+        // Check for intra cluster nodes
+        if (!is_inter_cluster_node(rr_graph, inode)) {
+
+            if (!draw_state->is_flat) {
+                continue;
+            }
+
+            auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
+            ezgl::point2d p = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+
+            if (click_x >= p.x - draw_coords->pin_size && click_x <= p.x + draw_coords->pin_size && click_y >= p.y - draw_coords->pin_size && click_y <= p.y + draw_coords->pin_size) {
+                hit_node = inode;
+                return hit_node;
+            }
+
+            continue;
+        }
+
+        // Check for inter cluster nodes
         switch (rr_graph.node_type(inode)) {
             case e_rr_type::IPIN:
             case e_rr_type::OPIN: {
@@ -820,11 +866,11 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
                 break;
 
             case e_rr_type::IPIN: //fallthrough
-                draw_rr_pin(inode, color, g);
+                draw_cluster_pin(inode, color, g);
                 if (with_edges) draw_rr_edges(inode, g);
                 break;
             case e_rr_type::OPIN:
-                draw_rr_pin(inode, color, g);
+                draw_cluster_pin(inode, color, g);
                 if (with_edges) draw_rr_edges(inode, g);
                 break;
             case e_rr_type::SOURCE:

@@ -857,17 +857,15 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
     return nullptr;
 }
 
-//Retrieves the atom pin associated with a specific CLB and pb_graph_pin
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     int pb_route_id = pb_gpin->pin_count_in_cluster;
     AtomNetId atom_net = cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route[pb_route_id].atom_net_id;
-
     VTR_ASSERT(atom_net);
 
-    AtomPinId atom_pin;
+    AtomPinId atom_pin = AtomPinId::INVALID();
 
     //Look through all the pins on this net, looking for the matching pin
     for (AtomPinId pin : atom_ctx.netlist().net_pins(atom_net)) {
@@ -879,8 +877,6 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
                 atom_pin = pin;
         }
     }
-
-    VTR_ASSERT(atom_pin);
 
     return atom_pin;
 }
@@ -1753,6 +1749,43 @@ RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id) {
                                              pin_physical_num);
 
     return rr_node_id;
+}
+
+std::pair<ClusterBlockId, t_pb_graph_pin*> get_rr_node_cluster_blk_id_pb_graph_pin(RRNodeId rr_node_id) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    VTR_ASSERT(!is_inter_cluster_node(g_vpr_ctx.device().rr_graph, rr_node_id));
+
+    int pin_physical_num = device_ctx.rr_graph.node_ptc_num(rr_node_id);
+    int x = device_ctx.rr_graph.node_xlow(rr_node_id);
+    int y = device_ctx.rr_graph.node_ylow(rr_node_id);
+    int layer = device_ctx.rr_graph.node_layer(rr_node_id);
+
+    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({x, y, layer});
+
+    auto [sub_tile, sub_tile_num] = get_sub_tile_from_pin_physical_num(physical_tile, pin_physical_num);
+    VTR_ASSERT(sub_tile && sub_tile_num >= 0 && sub_tile_num < physical_tile->capacity);
+
+    ClusterBlockId blk_id = place_ctx.grid_blocks().block_at_location({x, y, sub_tile_num, layer});
+    VTR_ASSERT(blk_id != ClusterBlockId::INVALID());
+
+    t_pb_graph_pin* pb_graph_pin = physical_tile->pin_num_to_pb_pin.at(pin_physical_num);
+
+    VTR_ASSERT(pb_graph_pin);
+
+    return {blk_id, pb_graph_pin};
+}
+
+AtomPinId get_rr_node_atom_pin_id(RRNodeId rr_node_id) {
+
+    auto [blk_id, pb_graph_pin] = get_rr_node_cluster_blk_id_pb_graph_pin(rr_node_id);
+
+    AtomPinId atom_pin_id = find_atom_pin(blk_id, pb_graph_pin);
+
+    VTR_ASSERT_SAFE(atom_pin_id != AtomPinId::INVALID());
+
+    return atom_pin_id;
 }
 
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
