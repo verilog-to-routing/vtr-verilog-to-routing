@@ -120,18 +120,18 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
         // of the device grid and update the flat placement info for all its atoms accordingly.
         if (!found_valid_atom) {
             VTR_LOG_WARN("No atoms of molecule ID %zu provided in the flat placement. Assigning it to the device center.\n", mol_id);
-            p_placement.block_x_locs[ap_blk_id] = g_vpr_ctx.device().grid.width()/2.0f;
-            p_placement.block_y_locs[ap_blk_id] = g_vpr_ctx.device().grid.height()/2.0f;
+            p_placement.block_x_locs[ap_blk_id] = g_vpr_ctx.device().grid.width() / 2.0f;
+            p_placement.block_y_locs[ap_blk_id] = g_vpr_ctx.device().grid.height() / 2.0f;
             p_placement.block_layer_nums[ap_blk_id] = 0;
             p_placement.block_sub_tiles[ap_blk_id] = 0;
             // Update flat placement for atoms of that molecule accordingly
             for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_x_pos[atom_blk_id] = g_vpr_ctx.device().grid.width()/2.0f;
-                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_y_pos[atom_blk_id] = g_vpr_ctx.device().grid.height()/2.0f;
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_x_pos[atom_blk_id] = g_vpr_ctx.device().grid.width() / 2.0f;
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_y_pos[atom_blk_id] = g_vpr_ctx.device().grid.height() / 2.0f;
                 g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_layer[atom_blk_id] = 0;
                 g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_sub_tile[atom_blk_id] = 0;
             }
-        } else{
+        } else {
             // Pass the placement information
             p_placement.block_x_locs[ap_blk_id] = atom_loc_x;
             p_placement.block_y_locs[ap_blk_id] = atom_loc_y;

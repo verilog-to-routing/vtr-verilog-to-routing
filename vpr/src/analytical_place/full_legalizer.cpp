@@ -84,12 +84,12 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                             device_grid);
         case e_ap_full_legalizer::FlatRecon:
             return std::make_unique<FlatRecon>(ap_netlist,
-                                                        atom_netlist,
-                                                        prepacker,
-                                                        pre_cluster_timing_manager,
-                                                        vpr_setup,
-                                                        arch,
-                                                        device_grid);
+                                               atom_netlist,
+                                               prepacker,
+                                               pre_cluster_timing_manager,
+                                               vpr_setup,
+                                               arch,
+                                               device_grid);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized full legalizer type");
@@ -367,13 +367,13 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
 }
 
 void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
-                                                    const t_physical_tile_type_ptr& tile_type,
-                                                    const std::vector<PackMoleculeId>& tile_molecules,
-                                                    ClusterLegalizer& cluster_legalizer,
-                                                    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                                    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-                                                    std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check) {
-    for (PackMoleculeId mol_id: tile_molecules) {
+                                          const t_physical_tile_type_ptr& tile_type,
+                                          const std::vector<PackMoleculeId>& tile_molecules,
+                                          ClusterLegalizer& cluster_legalizer,
+                                          const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                          std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                                          std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check) {
+    for (PackMoleculeId mol_id : tile_molecules) {
         // Get the block type for compatibility check.
         const auto block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
 
@@ -410,10 +410,10 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
 }
 
 void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
-                                                      const DeviceGrid& device_grid,
-                                                      const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                                      std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
-                                                      std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks) {
+                                            const DeviceGrid& device_grid,
+                                            const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                            std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
+                                            std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks) {
     vtr::ScopedStartFinishTimer reconstruction_pass_clustering("Reconstruction Pass Clustering");
     for (const auto& [key, value] : tile_blocks) {
         // Get tile and molecules aimed to be placed in that tile
@@ -471,9 +471,9 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
 }
 
 void FlatRecon::neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
-                                                const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                                std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-                                                int search_radius) {
+                                      const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                      std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                                      int search_radius) {
     std::string timer_label = "Neighbor Pass Clustering with search radius " + std::to_string(search_radius);
     vtr::ScopedStartFinishTimer neighbor_pass_clustering(timer_label);
     // For each unclustered molecule
@@ -495,11 +495,11 @@ void FlatRecon::neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
 
         // Sort by Manhattan distance to seed.
         std::sort(neighbor_molecules.begin(), neighbor_molecules.end(),
-                [&](const auto& a, const auto& b) {
-                    int da = std::abs(seed_loc.x - a.second.x) + std::abs(seed_loc.y - a.second.y) + std::abs(seed_loc.layer_num - a.second.layer_num);
-                    int db = std::abs(seed_loc.x - b.second.x) + std::abs(seed_loc.y - b.second.y) + std::abs(seed_loc.layer_num - b.second.layer_num);
-                    return da < db;
-                });
+                  [&](const auto& a, const auto& b) {
+                      int da = std::abs(seed_loc.x - a.second.x) + std::abs(seed_loc.y - a.second.y) + std::abs(seed_loc.layer_num - a.second.layer_num);
+                      int db = std::abs(seed_loc.x - b.second.x) + std::abs(seed_loc.y - b.second.y) + std::abs(seed_loc.layer_num - b.second.layer_num);
+                      return da < db;
+                  });
 
         // Try to cluster them
         LegalizationClusterId cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types);
@@ -515,7 +515,7 @@ void FlatRecon::neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
 }
 
 ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
-                                                      const PartialPlacement& p_placement) {
+                                            const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer creating_clusters("Creating Clusters");
 
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
@@ -546,14 +546,14 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     size_t total_atoms_in_first_pass_clusters = 0;
     size_t total_molecules_in_first_pass_clusters = 0;
     size_t total_clusters_in_first_pass = 0;
-    for (LegalizationClusterId cluster_id: cluster_legalizer.clusters()) {
+    for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
         total_clusters_in_first_pass++;
         first_pass_clusters.push_back(cluster_id);
         bool block_type_set = false;
-        for (PackMoleculeId mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
+        for (PackMoleculeId mol_id : cluster_legalizer.get_cluster_molecules(cluster_id)) {
             // We still need to iterate over the atom ids due to invalid ones.
             total_molecules_in_first_pass_clusters++;
-            for (AtomBlockId atom_id: prepacker_.get_molecule(mol_id).atom_block_ids) {
+            for (AtomBlockId atom_id : prepacker_.get_molecule(mol_id).atom_block_ids) {
                 if (atom_id.is_valid()) {
                     total_atoms_in_first_pass_clusters++;
                 }
@@ -593,15 +593,15 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     size_t total_atoms_in_second_pass_clusters = 0;
     size_t total_molecules_in_second_pass_clusters = 0;
     size_t total_clusters_in_second_pass = 0;
-    for (LegalizationClusterId cluster_id: cluster_legalizer.clusters()) {
+    for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
         if (std::find(first_pass_clusters.begin(), first_pass_clusters.end(), cluster_id) != first_pass_clusters.end())
             continue;
         total_clusters_in_second_pass++;
         bool block_type_set = false;
-        for (PackMoleculeId mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
+        for (PackMoleculeId mol_id : cluster_legalizer.get_cluster_molecules(cluster_id)) {
             total_molecules_in_second_pass_clusters++;
             // We still need to iterate over the atom ids due to invalid ones.
-            for (AtomBlockId atom_blk_id: prepacker_.get_molecule(mol_id).atom_block_ids) {
+            for (AtomBlockId atom_blk_id : prepacker_.get_molecule(mol_id).atom_block_ids) {
                 if (atom_blk_id.is_valid()) {
                     total_atoms_in_second_pass_clusters++;
                 }
@@ -641,14 +641,11 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     VTR_LOG("Avg molecules per cluster (Reconstruction pass) : %.2f\n", avg_mol_number_in_first_pass);
     VTR_LOG("Avg molecules per cluster (Neighbor pass)       : %.2f\n", avg_mol_number_in_neighbor_pass);
     VTR_LOG("Percent of atoms clustered in Neighbor pass     : %.2f%%\n",
-            100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) /
-            static_cast<float>(total_atoms_in_first_pass_clusters + total_atoms_in_second_pass_clusters));
+            100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_atoms_in_first_pass_clusters + total_atoms_in_second_pass_clusters));
     VTR_LOG("Percent of molecules clustered in Neighbor pass : %.2f%%\n",
-            100.0f * static_cast<float>(total_molecules_in_second_pass_clusters) /
-            static_cast<float>(total_molecules_in_first_pass_clusters + total_molecules_in_second_pass_clusters));
+            100.0f * static_cast<float>(total_molecules_in_second_pass_clusters) / static_cast<float>(total_molecules_in_first_pass_clusters + total_molecules_in_second_pass_clusters));
     VTR_LOG("Percent of clusters created in Neighbor pass    : %.2f%%\n",
-            100.0f * static_cast<float>(total_clusters_in_second_pass) /
-            static_cast<float>(total_clusters_in_first_pass + total_clusters_in_second_pass));
+            100.0f * static_cast<float>(total_clusters_in_second_pass) / static_cast<float>(total_clusters_in_first_pass + total_clusters_in_second_pass));
     VTR_LOG("-------------------------------------------------------\n\n");
 
     // Check and output the clustering.
@@ -696,20 +693,20 @@ void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     //       in neighbor pass and atoms misplaced might not match exactly.
     if (g_vpr_ctx.atom().flat_placement_info().valid) {
         initial_placement(vpr_setup_.PlacerOpts,
-                      vpr_setup_.PlacerOpts.constraints_file.c_str(),
-                      vpr_setup_.NocOpts,
-                      blk_loc_registry,
-                      *g_vpr_ctx.placement().place_macros,
-                      noc_cost_handler,
-                      g_vpr_ctx.atom().flat_placement_info(),
-                      rng);
+                          vpr_setup_.PlacerOpts.constraints_file.c_str(),
+                          vpr_setup_.NocOpts,
+                          blk_loc_registry,
+                          *g_vpr_ctx.placement().place_macros,
+                          noc_cost_handler,
+                          g_vpr_ctx.atom().flat_placement_info(),
+                          rng);
         // Log some information on how good the reconstruction was.
         log_flat_placement_reconstruction_info(g_vpr_ctx.atom().flat_placement_info(),
-                                            blk_loc_registry.block_locs(),
-                                            g_vpr_ctx.clustering().atoms_lookup,
-                                            g_vpr_ctx.atom().lookup(),
-                                            atom_netlist_,
-                                            g_vpr_ctx.clustering().clb_nlist);
+                                               blk_loc_registry.block_locs(),
+                                               g_vpr_ctx.clustering().atoms_lookup,
+                                               g_vpr_ctx.atom().lookup(),
+                                               atom_netlist_,
+                                               g_vpr_ctx.clustering().clb_nlist);
     } else {
         // If a flat placement is not being read or casted at that point, cast
         // the partial placement to flat placement here. So that it can be used
@@ -738,11 +735,11 @@ void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
                           rng);
         // Log some information on how good the reconstruction was.
         log_flat_placement_reconstruction_info(flat_placement_info,
-                                            blk_loc_registry.block_locs(),
-                                            g_vpr_ctx.clustering().atoms_lookup,
-                                            g_vpr_ctx.atom().lookup(),
-                                            atom_netlist_,
-                                            g_vpr_ctx.clustering().clb_nlist);
+                                               blk_loc_registry.block_locs(),
+                                               g_vpr_ctx.clustering().atoms_lookup,
+                                               g_vpr_ctx.atom().lookup(),
+                                               atom_netlist_,
+                                               g_vpr_ctx.clustering().clb_nlist);
     }
 
     // Verify that the placement is valid for the VTR flow.

@@ -131,7 +131,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
  *
  */
 class FlatRecon : public FullLegalizer {
-public:
+  public:
     using FullLegalizer::FullLegalizer;
 
     /**
@@ -139,7 +139,7 @@ public:
      */
     void legalize(const PartialPlacement& p_placement) final;
 
-private:
+  private:
     /// @brief Mapping from subtile location to legalization cluster id to keep
     ///        track of clusters created.
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
@@ -193,9 +193,9 @@ private:
      * unclustered molecules left.
      */
     void neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
-                              const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                              std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-                              int search_radius);
+                               const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                               std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                               int search_radius);
 
     /**
      * @brief Helper method to create clusters with reconstruction and neighbor pass.
