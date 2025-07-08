@@ -954,88 +954,77 @@ enum class e_move_type;
 
 /**
  * @brief Various options for the placer.
- *
- *   @param place_algorithm
- *              Controls which placement algorithm is used.
- *   @param place_quench_algorithm
- *              Controls which placement algorithm is used
- *              during placement quench.
- *   @param timing_tradeoff
- *              When in CRITICALITY_TIMING_PLACE mode, what is the
- *              tradeoff between timing and wiring costs.
- *   @param place_chan_width
- *              The channel width assumed if only one placement is performed.
- *   @param pad_loc_type
- *              Are pins FREE or fixed randomly.
- *   @param constraints_file
- *              File that specifies locations of locked down (constrained)
- *              blocks for placement. Empty string means no constraints file.
- *   @param write_initial_place_file
- *              Write the initial placement into this file. Empty string means
- *              the initial placement is not written.
- *   @param pad_loc_file
- *              File to read pad locations from if pad_loc_type is USER.
- *   @param place_freq
- *              Should the placement be skipped, done once, or done
- *              for each channel width in the binary search. (Default: ONCE)
- *   @param recompute_crit_iter
- *              How many temperature stages pass before we recompute
- *              criticalities based on the current placement and its
- *              estimated point-to-point delays.
- *   @param inner_loop_crit_divider
- *              (move_lim/inner_loop_crit_divider) determines how
- *              many inner_loop iterations pass before a recompute
- *              of criticalities is done.
- *   @param td_place_exp_first
- *              Exponent that is used in the CRITICALITY_TIMING_PLACE
- *              mode to specify the initial value of `crit_exponent`.
- *              After we map the slacks to criticalities, this value
- *              is used to `sharpen` the criticalities, making connections
- *              with worse slacks more critical.
- *   @param td_place_exp_last
- *              Value that the crit_exponent will be at the end.
- *   @param doPlacement
- *              True if placement is supposed to be done in the CAD flow.
- *              False if otherwise.
- *   @param place_constraint_expand
- *              Integer value that specifies how far to expand the floorplan
- *              region when printing out floorplan constraints based on
- *              current placement.
- *   @param place_constraint_subtile
- *              True if subtiles should be specified when printing floorplan
- *              constraints. False if not.
- *   @param place_auto_init_t_scale
- *              When the annealer is using the automatic schedule, this option
- *              scales the initial temperature selected.
  */
 struct t_placer_opts {
+    /// Controls which placement algorithm is used.
     t_place_algorithm place_algorithm;
+
+    /// Controls which placement algorithm is used during placement quench.
     t_place_algorithm place_quench_algorithm;
-    t_annealing_sched anneal_sched; ///<Placement option annealing schedule
+
+    /// Placement option annealing schedule
+    t_annealing_sched anneal_sched;
+
+    /// When in CRITICALITY_TIMING_PLACE mode, what is the tradeoff between timing and wiring costs.
     float timing_tradeoff;
+
     float congestion_factor;
     float congestion_rlim_trigger_ratio;
     float congestion_chan_util_threshold;
+
+    /// The channel width assumed if only one placement is performed.
     int place_chan_width;
+
+    /// Are pins FREE or fixed randomly.
     enum e_pad_loc_type pad_loc_type;
+
+    /// File that specifies locations of locked down (constrained) blocks for placement. Empty string means no constraints file.
     std::string constraints_file;
+
+    /// Write the initial placement into this file. Empty string means the initial placement is not written.
     std::string write_initial_place_file;
+
     std::string read_initial_place_file;
+
+    /// Should the placement be skipped, done once, or done for each channel width in the binary search. (Default: ONCE)
     enum pfreq place_freq;
+
+    /// How many temperature stages pass before we recompute criticalities
+    /// based on the current placement and its estimated point-to-point delays.
     int recompute_crit_iter;
+
+    /// (move_lim/inner_loop_crit_divider) determines how many inner_loop iterations pass before a recompute of criticalities is done.
     int inner_loop_recompute_divider;
+
     int quench_recompute_divider;
+
+    /**
+     * Exponent that is used in the CRITICALITY_TIMING_PLACE mode to specify the initial value of `crit_exponent`.
+     * After we map the slacks to criticalities, this value is used to `sharpen` the criticalities, making
+     * connections with worse slacks more critical.
+     */
     float td_place_exp_first;
+
     int seed;
+
+    /// Value that the crit_exponent will be at the end.
     float td_place_exp_last;
+
+    /// True if placement is supposed to be done in the CAD flow. False if otherwise.
     e_stage_action doPlacement;
+
     float rlim_escape_fraction;
+
     std::string move_stats_file;
+
     int placement_saves_per_temperature;
+
     e_place_effort_scaling effort_scaling;
+
     e_timing_update_type timing_update_type;
 
     PlaceDelayModelType delay_model_type;
+
     e_reducer delay_model_reducer;
 
     float delay_offset;
@@ -1050,23 +1039,40 @@ struct t_placer_opts {
 
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
+
     vtr::vector<e_move_type, float> place_static_move_prob;
+
     bool RL_agent_placement;
     bool place_agent_multistate;
     bool place_checkpointing;
+
     int place_high_fanout_net;
+
     e_place_bounding_box_mode place_bounding_box_mode;
+
     e_agent_algorithm place_agent_algorithm;
+
     float place_agent_epsilon;
     float place_agent_gamma;
     float place_dm_rlim;
+
     e_agent_space place_agent_space;
+
     std::string place_reward_fun;
+
     float place_crit_limit;
+
+
+    /// Integer value that specifies how far to expand the floorplan region when
+    /// printing out floorplan constraints based on current placement.
     int place_constraint_expand;
+
+    /// True if subtiles should be specified when printing floorplan constraints. False if not.
     bool place_constraint_subtile;
+
     int floorplan_num_horizontal_partitions;
     int floorplan_num_vertical_partitions;
+
     bool place_quench_only;
 
     int placer_debug_block;
@@ -1082,6 +1088,7 @@ struct t_placer_opts {
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
 
+    /// When the annealer is using the automatic schedule, this option scales the initial temperature selected.
     float place_auto_init_t_scale;
 };
 
@@ -1091,63 +1098,42 @@ struct t_placer_opts {
 
 /**
  * @brief Various options for the Analytical Placer.
- *
- *   @param doAnalyticalPlacement
- *              True if analytical placement is supposed to be done in the CAD
- *              flow. False if otherwise.
- *   @param analytical_solver_type
- *              The type of analytical solver the Global Placer in the AP flow
- *              will use.
- *   @param partial_legalizer_type
- *              The type of partial legalizer the Global Placer in the AP flow
- *              will use.
- *   @param full_legalizer_type
- *              The type of full legalizer the AP flow will use.
- *   @param detailed_placer_type
- *              The type of detailed placter the AP flow will use.
- *   @param ap_timing_tradeoff
- *              A trade-off parameter used to decide how focused the AP flow
- *              should be on optimizing timing over wirelength.
- *   @param ap_high_fanout_threshold;
- *              The threshold to ignore nets with higher fanout than that
- *              value while constructing the solver.
- *   @param ap_partial_legalizer_target_density
- *              Vector of strings passed by the user to configure the target
- *              density of different physical tiles on the device.
- *   @param appack_max_dist_th
- *              Array of string passed by the user to configure the max candidate
- *              distance thresholds.
- *   @param num_threads
- *              The number of threads the AP flow can use.
- *   @param log_verbosity
- *              The verbosity level of log messages in the AP flow, with higher
- *              values leading to more verbose messages.
- *   @param generate_mass_report
- *              Whether to generate a mass report during global placement or not.
  */
 struct t_ap_opts {
+    /// True if analytical placement is supposed to be done in the CAD flow. False if otherwise.
     e_stage_action doAP;
 
+    /// The type of analytical solver the Global Placer in the AP flow will use.
     e_ap_analytical_solver analytical_solver_type;
 
+    /// The type of partial legalizer the Global Placer in the AP flow will use.
     e_ap_partial_legalizer partial_legalizer_type;
 
+    /// The type of full legalizer the AP flow will use.
     e_ap_full_legalizer full_legalizer_type;
 
+    /// The type of detailed placer the AP flow will use.
     e_ap_detailed_placer detailed_placer_type;
 
+    /// A trade-off parameter used to decide how focused the AP flow should be on optimizing timing over wirelength.
     float ap_timing_tradeoff;
 
+    /// The threshold to ignore nets with higher fanout than that value while constructing the solver.
     int ap_high_fanout_threshold;
 
+    /// Vector of strings passed by the user to configure the target density of different physical tiles on the device.
     std::vector<std::string> ap_partial_legalizer_target_density;
 
+    /// Array of string passed by the user to configure the max candidate distance thresholds.
     std::vector<std::string> appack_max_dist_th;
 
+    /// The number of threads the AP flow can use.
     unsigned num_threads;
 
+    /// The verbosity level of log messages in the AP flow, with higher values leading to more verbose messages.
     int log_verbosity;
 
+    /// Whether to generate a mass report during global placement or not.
     bool generate_mass_report;
 };
 
