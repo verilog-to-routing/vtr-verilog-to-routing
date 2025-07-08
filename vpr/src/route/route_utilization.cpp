@@ -23,7 +23,7 @@ ChannelData<vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing
         // Compute net bounding boxes
         net_cost_handler_->comp_bb_cong_cost(e_cost_methods::NORMAL);
 
-        // Estimate routing channel utilization using
+        // Estimate routing channel usage
         net_cost_handler_->estimate_routing_chan_util(/*compute_congestion_cost=*/false);
 
         return net_cost_handler_->get_chan_util();

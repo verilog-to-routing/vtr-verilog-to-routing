@@ -28,7 +28,7 @@ void routing_stats(const Netlist<>& net_list,
 /**
  * @brief Calculates the routing channel width at each grid location.
  *
- * Iterates through all RR nodes and counts how many wires pass through each (x, y) location
+ * Iterates through all RR nodes and counts how many wires pass through each (layer, x, y) location
  * for both horizontal (CHANX) and vertical (CHANY) channels.
  *
  * @return A pair of 3D matrices:
@@ -72,6 +72,8 @@ void print_device_utilization(const float target_device_utilization);
  *   - Occupancy count
  *   - Occupancy percentage (occupancy / capacity)
  *   - Channel capacity
+ *
+ *   TODO: extend to 3D
  *
  * @param filename      Output file path.
  * @param occupancy     Matrix of occupancy counts.

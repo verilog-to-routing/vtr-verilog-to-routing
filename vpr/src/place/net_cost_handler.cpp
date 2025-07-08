@@ -1842,7 +1842,7 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     congestion_modeling_started_ = true;
 
     double cong_cost = 0.;
-    // Compute congestion cost using recomputed bounding boxes and channel utilization map
+    // Compute congestion cost using computed bounding boxes and channel utilization map
     if (compute_congestion_cost) {
         for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
             if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {

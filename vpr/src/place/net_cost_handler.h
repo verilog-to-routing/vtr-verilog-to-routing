@@ -143,15 +143,22 @@ class NetCostHandler {
     /**
      * @brief Estimates routing channel utilization and computes the congestion cost
      * for each net.
+     * @param compute_congestion_cost Indicates whether computing congestion cost is needed.
      *
      * For each net, distributes estimated wirelength across its bounding box
      * and accumulates demand for different routing channels. Normalizes by channel widths
      * (e.g. a value of 0.5 means 50% of the wiring in a channel is expected to be used).
      *
-     * @return Total congestion cost.
+     * @note This method assumes that net bounding boxes are already computed.
+     *
+     * @return Total congestion cost if requested.
      */
     double estimate_routing_chan_util(bool compute_congestion_cost = true);
 
+    /**
+     * @brief Returns the estimated routing channel usage for each location in the grid.
+     *        The channel usage estimates are computed in estimate_routing_chan_util().
+     */
     const ChannelData<vtr::NdMatrix<double, 3>>& get_chan_util() const;
 
   private:
@@ -268,10 +275,21 @@ class NetCostHandler {
      */
      ChannelData<vtr::PrefixSum1D<int>> acc_chan_width_;
 
-     ChannelData<vtr::PrefixSum2D<double>> acc_chan_util_;
-
+     /**
+     * @brief Estimated routing usage per channel segment,
+     *        indexed by [layer][x][y]. Values represent normalized wire demand
+     *        contribution from all nets distributed over their bounding boxes.
+     */
      ChannelData<vtr::NdMatrix<double, 3>> chan_util_;
 
+     /**
+      * @brief Accumulated (prefix sum) channel utilization in each direction (x/y),
+      *        on the base layer. Enables fast computation of average utilization
+      *        over a net’s bounding box during congestion cost estimation.
+      */
+     ChannelData<vtr::PrefixSum2D<double>> acc_chan_util_;
+
+     /// Available channel width per grid location, indexed by [layer][x][y].
      ChannelData<vtr::NdMatrix<int, 3>> chan_width_;
 
     /**
