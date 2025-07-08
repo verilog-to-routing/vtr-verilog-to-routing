@@ -1419,17 +1419,11 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
     VTR_ASSERT_SAFE(congestion_modeling_started_);
     const auto [x_chan_util, y_chan_util] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
 
-    //    const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
-
-    //    int distance_x = bb.xmax - bb.xmin + 1;
-    //    int distance_y = bb.ymax - bb.ymin + 1;
-
     const float threshold = placer_opts_.congestion_chan_util_threshold;
 
     float x_chan_cong = (x_chan_util < threshold) ? 0.0f : x_chan_util - threshold;
     float y_chan_cong = (y_chan_util < threshold) ? 0.0f : y_chan_util - threshold;
-
-    //    return (distance_x * x_chan_cong) + (distance_y * y_chan_cong);
+    
     return x_chan_cong + y_chan_cong;
 }
 

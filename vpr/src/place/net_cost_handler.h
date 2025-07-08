@@ -148,22 +148,23 @@ class NetCostHandler {
     std::pair<const vtr::NdMatrix<double, 3>&, const vtr::NdMatrix<double, 3>&> get_chanxy_util() const;
 
   private:
+    /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;
-    ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.
+    /// Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;
-    ///@brief Determines whether the FPGA has multiple dies (layers)
+    /// Determines whether the FPGA has multiple dies (layers)
     bool is_multi_layer_;
-    ///@brief A reference to the placer's state to be updated by this object.
+    /// A reference to the placer's state to be updated by this object.
     PlacerState& placer_state_;
-    ///@brief Contains some parameter that determine how the placement cost is computed.
+    /// Contains some parameter that determine how the placement cost is computed.
     const t_placer_opts& placer_opts_;
-    ///@brief Points to the proper method for computing the bounding box cost from scratch.
+    /// Points to the proper method for computing the bounding box cost from scratch.
     std::function<std::tuple<double, double, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
-    ///@brief Points to the proper method for updating the bounding box of a net.
+    /// Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
-    ///@brief Points to the proper method for getting the bounding box cost of a net
+    /// Points to the proper method for getting the bounding box cost of a net
     std::function<double(ClusterNetId)> get_net_bb_cost_functor_;
-    ///@brief Points to the proper method for getting the non-updatable bounding box of a net
+    /// Points to the proper method for getting the non-updatable bounding box of a net
     std::function<void(const ClusterNetId net)> get_non_updatable_bb_functor_;
 
     /**
