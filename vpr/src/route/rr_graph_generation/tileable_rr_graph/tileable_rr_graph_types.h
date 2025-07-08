@@ -26,5 +26,4 @@ constexpr vtr::array<e_direction, const char*, static_cast<size_t>(e_direction::
     "INC_DIR",
     "DEC_DIR",
     "BI_DIR",
-    "NO_DIR"
-};
+    "NO_DIR"};
