@@ -483,7 +483,7 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: ${{ matrix.params }}
-        BUILD_TYPE: debug
+        BUILD_TYPE: RelWithDebInfo
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
         # In Ubuntu 20240310.1.0, the entropy of ASLR has increased (28 -> 32). LLVM 14 in this
         # image is not compatible with this increased ASLR entropy. Apparently, memory sanitizer
