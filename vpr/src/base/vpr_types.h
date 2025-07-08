@@ -968,8 +968,13 @@ struct t_placer_opts {
     /// When in CRITICALITY_TIMING_PLACE mode, what is the tradeoff between timing and wiring costs.
     float timing_tradeoff;
 
+    /// Weight for how much congestion affects placement cost.
+    /// Higher means congestion is more important.
     float congestion_factor;
+    /// Start using congestion cost when (current rlim / initial rlim) drops below this value.
     float congestion_rlim_trigger_ratio;
+    /// Nets with average channel usage (withing their bounding box) above this threshold
+    /// are predicted to face some congestion in the routing stage.
     float congestion_chan_util_threshold;
 
     /// The channel width assumed if only one placement is performed.
