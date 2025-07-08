@@ -1723,7 +1723,7 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     return estimated_wirelength;
 }
 
-double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost/* = true*/) {
+double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /* = true*/) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 

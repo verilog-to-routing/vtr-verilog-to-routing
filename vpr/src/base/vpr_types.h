@@ -1062,7 +1062,6 @@ struct t_placer_opts {
 
     float place_crit_limit;
 
-
     /// Integer value that specifies how far to expand the floorplan region when
     /// printing out floorplan constraints based on current placement.
     int place_constraint_expand;
