@@ -250,11 +250,11 @@ void SetupVPR(const t_options* options,
         && !options->do_routing
         && !options->do_analysis) {
         //run all stages if none specified
-        packerOpts->doPacking = STAGE_DO;
-        placerOpts->doPlacement = STAGE_DO;
-        apOpts->doAP = STAGE_SKIP; // AP not default.
-        routerOpts->doRouting = STAGE_DO;
-        analysisOpts->doAnalysis = STAGE_AUTO; //Deferred until implementation status known
+        packerOpts->doPacking = e_stage_action::DO;
+        placerOpts->doPlacement = e_stage_action::DO;
+        apOpts->doAP = e_stage_action::SKIP; // AP not default.
+        routerOpts->doRouting = e_stage_action::DO;
+        analysisOpts->doAnalysis = e_stage_action::SKIP_IF_PRIOR_FAIL; //Deferred until implementation status known
     } else {
         //We run all stages up to the specified stage
         //Note that by checking in reverse order (i.e. analysis to packing)
@@ -262,38 +262,38 @@ void SetupVPR(const t_options* options,
         //set by later stages
 
         if (options->do_analysis) {
-            packerOpts->doPacking = STAGE_LOAD;
-            placerOpts->doPlacement = STAGE_LOAD;
-            routerOpts->doRouting = STAGE_LOAD;
-            analysisOpts->doAnalysis = STAGE_DO;
+            packerOpts->doPacking = e_stage_action::LOAD;
+            placerOpts->doPlacement = e_stage_action::LOAD;
+            routerOpts->doRouting = e_stage_action::LOAD;
+            analysisOpts->doAnalysis = e_stage_action::DO;
         }
 
         if (options->do_routing) {
-            packerOpts->doPacking = STAGE_LOAD;
-            placerOpts->doPlacement = STAGE_LOAD;
-            routerOpts->doRouting = STAGE_DO;
-            analysisOpts->doAnalysis = ((options->do_analysis) ? STAGE_DO : STAGE_AUTO); //Always run analysis after routing
+            packerOpts->doPacking = e_stage_action::LOAD;
+            placerOpts->doPlacement = e_stage_action::LOAD;
+            routerOpts->doRouting = e_stage_action::DO;
+            analysisOpts->doAnalysis = ((options->do_analysis) ? e_stage_action::DO : e_stage_action::SKIP_IF_PRIOR_FAIL); //Always run analysis after routing
         }
 
         if (options->do_placement) {
-            packerOpts->doPacking = STAGE_LOAD;
-            placerOpts->doPlacement = STAGE_DO;
+            packerOpts->doPacking = e_stage_action::LOAD;
+            placerOpts->doPlacement = e_stage_action::DO;
         }
 
         if (options->do_analytical_placement) {
             // In the Analytical Placement flow, packing and placement are
             // integrated. Thus, these stages are skipped.
-            packerOpts->doPacking = STAGE_SKIP;
-            placerOpts->doPlacement = STAGE_SKIP;
-            apOpts->doAP = STAGE_DO;
+            packerOpts->doPacking = e_stage_action::SKIP;
+            placerOpts->doPlacement = e_stage_action::SKIP;
+            apOpts->doAP = e_stage_action::DO;
         }
 
         if (options->do_packing) {
-            packerOpts->doPacking = STAGE_DO;
+            packerOpts->doPacking = e_stage_action::DO;
         }
 
         if (options->do_legalize) {
-            packerOpts->doPacking = STAGE_LOAD;
+            packerOpts->doPacking = e_stage_action::LOAD;
             packerOpts->load_flat_placement = true;
         }
     }
@@ -473,7 +473,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->acc_fac = Options.acc_fac;
     RouterOpts->bend_cost = Options.bend_cost;
     if (Options.do_routing) {
-        RouterOpts->doRouting = STAGE_DO;
+        RouterOpts->doRouting = e_stage_action::DO;
     }
     RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
     RouterOpts->routing_budgets_algorithm = Options.routing_budgets_algorithm;
@@ -587,7 +587,7 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->circuit_file_name = Options.CircuitFile;
 
     if (Options.do_packing) {
-        PackerOpts->doPacking = STAGE_DO;
+        PackerOpts->doPacking = e_stage_action::DO;
     }
 
     PackerOpts->allow_unrelated_clustering = Options.allow_unrelated_clustering;
@@ -629,7 +629,7 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
  */
 static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts) {
     if (Options.do_placement) {
-        PlacerOpts->doPlacement = STAGE_DO;
+        PlacerOpts->doPlacement = e_stage_action::DO;
     }
 
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
@@ -716,7 +716,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
     if (Options.do_analysis) {
-        analysis_opts.doAnalysis = STAGE_DO;
+        analysis_opts.doAnalysis = e_stage_action::DO;
     }
 
     analysis_opts.gen_post_synthesis_netlist = Options.Generate_Post_Synthesis_Netlist;
