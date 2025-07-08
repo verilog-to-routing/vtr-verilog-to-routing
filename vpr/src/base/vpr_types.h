@@ -1140,56 +1140,6 @@ struct t_ap_opts {
  * Router data types
  *******************************************************************/
 
-/* All the parameters controlling the router's operation are in this        *
- * structure.                                                               *
- * first_iter_pres_fac:  Present sharing penalty factor used for the        *
- *                 very first (congestion mapping) Pathfinder iteration.    *
- * initial_pres_fac:  Initial present sharing penalty factor for            *
- *                    Pathfinder; used to set pres_fac on 2nd iteration.    *
- * pres_fac_mult:  Amount by which pres_fac is multiplied each              *
- *                 routing iteration.                                       *
- * acc_fac:  Historical congestion cost multiplier.  Used unchanged         *
- *           for all iterations.                                            *
- * bend_cost:  Cost of a bend (usually non-zero only for global routing).   *
- * max_router_iterations:  Maximum number of iterations before giving       *
- *                up.                                                       *
- * min_incremental_reroute_fanout: Minimum fanout a net needs to have       *
- *              for incremental reroute to be applied to it through route   *
- *              tree pruning. Larger circuits should get larger thresholds  *
- * bb_factor:  Linear distance a route can go outside the net bounding      *
- *             box.                                                         *
- * route_type:  GLOBAL or DETAILED.                                         *
- * fixed_channel_width:  Only attempt to route the design once, with the    *
- *                       channel width given.  If this variable is          *
- *                       == NO_FIXED_CHANNEL_WIDTH, do a binary search      *
- *                       on channel width.                                  *
- * router_algorithm:  TIMING_DRIVEN or PARALLEL.  Selects the desired       *
- * routing algorithm.                                                       *
- * base_cost_type: Specifies how to compute the base cost of each type of   *
- *                 rr_node.  DELAY_NORMALIZED -> base_cost = "demand"       *
- *                 x average delay to route past 1 CLB.  DEMAND_ONLY ->     *
- *                 expected demand of this node (old breadth-first costs).  *
- *                                                                          *
- * The following parameters are used only by the timing-driven router.      *
- *                                                                          *
- * astar_fac:  Factor (alpha) used to weight expected future costs to       *
- *             target in the timing_driven router.  astar_fac = 0 leads to  *
- *             an essentially breadth-first search, astar_fac = 1 is near   *
- *             the usual astar algorithm and astar_fac > 1 are more         *
- *             aggressive.                                                  *
- * astar_offset: Offset that is subtracted from the lookahead (expected     *
- *               future costs) in the timing-driven router.                 *
- * max_criticality: The maximum criticality factor (from 0 to 1) any sink   *
- *                  will ever have (i.e. clip criticality to this number).  *
- * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
- *                  criticality_exp (then clip to max_criticality).         *
- * doRouting: true if routing is supposed to be done, false otherwise       *
- * routing_failure_predictor: sets the configuration to be used by the      *
- * routing failure predictor, how aggressive the threshold used to judge    *
- * and abort routings deemed unroutable                                     *
- * write_rr_graph_name: stores the file name of the output rr graph         *
- * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
-
 enum e_router_algorithm {
     NESTED,
     PARALLEL,
@@ -1249,25 +1199,54 @@ enum class e_incr_reroute_delay_ripup {
 
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
+/**
+ * @brief Parameters controlling the router's operation.
+ */
 struct t_router_opts {
     bool read_rr_edge_metadata = false;
     bool do_check_rr_graph = true;
+
+    /// Present sharing penalty factor used for the very first (congestion mapping) Pathfinder iteration.
     float first_iter_pres_fac;
+    /// Initial present sharing penalty factor for Pathfinder; used to set pres_fac on 2nd iteration.
     float initial_pres_fac;
+    /// Amount by which pres_fac is multiplied each routing iteration.
     float pres_fac_mult;
     float max_pres_fac;
+
+    /// Historical congestion cost multiplier. Used unchanged for all iterations.
     float acc_fac;
+    /// Cost of a bend (usually non-zero only for global routing).
     float bend_cost;
+    /// Maximum number of iterations before giving up.
     int max_router_iterations;
+    /// Minimum fanout a net needs to have for incremental reroute to be applied to it through route tree pruning.
+    /// Larger circuits should get larger thresholds
     int min_incremental_reroute_fanout;
     e_incr_reroute_delay_ripup incr_reroute_delay_ripup;
+    /// Linear distance a route can go outside the net bounding box.
     int bb_factor;
+    /// GLOBAL or DETAILED.
     enum e_route_type route_type;
+    /// Only attempt to route the design once, with the channel width given.
+    /// If this variable is == NO_FIXED_CHANNEL_WIDTH, do a binary search on channel width.
     int fixed_channel_width;
-    int min_channel_width_hint; ///<Hint to binary search of what the minimum channel width is
+    /// Hint to binary search of what the minimum channel width is
+    int min_channel_width_hint;
+    /// TIMING_DRIVEN or PARALLEL.  Selects the desired routing algorithm.
     enum e_router_algorithm router_algorithm;
+
+    /// Specifies how to compute the base cost of each type of rr_node.
+    /// DELAY_NORMALIZED -> base_cost = "demand" x average delay to route past 1 CLB.
+    /// DEMAND_ONLY -> expected demand of this node (old breadth-first costs).
     enum e_base_cost_type base_cost_type;
+
+    /// Factor (alpha) used to weight expected future costs to target in the timing_driven router.
+    /// astar_fac = 0 leads to an essentially breadth-first search,
+    /// astar_fac = 1 is near the usual astar algorithm and astar_fac > 1 are more aggressive.
     float astar_fac;
+
+    /// Offset that is subtracted from the lookahead (expected future costs) in the timing-driven router.
     float astar_offset;
     float router_profiler_astar_fac;
     bool enable_parallel_connection_router;
@@ -1276,7 +1255,9 @@ struct t_router_opts {
     int multi_queue_num_threads;
     int multi_queue_num_queues;
     bool multi_queue_direct_draining;
+    /// The maximum criticality factor (from 0 to 1) any sink will ever have (i.e. clip criticality to this number).
     float max_criticality;
+    /// Set criticality to (path_length(sink) / longest_path) ^ criticality_exp (then clip to max_criticality).
     float criticality_exp;
     float init_wirelength_abort_threshold;
     bool verify_binary_search;
@@ -1284,7 +1265,10 @@ struct t_router_opts {
     bool congestion_analysis;
     bool fanout_analysis;
     bool switch_usage_analysis;
+    /// true if routing is supposed to be done, false otherwise
     e_stage_action doRouting;
+    /// the configuration to be used by the routing failure predictor,
+    /// how aggressive the threshold used to judge and abort routings deemed unroutable
     enum e_routing_failure_predictor routing_failure_predictor;
     enum e_routing_budgets_algorithm routing_budgets_algorithm;
     bool save_routing_per_iteration;
