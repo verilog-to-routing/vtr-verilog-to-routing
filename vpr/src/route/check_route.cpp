@@ -417,6 +417,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 num_adj += 1; // adjacent
             } else if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ) {
                 num_adj += rr_graph.chan_nodes_are_adjacent(from_node, to_node);
+            } else if (to_type == e_rr_type::MUX) {
+                num_adj += 1; // adjacent
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
@@ -428,6 +430,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 num_adj += 1; // adjacent
             } else if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ) {
                 num_adj += rr_graph.chan_nodes_are_adjacent(from_node, to_node);
+            } else if (to_type == e_rr_type::MUX) {
+                num_adj += 1; // adjacent
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
