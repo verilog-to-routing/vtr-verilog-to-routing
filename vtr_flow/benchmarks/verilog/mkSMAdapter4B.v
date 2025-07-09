@@ -1305,6 +1305,8 @@ wire full_not_used;
 					);
 					
 wire dummy1;
+wire dummy2;
+wire dummy3;
 assign dummy1 = &wci_reqF__D_OUT;
 assign prevent_sweep_node = dummy1 & dummy2 & dummy3;
 
@@ -1323,7 +1325,6 @@ assign prevent_sweep_node = dummy1 & dummy2 & dummy3;
 						     .FULL_N(wmi_respF__FULL_N),
 						     .EMPTY_N(wmi_respF__EMPTY_N)
 							 );
-wire dummy2;
 assign dummy2 = &wmi_respF__D_OUT;
 
   // submodule wsiM_isReset
@@ -1351,7 +1352,6 @@ assign dummy2 = &wmi_respF__D_OUT;
 					    .EMPTY_N(wsiS_reqFifo__EMPTY_N)
 						);
 
-wire dummy3;
 assign dummy3 = &wsiS_reqFifo__D_OUT;
 
 
@@ -3458,9 +3458,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 60'b000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awa;
-defparam ram1.DATA_WIDTH = `dwa;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwa))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -3862,9 +3862,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 34'b0000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awb;
-defparam ram1.DATA_WIDTH = `dwb;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`awb), .DATA_WIDTH(`dwb))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -4267,9 +4267,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 61'b0000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awc;
-defparam ram1.DATA_WIDTH = `dwc;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`awc), .DATA_WIDTH(`dwc))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),

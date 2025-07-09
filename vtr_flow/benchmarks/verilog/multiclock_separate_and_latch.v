@@ -42,7 +42,7 @@ module and_latch(
     input	a_in;
     input	b_in;
 
-    output	out;
+    output reg	out;
 
     // ASSIGN STATEMENTS
     always @(posedge clock)
