@@ -233,8 +233,8 @@ def run(
         odin_config_full_path,
     )
 
-    # Set the synlig exe script path in the environment variable
-    # (handle if it is not set or system-verilog OFF)
+    # Set the slang exe script path in the environment variable
+    # (handle if it is not set or yosys-slang OFF)
     try:
         os.environ["yosys_slang_path"] = str(vtr.paths.yosys_slang_path)
     except KeyError:

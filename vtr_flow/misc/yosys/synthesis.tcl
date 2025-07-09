@@ -33,11 +33,6 @@ if {$env(PARSER) == "slang" } {
 
 parmys_arch -a QQQ
 
-#if {$env(PARSER) == "surelog" } {
-#	puts "Using Synlig read_uhdm command"
-#	exec $synlig -p "read_uhdm XXX"
-#}
-
 if {$env(PARSER) == "slang" } {
 	# Create a file list containing the name(s) of file(s) \
 	# to read together with read_slang
@@ -98,14 +93,6 @@ if {$env(PARSER) == "default" || $env(PARSER) == "slang"} {
     # For Verilog, use -nopass for a simpler, faster flow
     parmys -a QQQ -nopass -c CCC YYY
 } 
-#elseif {$env(PARSER) == "slang"} {
-    # For Slang, run additional passes to handle complexity
-#    parmys -a QQQ -c CCC YYY
-#}
-#elseif {$env(PARSER) == "system-verilog" || $env(PARSER) == "surelog"} {
-#    # For Synlig SystemVerilog, run additional passes to handle complexity
-#    parmys -a QQQ -c CCC YYY
-#}
 
 opt -full
 
