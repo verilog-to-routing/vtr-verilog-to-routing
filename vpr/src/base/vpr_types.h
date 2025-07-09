@@ -1426,16 +1426,16 @@ struct t_det_routing_arch {
     /// the CUSTOM switch block type. See comment at top of SRC/route/build_switchblocks.c
     std::vector<t_switchblock_inf> switchblocks;
 
+    // Following options are used only for tileable routing architecture
+
+    /// Whether the routing architecture is tileable
+    bool tileable;
+
     /// Sub type and Fs are applied to pass tracks
     int sub_fs;
 
     /// Subtype of switch blocks.
     enum e_switch_block_type switch_block_subtype;
-
-    // Following options are used only for tileable routing architecture
-
-    /// Whether the routing architecture is tileable
-    bool tileable;
 
     /// Allow connection blocks to appear around the perimeter programmable block (mainly I/Os)
     bool perimeter_cb;

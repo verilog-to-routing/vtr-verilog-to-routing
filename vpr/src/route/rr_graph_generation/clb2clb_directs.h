@@ -1,5 +1,11 @@
 #pragma once
 
+/**
+ * @file clb2clb_directs.h
+ * @brief This file contains the functions to parse the direct connections between two CLBs
+ * and store them in a clb_to_clb_directs data structure.
+ */
+
 #include "physical_types.h"
 
 /**
