@@ -184,6 +184,10 @@ class t_rr_graph_storage {
         return node_storage_[id].yhigh_;
     }
 
+    void set_tileable(bool is_tileable) {
+        is_tileable_ = is_tileable;
+    }
+
     short node_bend_start(RRNodeId id) const {
         return node_bend_start_[id];
     }
@@ -528,8 +532,10 @@ class t_rr_graph_storage {
         node_ptc_.reserve(node_storage_.capacity());
         node_ptc_.resize(node_storage_.size());
         node_layer_.resize(node_storage_.size());
-        node_bend_start_.resize(node_storage_.size());
-        node_bend_end_.resize(node_storage_.size());
+        if (is_tileable_) {
+            node_bend_start_.resize(node_storage_.size());
+            node_bend_end_.resize(node_storage_.size());
+        }
     }
 
     /** @brief  Reserve storage for RR nodes. */
@@ -539,8 +545,10 @@ class t_rr_graph_storage {
         node_storage_.reserve(size);
         node_ptc_.reserve(size);
         node_layer_.reserve(size);
-        node_bend_start_.reserve(size);
-        node_bend_end_.reserve(size);
+        if (is_tileable_) {
+            node_bend_start_.reserve(size);
+            node_bend_end_.reserve(size);
+        }
     }
 
     /** @brief  Resize node storage to accomidate size RR nodes. */
@@ -584,6 +592,7 @@ class t_rr_graph_storage {
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
+        is_tileable_ = false;
     }
 
     /** @brief
@@ -626,8 +635,10 @@ class t_rr_graph_storage {
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
         node_layer_.emplace_back();
-        node_bend_start_.emplace_back();
-        node_bend_end_.emplace_back();
+        if (is_tileable_) {
+            node_bend_start_.emplace_back();
+            node_bend_end_.emplace_back();
+        }
     }
 
     /** @brief Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
@@ -931,6 +942,7 @@ class t_rr_graph_storage {
      * Bend start and end are only used for CHANX and CHANY nodes.
      * Bend start and end are only used for tileable routing resource graph.
      */
+    bool is_tileable_;
     vtr::vector<RRNodeId, int16_t> node_bend_start_;
     vtr::vector<RRNodeId, int16_t> node_bend_end_;
 
