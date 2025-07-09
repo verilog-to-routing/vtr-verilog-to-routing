@@ -938,11 +938,12 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, bool> edge_remapped_;
 
     /** @brief
+     * The tileable flag is set to true by tileable routing resource graph builder.
      * Bend start and end are used to store the bend information for each node.
      * Bend start and end are only used for CHANX and CHANY nodes.
      * Bend start and end are only used for tileable routing resource graph.
      */
-    bool is_tileable_;
+    bool is_tileable_ = false;
     vtr::vector<RRNodeId, int16_t> node_bend_start_;
     vtr::vector<RRNodeId, int16_t> node_bend_end_;
 

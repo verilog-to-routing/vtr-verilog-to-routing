@@ -198,6 +198,14 @@ class RRGraphBuilder {
         node_storage_.set_node_coordinates(id, x1, y1, x2, y2);
     }
 
+    /** @brief Set the tileable flag. This function is 
+     * used by tileable routing resource graph builder 
+     * only since the value of this flag is set to false by default.
+     */
+    inline void set_tileable(bool is_tileable) {
+        node_storage_.set_tileable(is_tileable);
+    }
+
     /**
      * @brief Set the bend start of a node
      * @param id The node id
