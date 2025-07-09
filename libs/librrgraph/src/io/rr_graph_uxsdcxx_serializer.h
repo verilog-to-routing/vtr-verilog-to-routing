@@ -832,7 +832,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         } else if (rr_graph.node_type(node.id()) == e_rr_type::CHANZ) {
             // TODO: Don't use CHANX info
-            int seg_ind_z = find_segment_index_along_axis(segment_id, X_AXIS);
+            int seg_ind_z = find_segment_index_along_axis(segment_id, e_parallel_axis::X_AXIS);
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + seg_ind_z));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         }
