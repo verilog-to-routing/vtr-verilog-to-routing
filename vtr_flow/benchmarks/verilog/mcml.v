@@ -1778,9 +1778,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 // assign dont_care_out = 32'b00000000000000000000000000000000;
 
-defparam dpram1.ADDR_WIDTH = 13;
-defparam dpram1.DATA_WIDTH = 32;	
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(13), .DATA_WIDTH(32))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1815,9 +1815,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 // assign dont_care_out = 32'b00000000000000000000000000000000;
 	
-defparam dpram1.ADDR_WIDTH = 13;
-defparam dpram1.DATA_WIDTH = 32;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(13), .DATA_WIDTH(32))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1852,9 +1852,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 // assign dont_care_out = 32'b00000000000000000000000000000000;
 	
-defparam dpram1.ADDR_WIDTH = 13;
-defparam dpram1.DATA_WIDTH = 32;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(13), .DATA_WIDTH(32))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1889,9 +1889,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 32'b00000000000000000000000000000000;
 // assign dont_care_out = 32'b00000000000000000000000000000000;
 	
-defparam dpram1.ADDR_WIDTH = 13;
-defparam dpram1.DATA_WIDTH = 32;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(13), .DATA_WIDTH(32))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1925,9 +1925,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 36'b000000000000000000000000000000000000;
 // assign dont_care_out = 36'b000000000000000000000000000000000000;
 	
-defparam dpram1.ADDR_WIDTH = 16;
-defparam dpram1.DATA_WIDTH = 36;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(16), .DATA_WIDTH(36))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1961,9 +1961,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 18'b000000000000000000;
 // assign dont_care_out = 18'b000000000000000000;
 	
-defparam dpram1.ADDR_WIDTH = 16;
-defparam dpram1.DATA_WIDTH = 18;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(16), .DATA_WIDTH(18))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -1997,9 +1997,9 @@ assign const_zero = 1'b0;
 assign const_zero_data = 8'b00000000;
 // assign dont_care_out = 8'b00000000;
 	
-defparam dpram1.ADDR_WIDTH = 16;
-defparam dpram1.DATA_WIDTH = 8;
-dual_port_ram dpram1(	
+dual_port_ram 
+  # (.ADDR_WIDTH(16), .DATA_WIDTH(8))
+dpram1(	
   .clk (clk),
   .we1(wren),
   .we2(const_zero),
@@ -10468,9 +10468,10 @@ reg [`BIT_WIDTH - 1:0] log_x;
 wire [31:0]blank;
 assign blank = 32'b000000000000000000000000000000;
 
-defparam sram_replace0.ADDR_WIDTH = `MANTISSA_PRECISION;
-defparam sram_replace0.DATA_WIDTH = 32;
-single_port_ram sram_replace0 (.clk (clock), .addr (c_shifted_x), .data (blank), .we (1'b0), .out (mantissa));
+
+single_port_ram 
+  # (.ADDR_WIDTH(`MANTISSA_PRECISION), .DATA_WIDTH(32))
+sram_replace0 (.clk (clock), .addr (c_shifted_x), .data (blank), .we (1'b0), .out (mantissa));
 
 // priority encoder
 //integer i;
@@ -18323,13 +18324,14 @@ output	[31:0]			cosp;
 //Instantiate a single port ram for odin
 wire [31:0]blank;
 assign blank = 32'b000000000000000000000000000000;
-defparam sinp_replace.ADDR_WIDTH = 10;
-defparam sinp_replace.DATA_WIDTH = 32;
-single_port_ram sinp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (sinp));
 
-defparam cosp_replace.ADDR_WIDTH = 10;
-defparam cosp_replace.DATA_WIDTH = 32;
-single_port_ram cosp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (cosp));
+single_port_ram  
+# (.ADDR_WIDTH(10), .DATA_WIDTH(32))
+sinp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (sinp));
+
+single_port_ram 
+# (.ADDR_WIDTH(10), .DATA_WIDTH(32))
+cosp_replace(.clk (clock), .addr (pindex), .data (blank), .we (1'b0), .out (cosp));
 
 			
 endmodule

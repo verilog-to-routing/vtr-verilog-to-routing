@@ -1648,9 +1648,9 @@ reg     temp_datavalid;
 
 
 
-defparam new_ram.ADDR_WIDTH = 10;
-defparam new_ram.DATA_WIDTH = 32;
-single_port_ram new_ram(
+single_port_ram 
+  # (.ADDR_WIDTH(10), .DATA_WIDTH(32))
+new_ram(
   .clk (clk),
   .we(we),
   .data(datain),

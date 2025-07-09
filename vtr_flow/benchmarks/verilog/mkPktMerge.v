@@ -562,12 +562,14 @@ reg			full_n_r, empty_n_r;
  
  wire [`dw-1:0] junk_in;
  
+ wire [`dw-1:0] doutz;
+
  // manually assign
  assign junk_in = 0;
 
-defparam ram1.ADDR_WIDTH = `aw;
-defparam ram1.DATA_WIDTH = `dw;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`aw), .DATA_WIDTH(`dw))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -579,7 +581,6 @@ dual_port_ram   ram1(
 	.data2 (	junk_in)
 	);
  
- wire [`dw-1:0] doutz;
 assign dout = (1'b1) ? doutz: junk_out;
 
 ////////////////////////////////////////////////////////////////////
@@ -973,12 +974,14 @@ reg			full_n_r, empty_n_r;
  
  wire [`dw-1:0] junk_in;
  
+ wire [`dw-1:0] doutz;
+
  // manually assign
  assign junk_in = 0;
 
-defparam ram1.ADDR_WIDTH = `aw;
-defparam ram1.DATA_WIDTH = `dw;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`aw), .DATA_WIDTH(`dw))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -990,7 +993,6 @@ dual_port_ram   ram1(
 	.data2 (	junk_in)
 	);
  
-wire [`dw-1:0] doutz;
 assign dout = (1'b1) ? doutz: junk_out;
 
 ////////////////////////////////////////////////////////////////////
@@ -1385,12 +1387,14 @@ reg			full_n_r, empty_n_r;
  
  wire [`dw-1:0] junk_in;
  
+ wire [`dw-1:0] doutz;
+
  // manually assign
  assign junk_in = 0;
 
-defparam ram1.ADDR_WIDTH = `aw;
-defparam ram1.DATA_WIDTH = `dw;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`aw), .DATA_WIDTH(`dw))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -1402,7 +1406,6 @@ dual_port_ram   ram1(
 	.data2 (	junk_in)
 	);
  
- wire [`dw-1:0] doutz;
 assign dout = (1'b1) ? doutz: junk_out;
 
 ////////////////////////////////////////////////////////////////////
