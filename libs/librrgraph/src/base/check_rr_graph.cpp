@@ -418,7 +418,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANX:
-            if (xlow < 1 || xhigh > grid_width - 1 || yhigh > grid_height - 1 || yhigh != ylow) {
+            if (xlow < 0 || xhigh > grid_width - 1 || yhigh > grid_height - 2 || yhigh != ylow) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
@@ -429,7 +429,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANY:
-            if (xhigh > grid_width - 1 || ylow < 1 || yhigh > grid_height - 1 || xlow != xhigh) {
+            if (xhigh > grid_width - 2 || ylow < 0 || yhigh > grid_height - 1 || xlow != xhigh) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "Error in check_rr_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
