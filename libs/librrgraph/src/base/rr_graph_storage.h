@@ -938,6 +938,7 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, bool> edge_remapped_;
 
     /** @brief
+     * The following data structures are only used for tileable routing resource graph.
      * The tileable flag is set to true by tileable routing resource graph builder.
      * Bend start and end are used to store the bend information for each node.
      * Bend start and end are only used for CHANX and CHANY nodes.
