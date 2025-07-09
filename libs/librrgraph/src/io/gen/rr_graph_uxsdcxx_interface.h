@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/smahmoudi/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/smahmoudi/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: dcf32619cae0c49d168a2575bdb00896
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 5d51b89242fe6e463629ac43a72e4606
  */
 
 #include <functional>
@@ -27,7 +27,7 @@ enum class enum_segment_res_type {UXSD_INVALID = 0, GENERAL, GCLK};
 
 enum class enum_pin_type {UXSD_INVALID = 0, OPEN, OUTPUT, INPUT};
 
-enum class enum_node_type {UXSD_INVALID = 0, CHANX, CHANY, SOURCE, SINK, OPIN, IPIN, MUX};
+enum class enum_node_type {UXSD_INVALID = 0, CHANX, CHANY, CHANZ, SOURCE, SINK, OPIN, IPIN, MUX};
 
 enum class enum_node_direction {UXSD_INVALID = 0, INC_DIR, DEC_DIR, BI_DIR, NONE};
 

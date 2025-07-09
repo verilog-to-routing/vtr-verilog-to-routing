@@ -37,30 +37,30 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
     VTR_LOG("\n");
 
-    VTR_LOG("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Analytical Placer: %s\n", (vpr_setup.APOpts.doAP ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Analysis: %s\n", (vpr_setup.AnalysisOpts.doAnalysis ? "ENABLED" : "DISABLED"));
+    VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
+    VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.doPlacement]);
+    VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
+    VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
+    VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
     VTR_LOG("\n");
 
     VTR_LOG("VPR was run with the following options:\n\n");
 
     ShowNetlistOpts(vpr_setup.NetlistOpts);
 
-    if (vpr_setup.PackerOpts.doPacking) {
+    if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
         ShowPackerOpts(vpr_setup.PackerOpts);
     }
-    if (vpr_setup.PlacerOpts.doPlacement) {
+    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::SKIP) {
         ShowPlacerOpts(vpr_setup.PlacerOpts);
     }
-    if (vpr_setup.APOpts.doAP) {
+    if (vpr_setup.APOpts.doAP != e_stage_action::SKIP) {
         ShowAnalyticalPlacerOpts(vpr_setup.APOpts);
     }
-    if (vpr_setup.RouterOpts.doRouting) {
+    if (vpr_setup.RouterOpts.doRouting != e_stage_action::SKIP) {
         ShowRouterOpts(vpr_setup.RouterOpts);
     }
-    if (vpr_setup.AnalysisOpts.doAnalysis) {
+    if (vpr_setup.AnalysisOpts.doAnalysis != e_stage_action::SKIP) {
         ShowAnalysisOpts(vpr_setup.AnalysisOpts);
     }
     if (vpr_setup.NocOpts.noc) {

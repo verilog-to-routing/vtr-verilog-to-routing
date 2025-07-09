@@ -3,6 +3,7 @@
 #include <ostream>
 #include <string>
 #include <vector>
+#include "vpr_types.h"
 
 struct t_logical_block_type;
 struct t_vpr_setup;
@@ -33,4 +34,5 @@ struct ClusteredNetlistStats {
 };
 
 void ShowSetup(const t_vpr_setup& vpr_setup);
+
 void writeClusteredNetlistStats(const std::string& block_usage_filename);

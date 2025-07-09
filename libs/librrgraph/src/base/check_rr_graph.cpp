@@ -59,13 +59,13 @@ void check_rr_graph(const RRGraphView& rr_graph,
         route_type = e_route_type::GLOBAL;
     }
 
-    auto total_edges_to_node = std::vector<int>(rr_graph.num_nodes());
-    auto switch_types_from_current_to_node = std::vector<unsigned char>(rr_graph.num_nodes());
+    std::vector<int> total_edges_to_node(rr_graph.num_nodes());
+    std::vector<unsigned char> switch_types_from_current_to_node(rr_graph.num_nodes());
     const int num_rr_switches = rr_graph.num_rr_switches();
 
     std::vector<std::pair<int, int>> edges;
 
-    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+    for (const RRNodeId rr_node : rr_graph.nodes()) {
         size_t inode = (size_t)rr_node;
         rr_graph.validate_node(rr_node);
 
@@ -84,7 +84,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
         check_rr_node(rr_graph, rr_indexed_data, grid, vib_grid, chan_width, route_type, inode, is_flat);
 
-        /* Check all the connectivity (edges, etc.) information.                    */
+        // Check all the connectivity (edges, etc.) information.
         edges.resize(0);
         edges.reserve(num_edges);
 
@@ -332,15 +332,14 @@ void check_rr_node(const RRGraphView& rr_graph,
                    const enum e_route_type route_type, 
                    const int inode,
                    bool is_flat) {
-    /* This routine checks that the rr_node is inside the grid and has a valid
-     * pin number, etc.
-     */
-
     //Make sure over-flow doesn't happen
     VTR_ASSERT(inode >= 0);
-    int nodes_per_chan, tracks_per_node;
-    float C, R;
+    int tracks_per_node;
     RRNodeId rr_node = RRNodeId(inode);
+
+    const int grid_width = grid.width();
+    const int grid_height = grid.height();
+    const int grid_layers = grid.get_num_layers();
 
     e_rr_type rr_type = rr_graph.node_type(rr_node);
     int xlow = rr_graph.node_xlow(rr_node);
@@ -351,19 +350,18 @@ void check_rr_node(const RRGraphView& rr_graph,
     int ptc_num = rr_graph.node_ptc_num(rr_node);
     int capacity = rr_graph.node_capacity(rr_node);
     RRIndexedDataId cost_index = rr_graph.node_cost_index(rr_node);
-    t_physical_tile_type_ptr type = nullptr;
 
     if (xlow > xhigh || ylow > yhigh) {
         VPR_ERROR(VPR_ERROR_ROUTE,
                   "in check_rr_node: rr endpoints are (%d,%d) and (%d,%d).\n", xlow, ylow, xhigh, yhigh);
     }
 
-    if (xlow < 0 || xhigh > int(grid.width()) - 1 || ylow < 0 || yhigh > int(grid.height()) - 1) {
+    if (xlow < 0 || xhigh > grid_width - 1 || ylow < 0 || yhigh > grid_height - 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_rr_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n", xlow, ylow, xhigh, yhigh);
     }
 
-    if (layer_num < 0 || layer_num > int(grid.get_num_layers()) - 1) {
+    if (layer_num < 0 || layer_num > grid_layers - 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_rr_node: rr endpoints layer_num (%d) is out of range.\n", layer_num);
     }
@@ -378,8 +376,8 @@ void check_rr_node(const RRGraphView& rr_graph,
                         "in check_rr_node: node %d cost index (%d) is out of range.\n", inode, cost_index);
     }
 
-    /* Check that the segment is within the array and such. */
-    type = grid.get_physical_type({xlow, ylow, layer_num});
+    // Check that the segment is within the array and such.
+    t_physical_tile_type_ptr type = grid.get_physical_type({xlow, ylow, layer_num});
 
     switch (rr_type) {
         case e_rr_type::SOURCE:
@@ -420,7 +418,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANX:
-            if (xhigh > int(grid.width()) - 1 || yhigh > int(grid.height()) - 2 || yhigh != ylow) {
+            if (xlow < 1 || xhigh > grid_width - 1 || yhigh > grid_height - 1 || yhigh != ylow) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
@@ -431,7 +429,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANY:
-            if (xhigh > int(grid.width()) - 2 || yhigh > int(grid.height()) - 1 || xlow != xhigh) {
+            if (xhigh > grid_width - 1 || ylow < 1 || yhigh > grid_height - 1 || xlow != xhigh) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "Error in check_rr_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
@@ -441,12 +439,20 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
 
+        case e_rr_type::CHANZ:
+            if (xhigh != xlow || yhigh != ylow || xhigh > grid_width - 1 || ylow < 1 || yhigh > grid_height - 1) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "Error in check_rr_node: CHANZ out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
+            }
+            // TODO: handle global routing case
+            break;
+
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_rr_node: Unexpected segment type: %d\n", rr_type);
     }
 
-    /* Check that it's capacities and such make sense. */
+    // Check that its capacities and such make sense.
 
     int class_max_ptc = get_tile_class_max_ptc(type, is_flat);
     int pin_max_ptc = get_tile_pin_max_ptc(type, is_flat);
@@ -509,20 +515,9 @@ void check_rr_node(const RRGraphView& rr_graph,
         case e_rr_type::CHANX:
         case e_rr_type::CHANY:
             if (route_type == e_route_type::DETAILED) {
-                nodes_per_chan = chan_width.max;
                 tracks_per_node = 1;
             } else {
-                nodes_per_chan = 1;
-                tracks_per_node = ((rr_type == e_rr_type::CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow]);
-            }
-
-            //if a chanx/chany has length 0, it means it is used to connect different dice together
-            //hence, the ptc number can be larger than nodes_per_chan
-            if(xlow != xhigh || ylow != yhigh) {
-                if (ptc_num >= nodes_per_chan) {
-                    VPR_ERROR(VPR_ERROR_ROUTE,
-                              "in check_rr_node: inode %d (type %d) has a ptc_num of %d.\n", inode, rr_type, ptc_num);
-                }
+                tracks_per_node = (rr_type == e_rr_type::CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow];
             }
 
             if (capacity != tracks_per_node) {
@@ -531,14 +526,26 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
 
+        case e_rr_type::CHANZ:
+            if (route_type == e_route_type::DETAILED) {
+                tracks_per_node = 1;
+            } else {
+                // TODO: do checks for CHANZ type when global routing is enabled
+                //       This can be done once we have a way to specify how many chanz
+                //       nodes per switch block exist.
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: Global routing is not supported in 3D architectures.\n");
+            }
+            break;
+
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in check_rr_node: Unexpected segment type: %d\n", rr_type);
     }
 
-    /* Check that the capacitance and resistance are reasonable. */
-    C = rr_graph.node_C(rr_node);
-    R = rr_graph.node_R(rr_node);
+    // Check that the capacitance and resistance are reasonable.
+    float C = rr_graph.node_C(rr_node);
+    float R = rr_graph.node_R(rr_node);
 
     if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
         if (C < 0. || R < 0.) {

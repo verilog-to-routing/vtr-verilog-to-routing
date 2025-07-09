@@ -46,6 +46,7 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
             switch (node_type) {
                 case e_rr_type::SOURCE:
                 case e_rr_type::SINK:
+                case e_rr_type::CHANZ:
                 case e_rr_type::CHANY:
                 case e_rr_type::CHANX:
                     node_lookup_.add_node(node, node_layer, ix, iy, node_type, node_ptc_num, TOTAL_2D_SIDES[0]);

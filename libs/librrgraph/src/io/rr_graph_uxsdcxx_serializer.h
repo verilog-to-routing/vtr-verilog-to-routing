@@ -830,6 +830,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             int seg_ind_y = find_segment_index_along_axis(segment_id, e_parallel_axis::Y_AXIS);
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_x_.size() + seg_ind_y));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
+        } else if (rr_graph.node_type(node.id()) == e_rr_type::CHANZ) {
+            // TODO: Don't use CHANX info
+            int seg_ind_z = find_segment_index_along_axis(segment_id, X_AXIS);
+            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + seg_ind_z));
+            seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         }
         return inode;
     }
@@ -888,9 +893,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         switch (rr_graph.node_type(node.id())) {
             case e_rr_type::CHANX:
-                break;
             case e_rr_type::CHANY:
+            case e_rr_type::CHANZ:
                 break;
+
             case e_rr_type::SOURCE:
                 rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(SOURCE_COST_INDEX));
                 break;
@@ -956,7 +962,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) final {
         const auto& rr_graph = (*rr_graph_);
-        auto node = (*rr_nodes_)[inode];
+        const t_rr_node& node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
         if (direction == uxsd::enum_node_direction::UXSD_INVALID) {
@@ -965,13 +971,18 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     "inode %d is type %d, which requires a direction, but no direction was supplied.",
                     inode, rr_graph.node_type(node.id()));
             }
+
+            // TODO: when CHANZ nodes have a direction, we should handle them
+
         } else {
             rr_graph_builder_->set_node_direction(node_id, from_uxsd_node_direction(direction));
         }
     }
     inline uxsd::enum_node_direction get_node_direction(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
-        if (rr_graph.node_type(node.id()) == e_rr_type::CHANX || rr_graph.node_type(node.id()) == e_rr_type::CHANY) {
+        if (rr_graph.node_type(node.id()) == e_rr_type::CHANX
+            || rr_graph.node_type(node.id()) == e_rr_type::CHANY
+            || rr_graph.node_type(node.id()) == e_rr_type::CHANZ) {
             return to_uxsd_node_direction(rr_graph.node_direction(node.id()));
         } else {
             return uxsd::enum_node_direction::UXSD_INVALID;
@@ -2012,6 +2023,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return e_rr_type::CHANX;
             case uxsd::enum_node_type::CHANY:
                 return e_rr_type::CHANY;
+            case uxsd::enum_node_type::CHANZ:
+                return e_rr_type::CHANZ;
             case uxsd::enum_node_type::SOURCE:
                 return e_rr_type::SOURCE;
             case uxsd::enum_node_type::SINK:
@@ -2034,6 +2047,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return uxsd::enum_node_type::CHANX;
             case e_rr_type::CHANY:
                 return uxsd::enum_node_type::CHANY;
+            case e_rr_type::CHANZ:
+                return uxsd::enum_node_type::CHANZ;
             case e_rr_type::SOURCE:
                 return uxsd::enum_node_type::SOURCE;
             case e_rr_type::SINK:

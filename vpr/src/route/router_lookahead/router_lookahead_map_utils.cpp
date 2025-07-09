@@ -592,7 +592,7 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
 
     int delta_x, delta_y;
 
-    if (!is_chan(from_type) && !is_chan(to_type)) {
+    if (!is_chanxy(from_type) && !is_chanxy(to_type)) {
         //Alternate formulation for non-channel types
         auto [from_x, from_y] = get_adjusted_rr_position(from_node);
         auto [to_x, to_y] = get_adjusted_rr_position(to_node);
@@ -657,7 +657,7 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
         /* account for wire direction. lookahead map was computed by looking up and to the right starting at INC wires. for targets
          * that are opposite of the wire direction, let's add 1 to delta_seg */
         Direction from_dir = rr_graph.node_direction(from_node);
-        if (is_chan(from_type)
+        if (is_chanxy(from_type)
             && ((to_seg < from_seg_low && from_dir == Direction::INC) || (to_seg > from_seg_high && from_dir == Direction::DEC))) {
             // If the routing channel starts from the perimeter of the grid,
             // and it is heading towards the outside of the grid, we should
@@ -1420,13 +1420,15 @@ static std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
 
     e_rr_type rr_type = rr_graph.node_type(rr);
 
-    if (is_chan(rr_type)) {
+    if (is_chanxy(rr_type)) {
         return get_adjusted_rr_wire_position(rr);
     } else if (is_pin(rr_type)) {
         return get_adjusted_rr_pin_position(rr);
-    } else {
-        VTR_ASSERT_SAFE(is_src_sink(rr_type));
+    } else if (is_src_sink(rr_type)) {
         return get_adjusted_rr_src_sink_position(rr);
+    } else {
+        VTR_ASSERT_SAFE(is_chanz(rr_type));
+        return {rr_graph.node_xlow(rr), rr_graph.node_ylow(rr)};
     }
 }
 
@@ -1500,7 +1502,7 @@ static std::pair<int, int> get_adjusted_rr_wire_position(const RRNodeId rr) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    VTR_ASSERT_SAFE(is_chan(rr_graph.node_type(rr)));
+    VTR_ASSERT_SAFE(is_chanxy(rr_graph.node_type(rr)));
 
     Direction rr_dir = rr_graph.node_direction(rr);
 

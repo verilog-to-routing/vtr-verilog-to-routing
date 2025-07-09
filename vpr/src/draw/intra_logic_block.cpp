@@ -34,11 +34,47 @@
 #include "draw.h"
 #include "draw_triangle.h"
 
+// Vertical padding (as a fraction of tile height) added to leave space for text inside internal logic blocks
+constexpr float FRACTION_TEXT_PADDING = 0.01;
+
 /************************* Subroutines local to this file. *******************************/
 
+/**
+ * @brief A recursive function which traverses through each sub-block of a pb_graph_node, calculates bounding boxes for each sub-block, and stores the bounding boxes in the global draw_coords variable.
+ * @param type_descrip_index The index of the logical block type.
+ * @param pb_graph_node The pb_graph_node.
+ * @param parent_width The width of the parent block.
+ * @param parent_height The height of the parent block.
+ */
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height);
+
+/**
+ * @brief Finds the maximum depth of sub-blocks for a given pb_type.
+ * @param pb_type The top-level pb_type.
+ * @return The maximum level for the given pb_type.
+ */
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
-static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height);
+/**
+ * @brief A helper function to calculate the number of child blocks for a given t_mode.
+ * @param mode The mode of the parent pb_type.
+ * @return The number of child blocks for the given t_mode.
+ */
+static int get_num_child_blocks(const t_mode& mode);
+/**
+ * @brief A helper function for draw_internal_load_coords. 
+ * Calculates the coordinates of a internal block and stores its bounding box inside global variables. 
+ * The calculated width and height of the block are also assigned to the pointers blk_width and blk_height.
+ * @param type_descrip_index The index of the logical block type.
+ * @param pb_graph_node The pb_graph_node of the logical block type.
+ * @param blk_num Each logical block type has num_modes * num_pb_type_children sub-blocks. blk_num is the index of the sub-block within the logical block type.
+ * @param num_columns Number of columns of blocks to draw in the parent block type.
+ * @param num_rows Number of rows of blocks to draw in the parent block type.
+ * @param parent_width The width of the parent block.
+ * @param parent_height The height of the parent block.
+ * @param blk_width Pointer to store the calculated width of the block.
+ * @param blk_height Pointer to store the calculated height of the block.
+ */
+static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int blk_num, int num_columns, int num_rows, float parent_width, float parent_height, float* blk_width, float* blk_height);
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
@@ -214,6 +250,15 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
     return max_levels;
 }
 
+static int get_num_child_blocks(const t_mode& mode) {
+    // not all child_pb_types have the same number of physical blocks, so we have to manually loop through and count the physical blocks
+    int num_blocks = 0;
+    for (int j = 0; j < mode.num_pb_type_children; ++j) {
+        num_blocks += mode.pb_type_children[j].num_pb;
+    }
+    return num_blocks;
+}
+
 /* Helper function for initializing bounding box values for each sub-block. This function
  * traverses through the pb_graph for a descriptor_type (given by type_descrip_index), and
  * calls helper function to compute bounding box values.
@@ -232,23 +277,48 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
     for (int i = 0; i < num_modes; ++i) {
         t_mode mode = pb_type->modes[i];
         int num_children = mode.num_pb_type_children;
+        int num_blocks = get_num_child_blocks(mode);
+        int blk_num = 0;
 
         for (int j = 0; j < num_children; ++j) {
-            /* Find the number of instances for each child pb_type. */
+            // Find the number of instances for each child pb_type.
             int num_pb = mode.pb_type_children[j].num_pb;
 
+            // Determine how we want to arrange the sub-blocks in the parent block.
+            // We want the blocks to be squarish, and not too wide or too tall.
+            // In other words, we want the number of rows to be as close to the number of columns as possible such that
+            // num_rows * num_columns =  num_blocks.
+            // first, determine the "middle" factor for the number of columns
+            int num_columns = 1;
+            for (int k = 1; k * k <= num_blocks; ++k) {
+                if (num_blocks % k == 0) {
+                    num_columns = k;
+                }
+            }
+            int num_rows = num_blocks / num_columns;
+            // Currently num_rows >= num_columns
+
+            // If blocks are too wide, swap num_rows and num_columns, so that num_rows <= num_columns.
+            const int MAX_WIDTH_HEIGHT_RATIO = 2;
+            if (parent_width > parent_height * MAX_WIDTH_HEIGHT_RATIO) {
+                std::swap(num_columns, num_rows);
+            }
+
             for (int k = 0; k < num_pb; ++k) {
-                /* Compute bound box for block. Don't call if pb_type is root-level pb. */
+
+                // Compute bound box for block. Don't call if pb_type is root-level pb.
                 draw_internal_calc_coords(type_descrip_index,
                                           &pb_graph_node->child_pb_graph_nodes[i][j][k],
-                                          num_children, j, num_pb, k,
+                                          blk_num, num_columns, num_rows,
                                           parent_width, parent_height,
                                           &blk_width, &blk_height);
 
-                /* Traverse to next level in the pb_graph */
+                // Traverse to next level in the pb_graph
                 draw_internal_load_coords(type_descrip_index,
                                           &pb_graph_node->child_pb_graph_nodes[i][j][k],
                                           blk_width, blk_height);
+
+                blk_num++;
             }
         }
     }
@@ -258,56 +328,47 @@ static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* p
  * are relative to the left and bottom corner of the parent block.
  */
 static void
-draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
+draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int blk_num, int num_columns, int num_rows, float parent_width, float parent_height, float* blk_width, float* blk_height) {
 
     // get the bbox for this pb type
     ezgl::rectangle& pb_bbox = get_draw_coords_vars()->blk_info.at(type_descrip_index).get_pb_bbox_ref(*pb_graph_node);
 
-    const float FRACTION_PARENT_PADDING_X = 0.01;
+    float tile_width = get_draw_coords_vars()->get_tile_width();
 
-    const float NORMAL_FRACTION_PARENT_HEIGHT = 0.90;
-    float capacity_divisor = 1;
-    const float FRACTION_PARENT_PADDING_BOTTOM = 0.01;
+    constexpr float FRACTION_PARENT_PADDING = 0.005;
+    constexpr float FRACTION_CHILD_MARGIN = 0.003;
 
-    const float FRACTION_CHILD_MARGIN_X = 0.025;
-    const float FRACTION_CHILD_MARGIN_Y = 0.04;
+    float abs_parent_padding = tile_width * FRACTION_PARENT_PADDING;
+    float abs_text_padding = tile_width * FRACTION_TEXT_PADDING;
+    float abs_child_margin = tile_width * FRACTION_CHILD_MARGIN;
 
-    int capacity = device_ctx.physical_tile_types[type_descrip_index].capacity;
-    // TODO: this is a hack - should be fixed for the layer_num
-    const auto& type = device_ctx.grid.get_physical_type({1, 0, 0});
-    if (capacity > 1 && device_ctx.grid.width() > 0 && device_ctx.grid.height() > 0 && grid_blocks.get_usage({1, 0, 0}) != 0
-        && type_descrip_index == type->index) {
-        // that should test for io blocks, and setting capacity_divisor > 1
-        // will squish every thing down
-        capacity_divisor = capacity - 1;
+    // add safety check to ensure that the dimensions will never be below zero
+    if (parent_width <= 2 * abs_parent_padding || parent_height <= 2 * abs_parent_padding - abs_text_padding) {
+        abs_parent_padding = 0;
+        abs_text_padding = 0;
     }
 
-    /* Draw all child-level blocks in just most of the space inside their parent block. */
-    float parent_drawing_width = parent_width * (1 - FRACTION_PARENT_PADDING_X * 2);
-    float parent_drawing_height = parent_height * (NORMAL_FRACTION_PARENT_HEIGHT / capacity_divisor);
+    /* Draw all child-level blocks using most of the space inside their parent block. */
+    float parent_drawing_width = parent_width - 2 * abs_parent_padding;
+    float parent_drawing_height = parent_height - 2 * abs_parent_padding - abs_text_padding;
 
-    /* The left and bottom corner (inside the parent block) of the space to draw
-     * child blocks.
-     */
-    float sub_tile_x = parent_width * FRACTION_PARENT_PADDING_X;
-    float sub_tile_y = parent_height * FRACTION_PARENT_PADDING_BOTTOM;
+    int x_index = blk_num % num_columns;
+    int y_index = blk_num / num_columns;
 
-    /* Divide parent_drawing_width by the number of child types. */
-    float child_width = parent_drawing_width / num_pb_types;
-    /* Divide parent_drawing_height by the number of instances of the pb_type. */
-    float child_height = parent_drawing_height / num_pb;
+    float child_width = parent_drawing_width / num_columns;
+    float child_height = parent_drawing_height / num_rows;
 
-    /* The starting point to draw the physical block. */
-    double left = child_width * type_index + sub_tile_x + FRACTION_CHILD_MARGIN_X * child_width;
-    double bot = child_height * pb_index + sub_tile_y + FRACTION_CHILD_MARGIN_Y * child_height;
+    // add safety check to ensure that the dimensions will never be below zero
+    if (child_width <= abs_child_margin * 2 || child_height <= abs_child_margin * 2) {
+        abs_child_margin = 0;
+    }
 
-    /* Leave some space between different pb_types. */
-    child_width *= 1 - FRACTION_CHILD_MARGIN_X * 2;
-    /* Leave some space between different instances of the same type. */
-    child_height *= 1 - FRACTION_CHILD_MARGIN_Y * 2;
+    // The starting point to draw the physical block.
+    double left = child_width * x_index + abs_parent_padding + abs_child_margin;
+    double bot = child_height * y_index + abs_parent_padding + abs_child_margin;
+
+    child_width -= abs_child_margin * 2;
+    child_height -= abs_child_margin * 2;
 
     /* Endpoint for drawing the pb_type */
     double right = left + child_width;
@@ -343,7 +404,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         return;
     }
 
-    /// first draw box ///
+    // first draw box
 
     if (pb->name != nullptr) {
         // If block is used, draw it in colour with solid border.
@@ -373,51 +434,54 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         g->draw_rectangle(abs_bbox);
     }
 
-    /// then draw text ///
+    // Display text for each physical block.
+    std::string pb_display_text(pb_type->name);
+    std::string pb_type_name(pb_type->name);
 
-    if (pb->name != nullptr) {
-        g->set_font_size(16); // note: calc_text_xbound(...) assumes this is 16
-        if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
-            // If this pb is at the lowest displayed level, or has no more children, then
-            // label it in the center with its type and name
+    if (!pb->is_primitive()) {
+        // Format for non-primitives: <block_type_name>[<placement_index>]:<mode_name>
+        std::string mode_name = pb->pb_graph_node->pb_type->modes[pb->mode].name;
+        pb_display_text += "[" + std::to_string(pb->pb_graph_node->placement_index) + "]";
 
-            std::string pb_type_name(pb_type->name);
-            std::string pb_name(pb->name);
-
-            std::string blk_tag = pb_type_name + pb_name;
-
-            if (draw_state->draw_block_text) {
-                g->draw_text(
-                    abs_bbox.center(),
-                    blk_tag.c_str(),
-                    abs_bbox.width(),
-                    abs_bbox.height());
-            }
-
-        } else {
-            // else (ie. has chilren, and isn't at the lowest displayed level)
-            // just label its type, and put it up at the top so we can see it
-            if (draw_state->draw_block_text) {
-                g->draw_text(
-                    ezgl::point2d(abs_bbox.center_x(),
-                                  abs_bbox.top() - (abs_bbox.height()) / 15.0),
-                    pb_type->name,
-                    abs_bbox.width(),
-                    abs_bbox.height());
-            }
+        // Don't display mode name if it is the same as the pb_type name
+        if (mode_name != pb_type_name) {
+            pb_display_text += ":" + mode_name;
         }
     } else {
-        // If child block is not used, label it only by its type
+        // Format for primitives: <block_type_name>(<block_name>)
+        if (pb->name != nullptr) {
+            std::string pb_name(pb->name);
+            pb_display_text += "(" + pb_name + ")";
+        }
+    }
+
+    g->set_font_size(16);
+    if (pb_type->depth == draw_state->show_blk_internal || pb->child_pbs == nullptr) {
+        // If this pb is at the lowest displayed level, or has no more children, then
+        // label it in the center with its type and name
+
         if (draw_state->draw_block_text) {
             g->draw_text(
                 abs_bbox.center(),
-                pb_type->name,
+                pb_display_text.c_str(),
+                abs_bbox.width(),
+                abs_bbox.height());
+        }
+
+    } else {
+        // else (ie. has chilren, and isn't at the lowest displayed level)
+        // just label its type, and put it up at the top so we can see it
+        if (draw_state->draw_block_text) {
+            g->draw_text(
+                ezgl::point2d(abs_bbox.center_x(),
+                              abs_bbox.top() - draw_coords->get_tile_height() * FRACTION_TEXT_PADDING),
+                pb_display_text.c_str(),
                 abs_bbox.width(),
                 abs_bbox.height());
         }
     }
 
-    /// now recurse on the child pbs. ///
+    // now recurse on the child pbs.
 
     // return if no children, or this is an unusused pb,
     // or if going down will be too far down (this one is redundant, but for optimazition)
