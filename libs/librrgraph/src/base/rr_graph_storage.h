@@ -529,11 +529,21 @@ class t_rr_graph_storage {
      */
     void make_room_for_node(RRNodeId elem_position) {
         make_room_in_vector(&node_storage_, size_t(elem_position));
+
+        // Reserve the capacity based on node_storage_. The capacity is determined in 
+        // make_room_in_vector(), which uses a power-of-two growth pattern to avoid 
+        // growing the vector one element at a time.
         node_ptc_.reserve(node_storage_.capacity());
         node_ptc_.resize(node_storage_.size());
+
+        node_layer_.reserve(node_storage_.capacity());
         node_layer_.resize(node_storage_.size());
+
         if (is_tileable_) {
+            node_bend_start_.reserve(node_storage_.capacity());
             node_bend_start_.resize(node_storage_.size());
+
+            node_bend_end_.reserve(node_storage_.capacity());
             node_bend_end_.resize(node_storage_.size());
         }
     }
@@ -558,8 +568,10 @@ class t_rr_graph_storage {
         node_storage_.resize(size);
         node_ptc_.resize(size);
         node_layer_.resize(size);
-        node_bend_start_.resize(size);
-        node_bend_end_.resize(size);
+        if (is_tileable_) {
+            node_bend_start_.resize(size);
+            node_bend_end_.resize(size);
+        }
     }
 
     /** @brief Number of RR nodes that can be accessed. */
