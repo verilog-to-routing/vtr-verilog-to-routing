@@ -115,7 +115,6 @@ class NetCostHandler {
     /**
      * @brief Update net cost data structures (in placer context and net_cost in .cpp file)
      * and reset flags (proposed_net_cost and bb_updated_before).
-     * @param num_nets_affected The number of nets affected by the move.
      * It is used to determine the index up to which elements in ts_nets_to_update are valid.
      */
     void update_move_nets();
@@ -125,7 +124,6 @@ class NetCostHandler {
      * and update "costs" accordingly. It is important to note that in this function bounding box
      * and connection delays are not calculated from scratch. However, it iterates over all nets
      * and connections and updates their costs by a complete summation, rather than incrementally.
-     * @param noc_opts Contains NoC cost weighting factors.
      * @param delay_model Placement delay model. Used to compute timing cost.
      * @param criticalities Contains the clustered netlist connection criticalities.
      * Used to computed timing cost .
@@ -305,7 +303,7 @@ class NetCostHandler {
      * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 
      * the cross-die-layer direction over a 2D (x,y) region. We don't assume the inter-die connectivity is the same at all (x,y) locations, so we
      * can't compute the full chanz_place_cost_fac for all possible (xlow,ylow)(xhigh,yhigh) without a 4D array, which would
-     * be too big: O(n^2) in circuit size. Instead we compute a prefix sum that stores the number of inter-die connections per layer from
+     * be too big: O(n^2) in circuit size. Instead, we compute a prefix sum that stores the number of inter-die connections per layer from
      * (x=0,y=0) to (x,y). Given this, we can compute the average number of inter-die connections over a (xlow,ylow) to (xhigh,yhigh) 
      * region in O(1) (by adding and subtracting 4 entries)
      */
@@ -435,10 +433,10 @@ class NetCostHandler {
      * @details This routine finds the bounding box of each net from scratch when the bounding box is of type per-layer (i.e. from
      * only the block location information). It updates the coordinate, number of pins on each edge information, and the
      * number of sinks on each layer. It should only be called when the bounding box information is not valid.
-     * @param net_id ID of the net which the moving pin belongs to
-     * @param coords Bounding box coordinates of the net. It is calculated in this function
-     * @param num_on_edges Net's number of blocks on the edges of the bounding box. It is calculated in this function.
-     * @param num_sink_pin_layer Net's number of sinks on each layer, calculated in this function.
+     * @param net_id                ID of the net which the moving pin belongs to
+     * @param coords                Bounding box coordinates of the net. It is calculated in this function
+     * @param num_on_edges          Net's number of blocks on the edges of the bounding box. It is calculated in this function.
+     * @param layer_pin_sink_count  Net's number of sinks on each layer, calculated in this function.
      */
     void get_layer_bb_from_scratch_(ClusterNetId net_id,
                                     std::vector<t_2D_bb>& num_on_edges,
@@ -473,11 +471,9 @@ class NetCostHandler {
      * Currently assumes channels on both sides of the CLBs forming the   edges of the bounding box can be used.
      * Essentially, I am assuming the pins always lie on the outside of the bounding box. The x and y coordinates
      * are the pin's x and y coordinates. IO blocks are considered to be one cell in for simplicity.
-     * @param bb_edge_new Number of blocks on the edges of the bounding box
-     * @param bb_coord_new Coordinates of the bounding box
-     * @param num_sink_pin_layer_new Number of sinks of the given net on each layer
-     * @param pin_old_loc The old location of the moving pin
-     * @param pin_new_loc The new location of the moving pin
+     * @param net_id        Net whose bounding box is to be updated.
+     * @param pin_old_loc   The old location of the moving pin
+     * @param pin_new_loc   The new location of the moving pin
      * @param is_output_pin Is the moving pin of the type output
      */
     void update_layer_bb_(ClusterNetId net_id,
@@ -650,16 +646,14 @@ class NetCostHandler {
     /**
      * @brief Given the 3D BB, calculate the wire-length estimate of the net
      * @param net_id ID of the net which wirelength estimate is requested
-     * @param bb Bounding box of the net
      * @return Wirelength estimate of the net
      */
     double get_net_wirelength_estimate_(ClusterNetId net_id) const;
 
     /**
      * @brief Given the per-layer BB, calculate the wire-length estimate of the net on each layer
-     * and return the sum of the lengths
-     * @param bb Per-layer BB of the net
-     * @param net_layer_pin_sink_count Number of sink pins on each layer for the net
+     *        and return the sum of the lengths
+     * @param net_id Net whose weirelength is to be estimated.
      * @return Wirelength estimate of the net
      */
     double get_net_wirelength_from_layer_bb_(ClusterNetId net_id) const;

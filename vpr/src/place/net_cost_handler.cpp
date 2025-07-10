@@ -303,10 +303,10 @@ std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cos
     // TODO: compute congestion cost
     constexpr double cong_cost = 0.;
 
-    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) { /* for each net ... */
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {   /* Do only if not ignored. */
-            /* Small nets don't use incremental updating on their bounding boxes, *
-             * so they can use a fast bounding box calculator.                    */
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            // Small nets don't use incremental updating on their bounding boxes,
+            //so they can use a fast bounding box calculator.
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
                 get_layer_bb_from_scratch_(net_id,
                                            layer_bb_num_on_edges_[net_id],
