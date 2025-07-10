@@ -194,11 +194,7 @@ def run(
     yosys_helper_base_script = None
     if yosys_script is None:
         yosys_base_script = str(vtr.paths.yosys_script_path)
-        try:
-            yosys_slang_exec = str(vtr.paths.yosys_slang_path)
-            yosys_helper_base_script = str(vtr.paths.yosys_helper_script_path)
-        except KeyError:
-            yosys_helper_base_script = None
+        yosys_helper_base_script = str(vtr.paths.yosys_helper_script_path)
     else:
         yosys_base_script = str(Path(yosys_script).resolve())
 
