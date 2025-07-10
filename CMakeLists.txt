@@ -56,7 +56,6 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
 option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
-#option(SYNLIG_SYSTEMVERILOG "Enable building and installing Synlig SystemVerilog and UHDM plugins" OFF)
 option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" OFF)
 
 set(VTR_VERSION_MAJOR 9)
