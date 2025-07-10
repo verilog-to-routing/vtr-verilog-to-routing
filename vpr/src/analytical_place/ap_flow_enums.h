@@ -27,7 +27,7 @@ enum class e_ap_analytical_solver {
  */
 enum class e_ap_partial_legalizer {
     BiPartitioning, ///< Partial Legalizer which forms minimum windows around dense regions and uses bipartitioning to spread blocks over windows.
-    FlowBased       ///> Partial Legalizer which flows blocks from overfilled bins to underfilled bins.
+    FlowBased       ///< Partial Legalizer which flows blocks from overfilled bins to underfilled bins.
 };
 
 /**
