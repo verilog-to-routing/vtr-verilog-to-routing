@@ -190,8 +190,8 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
                                                                     int x,
                                                                     int y,
                                                                     e_rr_type rr_type) const {
-    VTR_ASSERT(rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN || rr_type == e_rr_type::SINK);
-    if (rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::SINK) {
+    VTR_ASSERT(rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN || rr_type == e_rr_type::SINK || rr_type == e_rr_type::MUX);
+    if (rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::SINK || rr_type == e_rr_type::MUX) {
         return find_nodes(layer,x, y, rr_type);
     }
 
@@ -199,7 +199,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
     // Reserve space to avoid memory fragmentation
     size_t num_nodes = 0;
     for (e_side node_side : TOTAL_2D_SIDES) {
-        num_nodes += find_nodes(layer,x, y, rr_type, node_side).size();
+        num_nodes += find_nodes(layer, x, y, rr_type, node_side).size();
     }
 
     nodes.reserve(num_nodes);
@@ -290,7 +290,7 @@ void RRSpatialLookup::mirror_nodes(const int layer,
                                    const vtr::Point<int>& des_coord,
                                    e_rr_type type,
                                    e_side side) {
-    VTR_ASSERT(e_rr_type::SOURCE == type);
+    VTR_ASSERT(e_rr_type::SOURCE == type || e_rr_type::SINK == type);
     resize_nodes(layer, des_coord.x(), des_coord.y(), type, side);
     rr_node_indices_[type][layer][des_coord.x()][des_coord.y()][side] = rr_node_indices_[type][layer][src_coord.x()][src_coord.y()][side];
 }

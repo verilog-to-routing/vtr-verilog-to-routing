@@ -517,9 +517,9 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
         for (const auto& segment_inf : segment_inf_vec) {
             std::vector<e_rr_type> chan_types;
-            if (segment_inf.parallel_axis == X_AXIS)
+            if (segment_inf.parallel_axis == e_parallel_axis::X_AXIS)
                 chan_types.push_back(e_rr_type::CHANX);
-            else if (segment_inf.parallel_axis == Y_AXIS)
+            else if (segment_inf.parallel_axis == e_parallel_axis::Y_AXIS)
                 chan_types.push_back(e_rr_type::CHANY);
             else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
                 chan_types.insert(chan_types.end(), {e_rr_type::CHANX, e_rr_type::CHANY});
@@ -728,7 +728,9 @@ static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitiv
                          g_vpr_ctx.device().rr_indexed_data,
                          g_vpr_ctx.device().rr_rc_data,
                          rr_graph_builder.rr_segments(),
-                         rr_graph_builder.rr_switch()};
+                         rr_graph_builder.rr_switch(),
+                         rr_graph_builder.node_in_edge_storage(),
+                         rr_graph_builder.node_ptc_storage()};
 
     util::t_ipin_primitive_sink_delays pin_delays = util::compute_intra_tile_dijkstra(rr_graph,
                                                                                       physical_tile,

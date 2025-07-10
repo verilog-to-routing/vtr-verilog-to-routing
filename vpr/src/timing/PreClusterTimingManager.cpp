@@ -10,7 +10,7 @@
 #include <memory>
 #include "PreClusterDelayCalculator.h"
 #include "PreClusterTimingGraphResolver.h"
-#include "SetupGrid.h"
+#include "setup_grid.h"
 #include "atom_lookup.h"
 #include "atom_netlist.h"
 #include "atom_netlist_fwd.h"

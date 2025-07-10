@@ -416,11 +416,9 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         break;
                     }
 
-                    //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x(), sample_loc.y());
                     const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num, sample_loc.x, sample_loc.y, rr_type);
                     for (RRNodeId node_id : rr_nodes_at_loc) {
                         int ptc = rr_graph.node_ptc_num(node_id);
-                        // For the time being, we decide to not let the lookahead explore the node inside the clusters
                         if (!is_inter_cluster_node(rr_graph, node_id)) {
                             continue;
                         }
@@ -661,7 +659,18 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
         Direction from_dir = rr_graph.node_direction(from_node);
         if (is_chanxy(from_type)
             && ((to_seg < from_seg_low && from_dir == Direction::INC) || (to_seg > from_seg_high && from_dir == Direction::DEC))) {
-            delta_seg++;
+            // If the routing channel starts from the perimeter of the grid,
+            // and it is heading towards the outside of the grid, we should
+            // not increment the delta_seg by 1.
+            int max_seg_index = -1;
+            if (from_type == e_rr_type::CHANX) {
+                max_seg_index = static_cast<int>(device_ctx.grid.width()) - 1;
+            } else {
+                max_seg_index = static_cast<int>(device_ctx.grid.height()) - 1;
+            }
+            if (!((from_seg_low == 0 && from_dir == Direction::DEC) || (from_seg_low == max_seg_index && from_dir == Direction::INC))) {
+                delta_seg++;
+            }
         }
 
         if (from_type == e_rr_type::CHANY) {
@@ -720,9 +729,9 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     //First try to pick good representative sample locations for each type
     std::vector<RRNodeId> sample_nodes;
     std::vector<e_rr_type> chan_types;
-    if (segment_inf.parallel_axis == X_AXIS)
+    if (segment_inf.parallel_axis == e_parallel_axis::X_AXIS)
         chan_types.push_back(e_rr_type::CHANX);
-    else if (segment_inf.parallel_axis == Y_AXIS)
+    else if (segment_inf.parallel_axis == e_parallel_axis::Y_AXIS)
         chan_types.push_back(e_rr_type::CHANY);
     else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
         chan_types.insert(chan_types.end(), {e_rr_type::CHANX, e_rr_type::CHANY});
@@ -1010,7 +1019,7 @@ static void dijkstra_flood_to_wires(int itile,
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].congestion = curr.congestion;
             }
 
-        } else if (curr_rr_type == e_rr_type::SOURCE || curr_rr_type == e_rr_type::OPIN || curr_rr_type == e_rr_type::IPIN) {
+        } else if (curr_rr_type == e_rr_type::SOURCE || curr_rr_type == e_rr_type::OPIN || curr_rr_type == e_rr_type::IPIN || curr_rr_type == e_rr_type::MUX) {
             //We allow expansion through SOURCE/OPIN/IPIN types
             auto cost_index = rr_graph.node_cost_index(curr.node);
             float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
@@ -1021,7 +1030,6 @@ static void dijkstra_flood_to_wires(int itile,
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-
                 if (!is_inter_cluster_node(rr_graph, next_node)) {
                     // Don't go inside the clusters
                     continue;
@@ -1376,8 +1384,8 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
 
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
-        // For the time being, we decide to not let the lookahead explore the node inside the clusters
-
+        // Don't expand the nodes inside the clusters since the intra-cluster lookahead
+        // is computed separately.
         if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
         }

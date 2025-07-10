@@ -45,6 +45,11 @@
  * - Timing analyzer
  * - GUI
  *
+ * Note that each client of rr_graph may get a frame view of the object
+ * The RRGraphView is the complete frame view of the routing resource graph
+ * - This helps to reduce the memory footprint for each client
+ * - This avoids massive changes for each client on using the APIs
+ *   as each frame view provides adhoc APIs for each client
  * \internal
  * TODO: More compact frame views will be created, such as:
  * - A mini frame view: Contains only nodes and edges, representing the 
@@ -72,19 +77,21 @@ class RRGraphView {
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                 const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
-                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
+                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
+                const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges,
+                const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums);
 
     /* Disable copy constructors and copy assignment operator
-     * This is to avoid accidental copy because it could be an expensive operation considering that the 
+     * This is to avoid accidental copy because it could be an expensive operation considering that the
      * memory footprint of the data structure could ~ Gb
-     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught 
+     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught
      * by compiler
      */
     RRGraphView(const RRGraphView&) = delete;
     void operator=(const RRGraphView&) = delete;
 
     /* -- Accessors -- */
-    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin' 
+    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin'
      * kind of accessors
      */
   public:
@@ -222,6 +229,24 @@ class RRGraphView {
     */
     inline short node_layer(RRNodeId node) const {
         return node_storage_.node_layer(node);
+    }
+    
+    /** 
+     * @brief Return the bend start of a specified node.
+     * @param node The node id
+     * @return The bend start
+     */
+    inline short node_bend_start(RRNodeId node) const {
+        return node_storage_.node_bend_start(node);
+    }
+
+    /** 
+     * @brief Return the bend end of a specified node.
+     * @param node The node id
+     * @return The bend end
+     */
+    inline short node_bend_end(RRNodeId node) const {
+        return node_storage_.node_bend_end(node);
     }
 
     /** @brief Return the first outgoing edge of a specified node.
@@ -459,6 +484,24 @@ class RRGraphView {
         return node_storage_.edge_sink_node(id, iedge);
     }
 
+    /**
+     * @brief Return the destination node for the specified edge.
+     * @param edge The edge id
+     * @return The destination node id
+     */
+    inline RRNodeId edge_sink_node(RREdgeId edge) const {
+        return node_storage_.edge_sink_node(edge);
+    }
+
+    /** 
+     * @brief Get the source node for the iedge'th edge from specified RRNodeId.
+     * @note This method should generally not be used, and instead first_edge and
+     * last_edge should be used.
+     */
+    inline RRNodeId edge_source_node(RRNodeId id, t_edge_size iedge) const {
+        return node_storage_.edge_source_node(id, iedge);
+    }
+
     /** @brief Check if the edge is a configurable edge 
      * @note A configurable edge represents a programmable switch between routing resources, which could be 
      *  - a multiplexer
@@ -467,6 +510,15 @@ class RRGraphView {
     */
     inline bool edge_is_configurable(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_is_configurable(id, iedge, rr_switch_inf_);
+    }
+
+    /**
+     * @brief Check if the edge is a configurable edge
+     * @param edge The edge id
+     * @return True if the edge is configurable, false otherwise
+     */
+    inline bool edge_is_configurable(RREdgeId edge) const {
+        return node_storage_.edge_is_configurable(edge, rr_switch_inf_);
     }
 
     /** @brief Return the number of configurable edges. 
@@ -481,10 +533,21 @@ class RRGraphView {
         return node_storage_.num_non_configurable_edges(node, rr_switch_inf_);
     }
 
-    /** @brief Return ID range for configurable edges.  
-     */
+    /** 
+     * @brief A configurable edge represents a programmable switch between routing resources, which could be
+     *  - a multiplexer
+     *  - a tri-state buffer
+     *  - a pass gate
+     * This API gets ID range for configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range configurable_edges(RRNodeId node) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)));
+    }
+
+    /**
+     * @brief Return ID range for configurable outgoing edges.
+     */
+    inline edge_idx_range node_configurable_out_edges(RRNodeId node) const {
+        return configurable_edges(node);
     }
 
     /** @brief Return ID range for non-configurable edges. 
@@ -494,6 +557,13 @@ class RRGraphView {
      */
     inline edge_idx_range non_configurable_edges(RRNodeId node) const {
         return vtr::make_range(edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)), edge_idx_iterator(num_edges(node)));
+    }
+
+    /**
+     * @brief Return ID range for non-configurable outgoing edges.
+     */
+    inline edge_idx_range node_non_configurable_out_edges(RRNodeId node) const {
+        return non_configurable_edges(node);
     }
 
     /**
@@ -510,6 +580,16 @@ class RRGraphView {
     inline edge_idx_range edges(const RRNodeId& id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
+
+    /**
+     * @brief Return ID range for outgoing edges.
+     */
+    inline edge_idx_range node_out_edges(const RRNodeId& id) const {
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
+    }
+
+    /** @brief find the edges between two nodes */
+    std::vector<RREdgeId> find_edges(RRNodeId src_node, RRNodeId des_node) const;
 
     /** @brief Return the number of edges.
      */
@@ -559,6 +639,27 @@ class RRGraphView {
     RRIndexedDataId node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);
     }
+
+    /** @brief Get the segment id which a routing resource node represents. Only applicable to nodes whose type is CHANX or CHANY */
+    RRSegmentId node_segment(RRNodeId node) const;
+
+    /** 
+     * @brief Return incoming edges for a given routing resource node 
+     *        Requires build_in_edges() to be called first
+     */
+    std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
+
+    /** 
+     * @brief Return configurable incoming edges for a given routing resource node
+     *        Requires build_in_edges() to be called first
+     */
+    std::vector<RREdgeId> node_configurable_in_edges(RRNodeId node) const;
+
+    /** 
+     * @brief Return non-configurable incoming edges for a given routing resource node
+     *        Requires build_in_edges() to be called first
+     */
+    std::vector<RREdgeId> node_non_configurable_in_edges(RRNodeId node) const;
 
     /** @brief Return detailed routing segment information of a specified segment
      * @note The routing segments here may not be exactly same as those defined in architecture file. They have been
@@ -634,6 +735,26 @@ class RRGraphView {
         return node_storage_.validate_node(node_id, rr_switch_inf_);
     }
 
+    /** @brief Check if the node id is a valid one in storage */
+    inline bool valid_node(RRNodeId node_id) const {
+        return size_t(node_id) < node_storage_.size();
+    }
+
+    /** @brief Check if the switch is a valid one in storage */
+    inline bool valid_switch(RRSwitchId switch_id) const {
+        return (size_t(switch_id) < rr_switch_inf_.size());
+    }
+
+    /** @brief Validate if all the fan-in edge lists are valid. This
+     *         function should be called only if build_in_edges() is called before.
+    */
+    bool validate_in_edges() const;
+    
+    /** @brief Count the number of incoming edges for all the nodes. This
+     *         function should be called only if build_in_edges() is called before.
+    */
+    size_t in_edges_count() const;
+
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */
   private:
@@ -676,4 +797,12 @@ class RRGraphView {
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
     /// switch info for rr nodes
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
+
+    /// A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
+    /// By default, it is empty. Call build_in_edges() to construct it.
+    const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges_;
+
+    /// A list of extra ptc numbers for each routing resource node. This is only used for tileable architecture.
+    /// See details in RRGraphBuilder class
+    const vtr::vector<RRNodeId, std::vector<short>>& node_tileable_track_nums_;
 };

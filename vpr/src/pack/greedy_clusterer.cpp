@@ -42,7 +42,7 @@
 #include <string>
 #include <vector>
 #include "appack_context.h"
-#include "SetupGrid.h"
+#include "setup_grid.h"
 #include "atom_netlist.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
