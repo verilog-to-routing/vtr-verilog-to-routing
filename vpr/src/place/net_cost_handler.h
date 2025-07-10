@@ -282,24 +282,24 @@ class NetCostHandler {
      * number of tracks in that direction; for other cost functions they
      * will never be used.
      */
-     ChannelData<vtr::PrefixSum1D<int>> acc_chan_width_;
+    ChannelData<vtr::PrefixSum1D<int>> acc_chan_width_;
 
-     /**
+    /**
      * @brief Estimated routing usage per channel segment,
      *        indexed by [layer][x][y]. Values represent normalized wire demand
      *        contribution from all nets distributed over their bounding boxes.
      */
-     ChannelData<vtr::NdMatrix<double, 3>> chan_util_;
+    ChannelData<vtr::NdMatrix<double, 3>> chan_util_;
 
-     /**
-      * @brief Accumulated (prefix sum) channel utilization in each direction (x/y),
-      *        on the base layer. Enables fast computation of average utilization
-      *        over a net’s bounding box during congestion cost estimation.
-      */
-     ChannelData<vtr::PrefixSum2D<double>> acc_chan_util_;
+    /**
+     * @brief Accumulated (prefix sum) channel utilization in each direction (x/y),
+     *        on the base layer. Enables fast computation of average utilization
+     *        over a net’s bounding box during congestion cost estimation.
+     */
+    ChannelData<vtr::PrefixSum2D<double>> acc_chan_util_;
 
-     /// Available channel width per grid location, indexed by [layer][x][y].
-     ChannelData<vtr::NdMatrix<int, 3>> chan_width_;
+    /// Available channel width per grid location, indexed by [layer][x][y].
+    ChannelData<vtr::NdMatrix<int, 3>> chan_width_;
 
     /**
      * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 

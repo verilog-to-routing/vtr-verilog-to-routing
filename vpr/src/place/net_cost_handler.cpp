@@ -1424,7 +1424,7 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
 
     float x_chan_cong = (x_chan_util < threshold) ? 0.0f : x_chan_util - threshold;
     float y_chan_cong = (y_chan_util < threshold) ? 0.0f : y_chan_util - threshold;
-    
+
     return x_chan_cong + y_chan_cong;
 }
 
@@ -1834,10 +1834,10 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
                                                 });
 
     acc_chan_util_.y = vtr::PrefixSum2D<double>(grid_width,
-                                               grid_height,
-                                               [&](size_t x, size_t y) {
-                                                   return chan_util_.y[0][x][y];
-                                               });
+                                                grid_height,
+                                                [&](size_t x, size_t y) {
+                                                    return chan_util_.y[0][x][y];
+                                                });
 
     congestion_modeling_started_ = true;
 
