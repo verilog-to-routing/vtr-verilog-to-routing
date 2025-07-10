@@ -679,14 +679,18 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
         outer_crit_iter_count_++;
     }
 
-
     // Congestion modeling is enabled when the ratio of the current range limit to the initial range limit
     // drops below a user-specified threshold, and the congestion cost weighting factor is non-zero.
     // Once enabled, congestion modeling continues even if the range limit increases and the ratio
     // rises above the threshold.
+    //
+    // This logic is motivated by the observation that enabling congestion modeling too early in the
+    // anneal increases computational overhead and introduces noise into the placement cost function,
+    // as early placements are typically highly congested and unstable. So, we delay congestion modeling
+    // until the placement is more settled and wirelength has been reasonably optimized.
     if ((annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio
-        && placer_opts_.congestion_factor != 0.)
-        || congestion_modeling_started_)  {
+         && placer_opts_.congestion_factor != 0.)
+        || congestion_modeling_started_) {
         costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util();
 
         if (!congestion_modeling_started_) {

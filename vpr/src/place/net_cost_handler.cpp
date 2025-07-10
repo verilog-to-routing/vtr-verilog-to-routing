@@ -301,6 +301,7 @@ std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cos
     double cost = 0.;
     double expected_wirelength = 0.;
     // TODO: compute congestion cost
+    // Congestion modeling is not supported for per-layer mode, so 0 is returned.
     constexpr double cong_cost = 0.;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
