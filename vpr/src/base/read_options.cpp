@@ -93,6 +93,7 @@ struct ParseArchFormat {
         return {"vtr", "fpga-interchange"};
     }
 };
+
 struct ParseCircuitFormat {
     ConvertedValue<e_circuit_format> from_str(const std::string& str) {
         ConvertedValue<e_circuit_format> conv_value;
@@ -2334,9 +2335,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Specifies the type of bounding box to be used in 3D architectures.\n"
             "\n"
             "MODE options:\n"
-            "  auto_bb     : Automatically determine the appropriate bounding box based on the connections between layers.\n"
-            "  cube_bb            : Use 3D bounding boxes.\n"
-            "  per_layer_bb     : Use per-layer bounding boxes.\n"
+            "  auto_bb      : Automatically determine the appropriate bounding box based on the connections between layers.\n"
+            "  cube_bb      : Use 3D bounding boxes.\n"
+            "  per_layer_bb : Use per-layer bounding boxes.\n"
             "\n"
             "Choose one of the available modes to define the behavior of bounding boxes in your 3D architecture. The default mode is 'automatic'.")
         .default_value("auto_bb")
@@ -2490,18 +2491,21 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
-        .help("To be written")
+        .help("Weighting factor for congestion cost during placement. "
+              "Higher values prioritize congestion avoidance over bounding box and timing costs. "
+              "When set to zero, congestion modeling and optimization is disabled in the placement stage.")
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_congestion_rlim_trigger_ratio, "--congestion_rlim_trigger_ratio")
-        .help("To be written")
-        .default_value("0.0")
+        .help("Enables congestion modeling when the ratio of the current range limit to the initial range limit falls below this threshold, "
+              "provided the congestion weighting factor is non-zero.")
+        .default_value("1.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_congestion_chan_util_threshold, "--congestion_chan_util_threshold")
-        .help("To be written")
-        .default_value("1.0")
+        .help("Penalizes nets in placement whose average routing channel utilization within their bounding boxes exceeds this threshold.")
+        .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.RecomputeCritIter, "--recompute_crit_iter")

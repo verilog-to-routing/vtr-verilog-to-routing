@@ -679,8 +679,14 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
         outer_crit_iter_count_++;
     }
 
-    if (congestion_modeling_started_
-        || (annealing_state_.rlim / MoveGenerator::first_rlim) < placer_opts_.congestion_rlim_trigger_ratio) {
+
+    // Congestion modeling is enabled when the ratio of the current range limit to the initial range limit
+    // drops below a user-specified threshold, and the congestion cost weighting factor is non-zero.
+    // Once enabled, congestion modeling continues even if the range limit increases and the ratio
+    // rises above the threshold.
+    if ((annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio
+        && placer_opts_.congestion_factor != 0.)
+        || congestion_modeling_started_)  {
         costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util();
 
         if (!congestion_modeling_started_) {
