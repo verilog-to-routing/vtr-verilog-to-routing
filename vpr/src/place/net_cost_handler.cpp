@@ -1876,7 +1876,9 @@ const ChannelData<vtr::NdMatrix<double, 3>>& NetCostHandler::get_chan_util() con
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
     if (cube_bb_) {
         bb_coords_[net_id] = ts_bb_coord_new_[net_id];
-        avg_chan_util_[net_id] = ts_avg_chan_util_new_[net_id];
+        if (congestion_modeling_started_) {
+            avg_chan_util_[net_id] = ts_avg_chan_util_new_[net_id];
+        }
     } else {
         layer_bb_coords_[net_id] = layer_ts_bb_coord_new_[net_id];
     }
