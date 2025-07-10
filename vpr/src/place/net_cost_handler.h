@@ -62,16 +62,16 @@ class NetCostHandler {
     NetCostHandler(const t_placer_opts& placer_opts, PlacerState& placer_state, bool cube_bb);
 
     /**
-     * @brief Finds the bb cost from scratch.
-     * Done only when the placement has been radically changed
-     * (i.e. after initial placement). Otherwise find the cost
+     * @brief Finds the bb cost and congestion cost from scratch.
+     * @details Done only when the placement has been radically changed
+     * (i.e. after initial placement). Otherwise, find the cost
      * change incrementally. If method check is NORMAL, we find
      * bounding boxes that are updatable for the larger nets.
      * If method is CHECK, all bounding boxes are found via the
      * non_updateable_bb routine, to provide a cost which can be
      * used to check the correctness of the other routine.
      * @param method The method used to calculate placement cost.
-     * @return (bounding box cost of the placement, estimated wirelength)
+     * @return (bounding box cost of the placement, estimated wirelength, congestion cost)
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
@@ -172,7 +172,7 @@ class NetCostHandler {
     PlacerState& placer_state_;
     /// Contains some parameter that determine how the placement cost is computed.
     const t_placer_opts& placer_opts_;
-    /// Points to the proper method for computing the bounding box cost from scratch.
+    /// Points to the proper method for computing the bounding box cost, estimated wirelength and congestion cost from scratch.
     std::function<std::tuple<double, double, double>(e_cost_methods method)> comp_bb_cong_cost_functor_;
     /// Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
@@ -259,6 +259,15 @@ class NetCostHandler {
     vtr::vector<ClusterNetId, double> net_cost_;
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
 
+    /**
+     * @brief The congestion cost for each net is based on the extent to which its
+     * average routing channel utilization exceeds a predefined threshold.
+     * This is computed by measuring the average utilization within the net's
+     * bounding box and subtracting the congestion threshold.
+     * Only the excess portion contributes to the net's congestion cost.
+     * The valid range is [0...cluster_ctx.clb_nlist.nets().size()-1] when
+     * congestion modeling is enabled. Otherwise, this vector would be empty.
+     */
     vtr::vector<ClusterNetId, double> net_cong_cost_;
     vtr::vector<ClusterNetId, double> proposed_net_cong_cost_;
 
@@ -335,7 +344,8 @@ class NetCostHandler {
     /**
      * @brief Calculates and returns the total bb (wirelength) cost change that would result from moving the blocks
      * indicated in the blocks_affected data structure.
-     * @param bb_delta_c Cost difference after and before moving the block
+     * @param bb_delta_c Bounding box cost difference after and before moving the block.
+     * @param congestion_delta_c Congestion cost difference after and before moving the block.
      */
     void set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c);
 
@@ -352,7 +362,7 @@ class NetCostHandler {
 
     /**
      * @brief Allocates and loads acc_tile_num_inter_die_conn_ which contains the accumulative number of inter-die
-     * conntections.
+     * connections.
      *
      * @details This is only useful for multi-die FPGAs.
      */
@@ -544,17 +554,18 @@ class NetCostHandler {
      * @brief Computes the bounding box from scratch using 2D bounding boxes (per-layer mode)
      * @param method The method used to calculate placement cost. Specifies whether the cost is
      * computed from scratch or incrementally.
-     * @return (bounding box cost of the placement, estimated wirelength)
-     *
+     * @return (bounding box cost of the placement, estimated wirelength, congestion cost)
+     * @note Congestion modeling is not supported for per-layer mode, so 0 is returned.
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
     std::tuple<double, double, double> comp_per_layer_bb_cost_(e_cost_methods method);
 
     /**
      * @brief Computes the bounding box from scratch using 3D bounding boxes (cube mode)
+     *        and calculates BB cost, estimated wirelength, and congestion cost (if enabled).
      * @param method The method used to calculate placement cost. Specifies whether the cost is
-     * computed from scratch or incrementally.
-     * @return (bounding box cost of the placement, estimated wirelength)
+     *               computed from scratch or incrementally.
+     * @return (bounding box cost of the placement, estimated wirelength, congestion cost)
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
@@ -568,8 +579,10 @@ class NetCostHandler {
 
     /**
      * @brief To mitigate round-off errors, every once in a while, the costs of nets are summed up from scratch.
-     * This functions is called to do that for bb cost. It doesn't calculate the BBs from scratch, it would only add the costs again.
-     * @return Total bb (wirelength) cost for the placement
+     *        This function is called to do that for bb and congestion cost.
+     *        It doesn't calculate the BBs or channel usage estimate from scratch,
+     *        it would only add the costs again.
+     * @return (total bb cost, total congestion cost)
      */
     std::pair<double, double> recompute_bb_cong_cost_();
 
