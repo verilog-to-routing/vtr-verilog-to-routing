@@ -36,17 +36,10 @@ parmys_arch -a QQQ
 if {$env(PARSER) == "slang" } {
 	# Create a file list containing the name(s) of file(s) \
 	# to read together with read_slang
+	source [file join [pwd] "slang_filelist.tcl"]
 	set readfile [file join [pwd] "filelist.txt"]
-	set fh [open $readfile "w"]
-	foreach f {XXX} {
-		set ext [string tolower [file extension $f]]
-		if {$ext == ".sv" || $ext == ".svh" || $ext == ".v" || $ext == ".vh"} {
-			puts $fh $f
-		} else {
-			error "Unsupported file type. Yosys-Slang accepts .sv .svh .v .vh"
-		}
-	}
-	close $fh
+	#Writing names of circuit files to file list
+	build_filelist {XXX} $readfile
 	puts "Using Yosys read_slang command"
 	read_slang -C $readfile
 } elseif {$env(PARSER) == "default" } {

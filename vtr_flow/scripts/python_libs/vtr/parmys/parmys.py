@@ -191,8 +191,14 @@ def run(
     if yosys_exec is None:
         yosys_exec = str(vtr.paths.yosys_exe_path)
 
+    yosys_helper_base_script = None
     if yosys_script is None:
         yosys_base_script = str(vtr.paths.yosys_script_path)
+        try:
+            yosys_slang_exec = str(vtr.paths.yosys_slang_path)
+            yosys_helper_base_script = str(vtr.paths.yosys_helper_script_path)
+        except KeyError:
+            yosys_helper_base_script = None
     else:
         yosys_base_script = str(Path(yosys_script).resolve())
 
@@ -200,6 +206,12 @@ def run(
     yosys_script = "synthesis.tcl"
     yosys_script_full_path = str(temp_dir / yosys_script)
     shutil.copyfile(yosys_base_script, yosys_script_full_path)
+
+    if yosys_helper_base_script is not None:
+        # Copy the yosys-slang helper script file
+        yosys_helper_script = "slang_filelist.tcl"
+        yosys_helper_script_full_path = str(temp_dir / yosys_helper_script)
+        shutil.copyfile(yosys_helper_base_script, yosys_helper_script_full_path)
 
     # Copy the VTR memory blocks file
 
