@@ -94,8 +94,6 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     , placer_opts_(placer_opts) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    const size_t grid_width = device_ctx.grid.width();
-    const size_t grid_height = device_ctx.grid.height();
     const size_t num_layers = device_ctx.grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
@@ -105,10 +103,8 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     if (cube_bb_) {
         ts_bb_edge_new_.resize(num_nets, t_bb());
         ts_bb_coord_new_.resize(num_nets, t_bb());
-        ts_avg_chan_util_new_.resize(num_nets, {0., 0.});
 
         bb_coords_.resize(num_nets, t_bb());
-        avg_chan_util_.resize(num_nets, {0., 0.});
 
         bb_num_on_edges_.resize(num_nets, t_bb());
         comp_bb_cong_cost_functor_ = std::bind(&NetCostHandler::comp_cube_bb_cong_cost_, this, std::placeholders::_1);
@@ -137,8 +133,6 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     // negative net costs mean the cost is not valid.
     net_cost_.resize(num_nets, -1.);
     proposed_net_cost_.resize(num_nets, -1.);
-    net_cong_cost_.resize(num_nets, -1.);
-    proposed_net_cong_cost_.resize(num_nets, -1.);
 
     // Used to store costs for moves not yet made and to indicate when a net's
     // cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
@@ -147,20 +141,14 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 
     alloc_and_load_chan_w_factors_for_place_cost_();
 
-    chan_util_.x = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
-    chan_util_.y = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
-
-    acc_chan_util_.x = vtr::PrefixSum2D<double>(grid_width,
-                                                grid_height,
-                                                [&](size_t x, size_t y) {
-                                                    return chan_util_.x[0][x][y];
-                                                });
-
-    acc_chan_util_.y = vtr::PrefixSum2D<double>(grid_width,
-                                                grid_height,
-                                                [&](size_t x, size_t y) {
-                                                    return chan_util_.y[0][x][y];
-                                                });
+    // Congestion-related data members are not allocated until congestion modeling is enabled
+    // by calling estimate_routing_chan_util().
+    VTR_ASSERT(!congestion_modeling_started_);
+    VTR_ASSERT(chan_util_.x.empty() && chan_util_.y.empty());
+    VTR_ASSERT(acc_chan_util_.x.empty() && acc_chan_util_.y.empty());
+    VTR_ASSERT(ts_avg_chan_util_new_.empty());
+    VTR_ASSERT(avg_chan_util_.empty());
+    VTR_ASSERT(net_cong_cost_.empty() && proposed_net_cong_cost_.empty());
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
@@ -1718,13 +1706,41 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     return estimated_wirelength;
 }
 
-double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /* = true*/) {
+double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /*=true*/) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     const size_t grid_width = device_ctx.grid.width();
     const size_t grid_height = device_ctx.grid.height();
     const size_t num_layers = device_ctx.grid.get_num_layers();
+    const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
+
+    // Congestion-related data members are allocated the first time this method is called
+    // to enable congestion modeling. This lazy allocation helps save memory when congestion
+    // modeling is not used.
+    if (!congestion_modeling_started_) {
+        congestion_modeling_started_ = true;
+
+        chan_util_.x = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
+        chan_util_.y = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
+
+        acc_chan_util_.x = vtr::PrefixSum2D<double>(grid_width,
+                                                    grid_height,
+                                                    [&](size_t x, size_t y) {
+                                                        return chan_util_.x[0][x][y];
+                                                    });
+
+        acc_chan_util_.y = vtr::PrefixSum2D<double>(grid_width,
+                                                    grid_height,
+                                                    [&](size_t x, size_t y) {
+                                                        return chan_util_.y[0][x][y];
+                                                    });
+
+        ts_avg_chan_util_new_.resize(num_nets, {0., 0.});
+        avg_chan_util_.resize(num_nets, {0., 0.});
+        net_cong_cost_.resize(num_nets, -1.);
+        proposed_net_cong_cost_.resize(num_nets, -1.);
+    }
 
     chan_util_.x.fill(0.);
     chan_util_.y.fill(0.);
@@ -1838,8 +1854,6 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
                                                 [&](size_t x, size_t y) {
                                                     return chan_util_.y[0][x][y];
                                                 });
-
-    congestion_modeling_started_ = true;
 
     double cong_cost = 0.;
     // Compute congestion cost using computed bounding boxes and channel utilization map

@@ -553,7 +553,7 @@ class NetCostHandler {
     /**
      * @brief Computes the bounding box from scratch using 2D bounding boxes (per-layer mode)
      * @param method The method used to calculate placement cost. Specifies whether the cost is
-     * computed from scratch or incrementally.
+     *        computed from scratch or incrementally.
      * @return (bounding box cost of the placement, estimated wirelength, congestion cost)
      * @note Congestion modeling is not supported for per-layer mode, so 0 is returned.
      * @note The returned estimated wirelength is valid only when method == CHECK
@@ -588,13 +588,20 @@ class NetCostHandler {
 
     /**
      * @brief Given the 3D BB, calculate the wire-length cost of the net
-     * @param net_id ID of the net which cost is requested.
+     * @param net_id ID of the net whose cost is requested.
      * @param use_ts Specifies if the bounding box is retrieved from ts data structures
-     * or move context.
+     *               or permanent data structures.
      * @return Wirelength cost of the net
      */
     double get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts);
 
+    /**
+     * @brief Calculate the congestion cost of net using its 3D bounding box.
+     * @param net_id ID of the net whose cost is requested.
+     * @param use_ts Specifies if the bounding box is retrieved from ts data structures
+     *               or move context.
+     * @return Congestion cost of the net
+     */
     double get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts);
 
     /**
