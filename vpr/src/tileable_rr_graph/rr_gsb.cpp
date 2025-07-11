@@ -938,15 +938,14 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph) {
 void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                                     const e_side& ipin_side,
                                     const size_t& ipin_id) {
-    std::map<size_t, RREdgeId> from_track_edge_map;
-    std::array<std::map<size_t, RREdgeId>, NUM_2D_SIDES> from_opin_edge_map;
 
-    e_side chan_side = get_cb_chan_side(ipin_side);
+    std::map<size_t, std::map<size_t, RREdgeId>> from_track_edge_map;
+    std::array<std::map<size_t, RREdgeId>, NUM_2D_SIDES> from_opin_edge_map;
+    size_t edge_counter = 0;
 
     const RRNodeId& ipin_node = ipin_node_[size_t(ipin_side)][ipin_id];
 
     /* Count the edges and ensure every of them has been sorted */
-    size_t edge_counter = 0;
 
     /* For each incoming edge, find the node side and index in this GSB.
      * and cache these. Then we will use the data to sort the edge in the
@@ -965,14 +964,28 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
         /* In this part, we only sort routing track nodes. IPIN nodes will be handled later */
         if (CHANX != rr_graph.node_type(src_node) && CHANY != rr_graph.node_type(src_node)) {
-            continue;
+          continue;
         }
         /* The driver routing channel node can be either an input or an output to the GSB.
          * Just try to find a qualified one. */
         int index = OPEN;
+        e_side chan_side = get_cb_chan_side(ipin_side);
+
+        // Try extracting from cb_chan_sides first
         index = get_node_index(rr_graph, src_node, chan_side, IN_PORT);
         if (OPEN == index) {
             index = get_node_index(rr_graph, src_node, chan_side, OUT_PORT);
+        }
+        // If not found then search remaining sides
+        if (OPEN == index) {
+            for (size_t side = 0; side < NUM_2D_SIDES; ++side) {
+                SideManager side_manager(side);
+                chan_side = side_manager.get_side();
+                index = get_node_index(rr_graph, src_node, chan_side, IN_PORT);
+                if (OPEN != index) { break; }
+                index = get_node_index(rr_graph, src_node, chan_side, OUT_PORT);
+                if (OPEN != index) { break; }
+            }
         }
 
         /* Must have valid side and index */
@@ -995,11 +1008,9 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                 VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
             }
         }
-
         VTR_ASSERT(OPEN != index);
 
-        VTR_ASSERT(CHANX == rr_graph.node_type(src_node) || CHANY == rr_graph.node_type(src_node));
-        from_track_edge_map[index] = edge;
+        from_track_edge_map[chan_side][index] = edge;
         edge_counter++;
     }
 
@@ -1008,7 +1019,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
         /* In this part, we only sort routing track nodes. IPIN nodes will be handled later */
         if (OPIN != rr_graph.node_type(src_node)) {
-            continue;
+          continue;
         }
         enum e_side cb_opin_side = NUM_2D_SIDES;
         int cb_opin_index = -1;
@@ -1040,9 +1051,11 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
     }
 
     /* Store the sorted edge */
-    for (size_t itrack = 0; itrack < chan_node_[size_t(chan_side)].get_chan_width(); ++itrack) {
-        if (0 < from_track_edge_map.count(itrack)) {
-            ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_track_edge_map[itrack]);
+    for (size_t iside = 0; iside < NUM_2D_SIDES; ++iside) {
+        for (size_t itrack = 0; itrack < chan_node_[iside].get_chan_width(); ++itrack) {
+            if (0 < from_track_edge_map[iside].count(itrack)) {
+                ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_track_edge_map[iside][itrack]);
+            }
         }
     }
 
