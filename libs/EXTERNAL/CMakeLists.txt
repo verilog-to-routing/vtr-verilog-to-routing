@@ -1,6 +1,8 @@
 include(ExternalProject)
 include(ProcessorCount)
 
+find_package(Git REQUIRED)
+
 #Manually synchronized external libraries
 add_subdirectory(libpugixml)
 
@@ -59,11 +61,11 @@ if (${WITH_PARMYS})
 
 	#Initialize yosys submodules
 	execute_process(
-	 COMMAND git submodule update --init
+	 COMMAND ${GIT_EXECUTABLE} submodule update --init
 	 WORKING_DIRECTORY ${YOSYS_SRC_DIR}
 	)
 	execute_process(
-	  COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive git\ submodule\ update\ --init
+	  COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive ${GIT_EXECUTABLE}\ submodule\ update\ --init
 	  WORKING_DIRECTORY ${YOSYS_SRC_DIR}
 	)
 
@@ -72,13 +74,13 @@ if (${WITH_PARMYS})
 		COMMAND ${MAKE_PROGRAM} -C ${YOSYS_SRC_DIR}
 		    ENABLE_ABC=0
 		    PREFIX=${CMAKE_BINARY_DIR}
-
+            > /dev/null 2>&1
 		 COMMAND ${MAKE_PROGRAM} 
 		    -C ${YOSYS_SRC_DIR}
 		    install
 		    ENABLE_ABC=0
 		    PREFIX=${CMAKE_BINARY_DIR}
-
+            > /dev/null 2>&1
 		WORKING_DIRECTORY ${YOSYS_SRC_DIR})
 
 	add_custom_target(yosys ALL DEPENDS ${YOSYS_BUILD_DIR})
@@ -89,11 +91,11 @@ if (${WITH_PARMYS})
         set(YOSYS_CONFIG_EXECUTABLE ${CMAKE_BINARY_DIR}/bin/yosys-config CACHE STRING "Path to the yosys-config helper" FORCE)
         #Initialize yosys-slang submodules
         execute_process(
-	        COMMAND git submodule update --init
+	        COMMAND ${GIT_EXECUTABLE} submodule update --init
 	        WORKING_DIRECTORY ${SLANG_SRC_DIR}
 	    )
 	    execute_process(
-	        COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive git\ submodule\ update\ --init
+	        COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive ${GIT_EXECUTABLE}\ submodule\ update\ --init
 	        WORKING_DIRECTORY ${SLANG_SRC_DIR}
 	    )
         set(SLANG_FE "${SLANG_SRC_DIR}/src/slang_frontend.cc")
@@ -116,6 +118,9 @@ if (${WITH_PARMYS})
             BUILD_COMMAND ${CMAKE_COMMAND} --build ${SLANG_BUILD_DIR} -- -j${PROCESSOR_COUNT}
             INSTALL_COMMAND ${CMAKE_COMMAND} --install ${SLANG_BUILD_DIR}
             DEPENDS yosys
+
+            #Suppress warnings in the yosys-slang build
+            LOG_BUILD OFF
         )
     endif ()
 endif ()
