@@ -437,11 +437,12 @@ if(${WITH_ODIN})
     endif()
 endif()
 
-# handle cmake params to compile Yosys SystemVerilog/UHDM plugins
+# handle cmake params to compile yosys-slang plugin for Yosys
 if(${SLANG_SYSTEMVERILOG})
-    # avoid compiling plugins in case the Parmys frontend is not active
+    # avoid compiling yosys-slang plugin in case the Parmys frontend is not active
     if(NOT ${WITH_PARMYS})
-        message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Parmys frontend. Please set WITH_PARMYS.")
+        message(WARNING "Parmys is not enabled, disabling Yosys-Slang as well.")
+        set(SLANG_SYSTEMVERILOG OFF)
     endif()
 endif()
 
