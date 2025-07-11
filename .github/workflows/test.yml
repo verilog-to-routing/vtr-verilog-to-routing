@@ -312,6 +312,10 @@ jobs:
             suite: 'vtr_reg_strong'
           },
           {
+            name: 'SystemVerilog',
+            suite: 'vtr_reg_system_verilog'
+          },
+          {
             name: 'Valgrind Memory',
             suite: 'vtr_reg_valgrind_small'
           }
