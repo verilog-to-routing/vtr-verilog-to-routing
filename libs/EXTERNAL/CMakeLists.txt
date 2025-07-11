@@ -104,10 +104,6 @@ if (${WITH_PARMYS})
             SOURCE_DIR ${SLANG_SRC_DIR}
             BINARY_DIR ${SLANG_BUILD_DIR}
 
-            #Suppress warnings in the slang build
-            CMAKE_ARGS
-                -DCMAKE_CXX_FLAGS="-w"
-                
             #Disabling UndrivenPass in slang_frontend.cc
             PATCH_COMMAND
                 ${CMAKE_COMMAND} -E echo "Patching slang_frontend.cc to disable UndrivenPass" &&
@@ -115,7 +111,7 @@ if (${WITH_PARMYS})
                 
 
             CONFIGURE_COMMAND
-                ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release
+                ${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-w
                 -DYOSYS_CONFIG=${YOSYS_CONFIG_EXECUTABLE}
                 ${SLANG_SRC_DIR}
             
