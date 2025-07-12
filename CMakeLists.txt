@@ -62,6 +62,13 @@ set(VTR_VERSION_MAJOR 9)
 set(VTR_VERSION_MINOR 0)
 set(VTR_VERSION_PATCH 0)
 set(VTR_VERSION_PRERELEASE "dev")
+# Git describe is used to get the detailed version of VTR. Git describe returns
+# a string which is of the form <tag>-<num_commmits_since_tag>-<commit-hash>.
+# The number of commits since the tag is used to make the version unique and
+# should guarantee a unique version for each commit on the head of master.
+# This variable sets the tag that the version should be relative to. This should
+# always be of the form v9.0.0, v10.1.2, etc.
+set(VTR_VERSION_TAG_REF "v9.0.0")
 
 include(FilesToDirs)
 
