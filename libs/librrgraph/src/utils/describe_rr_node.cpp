@@ -37,6 +37,11 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
         msg += vtr::string_fmt(" pin: %d pin_name: %s",
                                rr_graph.node_pin_num(inode),
                                pin_name.c_str());
+    } else if (rr_graph.node_type(inode) == e_rr_type::MUX) {
+        int index = rr_graph.node_ptc_num(inode);
+        
+        msg += vtr::string_fmt(" mux index: %d",
+                               index);
     } else {
         VTR_ASSERT(node_type == e_rr_type::SOURCE || node_type == e_rr_type::SINK);
 

@@ -362,6 +362,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
         from_rr_type = rr_graph.node_type(from_rr_node);
 
         switch (from_rr_type) {
+            case e_rr_type::MUX:
             case e_rr_type::CHANX:
             case e_rr_type::CHANY:
             case e_rr_type::CHANZ:
@@ -378,6 +379,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                     }
 
                     switch (to_rr_type) {
+                        case e_rr_type::MUX:
                         case e_rr_type::CHANX:
                         case e_rr_type::CHANY:
                         case e_rr_type::CHANZ:
@@ -451,7 +453,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                     for (i = rr_graph.node_xlow(from_rr_node); i <= rr_graph.node_xhigh(from_rr_node); i++)
                         cblock_counted[i] = false;
 
-                } else { /* CHANY */
+                } else if (from_rr_type == e_rr_type::CHANY) {
                     for (j = rr_graph.node_ylow(from_rr_node); j <= rr_graph.node_yhigh(from_rr_node);
                          j++)
                         cblock_counted[j] = false;

@@ -197,7 +197,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
 
     std::set<std::string> allowed_types;
     if (!placer_opts.allowed_tiles_for_delay_model.empty()) {
-        std::vector<std::string> allowed_types_vector = vtr::split(placer_opts.allowed_tiles_for_delay_model, ",");
+        std::vector<std::string> allowed_types_vector = vtr::StringToken(placer_opts.allowed_tiles_for_delay_model).split(",");
         allowed_types = std::set(allowed_types_vector.begin(), allowed_types_vector.end());
     }
 

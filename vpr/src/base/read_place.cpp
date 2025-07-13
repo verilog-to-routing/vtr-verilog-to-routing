@@ -99,7 +99,7 @@ static void read_place_header(std::ifstream& placement_file,
     while (std::getline(placement_file, line) && (!seen_netlist_id || !seen_grid_dimensions)) { //Parse line-by-line
         ++lineno;
 
-        std::vector<std::string> tokens = vtr::split(line);
+        std::vector<std::string> tokens = vtr::StringToken(line).split(" \t\n");
 
         if (tokens.empty()) {
             continue; //Skip blank lines
@@ -226,7 +226,7 @@ static std::string read_place_body(std::ifstream& placement_file,
     while (std::getline(placement_file, line)) { //Parse line-by-line
         ++lineno;
 
-        std::vector<std::string> tokens = vtr::split(line);
+        std::vector<std::string> tokens = vtr::StringToken(line).split(" \t\n");
 
         if (tokens.empty()) {
             continue; //Skip blank lines

@@ -2339,6 +2339,7 @@ Additional power options are specified within the ``<architecture>`` level ``<po
 
     :req_param logical_effort_factor: **Default:** ``4``.
 
+.. _direct_interconnect:
 
 Direct Inter-block Connections
 ------------------------------
@@ -2679,4 +2680,355 @@ Example of a metadata block with 2 keys:
         <meta name="some_key">Some value</meta>
         <meta name="other key!">Other value!</meta>
       </metadata>
+
+.. _openfpga_arch_syntax:
+
+Additional Syntax for Tileable Architecture
+-------------------------------------------
+
+When tileable architecture is enabled, the following options are available in the architecture file:
+
+Layout
+~~~~~~
+
+``<layout>`` may include additioinal attributes to enable tileable routing resource graph generation
+
+.. option:: tileable="<bool>"
+
+  Turn ``on``/ ``off`` the tileable routing resource graph generator.
+  
+  The tileable routing architecture can minimize the number of unique modules in FPGA fabric to be physically implemented.
+
+  Technical details can be found in :cite:`XTang_FPT_2019`. 
+
+  .. note:: It is strongly recommended to enable the tileable routing architecture when you want to PnR large FPGA fabrics, which can effectively reduce the runtime.
+
+.. option:: through_channel="<bool>"
+  
+  Allow routing channels to pass through multi-width and multi-height programmable blocks. This is mainly used in heterogeneous FPGAs to increase routability, as illustrated in :numref:`fig_thru_channel`.
+  By default, it is ``false``.
+
+  .. _fig_thru_channel:
+  
+  .. figure:: thru_channel.png
+     :width: 100%
+     :alt: Impact of through channel
+  
+     Impact on routing architecture when through channel in multi-width and multi-height programmable blocks: (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``through_channel`` if you are not using the tileable routing resource graph generator!
+  
+  .. warning:: You cannot use ``spread`` pin location for the ``height > 1`` or ``width >1`` tiles when using the tileable routing resource graph. Otherwise, it will cause undriven pins in your device!!!
+
+.. option:: shrink_boundary="<bool>"
+  
+  Remove all the routing wires in empty regions. This is mainly used in non-rectangular FPGAs to avoid redundant routing wires in blank area, as illustrated in :numref:`fig_shrink_boundary`.
+  By default, it is ``false``.
+
+  .. _fig_shrink_boundary:
+  
+  .. figure:: shrink_boundary.png
+     :width: 100%
+     :alt: Impact of shrink boundary
+  
+     Impact on routing architecture when shrink-boundary: (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``shrink_boundary`` if you are not using the tileable routing resource graph generator!
+
+.. option:: perimeter_cb="<bool>"
+  
+  Allow connection blocks to appear around the blocks on the perimeter of the device (mainly I/Os). This is designed to enhance routability of I/Os on perimeter. It is also strongly recommended when a programmable clock network is required to touch clock pins on I/Os. As illustrated in :numref:`fig_perimeter_cb`, routing tracks can access three sides of each I/O when perimeter connection blocks are created. 
+
+  **Default:** ``false``
+
+.. warning:: When enabled, please only place outputs at one side of I/Os. For example, outputs of an I/O on the top side can only occur on the bottom side of the I/O tile. Otherwise, routability loss may be expected, leading to some pins being unreachable. Enable the ``opin2all_sides`` to recover routability loss. 
+
+  .. _fig_perimeter_cb:
+  
+  .. figure:: perimeter_cb.png
+     :width: 100%
+     :alt: Impact of perimeter_cb
+  
+     Impact on routing architecture when perimeter connection blocks are : (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``perimeter_cb`` if you are not using the tileable routing resource graph generator!
+
+.. option:: opin2all_sides="<bool>"
+
+  Allow each output pin of a programmable block to drive the routing tracks on all the sides of its adjacent switch block (see an illustrative example in :numref:`fig_opin2all_sides`). This can improve the routability of an FPGA fabric with an increase in the sizes of routing multiplexers in each switch block. 
+  
+  **Default:** ``false``
+
+  .. _fig_opin2all_sides:
+  
+  .. figure:: opin2all_sides.svg
+     :width: 100%
+     :alt: Impact of opin2all_sides
+  
+     Impact on routing architecture when the opin-to-all-sides: (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``opin2all_sides`` if you are not using the tileable routing resource graph generator!
+
+.. option:: concat_wire="<bool>"
+
+  In each switch block, allow each routing track which ends to drive another routing track on the opposite side, as such a wire can be continued in the same direction (see an illustrative example in :numref:`fig_concat_wire`). In other words, routing wires can be concatenated in the same direction across an FPGA fabric. This can improve the routability of an FPGA fabric with an increase in the sizes of routing multiplexers in each switch block. 
+  
+  **Default:** ``false``
+
+  .. _fig_concat_wire:
+  
+  .. figure:: concat_wire.svg
+     :width: 100%
+     :alt: Impact of concat_wire
+  
+     Impact on routing architecture when the wire concatenation: (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``concat_wire`` if you are not using the tileable routing resource graph generator!
+
+.. option:: concat_pass_wire="<bool>"
+
+  In each switch block, allow each routing track which passes to drive another routing track on the opposite side, as such a pass wire can be continued in the same direction (see an illustrative example in :numref:`fig_concat_pass_wire`). This can improve the routability of an FPGA fabric with an increase in the sizes of routing multiplexers in each switch block. 
+  
+  **Default:** ``false``
+
+  .. _fig_concat_wire:
+  
+  .. figure:: concat_pass_wire.svg
+     :width: 100%
+     :alt: Impact of concat_pass_wire
+  
+     Impact on routing architecture when the pass wire concatenation: (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``concat_pass_wire`` if you are not using the tileable routing resource graph generator!
+
+A quick example to show tileable routing is enabled, other options, e.g., through channels are disabled:
+
+.. code-block:: xml
+
+  <layout tileable="true" through_channel="false" shrink_boundary="false" opin2all_sides="false" concat_wire="false" concat_pass_wire="false">
+  </layout>
+
+Switch Block
+~~~~~~~~~~~~
+
+``<switch_block>`` may include addition syntax to enable different connectivity for pass tracks
+
+.. option:: sub_type="<string>"
+  
+  Connecting type for pass tracks in each switch block.
+  The supported connecting patterns are ``subset``, ``universal`` and ``wilton``, being the same as the capability of VPR.
+  If not specified, the pass tracks will have the same connecting patterns as start/end tracks, which are defined in ``type``
+
+.. option:: sub_Fs="<int>"
+
+  Connectivity parameter for pass tracks in each switch block. Must be a multiple of 3.
+  If not specified, the pass tracks will have the same connectivity as start/end tracks, which are defined in ``fs``.
+
+A quick example which defines a switch block
+  - Starting/ending routing tracks are connected in the ``wilton`` pattern
+  - Each starting/ending routing track can drive 3 other starting/ending routing tracks
+  - Passing routing tracks are connected in the ``subset`` pattern
+  - Each passing routing track can drive 6 other starting/ending routing tracks
+
+.. code-block:: xml
+
+  <device>
+    <switch_block type="wilton" fs="3" sub_type="subset" sub_fs="6"/>
+  </device>
+
+Routing Segments
+~~~~~~~~~~~~~~~~
+
+When using tileable architecture, it is strongly recommended to give explicit names
+for each routing segment in ``<segmentlist>``.
+This is used to link ``circuit_model`` to routing segments.
+
+A quick example which defines a length-4 uni-directional routing segment called ``L4`` :
+
+.. code-block:: xml
+
+  <segmentlist>
+    <segment name="L4" freq="1" length="4" type="undir"/>
+  </segmentlist>
+
+.. note:: Currently, tileable architecture only supports uni-directional routing architectures.
+
+Direct Interconnect
+~~~~~~~~~~~~~~~~~~~
+
+This section introduces extensions on the architecture description file about direct connections between programmable blocks.
+
+Syntax
+~~~~~~
+
+The original direct connections in the directlist section are documented in :ref:`direct_interconnect`. Its description is given below:
+
+.. code-block:: xml
+
+  <directlist>
+    <direct name="string" from_pin="string" to_pin="string" x_offset="int" y_offset="int" z_offset="int" switch_name="string"/>
+  </directlist>
+
+.. note:: These options are required
+
+In the tileable architecture file, you may define additional attributes for each VPR's direct connection:
+
+.. code-block:: xml
+
+  <direct_connection>
+    <direct name="string" circuit_model_name="string" interconnection_type="string" x_dir="string" y_dir="string"/>
+  </directlist>
+
+.. note:: these options are optional. However, if ``interconnection_type`` is set to ``inter_column`` or ``inter_row``, then ``x_dir`` and ``y_dir`` are required.
+
+.. option:: interconnection_type="<string>"
+
+  Available types are ``inner_column_or_row`` | ``part_of_cb`` | ``inter_column`` | ``inter_row``
+
+  - ``inner_column_or_row`` indicates the direct connections are between tiles in the same column or row. This is the default value.
+  - ``part_of_cb`` indicates the direct connections will drive routing multiplexers in connection blocks. Therefore, it is no longer a strict point-to-point direct connection.
+  - ``inter_column`` indicates the direct connections are between tiles in two columns
+  - ``inter_row`` indicates the direct connections are between tiles in two rows
+
+.. note:: The following syntax is only applicable to ``inter_column`` and ``inter_row``
+
+.. option:: x_dir="<string>"
+
+  Available directionalities are ``positive`` | ``negative``, specifies if the next cell to connect has a bigger or lower ``x`` value.
+  Considering a coordinate system where (0,0) is the origin at the bottom left and ``x`` and ``y`` are positives: 
+
+    - x_dir="positive": 
+
+        - interconnection_type="inter_column": a column will be connected to a column on the ``right``, if it exists.
+
+        - interconnection_type="inter_row": the most on the ``right`` cell from a row connection will connect the most on the ``left`` cell of next row, if it exists.
+
+    - x_dir="negative": 
+
+        - interconnection_type="inter_column": a column will be connected to a column on the ``left``, if it exists.
+
+        - interconnection_type="inter_row": the most on the ``left`` cell from a row connection will connect the most on the ``right`` cell of next row, if it exists.
+
+.. option:: y_dir="<string>"
+
+  Available directionalities are ``positive`` | ``negative``, specifies if the next cell to connect has a bigger or lower x value.
+  Considering a coordinate system where (0,0) is the origin at the bottom left and `x` and `y` are positives:
+
+    - y_dir="positive": 
+
+        - interconnection_type="inter_column": the ``bottom`` cell of a column will be connected to the next column ``top`` cell, if it exists.
+
+        - interconnection_type="inter_row": a row will be connected on an ``above`` row, if it exists.
+
+    - y_dir="negative": 
+
+        - interconnection_type="inter_column": the ``top`` cell of a column will be connected to the next column ``bottom`` cell, if it exists.
+
+        - interconnection_type="inter_row": a row will be connected on a row ``below``, if it exists.
+
+Enhanced Connection Block
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A direct connection can also drive routing multiplexers of connection blocks. When such connection occurs in a connection block, it is called an enhanced connection block.
+:numref:`fig_ecb` illustrates the difference between a regular connection block and an enhanced connection block.
+
+.. _fig_ecb:
+
+.. figure:: ecb.png
+
+    Enhanced connection block vs. Regular connection block
+
+In such scenario, the type ``part_of_cb`` is required.
+
+.. warning:: Restrictions may be applied when building the direct connections as part of a connection block. 
+
+Direct connections can be inside a tile or across two tiles. Currently, across more than two tiles are not supported!
+:numref:`fig_ecb_allowed_direct_connection` illustrates the region (in red) where any input pin is allowed to be driven by any output pin.
+
+.. _fig_ecb_allowed_direct_connection:
+
+.. figure:: ecb_allowed_direct_connection.png
+
+    Allowed connections inside a tile for enhanced connection block (see the highlighted region)
+
+:numref:`fig_ecb_allowed_direct_connection_inner_tile_example` shows a few feedback connections which can be built inside connection blocks. Note that feedback connections are fully allowed between any pins on the same side of a programmable block.
+
+.. _fig_ecb_allowed_direct_connection_inner_tile_example:
+
+.. figure:: ecb_allowed_direct_connection_inner_tile_example.png
+
+    Example of feedback connections inside a tile for enhanced connection block
+
+For instance, a non-tileable VPR architecture defines:
+
+.. code-block:: xml
+
+  <directlist>
+    <!-- Add 2 inputs to the routing multiplexers inside a connection block which drives pin 'clb.I_top[0]' -->
+    <direct name="feedback" from_pin="clb.O_top[0:0]" to_pin="clb.I_top[0:0]" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="feedback" from_pin="clb.O_top[1:1]" to_pin="clb.I_top[0:0]" x_offset="0" y_offset="0" z_offset="0"/>
+  </directlist>
+
+:numref:`fig_ecb_allowed_direct_connection_inter_tile_example` shows a few inter-tile connections which can be built inside connection blocks. Note that inter-tile connections are subjected to the restrictions depicted in :numref:`fig_ecb_allowed_direct_connection`
+
+.. _fig_ecb_allowed_direct_connection_inter_tile_example:
+
+.. figure:: ecb_allowed_direct_connection_inter_tile_example.png
+
+    Example of connections across two tiles for enhanced connection block
+
+:numref:`fig_ecb_forbid_direct_connection_example` illustrates some inner-tile and inter-tile connections which are not allowed. Note that feedback connections across different sides are restricted! 
+
+.. _fig_ecb_forbid_direct_connection_example:
+
+.. figure:: ecb_forbid_direct_connection_example.png
+
+    Restrictions on building direct connections as part of a connection block
+
+Inter-tile Connections
+~~~~~~~~~~~~~~~~~~~~~~
+
+For this example, we will study a scan-chain implementation. The description could be:
+
+In a non-tileable architecture:
+
+.. code-block:: xml
+
+  <directlist>
+    <direct name="scff_chain" from_pin="clb.sc_out" to_pin="clb.sc_in" x_offset="0" y_offset="-1" z_offset="0"/>
+  </directlist>
+
+In a tileable architecture:
+
+.. code-block:: xml
+
+  <direct_connection>
+    <direct name="scff_chain" interconnection_type="column" x_dir="positive" y_dir="positive"/>
+  </direct_connection>
+
+:numref:`fig_p2p_exple` is the graphical representation of the above scan-chain description on a 4x4 FPGA.
+
+.. _fig_p2p_exple:
+
+.. figure:: point2point_example.png
+
+    An example of scan-chain implementation
+
+
+In this figure, the red arrows represent the initial direct connection. The green arrows represent the point to point connection to connect all the columns of CLB.
+
+A point to point connection can be applied in different ways than showed in the example section. To help the designer implement their point to point connection, a truth table with our new parameters is provided below.
+
+:numref:`fig_p2p_trtable` provides all possible variable combination and the connection it will generate.
+
+.. _fig_p2p_trtable:
+
+.. figure:: point2point_truthtable.png
+
+    Point to point truth table
+
+VIB Architecture
+~~~~~~~~~~~~~~~~
+
+.. include:: VIB.rst
 
