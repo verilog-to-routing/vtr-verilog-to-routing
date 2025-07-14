@@ -1649,7 +1649,7 @@ static bool should_move_blk_to_other_window(const PrimitiveVector& window_curr_o
  * If this block is moved, the utilizations and the overfills will be updated
  * accordingly, but the block itself will remain unmoved.
  * NOTE: This may seem strange, it is; this is to prevent updating the primitive
- *       vectors too much, but tends to take a long time.
+ *       vectors too much, which tends to take a long time.
  *
  *  @param blk_mass
  *      The mass of the block to move from this window to the other window.
