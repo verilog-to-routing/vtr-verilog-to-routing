@@ -2,11 +2,11 @@
  * @file net_cost_handler.cpp
  * @brief This file contains the implementation of functions used to update placement cost when a new move is proposed/committed.
  *
- * VPR placement cost consists of three terms which represent wirelength, timing, and NoC cost.
+ * VPR placement cost consists of multiple terms which represent wirelength, timing, congestion, and NoC cost.
  *
- * To get an estimation of the wirelength of each net, the Half Perimeter Wire Length (HPWL) approach is used. In this approach,
+ * To get an estimation of the wirelength of each net, the Half Perimeter Wire Length (HPWL) metric is used. In this approach,
  * half of the perimeter of the bounding box which contains all terminals of the net is multiplied by a correction factor,
- * and the resulting number is considered as an estimation of the bounding box.
+ * and the resulting number is considered as an estimation of the wirelength needed to route this net.
  *
  * Currently, we have two types of bounding boxes: 3D bounding box (or Cube BB) and per-layer bounding box.
  * If the FPGA grid is a 2D structure, a Cube bounding box is used, which will always have the z direction equal to 1. For 3D architectures,
@@ -20,6 +20,17 @@
  * To get a delay estimation of a connection (from a source to a sink), first, dx and dy between these two points should be calculated,
  * and these two numbers are the indices to access this 2D array. By default, the placement delay model is created by iterating over the router lookahead
  * to get the minimum cost for each dx and dy.
+ *
+ * For congestion modeling, we periodically estimate routing channel usage by distributing the estimated
+ * wirelength (WL) of each net across all routing channels within its bounding box. The wirelength is divided
+ * between CHANX and CHANY in proportion to the bounding box's width and height, respectively. However, all
+ * routing channels of the same type (CHANX or CHANY) within the box receive an equal share of that net's WL.
+ *
+ * We compute a congestion cost for each net by averaging the estimated utilization over all CHANX and CHANY
+ * channels in its bounding box. These average utilizations are then compared to a user-specified threshold.
+ * If a net’s average utilization exceeds the threshold, the excess is penalized by adding a cost proportional
+ * to the amount of the exceedance.
+ *
  */
 #include "net_cost_handler.h"
 
@@ -551,6 +562,7 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
         num_sink_pin_layer[pin_loc.layer_num]++;
     }
 
+    // Update average CHANX and CHANY usage for this net within its bounding box if congestion modeling is enabled
     if (congestion_modeling_started_) {
         auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
         const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
@@ -864,6 +876,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
         bb_update_status_[net_id] = NetUpdateState::UPDATED_ONCE;
     }
 
+    // Update average CHANX and CHANY usage for this net within its bounding box if congestion modeling is enabled
     if (congestion_modeling_started_) {
         auto& [x_chan_util, y_chan_util] = ts_avg_chan_util_new_[net_id];
         const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
@@ -1305,6 +1318,7 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     num_on_edges.layer_min = layer_min_edge;
     num_on_edges.layer_max = layer_max_edge;
 
+    // Update average CHANX and CHANY usage for this net within its bounding box if congestion modeling is enabled
     if (congestion_modeling_started_) {
         auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chan_util_new_[net_id] : avg_chan_util_[net_id];
         const int total_channels = (coords.xmax - coords.xmin + 1) * (coords.ymax - coords.ymin + 1);
@@ -1584,12 +1598,12 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
     ts_nets_to_update_.resize(0);
 
-    /* Go through all the blocks moved. */
+    // Go through all the blocks moved.
     for (const t_pl_moved_block& moving_block : blocks_affected.moved_blocks) {
         auto& affected_pins = blocks_affected.affected_pins;
         ClusterBlockId blk_id = moving_block.block_num;
 
-        /* Go through all the pins in the moved block. */
+        // Go through all the pins in the moved block.
         for (ClusterPinId blk_pin : clb_nlist.block_pins(blk_id)) {
             bool is_src_moving = false;
             if (clb_nlist.pin_type(blk_pin) == PinType::SINK) {
@@ -1606,13 +1620,13 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
         }
     }
 
-    /* Now update the bounding box costs (since the net bounding     *
-     * boxes are up-to-date). The cost is only updated once per net. */
+    // Now update the bounding box costs (since the net bounding
+    // boxes are up-to-date). The cost is only updated once per net.
     set_bb_delta_cost_(bb_delta_c, congestion_delta_c);
 }
 
 void NetCostHandler::update_move_nets() {
-    /* update net cost functions and reset flags. */
+    // update net cost functions and reset flags.
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
