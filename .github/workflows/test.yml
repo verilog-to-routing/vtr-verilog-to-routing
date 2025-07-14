@@ -487,7 +487,7 @@ jobs:
     - name: Test
       env:
         CMAKE_PARAMS: ${{ matrix.params }}
-        BUILD_TYPE: debug
+        BUILD_TYPE: RelWithDebInfo
         LSAN_OPTIONS: 'exitcode=42' #Use a non-standard exit code to ensure LSAN errors are detected
         # In Ubuntu 20240310.1.0, the entropy of ASLR has increased (28 -> 32). LLVM 14 in this
         # image is not compatible with this increased ASLR entropy. Apparently, memory sanitizer
@@ -615,19 +615,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - { name: 'GCC 11 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-11 && CXX=g++-11',       key: 'gcc-11', }
-        - { name: 'GCC 12 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-12 && CXX=g++-12',       key: 'gcc-12', }
-        - { name: 'GCC 14 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-14 && CXX=g++-14',       key: 'gcc-14', }
-        - { name: 'Clang 16 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-16 && CXX=clang++-16', key: 'clang-16', }
-        - { name: 'Clang 17 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-17 && CXX=clang++-17', key: 'clang-17', }
-        - { name: 'Clang 18 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-18 && CXX=clang++-18', key: 'clang-18', }
+        - { name: 'GCC 12 (Ubuntu Noble - 24.04)',    CC: 'gcc-12',   CXX: 'g++-12',     }
+        - { name: 'GCC 14 (Ubuntu Noble - 24.04)',    CC: 'gcc-14',   CXX: 'g++-14',     }
+        - { name: 'Clang 16 (Ubuntu Noble - 24.04)',  CC: 'clang-16', CXX: 'clang++-16', }
+        - { name: 'Clang 17 (Ubuntu Noble - 24.04)',  CC: 'clang-17', CXX: 'clang++-17', }
+        - { name: 'Clang 18 (Ubuntu Noble - 24.04)',  CC: 'clang-18', CXX: 'clang++-18', }
         # Note: We do not include GCC-13 since it is the default and is already tested.
+        #       We also do not include GCC-11 since it is tested in the JammyCompatibility test.
     name: 'B: ${{ matrix.name }}'
+    env:
+      CC: ${{ matrix.CC }}
+      CXX: ${{ matrix.CXX }}
     steps:
 
-    - uses: actions/setup-python@v5
-      with:
-        python-version: 3.12.3
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
@@ -641,27 +641,24 @@ jobs:
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: ${{ github.job }}-${{ matrix.key }}
+        key: ${{ github.job }}-${{ matrix.CC }}
 
-    - name: Test
+    - name: Build
       env:
-        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DWITH_ODIN=on -DVTR_IPO_BUILD=off"
-        MATRIX_EVAL: ${{ matrix.eval }}
-        BUILD_TYPE: debug # Note: We use the debug build here to make the build time faster since we do not care about run time.
-        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DVTR_IPO_BUILD=off"
+        BUILD_TYPE: release # Note: Found that release build caches way better than debug build for this test.
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
+        make -j${{ steps.cpu-cores.outputs.count}}
 
   JammyCompatibility:
     name: 'Ubuntu Jammy - 22.04 Compatibility Test'
     runs-on: ubuntu-22.04
     needs: [BuildVTR]
+    env:
+      CC: gcc-11
+      CXX: g++-11
     steps:
-    - uses: actions/setup-python@v5
-      with:
-        python-version: 3.10.10
-
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
@@ -675,15 +672,13 @@ jobs:
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: ${{ github.job }}
+        key: ${{ github.job }}-gcc-11
 
-    - name: Test
+    - name: Build
       env:
         CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off"
-        MATRIX_EVAL: 'CC=gcc-11 && CXX=g++-11'
-        BUILD_TYPE: debug # Note: We use the debug build here to make the build time faster since we do not care about run time.
-        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+        BUILD_TYPE: release # Note: Found that release build caches way better than debug build for this test.
       run: |
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
+        make -j${{ steps.cpu-cores.outputs.count}}
 

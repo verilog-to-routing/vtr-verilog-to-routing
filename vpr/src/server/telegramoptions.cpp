@@ -11,9 +11,9 @@ namespace server {
 
 TelegramOptions::TelegramOptions(const std::string& data, const std::vector<std::string>& expected_keys) {
     // parse data string
-    std::vector<std::string> options = vtr::split(data, ";");
+    std::vector<std::string> options = vtr::StringToken(data).split(";");
     for (const std::string& option_str : options) {
-        std::vector<std::string> fragments = vtr::split(option_str, ":");
+        std::vector<std::string> fragments = vtr::StringToken(option_str).split(":");
         if (fragments.size() == TOTAL_INDEXES_NUM) {
             std::string name{std::move(fragments[INDEX_NAME])};
             Option option{std::move(fragments[INDEX_TYPE]), std::move(fragments[INDEX_VALUE])};
@@ -35,13 +35,13 @@ std::map<std::size_t, std::set<std::size_t>> TelegramOptions::get_map_of_sets(co
     std::map<std::size_t, std::set<std::size_t>> result;
     std::string data_str = get_string(name);
     if (!data_str.empty()) {
-        std::vector<std::string> paths = vtr::split(data_str, "|");
+        std::vector<std::string> paths = vtr::StringToken(data_str).split("|");
         for (const std::string& path : paths) {
-            std::vector<std::string> path_struct = vtr::split(path, "#");
+            std::vector<std::string> path_struct = vtr::StringToken(path).split("#");
             if (path_struct.size() == 2) {
                 std::string path_index_str = path_struct[0];
                 std::string path_element_indexes_str = path_struct[1];
-                std::vector<std::string> path_element_indexes = vtr::split(path_element_indexes_str, ",");
+                std::vector<std::string> path_element_indexes = vtr::StringToken(path_element_indexes_str).split(",");
                 std::set<std::size_t> elements;
                 for (const std::string& path_element_index_Str : path_element_indexes) {
                     if (std::optional<int> opt_value = try_convert_to_int(path_element_index_Str)) {

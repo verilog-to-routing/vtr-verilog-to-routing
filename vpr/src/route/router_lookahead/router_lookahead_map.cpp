@@ -175,13 +175,14 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     if (is_flat_) {
         return get_expected_cost_flat_router(current_node, target_node, params, R_upstream);
     } else {
-        if (from_rr_type == e_rr_type::CHANX || from_rr_type == e_rr_type::CHANY || from_rr_type == e_rr_type::SOURCE || from_rr_type == e_rr_type::OPIN) {
+        if (from_rr_type == e_rr_type::CHANX || from_rr_type == e_rr_type::CHANY || from_rr_type == e_rr_type::CHANZ
+            || from_rr_type == e_rr_type::SOURCE || from_rr_type == e_rr_type::OPIN) {
             // Get the total cost using the combined delay and congestion costs
             auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
             return delay_cost + cong_cost;
-        } else if (from_rr_type == e_rr_type::IPIN) { /* Change if you're allowing route-throughs */
+        } else if (from_rr_type == e_rr_type::IPIN) { // Change if you're allowing route-throughs
             return (device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
-        } else { /* Change this if you want to investigate route-throughs */
+        } else { // Change this if you want to investigate route-throughs
             return (0.);
         }
     }
@@ -516,9 +517,9 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
         for (const auto& segment_inf : segment_inf_vec) {
             std::vector<e_rr_type> chan_types;
-            if (segment_inf.parallel_axis == X_AXIS)
+            if (segment_inf.parallel_axis == e_parallel_axis::X_AXIS)
                 chan_types.push_back(e_rr_type::CHANX);
-            else if (segment_inf.parallel_axis == Y_AXIS)
+            else if (segment_inf.parallel_axis == e_parallel_axis::Y_AXIS)
                 chan_types.push_back(e_rr_type::CHANY);
             else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
                 chan_types.insert(chan_types.end(), {e_rr_type::CHANX, e_rr_type::CHANY});
@@ -727,7 +728,9 @@ static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitiv
                          g_vpr_ctx.device().rr_indexed_data,
                          g_vpr_ctx.device().rr_rc_data,
                          rr_graph_builder.rr_segments(),
-                         rr_graph_builder.rr_switch()};
+                         rr_graph_builder.rr_switch(),
+                         rr_graph_builder.node_in_edge_storage(),
+                         rr_graph_builder.node_ptc_storage()};
 
     util::t_ipin_primitive_sink_delays pin_delays = util::compute_intra_tile_dijkstra(rr_graph,
                                                                                       physical_tile,

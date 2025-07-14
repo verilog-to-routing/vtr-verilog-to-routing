@@ -39,7 +39,8 @@
 #include "place_and_route.h"
 #include "pack.h"
 #include "place.h"
-#include "SetupGrid.h"
+#include "setup_grid.h"
+#include "setup_vib_grid.h"
 #include "setup_clocks.h"
 #include "setup_noc.h"
 #include "read_xml_noc_traffic_flows_file.h"
@@ -47,7 +48,7 @@
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
-#include "SetupVPR.h"
+#include "setup_vpr.h"
 #include "ShowSetup.h"
 #include "CheckArch.h"
 #include "CheckSetup.h"
@@ -259,7 +260,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which VPR_ERRORs
      * are demoted to VTR_LOG_WARNs
      */
-    for (const std::string& func_name : vtr::split(options->disable_errors.value(), ":")) {
+    for (const std::string& func_name : vtr::StringToken(options->disable_errors.value()).split(":")) {
         map_error_activation_status(func_name);
     }
 
@@ -267,7 +268,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which
      * warnings are being suppressed
      */
-    std::vector<std::string> split_warning_option = vtr::split(options->suppress_warnings.value(), ",");
+    std::vector<std::string> split_warning_option = vtr::StringToken(options->suppress_warnings.value()).split(",");
     std::string warn_log_file;
     std::string warn_functions;
     // If no log file name is provided, the specified warning
@@ -280,7 +281,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     }
 
     set_noisy_warn_log_file(warn_log_file);
-    for (const std::string& func_name : vtr::split(warn_functions, std::string(":"))) {
+    for (const std::string& func_name : vtr::StringToken(warn_functions).split(":")) {
         add_warnings_to_suppress(func_name);
     }
 
@@ -458,7 +459,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     vpr_create_device(vpr_setup, arch);
     // If packing is not skipped, cluster netlist contain valid information, so
     // we can print the resource usage and device utilization
-    if (vpr_setup.PackerOpts.doPacking != STAGE_SKIP) {
+    if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
         float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
         // Print the number of resources in netlist and number of resources available in architecture
         print_resource_usage();
@@ -482,7 +483,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     }
 
     { // Analytical Place
-        if (vpr_setup.APOpts.doAP == STAGE_DO) {
+        if (vpr_setup.APOpts.doAP == e_stage_action::DO) {
             // Passing flat placement input if provided and not loaded yet.
             if (!vpr_setup.FileNameOpts.read_flat_place_file.empty() && !g_vpr_ctx.atom().flat_placement_info().valid) {
                 g_vpr_ctx.mutable_atom().mutable_flat_placement_info() = read_flat_placement(vpr_setup.FileNameOpts.read_flat_place_file,
@@ -570,6 +571,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     //Build the device
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
+    if (!Arch.vib_infs.empty()) {
+        device_ctx.vib_grid = create_vib_device_grid(vpr_setup.device_layout, Arch.vib_grid_layouts);
+    }
 
     VTR_ASSERT_MSG(device_ctx.grid.get_num_layers() <= MAX_NUM_LAYERS,
                    "Number of layers should be less than MAX_NUM_LAYERS. "
@@ -641,10 +645,10 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     bool status = true;
 
-    if (packer_opts.doPacking == STAGE_SKIP) {
+    if (packer_opts.doPacking == e_stage_action::SKIP) {
         //pass
     } else {
-        if (packer_opts.doPacking == STAGE_DO) {
+        if (packer_opts.doPacking == e_stage_action::DO) {
             //Do the actual packing
             status = vpr_pack(vpr_setup, arch);
             if (!status) {
@@ -658,7 +662,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             //Load the result from the .net file
             vpr_load_packing(vpr_setup, arch);
         } else {
-            VTR_ASSERT(packer_opts.doPacking == STAGE_LOAD);
+            VTR_ASSERT(packer_opts.doPacking == e_stage_action::LOAD);
 
             // generate a .net file by legalizing an input flat placement file
             if (packer_opts.load_flat_placement) {
@@ -799,7 +803,7 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     device_ctx.grid.clear();
 
     // if running placement, use the fix clusters file produced by the legalizer
-    if (vpr_setup.PlacerOpts.doPlacement) {
+    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::SKIP) {
         vpr_setup.PlacerOpts.constraints_file = vpr_setup.FileNameOpts.write_constraints_file;
     }
     return true;
@@ -811,15 +815,15 @@ bool vpr_place_flow(const Netlist<>& net_list,
     VTR_LOG("\n");
     const auto& placer_opts = vpr_setup.PlacerOpts;
     const auto& filename_opts = vpr_setup.FileNameOpts;
-    if (placer_opts.doPlacement == STAGE_SKIP) {
+    if (placer_opts.doPlacement == e_stage_action::SKIP) {
         //pass
     } else {
-        if (placer_opts.doPlacement == STAGE_DO) {
+        if (placer_opts.doPlacement == e_stage_action::DO) {
             //Do the actual placement
             vpr_place(net_list, vpr_setup, arch);
 
         } else {
-            VTR_ASSERT(placer_opts.doPlacement == STAGE_LOAD);
+            VTR_ASSERT(placer_opts.doPlacement == e_stage_action::LOAD);
 
             //Load a previous placement
             vpr_load_placement(vpr_setup, arch.directs);
@@ -943,7 +947,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    if (router_opts.doRouting == STAGE_SKIP) {
+    if (router_opts.doRouting == e_stage_action::SKIP) {
         //Assume successful
         route_status = RouteStatus(true, -1);
     } else { //Do or load
@@ -975,7 +979,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             timing_info = make_constant_timing_info(0);
         }
 
-        if (router_opts.doRouting == STAGE_DO) {
+        if (router_opts.doRouting == e_stage_action::DO) {
             //Do the actual routing
             if (NO_FIXED_CHANNEL_WIDTH == chan_width) {
                 //Find minimum channel width
@@ -991,7 +995,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
                         filename_opts.RouteFile.c_str(),
                         is_flat);
         } else {
-            VTR_ASSERT(router_opts.doRouting == STAGE_LOAD);
+            VTR_ASSERT(router_opts.doRouting == e_stage_action::LOAD);
             //Load a previous routing
             //if the previous load file is generated using flat routing,
             //we need to create rr_graph with is_flat flag to add additional
@@ -1180,6 +1184,9 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
         graph_directionality = e_graph_type::BIDIR;
     } else {
         graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
+        }
         graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
@@ -1312,7 +1319,7 @@ void vpr_free_vpr_data_structures(t_arch& Arch,
 void vpr_free_all(t_arch& Arch,
                   t_vpr_setup& vpr_setup) {
     free_rr_graph();
-    if (vpr_setup.RouterOpts.doRouting) {
+    if (vpr_setup.RouterOpts.doRouting != e_stage_action::SKIP) {
         free_route_structs();
     }
     vpr_free_vpr_data_structures(Arch, vpr_setup);
@@ -1414,12 +1421,12 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
                        bool is_flat) {
     auto& analysis_opts = vpr_setup.AnalysisOpts;
 
-    if (analysis_opts.doAnalysis == STAGE_SKIP) return true; //Skipped
+    if (analysis_opts.doAnalysis == e_stage_action::SKIP) return true; //Skipped
 
-    if (analysis_opts.doAnalysis == STAGE_AUTO && !route_status.success()) return false; //Not run
+    if (analysis_opts.doAnalysis == e_stage_action::SKIP_IF_PRIOR_FAIL && !route_status.success()) return false; //Not run
 
-    VTR_ASSERT_MSG(analysis_opts.doAnalysis == STAGE_DO
-                       || (analysis_opts.doAnalysis == STAGE_AUTO && route_status.success()),
+    VTR_ASSERT_MSG(analysis_opts.doAnalysis == e_stage_action::DO
+                       || (analysis_opts.doAnalysis == e_stage_action::SKIP_IF_PRIOR_FAIL && route_status.success()),
                    "Analysis should run only if forced, or implementation legal");
 
     if (!route_status.success()) {

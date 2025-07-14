@@ -3,7 +3,7 @@
 
 #include <unordered_set>
 #include "PreClusterTimingManager.h"
-#include "SetupGrid.h"
+#include "setup_grid.h"
 #include "appack_context.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
@@ -54,6 +54,8 @@ enum class e_packer_state {
     /// @brief Region constraints: Turns on more attraction groups for all regions
     ///        and increases the pull on these groups.
     CREATE_ATTRACTION_GROUPS_FOR_ALL_REGIONS_AND_INCREASE_PULL,
+    /// @brief APPack: Increase the max displacement threshold for overused block types.
+    AP_INCREASE_MAX_DISPLACEMENT,
     /// @brief The failure state.
     FAILURE
 };
@@ -90,6 +92,8 @@ static bool try_size_device_grid(const t_arch& arch,
  *      The current external pin utilization targets.
  *  @param packer_opts
  *      The options passed into the packer.
+ *  @param appack_ctx
+ *      The APPack context used when AP is turned on.
  */
 static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
                                             bool fits_on_device,
@@ -98,7 +102,8 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
                                             bool using_balanced_block_type_util,
                                             const std::map<t_logical_block_type_ptr, float>& block_type_utils,
                                             const t_ext_pin_util_targets& external_pin_util_targets,
-                                            const t_packer_opts& packer_opts) {
+                                            const t_packer_opts& packer_opts,
+                                            const APPackContext& appack_ctx) {
     if (fits_on_device && !floorplan_regions_overfull) {
         // If everything fits on the device and the floorplan regions are
         // not overfilled, the next state is success.
@@ -142,20 +147,36 @@ static e_packer_state get_next_packer_state(e_packer_state current_packer_state,
         // density of the block types available.
 
         // Check if we can turn on unrelated cluster and/or balanced block type
-        // utilization.
-        if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO && packer_opts.balance_block_type_utilization == e_balance_block_type_util::AUTO) {
+        // utilization and they have not been turned on already.
+        if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO && !using_unrelated_clustering) {
+            return e_packer_state::SET_UNRELATED_AND_BALANCED;
+        }
+        if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::AUTO && !using_balanced_block_type_util) {
+            return e_packer_state::SET_UNRELATED_AND_BALANCED;
+        }
+    }
 
-            // Check if they are not already on. If not, set the next state to turn them on.
-            if (!using_unrelated_clustering || !using_balanced_block_type_util) {
-                return e_packer_state::SET_UNRELATED_AND_BALANCED;
-            }
+    // If APPack is used, we can increase the max distance threshold to create
+    // a denser clustering. This will cause the packer to not adhere as well to
+    // the global placement.
+    if (appack_ctx.appack_options.use_appack) {
+        for (const auto& p : block_type_utils) {
+            if (p.second <= 1.0f)
+                continue;
+
+            // Check if we can increase the max distance threshold for any of the
+            // overused block types.
+            float max_device_distance = appack_ctx.max_distance_threshold_manager.get_max_device_distance();
+            float max_distance_th = appack_ctx.max_distance_threshold_manager.get_max_dist_threshold(*p.first);
+            if (max_distance_th < max_device_distance)
+                return e_packer_state::AP_INCREASE_MAX_DISPLACEMENT;
         }
     }
 
     // Check if we can increase the target density of the overused block types.
     // This is a last resort since increasing the target pin density can have
     // bad affects on quality and routability.
-    for (auto& p : block_type_utils) {
+    for (const auto& p : block_type_utils) {
         const t_ext_pin_util& target_pin_util = external_pin_util_targets.get_pin_util(p.first->name);
         if (p.second > 1.0f && (target_pin_util.input_pin_util < 1.0f || target_pin_util.output_pin_util < 1.0f))
             return e_packer_state::INCREASE_OVERUSED_TARGET_PIN_UTILIZATION;
@@ -323,7 +344,8 @@ bool try_pack(const t_packer_opts& packer_opts,
                                                                  balance_block_type_util,
                                                                  block_type_utils,
                                                                  cluster_legalizer.get_target_external_pin_util(),
-                                                                 packer_opts);
+                                                                 packer_opts,
+                                                                 appack_ctx);
 
         // Set up for the options used for the next packer state.
         // NOTE: This must be done here (and not at the start of the next packer
@@ -341,6 +363,20 @@ bool try_pack(const t_packer_opts& packer_opts,
                 if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::AUTO) {
                     VTR_ASSERT(balance_block_type_util == false);
                     balance_block_type_util = true;
+                }
+                if (appack_ctx.appack_options.use_appack) {
+                    // Only do unrelated clustering on the overused type instances.
+                    for (const auto& p : block_type_utils) {
+                        // Any overutilized block types will use the default options.
+                        if (p.second > 1.0f)
+                            continue;
+
+                        // Any underutilized block types should not do unrelated clustering.
+                        // We can turn this off by just setting the max attempts to 0.
+                        // TODO: These may become over-utilized in the future. Should
+                        //       investigate turning these on if needed.
+                        appack_ctx.appack_options.max_unrelated_clustering_attempts[p.first->index] = 0;
+                    }
                 }
                 VTR_LOG("Packing failed to fit on device. Re-packing with: unrelated_logic_clustering=%s balance_block_type_util=%s\n",
                         (allow_unrelated_clustering ? "true" : "false"),
@@ -400,6 +436,35 @@ bool try_pack(const t_packer_opts& packer_opts,
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration and higher pull. \n");
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
                 attraction_groups.set_att_group_pulls(4);
+                break;
+            }
+            case e_packer_state::AP_INCREASE_MAX_DISPLACEMENT: {
+                VTR_ASSERT(appack_ctx.appack_options.use_appack);
+                std::vector<t_logical_block_type_ptr> block_types_to_increase;
+                for (const auto& p : block_type_utils) {
+                    if (p.second <= 1.0f)
+                        continue;
+
+                    float max_device_distance = appack_ctx.max_distance_threshold_manager.get_max_device_distance();
+                    float max_distance_th = appack_ctx.max_distance_threshold_manager.get_max_dist_threshold(*p.first);
+                    if (max_distance_th < max_device_distance)
+                        block_types_to_increase.push_back(p.first);
+                }
+
+                // TODO: Instead of setting to max distance, set to the current threshold,
+                //       multiplied by the overuse. Or maybe just double it.
+                VTR_LOG("Packing failed to fit on device. Increasing the APPack max distance thresholds of block types: ");
+                for (size_t i = 0; i < block_types_to_increase.size(); i++) {
+                    t_logical_block_type_ptr block_type_ptr = block_types_to_increase[i];
+
+                    float max_device_distance = appack_ctx.max_distance_threshold_manager.get_max_device_distance();
+                    appack_ctx.max_distance_threshold_manager.set_max_dist_threshold(*block_type_ptr, max_device_distance);
+
+                    VTR_LOG("%s", block_type_ptr->name.c_str());
+                    if (i < block_types_to_increase.size() - 1)
+                        VTR_LOG(", ");
+                }
+                VTR_LOG("\n");
                 break;
             }
             case e_packer_state::DEFAULT:

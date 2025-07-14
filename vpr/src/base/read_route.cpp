@@ -163,7 +163,7 @@ bool read_route(const char* route_file,
     std::getline(fp, header_str);
     ++lineno;
 
-    std::vector<std::string> header = vtr::split(header_str);
+    std::vector<std::string> header = vtr::StringToken(header_str).split(" \t\n");
     if (header[0] == "Placement_File:" && header[2] == "Placement_ID:" && header[3] != place_ctx.placement_id) {
         auto msg = vtr::string_fmt(
             "Placement file %s specified in the routing file"
@@ -188,7 +188,7 @@ bool read_route(const char* route_file,
     std::getline(fp, header_str);
     ++lineno;
     header.clear();
-    header = vtr::split(header_str);
+    header = vtr::StringToken(header_str).split(" \t\n");
     if (header[0] == "Array" && header[1] == "size:" && (vtr::atou(header[2].c_str()) != device_ctx.grid.width() || vtr::atou(header[4].c_str()) != device_ctx.grid.height())) {
         vpr_throw(VPR_ERROR_ROUTE, route_file, lineno,
                   "Device dimensions %sx%s specified in the routing file does not match given %dx%d ",
@@ -239,7 +239,7 @@ static void process_route(const Netlist<>& net_list,
     while (std::getline(fp, input)) {
         ++lineno;
         tokens.clear();
-        tokens = vtr::split(input);
+        tokens = vtr::StringToken(input).split(" \t\n");
         if (tokens.empty()) {
             continue; //Skip blank lines
         } else if (tokens[0][0] == '#') {
@@ -341,7 +341,7 @@ static void process_nodes(const Netlist<>& net_list,
         ++lineno;
 
         tokens.clear();
-        tokens = vtr::split(input);
+        tokens = vtr::StringToken(input).split(" \t\n");
 
         if (tokens.empty()) {
             continue; /*Skip blank lines*/
@@ -526,7 +526,7 @@ static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, 
     while (std::getline(fp, block)) {
         ++lineno;
         tokens.clear();
-        tokens = vtr::split(block);
+        tokens = vtr::StringToken(block).split(" \t\n");
 
         if (tokens.empty()) {
             continue; /*Skip blank lines*/
@@ -673,9 +673,9 @@ void print_route(const Netlist<>& net_list,
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     if (route_ctx.route_trees.empty())
-        return; //Only if routing exists
+        return; // Only if routing exists
 
-    for (auto net_id : net_list.nets()) {
+    for (ParentNetId net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id)) {
             fprintf(fp, "\n\nNet %zu (%s)\n\n", size_t(net_id), net_list.net_name(net_id).c_str());
             if (net_list.net_sinks(net_id).size() == false) {
@@ -697,8 +697,8 @@ void print_route(const Netlist<>& net_list,
                     fprintf(fp, "Node:\t%zu\t%6s (%d,%d,%d) ", size_t(inode),
                             rr_graph.node_type_string(inode), ilow, jlow, layer_num);
 
-                    if ((ilow != rr_graph.node_xhigh(inode))
-                        || (jlow != rr_graph.node_yhigh(inode)))
+                    if (ilow != rr_graph.node_xhigh(inode)
+                        || jlow != rr_graph.node_yhigh(inode))
                         fprintf(fp, "to (%d,%d,%d) ", rr_graph.node_xhigh(inode),
                                 rr_graph.node_yhigh(inode), layer_num);
 
@@ -710,13 +710,14 @@ void print_route(const Netlist<>& net_list,
 
                             if (physical_tile->is_io()) {
                                 fprintf(fp, " Pad: ");
-                            } else { /* IO Pad. */
+                            } else { // IO Pad
                                 fprintf(fp, " Pin: ");
                             }
                             break;
 
                         case e_rr_type::CHANX:
                         case e_rr_type::CHANY:
+                        case e_rr_type::CHANZ:
                             fprintf(fp, " Track: ");
                             break;
 
@@ -724,9 +725,13 @@ void print_route(const Netlist<>& net_list,
                         case e_rr_type::SINK:
                             if (physical_tile->is_io()) {
                                 fprintf(fp, " Pad: ");
-                            } else { /* IO Pad. */
+                            } else { // IO Pad
                                 fprintf(fp, " Class: ");
                             }
+                            break;
+
+                        case e_rr_type::MUX:
+                            fprintf(fp, " Index: ");
                             break;
 
                         default:
