@@ -112,22 +112,21 @@ if (${WITH_PARMYS})
             
             # Sets location of yosys-config required by slang and suppresses warnings
             BUILD_COMMAND 
-                ${CMAKE_COMMAND} -E env 
-                YOSYS_PREFIX=${CMAKE_BINARY_DIR}/bin/
+                ${CMAKE_COMMAND} -E env
+                    YOSYS_PREFIX=${CMAKE_BINARY_DIR}/bin/
                 ${MAKE_PROGRAM} -C ${SLANG_SRC_DIR}
-                CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-w"
+                    CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-w"
                 install
 
             INSTALL_COMMAND ""
 
-            LOG_BUILD ON
+            DEPENDS yosys
+
+            LOG_BUILD OFF
             LOG_UPDATE ON
             LOG_INSTALL ON
             LOG_CONFIGURE OFF
             LOG_OUTPUT_ON_FAILURE ON
-
-            DEPENDS yosys
-
             
         )
     endif ()
