@@ -99,6 +99,10 @@ if (${WITH_PARMYS})
 	        WORKING_DIRECTORY ${SLANG_SRC_DIR}
 	    )
         set(SLANG_FE "${SLANG_SRC_DIR}/src/slang_frontend.cc")
+        CHECK_CXX_COMPILER_FLAG("-w" CXX_COMPILER_SUPPORTS_-w)
+        if (CXX_COMPILER_SUPPORTS_-w)
+            add_compile_options("-w")
+        endif ()
         ExternalProject_Add(
             yosys-slang
             SOURCE_DIR ${SLANG_SRC_DIR}
