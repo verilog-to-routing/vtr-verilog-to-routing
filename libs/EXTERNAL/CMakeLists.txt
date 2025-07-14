@@ -88,7 +88,6 @@ if (${WITH_PARMYS})
     if (${SLANG_SYSTEMVERILOG})
         set(SLANG_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-slang)
         set(SLANG_BUILD_DIR ${CMAKE_BINARY_DIR}/yosys-slang)
-        set(YOSYS_CONFIG_EXECUTABLE ${CMAKE_BINARY_DIR}/bin/yosys-config CACHE STRING "Path to the yosys-config helper" FORCE)
         #Initialize yosys-slang submodules
         execute_process(
 	        COMMAND ${GIT_EXECUTABLE} submodule update --init
@@ -121,10 +120,15 @@ if (${WITH_PARMYS})
 
             INSTALL_COMMAND ""
 
+            LOG_BUILD ON
+            LOG_UPDATE ON
+            LOG_INSTALL ON
+            LOG_CONFIGURE OFF
+            LOG_OUTPUT_ON_FAILURE ON
+
             DEPENDS yosys
 
-            #Suppress warnings in the yosys-slang build
-            LOG_BUILD OFF
+            
         )
     endif ()
 endif ()
