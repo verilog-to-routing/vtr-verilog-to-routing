@@ -115,7 +115,7 @@ if (${WITH_PARMYS})
             BUILD_COMMAND 
                 ${CMAKE_COMMAND} -E env 
                 YOSYS_PREFIX=${CMAKE_BINARY_DIR}/bin/
-                CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release -w"
+                CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-w"
                 ${MAKE_PROGRAM} -C ${SLANG_SRC_DIR} install
 
             INSTALL_COMMAND ""
