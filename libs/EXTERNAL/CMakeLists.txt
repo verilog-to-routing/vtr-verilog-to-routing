@@ -103,7 +103,6 @@ if (${WITH_PARMYS})
             yosys-slang
             SOURCE_DIR ${SLANG_SRC_DIR}
             BINARY_DIR ${SLANG_BUILD_DIR}
-            BUILD_IN_SOURCE FALSE
 
             #Disabling UndrivenPass in slang_frontend.cc
             PATCH_COMMAND
@@ -117,7 +116,7 @@ if (${WITH_PARMYS})
                 ${CMAKE_COMMAND} -E env 
                 YOSYS_PREFIX=${CMAKE_BINARY_DIR}/bin/
                 CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release -w"
-                ${MAKE_PROGRAM} -C ${SLANG_SRC_DIR} install DESTDIR=${SLANG_BUILD_DIR}
+                ${MAKE_PROGRAM} -C ${SLANG_SRC_DIR} install
 
             INSTALL_COMMAND ""
 
