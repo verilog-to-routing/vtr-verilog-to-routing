@@ -127,7 +127,7 @@ FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_pa
     std::string line;
     while (std::getline(flat_place_file, line)) {
         // Split the line into tokens (using spaces, tabs, etc. as delimiters).
-        std::vector<std::string> tokens = vtr::split(line);
+        std::vector<std::string> tokens = vtr::StringToken(line).split(" \t\n");
         // Skip empty lines
         if (tokens.empty())
             continue;

@@ -1403,6 +1403,40 @@ struct t_det_routing_arch {
     /// the CUSTOM switch block type. See comment at top of SRC/route/build_switchblocks.c
     std::vector<t_switchblock_inf> switchblocks;
 
+    // Following options are used only for tileable routing architecture
+
+    /// Whether the routing architecture is tileable
+    bool tileable;
+
+    /// Sub type and Fs are applied to pass tracks
+    int sub_fs;
+
+    /// Subtype of switch blocks.
+    enum e_switch_block_type switch_block_subtype;
+
+    /// Allow connection blocks to appear around the perimeter programmable block (mainly I/Os)
+    bool perimeter_cb;
+
+    /// Remove all the routing wires in empty regions
+    bool shrink_boundary;
+
+    /// Allow routing channels to pass through multi-width and multi-height programmable blocks.
+    bool through_channel;
+
+    /// Allow each output pin of a programmable block to drive the routing tracks on all the
+    /// sides of its adjacent switch block
+    bool opin2all_sides;
+
+    ///In each switch block, allow each routing track which ends to drive another
+    /// routing track on the opposite side
+    bool concat_wire;
+
+    /// In each switch block, allow each routing track which passes to drive
+    /// another routing track on the opposite side
+    bool concat_pass_wire;
+
+    // End of tileable routing architecture-specific options
+
     short global_route_switch;
 
     /// Index of a zero delay switch (used to connect things that should have no delay).

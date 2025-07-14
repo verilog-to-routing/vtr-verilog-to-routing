@@ -364,7 +364,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
         case e_rr_type::OPIN:
             from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
-            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::MUX) {
                 num_adj += 1; //adjacent
             } else if (is_flat) {
                 VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN); // If pin is located inside a cluster
@@ -417,6 +417,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 num_adj += 1; // adjacent
             } else if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ) {
                 num_adj += rr_graph.chan_nodes_are_adjacent(from_node, to_node);
+            } else if (to_type == e_rr_type::MUX) {
+                num_adj += 1; // adjacent
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
@@ -428,6 +430,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 num_adj += 1; // adjacent
             } else if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ) {
                 num_adj += rr_graph.chan_nodes_are_adjacent(from_node, to_node);
+            } else if (to_type == e_rr_type::MUX) {
+                num_adj += 1; // adjacent
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
@@ -441,6 +445,19 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
             }
+            break;
+
+        case e_rr_type::MUX:
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::MUX) {
+                num_adj += 1; //adjacent
+            } else if (is_flat) {
+                VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN); // If pin is located inside a cluster
+                return true;
+            } else {
+                VTR_ASSERT(to_type == e_rr_type::IPIN);
+                num_adj += 1;
+            }
+
             break;
 
         default:
@@ -568,6 +585,7 @@ static void check_node_and_range(RRNodeId inode,
     check_rr_node(device_ctx.rr_graph,
                   device_ctx.rr_indexed_data,
                   device_ctx.grid,
+                  device_ctx.vib_grid,
                   device_ctx.chan_width,
                   route_type,
                   size_t(inode),
