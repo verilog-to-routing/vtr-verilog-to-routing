@@ -1198,6 +1198,15 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
 void BiPartitioningPartialLegalizer::merge_overlapping_windows(
     std::vector<SpreadingWindow>& windows) {
 
+    // Within the spatial lookup map, we want to store the start and end of the
+    // region that contains the window. However, we do not want to store the
+    // boundary of that region since we are ok with two windows touching at their
+    // boundaries. Hence, we pad a small epsilon around the region.
+    // NOTE: This number should be smaller than the units used for the windows.
+    //       For example, if the windows are placed over grid-tile locations, this
+    //       just needs to be smaller than 1.
+    double epsilon = 0.0001;
+
     // Create a spatial lookup between the x-position of the left / right side of
     // each window and the ID of that window. Here we use the index of the window
     // in the windows vector as an ID.
@@ -1206,12 +1215,14 @@ void BiPartitioningPartialLegalizer::merge_overlapping_windows(
     std::multimap<double, size_t> x_sorted_windows;
     size_t num_windows = windows.size();
     for (size_t i = 0; i < num_windows; i++) {
-        // Add the lower and upper bound of the window into the map.
+        // Add the lower and upper bound of the window into the map. Add a small
+        // epsilon to exclude the border of the window. We do not care if two
+        // windows share a border, only if they overlap.
         // NOTE: This will add duplicates; however it ensures that the overlaping
         //       region is found in the lower algorithm.
         const SpreadingWindow& window = windows[i];
-        x_sorted_windows.insert(std::make_pair(window.region.xmin(), i));
-        x_sorted_windows.insert(std::make_pair(window.region.xmax() - 1, i));
+        x_sorted_windows.insert(std::make_pair(window.region.xmin() + epsilon, i));
+        x_sorted_windows.insert(std::make_pair(window.region.xmax() - epsilon, i));
     }
 
     // Merge overlapping windows.
@@ -1241,10 +1252,10 @@ void BiPartitioningPartialLegalizer::merge_overlapping_windows(
             // Get the lower and upper bounds in the spatial lookup. This will
             // give a list of all windows which could possibly overlap right now
             // (at least in the x dimension).
-            // NOTE: There may be diplicates; but thats ok since these checks
+            // NOTE: There may be duplicates; but thats ok since these checks
             //       are fast.
             auto lower = x_sorted_windows.lower_bound(region.xmin());
-            auto upper = x_sorted_windows.lower_bound(region.xmax() - 1);
+            auto upper = x_sorted_windows.upper_bound(region.xmax());
 
             // Go through the windows which may overlap with this window.
             bool recheck_for_overlap = false;
@@ -1302,8 +1313,8 @@ void BiPartitioningPartialLegalizer::merge_overlapping_windows(
 
         // Update the positional map with the new bounds of this window.
         // This will be used by future explored windows to check for overlap.
-        x_sorted_windows.insert(std::make_pair(region.xmin(), i));
-        x_sorted_windows.insert(std::make_pair(region.xmax() - 1, i));
+        x_sorted_windows.insert(std::make_pair(region.xmin() + epsilon, i));
+        x_sorted_windows.insert(std::make_pair(region.xmax() - epsilon, i));
     }
 
     // Collect the windows that were not merged into other windows.
@@ -1588,6 +1599,108 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     return partitioned_window;
 }
 
+/**
+ * @brief Helper method to decide if we should move a block from one window
+ *        to another given the change in overfills.
+ *
+ *  @param window_curr_overfill
+ *      The overfill of this window if the block is not moved to other.
+ *  @param window_new_overfill
+ *      The overfill of this window if the block is moved to other.
+ *  @param other_window_curr_overfill
+ *      The overfill of the other window if the block is not moved to other.
+ *  @param other_window_new_overfill
+ *      THe overfill of the other window if the block is moved to other.
+ */
+static bool should_move_blk_to_other_window(const PrimitiveVector& window_curr_overfill,
+                                            const PrimitiveVector& window_new_overfill,
+                                            const PrimitiveVector& other_window_curr_overfill,
+                                            const PrimitiveVector& other_window_new_overfill) {
+    // Check what would be the gain of moving this block to the other partition.
+    // Here, we define gain as the amount the overfill of the window would
+    // decrease due to moving this block to the other side.
+    float gain = window_curr_overfill.sum() - window_new_overfill.sum();
+    // If there is no gain for removing this from the current window, keep it where it is.
+    if (gain == 0.0)
+        return false;
+
+    // Compute how much the other window would "lose" due to having this
+    // block on the other side.
+    // Here, we define loss as the amount the overfill of the other window would
+    // increase due to moving this block to the other side.
+    float loss = other_window_new_overfill.sum() - other_window_curr_overfill.sum();
+    // If we would lose more (i.e. make the overfill worse) by moving to
+    // other window than we would gain, keep on this side.
+    if (loss >= gain)
+        return false;
+
+    // If we reach this point, this means that there is more gain to moving this
+    // block to the other window than there is loss. Move it.
+    return true;
+}
+
+/**
+ * @brief Helper method for trying to move a block with the given mass from its
+ *        window to the other window if, by moving this block, we can balance
+ *        the overfill of the two windows better.
+ *
+ * Returns true if the block was moved.
+ *
+ * If this block is moved, the utilizations and the overfills will be updated
+ * accordingly, but the block itself will remain unmoved.
+ * NOTE: This may seem strange, it is; this is to prevent updating the primitive
+ *       vectors too much, but tends to take a long time.
+ *
+ *  @param blk_mass
+ *      The mass of the block to move from this window to the other window.
+ *  @param window_curr_utilization
+ *      The current utilization of this window.
+ *  @param window_curr_overfill
+ *      The current overfill of this window.
+ *  @param other_window_curr_utilization
+ *      The current utilization of the other window.
+ *  @param other_window_curr_overfill
+ *      The current overfill of the other window.
+ *  @param other_window_capacity
+ *      The capacity of the other window.
+ */
+static bool try_move_blk_to_other_window(const PrimitiveVector& blk_mass,
+                                         PrimitiveVector& window_curr_utilization,
+                                         PrimitiveVector& window_curr_overfill,
+                                         PrimitiveVector& other_window_curr_utilization,
+                                         PrimitiveVector& other_window_curr_overfill,
+                                         const PrimitiveVector& other_window_capacity) {
+    // Compute the overfill this window would have if we remove the block from it.
+    PrimitiveVector window_new_overfill = window_curr_overfill - blk_mass;
+    window_new_overfill.relu();
+
+    // Compute the overfill of the other window if the block moved into it.
+    PrimitiveVector other_window_new_utilization = other_window_curr_utilization + blk_mass;
+    PrimitiveVector other_window_new_overfill = other_window_new_utilization - other_window_capacity;
+    other_window_new_overfill.relu();
+
+    // Check if we should move this block to the other window, given the change
+    // in overfill.
+    bool should_move_block = should_move_blk_to_other_window(window_curr_overfill,
+                                                             window_new_overfill,
+                                                             other_window_curr_overfill,
+                                                             other_window_new_overfill);
+    // If we should not move it, return false.
+    if (!should_move_block)
+        return false;
+
+    // If we should move it, update the overfills of each window.
+    // NOTE: Here we are avoiding doing operations on the primitive vectors as
+    //       much as possible.
+    window_curr_utilization -= blk_mass;
+    window_curr_overfill = std::move(window_new_overfill);
+    other_window_curr_utilization = std::move(other_window_new_utilization);
+    other_window_curr_overfill = std::move(other_window_new_overfill);
+
+    // The block was moved.
+    return true;
+}
+
 void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     SpreadingWindow& window,
     PartitionedWindow& partitioned_window,
@@ -1604,15 +1717,8 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     PrimitiveVector upper_window_capacity = capacity_prefix_sum_.get_sum(dims,
                                                                          upper_window.region);
 
-    // Due to the division by the area, we may get numerical underflows /
-    // overflows which accumulate. If they accumulate in the positive
-    // direction, it is not a big deal; but in the negative direction it
-    // will cause problems with the algorithm below. Clamp any negative
-    // numbers to 0.
-    PrimitiveVector lower_window_underfill = lower_window_capacity;
-    PrimitiveVector upper_window_underfill = upper_window_capacity;
-    VTR_ASSERT_SAFE(lower_window_underfill.is_non_negative());
-    VTR_ASSERT_SAFE(upper_window_underfill.is_non_negative());
+    VTR_ASSERT_SAFE(lower_window_capacity.is_non_negative());
+    VTR_ASSERT_SAFE(upper_window_capacity.is_non_negative());
 
     // FIXME: We need to take into account the current utilization of the
     //        fixed blocks... We need to take into account that they are there.
@@ -1621,20 +1727,15 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     //        them.
 
     // If the lower window has no space, put all of the blocks in the upper window.
-    // NOTE: We give some room due to numerical overflows from the prefix sum.
-    if (lower_window_underfill.manhattan_norm() < 0.01f) {
+    if (lower_window_capacity.is_zero()) {
         upper_window.contained_blocks = std::move(window.contained_blocks);
         return;
     }
     // If the upper window has no space, put all of the blocks in the lower window.
-    if (upper_window_underfill.manhattan_norm() < 0.01f) {
+    if (upper_window_capacity.is_zero()) {
         lower_window.contained_blocks = std::move(window.contained_blocks);
         return;
     }
-
-    // Reserve space in each of the windows to make insertion faster.
-    upper_window.contained_blocks.reserve(window.contained_blocks.size());
-    lower_window.contained_blocks.reserve(window.contained_blocks.size());
 
     // Sort the blocks and get the pivot index. The pivot index is the index in
     // the windows contained block which decides which sub-window the block
@@ -1644,7 +1745,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     size_t pivot;
     if (partitioned_window.partition_dir == e_partition_dir::VERTICAL) {
         // Sort the blocks in the window by the x coordinate.
-        std::sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
+        std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
             return p_placement.block_x_locs[a] < p_placement.block_x_locs[b];
         });
         auto upper = std::upper_bound(window.contained_blocks.begin(),
@@ -1657,7 +1758,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     } else {
         VTR_ASSERT(partitioned_window.partition_dir == e_partition_dir::HORIZONTAL);
         // Sort the blocks in the window by the y coordinate.
-        std::sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
+        std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
             return p_placement.block_y_locs[a] < p_placement.block_y_locs[b];
         });
         auto upper = std::upper_bound(window.contained_blocks.begin(),
@@ -1706,92 +1807,67 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // Try to move things from lower to upper greedily.
     std::vector<APBlockId> lower_blocks_to_move;
     lower_blocks_to_move.reserve(lower_contained_blocks.size());
+    // We start from the blocks closest to the partition line and move away.
     for (int i = lower_contained_blocks.size() - 1; i >= 0; i--) {
         // If the lower window has no overfill, there is no reason to move anything.
         if (lower_window_overfill.is_zero())
             break;
 
-        // Check what would be the gain of moving this block to the upper partition.
-        // Here, we define gain as the amount the overfill of the lower window would
-        // decrease due to moving this block to the other side.
+        // Get the mass of this block.
         APBlockId lower_blk = lower_contained_blocks[i];
         const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(lower_blk);
 
-        PrimitiveVector new_lower_overfill = lower_window_overfill - blk_mass;
-        new_lower_overfill.relu();
+        // Using the mass, try to move the block to the other window if it would
+        // improve the imbalance of overfill.
+        // If the block is moved, this will update the window utilizations and
+        // overfills accordingly.
+        bool block_was_moved = try_move_blk_to_other_window(blk_mass,
+                                                            lower_window_utilization,
+                                                            lower_window_overfill,
+                                                            upper_window_utilization,
+                                                            upper_window_overfill,
+                                                            upper_window_capacity);
 
-        float lower_gain = lower_window_overfill.manhattan_norm() - new_lower_overfill.manhattan_norm();
-        // If there is no gain on removing this from the lower partition, keep it where it is.
-        if (lower_gain == 0.0)
-            continue;
-
-        // Compute how much the upper partition would "lose" due to having this
-        // block on the other side.
-        // Here, we define loss as the amount the overfill of the upper window would
-        // increase due to moving this block to the other side.
-        PrimitiveVector new_upper_utilization = upper_window_utilization + blk_mass;
-        PrimitiveVector new_upper_overfill = new_upper_utilization - upper_window_capacity;
-        new_upper_overfill.relu();
-
-        float upper_loss = new_upper_overfill.manhattan_norm() - upper_window_overfill.manhattan_norm();
-        // If we would lose more (i.e. make the overfill worse) by moving to
-        // upper than we would gain, keep on this side.
-        if (upper_loss >= lower_gain)
-            continue;
-
-        // Move this block to the other side.
-
-        // Update the overfills of each side.
-        lower_window_utilization -= blk_mass;
-        lower_window_overfill = std::move(new_lower_overfill);
-        upper_window_utilization = std::move(new_upper_utilization);
-        upper_window_overfill = std::move(new_upper_overfill);
-
-        // Add this block to the list of blocks to move and invalidate the block
-        // in the current list.
-        // Here, we mark the block as invalid and later we will compress the vector.
-        lower_blocks_to_move.push_back(lower_blk);
-        lower_contained_blocks[i] = APBlockId::INVALID();
+        if (block_was_moved) {
+            // If the block was moved, add this block to the list of blocks to
+            // move and invalidate the block in the current list.
+            // Here, we mark the block as invalid and later we will compress the vector.
+            lower_blocks_to_move.push_back(lower_blk);
+            lower_contained_blocks[i] = APBlockId::INVALID();
+        }
     }
 
     // Try to move things from upper to lower greedily.
     std::vector<APBlockId> upper_blocks_to_move;
     upper_blocks_to_move.reserve(upper_contained_blocks.size());
+    // We start from the blocks closest to the partition line and move away.
     for (size_t i = 0; i < upper_contained_blocks.size(); i++) {
         // If the upper window has no overfill, there is no reason to move anything.
         if (upper_window_overfill.is_zero())
             break;
 
-        // Check what would be the gain of moving this block to the upper partition.
+        // Get the mass of this block.
         APBlockId upper_blk = upper_contained_blocks[i];
         const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(upper_blk);
 
-        PrimitiveVector new_upper_overfill = upper_window_overfill - blk_mass;
-        new_upper_overfill.relu();
+        // Using the mass, try to move the block to the other window if it would
+        // improve the imbalance of overfill.
+        // If the block is moved, this will update the window utilizations and
+        // overfills accordingly.
+        bool block_was_moved = try_move_blk_to_other_window(blk_mass,
+                                                            upper_window_utilization,
+                                                            upper_window_overfill,
+                                                            lower_window_utilization,
+                                                            lower_window_overfill,
+                                                            lower_window_capacity);
 
-        float upper_gain = upper_window_overfill.manhattan_norm() - new_upper_overfill.manhattan_norm();
-        // If there is no gain on removing this from the upper partition, keep it where it is.
-        if (upper_gain == 0.0)
-            continue;
-
-        // Compute the change in overfill on the lower.
-        PrimitiveVector new_lower_utilization = lower_window_utilization + blk_mass;
-        PrimitiveVector new_lower_overfill = new_lower_utilization - lower_window_capacity;
-        new_lower_overfill.relu();
-
-        float lower_loss = new_lower_overfill.manhattan_norm() - lower_window_overfill.manhattan_norm();
-        // If we would lose more (i.e. make the overfill worse) by moving to upper than we would gain, keep on this side.
-        if (lower_loss >= upper_gain)
-            continue;
-
-        // Move this block to the other side.
-        upper_window_utilization -= blk_mass;
-        upper_window_overfill = std::move(new_upper_overfill);
-        lower_window_utilization = std::move(new_lower_utilization);
-        lower_window_overfill = std::move(new_lower_overfill);
-
-        upper_blocks_to_move.push_back(upper_blk);
-        upper_contained_blocks[i] = APBlockId::INVALID();
+        if (block_was_moved) {
+            // If the block was moved, add this block to the list of blocks to
+            // move and invalidate the block in the current list.
+            // Here, we mark the block as invalid and later we will compress the vector.
+            upper_blocks_to_move.push_back(upper_blk);
+            upper_contained_blocks[i] = APBlockId::INVALID();
+        }
     }
 
     // Move the blocks into the windows.
@@ -1799,9 +1875,8 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // Compress the lower contained blocks which have not moved.
     lower_window.contained_blocks.reserve(lower_contained_blocks.size() - lower_blocks_to_move.size() + upper_blocks_to_move.size());
     for (APBlockId lower_blk : lower_contained_blocks) {
-        if (!lower_blk.is_valid())
-            continue;
-        lower_window.contained_blocks.push_back(lower_blk);
+        if (lower_blk.is_valid())
+            lower_window.contained_blocks.push_back(lower_blk);
     }
     // Insert the upper blocks which have moved into the lower partition.
     lower_window.contained_blocks.insert(lower_window.contained_blocks.end(),
@@ -1818,9 +1893,8 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
                                          lower_blocks_to_move.end());
     // Compress the upper contained blocks which have not moved.
     for (APBlockId upper_blk : upper_contained_blocks) {
-        if (!upper_blk.is_valid())
-            continue;
-        upper_window.contained_blocks.push_back(upper_blk);
+        if (upper_blk.is_valid())
+            upper_window.contained_blocks.push_back(upper_blk);
     }
 }
 
