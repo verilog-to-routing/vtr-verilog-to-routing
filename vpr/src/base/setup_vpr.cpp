@@ -27,23 +27,61 @@
 #include "setup_vib_utils.h"
 
 static void setup_netlist_opts(const t_options& Options, t_netlist_opts& NetlistOpts);
+
+/**
+ * @brief Sets up the t_ap_opts structure based on users inputs and
+ *        on the architecture specified.
+ *
+ * Error checking, such as checking for conflicting params is assumed
+ * to be done beforehand
+ */
 static void setup_ap_opts(const t_options& options,
                           t_ap_opts& apOpts);
+
+/**
+ * @brief Sets up the t_packer_opts structure based on users inputs and
+ *        on the architecture specified.
+ *
+ * Error checking, such as checking for conflicting params is assumed
+ * to be done beforehand
+ */
 static void setup_packer_opts(const t_options& Options,
                               t_packer_opts* PackerOpts);
+
+/**
+ * @brief Sets up the s_placer_opts structure based on users input.
+ *
+ * Error checking, such as checking for conflicting params
+ * is assumed to be done beforehand
+ */
 static void setup_placer_opts(const t_options& Options,
                               t_placer_opts* PlacerOpts);
 static void setup_anneal_sched(const t_options& Options,
                                t_annealing_sched* AnnealSched);
 static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpts);
+
+/**
+ * Go through all the NoC options supplied by the user and store them internally.
+ */
 static void setup_noc_opts(const t_options& Options,
                            t_noc_opts* NocOpts);
+
 static void setup_server_opts(const t_options& Options,
                               t_server_opts* ServerOpts);
 
+/**
+ * @brief Sets up routing structures.
+ *
+ * Since checks are already done, this just copies values across
+ */
 static void setup_routing_arch(const t_arch& Arch, t_det_routing_arch& RoutingArch);
 
 static void setup_timing(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
+
+/**
+ * @brief This loads up VPR's arch_switch_inf data by combining the switches
+ *        from the arch file with the special switches that VPR needs.
+ */
 static void setup_switches(const t_arch& Arch,
                            t_det_routing_arch& RoutingArch,
                            const std::vector<t_arch_switch_inf>& arch_switches);
@@ -72,22 +110,12 @@ static void add_intra_tile_switches();
 
 /**
  * Identify the pins that can directly reach class_inf
- * @param physical_tile
- * @param logical_block
- * @param class_inf
- * @param physical_class_num
  */
 static void do_reachability_analysis(t_physical_tile_type* physical_tile,
                                      t_logical_block_type* logical_block,
                                      t_class* class_inf,
                                      int physical_class_num);
 
-/**
- * @brief Sets VPR parameters and defaults.
- *
- * Does not do any error checking as this should have been done by
- * the various input checkers
- */
 void SetupVPR(const t_options* options,
               const bool timingenabled,
               const bool readArchFile,
@@ -306,7 +334,7 @@ void SetupVPR(const t_options* options,
 
     ShowSetup(*vpr_setup);
 
-    /* init global variables */
+    // init global variables
     vtr::out_file_prefix = options->out_file_prefix;
 
     {
@@ -348,7 +376,7 @@ void SetupVPR(const t_options* options,
 }
 
 static void setup_timing(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing) {
-    /* Don't do anything if they don't want timing */
+    // Don't do anything if they don't want timing
     if (!TimingEnabled) {
         Timing->timing_analysis_enabled = false;
         return;
@@ -358,10 +386,6 @@ static void setup_timing(const t_options& Options, const bool TimingEnabled, t_t
     Timing->SDCFile = Options.SDCFile;
 }
 
-/**
- * @brief This loads up VPR's arch_switch_inf data by combining the switches
- *        from the arch file with the special switches that VPR needs.
- */
 static void setup_switches(const t_arch& Arch,
                            t_det_routing_arch& RoutingArch,
                            const std::vector<t_arch_switch_inf>& arch_switches) {
@@ -372,10 +396,10 @@ static void setup_switches(const t_arch& Arch,
 
     find_ipin_cblock_switch_index(Arch, RoutingArch.wire_to_arch_ipin_switch, RoutingArch.wire_to_arch_ipin_switch_between_dice);
 
-    /* Depends on device_ctx.num_arch_switches */
+    // Depends on device_ctx.num_arch_switches
     RoutingArch.delayless_switch = num_arch_switches++;
 
-    /* Alloc the list now that we know the final num_arch_switches value */
+    // Alloc the list now that we know the final num_arch_switches value
     device_ctx.arch_switch_inf.resize(num_arch_switches);
     for (int iswitch = 0; iswitch < switches_to_copy; iswitch++) {
         device_ctx.arch_switch_inf[iswitch] = arch_switches[iswitch];
@@ -384,7 +408,7 @@ static void setup_switches(const t_arch& Arch,
         device_ctx.all_sw_inf[iswitch] = arch_switches[iswitch];
     }
 
-    /* Delayless switch for connecting sinks and sources with their pins. */
+    // Delayless switch for connecting sinks and sources with their pins.
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_type(SwitchType::MUX);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].name = std::string(VPR_DELAYLESS_SWITCH_NAME);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].R = 0.;
@@ -404,21 +428,15 @@ static void setup_switches(const t_arch& Arch,
 
     device_ctx.delayless_switch_idx = RoutingArch.delayless_switch;
 
-    //Warn about non-zero Cout values for the ipin switch, since these values have no effect.
-    //VPR do not model the R/C's of block internal routing connection.
-    //
-    //Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
+    // Warn about non-zero Cout values for the ipin switch, since these values have no effect.
+    // VPR do not model the R/C's of block internal routing connection
+    // Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
     if (device_ctx.arch_switch_inf[RoutingArch.wire_to_arch_ipin_switch].Cout != 0.) {
         VTR_LOG_WARN("Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
                      device_ctx.arch_switch_inf[RoutingArch.wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name[0].c_str());
     }
 }
 
-/**
- * @brief Sets up routing structures.
- *
- * Since checks are already done, this just copies values across
- */
 static void setup_routing_arch(const t_arch& Arch,
                                t_det_routing_arch& RoutingArch) {
     RoutingArch.switch_block_type = Arch.sb_type;
@@ -432,10 +450,10 @@ static void setup_routing_arch(const t_arch& Arch,
         RoutingArch.directionality = Arch.Segments[0].directionality;
     }
 
-    /* copy over the switch block information */
+    // copy over the switch block information
     RoutingArch.switchblocks = Arch.switchblocks;
 
-    /* Copy the tileable routing setting */
+    // Copy the tileable routing setting
     RoutingArch.tileable = Arch.tileable;
     RoutingArch.perimeter_cb = Arch.perimeter_cb;
     RoutingArch.shrink_boundary = Arch.shrink_boundary;
@@ -569,15 +587,8 @@ static void setup_anneal_sched(const t_options& Options,
     AnnealSched->type = Options.anneal_sched_type;
 }
 
-/**
- * @brief Sets up the t_ap_opts structure based on users inputs and
- *        on the architecture specified.
- *
- * Error checking, such as checking for conflicting params is assumed
- * to be done beforehand
- */
-void setup_ap_opts(const t_options& options,
-                   t_ap_opts& apOpts) {
+static void setup_ap_opts(const t_options& options,
+                          t_ap_opts& apOpts) {
     apOpts.analytical_solver_type = options.ap_analytical_solver.value();
     apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
@@ -591,13 +602,6 @@ void setup_ap_opts(const t_options& options,
     apOpts.generate_mass_report = options.ap_generate_mass_report.value();
 }
 
-/**
- * @brief Sets up the t_packer_opts structure based on users inputs and
- *        on the architecture specified.
- *
- * Error checking, such as checking for conflicting params is assumed
- * to be done beforehand
- */
 void setup_packer_opts(const t_options& Options,
                        t_packer_opts* PackerOpts) {
     PackerOpts->output_file = Options.NetFile;
@@ -639,12 +643,6 @@ static void setup_netlist_opts(const t_options& Options, t_netlist_opts& Netlist
     NetlistOpts.netlist_verbosity = Options.netlist_verbosity;
 }
 
-/**
- * @brief Sets up the s_placer_opts structure based on users input.
- *
- * Error checking, such as checking for conflicting params
- * is assumed to be done beforehand
- */
 static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpts) {
     if (Options.do_placement) {
         PlacerOpts->doPlacement = e_stage_action::DO;
@@ -677,7 +675,7 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->congestion_rlim_trigger_ratio = Options.place_congestion_rlim_trigger_ratio;
     PlacerOpts->congestion_chan_util_threshold = Options.place_congestion_chan_util_threshold;
 
-    /* Depends on PlacerOpts->place_algorithm */
+    // Depends on PlacerOpts->place_algorithm
     PlacerOpts->delay_offset = Options.place_delay_offset;
     PlacerOpts->delay_ramp_delta_threshold = Options.place_delay_ramp_delta_threshold;
     PlacerOpts->delay_ramp_slope = Options.place_delay_ramp_slope;
@@ -686,7 +684,7 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->delay_model_type = Options.place_delay_model;
     PlacerOpts->delay_model_reducer = Options.place_delay_model_reducer;
 
-    PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
+    PlacerOpts->place_freq = PLACE_ONCE; // DEFAULT
 
     PlacerOpts->post_place_timing_report_file = Options.post_place_timing_report_file;
 
@@ -778,9 +776,7 @@ static void setup_power_opts(const t_options& Options, t_power_opts* power_opts,
     }
 }
 
-/*
- * Go through all the NoC options supplied by the user and store them internally.
- */
+
 static void setup_noc_opts(const t_options& Options, t_noc_opts* NocOpts) {
     // assign the noc specific options from the command line
     NocOpts->noc = Options.noc;
