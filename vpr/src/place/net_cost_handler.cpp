@@ -30,7 +30,6 @@
  * channels in its bounding box. These average utilizations are then compared to a user-specified threshold.
  * If a net’s average utilization exceeds the threshold, the excess is penalized by adding a cost proportional
  * to the amount of the exceedance.
- *
  */
 #include "net_cost_handler.h"
 
@@ -1836,6 +1835,9 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     VTR_ASSERT(chan_util_.x.size() == chan_width_.x.size());
     VTR_ASSERT(chan_util_.y.size() == chan_width_.y.size());
 
+    // Normalize channel utilizations by dividing by the corresponding channel widths.
+    // If a channel does not exist (i.e., its width is zero), we set its utilization to 1
+    // to avoid division by zero.
     for (size_t layer = 0; layer < num_layers; ++layer) {
         for (size_t x = 0; x < grid_width; ++x) {
             for (size_t y = 0; y < grid_height; ++y) {

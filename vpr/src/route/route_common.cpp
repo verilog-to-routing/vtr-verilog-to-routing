@@ -83,7 +83,6 @@ static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num,
  * @param chan_util Post-placement estimate of routing channel utilization per (layer, x, y) location.
  * @return Initial `acc_cost` for the given RR node.
  */
-
 static float comp_initial_acc_cost(RRNodeId node_id,
                                    const t_router_opts& route_opts,
                                    const ChannelData<vtr::NdMatrix<double, 3>>& chan_util);
@@ -481,6 +480,7 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
 
     VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_graph.num_nodes()));
 
+    // RoutingChanUtilEstimator assumes cube bounding box
     RoutingChanUtilEstimator routing_chan_util_estimator(blk_loc_registry);
     const ChannelData<vtr::NdMatrix<double, 3>> chan_util = routing_chan_util_estimator.estimate_routing_chan_util();
 

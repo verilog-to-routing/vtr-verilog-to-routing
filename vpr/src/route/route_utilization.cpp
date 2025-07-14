@@ -10,6 +10,7 @@ RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc
     placer_state_->mutable_blk_loc_registry() = blk_loc_registry;
 
     placer_opts_.place_algorithm = e_place_algorithm::BOUNDING_BOX_PLACE;
+    /// RoutingChanUtilEstimator uses cube bounding box
     net_cost_handler_ = std::make_unique<NetCostHandler>(placer_opts_, *placer_state_, /*cube_bb=*/true);
 }
 
