@@ -99,10 +99,6 @@ if (${WITH_PARMYS})
 	        WORKING_DIRECTORY ${SLANG_SRC_DIR}
 	    )
         set(SLANG_FE "${SLANG_SRC_DIR}/src/slang_frontend.cc")
-        CHECK_CXX_COMPILER_FLAG("-w" CXX_COMPILER_SUPPORTS_-w)
-        if (CXX_COMPILER_SUPPORTS_-w)
-            add_compile_options("-w")
-        endif ()
         ExternalProject_Add(
             yosys-slang
             SOURCE_DIR ${SLANG_SRC_DIR}
@@ -119,8 +115,7 @@ if (${WITH_PARMYS})
             BUILD_COMMAND 
                 ${CMAKE_COMMAND} -E env 
                 YOSYS_PREFIX=${CMAKE_BINARY_DIR}/bin/
-                CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release"
-                CMAKE_CXX_FLAGS="-w"
+                CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-w"
                 ${MAKE_PROGRAM} -C ${SLANG_SRC_DIR} install
 
             INSTALL_COMMAND ""
