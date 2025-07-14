@@ -12,6 +12,10 @@
         "ignored_tasks": []
     },
     {
+        "name": "vtr_reg_system_verilog",
+        "ignored_tasks": []
+    },
+    {
         "name": "vtr_reg_valgrind_small",
         "ignored_tasks": []
     },
