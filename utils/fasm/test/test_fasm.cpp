@@ -429,7 +429,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
         // A feature representing block pin used by the router
         if(line.find("PIN_") != std::string::npos) {
-            auto parts = vtr::split(line, "_");
+            auto parts = vtr::StringToken(line).split("_");
             REQUIRE(parts.size() == 6);
 
             auto x = vtr::atoi(parts[1]);
@@ -558,7 +558,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             CHECK(FLE_occurrences <= 1);
 
         } else {
-            auto parts = vtr::split(line, "_");
+            auto parts = vtr::StringToken(line).split("_");
             REQUIRE(parts.size() == 3);
             auto src_inode = vtr::atoi(parts[0]);
             auto sink_inode = vtr::atoi(parts[1]);

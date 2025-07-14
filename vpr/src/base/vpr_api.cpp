@@ -39,7 +39,8 @@
 #include "place_and_route.h"
 #include "pack.h"
 #include "place.h"
-#include "SetupGrid.h"
+#include "setup_grid.h"
+#include "setup_vib_grid.h"
 #include "setup_clocks.h"
 #include "setup_noc.h"
 #include "read_xml_noc_traffic_flows_file.h"
@@ -47,7 +48,7 @@
 #include "stats.h"
 #include "read_options.h"
 #include "echo_files.h"
-#include "SetupVPR.h"
+#include "setup_vpr.h"
 #include "ShowSetup.h"
 #include "CheckArch.h"
 #include "CheckSetup.h"
@@ -259,7 +260,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which VPR_ERRORs
      * are demoted to VTR_LOG_WARNs
      */
-    for (const std::string& func_name : vtr::split(options->disable_errors.value(), ":")) {
+    for (const std::string& func_name : vtr::StringToken(options->disable_errors.value()).split(":")) {
         map_error_activation_status(func_name);
     }
 
@@ -267,7 +268,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which
      * warnings are being suppressed
      */
-    std::vector<std::string> split_warning_option = vtr::split(options->suppress_warnings.value(), ",");
+    std::vector<std::string> split_warning_option = vtr::StringToken(options->suppress_warnings.value()).split(",");
     std::string warn_log_file;
     std::string warn_functions;
     // If no log file name is provided, the specified warning
@@ -280,7 +281,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     }
 
     set_noisy_warn_log_file(warn_log_file);
-    for (const std::string& func_name : vtr::split(warn_functions, std::string(":"))) {
+    for (const std::string& func_name : vtr::StringToken(warn_functions).split(":")) {
         add_warnings_to_suppress(func_name);
     }
 
@@ -570,6 +571,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     //Build the device
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
+    if (!Arch.vib_infs.empty()) {
+        device_ctx.vib_grid = create_vib_device_grid(vpr_setup.device_layout, Arch.vib_grid_layouts);
+    }
 
     VTR_ASSERT_MSG(device_ctx.grid.get_num_layers() <= MAX_NUM_LAYERS,
                    "Number of layers should be less than MAX_NUM_LAYERS. "
@@ -1180,6 +1184,9 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
         graph_directionality = e_graph_type::BIDIR;
     } else {
         graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
+        }
         graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
