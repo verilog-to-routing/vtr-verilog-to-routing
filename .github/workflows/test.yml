@@ -122,27 +122,42 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - { name: 'C/C++',       script: 'check-format.sh'    }
-        - { name: 'Python',      script: 'check-format-py.sh' }
-        - { name: 'Python Lint', script: 'pylint_check.py'    }
+        - { name: 'C/C++',       script: 'check-format.sh'   , with_python: 'no', pkgs: 'clang-format-18' }
+        - { name: 'Python',      script: 'check-format-py.sh', with_python: 'yes', pkgs: '' }
+        - { name: 'Python Lint', script: 'pylint_check.py'   , with_python: 'yes', pkgs: '' }
     name: 'F: ${{ matrix.name }}'
     steps:
 
+    - uses: actions/checkout@v4
+      # NOTE: We do not need sub-modules. We do not check sub-modules for formatting.
+
     # TODO: This should be on the same version of Python as would be found on
     #       Ubuntu 24.04 (3.12.3); however that version has some linting errors.
+    #         - The version of Pylint in requirements.txt is not compatible with
+    #           python version 3.12.3. Pylint needs to be updated to move to this version.
     - uses: actions/setup-python@v5
+      if: ${{ matrix.with_python == 'yes' }}
       with:
         python-version: 3.10.10
 
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
+    - name: Build Python Virtual Env
+      run: |
+        python -m venv .venv
+
+    - name: Install Python Requirements
+      if: ${{ matrix.with_python == 'yes' }}
+      run: |
+        source .venv/bin/activate
+        pip install -r requirements.txt
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      if: ${{ matrix.pkgs }}
+      run: sudo apt install -y ${{ matrix.pkgs }}
 
     - name: Test
-      run: ./dev/${{ matrix.script }}
+      run: |
+        source .venv/bin/activate
+        ./dev/${{ matrix.script }}
 
 
   VerifyTestSuites:
