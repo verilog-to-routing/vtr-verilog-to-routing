@@ -255,7 +255,12 @@ void log_flat_placement_reconstruction_info(
     float total_disp = 0.f;
     float max_disp = 0.f;
     unsigned num_atoms_missplaced = 0;
+    const auto& grid = g_vpr_ctx.device().grid;
     for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
+        if (!atom_blk_id.is_valid()) {
+            continue;
+        }
+
         // TODO: Currently only handle the case when all of the position
         //       data is provided. This can be extended,
         VTR_ASSERT(flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS);
@@ -272,11 +277,21 @@ void log_flat_placement_reconstruction_info(
         ClusterBlockId atom_clb_id = cluster_of_atom_lookup.atom_clb(atom_blk_id);
         const t_block_loc& clb_loc = block_locs[atom_clb_id];
 
-        // Compute the distance between these two positions.
-        // FIXME: This will overreport large blocks. This should really be
-        //        the distance outside of the tile you want to be placed in.
-        float dx = blk_x - clb_loc.loc.x;
-        float dy = blk_y - clb_loc.loc.y;
+        // Compute the distance between the block position and the tile that
+        // cluster containing current atom placed.
+        t_physical_tile_loc tile_loc = {clb_loc.loc.x, clb_loc.loc.y, clb_loc.loc.layer};
+        vtr::Rect<int> tile_bb = grid.get_tile_bb(tile_loc);
+        int tile_xmin = tile_bb.xmin(), tile_xmax = tile_bb.xmax();
+        int tile_ymin = tile_bb.ymin(), tile_ymax = tile_bb.ymax();
+
+        // Project the block position to tile bounding box.
+        float proj_x = std::clamp(blk_x, tile_xmin, tile_xmax);
+        float proj_y = std::clamp(blk_y, tile_ymin, tile_ymax);
+
+        // Then compute the L1 distance from the block location to the projected
+        // position. This will be the minimum distance this point needs to move.
+        float dx = std::abs(proj_x - blk_x);
+        float dy = std::abs(proj_y - blk_y);
         float dlayer = blk_layer - clb_loc.loc.layer;
         // Using the Manhattan distance (L1 norm)
         float dist = std::abs(dx) + std::abs(dy) + std::abs(dlayer);
@@ -309,7 +324,7 @@ void log_flat_placement_reconstruction_info(
     size_t num_clusters = clustered_netlist.blocks().size();
     VTR_LOG("Flat Placement Reconstruction Info:\n");
     VTR_LOG("\tPercent of clusters with reconstruction errors: %f\n",
-            static_cast<float>(num_imperfect_clusters) / static_cast<float>(num_clusters));
+            100.0f * static_cast<float>(num_imperfect_clusters) / static_cast<float>(num_clusters));
     VTR_LOG("\tTotal displacement of initial placement from flat placement: %f\n",
             total_disp);
     VTR_LOG("\tAverage atom displacement of initial placement from flat placement: %f\n",
@@ -317,5 +332,5 @@ void log_flat_placement_reconstruction_info(
     VTR_LOG("\tMax atom displacement of initial placement from flat placement: %f\n",
             max_disp);
     VTR_LOG("\tPercent of atoms misplaced from the flat placement: %f\n",
-            static_cast<float>(num_atoms_missplaced) / static_cast<float>(num_atoms));
+            100.0f * static_cast<float>(num_atoms_missplaced) / static_cast<float>(num_atoms));
 }
