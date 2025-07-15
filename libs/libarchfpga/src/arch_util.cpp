@@ -1029,6 +1029,32 @@ bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& bl
     return false;
 }
 
+bool pb_type_contains_memory_pbs(const t_pb_type* pb_type) {
+    // TODO: This should eb a graph traversal instead of a recursive function.
+
+    if (pb_type == nullptr)
+        return false;
+
+    // Check if this pb_type is a memory class. If so return true. This acts as
+    // a base case for the recursion.
+    if (pb_type->class_type == e_pb_type_class::MEMORY_CLASS)
+        return true;
+
+    // Go through all modes of this pb_type and check if any of those modes'
+    // children have memory pb_types, if so return true.
+    for (int mode_idx = 0; mode_idx < pb_type->num_modes; mode_idx++) {
+        const t_mode& mode = pb_type->modes[mode_idx];
+        for (int child_idx = 0; child_idx < mode.num_pb_type_children; child_idx++) {
+            if (pb_type_contains_memory_pbs(&mode.pb_type_children[child_idx]))
+                return true;
+        }
+    }
+
+    // If this pb_type is not a memory and its modes do not have memory pbs in
+    // them, then this pb_type is not a memory.
+    return false;
+}
+
 bool has_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type) {
     VTR_ASSERT(annot_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
                || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
