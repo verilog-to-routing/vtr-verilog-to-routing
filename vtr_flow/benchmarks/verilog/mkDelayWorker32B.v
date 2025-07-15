@@ -310,16 +310,6 @@ module mkDelayWorker32B(wciS0_Clk,
   wire dummy7;
   wire dummy8;
   wire dummy9;
-  assign dummy1 = &mesgRF_memory__DOB;
-  assign dummy2 = &mesgWF_memory__DOB;
-  assign dummy3 = &metaRF__D_OUT;
-  assign dummy4 = &metaWF__D_OUT ;
-  assign dummy5 = &wci_reqF__D_OUT;
-  assign dummy6 = &wide16Fa__D_OUT;
-  assign dummy7 = &wide16Fb__D_OUT;
-  assign dummy8 = &wmemi_respF__D_OUT;
-  assign dummy9 = &wsiS_reqFifo__D_OUT;
-  
   wire prevent_hang_wire;
   assign prevent_hang_wire =  dummy1 & dummy2 & dummy3 & dummy4 &dummy5 & dummy6 & dummy7 & dummy8 & dummy9;
   assign prevent_hanging_nodes = prevent_hang_wire;
@@ -1331,6 +1321,16 @@ module mkDelayWorker32B(wciS0_Clk,
        metaWF_RDY_deq__58_AND_NOT_wrtSerPos_11_EQ_3_1_ETC___d365,
        wci_cState_9_EQ_2_0_AND_dlyCtrl_4_BITS_3_TO_0__ETC___d397;
 
+  assign dummy1 = &mesgRF_memory__DOB;
+  assign dummy2 = &mesgWF_memory__DOB;
+  assign dummy3 = &metaRF__D_OUT;
+  assign dummy4 = &metaWF__D_OUT ;
+  assign dummy5 = &wci_reqF__D_OUT;
+  assign dummy6 = &wide16Fa__D_OUT;
+  assign dummy7 = &wide16Fb__D_OUT;
+  assign dummy8 = &wmemi_respF__D_OUT;
+  assign dummy9 = &wsiS_reqFifo__D_OUT;
+  
   // action method wciS0_mCmd
   assign CAN_FIRE_wciS0_mCmd = 1'b1 ;
   assign WILL_FIRE_wciS0_mCmd = 1'b1 ;
@@ -1503,9 +1503,9 @@ module mkDelayWorker32B(wciS0_Clk,
 wire [255:0] dp_out_not_used1;
 wire [255:0] dp_out_not_used2;
 
-  defparam dpram1.ADDR_WIDTH = 10;
-  defparam dpram1.DATA_WIDTH = 256;
-  dual_port_ram dpram1 (
+  dual_port_ram 
+    # (.ADDR_WIDTH(10), .DATA_WIDTH(256))
+    dpram1 (
 						.clk(wciS0_Clk),
 					    .addr1(mesgRF_memory__ADDRA),
 					    .addr2(mesgRF_memory__ADDRB),
@@ -1523,9 +1523,9 @@ wire [255:0] dp_out_not_used2;
 //	  .DATA_WIDTH(32'b1056),
 //	  .MEMSIZE(11'b1024)) mesgWF_memory(
 
- defparam dpram2.ADDR_WIDTH = 10;
- defparam dpram2.DATA_WIDTH = 256;  
- dual_port_ram dpram2   (
+ dual_port_ram 
+    # (.ADDR_WIDTH(10), .DATA_WIDTH(256))
+   dpram2   (
 						.clk(wciS0_Clk),
 					    .addr1(mesgWF_memory__ADDRA),
 					    .addr2(mesgWF_memory__ADDRB),
@@ -4137,9 +4137,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 32'b00000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awa;
-defparam ram1.DATA_WIDTH = `dwa;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwa))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -4537,9 +4537,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 32'b00000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awa;
-defparam ram1.DATA_WIDTH = `dwa;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwa))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -4941,9 +4941,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awa;
-defparam ram1.DATA_WIDTH = `dwc;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwc))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -5345,9 +5345,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awa;
-defparam ram1.DATA_WIDTH = `dwd;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwd))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -5693,9 +5693,6 @@ parameter n=32;
 parameter max_size = 1<<aw;
  */
  
- `define dwc  60
-`define awc 3
-
 module generic_fifo_sc_f(clk, rst, clr, din, we, dout, re,
 			 full, empty,
              full_n, empty_n,
@@ -5708,10 +5705,14 @@ parameter aw=8;
 parameter n=32;
 parameter max_size = 1<<aw;
  */
+
+parameter dwc = 60;
+parameter awc = 3;
+
 input			clk, rst, clr;
-input	[`dwc-1:0]	din;
+input	[dwc-1:0]	din;
 input			we;
-output	[`dwc-1:0]	dout;
+output	[dwc-1:0]	dout;
 input			re;
 output			full, full_r;
 output			empty, empty_r;
@@ -5724,16 +5725,16 @@ output	[1:0]		level;
 // Local Wires
 //
  
-reg	[`awc-1:0]	wp;
-wire	[`awc-1:0]	wp_pl1;
-wire	[`awc-1:0]	wp_pl2;
-reg	[`awc-1:0]	rp;
-wire	[`awc-1:0]	rp_pl1;
+reg	[awc-1:0]	wp;
+wire	[awc-1:0]	wp_pl1;
+wire	[awc-1:0]	wp_pl2;
+reg	[awc-1:0]	rp;
+wire	[awc-1:0]	rp_pl1;
 reg			full_r;
 reg			empty_r;
 reg			gb;
 reg			gb2;
-reg	[`awc:0]		cnt;
+reg	[awc:0]		cnt;
 wire			full_n, empty_n;
 reg			full_n_r, empty_n_r;
  
@@ -5743,16 +5744,16 @@ reg			full_n_r, empty_n_r;
 //
  wire always_zero;
  assign always_zero = 1'b0;
- wire [`dwc-1:0] junk_out;
+ wire [dwc-1:0] junk_out;
  
- wire [`dwc-1:0] junk_in;
+ wire [dwc-1:0] junk_in;
  
  // manually assign
  assign junk_in = 60'b000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awc;
-defparam ram1.DATA_WIDTH = `dwc;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(awc), .DATA_WIDTH(dwc))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -5846,7 +5847,7 @@ always @(posedge clk )
  
 assign empty_n = cnt < `n;
 assign full_n  = !(cnt < (`max_size-`n+1));
-assign level = {{cnt[`awc]}, {cnt[`awc]}} | cnt[`awc-1:`awc-2];
+assign level = {{cnt[awc]}, {cnt[awc]}} | cnt[awc-1:awc-2];
  
 // N entries status
 always @(posedge clk )
@@ -6152,9 +6153,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 313'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awf;
-defparam ram1.DATA_WIDTH = `dwf;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwf))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -6557,9 +6558,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 131'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awx;
-defparam ram1.DATA_WIDTH = `dwx;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awx), .DATA_WIDTH(`dwx))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -6661,7 +6662,7 @@ always @(posedge clk )
 	else
 	if(clr)		cnt <=  {3'b000};
 	else
-	if( re & !we)	cnt <=  cnt + { 3'b1111};
+	if( re & !we)	cnt <=  cnt + { 4'b1111};
 	else
 	if(!re &  we)	cnt <=  cnt + { {2'b00}, 1'b1};
  

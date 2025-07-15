@@ -182,22 +182,22 @@
 `define OR1200_DU_DSR_WIDTH 14
 
 
-`define OR1200_EXCEPT_UNUSED		3'hf
-`define OR1200_EXCEPT_TRAP		3'he
-`define OR1200_EXCEPT_BREAK		3'hd
-`define OR1200_EXCEPT_SYSCALL		3'hc
-`define OR1200_EXCEPT_RANGE		3'hb
-`define OR1200_EXCEPT_ITLBMISS		3'ha
-`define OR1200_EXCEPT_DTLBMISS		3'h9
-`define OR1200_EXCEPT_INT		3'h8
-`define OR1200_EXCEPT_ILLEGAL		3'h7
-`define OR1200_EXCEPT_ALIGN		3'h6
-`define OR1200_EXCEPT_TICK		3'h5
-`define OR1200_EXCEPT_IPF		3'h4
-`define OR1200_EXCEPT_DPF		3'h3
-`define OR1200_EXCEPT_BUSERR		3'h2
-`define OR1200_EXCEPT_RESET		3'h1
-`define OR1200_EXCEPT_NONE		3'h0
+`define OR1200_EXCEPT_UNUSED		4'hf
+`define OR1200_EXCEPT_TRAP		4'he
+`define OR1200_EXCEPT_BREAK		4'hd
+`define OR1200_EXCEPT_SYSCALL		4'hc
+`define OR1200_EXCEPT_RANGE		4'hb
+`define OR1200_EXCEPT_ITLBMISS		4'ha
+`define OR1200_EXCEPT_DTLBMISS		4'h9
+`define OR1200_EXCEPT_INT		4'h8
+`define OR1200_EXCEPT_ILLEGAL		4'h7
+`define OR1200_EXCEPT_ALIGN		4'h6
+`define OR1200_EXCEPT_TICK		4'h5
+`define OR1200_EXCEPT_IPF		4'h4
+`define OR1200_EXCEPT_DPF		4'h3
+`define OR1200_EXCEPT_BUSERR		4'h2
+`define OR1200_EXCEPT_RESET		4'h1
+`define OR1200_EXCEPT_NONE		4'h0
 
 `define OR1200_OPERAND_WIDTH		32
 `define OR1200_REGFILE_ADDR_WIDTH	5
@@ -3099,9 +3099,9 @@ assign const_zero_data = 32'b00000000000000000000000000000000;
 wire [31:0] dont_care_out;
 wire [31:0] dont_care_out2;
 
-defparam rf_a.ADDR_WIDTH = `OR1200_REGFILE_ADDR_WIDTH;
-defparam rf_a.DATA_WIDTH = `OR1200_OPERAND_WIDTH;
-dual_port_ram rf_a(	
+dual_port_ram 
+  # (.ADDR_WIDTH(`OR1200_REGFILE_ADDR_WIDTH), .DATA_WIDTH(`OR1200_OPERAND_WIDTH))
+rf_a(	
 
   .clk (clk),
   .we1(const_zero),
@@ -3142,9 +3142,9 @@ or1200_tpram_32x32 rf_a(
 // Instantiation of register file two-port RAM B
 //
 
-defparam rf_b.ADDR_WIDTH = `OR1200_REGFILE_ADDR_WIDTH;
-defparam rf_b.DATA_WIDTH = `OR1200_OPERAND_WIDTH;
-dual_port_ram rf_b(	
+dual_port_ram 
+  # (.ADDR_WIDTH(`OR1200_REGFILE_ADDR_WIDTH), .DATA_WIDTH(`OR1200_OPERAND_WIDTH))
+rf_b(	
   .clk (clk),
   .we1(const_zero),
   .we2(rf_we),
