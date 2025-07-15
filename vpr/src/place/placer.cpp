@@ -286,6 +286,19 @@ void Placer::place() {
         // Table header
         log_printer_.print_place_status_header();
 
+        // Save a checkpoint of the initial placement. This may be restored
+        // during the anneal (or rarely at the end of anneal) if it is found to
+        // have a better quality than the current placement solution.
+        bool checkpoint_is_initial_placement = false;
+        if (placer_opts_.place_algorithm.is_timing_driven()) {
+            critical_path_ = timing_info_->least_slack_critical_path();
+            save_placement_checkpoint_if_needed(placer_state_.mutable_block_locs(),
+                                                placement_checkpoint_,
+                                                timing_info_, costs_, critical_path_.delay());
+            checkpoint_is_initial_placement = true;
+        }
+
+        unsigned num_outer_loop_iterations = 0;
         // Outer loop of the simulated annealing begins
         do {
             vtr::Timer temperature_timer;
@@ -295,11 +308,33 @@ void Placer::place() {
             if (placer_opts_.place_algorithm.is_timing_driven()) {
                 critical_path_ = timing_info_->least_slack_critical_path();
 
-                // see if we should save the current placement solution as a checkpoint
-                if (placer_opts_.place_checkpointing && annealer_->get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
-                    save_placement_checkpoint_if_needed(placer_state_.mutable_block_locs(),
-                                                        placement_checkpoint_,
-                                                        timing_info_, costs_, critical_path_.delay());
+                // If place checkpointing is on, depending on the current state
+                // of the anneal, we should see if we should save the current
+                // placement solution as a checkpoint or restore it.
+                if (placer_opts_.place_checkpointing) {
+                    if (checkpoint_is_initial_placement && num_outer_loop_iterations == 20) {
+                        // If the checkpoint currently saved is the intial placement,
+                        // after 20 iterations of the outer loop, if the quality is
+                        // worse we should restore to that initial placement solution.
+                        const t_annealing_state& annealing_state = annealer_->get_annealing_state();
+                        PlaceCritParams crit_params;
+                        crit_params.crit_exponent = annealing_state.crit_exponent;
+                        crit_params.crit_limit = placer_opts_.place_crit_limit;
+                        restore_best_placement(placer_state_,
+                                               placement_checkpoint_, timing_info_, costs_,
+                                               placer_criticalities_, placer_setup_slacks_, place_delay_model_,
+                                               pin_timing_invalidator_, crit_params,
+                                               net_cost_handler_,
+                                               placer_opts_, noc_opts_,
+                                               noc_cost_handler_);
+                    } else if (annealer_->get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
+                        // If we are late in the anneal, we should try and create a
+                        // checkpoint if needed.
+                        save_placement_checkpoint_if_needed(placer_state_.mutable_block_locs(),
+                                                            placement_checkpoint_,
+                                                            timing_info_, costs_, critical_path_.delay());
+                        checkpoint_is_initial_placement = false;
+                    }
                 }
             }
 
@@ -307,6 +342,8 @@ void Placer::place() {
             annealer_->placement_inner_loop();
 
             log_printer_.print_place_status(temperature_timer.elapsed_sec());
+
+            num_outer_loop_iterations++;
 
             // Outer loop of the simulated annealing ends
         } while (annealer_->outer_loop_update_state());
@@ -355,7 +392,10 @@ void Placer::place() {
         restore_best_placement(placer_state_,
                                placement_checkpoint_, timing_info_, costs_,
                                placer_criticalities_, placer_setup_slacks_, place_delay_model_,
-                               pin_timing_invalidator_, crit_params, noc_cost_handler_);
+                               pin_timing_invalidator_, crit_params,
+                               net_cost_handler_,
+                               placer_opts_, noc_opts_,
+                               noc_cost_handler_);
     }
 
     if (placer_opts_.placement_saves_per_temperature >= 1) {

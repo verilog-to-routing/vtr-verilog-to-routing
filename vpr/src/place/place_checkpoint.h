@@ -8,6 +8,7 @@
 #include "place_delay_model.h"
 #include "place_timing_update.h"
 
+class NetCostHandler;
 class NocCostHandler;
 
 /**
@@ -74,4 +75,7 @@ void restore_best_placement(PlacerState& placer_state,
                             std::shared_ptr<PlaceDelayModel>& place_delay_model,
                             std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator,
                             PlaceCritParams crit_params,
+                            NetCostHandler& net_cost_handler,
+                            const t_placer_opts& placer_opts,
+                            const t_noc_opts& noc_opts,
                             std::optional<NocCostHandler>& noc_cost_handler);
