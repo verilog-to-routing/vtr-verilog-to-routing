@@ -482,7 +482,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="IntraClusterNets">
+          <object class="GtkCheckButton" id="ToggleIntraClusterNets">
             <property name="label" translatable="yes">Intra-cluster Nets</property>
             <property name="visible">True</property>
             <property name="can-focus">True</property>
@@ -895,10 +895,10 @@
                 <property name="can-focus">False</property>
                 <child>
                   <object class="GtkButton" id="Window">
+                    <property name="width-request">1</property>
+                    <property name="height-request">-1</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <property name="use-stock">True</property>
                   </object>
                   <packing>
                     <property name="left-attach">0</property>
@@ -911,8 +911,6 @@
                     <property name="height-request">-1</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
-                    <property name="receives-default">True</property>
-                    <property name="use-stock">True</property>
                   </object>
                   <packing>
                     <property name="left-attach">1</property>
@@ -1047,7 +1045,6 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
-                <property name="hexpand">True</property>
                 <property name="image-position">right</property>
               </object>
               <packing>

@@ -621,6 +621,8 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         ezgl::color color = draw_state->draw_rr_node[inode].color;
 
+        
+
         // For 3D architectures, draw only visible layers
         if (!draw_state->draw_layer_display[node_layer].visible) {
             continue;
