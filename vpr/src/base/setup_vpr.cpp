@@ -776,7 +776,6 @@ static void setup_power_opts(const t_options& Options, t_power_opts* power_opts,
     }
 }
 
-
 static void setup_noc_opts(const t_options& Options, t_noc_opts* NocOpts) {
     // assign the noc specific options from the command line
     NocOpts->noc = Options.noc;
