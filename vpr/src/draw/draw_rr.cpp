@@ -517,7 +517,7 @@ void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::r
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    if (!draw_state->is_flat) {
+    if(!draw_state->draw_intra_cluster_nets){
         return;
     }
 

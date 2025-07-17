@@ -54,6 +54,9 @@ void net_button_setup(ezgl::application* app) {
     GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNets"));
     g_signal_connect(toggle_nets, "changed", G_CALLBACK(toggle_nets_cbk), app);
 
+    GtkToggleButton* intra_cluster_nets = GTK_TOGGLE_BUTTON(app->get_object("ToggleIntraClusterNets"));
+    g_signal_connect(intra_cluster_nets, "toggled", G_CALLBACK(toggle_intra_cluster_nets_cbk), app);
+
     //Manages net alpha
     GtkSpinButton* net_alpha = GTK_SPIN_BUTTON(app->get_object("NetAlpha"));
     g_signal_connect(net_alpha, "value-changed", G_CALLBACK(set_net_alpha_value_cbk), app);
