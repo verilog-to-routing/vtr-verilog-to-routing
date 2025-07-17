@@ -18,28 +18,38 @@
 #include <X11/keysym.h>
 #endif
 
+void toggle_show_nets_cbk(GtkSwitch* , gboolean state, ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
 
-void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app) {
+    if(state) {
+        draw_state->show_nets = true;
+    }else{
+        draw_state->show_nets = false;
+    }
+
+    // app->update_message(draw_state->default_message);
+    app->refresh_drawing();
+}
+
+void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
     enum e_draw_nets new_state;
     t_draw_state* draw_state = get_draw_state_vars();
     gchar* setting = gtk_combo_box_text_get_active_text(
         GTK_COMBO_BOX_TEXT(self));
     // assign corresponding enum value to draw_state->show_nets
-    if (strcmp(setting, "None") == 0)
-        new_state = DRAW_NO_NETS;
-    else if (strcmp(setting, "Routing") == 0) {
+    if (strcmp(setting, "Routing") == 0) {
         new_state = DRAW_ROUTED_NETS;
     } else { // Flylines - direct connections between sources and sinks
         new_state = DRAW_FLYLINES;
     }
     draw_state->reset_nets_congestion_and_rr();
-    draw_state->show_nets = new_state;
+    draw_state->draw_nets = new_state;
 
     //free dynamically allocated pointers
     g_free(setting);
 
     //redraw
-    app->update_message(draw_state->default_message);
+    
     app->refresh_drawing();
 }
 

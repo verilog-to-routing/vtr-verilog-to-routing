@@ -510,7 +510,6 @@
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">False</property>
-            <property name="margin-start">20</property>
             <property name="draw-indicator">True</property>
           </object>
           <packing>
@@ -608,7 +607,7 @@
             <property name="margin-top">5</property>
             <property name="margin-bottom">5</property>
             <child>
-              <object class="GtkSwitch">
+              <object class="GtkSwitch" id="ToggleRR">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="halign">start</property>
@@ -646,7 +645,6 @@
             <property name="sensitive">False</property>
             <property name="can-focus">True</property>
             <property name="receives-default">False</property>
-            <property name="margin-start">20</property>
             <property name="draw-indicator">True</property>
           </object>
           <packing>
@@ -662,7 +660,6 @@
             <property name="sensitive">False</property>
             <property name="can-focus">True</property>
             <property name="receives-default">False</property>
-            <property name="margin-start">20</property>
             <property name="draw-indicator">True</property>
           </object>
           <packing>
@@ -678,7 +675,6 @@
             <property name="sensitive">False</property>
             <property name="can-focus">True</property>
             <property name="receives-default">False</property>
-            <property name="margin-start">20</property>
             <property name="draw-indicator">True</property>
           </object>
           <packing>
@@ -689,12 +685,11 @@
         </child>
         <child>
           <object class="GtkCheckButton" id="ToggleRRIntraCluster">
-            <property name="label" translatable="yes">Intra-cluster</property>
+            <property name="label" translatable="yes">Intra-cluster Routing Resources</property>
             <property name="visible">True</property>
             <property name="sensitive">False</property>
             <property name="can-focus">True</property>
             <property name="receives-default">False</property>
-            <property name="margin-start">20</property>
             <property name="draw-indicator">True</property>
           </object>
           <packing>
