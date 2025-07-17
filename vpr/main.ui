@@ -449,13 +449,37 @@
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkLabel" id="toggleNetLabel">
+          <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Draw Nets</property>
-            <attributes>
-              <attribute name="weight" value="bold"/>
-            </attributes>
+            <property name="margin-top">5</property>
+            <property name="margin-bottom">5</property>
+            <child>
+              <object class="GtkSwitch" id="ToggleNets">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="halign">start</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-left">5</property>
+                <property name="margin-start">5</property>
+                <property name="label" translatable="yes">Display Nets</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -464,13 +488,12 @@
           </packing>
         </child>
         <child>
-          <object class="GtkComboBoxText" id="ToggleNets">
+          <object class="GtkComboBoxText" id="ToggleNetType">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <property name="active">0</property>
             <property name="active-id">0</property>
             <items>
-              <item id="0" translatable="yes">None</item>
               <item id="1" translatable="yes">Routing</item>
               <item id="2" translatable="yes">Flylines</item>
             </items>
@@ -487,23 +510,13 @@
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">False</property>
+            <property name="margin-start">20</property>
             <property name="draw-indicator">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">2</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkSeparator">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">3</property>
           </packing>
         </child>
         <child>
@@ -515,7 +528,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">4</property>
+            <property name="position">3</property>
           </packing>
         </child>
         <child>
@@ -527,19 +540,19 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">5</property>
+            <property name="position">4</property>
           </packing>
         </child>
         <child>
           <object class="GtkLabel" id="netFanoutButton">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Net Max Fanout:</property>
+            <property name="label" translatable="yes">Net Max Fanout</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">6</property>
+            <property name="position">5</property>
           </packing>
         </child>
         <child>
@@ -550,7 +563,32 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
+            <property name="position">6</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
             <property name="position">7</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="FanInFanOut">
+            <property name="label" translatable="yes">Highlight Block Fan-In Fan-Out</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">False</property>
+            <property name="draw-indicator">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">8</property>
           </packing>
         </child>
       </object>
@@ -564,13 +602,36 @@
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkLabel" id="ToggleRRLabel">
+          <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Draw Routing Resources</property>
-            <attributes>
-              <attribute name="weight" value="bold"/>
-            </attributes>
+            <property name="margin-top">5</property>
+            <property name="margin-bottom">5</property>
+            <child>
+              <object class="GtkSwitch">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="halign">start</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-start">5</property>
+                <property name="label" translatable="yes">Display Routing Resources</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -579,25 +640,13 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="DrawRRChannels">
+          <object class="GtkCheckButton" id="ToggleRRChannels">
             <property name="label" translatable="yes">Channels</property>
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can-focus">True</property>
             <property name="receives-default">False</property>
-            <property name="draw-indicator">True</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkCheckButton" id="DrawRRSBox">
-            <property name="label" translatable="yes">Switch Boxes</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">False</property>
+            <property name="margin-start">20</property>
             <property name="draw-indicator">True</property>
           </object>
           <packing>
@@ -607,11 +656,13 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="DrawRRCBox">
-            <property name="label" translatable="yes">Connection Boxes</property>
+          <object class="GtkCheckButton" id="ToggleRRSBox">
+            <property name="label" translatable="yes">Switch Boxes</property>
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can-focus">True</property>
             <property name="receives-default">False</property>
+            <property name="margin-start">20</property>
             <property name="draw-indicator">True</property>
           </object>
           <packing>
@@ -621,17 +672,35 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="DrawRRIntraCluster">
-            <property name="label" translatable="yes">Intra-cluster Routing Resources</property>
+          <object class="GtkCheckButton" id="ToggleRRCBox">
+            <property name="label" translatable="yes">Connection Boxes</property>
             <property name="visible">True</property>
+            <property name="sensitive">False</property>
             <property name="can-focus">True</property>
             <property name="receives-default">False</property>
+            <property name="margin-start">20</property>
             <property name="draw-indicator">True</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">4</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkCheckButton" id="ToggleRRIntraCluster">
+            <property name="label" translatable="yes">Intra-cluster</property>
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">False</property>
+            <property name="margin-start">20</property>
+            <property name="draw-indicator">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">5</property>
           </packing>
         </child>
         <child>
@@ -642,19 +711,19 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">5</property>
+            <property name="position">6</property>
           </packing>
         </child>
         <child>
           <object class="GtkLabel" id="RoutingCongestionLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Toggle Congestion:</property>
+            <property name="label" translatable="yes">Congestion</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">6</property>
+            <property name="position">7</property>
           </packing>
         </child>
         <child>
@@ -671,19 +740,30 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">7</property>
+            <property name="position">8</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">9</property>
           </packing>
         </child>
         <child>
           <object class="GtkLabel" id="CongCostLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Toggle Routing Cong. Cost:</property>
+            <property name="label" translatable="yes">Routing Congestion Cost</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">8</property>
+            <property name="position">10</property>
           </packing>
         </child>
         <child>
@@ -705,19 +785,30 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">9</property>
+            <property name="position">11</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">12</property>
           </packing>
         </child>
         <child>
           <object class="GtkLabel" id="RoutingBBoxLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Toggle Routing Bounding Box:</property>
+            <property name="label" translatable="yes">Routing Bounding Box</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">10</property>
+            <property name="position">13</property>
           </packing>
         </child>
         <child>
@@ -728,19 +819,30 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">11</property>
+            <property name="position">14</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">15</property>
           </packing>
         </child>
         <child>
           <object class="GtkLabel" id="ExpansionCostLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Toggle Routing Expansion Cost:</property>
+            <property name="label" translatable="yes">Routing Expansion Cost</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">12</property>
+            <property name="position">16</property>
           </packing>
         </child>
         <child>
@@ -761,19 +863,30 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">13</property>
+            <property name="position">17</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">18</property>
           </packing>
         </child>
         <child>
           <object class="GtkLabel" id="ToggleRoutingUtilLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Toggle Routing Util:</property>
+            <property name="label" translatable="yes">Routing Utilization</property>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">14</property>
+            <property name="position">19</property>
           </packing>
         </child>
         <child>
@@ -792,7 +905,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">15</property>
+            <property name="position">20</property>
           </packing>
         </child>
         <child>
@@ -808,7 +921,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">16</property>
+            <property name="position">21</property>
           </packing>
         </child>
       </object>
@@ -1047,7 +1160,6 @@
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
-                <property name="hexpand">True</property>
                 <property name="image-position">right</property>
               </object>
               <packing>
