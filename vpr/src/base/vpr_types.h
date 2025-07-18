@@ -107,6 +107,8 @@ enum class e_router_lookahead {
     COMPRESSED_MAP,
     ///@brief Lookahead with a more extensive node sampling method
     EXTENDED_MAP,
+    ///@brief Simple distance-based lookahead
+    SIMPLE,
     ///@brief A no-operation lookahead which always returns zero
     NO_OP
 };
