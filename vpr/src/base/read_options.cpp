@@ -2365,9 +2365,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Specifies the type of bounding box to be used in 3D architectures.\n"
             "\n"
             "MODE options:\n"
-            "  auto_bb     : Automatically determine the appropriate bounding box based on the connections between layers.\n"
-            "  cube_bb            : Use 3D bounding boxes.\n"
-            "  per_layer_bb     : Use per-layer bounding boxes.\n"
+            "  auto_bb      : Automatically determine the appropriate bounding box based on the connections between layers.\n"
+            "  cube_bb      : Use 3D bounding boxes.\n"
+            "  per_layer_bb : Use per-layer bounding boxes.\n"
             "\n"
             "Choose one of the available modes to define the behavior of bounding boxes in your 3D architecture. The default mode is 'automatic'.")
         .default_value("auto_bb")
