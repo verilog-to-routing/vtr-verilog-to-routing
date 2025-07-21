@@ -360,6 +360,8 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         }
     }
 
+    g_vpr_ctx.mutable_floorplanning().clean_floorplanning_context_post_place();
+
     // End binary search verification.
     // Restore the best placement (if necessary), the best routing, and the
     // best channel widths for final drawing and statistics output.
