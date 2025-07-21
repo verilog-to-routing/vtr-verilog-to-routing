@@ -59,16 +59,16 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("Bounding box mode is %s\n", (mutable_placement.cube_bb ? "Cube" : "Per-layer"));
     VTR_LOG("\n");
 
-    /* To make sure the importance of NoC-related cost terms compared to
-     * BB and timing cost is determine only through NoC placement weighting factor,
-     * we normalize NoC-related cost weighting factors so that they add up to 1.
-     * With this normalization, NoC-related cost weighting factors only determine
-     * the relative importance of NoC cost terms with respect to each other, while
-     * the importance of total NoC cost to conventional placement cost is determined
-     * by NoC placement weighting factor.
-     * FIXME: This should not be modifying the NoC Opts here, this normalization
-     *        should occur when these Opts are loaded in.
-     */
+
+    // To make sure the importance of NoC-related cost terms compared to
+    // BB and timing cost is determine only through NoC placement weighting factor,
+    // we normalize NoC-related cost weighting factors so that they add up to 1.
+    // With this normalization, NoC-related cost weighting factors only determine
+    // the relative importance of NoC cost terms with respect to each other, while
+    // the importance of total NoC cost to conventional placement cost is determined
+    // by NoC placement weighting factor.
+    // FIXME: This should not be modifying the NoC Opts here, this normalization
+    //        should occur when these Opts are loaded in.
     if (noc_opts.noc) {
         normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
     }
@@ -94,10 +94,9 @@ void try_place(const Netlist<>& net_list,
         }
     }
 
-    /* Make the global instance of BlkLocRegistry inaccessible through the getter methods of the
-     * placement context. This is done to make sure that the placement stage only accesses its
-     * own local instances of BlkLocRegistry.
-     */
+    // Make the global instance of BlkLocRegistry inaccessible through the getter methods of the
+    // placement context. This is done to make sure that the placement stage only accesses its
+    // own local instances of BlkLocRegistry.
     mutable_placement.lock_loc_vars();
 
     // Start measuring placement time. The measured execution time will be printed
@@ -150,7 +149,7 @@ static void update_screen_debug();
 
 //Performs a major (i.e. interactive) placement screen update.
 //This function with no arguments is useful for calling from a debugger to
-//look at the intermediate implemetnation state.
+//look at the intermediate implementation state.
 static void update_screen_debug() {
     update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", PLACEMENT, nullptr);
 }

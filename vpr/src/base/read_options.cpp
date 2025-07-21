@@ -2177,7 +2177,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     auto& place_grp = parser.add_argument_group("placement options");
 
-    place_grp.add_argument(args.Seed, "--seed")
+    place_grp.add_argument(args.seed, "--seed")
         .help("Placement random number generator seed")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2195,7 +2195,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("astar")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.PlaceInnerNum, "--inner_num")
+    place_grp.add_argument(args.place_inner_num, "--inner_num")
         .help("Controls number of moves per temperature: inner_num * num_blocks ^ (4/3)")
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2226,17 +2226,17 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.PlaceInitT, "--init_t")
+    place_grp.add_argument(args.place_init_t, "--init_t")
         .help("Initial temperature for manual annealing schedule")
         .default_value("100.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.PlaceExitT, "--exit_t")
+    place_grp.add_argument(args.place_exit_t, "--exit_t")
         .help("Temperature at which annealing which terminate for manual annealing schedule")
         .default_value("0.01")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.PlaceAlphaT, "--alpha_t")
+    place_grp.add_argument(args.place_alpha_t, "--alpha_t")
         .help(
             "Temperature scaling factor for manual annealing schedule."
             " Old temperature is multiplied by alpha_t")
@@ -2259,7 +2259,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
+    place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.place_algorithm, "--place_algorithm")
         .help(
             "Controls which placement algorithm is used. Valid options:\n"
             " * bounding_box: Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.\n"
@@ -2269,7 +2269,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .choices({"bounding_box", "criticality_timing", "slack_timing"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceQuenchAlgorithm, "--place_quench_algorithm")
+    place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.place_quench_algorithm, "--place_quench_algorithm")
         .help(
             "Controls which placement algorithm is used during placement quench.\n"
             "If specified, it overrides the option --place_algorithm during placement quench.\n"
@@ -2281,7 +2281,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .choices({"bounding_box", "criticality_timing", "slack_timing"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.PlaceChanWidth, "--place_chan_width")
+    place_grp.add_argument(args.place_chan_width, "--place_chan_width")
         .help(
             "Sets the assumed channel width during placement. "
             "If --place_chan_width is unspecified, but --route_chan_width is specified the "
@@ -2483,14 +2483,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
-    place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")
+    place_timing_grp.add_argument(args.place_timing_tradeoff, "--timing_tradeoff")
         .help(
             "Trade-off control between delay and wirelength during placement."
             " 0.0 focuses completely on wirelength, 1.0 completely on timing")
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_timing_grp.add_argument(args.RecomputeCritIter, "--recompute_crit_iter")
+    place_timing_grp.add_argument(args.recompute_crit_iter, "--recompute_crit_iter")
         .help("Controls how many temperature updates occur between timing analysis during placement")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -3449,11 +3449,11 @@ void set_conditional_defaults(t_options& args) {
      */
 
     //Which placement algorithm to use?
-    if (args.PlaceAlgorithm.provenance() != Provenance::SPECIFIED) {
+    if (args.place_algorithm.provenance() != Provenance::SPECIFIED) {
         if (args.timing_analysis) {
-            args.PlaceAlgorithm.set(e_place_algorithm::CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
+            args.place_algorithm.set(e_place_algorithm::CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
         } else {
-            args.PlaceAlgorithm.set(e_place_algorithm::BOUNDING_BOX_PLACE, Provenance::INFERRED);
+            args.place_algorithm.set(e_place_algorithm::BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }
     }
 
@@ -3467,7 +3467,7 @@ void set_conditional_defaults(t_options& args) {
     // Check for correct options combinations
     // If you are running WLdriven placement, the RL reward function should be
     // either basic or nonPenalizing basic
-    if (args.RL_agent_placement && (args.PlaceAlgorithm == e_place_algorithm::BOUNDING_BOX_PLACE || !args.timing_analysis)) {
+    if (args.RL_agent_placement && (args.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE || !args.timing_analysis)) {
         if (args.place_reward_fun.value() != "basic" && args.place_reward_fun.value() != "nonPenalizing_basic") {
             VTR_LOG_WARN(
                 "To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n"
@@ -3478,18 +3478,18 @@ void set_conditional_defaults(t_options& args) {
     }
 
     //Which placement algorithm to use during placement quench?
-    if (args.PlaceQuenchAlgorithm.provenance() != Provenance::SPECIFIED) {
-        args.PlaceQuenchAlgorithm.set(args.PlaceAlgorithm, Provenance::INFERRED);
+    if (args.place_quench_algorithm.provenance() != Provenance::SPECIFIED) {
+        args.place_quench_algorithm.set(args.place_algorithm, Provenance::INFERRED);
     }
 
     //Place chan width follows Route chan width if unspecified
-    if (args.PlaceChanWidth.provenance() != Provenance::SPECIFIED && args.RouteChanWidth.provenance() == Provenance::SPECIFIED) {
-        args.PlaceChanWidth.set(args.RouteChanWidth.value(), Provenance::INFERRED);
+    if (args.place_chan_width.provenance() != Provenance::SPECIFIED && args.RouteChanWidth.provenance() == Provenance::SPECIFIED) {
+        args.place_chan_width.set(args.RouteChanWidth.value(), Provenance::INFERRED);
     }
 
     //Do we calculate timing info during placement?
-    if (args.ShowPlaceTiming.provenance() != Provenance::SPECIFIED) {
-        args.ShowPlaceTiming.set(args.timing_analysis, Provenance::INFERRED);
+    if (args.show_place_timing.provenance() != Provenance::SPECIFIED) {
+        args.show_place_timing.set(args.timing_analysis, Provenance::INFERRED);
     }
 
     //Slave quench recompute divider of inner loop recompute divider unless specified
@@ -3498,9 +3498,9 @@ void set_conditional_defaults(t_options& args) {
     }
 
     //Which schedule?
-    if (args.PlaceInitT.provenance() == Provenance::SPECIFIED // Any of these flags select a manual schedule
-        || args.PlaceExitT.provenance() == Provenance::SPECIFIED
-        || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
+    if (args.place_init_t.provenance() == Provenance::SPECIFIED // Any of these flags select a manual schedule
+        || args.place_exit_t.provenance() == Provenance::SPECIFIED
+        || args.place_alpha_t.provenance() == Provenance::SPECIFIED) {
         args.anneal_sched_type.set(e_sched_type::USER_SCHED, Provenance::INFERRED);
     } else {
         args.anneal_sched_type.set(e_sched_type::AUTO_SCHED, Provenance::INFERRED); // Otherwise use the automatic schedule
