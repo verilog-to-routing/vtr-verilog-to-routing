@@ -574,8 +574,9 @@ static void load_pin_loc(pugi::xml_node Locations,
                          const int num_of_avail_layer) {
     type->pin_width_offset.resize(type->num_pins, 0);
     type->pin_height_offset.resize(type->num_pins, 0);
-    //layer_offset is not used if the distribution is not custom
+    // layer_offset is not used if the distribution is not custom
     type->pin_layer_offset.resize(type->num_pins, 0);
+    type->pin_side.resize(type->num_pins, NUM_2D_SIDES);
 
     std::vector<int> physical_pin_counts(type->num_pins, 0);
     if (pin_locs->distribution == e_pin_location_distr::SPREAD) {
@@ -591,6 +592,7 @@ static void load_pin_loc(pugi::xml_node Locations,
                         int pin_num = side_index + pin_offset * num_sides;
                         if (pin_num < type->num_pins) {
                             type->pinloc[width][height][side][pin_num] = true;
+                            type->pin_side[pin_num] = side;
                             type->pin_width_offset[pin_num] += width;
                             type->pin_height_offset[pin_num] += height;
                             physical_pin_counts[pin_num] += 1;
@@ -618,6 +620,7 @@ static void load_pin_loc(pugi::xml_node Locations,
                             //On a side, with pins still to allocate
 
                             type->pinloc[width][height][side][ipin] = true;
+                            type->pin_side[ipin] = side;
                             type->pin_width_offset[ipin] += width;
                             type->pin_height_offset[ipin] += height;
                             physical_pin_counts[ipin] += 1;
@@ -657,6 +660,7 @@ static void load_pin_loc(pugi::xml_node Locations,
                             int pin_num = input_pins[ipin];
 
                             type->pinloc[width][height][side][pin_num] = true;
+                            type->pin_side[pin_num] = side;
                             type->pin_width_offset[pin_num] += width;
                             type->pin_height_offset[pin_num] += height;
                             physical_pin_counts[pin_num] += 1;
@@ -684,6 +688,7 @@ static void load_pin_loc(pugi::xml_node Locations,
                             int pin_num = output_pins[ipin];
 
                             type->pinloc[width][height][side][pin_num] = true;
+                            type->pin_side[pin_num] = side;
                             type->pin_width_offset[pin_num] += width;
                             type->pin_height_offset[pin_num] += height;
                             physical_pin_counts[pin_num] += 1;
@@ -734,6 +739,7 @@ static void load_pin_loc(pugi::xml_node Locations,
                                         int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
                                         int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
                                         type->pinloc[width][height][side][physical_pin_index] = true;
+                                        type->pin_side[physical_pin_index] = side;
                                         type->pin_width_offset[physical_pin_index] += width;
                                         type->pin_height_offset[physical_pin_index] += height;
                                         type->pin_layer_offset[physical_pin_index] = layer;

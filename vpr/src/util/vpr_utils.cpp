@@ -1477,7 +1477,7 @@ void print_switch_usage() {
     // a node can have multiple inward switches, so
     // map key: switch index; map value: count (fanin)
     std::map<int, int>* inward_switch_inf = new std::map<int, int>[rr_graph.num_nodes()];
-    for (const RRNodeId& inode : rr_graph.nodes()) {
+    for (const RRNodeId inode : rr_graph.nodes()) {
         int num_edges = rr_graph.num_edges(inode);
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = rr_graph.edge_switch(inode, iedge);
@@ -1491,7 +1491,7 @@ void print_switch_usage() {
             inward_switch_inf[to_node_index][switch_index]++;
         }
     }
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
         std::map<int, int>::iterator itr;
         for (itr = inward_switch_inf[(size_t)rr_id].begin(); itr != inward_switch_inf[(size_t)rr_id].end(); itr++) {
             int switch_index = itr->first;

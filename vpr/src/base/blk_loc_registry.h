@@ -64,6 +64,8 @@ class BlkLocRegistry {
     ///@brief Returns the physical pin of the tile, related to the given ClusterPinId
     int tile_pin_index(const ClusterPinId pin) const;
 
+    e_side pin_side(ClusterPinId pin) const;
+
     ///@brief Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index.
     int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
 

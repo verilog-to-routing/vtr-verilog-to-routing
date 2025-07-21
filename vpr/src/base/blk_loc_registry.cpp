@@ -83,6 +83,18 @@ int BlkLocRegistry::tile_pin_index(const ClusterPinId pin) const {
     return physical_pins_[pin];
 }
 
+e_side BlkLocRegistry::pin_side(ClusterPinId pin) const {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    int pnum = tile_pin_index(pin);
+    ClusterBlockId block = cluster_ctx.clb_nlist.pin_block(pin);
+
+    t_pl_loc block_loc = block_locs()[block].loc;
+    e_side side = physical_tile_type(block_loc)->pin_side[pnum];
+
+    return side;
+}
+
 int BlkLocRegistry::net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
