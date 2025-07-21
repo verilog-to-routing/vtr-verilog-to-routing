@@ -37,7 +37,8 @@ enum class e_sb_location {
     E_FRINGE, /* perimeter minus corners */
     E_CORE,
     E_EVERYWHERE,
-    E_XY_SPECIFIED
+    E_XY_SPECIFIED,
+    E_UNRECOGNIZED
 };
 
 /**

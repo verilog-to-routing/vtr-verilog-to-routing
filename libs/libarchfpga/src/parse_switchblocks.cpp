@@ -137,9 +137,9 @@ void read_sb_wireconns(const std::vector<t_arch_switch_inf>& switches,
     }
 }
 
-static t_wireconn_inf parse_wireconn(pugi::xml_node node,
-                                     const pugiutil::loc_data& loc_data,
-                                     const std::vector<t_arch_switch_inf>& switches) {
+t_wireconn_inf parse_wireconn(pugi::xml_node node,
+                              const pugiutil::loc_data& loc_data,
+                              const std::vector<t_arch_switch_inf>& switches) {
 
     size_t num_children = count_children(node, "from", loc_data, ReqOpt::OPTIONAL);
     num_children += count_children(node, "to", loc_data, ReqOpt::OPTIONAL);
@@ -568,4 +568,25 @@ int get_sb_formula_raw_result(FormulaParser& formula_parser, const char* formula
     }
 
     return result;
+}
+
+e_sb_location sb_location_from_string(std::string sb_location_string) {
+    e_sb_location location;
+    if (sb_location_string == "EVERYWHERE") {
+        location = e_sb_location::E_EVERYWHERE;
+    } else if (sb_location_string == "PERIMETER") {
+        location = e_sb_location::E_PERIMETER;
+    } else if (sb_location_string == "CORE") {
+        location = e_sb_location::E_CORE;
+    } else if (sb_location_string == "CORNER") {
+        location = e_sb_location::E_CORNER;
+    } else if (sb_location_string == "FRINGE") {
+        location = e_sb_location::E_FRINGE;
+    } else if (sb_location_string == "XY_SPECIFIED") {
+        location = e_sb_location::E_XY_SPECIFIED;
+    } else {
+        location = e_sb_location::E_UNRECOGNIZED;
+    }
+
+    return location;
 }
