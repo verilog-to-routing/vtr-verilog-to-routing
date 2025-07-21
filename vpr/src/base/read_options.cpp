@@ -2377,7 +2377,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     place_grp.add_argument<e_place_freq, ParsePlacementFreq>(args.place_placement_freq, "--place_frequency")
         .help("Run placement every time or only once during channel width search.")
         .default_value("once")
-        .choices({"once, always"})
+        .choices({"once", "always"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.RL_agent_placement, "--RL_agent_placement")
