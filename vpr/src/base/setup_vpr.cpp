@@ -683,7 +683,7 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->delay_model_type = Options.place_delay_model;
     PlacerOpts->delay_model_reducer = Options.place_delay_model_reducer;
 
-    PlacerOpts->place_freq = e_place_freq::ALWAYS; /* DEFAULT */
+    PlacerOpts->place_freq = Options.place_placement_freq;
 
     PlacerOpts->post_place_timing_report_file = Options.post_place_timing_report_file;
 
