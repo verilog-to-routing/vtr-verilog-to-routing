@@ -184,7 +184,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             break;
     }
 
-    switch (arch->SBType) {
+    switch (arch->sb_type) {
         case (WILTON):
             fprintf(Echo, "\tSwitch Block: type wilton fs %d\n", arch->Fs);
             break;

@@ -450,7 +450,7 @@ static float comp_initial_acc_cost(RRNodeId node_id,
     const double weight = route_opts.initial_acc_cost_chan_congestion_weight;
 
     // TODO: We don't have an explicit CHANZ type. These wires are marked as CHANX. This should be fixed.
-    if (is_chan(rr_type)) {
+    if (is_chanxy(rr_type)) {
         double max_util = 0.;
 
         if (rr_type == e_rr_type::CHANX) {

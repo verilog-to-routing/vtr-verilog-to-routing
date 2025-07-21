@@ -229,10 +229,12 @@
     <xs:restriction base="xs:string">
       <xs:enumeration value="CHANX"/>
       <xs:enumeration value="CHANY"/>
+      <xs:enumeration value="CHANZ"/>
       <xs:enumeration value="SOURCE"/>
       <xs:enumeration value="SINK"/>
       <xs:enumeration value="OPIN"/>
       <xs:enumeration value="IPIN"/>
+      <xs:enumeration value="MUX"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -281,7 +283,7 @@
     <xs:attribute name="xhigh" type="xs:int" use="required"/>
     <xs:attribute name="yhigh" type="xs:int" use="required"/>
     <xs:attribute name="side" type="loc_side"/>
-    <xs:attribute name="ptc" type="xs:int" use="required"/>
+    <xs:attribute name="ptc" type="xs:string" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="node_timing">

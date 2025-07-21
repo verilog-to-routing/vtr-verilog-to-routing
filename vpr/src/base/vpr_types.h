@@ -691,13 +691,27 @@ struct t_netlist_opts {
     int netlist_verbosity = 1; ///<Verbose output during netlist cleaning
 };
 
-///@brief Should a stage in the CAD flow be skipped, loaded from a file, or performed
-enum e_stage_action {
-    STAGE_SKIP = 0,
-    STAGE_LOAD,
-    STAGE_DO,
-    STAGE_AUTO
+/**
+ * @brief Specifies the action to take for a CAD flow stage.
+ * 
+ * @details
+ * SKIP - Do not perform this algorithm at all (End flow early).
+ * LOAD - Load previous result from file.
+ * DO - Run the specified algorithm.
+ * SKIP_IF_PRIOR_FAIL - Run the specified algorithm if possible. 
+ * Currently used to avoid analysis if we don't succeed at routing.
+ */
+enum class e_stage_action {
+    SKIP = 0,
+    LOAD,
+    DO,
+    SKIP_IF_PRIOR_FAIL,
+    NUM_STAGE_ACTIONS
 };
+
+///@brief String representations of e_stage_action
+constexpr vtr::array<e_stage_action, const char*, (size_t)e_stage_action::NUM_STAGE_ACTIONS> stage_action_strings{
+    "DISABLED", "LOAD", "ENABLED", "SKIP IF PRIOR FAIL"};
 
 /**
  * @brief Options for packing
@@ -1412,6 +1426,40 @@ struct t_det_routing_arch {
     /// the CUSTOM switch block type. See comment at top of SRC/route/build_switchblocks.c
     std::vector<t_switchblock_inf> switchblocks;
 
+    // Following options are used only for tileable routing architecture
+
+    /// Whether the routing architecture is tileable
+    bool tileable;
+
+    /// Sub type and Fs are applied to pass tracks
+    int sub_fs;
+
+    /// Subtype of switch blocks.
+    enum e_switch_block_type switch_block_subtype;
+
+    /// Allow connection blocks to appear around the perimeter programmable block (mainly I/Os)
+    bool perimeter_cb;
+
+    /// Remove all the routing wires in empty regions
+    bool shrink_boundary;
+
+    /// Allow routing channels to pass through multi-width and multi-height programmable blocks.
+    bool through_channel;
+
+    /// Allow each output pin of a programmable block to drive the routing tracks on all the
+    /// sides of its adjacent switch block
+    bool opin2all_sides;
+
+    ///In each switch block, allow each routing track which ends to drive another
+    /// routing track on the opposite side
+    bool concat_wire;
+
+    /// In each switch block, allow each routing track which passes to drive
+    /// another routing track on the opposite side
+    bool concat_pass_wire;
+
+    // End of tileable routing architecture-specific options
+
     short global_route_switch;
 
     /// Index of a zero delay switch (used to connect things that should have no delay).
@@ -1446,10 +1494,6 @@ struct t_det_routing_arch {
     /// File to read the RR graph edge attribute overrides.
     std::string read_rr_edge_override_filename;
 };
-
-constexpr bool is_pin(e_rr_type type) { return (type == e_rr_type::IPIN || type == e_rr_type::OPIN); }
-constexpr bool is_chan(e_rr_type type) { return (type == e_rr_type::CHANX || type == e_rr_type::CHANY); }
-constexpr bool is_src_sink(e_rr_type type) { return (type == e_rr_type::SOURCE || type == e_rr_type::SINK); }
 
 /**
  * @brief Information about the current status of a particular

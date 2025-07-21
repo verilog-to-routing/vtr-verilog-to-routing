@@ -149,9 +149,9 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int layer,
                                                           int x,
                                                           int y,
                                                           e_rr_type type) const {
-    /* Pre-check: node type should be routing tracks! */
-    if (type != e_rr_type::CHANX && type != e_rr_type::CHANY) {
-        return std::vector<RRNodeId>();
+    // Pre-check: node type should be routing tracks.
+    if (type != e_rr_type::CHANX && type != e_rr_type::CHANY && type != e_rr_type::CHANZ) {
+        return {};
     }
 
     return find_nodes(layer, x, y, type);
@@ -167,7 +167,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int layer,
     /* TODO: Consider to access the raw data like find_node() rather than calling find_node() many times, which hurts runtime */
     if (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN) {
         indices.reserve(NUM_2D_SIDES);
-        //For pins, we need to look at all the sides of the current grid tile
+        // For pins, we need to look at all the sides of the current grid tile
         for (e_side side : TOTAL_2D_SIDES) {
             RRNodeId rr_node_index = find_node(layer, x, y, rr_type, ptc, side);
             if (rr_node_index) {
@@ -176,7 +176,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int layer,
         }
         indices.shrink_to_fit();
     } else {
-        //Sides do not affect non-pins so there should only be one per ptc
+        // Sides do not affect non-pins so there should only be one per ptc
         RRNodeId rr_node_index = find_node(layer, x, y, rr_type, ptc);
         if (rr_node_index) {
             indices.push_back(rr_node_index);
@@ -190,16 +190,16 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
                                                                     int x,
                                                                     int y,
                                                                     e_rr_type rr_type) const {
-    VTR_ASSERT(rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN || rr_type == e_rr_type::SINK);
-    if (rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::SINK) {
+    VTR_ASSERT(rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN || rr_type == e_rr_type::SINK || rr_type == e_rr_type::MUX);
+    if (rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::SINK || rr_type == e_rr_type::MUX) {
         return find_nodes(layer,x, y, rr_type);
     }
 
     std::vector<RRNodeId> nodes;
-    /* Reserve space to avoid memory fragmentation */
+    // Reserve space to avoid memory fragmentation
     size_t num_nodes = 0;
     for (e_side node_side : TOTAL_2D_SIDES) {
-        num_nodes += find_nodes(layer,x, y, rr_type, node_side).size();
+        num_nodes += find_nodes(layer, x, y, rr_type, node_side).size();
     }
 
     nodes.reserve(num_nodes);
@@ -290,7 +290,7 @@ void RRSpatialLookup::mirror_nodes(const int layer,
                                    const vtr::Point<int>& des_coord,
                                    e_rr_type type,
                                    e_side side) {
-    VTR_ASSERT(e_rr_type::SOURCE == type);
+    VTR_ASSERT(e_rr_type::SOURCE == type || e_rr_type::SINK == type);
     resize_nodes(layer, des_coord.x(), des_coord.y(), type, side);
     rr_node_indices_[type][layer][des_coord.x()][des_coord.y()][side] = rr_node_indices_[type][layer][src_coord.x()][src_coord.y()][side];
 }

@@ -37,15 +37,15 @@ void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector
     auto& clock_networks_device = device_ctx.clock_networks;
     auto& grid = device_ctx.grid;
 
-    auto& clock_networks_arch = Arch.clock_arch.clock_networks_arch;
-    auto& clock_metal_layers = Arch.clock_arch.clock_metal_layers;
+    const std::vector<t_clock_network_arch>& clock_networks_arch = Arch.clock_arch.clock_networks_arch;
+    const std::unordered_map<std::string, t_metal_layer>& clock_metal_layers = Arch.clock_arch.clock_metal_layers;
 
     // TODO: copied over from SetupGrid. Ensure consistency by only assigning in one place
     t_formula_data vars;
     vars.set_var_value("W", grid.width());
     vars.set_var_value("H", grid.height());
 
-    for (auto clock_network_arch : clock_networks_arch) {
+    for (const t_clock_network_arch& clock_network_arch : clock_networks_arch) {
         switch (clock_network_arch.type) {
             case e_clock_type::SPINE: {
                 std::unique_ptr<ClockSpine> spine = std::make_unique<ClockSpine>();
@@ -123,20 +123,20 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
     auto& clock_connections_device = device_ctx.clock_connections;
     auto& grid = device_ctx.grid;
 
-    auto& clock_connections_arch = Arch.clock_arch.clock_connections_arch;
+    const std::vector<t_clock_connection_arch>& clock_connections_arch = Arch.clock_arch.clock_connections_arch;
 
     // TODO: copied over from SetupGrid. Ensure consistency by only assigning in one place
     t_formula_data vars;
     vars.set_var_value("W", grid.width());
     vars.set_var_value("H", grid.height());
 
-    for (auto clock_connection_arch : clock_connections_arch) {
+    for (const t_clock_connection_arch& clock_connection_arch : clock_connections_arch) {
         if (clock_connection_arch.from == "ROUTING") {
             clock_connections_device.emplace_back(new RoutingToClockConnection);
             if (RoutingToClockConnection* routing_to_clock = dynamic_cast<RoutingToClockConnection*>(clock_connections_device.back().get())) {
                 //TODO: Add error check to check that clock name and tap name exist and that only
                 //      two names are returned by the below function
-                auto names = vtr::split(clock_connection_arch.to, ".");
+                std::vector<std::string> names = vtr::StringToken(clock_connection_arch.to).split(".");
                 VTR_ASSERT_MSG(names.size() == 2, "Invalid clock name.\n");
                 routing_to_clock->set_clock_name_to_connect_to(names[0]);
                 routing_to_clock->set_clock_switch_point_name(names[1]);
@@ -153,7 +153,7 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
             if (ClockToPinsConnection* clock_to_pins = dynamic_cast<ClockToPinsConnection*>(clock_connections_device.back().get())) {
                 //TODO: Add error check to check that clock name and tap name exist and that only
                 //      two names are returned by the below function
-                auto names = vtr::split(clock_connection_arch.from, ".");
+                std::vector<std::string> names = vtr::StringToken(clock_connection_arch.from).split(".");
                 VTR_ASSERT_MSG(names.size() == 2, "Invalid clock name.\n");
                 clock_to_pins->set_clock_name_to_connect_from(names[0]);
                 clock_to_pins->set_clock_switch_point_name(names[1]);
@@ -166,8 +166,8 @@ void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
             if (ClockToClockConneciton* clock_to_clock = dynamic_cast<ClockToClockConneciton*>(clock_connections_device.back().get())) {
                 //TODO: Add error check to check that clock name and tap name exist and that only
                 //      two names are returned by the below function
-                auto to_names = vtr::split(clock_connection_arch.to, ".");
-                auto from_names = vtr::split(clock_connection_arch.from, ".");
+                std::vector<std::string> to_names = vtr::StringToken(clock_connection_arch.to).split(".");
+                std::vector<std::string> from_names = vtr::StringToken(clock_connection_arch.from).split(".");
                 VTR_ASSERT_MSG(to_names.size() == 2, "Invalid clock name.\n");
                 clock_to_clock->set_to_clock_name(to_names[0]);
                 clock_to_clock->set_to_clock_switch_point_name(to_names[1]);
@@ -196,7 +196,7 @@ MetalLayer get_metal_layer_from_name(
     }
 
     // Metal layer was found. Copy over from arch description to proper data type
-    auto arch_metal_layer = itter->second;
+    t_metal_layer arch_metal_layer = itter->second;
     MetalLayer metal_layer;
     metal_layer.r_metal = arch_metal_layer.r_metal;
     metal_layer.c_metal = arch_metal_layer.c_metal;
