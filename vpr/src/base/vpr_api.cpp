@@ -726,7 +726,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
-    /* Ensure we have a clean start with void net remapping information */
+    // Ensure we have a clean start with void net remapping information
     cluster_ctx.post_routing_clb_pin_nets.clear();
     cluster_ctx.pre_routing_net_pin_mapping.clear();
 
@@ -735,7 +735,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
                                          vpr_setup.FileNameOpts.verify_file_digests,
                                          vpr_setup.PackerOpts.pack_verbosity);
 
-    /* Load the mapping between clusters and their atoms */
+    // Load the mapping between clusters and their atoms
     init_clb_atoms_lookup(cluster_ctx.atoms_lookup, atom_ctx, cluster_ctx.clb_nlist);
 
     process_constant_nets(g_vpr_ctx.mutable_atom().mutable_netlist(),
@@ -749,14 +749,14 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
         report_packing_pin_usage(ofs, g_vpr_ctx);
     }
 
-    // Ater the clustered netlist has been loaded, update the floorplanning
+    // After the clustered netlist has been loaded, update the floorplanning
     // constraints with the new information.
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_post_pack();
 
     // Sanity check the resulting netlist
     check_netlist(vpr_setup.PackerOpts.pack_verbosity);
 
-    // Independently verify the clusterings to ensure the clustering can be
+    // Independently verify the clustering to ensure the clustering can be
     // used for the rest of the VPR flow.
     unsigned num_errors = verify_clustering(g_vpr_ctx);
     if (num_errors == 0) {
@@ -768,7 +768,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
                   num_errors);
     }
 
-    /* Output the netlist stats to console and optionally to file. */
+    // Output the netlist stats to console and optionally to file.
     writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
 
     // print the total number of used physical blocks for each

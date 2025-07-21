@@ -619,6 +619,37 @@ struct ParsePlaceBoundingBox {
     }
 };
 
+struct ParsePlacementFreq {
+    ConvertedValue<e_place_freq> from_str(const std::string& str) {
+        ConvertedValue<e_place_freq> conv_value;
+        if (str == "once") {
+            conv_value.set_value(e_place_freq::ONCE);
+        } else if (str == "always") {
+            conv_value.set_value(e_place_freq::ALWAYS);
+        } else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_place_freq (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_place_freq val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_place_freq::ONCE) {
+            conv_value.set_value("once");
+        } else {
+            VTR_ASSERT(val == e_place_freq::ALWAYS);
+            conv_value.set_value("always");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"once", "always"};
+    }
+};
+
 struct ParsePlaceAgentAlgorithm {
     ConvertedValue<e_agent_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_agent_algorithm> conv_value;
@@ -2344,6 +2375,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .choices({"auto_bb", "cube_bb", "per_layer_bb"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<e_place_freq, ParsePlacementFreq>(args.place_placement_freq, "--place_frequency")
+        .help("Run placement every time or only once during channel width search.")
+        .default_value("once")
+        .choices({"once, always"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument<bool, ParseOnOff>(args.RL_agent_placement, "--RL_agent_placement")
         .help(
             "Uses a Reinforcement Learning (RL) agent in choosing the appropriate move type in placement."
@@ -2490,7 +2527,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " 0.0 focuses completely on wirelength, 1.0 completely on timing")
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
-
+    
     place_timing_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
         .help("Weighting factor for congestion cost during placement. "
               "Higher values prioritize congestion avoidance over bounding box and timing costs. "

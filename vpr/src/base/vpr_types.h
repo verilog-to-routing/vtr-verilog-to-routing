@@ -375,23 +375,23 @@ constexpr int NUM_PL_MOVE_TYPES = 7;
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
+
+// Annealing schedule
 enum class e_sched_type {
     AUTO_SCHED,
     USER_SCHED
 };
-/* Annealing schedule */
 
+// What's on screen?
 enum pic_type {
     NO_PICTURE,
     PLACEMENT,
     ROUTING
 };
-/* What's on screen? */
 
-enum pfreq {
-    PLACE_NEVER,
-    PLACE_ONCE,
-    PLACE_ALWAYS
+enum class e_place_freq {
+    ONCE,
+    ALWAYS
 };
 
 ///@brief  Power data for t_netlist structure
@@ -1006,7 +1006,7 @@ struct t_placer_opts {
     std::string read_initial_place_file;
 
     /// Should the placement be skipped, done once, or done for each channel width in the binary search. (Default: ONCE)
-    enum pfreq place_freq;
+    e_place_freq place_freq;
 
     /// How many temperature stages pass before we recompute criticalities
     /// based on the current placement and its estimated point-to-point delays.

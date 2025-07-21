@@ -4,20 +4,22 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/system_verilog/f4pga/pulse_width_led
-includes_dir=benchmarks/system_verilog/f4pga/pulse_width_led
+circuits_dir=benchmarks/system_verilog/koios_sv
+includes_dir=benchmarks/system_verilog/koios_sv
 
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
 
 # Add circuits to list to sweep
-#include_list_add=PWM.v
+#include_list_add=display_control.sv
+#include_list_add=timer.sv
+#include_list_add=debounce.sv
 
 # Add circuits to list to sweep
-#circuit_list_add=pulse_led.v
+circuit_list_add=deepfreeze.style1.sv
 
-circuit_list_add=flattened_pulse_width_led.sv
+
 
 # Add architectures to list to sweep
 arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml

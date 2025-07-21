@@ -38,10 +38,9 @@ void try_place(const Netlist<>& net_list,
                const FlatPlacementInfo& flat_placement_info,
                bool is_flat) {
 
-    /* Currently, the functions that require is_flat as their parameter and are called during placement should
-     * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
-     * if is_flat is false, even if is_flat is set to true from the command line.
-     */
+    // Currently, the functions that require is_flat as their parameter and are called during placement should
+    // receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
+    // if is_flat is false, even if is_flat is set to true from the command line
     VTR_ASSERT(!is_flat);
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -51,6 +50,10 @@ void try_place(const Netlist<>& net_list,
 
     // Initialize the variables in the placement context.
     mutable_placement.init_placement_context(placer_opts, directs);
+
+    if (mutable_floorplanning.cluster_constraints.empty()) {
+        mutable_floorplanning.update_floorplanning_context_post_pack();
+    }
 
     // Update the floorplanning constraints with the macro information from the
     // placement context.
@@ -73,9 +76,9 @@ void try_place(const Netlist<>& net_list,
         normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
     }
 
-    /* Placement delay model is independent of the placement and can be shared across
-     * multiple placers if we are performing parallel annealing.
-     * So, it is created and initialized once. */
+    // Placement delay model is independent of the placement and can be shared across
+    // multiple placers if we are performing parallel annealing.
+    // So, it is created and initialized once. */
     std::shared_ptr<PlaceDelayModel> place_delay_model;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -99,9 +102,8 @@ void try_place(const Netlist<>& net_list,
     // own local instances of BlkLocRegistry.
     mutable_placement.lock_loc_vars();
 
-    /* Start measuring placement time. The measured execution time will be printed
-     * when this object goes out of scope at the end of this function.
-     */
+    // Start measuring placement time. The measured execution time will be printed
+    // when this object goes out of scope at the end of this function.
     vtr::ScopedStartFinishTimer placement_timer("Placement");
 
     // Enables fast look-up pb graph pins from block pin indices
@@ -115,10 +117,9 @@ void try_place(const Netlist<>& net_list,
 
     placer.place();
 
-    /* The placer object has its own copy of block locations and doesn't update
-     * the global context directly. We need to copy its internal data structures
-     * to the global placement context before it goes out of scope.
-     */
+    // The placer object has its own copy of block locations and doesn't update
+    // the global context directly. We need to copy its internal data structures
+    // to the global placement context before it goes out of scope.
     placer.update_global_state();
 
     // Clean the variables in the placement context. This will deallocate memory
