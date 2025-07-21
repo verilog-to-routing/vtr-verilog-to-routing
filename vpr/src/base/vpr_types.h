@@ -382,7 +382,6 @@ enum class e_sched_type {
     USER_SCHED
 };
 
-
 // What's on screen?
 enum pic_type {
     NO_PICTURE,

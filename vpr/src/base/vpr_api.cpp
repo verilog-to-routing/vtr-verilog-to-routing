@@ -887,7 +887,6 @@ void vpr_place(const Netlist<>& net_list,
               g_vpr_ctx.atom().flat_placement_info(),
               is_flat);
 
-
     auto& filename_opts = vpr_setup.FileNameOpts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = g_vpr_ctx.placement().block_locs();
