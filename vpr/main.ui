@@ -458,26 +458,25 @@
               <object class="GtkSwitch" id="ToggleNets">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
-                <property name="halign">start</property>
+                <property name="halign">end</property>
+                <property name="hexpand">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">0</property>
+                <property name="position">1</property>
               </packing>
             </child>
             <child>
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="margin-left">5</property>
-                <property name="margin-start">5</property>
                 <property name="label" translatable="yes">Display Nets</property>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">0</property>
               </packing>
             </child>
           </object>
@@ -494,8 +493,8 @@
             <property name="active">0</property>
             <property name="active-id">0</property>
             <items>
-              <item id="1" translatable="yes">Routing</item>
-              <item id="2" translatable="yes">Flylines</item>
+              <item id="1" translatable="yes">Flylines</item>
+              <item id="2" translatable="yes">Routing</item>
             </items>
           </object>
           <packing>
@@ -610,25 +609,25 @@
               <object class="GtkSwitch" id="ToggleRR">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
-                <property name="halign">start</property>
+                <property name="halign">end</property>
+                <property name="hexpand">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">0</property>
+                <property name="position">1</property>
               </packing>
             </child>
             <child>
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="margin-start">5</property>
                 <property name="label" translatable="yes">Display Routing Resources</property>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">0</property>
               </packing>
             </child>
           </object>
@@ -1003,6 +1002,7 @@
                 <property name="can-focus">False</property>
                 <child>
                   <object class="GtkButton" id="Window">
+                    <property name="label" translatable="yes">Window</property>
                     <property name="width-request">1</property>
                     <property name="height-request">-1</property>
                     <property name="visible">True</property>
@@ -1015,6 +1015,7 @@
                 </child>
                 <child>
                   <object class="GtkButton" id="ZoomFitButton">
+                    <property name="label" translatable="yes">Zoom Fit</property>
                     <property name="width-request">1</property>
                     <property name="height-request">-1</property>
                     <property name="visible">True</property>
