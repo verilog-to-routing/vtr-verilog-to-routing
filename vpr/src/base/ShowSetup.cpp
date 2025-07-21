@@ -501,9 +501,6 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
         case e_place_freq::ALWAYS:
             VTR_LOG("ALWAYS\n");
             break;
-        case e_place_freq::NEVER:
-            VTR_LOG("NEVER\n");
-            break;
         default:
             VTR_LOG_ERROR("Unknown Place Freq\n");
     }

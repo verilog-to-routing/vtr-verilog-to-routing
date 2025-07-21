@@ -391,7 +391,6 @@ enum pic_type {
 };
 
 enum class e_place_freq {
-    NEVER,
     ONCE,
     ALWAYS
 };
