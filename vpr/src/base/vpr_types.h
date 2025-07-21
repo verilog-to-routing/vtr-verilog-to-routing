@@ -375,23 +375,25 @@ constexpr int NUM_PL_MOVE_TYPES = 7;
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
+
+// Annealing schedule
 enum class e_sched_type {
     AUTO_SCHED,
     USER_SCHED
 };
-/* Annealing schedule */
 
+
+// What's on screen?
 enum pic_type {
     NO_PICTURE,
     PLACEMENT,
     ROUTING
 };
-/* What's on screen? */
 
-enum pfreq {
-    PLACE_NEVER,
-    PLACE_ONCE,
-    PLACE_ALWAYS
+enum class e_place_freq {
+    NEVER,
+    ONCE,
+    ALWAYS
 };
 
 ///@brief  Power data for t_netlist structure
@@ -1032,7 +1034,7 @@ struct t_placer_opts {
     std::string constraints_file;
     std::string write_initial_place_file;
     std::string read_initial_place_file;
-    enum pfreq place_freq;
+    e_place_freq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
     int quench_recompute_divider;
