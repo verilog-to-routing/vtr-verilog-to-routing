@@ -753,7 +753,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     // constraints with the new information.
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_post_pack();
 
-    /* Sanity check the resulting netlist */
+    // Sanity check the resulting netlist
     check_netlist(vpr_setup.PackerOpts.pack_verbosity);
 
     // Independently verify the clusterings to ensure the clustering can be
@@ -886,7 +886,7 @@ void vpr_place(const Netlist<>& net_list,
               arch.directs,
               g_vpr_ctx.atom().flat_placement_info(),
               is_flat);
-
+    
     auto& filename_opts = vpr_setup.FileNameOpts;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = g_vpr_ctx.placement().block_locs();
