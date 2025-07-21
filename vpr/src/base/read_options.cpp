@@ -2378,7 +2378,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     place_grp.add_argument<e_place_freq, ParsePlacementFreq>(args.place_placement_freq, "--place_frequency")
         .help("Run placement every time or only once during channel width search.")
         .default_value("once")
-        .choices({"once, always"})
+        .choices({"once", "always"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<bool, ParseOnOff>(args.RL_agent_placement, "--RL_agent_placement")
@@ -2527,7 +2527,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " 0.0 focuses completely on wirelength, 1.0 completely on timing")
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
-    
+
     place_timing_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
         .help("Weighting factor for congestion cost during placement. "
               "Higher values prioritize congestion avoidance over bounding box and timing costs. "
