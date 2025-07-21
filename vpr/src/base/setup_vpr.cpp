@@ -669,7 +669,7 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->place_chan_width = Options.place_chan_width;
 
     PlacerOpts->recompute_crit_iter = Options.recompute_crit_iter;
-    
+
     PlacerOpts->timing_tradeoff = Options.place_timing_tradeoff;
     PlacerOpts->congestion_factor = Options.place_congestion_factor;
     PlacerOpts->congestion_rlim_trigger_ratio = Options.place_congestion_rlim_trigger_ratio;

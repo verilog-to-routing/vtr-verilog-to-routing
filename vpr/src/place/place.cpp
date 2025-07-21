@@ -60,7 +60,6 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("Bounding box mode is %s\n", (mutable_placement.cube_bb ? "Cube" : "Per-layer"));
     VTR_LOG("\n");
 
-
     // To make sure the importance of NoC-related cost terms compared to
     // BB and timing cost is determine only through NoC placement weighting factor,
     // we normalize NoC-related cost weighting factors so that they add up to 1.

@@ -2485,11 +2485,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.place_timing_tradeoff, "--timing_tradeoff")
-            .help(
-                "Trade-off control between delay and wirelength during placement."
-                " 0.0 focuses completely on wirelength, 1.0 completely on timing")
-            .default_value("0.5")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Trade-off control between delay and wirelength during placement."
+            " 0.0 focuses completely on wirelength, 1.0 completely on timing")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
         .help("Weighting factor for congestion cost during placement. "

@@ -186,8 +186,6 @@ struct t_options {
     argparse::ArgValue<bool> noc_sat_routing_log_search_progress;
     argparse::ArgValue<std::string> noc_placement_file_name;
 
-
-
     // Timing-driven placement options only
     argparse::ArgValue<float> place_congestion_factor;
     argparse::ArgValue<float> place_congestion_rlim_trigger_ratio;
