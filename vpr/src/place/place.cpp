@@ -51,6 +51,10 @@ void try_place(const Netlist<>& net_list,
     // Initialize the variables in the placement context.
     mutable_placement.init_placement_context(placer_opts, directs);
 
+    if (mutable_floorplanning.cluster_constraints.empty()) {
+        mutable_floorplanning.update_floorplanning_context_post_pack();
+    }
+
     // Update the floorplanning constraints with the macro information from the
     // placement context.
     mutable_floorplanning.update_floorplanning_context_pre_place(*mutable_placement.place_macros);
@@ -123,6 +127,7 @@ void try_place(const Netlist<>& net_list,
     // used by variables which were allocated in the placement context and are
     // never used outside of placement.
     mutable_placement.clean_placement_context_post_place();
+    mutable_floorplanning.clean_floorplanning_context_post_place();
 }
 
 #ifdef VERBOSE
