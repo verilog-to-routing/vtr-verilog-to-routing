@@ -2634,6 +2634,29 @@ The full format is documented below.
     The 'to' set is all L4 switchpoint 0's.
     Note that since different switchpoints are selected from different segment types it is not possible to specify this without using ``<from>`` sub-tags.
 
+.. _scatter_gathern_patterns:
+
+Scatter-Gather Patterns
+---------------------
+
+Placeholder text explaining what scatter gather patterns are
+
+Example
+
+.. arch:tag:: <sg_pattern name="string" type={unidir|bidir}>
+
+.. arch:tag:: <gather>
+    TODO: Reference the wireconn tag
+
+.. arch:tag:: <scatter>
+    TODO: Reference the wireconn tag
+
+.. arch:tag:: <sg_link  name="string" x_offset="int" y_offset="int" z_offset="int" mux="string" seg_type="string">
+
+.. arch:tag:: <sg_location type="string" num="int" sg_link_name="string">
+
+
+
 .. _arch_metadata:
 
 Architecture metadata
