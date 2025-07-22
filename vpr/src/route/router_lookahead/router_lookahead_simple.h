@@ -17,6 +17,7 @@ class SimpleLookahead : public RouterLookahead {
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
     
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
+      VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::compute unsupported, try to load lookahead from a file.");
     }
 
     void compute_intra_tile() override {
