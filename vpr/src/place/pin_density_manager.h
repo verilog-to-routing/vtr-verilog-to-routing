@@ -28,6 +28,11 @@ class PinDensityManager {
     vtr::vector<ClusterPinId, t_physical_tile_loc> pin_locs_;
     vtr::vector<ClusterPinId, e_rr_type> pin_chan_type_;
 
+    std::vector<std::tuple<ClusterPinId, t_physical_tile_loc, e_rr_type>> moved_pins_;
+
+    vtr::vector<ClusterPinId, t_physical_tile_loc> ts_pin_locs_;
+    vtr::vector<ClusterPinId, e_rr_type> ts_pin_chan_type_;
+
   private:
     std::pair<t_physical_tile_loc, e_rr_type> input_pin_loc_chan_type_(const t_physical_tile_loc& loc, e_side side) const;
 };
