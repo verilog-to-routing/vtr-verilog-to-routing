@@ -81,7 +81,6 @@ void draw_rr(ezgl::renderer* g) {
 
         draw_rr_edges(inode, g);
         draw_rr_node(inode, draw_state->draw_rr_node[inode].color, g);
-
     }
 
     drawroute(HIGHLIGHTED, g);
@@ -241,7 +240,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     e_rr_type from_type, to_type;
 
     from_type = rr_graph.node_type(inode);
-    if(from_type == e_rr_type::SOURCE || from_type == e_rr_type::SINK || !is_inter_cluster_node(rr_graph, inode)) {
+    if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::SINK || !is_inter_cluster_node(rr_graph, inode)) {
         return;
     }
 
@@ -256,7 +255,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         to_type = rr_graph.node_type(to_node);
         bool edge_configurable = rr_graph.edge_is_configurable(inode, iedge);
 
-        if(to_type == e_rr_type::SOURCE || to_type == e_rr_type::SINK || !is_inter_cluster_node(rr_graph, to_node)) {
+        if (to_type == e_rr_type::SOURCE || to_type == e_rr_type::SINK || !is_inter_cluster_node(rr_graph, to_node)) {
             continue;
         }
 
@@ -264,27 +263,27 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         // Determine the color based on the type of the edge
         switch (from_type) {
             case e_rr_type::OPIN:
-                if(to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
+                if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
                     color = ezgl::PINK;
-                } else if (to_type == e_rr_type::IPIN){
+                } else if (to_type == e_rr_type::IPIN) {
                     color = ezgl::MEDIUM_PURPLE;
                 } else {
                     vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
-                                  inode, from_type, to_node, to_type);
+                              "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
+                              inode, from_type, to_node, to_type);
                 }
-            break;
+                break;
             case e_rr_type::CHANX:
             case e_rr_type::CHANY:
-                if(to_type == e_rr_type::IPIN) {
+                if (to_type == e_rr_type::IPIN) {
                     color = blk_LIGHTSKYBLUE;
                     if (draw_state->draw_rr_node[to_node].node_highlighted && draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
-                            // If the IPIN is clicked on, draw connection to all the CHANX
-                            // wire segments fanning into the pin. If a CHANX wire is clicked
-                            // on, draw only the connection between that wire and the IPIN, with
-                            // the pin fanning out from the wire.
-                            color = ezgl::MAGENTA;
-                        }
+                        // If the IPIN is clicked on, draw connection to all the CHANX
+                        // wire segments fanning into the pin. If a CHANX wire is clicked
+                        // on, draw only the connection between that wire and the IPIN, with
+                        // the pin fanning out from the wire.
+                        color = ezgl::MAGENTA;
+                    }
                 } else if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
                     if (edge_configurable) {
                         color = blk_DARKGREEN;
@@ -293,24 +292,24 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                     }
                 } else {
                     vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
-                                  inode, from_type, to_node, to_type);
+                              "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
+                              inode, from_type, to_node, to_type);
                 }
-            break;
+                break;
             default:
-            break;
+                break;
         }
 
         if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA) || rgb_is_same(draw_state->draw_rr_node[to_node].color, ezgl::MAGENTA)) {
             color = draw_state->draw_rr_node[to_node].color;
         }
 
-        draw_rr_edge(to_node, inode, color, g);        
-        
+        draw_rr_edge(to_node, inode, color, g);
+
     } /* End of for each edge loop */
 }
 
-void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g){
+void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;

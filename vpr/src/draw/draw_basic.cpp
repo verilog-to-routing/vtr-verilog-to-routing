@@ -624,10 +624,8 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         RRNodeId prev_node = rr_nodes_to_draw[i - 1];
 
         draw_rr_edge(inode, prev_node, draw_state->draw_rr_node[inode].color, g);
-        
     }
 }
-
 
 /* Helper function that checks whether the edges between the current and previous nodes can be drawn
  * based on whether the cross-layer connections option is enabled and whether the layer on which the

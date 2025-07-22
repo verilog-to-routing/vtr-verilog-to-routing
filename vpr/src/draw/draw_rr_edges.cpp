@@ -620,7 +620,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
     }
 }
 
-void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::renderer* g){
+void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
     t_draw_state* draw_state = get_draw_state_vars();
@@ -664,7 +664,6 @@ void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::r
 
     draw_inter_cluster_rr_edge(inode, prev_node, rr_type, prev_type, g);
 }
-
 
 void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr_type, e_rr_type prev_type, ezgl::renderer* g) {
     const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
