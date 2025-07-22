@@ -143,11 +143,11 @@ static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, in
     "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
 
 void read_router_lookahead(const std::string& /*file*/) {
-    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::read_router_lookahead " DISABLE_ERROR);
+    VPR_THROW(VPR_ERROR_PLACE, "SimpleLookahead::read_router_lookahead " DISABLE_ERROR);
 }
 
 void write_router_lookahead(const std::string& /*file*/) {
-    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::write_router_lookahead " DISABLE_ERROR);
+    VPR_THROW(VPR_ERROR_PLACE, "SimpleLookahead::write_router_lookahead " DISABLE_ERROR);
 }
 
 #else /* VTR_ENABLE_CAPNPROTO */
