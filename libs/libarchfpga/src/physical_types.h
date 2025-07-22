@@ -880,9 +880,13 @@ struct t_physical_tile_loc {
         , y(y_val)
         , layer_num(layer_num_val) {}
 
-    // Returns true if this type location layer_num/x/y is not equal to OPEN
+    /// Returns true if this type location layer_num/x/y is not equal to OPEN
     operator bool() const {
         return !(x == OPEN || y == OPEN || layer_num == OPEN);
+    }
+
+    bool operator==(const t_physical_tile_loc& other) const {
+        return x == other.x && y == other.y && layer_num == other.layer_num;
     }
 };
 

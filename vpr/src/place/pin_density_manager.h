@@ -25,10 +25,25 @@ class PinDensityManager {
     vtr::Matrix<int> chany_input_pin_count_;
     vtr::Matrix<int> chan_output_pin_count_;
 
+    vtr::Matrix<int> ts_chanx_input_pin_count_;
+    vtr::Matrix<int> ts_chany_input_pin_count_;
+    vtr::Matrix<int> ts_chan_output_pin_count_;
+
     vtr::vector<ClusterPinId, t_physical_tile_loc> pin_locs_;
     vtr::vector<ClusterPinId, e_rr_type> pin_chan_type_;
 
+    struct PhysicalLocHasher {
+        std::size_t operator()(const t_physical_tile_loc& loc) const {
+            std::size_t seed = 0;
+            vtr::hash_combine(seed, loc.x);
+            vtr::hash_combine(seed, loc.y);
+            vtr::hash_combine(seed, loc.layer_num);
+            return seed;
+        }
+    };
+
     std::vector<std::tuple<ClusterPinId, t_physical_tile_loc, e_rr_type>> moved_pins_;
+    std::unordered_set<t_physical_tile_loc, PhysicalLocHasher> affected_chan_locs_;
 
     vtr::vector<ClusterPinId, t_physical_tile_loc> ts_pin_locs_;
     vtr::vector<ClusterPinId, e_rr_type> ts_pin_chan_type_;
