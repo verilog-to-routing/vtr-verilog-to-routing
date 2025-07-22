@@ -34,25 +34,20 @@ double PinDensityManager::compute_cost() {
     chany_input_pin_count_.fill(0);
     chan_output_pin_count_.fill(0);
 
-    for (const ClusterNetId net_id : clb_nlist.nets()) {
-        // Ignored nets don't affect pin density
-        if (clb_nlist.net_is_ignored(net_id)) {
-            continue;
+    for (const ClusterBlockId blk_id : clb_nlist.blocks()) {
+
+        for (const ClusterPinId driver_pin_id : clb_nlist.block_output_pins(blk_id)) {
+            t_physical_tile_loc driver_pin_loc = blk_loc_registry.get_coordinate_of_pin(driver_pin_id);
+            chan_output_pin_count_[driver_pin_loc.x][driver_pin_loc.y]++;
+            pin_locs_[driver_pin_id] = driver_pin_loc;
+            pin_chan_type_[driver_pin_id] = e_rr_type::NUM_RR_TYPES;
         }
 
-        const ClusterPinId driver_pin_id = clb_nlist.net_driver(net_id);
-        t_physical_tile_loc driver_pin_loc = blk_loc_registry.get_coordinate_of_pin(driver_pin_id);
-        chan_output_pin_count_[driver_pin_loc.x][driver_pin_loc.y]++;
-        pin_locs_[driver_pin_id] = driver_pin_loc;
-        pin_chan_type_[driver_pin_id] = e_rr_type::NUM_RR_TYPES;
-
-        for (const ClusterPinId sink_pin_id : clb_nlist.net_sinks(net_id)) {
+        for (const ClusterPinId sink_pin_id : clb_nlist.block_input_pins(blk_id)) {
             t_physical_tile_loc sink_pin_loc = blk_loc_registry.get_coordinate_of_pin(sink_pin_id);
             e_side sink_pin_side = blk_loc_registry.pin_side(sink_pin_id);
+            auto [adjusted_sink_pin_loc, sink_pin_chan_type] = input_pin_loc_chan_type_(sink_pin_loc, sink_pin_side);
 
-            t_physical_tile_loc adjusted_sink_pin_loc;
-            e_rr_type sink_pin_chan_type;
-            std::tie(adjusted_sink_pin_loc, sink_pin_chan_type) = input_pin_loc_chan_type_(sink_pin_loc, sink_pin_side);
             pin_locs_[sink_pin_id] = adjusted_sink_pin_loc;
             pin_chan_type_[sink_pin_id] = sink_pin_chan_type;
 
@@ -64,6 +59,8 @@ double PinDensityManager::compute_cost() {
                 VTR_ASSERT(false);
             }
         }
+
+
     }
 
     ts_chanx_input_pin_count_ = chanx_input_pin_count_;
