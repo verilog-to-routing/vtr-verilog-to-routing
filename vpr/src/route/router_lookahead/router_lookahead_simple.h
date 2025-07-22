@@ -4,6 +4,13 @@
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
 
+/**
+ * @brief A lookahead that can only read a cost map from a file and query it based on distance.
+ *
+ * SimpleLookahead cannot compute a cost map, instead it can only read a single cost map from an external file.
+ * This cost map is similar to that of MapLookahead, and it only refers to channel segments. There is no additional
+ * cost map for sources/opins or intra-cluster estimates.
+ */
 class SimpleLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
