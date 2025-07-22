@@ -104,9 +104,9 @@ if (${WITH_PARMYS})
             BINARY_DIR ${SLANG_BUILD_DIR}
 
             #Disabling UndrivenPass in slang_frontend.cc
-            PATCH_COMMAND
-                ${CMAKE_COMMAND} -E echo "Patching slang_frontend.cc to disable UndrivenPass" &&
-                ${CMAKE_COMMAND} -DIN=${SLANG_FE} -P ${CMAKE_CURRENT_SOURCE_DIR}/patch_slang.cmake
+            # PATCH_COMMAND
+            #     ${CMAKE_COMMAND} -E echo "Patching slang_frontend.cc to disable UndrivenPass" &&
+            #     ${CMAKE_COMMAND} -DIN=${SLANG_FE} -P ${CMAKE_CURRENT_SOURCE_DIR}/patch_slang.cmake
                 
             CONFIGURE_COMMAND ""
             
