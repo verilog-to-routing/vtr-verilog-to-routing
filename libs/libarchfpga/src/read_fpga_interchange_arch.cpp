@@ -16,9 +16,9 @@
 #include <map>
 #include <regex>
 #include <set>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string>
-#include <string.h>
+#include <cstring>
 #include <zlib.h>
 #include <sstream>
 
@@ -1845,14 +1845,14 @@ struct ArchReader {
         auto site_pins = site.getBelPins();
 
         std::string endpoint = direction == BACKWARD ? ic->input_string : ic->output_string;
-        auto ic_endpoints = vtr::split(endpoint, " ");
+        std::vector<std::string> ic_endpoints = vtr::StringToken(endpoint).split(" ");
 
         std::unordered_map<t_interconnect*, std::set<std::string>> pps_map;
 
         bool is_backward = direction == BACKWARD;
 
-        for (auto ep : ic_endpoints) {
-            auto parts = vtr::split(ep, ".");
+        for (const std::string& ep : ic_endpoints) {
+            auto parts = vtr::StringToken(ep).split(".");
             auto bel = parts[0];
             auto pin = parts[1];
 
@@ -1875,7 +1875,7 @@ struct ArchReader {
             if (bel_reader.getCategory() == ROUTING) {
                 for (auto bel_pin : bel_reader.getPins()) {
                     auto pin_reader = site_pins[bel_pin];
-                    auto pin_name = str(pin_reader.getName());
+                    std::string pin_name = str(pin_reader.getName());
 
                     if (pin_reader.getDir() != (is_backward ? INPUT : OUTPUT))
                         continue;
@@ -1889,7 +1889,7 @@ struct ArchReader {
                         std::string ic_to_find = bel + "." + pin_name;
 
                         bool found = false;
-                        for (auto out : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " "))
+                        for (const std::string& out : vtr::StringToken(is_backward ? other_ic->output_string : other_ic->input_string).split(" "))
                             found |= out == ic_to_find;
 
                         if (found) {
@@ -1911,7 +1911,7 @@ struct ArchReader {
                         t_interconnect* other_ic = &mode->interconnect[iic];
 
                         bool found = false;
-                        for (auto other_ep : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " ")) {
+                        for (const std::string& other_ep : vtr::StringToken(is_backward ? other_ic->output_string : other_ic->input_string).split(" ")) {
                             found |= other_ep == ep;
                         }
 
@@ -2327,7 +2327,7 @@ struct ArchReader {
         arch_->Chans.chan_y_dist.xpeak = 0;
         arch_->Chans.chan_y_dist.dc = 0;
         arch_->ipin_cblock_switch_name.push_back(std::string("generic"));
-        arch_->SBType = WILTON;
+        arch_->sb_type = WILTON;
         arch_->Fs = 3;
         default_fc_.specified = true;
         default_fc_.in_value_type = e_fc_value_type::FRACTIONAL;
@@ -2465,7 +2465,7 @@ struct ArchReader {
             arch_->Segments[index].frequency = 1;
             arch_->Segments[index].Rmetal = 1e-12;
             arch_->Segments[index].Cmetal = 1e-12;
-            arch_->Segments[index].parallel_axis = BOTH_AXIS;
+            arch_->Segments[index].parallel_axis = e_parallel_axis::BOTH_AXIS;
 
             // TODO: Only bi-directional segments are created, but it the interchange format
             //       has directionality information on PIPs, which may be used to infer the

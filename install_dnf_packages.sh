@@ -42,11 +42,6 @@ sudo dnf install -y \
     boost-filesystem \
     zlib-ng-devel
 
-# Required to build the documentation
-sudo dnf install -y \
-    python3-sphinx \
-    python-sphinx-doc
-
 # Required to run the analytical placement flow
 sudo dnf install -y \
     eigen3-devel

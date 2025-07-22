@@ -46,6 +46,8 @@ class PostClusterDelayCalculator;
 
 #endif /* NO_SERVER */
 
+struct t_rr_node_route_inf;
+
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
  *
@@ -175,6 +177,13 @@ struct DeviceContext : public Context {
      * in this data structure should be used.
      */
     DeviceGrid grid;
+
+    /**
+     * @brief The VIB device grid. For details about this layout
+     * refer to https://doi.org/10.1109/ICFPT59805.2023.00014
+     */
+    VibDeviceGrid vib_grid;
+
     /*
      * Empty types
      */
@@ -234,7 +243,20 @@ struct DeviceContext : public Context {
     /* A read-only view of routing resource graph to be the ONLY database
      * for client functions: GUI, placer, router, timing analyzer etc.
      */
-    RRGraphView rr_graph{rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
+    RRGraphView rr_graph{rr_graph_builder.rr_nodes(),
+                         rr_graph_builder.node_lookup(),
+                         rr_graph_builder.rr_node_metadata(),
+                         rr_graph_builder.rr_edge_metadata(),
+                         rr_indexed_data,
+                         rr_rc_data,
+                         rr_graph_builder.rr_segments(),
+                         rr_graph_builder.rr_switch(),
+                         rr_graph_builder.node_in_edge_storage(),
+                         rr_graph_builder.node_ptc_storage()};
+
+    ///@brief Track ids for each rr_node in the rr_graph. This is used by drawer for tileable routing resource graph
+    std::map<RRNodeId, std::vector<size_t>> rr_node_track_ids;
+
     std::vector<t_arch_switch_inf> arch_switch_inf; // [0..(num_arch_switches-1)]
 
     std::map<int, t_arch_switch_inf> all_sw_inf;
@@ -552,9 +574,7 @@ struct RoutingContext : public Context {
                RouterLookahead>
         cached_router_lookahead_;
 
-    /**
-     * @brief User specified routing constraints
-     */
+    /// @brief User specified routing constraints
     UserRouteConstraints constraints;
 
     /** Is flat routing enabled? */

@@ -110,10 +110,16 @@ enum e_draw_net_type {
     HIGHLIGHTED
 };
 
-/* Chanx to chany or vice versa? */
-enum e_edge_dir {
+/// Chanx to chany or vice versa?
+enum e_chan_edge_dir {
     FROM_X_TO_Y,
     FROM_Y_TO_X
+};
+
+/// From inter-cluster pin to intra-cluster pin or vice versa?
+enum e_pin_edge_dir {
+    FROM_INTER_CLUSTER_TO_INTRA_CLUSTER,
+    FROM_INTRA_CLUSTER_TO_INTER_CLUSTER
 };
 
 /*
@@ -228,7 +234,7 @@ struct t_draw_state {
     bool auto_proceed = false;
 
     ///@brief GLOBAL or DETAILED
-    e_route_type draw_route_type = GLOBAL;
+    e_route_type draw_route_type = e_route_type::GLOBAL;
 
     ///@brief default screen message on screen
     char default_message[vtr::bufsize];
@@ -431,6 +437,14 @@ struct t_draw_coords {
      * clb with absolute coordinates, that can be directly drawn.
      */
     ezgl::rectangle get_absolute_pb_bbox(const ClusterBlockId clb_index, const t_pb_graph_node* pb_gnode);
+
+    /**
+     * @brief returns a 2D point for the absolute location of the given pb_graph_pin in the entire graphics context.
+     * @param clb_index The index of the cluster block containing the pin.
+     * @param pb_graph_pin The pin for which the absolute location is requested.
+     * @return A point2d representing the absolute coordinates of the pin.
+     */
+    ezgl::point2d get_absolute_pin_location(const ClusterBlockId clb_index, const t_pb_graph_pin* pb_graph_pin);
 
     ///@brief Returns bounding box for CLB of given idx/type
     ezgl::rectangle get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_logical_block_type_ptr type);

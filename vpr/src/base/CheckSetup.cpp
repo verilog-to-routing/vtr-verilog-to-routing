@@ -34,8 +34,8 @@ void CheckSetup(const t_packer_opts& packer_opts,
         }
     }
 
-    if ((GLOBAL == router_opts.route_type)
-        && (placer_opts.place_algorithm.is_timing_driven())) {
+    if (e_route_type::GLOBAL == router_opts.route_type
+        && placer_opts.place_algorithm.is_timing_driven()) {
         /* Works, but very weird.  Can't optimize timing well, since you're
          * not doing proper architecture delay modelling. */
         VTR_LOG_WARN(
@@ -50,7 +50,7 @@ void CheckSetup(const t_packer_opts& packer_opts,
                         "Timing analysis must be enabled for timing-driven placement.\n");
     }
 
-    if (!placer_opts.doPlacement && (!placer_opts.constraints_file.empty())) {
+    if (placer_opts.doPlacement == e_stage_action::SKIP && (!placer_opts.constraints_file.empty())) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "A block location file requires that placement is enabled.\n");
     }
@@ -69,15 +69,20 @@ void CheckSetup(const t_packer_opts& packer_opts,
                         NUM_PL_MOVE_TYPES);
     }
 
+    if (placer_opts.place_auto_init_t_scale < 0.0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Cannot have negative annealer auto initial temperature scale.\n");
+    }
+
     // Rules for doing Analytical Placement
-    if (ap_opts.doAP) {
+    if (ap_opts.doAP != e_stage_action::SKIP) {
         // Make sure that the --place option was not set.
-        if (placer_opts.doPlacement) {
+        if (placer_opts.doPlacement != e_stage_action::SKIP) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Cannot perform both analytical and non-analytical placement.\n");
         }
         // Make sure that the --pack option was not set.
-        if (packer_opts.doPacking) {
+        if (packer_opts.doPacking != e_stage_action::SKIP) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Analytical placement should skip packing.\n");
         }
@@ -98,7 +103,7 @@ void CheckSetup(const t_packer_opts& packer_opts,
         //       goes with ensuring that some blocks are fixed.
     }
 
-    if (router_opts.doRouting) {
+    if (router_opts.doRouting != e_stage_action::SKIP) {
         if (!timing.timing_analysis_enabled
             && (DEMAND_ONLY != router_opts.base_cost_type && DEMAND_ONLY_NORMALIZED_LENGTH != router_opts.base_cost_type)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
@@ -106,7 +111,7 @@ void CheckSetup(const t_packer_opts& packer_opts,
         }
     }
 
-    if (DETAILED == router_opts.route_type) {
+    if (e_route_type::DETAILED == router_opts.route_type) {
         if ((chans.chan_x_dist.type != UNIFORM)
             || (chans.chan_y_dist.type != UNIFORM)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,

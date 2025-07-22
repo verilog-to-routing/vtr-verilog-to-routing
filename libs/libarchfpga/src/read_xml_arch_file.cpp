@@ -47,6 +47,7 @@
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
+#include "read_xml_arch_file_vib.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
@@ -256,19 +257,6 @@ static void process_mode(pugi::xml_node Parent,
                          const t_arch& arch,
                          const pugiutil::loc_data& loc_data,
                          int& parent_pb_idx);
-/**
- * @brief Processes <metadata> tags.
- *
- * @param strings String internment storage used to store strings used
- * as keys and values in <metadata> tags.
- * @param Parent An XML node pointing to the parent tag whose <metadata> children
- * are to be parsed.
- * @param loc_data Points to the location in the architecture file where the parser is reading.
- * @return A t_metadata_dict that stored parsed (key, value) pairs.
- */
-static t_metadata_dict process_meta_data(vtr::string_internment& strings,
-                                         pugi::xml_node Parent,
-                                         const pugiutil::loc_data& loc_data);
 
 static void process_fc_values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
 static void process_fc(pugi::xml_node Node,
@@ -306,8 +294,12 @@ static void process_model_ports(pugi::xml_node port_group, t_model& model, std::
 static void process_layout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
 static t_grid_def process_grid_layout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 static void process_block_type_locs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
-static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Parses tags related to tileable rr graph under <device> tag in the architecture file.
+ */
+static void process_tileable_device_parameters(t_arch* arch, const pugiutil::loc_data& loc_data);
 
 /**
  * @brief Parses <complexblocklist> tag in the architecture file.
@@ -388,6 +380,8 @@ static e_side string_to_side(const std::string& side_str);
 template<typename T>
 static T* get_type_by_name(std::string_view type_name, std::vector<T>& types);
 
+static void process_bend(pugi::xml_node Node, t_segment_inf& segment, const int len, const pugiutil::loc_data& loc_data);
+
 /*
  *
  *
@@ -447,6 +441,12 @@ void xml_read_arch(const char* ArchFile,
         Next = get_single_child(architecture, "layout", loc_data);
         process_layout(Next, arch, loc_data, num_of_avail_layers);
 
+        // Precess vib_layout
+        Next = get_single_child(architecture, "vib_layout", loc_data, ReqOpt::OPTIONAL);
+        if (Next) {
+            process_vib_layout(Next, arch, loc_data);
+        }
+
         /* Process device */
         Next = get_single_child(architecture, "device", loc_data);
         process_device(Next, arch, arch_def_fc, loc_data);
@@ -456,7 +456,7 @@ void xml_read_arch(const char* ArchFile,
         arch->switches = process_switches(Next, timing_enabled, loc_data);
 
         /* Process switchblocks. This depends on switches */
-        bool switchblocklist_required = (arch->SBType == CUSTOM); //require this section only if custom switchblocks are used
+        bool switchblocklist_required = (arch->sb_type == CUSTOM); //require this section only if custom switchblocks are used
         SWITCHBLOCKLIST_REQD = BoolToReqOpt(switchblocklist_required);
 
         /* Process segments. This depends on switches */
@@ -485,7 +485,13 @@ void xml_read_arch(const char* ArchFile,
             arch->directs = process_directs(Next, arch->switches, loc_data);
         }
 
-        /* Process Clock Networks */
+        // Process vib_arch
+        Next = get_single_child(architecture, "vib_arch", loc_data, ReqOpt::OPTIONAL);
+        if (Next) {
+            process_vib_arch(Next, arch, loc_data);
+        }
+
+        // Process Clock Networks
         Next = get_single_child(architecture, "clocknetworks", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
             std::vector<std::string> expected_children = {"metal_layers", "clock_network", "clock_routing"};
@@ -504,11 +510,10 @@ void xml_read_arch(const char* ArchFile,
                                   loc_data);
         }
 
-        /* Process architecture power information */
+        // Process architecture power information
 
-        /* If arch->power has been initialized, meaning the user has requested power estimation,
-         * then the power architecture information is required.
-         */
+        // If arch->power has been initialized, meaning the user has requested power estimation,
+        // then the power architecture information is required.
         if (arch->power) {
             POWER_REQD = ReqOpt::REQUIRED;
         } else {
@@ -520,9 +525,7 @@ void xml_read_arch(const char* ArchFile,
             if (arch->power) {
                 process_power(Next, arch->power, loc_data);
             } else {
-                /* This information still needs to be read, even if it is just
-                 * thrown away.
-                 */
+                // This information still needs to be read, even if it is just thrown away.
                 t_power_arch* power_arch_fake = new t_power_arch();
                 process_power(Next, power_arch_fake, loc_data);
                 delete power_arch_fake;
@@ -535,9 +538,7 @@ void xml_read_arch(const char* ArchFile,
             if (arch->clocks) {
                 process_clocks(Next, *arch->clocks, loc_data);
             } else {
-                /* This information still needs to be read, even if it is just
-                 * thrown away.
-                 */
+                // This information still needs to be read, even if it is just thrown away.
                 std::vector<t_clock_network> clocks_fake;
                 process_clocks(Next, clocks_fake, loc_data);
             }
@@ -1987,28 +1988,6 @@ static void process_mode(pugi::xml_node Parent,
     process_interconnect(arch.strings, Cur, mode, loc_data);
 }
 
-static t_metadata_dict process_meta_data(vtr::string_internment& strings,
-                                         pugi::xml_node Parent,
-                                         const pugiutil::loc_data& loc_data) {
-    //	<metadata>
-    //	  <meta>CLBLL_L_</meta>
-    //	</metadata>
-    t_metadata_dict data;
-    auto metadata = get_single_child(Parent, "metadata", loc_data, ReqOpt::OPTIONAL);
-    if (metadata) {
-        auto meta_tag = get_first_child(metadata, "meta", loc_data);
-        while (meta_tag) {
-            auto key = get_attribute(meta_tag, "name", loc_data).as_string();
-
-            auto value = meta_tag.child_value();
-            data.add(strings.intern_string(vtr::string_view(key)),
-                     strings.intern_string(vtr::string_view(value)));
-            meta_tag = meta_tag.next_sibling(meta_tag.name());
-        }
-    }
-    return data;
-}
-
 static void process_fc_values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data) {
     spec.specified = true;
 
@@ -2499,7 +2478,7 @@ static void process_model_ports(pugi::xml_node port_group, t_model& model, std::
                 model_port->clock = std::string(attr.value());
 
             } else if (attr.name() == std::string("combinational_sink_ports")) {
-                model_port->combinational_sink_ports = vtr::split(attr.value());
+                model_port->combinational_sink_ports = vtr::StringToken(attr.value()).split(" \t\n");
 
             } else {
                 bad_attribute(attr, port, loc_data);
@@ -2544,8 +2523,13 @@ static void process_model_ports(pugi::xml_node port_group, t_model& model, std::
 static void process_layout(pugi::xml_node layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer) {
     VTR_ASSERT(layout_tag.name() == std::string("layout"));
 
-    //Expect no attributes on <layout>
-    expect_only_attributes(layout_tag, {}, loc_data);
+    arch->tileable = get_attribute(layout_tag, "tileable", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->perimeter_cb = get_attribute(layout_tag, "perimeter_cb", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->shrink_boundary = get_attribute(layout_tag, "shrink_boundary", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->through_channel = get_attribute(layout_tag, "through_channel", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->opin2all_sides = get_attribute(layout_tag, "opin2all_sides", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->concat_wire = get_attribute(layout_tag, "concat_wire", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->concat_pass_wire = get_attribute(layout_tag, "concat_pass_wire", loc_data, ReqOpt::OPTIONAL).as_bool(false);
 
     //Count the number of <auto_layout> or <fixed_layout> tags
     size_t auto_layout_cnt = 0;
@@ -2884,25 +2868,6 @@ static void process_block_type_locs(t_grid_def& grid_def,
     }
 }
 
-static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data) {
-    int max_die_num = -1;
-
-    const auto& layer_tag = layout_type_tag.children("layer");
-    for (const auto& layer_child : layer_tag) {
-        int die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
-        if (die_number > max_die_num) {
-            max_die_num = die_number;
-        }
-    }
-
-    if (max_die_num == -1) {
-        // For backwards compatibility, if no die number is specified, assume 1 layer
-        return 1;
-    } else {
-        return max_die_num + 1;
-    }
-}
-
 /* Takes in node pointing to <device> and loads all the
  * child type objects. */
 static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data) {
@@ -2954,24 +2919,27 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
 
     //<switch_block> tag
     Cur = get_single_child(Node, "switch_block", loc_data);
-    expect_only_attributes(Cur, {"type", "fs"}, loc_data);
+    expect_only_attributes(Cur, {"type", "fs", "sub_type", "sub_fs"}, loc_data);
     Prop = get_attribute(Cur, "type", loc_data).value();
+    // Parse attribute 'type', representing the major connectivity pattern for switch blocks
     if (strcmp(Prop, "wilton") == 0) {
-        arch->SBType = WILTON;
+        arch->sb_type = WILTON;
     } else if (strcmp(Prop, "universal") == 0) {
-        arch->SBType = UNIVERSAL;
+        arch->sb_type = UNIVERSAL;
     } else if (strcmp(Prop, "subset") == 0) {
-        arch->SBType = SUBSET;
+        arch->sb_type = SUBSET;
     } else if (strcmp(Prop, "custom") == 0) {
-        arch->SBType = CUSTOM;
+        arch->sb_type = CUSTOM;
         custom_switch_block = true;
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                        vtr::string_fmt("Unknown property %s for switch block type x\n", Prop).c_str());
     }
 
-    ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);
-    arch->Fs = get_attribute(Cur, "fs", loc_data, CUSTOM_SWITCHBLOCK_REQD).as_int(3);
+    ReqOpt custom_switchblock_reqd = BoolToReqOpt(!custom_switch_block);
+    arch->Fs = get_attribute(Cur, "fs", loc_data, custom_switchblock_reqd).as_int(3);
+
+    process_tileable_device_parameters(arch, loc_data);
 
     Cur = get_single_child(Node, "default_fc", loc_data, ReqOpt::OPTIONAL);
     if (Cur) {
@@ -2981,6 +2949,33 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
     } else {
         arch_def_fc.specified = false;
     }
+}
+
+static void process_tileable_device_parameters(t_arch* arch, const pugiutil::loc_data& loc_data) {
+    pugi::xml_node cur;
+
+    // Parse attribute 'sub_type', representing the minor connectivity pattern for switch blocks
+    // If not specified, the 'sub_type' is the same as major type
+    // This option is only valid for tileable routing resource graph builder
+    // Note that sub_type does not support custom switch block pattern!!!
+    // If 'sub_type' is specified, the custom switch block for 'type' is not allowed!
+    std::string sub_type_str = get_attribute(cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
+    if (!sub_type_str.empty()) {
+        if (sub_type_str == "wilton") {
+            arch->sb_sub_type = WILTON;
+        } else if (sub_type_str == "universal") {
+            arch->sb_sub_type = UNIVERSAL;
+        } else if (sub_type_str == "subset") {
+            arch->sb_sub_type = SUBSET;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                           "Unknown property %s for switch block subtype x\n", sub_type_str.c_str());
+        }
+    } else {
+        arch->sb_sub_type = arch->sb_type;
+    }
+
+    arch->sub_fs = get_attribute(cur, "sub_fs", loc_data, BoolToReqOpt(false)).as_int(arch->Fs);
 }
 
 /* Takes in node pointing to <chan_width_distr> and loads all the
@@ -3519,7 +3514,7 @@ static void process_pin_locations(pugi::xml_node Locations,
             seen_sides.insert(side_offset);
 
             /* Go through lists of pins */
-            const std::vector<std::string> Tokens = vtr::split(Cur.child_value());
+            const std::vector<std::string> Tokens = vtr::StringToken(Cur.child_value()).split(" \t\n");
             int Count = (int)Tokens.size();
             if (Count > 0) {
                 for (int pin = 0; pin < Count; ++pin) {
@@ -3872,15 +3867,15 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
 
         /*Get parallel axis*/
 
-        Segs[i].parallel_axis = BOTH_AXIS; /*DEFAULT value if no axis is specified*/
+        Segs[i].parallel_axis = e_parallel_axis::BOTH_AXIS; // DEFAULT value if no axis is specified
         tmp = get_attribute(Node, "axis", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
         if (tmp) {
             if (strcmp(tmp, "x") == 0) {
-                Segs[i].parallel_axis = X_AXIS;
+                Segs[i].parallel_axis = e_parallel_axis::X_AXIS;
                 x_axis_seg_found = true;
             } else if (strcmp(tmp, "y") == 0) {
-                Segs[i].parallel_axis = Y_AXIS;
+                Segs[i].parallel_axis = e_parallel_axis::Y_AXIS;
                 y_axis_seg_found = true;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
@@ -3933,7 +3928,9 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
 
             //Unidir requires the following tags
             expected_subtags.emplace_back("mux");
+            expected_subtags.emplace_back("bend");
             expected_subtags.emplace_back("mux_inter_die");
+
             //with the following two tags, we can allow the architecture file to define
             //different muxes with different delays for wires with different directions
             expected_subtags.emplace_back("mux_inc");
@@ -4066,12 +4063,21 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             process_cb_sb(SubElem, Segs[i].sb, loc_data);
         }
 
-        /*Store the index of this segment in Segs vector*/
+        // Setup the bend list if they give one, otherwise use default
+        if (length > 1) {
+            Segs[i].is_bend = false;
+            SubElem = get_single_child(Node, "bend", loc_data, ReqOpt::OPTIONAL);
+            if (SubElem) {
+                process_bend(SubElem, Segs[i], (length - 1), loc_data);
+            }
+        }
+
+        // Store the index of this segment in Segs vector
         Segs[i].seg_index = i;
-        /* Get next Node */
+        // Get next Node
         Node = Node.next_sibling(Node.name());
     }
-    /*We need at least one type of segment that applies to each of x- and y-directed wiring.*/
+    // We need at least one type of segment that applies to each of x- and y-directed wiring.
 
     if (!x_axis_seg_found || !y_axis_seg_found) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
@@ -4079,6 +4085,75 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
     }
 
     return Segs;
+}
+
+static void process_bend(pugi::xml_node Node, t_segment_inf& segment, const int len, const pugiutil::loc_data& loc_data) {
+    std::vector<int>& list = segment.bend;
+    std::vector<int>& part_len = segment.part_len;
+    bool& is_bend = segment.is_bend;
+
+    std::string tmp = std::string(get_attribute(Node, "type", loc_data).value());
+    if (tmp == "pattern") {
+        int i = 0;
+
+        /* Get the content string */
+        std::string content = std::string(Node.child_value());
+        for (char c : content) {
+            switch (c) {
+                case ' ':
+                case '\t':
+                case '\n':
+                    break;
+                case '-':
+                    list.push_back(0);
+                    break;
+                case 'U':
+                    list.push_back(1);
+                    is_bend = true;
+                    break;
+                case 'D':
+                    list.push_back(2);
+                    is_bend = true;
+                    break;
+                case 'B':
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                                   "B pattern is not supported in current version\n");
+                    break;
+                default:
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                                   "Invalid character %c in CB or SB depopulation list.\n",
+                                   c);
+            }
+        }
+
+        if (list.size() != size_t(len)) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           "Wrong length of bend list (%d). Expect %d symbols.\n",
+                           i, len);
+        }
+    } else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       "'%s' is not a valid type for specifying bend list.\n",
+                       tmp.c_str());
+    }
+
+    // TODO: Add a comment to explain this and this function overall
+    int tmp_len = 1;
+    int sum_len = 0;
+    for (size_t i_len = 0; i_len < list.size(); i_len++) {
+        if (list[i_len] == 0) {
+            tmp_len++;
+        } else if (list[i_len] != 0) {
+            VTR_ASSERT(tmp_len < (int)list.size() + 1);
+            part_len.push_back(tmp_len);
+            sum_len += tmp_len;
+            tmp_len = 1;
+        }
+    }
+
+    // add the last clip of segment
+    if (sum_len < (int)list.size() + 1)
+        part_len.push_back(list.size() + 1 - sum_len);
 }
 
 static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb) {
@@ -4123,7 +4198,7 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
     const char* tmp;
 
     /* get the number of switchblocks */
-    int num_switchblocks = count_children(Parent, "switchblock", loc_data);
+    const int num_switchblocks = count_children(Parent, "switchblock", loc_data);
     arch->switchblocks.reserve(num_switchblocks);
 
     int layout_index = -1;
@@ -4215,16 +4290,16 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             }
         }
 
-        /* get switchblock permutation functions */
+        // get switchblock permutation functions
         SubElem = get_first_child(Node, "switchfuncs", loc_data);
-        read_sb_switchfuncs(SubElem, &sb, loc_data);
+        read_sb_switchfuncs(SubElem, sb, loc_data);
 
-        read_sb_wireconns(arch->switches, Node, &sb, loc_data);
+        read_sb_wireconns(arch->switches, Node, sb, loc_data);
 
-        /* run error checks on switch blocks */
-        check_switchblock(&sb, arch);
+        // run error checks on switch blocks
+        check_switchblock(sb, arch);
 
-        /* assign the sb to the switchblocks vector */
+        // assign the sb to the switchblocks vector
         arch->switchblocks.push_back(sb);
 
         Node = Node.next_sibling(Node.name());
@@ -4235,13 +4310,14 @@ static void process_cb_sb(pugi::xml_node Node, std::vector<bool>& list, const pu
     const char* tmp = nullptr;
     int i;
     int len = list.size();
-    /* Check the type. We only support 'pattern' for now.
-     * Should add frac back eventually. */
+
+    // Check the type. We only support 'pattern' for now.
+    // Should add frac back eventually.
     tmp = get_attribute(Node, "type", loc_data).value();
     if (0 == strcmp(tmp, "pattern")) {
         i = 0;
 
-        /* Get the content string */
+        // Get the content string
         tmp = Node.child_value();
         while (*tmp) {
             switch (*tmp) {

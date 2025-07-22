@@ -12,7 +12,7 @@
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 /**
- * @brief goes through 3D custom switch blocks and counts how many connections are crossing dice for each switch block.
+ * @brief Goes through 3D custom switch blocks and counts how many connections are crossing dice for each switch block.
  *
  *  @param sb_conn_map switch block permutation map
  *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
@@ -39,7 +39,7 @@ void alloc_and_load_chan_details(const DeviceGrid& grid,
 t_chan_details init_chan_details(const DeviceGrid& grid,
                                  const t_chan_width& nodes_per_chan,
                                  const std::vector<t_seg_details>& seg_details,
-                                 const enum e_parallel_axis seg_details_type);
+                                 const e_parallel_axis seg_details_type);
 
 void adjust_chan_details(const DeviceGrid& grid,
                          const t_chan_width& nodes_per_chan,
@@ -51,7 +51,7 @@ void adjust_seg_details(const int x,
                         const DeviceGrid& grid,
                         const t_chan_width& nodes_per_chan,
                         t_chan_details& chan_details,
-                        const enum e_parallel_axis seg_details_type);
+                        const e_parallel_axis seg_details_type);
 
 int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
@@ -143,7 +143,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const int custom_3d_sb_fanin_fanout,
                         const int delayless_switch,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                        t_sb_connection_map* sb_conn_map);
+                        const t_sb_connection_map* sb_conn_map);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
                                              const t_chan_width& nodes_per_chan);

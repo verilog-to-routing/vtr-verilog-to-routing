@@ -41,6 +41,9 @@
 
 #include "logic_types.h"
 #include "clock_types.h"
+#include "switchblock_types.h"
+
+#include "vib_inf.h"
 
 //Forward declarations
 struct t_clock_network;
@@ -171,24 +174,6 @@ enum e_interconnect {
     MUX_INTERC = 3
 };
 
-/* Orientations. */
-enum e_side : unsigned char {
-    TOP = 0,
-    RIGHT = 1,
-    BOTTOM = 2,
-    LEFT = 3,
-    NUM_2D_SIDES = 4,
-    ABOVE = 5,
-    UNDER = 7,
-    NUM_3D_SIDES = 6,
-};
-
-constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
-constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
-
-constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         //Set of all side orientations including different layers
-constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; //String versions of side orientations including different layers
-
 /* pin location distributions */
 enum class e_pin_location_distr {
     SPREAD,
@@ -252,26 +237,6 @@ enum e_power_estimation_method_ {
 };
 typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
-
-/* Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere) */
-enum class e_sb_location {
-    E_PERIMETER = 0,
-    E_CORNER,
-    E_FRINGE, /* perimeter minus corners */
-    E_CORE,
-    E_EVERYWHERE,
-    E_XY_SPECIFIED
-};
-
-/**
- * @brief Describes regions that a specific switch block specifications should be applied to
- */
-struct t_sb_loc_spec {
-    int start = -1;
-    int repeat = -1;
-    int incr = -1;
-    int end = -1;
-};
 
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
@@ -613,9 +578,6 @@ enum class e_sb_type {
     FULL        //Full SB at this location (i.e. turns + straight)
 
 };
-
-constexpr int NO_SWITCH = -1;
-constexpr int DEFAULT_SWITCH = -2;
 
 /* Describes the type for a physical tile
  * name: unique identifier for type
@@ -1668,20 +1630,6 @@ struct t_chan_width_dist {
     t_chan chan_y_dist;
 };
 
-enum e_directionality {
-    UNI_DIRECTIONAL,
-    BI_DIRECTIONAL
-};
-
-/* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
- * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
- * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
-enum e_parallel_axis {
-    X_AXIS,
-    Y_AXIS,
-    BOTH_AXIS
-};
-
 /**
  * @brief An attribute of a segment that defines the general category of the wire segment type.
  *
@@ -1730,51 +1678,45 @@ enum e_Fc_type {
  * used if the route_type is DETAILED.  [0 .. det_routing_arch.num_segment]
  */
 struct t_segment_inf {
-    /**
-     *  @brief The name of the segment type
-     */
+    /// The name of the segment type
     std::string name;
 
-    /**
-     *  @brief ratio of tracks which are of this segment type.
-     */
+    /// brief ratio of tracks which are of this segment type.
     int frequency;
 
-    /**
-     *  @brief Length (in clbs) of the segment.
-     */
+    /// Length (in clbs) of the segment.
     int length;
 
     /**
-     *  @brief Index of the switch type that connects other wires to this segment.
+     * @brief Index of the switch type that connects other wires to this segment.
      * Note that this index is in relation to the switches from the architecture file,
      * not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_wire_switch;
 
     /**
-     *  @brief Index of the switch type that connects output pins to this segment.
+     * @brief Index of the switch type that connects output pins to this segment.
      * Note that this index is in relation to the switches from the architecture file,
      * not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_opin_switch;
 
     /**
-     *  @brief Same as arch_wire_switch but used only for decremental tracks if it is
+     * @brief Same as arch_wire_switch but used only for decremental tracks if it is
      * specified in the architecture file. If -1, this value was not set in the
      * architecture file and arch_wire_switch should be used for "DEC_DIR" wire segments.
      */
     short arch_wire_switch_dec = -1;
 
     /**
-     *  @brief Same as arch_opin_switch but used only for decremental tracks if
+     * @brief Same as arch_opin_switch but used only for decremental tracks if
      * it is specified in the architecture file. If -1, this value was not set in
      * the architecture file and arch_opin_switch should be used for "DEC_DIR" wire segments.
      */
     short arch_opin_switch_dec = -1;
 
     /**
-     *  @brief Index of the switch type that connects output pins (OPINs) to this
+     * @brief Index of the switch type that connects output pins (OPINs) to this
      * segment from another die (layer). Note that this index is in relation to
      * the switches from the architecture file, not the expanded list of switches
      * that is built at the end of build_rr_graph.
@@ -1782,44 +1724,56 @@ struct t_segment_inf {
     short arch_inter_die_switch = -1;
 
     /**
-     *  @brief The fraction of logic blocks along its length to which this segment can connect.
+     * @brief The fraction of logic blocks along its length to which this segment can connect.
      * (i.e. internal population).
      */
     float frac_cb;
 
     /**
-     *  @brief The fraction of the length + 1 switch blocks along the segment to which the segment can connect.
+     * @brief The fraction of the length + 1 switch blocks along the segment to which the segment can connect.
      * Segments that aren't long lines must connect to at least two switch boxes.
      */
     float frac_sb;
 
     bool longline;
 
-    /**
-     *  @brief The resistance of a routing track, per unit logic block length. */
+    /// The resistance of a routing track, per unit logic block length.
     float Rmetal;
 
-    /**
-     *  @brief The capacitance of a routing track, per unit logic block length. */
+    ///  The capacitance of a routing track, per unit logic block length.
     float Cmetal;
 
     enum e_directionality directionality;
 
     /**
-     *  @brief Defines what axis the segment is parallel to. See e_parallel_axis
+     * @brief Defines what axis the segment is parallel to. See e_parallel_axis
      * comments for more details on the values.
      */
-    enum e_parallel_axis parallel_axis;
+    e_parallel_axis parallel_axis;
 
-    /**
-     *  @brief A vector of booleans indicating whether the segment can connect to a logic block.
-     */
+    /// A vector of booleans indicating whether the segment can connect to a logic block.
     std::vector<bool> cb;
 
-    /**
-     *  @brief A vector of booleans indicating whether the segment can connect to a switch block.
-     */
+    /// A vector of booleans indicating whether the segment can connect to a switch block.
     std::vector<bool> sb;
+
+    /**
+     *  @brief This segment is bend or not
+     */
+    bool is_bend;
+
+    /**
+     *  @brief The bend type of the segment, "-"-0, "U"-1, "D"-2
+     *  For example: bend pattern <- - U ->; corresponding bend: [0,0,1,0]
+     */
+    std::vector<int> bend;
+
+    /**
+     *  @brief Divide the segment into several parts based on bend position.
+     *  For example: length-5 bend segment: <- - U ->;
+     *  Corresponding part_len: [3,2]
+     */
+    std::vector<int> part_len;
 
     /**
      *  @brief The index of the segment as stored in the appropriate Segs list.
@@ -2084,101 +2038,6 @@ struct t_direct_inf {
     int line;
 };
 
-enum class SwitchPointOrder {
-    FIXED,   //Switchpoints are ordered as specified in architecture
-    SHUFFLED //Switchpoints are shuffled (more diversity)
-};
-
-//A collection of switchpoints associated with a segment
-struct t_wire_switchpoints {
-    std::string segment_name;      //The type of segment
-    std::vector<int> switchpoints; //The indices of wire points along the segment
-};
-
-/* Used to list information about a set of track segments that should connect through a switchblock */
-struct t_wireconn_inf {
-    std::vector<t_wire_switchpoints> from_switchpoint_set;             //The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
-    std::vector<t_wire_switchpoints> to_switchpoint_set;               //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
-    SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
-    SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   //The desired to_switchpoint_set ordering
-    int switch_override_indx = DEFAULT_SWITCH;                         // index in switch array of the switch used to override wire_switch of the 'to' set.
-                                                                       // DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
-
-    std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
-                                    *
-                                    * '<int>': A specific number of connections
-                                    * 'from':  The number of generated connections between the 'from' and 'to' sets equals the
-                                    *          size of the 'from' set. This ensures every element in the from set is connected
-                                    *          to an element of the 'to' set.
-                                    *          Note: this it may result in 'to' elements being driven by multiple 'from'
-                                    *          elements (if 'from' is larger than 'to'), or in some elements of 'to' having
-                                    *          no driving connections (if 'to' is larger than 'from').
-                                    * 'to':    The number of generated connections is set equal to the size of the 'to' set.
-                                    *          This ensures that each element of the 'to' set has precisely one incoming connection.
-                                    *          Note: this may result in 'from' elements driving multiple 'to' elements (if 'to' is
-                                    *          larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
-                                    *          larger than 'to')
-                                    */
-};
-
-/* represents a connection between two sides of a switchblock */
-class SB_Side_Connection {
-  public:
-    /* specify the two SB sides that form a connection */
-    enum e_side from_side = TOP;
-    enum e_side to_side = TOP;
-
-    void set_sides(enum e_side from, enum e_side to) {
-        from_side = from;
-        to_side = to;
-    }
-
-    SB_Side_Connection() = default;
-
-    SB_Side_Connection(enum e_side from, enum e_side to)
-        : from_side(from)
-        , to_side(to) {
-    }
-
-    /* overload < operator which will be used by std::map */
-    bool operator<(const SB_Side_Connection& obj) const {
-        bool result;
-
-        if (from_side < obj.from_side) {
-            result = true;
-        } else {
-            if (from_side == obj.from_side) {
-                result = (to_side < obj.to_side) ? true : false;
-            } else {
-                result = false;
-            }
-        }
-
-        return result;
-    }
-};
-
-/* Use a map to index into the string permutation functions used to connect from one side to another */
-typedef std::map<SB_Side_Connection, std::vector<std::string>> t_permutation_map;
-
-/* Lists all information about a particular switch block specified in the architecture file */
-struct t_switchblock_inf {
-    std::string name;                /* the name of this switchblock */
-    e_sb_location location;          /* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
-    e_directionality directionality; /* the directionality of this switchblock (unidir/bidir) */
-
-    int x = -1; /* The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified */
-    int y = -1; /* The exact y-axis location that this SB is used, meaningful when type is set to E_XY_specified */
-
-    /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
-    t_sb_loc_spec reg_x;
-    t_sb_loc_spec reg_y;
-
-    t_permutation_map permutation_map; /* map holding the permutation functions attributed to this switchblock */
-
-    std::vector<t_wireconn_inf> wireconns; /* list of wire types/groups this SB will connect */
-};
-
 /* Clock related data types used for building a dedicated clock network */
 struct t_clock_arch_spec {
     std::vector<t_clock_network_arch> clock_networks_arch;
@@ -2262,18 +2121,55 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-/*   Detailed routing architecture */
+// Detailed routing architecture
 struct t_arch {
-    /** Stores unique strings used as key and values in <metadata> tags,
-     * i.e. implements a flyweight pattern to save memory.*/
+    /// Stores unique strings used as key and values in <metadata> tags,
+    /// i.e. implements a flyweight pattern to save memory.
     mutable vtr::string_internment strings;
     std::vector<vtr::interned_string> interned_strings;
 
     /// Secure hash digest of the architecture file to uniquely identify this architecture
     char* architecture_id;
 
+    // Options for tileable routing architectures
+    // These are used for an alternative, tilable, rr-graph generator that can produce
+    // OpenFPGA-compatible FPGAs that can be implemented to silicon via the OpenFPGA flow
+
+    /// Whether the routing architecture is tileable
+    bool tileable;
+
+    /// Allow connection blocks to appear around the perimeter programmable block
+    bool perimeter_cb;
+
+    /// Remove all the routing wires in empty regions
+    bool shrink_boundary;
+
+    /// Allow routing channels to pass through multi-width and
+    /// multi-height programable blocks
+    bool through_channel;
+
+    /// Allow each output pin of a programmable block to drive the
+    /// routing tracks on all the sides of its adjacent switch block
+    bool opin2all_sides;
+
+    /// Whether the routing architecture has concat wire
+    /// For further detail, please refer to documentation
+    bool concat_wire;
+
+    /// Whether the routing architecture has concat pass wire
+    /// For further detail, please refer to documentation
+    bool concat_pass_wire;
+
+    /// Connectivity parameter for pass tracks in each switch block
+    int sub_fs;
+
+    /// Connecting type for pass tracks in each switch block
+    enum e_switch_block_type sb_sub_type;
+
+    // End of tileable architecture options
+
     t_chan_width_dist Chans;
-    enum e_switch_block_type SBType;
+    enum e_switch_block_type sb_type;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;
@@ -2323,21 +2219,27 @@ struct t_arch {
     std::vector<t_lut_cell> lut_cells;
     std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
-    //The name of the switch used for the input connection block (i.e. to
-    //connect routing tracks to block pins). tracks can be connected to
+    // The name of the switch used for the input connection block (i.e. to
+    // connect routing tracks to block pins). tracks can be connected to
     // ipins through the same die or from other dice, each of these
-    //types of connections requires a different switch, all names should correspond to a switch in Switches.
+    // types of connections requires a different switch, all names should correspond to a switch in Switches.
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 
-    //the layout that is chosen to be used with command line options
-    //It is used to generate custom SB for a specific locations within the device
-    //If the layout is not specified in the command line options, this variable will be set to "auto"
+    // the layout that is chosen to be used with command line options
+    // It is used to generate custom SB for a specific locations within the device
+    // If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout;
 
     t_clock_arch_spec clock_arch; // Clock related data types
 
     /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
+
+    /// VIB grid layouts
+    std::vector<t_vib_grid_def> vib_grid_layouts;
+
+    // added for vib
+    std::vector<VibInf> vib_infs;
 };

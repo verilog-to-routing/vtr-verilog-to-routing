@@ -10,6 +10,7 @@
 #include "route_profiling.h"
 #include "route_utils.h"
 #include "rr_graph.h"
+#include "router_lookahead_report.h"
 #include "vtr_time.h"
 
 bool route(const Netlist<>& net_list,
@@ -26,8 +27,8 @@ bool route(const Netlist<>& net_list,
            ScreenUpdatePriority first_iteration_priority,
            bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     if (net_list.nets().empty()) {
@@ -36,11 +37,14 @@ bool route(const Netlist<>& net_list,
 
     e_graph_type graph_type;
     e_graph_type graph_directionality;
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
         graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
+        }
         graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
@@ -65,7 +69,7 @@ bool route(const Netlist<>& net_list,
     init_draw_coords(width_fac, g_vpr_ctx.placement().blk_loc_registry());
 
     /* Allocate and load additional rr_graph information needed only by the router. */
-    alloc_and_load_rr_node_route_structs();
+    alloc_and_load_rr_node_route_structs(router_opts);
 
     init_route_structs(net_list,
                        router_opts.bb_factor,
@@ -151,6 +155,12 @@ bool route(const Netlist<>& net_list,
     }
 
     VTR_ASSERT(router_lookahead != nullptr);
+
+    // After the router lookahead has been fully created, generate the router
+    // lookahead report if requested.
+    if (router_opts.generate_router_lookahead_report) {
+        generate_router_lookahead_report(router_lookahead, router_opts);
+    }
 
     /* Routing parameters */
     float pres_fac = router_opts.first_iter_pres_fac;

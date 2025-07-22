@@ -29,14 +29,32 @@ enum class e_rr_type : unsigned char {
     OPIN,       ///<Output pin of a block
     CHANX,      ///<x-directed routing wire, or an x-directed segment of a channel for global routing
     CHANY,      ///<y-directed routing wire, or a y-directed segment of a channel for global routing
+    MUX,        ///<a routing multiplexer that does not traverse a significant distance before feeding
+                /// other rr-nodes. E.g. the first node in a 2-stage mux in a switch block.
+    CHANZ,      ///<z-directed routing wire used to connect two different layers.
+                ///< For CHANZ nodes, xlow == xhigh and yhigh == ylow
     NUM_RR_TYPES
 };
 
-/// Used to iterate for different e_rr_type values in range-based for loops.
-constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_rr_type::SOURCE, e_rr_type::SINK, e_rr_type::IPIN,
-                                                                      e_rr_type::OPIN, e_rr_type::CHANX, e_rr_type::CHANY}};
+constexpr bool is_pin(e_rr_type type) { return (type == e_rr_type::IPIN || type == e_rr_type::OPIN); }
+constexpr bool is_chanxy(e_rr_type type) { return (type == e_rr_type::CHANX || type == e_rr_type::CHANY); }
+constexpr bool is_chanz(e_rr_type type) { return (type == e_rr_type::CHANZ); }
+constexpr bool is_src_sink(e_rr_type type) { return (type == e_rr_type::SOURCE || type == e_rr_type::SINK); }
 
-constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename {"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"};
+/// Used to iterate for different e_rr_type values in range-based for loops.
+constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_rr_type::SOURCE, e_rr_type::SINK,
+                                                                              e_rr_type::IPIN, e_rr_type::OPIN,
+                                                                              e_rr_type::CHANX, e_rr_type::CHANY, e_rr_type::CHANZ,
+                                                                              e_rr_type::MUX}};
+
+/**
+ * @brief Lookup for the string representation of the given node type. This is useful
+ *        for logging the type of an RR node.
+ */
+constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename {"SOURCE", "SINK",
+                                                                                               "IPIN", "OPIN",
+                                                                                               "CHANX", "CHANY", "CHANZ",
+                                                                                               "MUX"};
 
 /**
  * @enum Direction
@@ -103,8 +121,8 @@ typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
-/*
- * Resistance/Capacitance data for an RR Nodes
+/**
+ * @brief Resistance/Capacitance data for an RR Node.
  *
  * In practice many RR nodes have the same values, so they are fly-weighted
  * to keep t_rr_node small. Each RR node holds an rc_index which allows
@@ -121,8 +139,8 @@ typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 struct t_rr_rc_data {
     t_rr_rc_data(float Rval, float Cval) noexcept;
 
-    float R;
-    float C;
+    float R;    ///< Resistance to go through an RR node
+    float C;    ///<  Total capacitance of an RR node.
 };
 
 // This is the data type of fast lookups of an rr-node given an (rr_type, layer, x, y, and the side)

@@ -1,13 +1,15 @@
 /** @file Impls for more router utils */
 
+#include "route_common.h"
+
 #include "atom_netlist_utils.h"
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
-#include "route_common.h"
 #include "logic_types.h"
 #include "physical_types_util.h"
 #include "route_export.h"
 #include "vpr_utils.h"
+#include "route_utilization.h"
 
 #if defined(VPR_USE_TBB)
 #include <tbb/parallel_for_each.h>
@@ -69,6 +71,24 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
                                                            bool is_flat);
 
 static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
+
+/**
+ * @brief Computes the initial `acc_cost` for the given RR node by checking
+ *        if the node is of type CHANX/CHANY and goes through a possibly congested
+ *        routing channel.
+ * @param node_id    The RR node whose initial acc_cost is to be computed.
+ * @param route_opts Contains channel utilization threshold and weighting factor
+ *                   used to increase initial 'acc_cost' for nodes going through
+ *                   congested channels.
+ * @param chanx_util Post-placement estimate of CHANX routing utilization per (layer, x, y) location.
+ * @param chany_util Post-placement estimate of CHANY routing utilization per (layer, x, y) location.
+ * @return Initial `acc_cost` for the given RR node.
+ */
+
+static float comp_initial_acc_cost(RRNodeId node_id,
+                                   const t_router_opts& route_opts,
+                                   const vtr::NdMatrix<double, 3>& chanx_util,
+                                   const vtr::NdMatrix<double, 3>& chany_util);
 
 /************************** Subroutine definitions ***************************/
 
@@ -269,8 +289,7 @@ void init_route_structs(const Netlist<>& net_list,
                                                        is_flat);
 
     route_ctx.is_clock_net = load_is_clock_net(net_list, device_ctx.arch->models, is_flat);
-    route_ctx.route_bb = load_route_bb(net_list,
-                                       bb_factor);
+    route_ctx.route_bb = load_route_bb(net_list, bb_factor);
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_graph,
                                                   net_list,
                                                   is_flat);
@@ -342,13 +361,10 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
      * output pins for connections made locally within a CLB (if the netlist    *
      * specifies that this is necessary).                                       */
 
-    t_clb_opins_used clb_opins_used_locally;
-    int clb_pin, iclass;
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = g_vpr_ctx.placement().block_locs();
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = g_vpr_ctx.placement().block_locs();
-
-    clb_opins_used_locally.resize(cluster_ctx.clb_nlist.blocks().size());
+    t_clb_opins_used clb_opins_used_locally(cluster_ctx.clb_nlist.blocks().size());
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         t_pl_loc block_loc = block_locs[blk_id].loc;
@@ -363,13 +379,13 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
         const auto [pin_low, pin_high] = get_pin_range_for_block(blk_id);
 
-        for (clb_pin = pin_low; clb_pin <= pin_high; clb_pin++) {
+        for (int clb_pin = pin_low; clb_pin <= pin_high; clb_pin++) {
             ClusterNetId net = cluster_ctx.clb_nlist.block_net(blk_id, clb_pin);
 
             if (!net || (net && cluster_ctx.clb_nlist.net_sinks(net).size() == 0)) {
                 //There is no external net connected to this pin
-                auto port_eq = get_port_equivalency_from_pin_physical_num(type, clb_pin);
-                iclass = get_class_num_from_pin_physical_num(type, clb_pin);
+                PortEquivalence port_eq = get_port_equivalency_from_pin_physical_num(type, clb_pin);
+                int iclass = get_class_num_from_pin_physical_num(type, clb_pin);
 
                 if (port_eq == PortEquivalence::INSTANCE) {
                     //The pin is part of an instance equivalent class, hence we need to reserve a pin
@@ -401,38 +417,82 @@ void free_route_structs() {
     }
 }
 
-void alloc_and_load_rr_node_route_structs() {
-    /* Allocates some extra information about each rr_node that is used only   *
-     * during routing.                                                         */
+void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts) {
+    // Allocates some extra information about each rr_node that is used only during routing.
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     route_ctx.rr_node_route_inf.resize(device_ctx.rr_graph.num_nodes());
     route_ctx.non_configurable_bitset.resize(device_ctx.rr_graph.num_nodes());
     route_ctx.non_configurable_bitset.fill(false);
 
-    reset_rr_node_route_structs();
+    reset_rr_node_route_structs(router_opts);
 
     for (auto i : device_ctx.rr_node_to_non_config_node_set) {
         route_ctx.non_configurable_bitset.set(i.first, true);
     }
 }
 
-void reset_rr_node_route_structs() {
-    /* Resets some extra information about each rr_node that is used only   *
-     * during routing.                                                         */
+static float comp_initial_acc_cost(RRNodeId node_id,
+                                   const t_router_opts& route_opts,
+                                   const vtr::NdMatrix<double, 3>& chanx_util,
+                                   const vtr::NdMatrix<double, 3>& chany_util) {
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+
+    // The default acc_cost is 1 for all rr_nodes. For routing wires, if they pass through a channel
+    // with expected utilization above the threshold, we assign a higher initial cost.
+    // This helps the router avoid channels that are likely to be congested.
+    float cost = 1.f;
+
+    const e_rr_type rr_type = rr_graph.node_type(node_id);
+    const double threshold = route_opts.initial_acc_cost_chan_congestion_threshold;
+    const double weight = route_opts.initial_acc_cost_chan_congestion_weight;
+
+    // TODO: We don't have an explicit CHANZ type. These wires are marked as CHANX. This should be fixed.
+    if (is_chanxy(rr_type)) {
+        double max_util = 0.;
+
+        if (rr_type == e_rr_type::CHANX) {
+            int y = rr_graph.node_ylow(node_id);
+            int layer = rr_graph.node_layer(node_id);
+            for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
+                max_util = std::max(max_util, chanx_util[layer][x][y]);
+            }
+
+        } else {
+            VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANY);
+            int x = rr_graph.node_xlow(node_id);
+            int layer = rr_graph.node_layer(node_id);
+            for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
+                max_util = std::max(max_util, chany_util[layer][x][y]);
+            }
+        }
+
+        cost += std::max(max_util - threshold, 0.) * weight;
+    }
+
+    return cost;
+}
+
+void reset_rr_node_route_structs(const t_router_opts& route_opts) {
+    // Resets some extra information about each rr_node that is used only during routing.
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
+    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
 
     VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_graph.num_nodes()));
 
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        auto& node_inf = route_ctx.rr_node_route_inf[rr_id];
+    RoutingChanUtilEstimator routing_chan_util_estimator(blk_loc_registry, cube_bb);
+    const auto [chanx_util, chany_util] = routing_chan_util_estimator.estimate_routing_chan_util();
+
+    for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
+        t_rr_node_route_inf& node_inf = route_ctx.rr_node_route_inf[rr_id];
 
         node_inf.prev_edge = RREdgeId::INVALID();
-        node_inf.acc_cost = 1.0;
+        node_inf.acc_cost = comp_initial_acc_cost(rr_id, route_opts, chanx_util, chany_util);
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
         node_inf.set_occ(0);
@@ -1015,7 +1075,7 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               RRNodeId from_node,
                               RRNodeId to_node,
                               float R_upstream,
-                              const t_conn_cost_params cost_params,
+                              const t_conn_cost_params& cost_params,
                               bool /*is_flat*/) {
     return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
 }

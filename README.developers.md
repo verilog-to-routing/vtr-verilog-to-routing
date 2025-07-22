@@ -1644,23 +1644,23 @@ to output the html analysis to a specific folder, run `scan-build make -o /some/
 ## General Principles
 
 We periodically make 'official' VTR releases.
-While we aim to keep the VTR master branch stable through-out development some users prefer to work of off an official release.
+While we aim to keep the VTR master branch stable through-out development some users prefer to work off of an official release of VTR.
 Historically this has coincided with the publishing of a paper detailing and carefully evaluating the changes from the previous VTR release.
-This is particularly helpful for giving academics a named baseline version of VTR to which they can compare which has a known quality.
+This is particularly helpful for giving academics a named, baseline version of VTR to which they can compare which has a known quality.
 
-In preparation for a release it may make sense to produce 'release candidates' which when fully tested and evaluated (and after any bug fixes) become the official release.
+In preparation for a release it may make sense to produce 'release candidates' which, when fully tested and evaluated (and after any bug fixes), become the official release.
 
 ## Checklist
 
 The following outlines the procedure to following when making an official VTR release:
 
- * Check the code compiles on the list of supported compilers
+ * Check that the code compiles on the list of supported compilers
  * Check that all regression tests pass functionality
  * Update regression test golden results to match the released version
  * Check that all regression tests pass QoR
  * Create a new entry in the CHANGELOG.md for the release, summarizing at a high-level user-facing changes
- * Increment the version number (set in root CMakeLists.txt)
- * Create a git annotated tag (e.g. `v8.0.0`) and push it to github
+ * Increment the version number (set in the root CMakeLists.txt)
+ * Create a git annotated tag (e.g. `v8.0.0`) and push it to github. Note: tagged releases should always be off of Master, and not off of any other branch. Tagging releases off of other branches can be dangerous since that branch may be deleted in the future and git tools (such as git describe) may rely on tags being on the main development branch (which is master in our case).
  * GitHub will automatically create a release based on the tag
  * Add the new change log entry to the [GitHub release description](https://github.com/verilog-to-routing/vtr-verilog-to-routing/releases)
  * Update the [ReadTheDocs configuration](https://readthedocs.org/projects/vtr/versions/) to build and serve documentation for the relevant tag (e.g. `v8.0.0`)

@@ -691,13 +691,27 @@ struct t_netlist_opts {
     int netlist_verbosity = 1; ///<Verbose output during netlist cleaning
 };
 
-///@brief Should a stage in the CAD flow be skipped, loaded from a file, or performed
-enum e_stage_action {
-    STAGE_SKIP = 0,
-    STAGE_LOAD,
-    STAGE_DO,
-    STAGE_AUTO
+/**
+ * @brief Specifies the action to take for a CAD flow stage.
+ * 
+ * @details
+ * SKIP - Do not perform this algorithm at all (End flow early).
+ * LOAD - Load previous result from file.
+ * DO - Run the specified algorithm.
+ * SKIP_IF_PRIOR_FAIL - Run the specified algorithm if possible. 
+ * Currently used to avoid analysis if we don't succeed at routing.
+ */
+enum class e_stage_action {
+    SKIP = 0,
+    LOAD,
+    DO,
+    SKIP_IF_PRIOR_FAIL,
+    NUM_STAGE_ACTIONS
 };
+
+///@brief String representations of e_stage_action
+constexpr vtr::array<e_stage_action, const char*, (size_t)e_stage_action::NUM_STAGE_ACTIONS> stage_action_strings{
+    "DISABLED", "LOAD", "ENABLED", "SKIP IF PRIOR FAIL"};
 
 /**
  * @brief Options for packing
@@ -1004,8 +1018,9 @@ enum class e_move_type;
  *   @param place_constraint_subtile
  *              True if subtiles should be specified when printing floorplan
  *              constraints. False if not.
- *
- *
+ *   @param place_auto_init_t_scale
+ *              When the annealer is using the automatic schedule, this option
+ *              scales the initial temperature selected.
  */
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
@@ -1077,6 +1092,8 @@ struct t_placer_opts {
     std::string allowed_tiles_for_delay_model;
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
+
+    float place_auto_init_t_scale;
 };
 
 /******************************************************************
@@ -1105,6 +1122,9 @@ struct t_placer_opts {
  *   @param ap_high_fanout_threshold;
  *              The threshold to ignore nets with higher fanout than that
  *              value while constructing the solver.
+ *   @param ap_partial_legalizer_target_density
+ *              Vector of strings passed by the user to configure the target
+ *              density of different physical tiles on the device.
  *   @param appack_max_dist_th
  *              Array of string passed by the user to configure the max candidate
  *              distance thresholds.
@@ -1130,6 +1150,8 @@ struct t_ap_opts {
     float ap_timing_tradeoff;
 
     int ap_high_fanout_threshold;
+
+    std::vector<std::string> ap_partial_legalizer_target_density;
 
     std::vector<std::string> appack_max_dist_th;
 
@@ -1302,6 +1324,8 @@ struct t_router_opts {
     int router_debug_sink_rr;
     int router_debug_iteration;
     e_router_lookahead lookahead_type;
+    double initial_acc_cost_chan_congestion_threshold;
+    double initial_acc_cost_chan_congestion_weight;
     int max_convergence_count;
     int route_verbosity;
     float reconvergence_cpd_threshold;
@@ -1333,10 +1357,15 @@ struct t_router_opts {
 
     bool with_timing_analysis;
 
-    // Options related to rr_node reordering, for testing and possible cache optimization
+    /// Whether to verify the switch IDs in the route file with the RR Graph.
+    bool verify_route_file_switch_id;
+
+    /// Options related to rr_node reordering, for testing and possible cache optimization
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
     int reorder_rr_graph_nodes_seed = 1;
+
+    bool generate_router_lookahead_report;
 };
 
 struct t_analysis_opts {
@@ -1397,6 +1426,40 @@ struct t_det_routing_arch {
     /// the CUSTOM switch block type. See comment at top of SRC/route/build_switchblocks.c
     std::vector<t_switchblock_inf> switchblocks;
 
+    // Following options are used only for tileable routing architecture
+
+    /// Whether the routing architecture is tileable
+    bool tileable;
+
+    /// Sub type and Fs are applied to pass tracks
+    int sub_fs;
+
+    /// Subtype of switch blocks.
+    enum e_switch_block_type switch_block_subtype;
+
+    /// Allow connection blocks to appear around the perimeter programmable block (mainly I/Os)
+    bool perimeter_cb;
+
+    /// Remove all the routing wires in empty regions
+    bool shrink_boundary;
+
+    /// Allow routing channels to pass through multi-width and multi-height programmable blocks.
+    bool through_channel;
+
+    /// Allow each output pin of a programmable block to drive the routing tracks on all the
+    /// sides of its adjacent switch block
+    bool opin2all_sides;
+
+    ///In each switch block, allow each routing track which ends to drive another
+    /// routing track on the opposite side
+    bool concat_wire;
+
+    /// In each switch block, allow each routing track which passes to drive
+    /// another routing track on the opposite side
+    bool concat_pass_wire;
+
+    // End of tileable routing architecture-specific options
+
     short global_route_switch;
 
     /// Index of a zero delay switch (used to connect things that should have no delay).
@@ -1430,46 +1493,6 @@ struct t_det_routing_arch {
     std::string write_rr_graph_filename;
     /// File to read the RR graph edge attribute overrides.
     std::string read_rr_edge_override_filename;
-};
-
-constexpr bool is_pin(e_rr_type type) { return (type == e_rr_type::IPIN || type == e_rr_type::OPIN); }
-constexpr bool is_chan(e_rr_type type) { return (type == e_rr_type::CHANX || type == e_rr_type::CHANY); }
-constexpr bool is_src_sink(e_rr_type type) { return (type == e_rr_type::SOURCE || type == e_rr_type::SINK); }
-
-/**
- * @brief Extra information about each rr_node needed only during routing
- *        (i.e. during the maze expansion).
- *
- *   @param prev_edge  ID of the edge (globally unique edge ID in the RR Graph)
- *                     that was used to reach this node from the previous node.
- *                     If there is no predecessor, prev_edge = NO_PREVIOUS.
- *   @param acc_cost   Accumulated cost term from previous Pathfinder iterations.
- *   @param path_cost  Total cost of the path up to and including this node +
- *                     the expected cost to the target if the timing_driven router
- *                     is being used.
- *   @param backward_path_cost  Total cost of the path up to and including this
- *                     node.
- *   @param R_upstream Upstream resistance to ground from this node in the current
- *                     path search (connection routing), including the resistance
- *                     of the node itself (device_ctx.rr_nodes[index].R).
- *   @param occ        The current occupancy of the associated rr node.
- */
-struct t_rr_node_route_inf {
-    RREdgeId prev_edge;
-
-    float acc_cost;
-    float path_cost;
-    float backward_path_cost;
-    float R_upstream;
-
-  public: //Accessors
-    short occ() const { return occ_; }
-
-  public: //Mutators
-    void set_occ(int new_occ) { occ_ = new_occ; }
-
-  private: //Data
-    short occ_ = 0;
 };
 
 /**

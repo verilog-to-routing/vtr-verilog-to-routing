@@ -13,7 +13,8 @@ struct t_chan_width {
     std::vector<int> y_list;
 };
 
-enum e_route_type {
+/// @brief Specifies whether global routing or combined global and detailed routing is performed.
+enum class e_route_type {
     GLOBAL,
     DETAILED
 };

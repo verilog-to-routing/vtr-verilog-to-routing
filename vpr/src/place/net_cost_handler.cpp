@@ -20,8 +20,6 @@
  * To get a delay estimation of a connection (from a source to a sink), first, dx and dy between these two points should be calculated,
  * and these two numbers are the indices to access this 2D array. By default, the placement delay model is created by iterating over the router lookahead
  * to get the minimum cost for each dx and dy.
- *
- * @date July 12, 2024
  */
 #include "net_cost_handler.h"
 
@@ -35,6 +33,7 @@
 #include "vtr_ndmatrix.h"
 #include "PlacerCriticalities.h"
 #include "vtr_prefix_sum.h"
+#include "stats.h"
 
 #include <array>
 
@@ -83,13 +82,6 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
                             const t_2D_bb& bb_coord_old,
                             t_2D_bb& bb_edge_new,
                             t_2D_bb& bb_coord_new);
-
-/**
- * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter
- * bounding box wirelength's underestimate of wiring for nets with fanout greater than 2.
- * @return Multiplicative wirelength correction factor
- */
-static double wirelength_crossing_count(size_t fanout);
 
 /******************************* End of Function definitions ************************************/
 
@@ -460,15 +452,15 @@ void NetCostHandler::update_net_info_on_pin_move_(const PlaceDelayModel* delay_m
         return;
     }
 
-    /* Record effected nets */
+    // Record effected nets
     record_affected_net_(net_id);
 
     ClusterBlockId blk_id = moving_blk_inf.block_num;
-    /* Update the net bounding boxes. */
+    // Update the net bounding boxes.
     update_net_bb_(net_id, blk_id, pin_id, moving_blk_inf);
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
-        /* Determine the change in connection delay and timing cost. */
+        // Determine the change in connection delay and timing cost.
         update_td_delta_costs_(delay_model,
                                *criticalities,
                                net_id,
@@ -1426,14 +1418,11 @@ double NetCostHandler::get_net_wirelength_estimate_(ClusterNetId net_id) const {
 }
 
 double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) const {
-    /* WMF: Finds the estimate of wirelength due to one net by looking at   *
-     * its coordinate bounding box.                                         */
-
     const std::vector<t_2D_bb>& bb = layer_bb_coords_[net_id];
     const vtr::NdMatrixProxy<int, 1> net_layer_pin_sink_count = num_sink_pin_layer_[size_t(net_id)];
 
     double ncost = 0.;
-    VTR_ASSERT_SAFE(static_cast<int>(bb.size()) == g_vpr_ctx.device().grid.get_num_layers());
+    VTR_ASSERT_SAFE((int)bb.size() == g_vpr_ctx.device().grid.get_num_layers());
 
     for (size_t layer_num = 0; layer_num < bb.size(); layer_num++) {
         VTR_ASSERT_SAFE(net_layer_pin_sink_count[layer_num] != OPEN);
@@ -1492,7 +1481,7 @@ double NetCostHandler::recompute_bb_cost_() {
     return cost;
 }
 
-static double wirelength_crossing_count(size_t fanout) {
+double wirelength_crossing_count(size_t fanout) {
     /* Get the expected "crossing count" of a net, based on its number *
      * of pins.  Extrapolate for very large nets.                      */
 
@@ -1756,4 +1745,116 @@ std::pair<t_bb, t_bb> NetCostHandler::union_2d_bb_incr(ClusterNetId net_id) cons
     }
 
     return std::make_pair(merged_num_edge, merged_bb);
+}
+
+std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> NetCostHandler::estimate_routing_chan_util() const {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    auto chanx_util = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                                 device_ctx.grid.width(),
+                                                 device_ctx.grid.height()}},
+                                               0);
+
+    auto chany_util = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                                 device_ctx.grid.width(),
+                                                 device_ctx.grid.height()}},
+                                               0);
+
+    // For each net, this function estimates routing channel utilization by distributing
+    // the net's expected wirelength across its bounding box. The expected wirelength
+    // for each dimension (x, y) is computed proportionally based on the bounding box size
+    // in each direction. The wirelength in each dimension is then **evenly spread** across
+    // all grid locations within the bounding box, and the demand is accumulated in
+    // the channel utilization matrices.
+
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+
+            if (cube_bb_) {
+                const t_bb& bb = bb_coords_[net_id];
+                double expected_wirelength = get_net_wirelength_estimate_(net_id);
+
+                int distance_x = bb.xmax - bb.xmin + 1;
+                int distance_y = bb.ymax - bb.ymin + 1;
+                int distance_z = bb.layer_max - bb.layer_min + 1;
+
+                double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
+                double expected_y_wl = expected_wirelength - expected_x_wl;
+
+                int total_channel_segments = distance_x * distance_y * distance_z;
+                double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
+                double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
+
+                for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+                    for (int x = bb.xmin; x <= bb.xmax; x++) {
+                        for (int y = bb.ymin; y <= bb.ymax; y++) {
+                            chanx_util[layer][x][y] += expected_per_x_segment_wl;
+                            chany_util[layer][x][y] += expected_per_y_segment_wl;
+                        }
+                    }
+                }
+            } else {
+                const std::vector<t_2D_bb>& bb = layer_bb_coords_[net_id];
+                const vtr::NdMatrixProxy<int, 1> net_layer_pin_sink_count = num_sink_pin_layer_[size_t(net_id)];
+
+                for (size_t layer = 0; layer < bb.size(); layer++) {
+                    if (net_layer_pin_sink_count[layer] == 0) {
+                        continue;
+                    }
+
+                    double crossing = wirelength_crossing_count(net_layer_pin_sink_count[layer] + 1);
+                    double expected_wirelength = ((bb[layer].xmax - bb[layer].xmin + 1) + (bb[layer].ymax - bb[layer].ymin + 1)) * crossing;
+
+                    int distance_x = bb[layer].xmax - bb[layer].xmin + 1;
+                    int distance_y = bb[layer].ymax - bb[layer].ymin + 1;
+
+                    double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
+                    double expected_y_wl = expected_wirelength - expected_x_wl;
+
+                    int total_channel_segments = distance_x * distance_y;
+                    double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
+                    double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
+
+                    for (int x = bb[layer].xmin; x <= bb[layer].xmax; x++) {
+                        for (int y = bb[layer].ymin; y <= bb[layer].ymax; y++) {
+                            chanx_util[layer][x][y] += expected_per_x_segment_wl;
+                            chany_util[layer][x][y] += expected_per_y_segment_wl;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    const auto [chanx_width, chany_width] = calculate_channel_width();
+
+    VTR_ASSERT(chanx_util.size() == chany_util.size());
+    VTR_ASSERT(chanx_util.ndims() == chany_util.ndims());
+    VTR_ASSERT(chanx_util.size() == chanx_width.size());
+    VTR_ASSERT(chanx_util.ndims() == chanx_width.ndims());
+    VTR_ASSERT(chany_util.size() == chany_width.size());
+    VTR_ASSERT(chany_util.ndims() == chany_width.ndims());
+
+    for (size_t layer = 0; layer < chanx_util.dim_size(0); ++layer) {
+        for (size_t x = 0; x < chanx_util.dim_size(1); ++x) {
+            for (size_t y = 0; y < chanx_util.dim_size(2); ++y) {
+                if (chanx_width[layer][x][y] > 0) {
+                    chanx_util[layer][x][y] /= chanx_width[layer][x][y];
+                } else {
+                    VTR_ASSERT_SAFE(chanx_width[layer][x][y] == 0);
+                    chanx_util[layer][x][y] = 1.;
+                }
+
+                if (chany_width[layer][x][y] > 0) {
+                    chany_util[layer][x][y] /= chany_width[layer][x][y];
+                } else {
+                    VTR_ASSERT_SAFE(chany_width[layer][x][y] == 0);
+                    chany_util[layer][x][y] = 1.;
+                }
+            }
+        }
+    }
+
+    return {chanx_util, chany_util};
 }
