@@ -1,18 +1,9 @@
 #include "read_xml_util.h"
 #include "parse_switchblocks.h"
 #include "pugixml_util.hpp"
-#include "vtr_log.h"
 #include "arch_error.h"
 
-struct t_sg_link {
-    std::string name;
-    e_sg_link_offset_dim offset_dim;
-    int offset_length;
-    std::string mux_name;
-    std::string seg_type;
-};
-
-std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_pattern_tag,
+static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_pattern_tag,
                                           const pugiutil::loc_data& loc_data) {
     std::vector<t_sg_link> sg_link_list;
     for (pugi::xml_node node : sg_pattern_tag.children()) {
@@ -66,7 +57,7 @@ std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_pattern_tag,
 
     return sg_link_list;
 }
-std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_pattern_tag,
+static std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_pattern_tag,
                                                   const pugiutil::loc_data& loc_data) {
     std::vector<t_sg_location> sg_location_list;
     for (pugi::xml_node node : sg_pattern_tag.children()) {
@@ -81,21 +72,15 @@ std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_pattern_tag,
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                            vtr::string_fmt("unrecognized switchblock location: %s\n", pugiutil::get_attribute(node, "type", loc_data).as_string()).c_str());
         }
+        sg_location_list.push_back(sg_location);
     }
+    return sg_location_list;
 }
 
-/**
- * @brief Parses Scatter-Gather related information under <scatter_gather_list> tag.
- * @param noc_tag An XML node pointing to <scatter_gather_list> tag.
- * @param arch High-level architecture information. This function fills
- * TBD arch->noc with NoC-related information.
- * @param loc_data Points to the location in the xml file where the parser is reading.
- */
 void process_sg_tag(pugi::xml_node sg_list_tag,
                     t_arch* arch,
                     const pugiutil::loc_data& loc_data,
                     const std::vector<t_arch_switch_inf>& switches) {
-
     std::vector<t_scatter_gather_pattern> sg_patterns;
     std::vector<std::string> expected_children = {"sg_pattern"};
     pugiutil::expect_only_children(sg_list_tag, expected_children, loc_data);
