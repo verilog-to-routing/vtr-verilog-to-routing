@@ -55,8 +55,6 @@ void draw_rr(ezgl::renderer* g) {
     g->set_line_dash(ezgl::line_dash::none);
 
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
-        int layer_num = rr_graph.node_layer(inode);
-        int transparency_factor = get_rr_node_transparency(inode);
         if (!draw_state->draw_rr_node[inode].node_highlighted) {
             /* If not highlighted node, assign color based on type. */
             switch (rr_graph.node_type(inode)) {
@@ -81,45 +79,9 @@ void draw_rr(ezgl::renderer* g) {
             }
         }
 
-        draw_state->draw_rr_node[inode].color.alpha = transparency_factor;
+        draw_rr_edges(inode, g);
+        draw_rr_node(inode, draw_state->draw_rr_node[inode].color, g);
 
-        if (!draw_state->draw_layer_display[layer_num].visible)
-            continue; // skip drawing if layer is not visible
-
-        /* Now call drawing routines to draw the node. */
-        switch (rr_graph.node_type(inode)) {
-            case e_rr_type::SINK:
-                draw_rr_src_sink(inode, draw_state->draw_rr_node[inode].color, g);
-                break;
-            case e_rr_type::SOURCE:
-                draw_rr_edges(inode, g);
-                draw_rr_src_sink(inode, draw_state->draw_rr_node[inode].color, g);
-                break;
-
-            case e_rr_type::CHANX:
-                draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
-                draw_rr_edges(inode, g);
-                break;
-
-            case e_rr_type::CHANY:
-                draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
-                draw_rr_edges(inode, g);
-                break;
-
-            case e_rr_type::IPIN:
-                draw_cluster_pin(inode, draw_state->draw_rr_node[inode].color, g);
-                draw_rr_edges(inode, g);
-                break;
-
-            case e_rr_type::OPIN:
-                draw_cluster_pin(inode, draw_state->draw_rr_node[inode].color, g);
-                draw_rr_edges(inode, g);
-                break;
-
-            default:
-                vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                          "in draw_rr: Unexpected rr_node type: %d.\n", rr_graph.node_type(inode));
-        }
     }
 
     drawroute(HIGHLIGHTED, g);
@@ -294,16 +256,12 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         to_type = rr_graph.node_type(to_node);
         bool edge_configurable = rr_graph.edge_is_configurable(inode, iedge);
 
-        if(to_type == e_rr_type::SOURCE || to_type == e_rr_type::SINK) {
+        if(to_type == e_rr_type::SOURCE || to_type == e_rr_type::SINK || !is_inter_cluster_node(rr_graph, to_node)) {
             continue;
         }
 
-        if(!is_inter_cluster_node(rr_graph, to_node)) {
-            continue;
-        } 
-
         ezgl::color color = DEFAULT_RR_NODE_COLOR;
-        
+        // Determine the color based on the type of the edge
         switch (from_type) {
             case e_rr_type::OPIN:
                 if(to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
@@ -340,7 +298,6 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                 }
             break;
             default:
-
             break;
         }
 
