@@ -33,12 +33,10 @@
 #include "serdes_utils.h"
 #endif /* VTR_ENABLE_CAPNPROTO */
 
-
 /******** File-Scope Variables ********/
 
 //Look-up table from CHANX/CHANY (to SINKs) for various distances
 t_simple_cost_map simple_cost_map;
-
 
 /******** File-Scope Functions ********/
 
@@ -66,13 +64,13 @@ std::pair<float, float> SimpleLookahead::get_expected_delay_and_cong(RRNodeId fr
 
     float expected_delay_cost = std::numeric_limits<float>::max() / 1e12;
     float expected_cong_cost = std::numeric_limits<float>::max() / 1e12;
-    
+
     e_rr_type from_type = rr_graph.node_type(from_node);
     util::Cost_Entry cost_entry(0, 0);
-    if (is_chanxy(from_type) || is_chanz(from_type)){
+    if (is_chanxy(from_type) || is_chanz(from_type)) {
         int from_layer_num = rr_graph.node_layer(from_node);
         int to_layer_num = rr_graph.node_layer(to_node);
-        
+
         auto [delta_x, delta_y] = util::get_xy_deltas(from_node, to_node);
         delta_x = abs(delta_x);
         delta_y = abs(delta_y);
@@ -111,7 +109,6 @@ void SimpleLookahead::write(const std::string& file) const {
     }
 }
 
-
 /******** Function Definitions ********/
 
 static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
@@ -129,7 +126,6 @@ static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, in
 
     return simple_cost_map[from_layer_num][to_layer_num][chan_index][seg_index][delta_x][delta_y];
 }
-
 
 //
 // When writing capnp targetted serialization, always allow compilation when

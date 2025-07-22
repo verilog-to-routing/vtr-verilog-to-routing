@@ -15,29 +15,29 @@ class SimpleLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float R_upstream) const override;
-    
+
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
-      VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::compute unsupported, try to load lookahead from a file.");
+        VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::compute unsupported, try to load lookahead from a file.");
     }
 
     void compute_intra_tile() override {
-      VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::compute_intra_tile unimplemented");
+        VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::compute_intra_tile unimplemented");
     }
 
     void read(const std::string& file) override;
 
     void read_intra_cluster(const std::string& /*file*/) override {
-      VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::read_intra_cluster unimplemented");
-    } 
+        VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::read_intra_cluster unimplemented");
+    }
 
     void write(const std::string& file) const override;
 
     void write_intra_cluster(const std::string& /*file*/) const override {
-      VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::write_intra_cluster unimplemented");
+        VPR_THROW(VPR_ERROR_ROUTE, "SimpleLookahead::write_intra_cluster unimplemented");
     }
 
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
-      return -1;
+        return -1;
     }
 };
 
