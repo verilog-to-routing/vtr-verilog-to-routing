@@ -609,8 +609,6 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
 //Draws the set of rr_nodes specified, using the colors set in draw_state
 void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
 
     // Draw RR Nodes
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
@@ -622,48 +620,11 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
     // Draw Edges
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
-
         RRNodeId inode = rr_nodes_to_draw[i];
-        auto rr_type = rr_graph.node_type(inode);
-        bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
-        int current_node_layer = rr_graph.node_layer(inode);
-
         RRNodeId prev_node = rr_nodes_to_draw[i - 1];
-        auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
-        bool prev_node_inter_cluster = is_inter_cluster_node(rr_graph, prev_node);
-        int prev_node_layer = rr_graph.node_layer(prev_node);
 
-        t_draw_layer_display edge_visibility = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
-        ezgl::color color = draw_state->draw_rr_node[inode].color;
-
-        // For 3D architectures, draw only visible layers
-        if (!draw_state->draw_layer_display[current_node_layer].visible || !edge_visibility.visible) {
-            continue;
-        }
-
-        // Skip drawing edges to or from sources and sinks
-        if (rr_type == e_rr_type::SINK || rr_type == e_rr_type::SOURCE || prev_type == e_rr_type::SINK || prev_type == e_rr_type::SOURCE) {
-            continue;
-        }
-
-        g->set_color(color, edge_visibility.alpha);
-
-        if (!inode_inter_cluster && !prev_node_inter_cluster) {
-            draw_intra_cluster_edge(inode, prev_node, g);
-            continue;
-        }
-
-        if (!prev_node_inter_cluster && inode_inter_cluster) {
-            draw_intra_cluster_pin_to_pin(prev_node, inode, FROM_INTRA_CLUSTER_TO_INTER_CLUSTER, g);
-            continue;
-        }
-
-        if (prev_node_inter_cluster && !inode_inter_cluster) {
-            draw_intra_cluster_pin_to_pin(inode, prev_node, FROM_INTER_CLUSTER_TO_INTRA_CLUSTER, g);
-            continue;
-        }
-
-        draw_inter_cluster_rr_edge(inode, prev_node, rr_type, prev_type, g);
+        draw_rr_edge(inode, prev_node, draw_state->draw_rr_node[inode].color, g);
+        
     }
 }
 

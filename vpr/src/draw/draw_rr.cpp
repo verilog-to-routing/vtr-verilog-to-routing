@@ -295,9 +295,24 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         to_type = rr_graph.node_type(to_node);
         bool edge_configurable = rr_graph.edge_is_configurable(inode, iedge);
 
-        if (!is_edge_valid_to_draw(RRNodeId(to_node), rr_node))
-            continue; // skip drawing if edge is not valid to draw
+        ezgl::color color = DEFAULT_RR_NODE_COLOR;
+        
+        switch (from_type) {
+            case e_rr_type::OPIN:
+                if(to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
+                    color = ezgl::PINK;
+                } else if (to_type == e_rr_type::IPIN){
+                    color = ezgl::MEDIUM_PURPLE
+                }
+            break;
 
+            case e_rr_type::CHANX:
+            case e_rr_type::CHANY:
+
+            break;
+        }
+
+        
         switch (from_type) {
             case e_rr_type::OPIN:
                 switch (to_type) {

@@ -10,6 +10,7 @@
 #include "vpr_error.h"
 
 #include "globals.h"
+#include "draw.h"
 #include "draw_rr.h"
 #include "draw_rr_edges.h"
 #include "draw_triangle.h"
@@ -618,5 +619,51 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
         draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
     }
 }
+
+void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::renderer* g){
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_graph = device_ctx.rr_graph;
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    e_rr_type rr_type = rr_graph.node_type(inode);
+    bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
+    int current_node_layer = rr_graph.node_layer(inode);
+
+    e_rr_type prev_type = rr_graph.node_type(RRNodeId(prev_node));
+    bool prev_node_inter_cluster = is_inter_cluster_node(rr_graph, prev_node);
+    int prev_node_layer = rr_graph.node_layer(prev_node);
+
+    t_draw_layer_display edge_visibility = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
+
+    // For 3D architectures, draw only visible layers
+    if (!draw_state->draw_layer_display[current_node_layer].visible || !edge_visibility.visible) {
+        return;
+    }
+
+    // Skip drawing edges to or from sources and sinks
+    if (rr_type == e_rr_type::SINK || rr_type == e_rr_type::SOURCE || prev_type == e_rr_type::SINK || prev_type == e_rr_type::SOURCE) {
+        return;
+    }
+
+    g->set_color(color, edge_visibility.alpha);
+
+    if (!inode_inter_cluster && !prev_node_inter_cluster) {
+        draw_intra_cluster_edge(inode, prev_node, g);
+        return;
+    }
+
+    if (!prev_node_inter_cluster && inode_inter_cluster) {
+        draw_intra_cluster_pin_to_pin(prev_node, inode, FROM_INTRA_CLUSTER_TO_INTER_CLUSTER, g);
+        return;
+    }
+
+    if (prev_node_inter_cluster && !inode_inter_cluster) {
+        draw_intra_cluster_pin_to_pin(inode, prev_node, FROM_INTER_CLUSTER_TO_INTRA_CLUSTER, g);
+        return;
+    }
+
+    draw_inter_cluster_rr_edge(inode, prev_node, rr_type, prev_type, g);
+}
+
 
 #endif

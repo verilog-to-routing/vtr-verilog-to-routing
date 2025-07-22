@@ -77,4 +77,16 @@ e_side get_pin_side(RRNodeId pin_node, RRNodeId chan_node);
  */
 void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer* g);
 
+/**
+ * @brief Draws an edge between two RR nodes.
+ * 
+ * This function determines the type of the RR nodes and calls the appropriate drawing function.
+ * 
+ * @param inode The current node to draw to
+ * @param prev_node The previous node to draw from
+ * @param color The color of the edge
+ * @param g The ezgl renderer
+ */
+void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::renderer* g);
+
 #endif /* NO_GRAPHICS */
