@@ -68,6 +68,7 @@
 #include "vtr_expr_eval.h"
 
 #include "read_xml_arch_file_noc_tag.h"
+#include "read_xml_arch_file_sg.h"
 
 using namespace std::string_literals;
 using pugiutil::ReqOpt;
@@ -548,6 +549,11 @@ void xml_read_arch(const char* ArchFile,
         Next = get_single_child(architecture, "noc", loc_data, pugiutil::OPTIONAL);
         if (Next) {
             process_noc_tag(Next, arch, loc_data);
+        }
+
+        Next = get_single_child(architecture, "scatter_gather_list", loc_data);
+        if (Next) {
+            process_sg_tag(Next, arch, loc_data, arch->switches);
         }
 
         SyncModelsPbTypes(arch, LogicalBlockTypes);
