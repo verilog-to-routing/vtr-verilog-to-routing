@@ -513,6 +513,43 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     } /* End of for each edge loop */
 }
 
+void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g){
+    t_draw_state* draw_state = get_draw_state_vars();
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    e_rr_type rr_type = rr_graph.node_type(inode);
+    bool is_inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
+    int node_layer = rr_graph.node_layer(inode);
+
+    // For 3D architectures, draw only visible layers
+    if (!draw_state->draw_layer_display[node_layer].visible) {
+        return;
+    }
+
+    // Skip drawing sources and sinks
+    if (rr_type == e_rr_type::SINK || rr_type == e_rr_type::SOURCE) {
+        return;
+    }
+
+    // Draw intra-cluster nodes
+    if (!is_inode_inter_cluster) {
+        draw_rr_intra_cluster_pin(inode, color, g);
+        return;
+    }
+
+    // Draw cluster-level IO Pins
+    if (rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN) {
+        draw_cluster_pin(inode, color, g);
+        return;
+    }
+
+    // Draw Channels
+    if (rr_type == e_rr_type::CHANY || rr_type == e_rr_type::CHANX) {
+        draw_rr_chan(inode, color, g);
+        return;
+    }
+}
+
 void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();

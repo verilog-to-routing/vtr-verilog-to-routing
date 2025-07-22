@@ -38,14 +38,13 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch
 void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_chan_edge_dir edge_dir, short switch_type, ezgl::renderer* g);
 
 /**
- * @brief Draws the edge between an intra-cluster pin and an inter-cluster pin when flat routing is enabled.
+ * @brief Draws the edge between an intra-cluster pin and an inter-cluster pin when flat routing is enabled. Draws to each side of the inter-cluster RR node.
  * @param intra_cluster_node The intra-cluster pin node
  * @param inter_cluster_node The inter-cluster pin node
  * @param pin_edge_dir The direction of the edge, FROM_INTER_CLUSTER_TO_INTRA_CLUSTER or FROM_INTRA_CLUSTER_TO_INTER_CLUSTER
- * @param pin_side The side of the inter-cluster pin (e.g. TOP, RIGHT, BOTTOM, LEFT)
  * @param g The ezgl renderer
  */
-void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_cluster_node, e_pin_edge_dir pin_edge_dir, e_side pin_side, ezgl::renderer* g);
+void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_cluster_node, e_pin_edge_dir pin_edge_dir, ezgl::renderer* g);
 
 /**
  * @brief Draws the edge between two intra-cluster pins when flat routing is enabled.

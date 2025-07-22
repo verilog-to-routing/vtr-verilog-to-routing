@@ -615,39 +615,9 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
     // Draw RR Nodes
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
         RRNodeId inode = rr_nodes_to_draw[i];
-        e_rr_type rr_type = rr_graph.node_type(inode);
-        bool is_inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
-        int node_layer = rr_graph.node_layer(inode);
-
         ezgl::color color = draw_state->draw_rr_node[inode].color;
 
-        // For 3D architectures, draw only visible layers
-        if (!draw_state->draw_layer_display[node_layer].visible) {
-            continue;
-        }
-
-        // Skip drawing sources and sinks
-        if (rr_type == e_rr_type::SINK || rr_type == e_rr_type::SOURCE) {
-            continue;
-        }
-
-        // Draw intra-cluster nodes
-        if (!is_inode_inter_cluster) {
-            draw_rr_intra_cluster_pin(inode, color, g);
-            continue;
-        }
-
-        // Draw cluster-level IO Pins
-        if (rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN) {
-            draw_cluster_pin(inode, color, g);
-            continue;
-        }
-
-        // Draw Channels
-        if (rr_type == e_rr_type::CHANY || rr_type == e_rr_type::CHANX) {
-            draw_rr_chan(inode, color, g);
-            continue;
-        }
+        draw_rr_node(inode, color, g);
     }
 
     // Draw Edges
@@ -683,27 +653,13 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             continue;
         }
 
-        // Default side for pin in case none can be found
-        e_side pin_side = e_side::TOP;
         if (!prev_node_inter_cluster && inode_inter_cluster) {
-            // draw intra-cluster pin to inter-cluster pin
-            // node i + 1 is the channel node
-            if (i + 1 < rr_nodes_to_draw.size()) {
-                pin_side = get_pin_side(inode, rr_nodes_to_draw[i + 1]);
-            }
-
-            draw_intra_cluster_pin_to_pin(prev_node, inode, FROM_INTRA_CLUSTER_TO_INTER_CLUSTER, pin_side, g);
+            draw_intra_cluster_pin_to_pin(prev_node, inode, FROM_INTRA_CLUSTER_TO_INTER_CLUSTER, g);
             continue;
         }
 
         if (prev_node_inter_cluster && !inode_inter_cluster) {
-            // draw inter-cluster pin to intra-cluster pin
-            // node i - 2 is the channel node
-            if (i >= 2) {
-                pin_side = get_pin_side(prev_node, rr_nodes_to_draw[i - 2]);
-            }
-
-            draw_intra_cluster_pin_to_pin(inode, prev_node, FROM_INTER_CLUSTER_TO_INTRA_CLUSTER, pin_side, g);
+            draw_intra_cluster_pin_to_pin(inode, prev_node, FROM_INTER_CLUSTER_TO_INTRA_CLUSTER, g);
             continue;
         }
 

@@ -300,39 +300,48 @@ void draw_intra_cluster_edge(RRNodeId inode, RRNodeId prev_node, ezgl::renderer*
     draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
 }
 
-void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_cluster_node, e_pin_edge_dir pin_edge_dir, e_side pin_side, ezgl::renderer* g) {
+void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_cluster_node, e_pin_edge_dir pin_edge_dir, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     if (!draw_state->is_flat) {
         return;
     }
 
-    // determine the location of the pins
-    float inter_cluster_x, inter_cluster_y;
-    ezgl::point2d intra_cluster_coord;
+    for (const e_side& pin_side : TOTAL_2D_SIDES) {
+        // Draw connections to each side of the inter-cluster node
+        if (!rr_graph.is_node_on_specific_side(inter_cluster_node, pin_side)) {
+            continue;
+        }
 
-    draw_get_rr_pin_coords(inter_cluster_node, &inter_cluster_x, &inter_cluster_y, pin_side);
+        // determine the location of the pins
+        float inter_cluster_x, inter_cluster_y;
+        ezgl::point2d intra_cluster_coord;
 
-    auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(intra_cluster_node);
-    intra_cluster_coord = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+        draw_get_rr_pin_coords(inter_cluster_node, &inter_cluster_x, &inter_cluster_y, pin_side);
 
-    // determine which coord is first based on the pin edge direction
-    ezgl::point2d prev_coord, icoord;
-    if (pin_edge_dir == FROM_INTRA_CLUSTER_TO_INTER_CLUSTER) {
-        prev_coord = intra_cluster_coord;
-        icoord = {inter_cluster_x, inter_cluster_y};
-    } else if (pin_edge_dir == FROM_INTER_CLUSTER_TO_INTRA_CLUSTER) {
-        prev_coord = {inter_cluster_x, inter_cluster_y};
-        icoord = intra_cluster_coord;
-    } else {
-        VPR_ERROR(VPR_ERROR_DRAW, "Invalid pin edge direction: %d", pin_edge_dir);
+        auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(intra_cluster_node);
+        intra_cluster_coord = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+
+        // determine which coord is first based on the pin edge direction
+        ezgl::point2d prev_coord, icoord;
+        if (pin_edge_dir == FROM_INTRA_CLUSTER_TO_INTER_CLUSTER) {
+            prev_coord = intra_cluster_coord;
+            icoord = {inter_cluster_x, inter_cluster_y};
+        } else if (pin_edge_dir == FROM_INTER_CLUSTER_TO_INTRA_CLUSTER) {
+            prev_coord = {inter_cluster_x, inter_cluster_y};
+            icoord = intra_cluster_coord;
+        } else {
+            VPR_ERROR(VPR_ERROR_DRAW, "Invalid pin edge direction: %d", pin_edge_dir);
+        }
+
+        g->draw_line(prev_coord, icoord);
+        float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
+        float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
+        draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
     }
-
-    g->draw_line(prev_coord, icoord);
-    float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
-    float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
-    draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
 }
 
 void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) {
