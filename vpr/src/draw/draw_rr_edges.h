@@ -89,4 +89,11 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
  */
 void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::renderer* g);
 
+/** @brief Draws an edge between two rr_nodes, which are both intra-cluster nodes.
+ * @param inode The current rr_node id
+ * @param prev_node The previous rr_node id
+ * @param g The ezgl renderer
+ */
+void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr_type, e_rr_type prev_type, ezgl::renderer* g);
+
 #endif /* NO_GRAPHICS */
