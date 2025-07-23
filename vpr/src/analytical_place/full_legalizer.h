@@ -144,6 +144,16 @@ class FlatRecon : public FullLegalizer {
     ///        track of clusters created.
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
 
+    /// @brief Mapping from physical tile location to legalization cluster ids
+    ///        to keep track of clusters created.
+    std::unordered_map<t_pl_loc, std::vector<LegalizationClusterId>> tile_loc_to_cluster_id_placed;
+
+    /// @brief Unclustered blocks after first pass
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks_saved;
+
+    /// @brief Vector of neighbor pass clusters
+    std::vector<LegalizationClusterId> neighbor_pass_clusters;
+
     /**
      * @brief Helper method to sort and group molecules by desired tile location.
      *        It first sorts by being in a long carry chain, then by external input

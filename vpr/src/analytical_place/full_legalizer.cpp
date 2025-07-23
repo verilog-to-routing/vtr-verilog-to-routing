@@ -57,6 +57,10 @@
 #include "vtr_time.h"
 #include "vtr_vector.h"
 
+#include "setup_grid.h"
+#include "stats.h"
+
+
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
                                                    const AtomNetlist& atom_netlist,
@@ -315,6 +319,54 @@ static t_logical_block_type_ptr get_molecule_logical_block_type(PackMoleculeId m
     VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
 }
 
+static bool try_size_device_grid(const t_arch& arch,
+                                 const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
+                                 std::map<t_logical_block_type_ptr, float>& type_util,
+                                 float target_device_utilization,
+                                 const std::string& device_layout_name) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    //Build the device
+    auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization);
+
+    /*
+     *Report on the device
+     */
+    VTR_LOG("FPGA sized to %zu x %zu (%s)\n", grid.width(), grid.height(), grid.name().c_str());
+
+    bool fits_on_device = true;
+
+    float device_utilization = calculate_device_utilization(grid, num_type_instances);
+    VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (is_empty_type(&type)) continue;
+
+        auto itr = num_type_instances.find(&type);
+        if (itr == num_type_instances.end()) continue;
+
+        float num_instances = itr->second;
+        float util = 0.;
+
+        float num_total_instances = 0.;
+        for (const auto& equivalent_tile : type.equivalent_tiles) {
+            num_total_instances += device_ctx.grid.num_instances(equivalent_tile, -1);
+        }
+
+        if (num_total_instances != 0) {
+            util = num_instances / num_total_instances;
+        }
+        type_util[&type] = util;
+
+        if (util > 1.) {
+            fits_on_device = false;
+        }
+        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name.c_str());
+    }
+    VTR_LOG("\n");
+
+    return fits_on_device;
+}
+
 std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>
 FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer pack_reconstruction_timer("Sorting and Grouping Blocks by Tile");
@@ -398,6 +450,7 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
                 LegalizationClusterId new_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
                 cluster_ids_to_check[new_id] = loc;
                 loc_to_cluster_id_placed[loc] = new_id;
+                tile_loc_to_cluster_id_placed[{tile_loc.x, tile_loc.y, -1, tile_loc.layer_num}].push_back(new_id);
                 placed = true;
                 break;
             }
@@ -503,6 +556,7 @@ void FlatRecon::neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
 
         // Try to cluster them
         LegalizationClusterId cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types);
+        neighbor_pass_clusters.push_back(cluster_id);
         for (const auto& [neighbor_mol, neighbor_loc] : neighbor_molecules) {
             if (!cluster_legalizer.is_molecule_compatible(neighbor_mol, cluster_id))
                 continue;
@@ -574,16 +628,111 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     float avg_mol_number_in_first_pass =
         static_cast<float>(total_molecules_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
 
-    // Set legalization strategy to full and set neigbour search radius.
-    // TODO: Neighbor search radius is selected from a small set of values.
-    //       We can set it adaptively according to remaining molecules number
-    //       and device size.
-    int NEIGHBOR_SEARCH_RADIUS = 8;
-    cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-    neighbor_cluster_pass(cluster_legalizer,
-                          primitive_candidate_block_types,
-                          unclustered_blocks,
-                          NEIGHBOR_SEARCH_RADIUS);
+    // Save unclustered blocks
+    unclustered_blocks_saved = unclustered_blocks;
+    
+    // Neighbor Search Radius Values to Try
+    std::vector<int> neighbor_search_radius_vector = {8, 16, static_cast<int>(device_grid.width() + device_grid.height())};
+
+    bool fits_on_device = false;
+    // Try all radiuses untill clusters fit into device
+    for (int neighbor_search_radius: neighbor_search_radius_vector) {
+        cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
+        neighbor_cluster_pass(cluster_legalizer,
+                              primitive_candidate_block_types,
+                              unclustered_blocks,
+                              neighbor_search_radius);
+        
+        //  num_used_type_instances: A map used to save the number of used
+        //                           instances from each logical block type.
+        std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
+        for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
+            if (!cluster_id.is_valid())
+                continue;
+            t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
+            num_used_type_instances[cluster_type]++;
+        }
+
+        std::map<t_logical_block_type_ptr, float> block_type_utils;
+        fits_on_device = try_size_device_grid(arch_,
+                                              num_used_type_instances,
+                                              block_type_utils,
+                                              vpr_setup_.PackerOpts.target_device_utilization,
+                                              vpr_setup_.PackerOpts.device_layout);
+        // Exit if clusters fit on device
+        if (fits_on_device)
+            break;
+        
+        VTR_LOG("Clusters did not fit on device with neighbor search radius of %d.\n", neighbor_search_radius);
+
+        for (LegalizationClusterId cluster_id: neighbor_pass_clusters) {
+            if (!cluster_id.is_valid())
+                continue; // we cant destroy a already destoyed cluster
+            cluster_legalizer.destroy_cluster(cluster_id);
+        }
+        
+        unclustered_blocks = unclustered_blocks_saved;
+        neighbor_pass_clusters.clear();        
+    }
+
+    if (!fits_on_device) {
+        VTR_LOG("Trying to cluster orphan molecules into neighbor clusters instead of creating new clusters.\n");
+
+        // Iterate over placed clusters and print number of molecules in each.
+        // for (auto& [loc, cluster_id]: loc_to_cluster_id_placed) {  
+        //     if (!cluster_id.is_valid())
+        //         continue;
+
+        //     VTR_LOG("At location (x,y,layer,subtile) = (%d,%d,%d,%d) cluster id %zu resided.\n", loc.x,loc.y,loc.layer,loc.sub_tile, cluster_id);
+            
+        //     // size_t num_cluster_inputs_available = cluster_legalizer.get_num_cluster_inputs_available(cluster_id);
+        //     // VTR_LOG("\tCluster inputs available:       %zu\n", num_cluster_inputs_available);
+        //     size_t num_mols_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
+        //     VTR_LOG("\tNumber of molecules in cluster: %zu\n", num_mols_in_cluster);
+        // }
+
+        // For each unplaced block, get its neighboring clusters created.
+        for (const auto& [molecule_id, loc] : unclustered_blocks) {
+            // Use molecule_id and tile_loc here
+            VTR_LOG("Molecule ID: %zu\n", size_t(molecule_id));
+            VTR_LOG("Tile Location: (x=%d, y=%d, layer=%d, subtile=%d)\n", loc.x, loc.y, loc.layer_num);
+        
+            // Get its 8-neighbouring clusters
+            std::vector<t_pl_loc> neighbor_tile_locs = {
+                {loc.x-1, loc.y-1, -1, loc.layer_num},
+                {loc.x-1, loc.y,   -1, loc.layer_num},
+                {loc.x-1, loc.y+1, -1, loc.layer_num},
+                {loc.x,   loc.y-1, -1, loc.layer_num},
+                {loc.x,   loc.y+1, -1, loc.layer_num},
+                {loc.x+1, loc.y-1, -1, loc.layer_num},
+                {loc.x+1, loc.y,   -1, loc.layer_num},
+                {loc.x+1, loc.y+1, -1, loc.layer_num},
+            };
+
+            std::vector<LegalizationClusterId> neighbor_clusters;
+            for (t_pl_loc neighbor_tile_loc: neighbor_tile_locs) {
+                if (tile_loc_to_cluster_id_placed.find(neighbor_tile_loc) == tile_loc_to_cluster_id_placed.end()) 
+                    continue;
+
+                for (LegalizationClusterId cluster_id: tile_loc_to_cluster_id_placed[neighbor_tile_loc]) {
+                    if (cluster_id.is_valid()) {
+                        neighbor_clusters.push_back(cluster_id);
+                        size_t num_mols_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
+                        VTR_LOG("\tNumber of molecules in neighbor cluster at (%d, %d, %d): %zu\n", 
+                                    neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer, num_mols_in_cluster);
+                    }
+                }
+            }        
+        }
+
+
+
+        VPR_FATAL_ERROR(VPR_ERROR_AP,
+                        "Unable to fit on device after doing neighbor search on whole device!");
+    }
+    
+    
+    
 
     // Get rid off the invalid cluster ids before reporting.
     cluster_legalizer.compress();
