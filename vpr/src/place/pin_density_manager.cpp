@@ -174,3 +174,33 @@ std::pair<t_physical_tile_loc, e_rr_type> PinDensityManager::input_pin_loc_chan_
 
     return {pin_loc, chan_type};
 }
+
+std::pair<t_physical_tile_loc, t_physical_tile_loc> PinDensityManager::output_pin_sb_locs_(const t_physical_tile_loc& loc, e_side side) const {
+    t_physical_tile_loc sb_loc0;
+    t_physical_tile_loc sb_loc1;
+
+    switch (side) {
+        case TOP:
+            sb_loc0 = loc;
+            sb_loc1 = {loc.x - 1, loc.y, loc.layer_num};
+            break;
+        case RIGHT:
+            sb_loc0 = loc;
+            sb_loc1 = {loc.x, loc.y - 1, loc.layer_num};
+            break;
+        case BOTTOM:
+            sb_loc0 = {loc.x, loc.y - 1, loc.layer_num};;
+            sb_loc1 = {loc.x - 1, loc.y - 1, loc.layer_num};
+            break;
+        case LEFT:
+            sb_loc0 = {loc.x - 1, loc.y, loc.layer_num};;
+            sb_loc1 = {loc.x - 1, loc.y - 1, loc.layer_num};
+            break;
+        case default:
+            VTR_ASSERT(false);
+            break;
+
+    }
+
+    return {sb_loc0, sb_loc1};
+}

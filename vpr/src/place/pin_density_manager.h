@@ -50,4 +50,5 @@ class PinDensityManager {
 
   private:
     std::pair<t_physical_tile_loc, e_rr_type> input_pin_loc_chan_type_(const t_physical_tile_loc& loc, e_side side) const;
+    std::pair<t_physical_tile_loc, t_physical_tile_loc> output_pin_sb_locs_(const t_physical_tile_loc& loc, e_side side) const;
 };
