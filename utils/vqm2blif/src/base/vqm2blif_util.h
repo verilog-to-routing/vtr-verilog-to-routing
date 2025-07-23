@@ -99,6 +99,7 @@ typedef pair <const char*, v_OptionBaseToken> tokpair;
 struct RamInfo {
     std::string mode = "";
     int port_a_addr_width = 0;
+    int port_a_addr2_width = 0;
     int port_a_data_width = 0;
     t_node_port_association* port_a_input_clock = nullptr;
     t_node_port_association* port_a_input_ena = nullptr;
@@ -108,6 +109,7 @@ struct RamInfo {
     t_node_port_association* port_a_dataout_sclr = nullptr;
 
     int port_b_addr_width = 0;
+    int port_b_addr2_width = 0;
     int port_b_data_width = 0;
     t_node_port_association* port_b_input_clock = nullptr;
     t_node_port_association* port_b_input_ena = nullptr;

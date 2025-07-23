@@ -40,7 +40,7 @@
 ^[ \t]*\/\/[^\n\r]*(\n|\r\n)                /* skip one-line comments */
 ^[ \t]*\(\*[^\n\r]*\*\)                     /* skip synthesis attributes and directives */
 [ \t]+                                      /* skip white spaces */
-!					    /* skip the logical operator ! applied on the input ports of the lut - this results in lut mask not being valid anoymore */
+(!|~)				    /* skip the logical operator ! applied on the input ports of the lut - this results in lut mask not being valid anoymore */
 (\n|\r\n)                                   /* skip empty lines */
 module                                      return TOKEN_MODULE;
 endmodule                                   return TOKEN_ENDMODULE;
