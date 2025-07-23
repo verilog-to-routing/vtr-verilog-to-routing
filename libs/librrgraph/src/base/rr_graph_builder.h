@@ -298,6 +298,10 @@ class RRGraphBuilder {
      *  @note This will not add an edge to storage. You need to call build_edges() after all the edges are cached. */
     void create_edge_in_cache(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped);
 
+    /** @brief Add a new edge to the cache of edges to be built 
+     *  @note This will not add an edge to storage! You need to call build_edges() after all the edges are cached! */
+    void create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped);
+
     /** @brief Allocate and build actual edges in storage. 
      * Once called, the cached edges will be uniquified and added to routing resource nodes, 
      * while the cache will be empty once build-up is accomplished 
@@ -390,6 +394,13 @@ class RRGraphBuilder {
         const std::vector<t_arch_switch_inf>& arch_switch_inf,
         t_arch_switch_fanin& arch_switch_fanins) {
         return node_storage_.count_rr_switches(arch_switch_inf, arch_switch_fanins);
+    }
+
+    /** @brief Unlock storage; required to modify an routing resource graph after edge is read */
+    inline void unlock_storage() {
+        node_storage_.edges_read_ = false;
+        node_storage_.partitioned_ = false;
+        node_storage_.clear_node_first_edge();
     }
 
     /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.
