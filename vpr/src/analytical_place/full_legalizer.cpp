@@ -628,6 +628,109 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     float avg_mol_number_in_first_pass =
         static_cast<float>(total_molecules_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
 
+
+    // The molecules that could not go back in their original clusters.
+    // (Hope there will be none of them)
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> broken_molecules;
+
+    // MAKING THE STRATEGY FULL
+    cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
+
+    // For each unplaced block, get its neighboring clusters created.
+    for (const auto& [molecule_id, loc] : unclustered_blocks) {
+        // Use molecule_id and tile_loc here
+        VTR_LOG("Molecule ID: %zu\n", size_t(molecule_id));
+        VTR_LOG("Tile Location: (x=%d, y=%d, layer=%d, subtile=%d)\n", loc.x, loc.y, loc.layer_num);
+    
+        // Get its 8-neighbouring clusters
+        std::vector<t_pl_loc> neighbor_tile_locs = {
+            {loc.x-1, loc.y-1, -1, loc.layer_num},
+            {loc.x-1, loc.y,   -1, loc.layer_num},
+            {loc.x-1, loc.y+1, -1, loc.layer_num},
+            {loc.x,   loc.y-1, -1, loc.layer_num},
+            {loc.x,   loc.y+1, -1, loc.layer_num},
+            {loc.x+1, loc.y-1, -1, loc.layer_num},
+            {loc.x+1, loc.y,   -1, loc.layer_num},
+            {loc.x+1, loc.y+1, -1, loc.layer_num},
+        };
+
+        bool fit_in_a_neighbor = false;
+
+        std::vector<LegalizationClusterId> neighbor_clusters;
+        for (t_pl_loc neighbor_tile_loc: neighbor_tile_locs) {
+            if (fit_in_a_neighbor) {
+                break;
+            }
+            
+            
+            if (tile_loc_to_cluster_id_placed.find(neighbor_tile_loc) == tile_loc_to_cluster_id_placed.end()) 
+                continue;
+
+            auto& clusters = tile_loc_to_cluster_id_placed[neighbor_tile_loc]; // alias for clarity
+            for (auto it = clusters.begin(); it != clusters.end(); /* no ++ here */) {
+                LegalizationClusterId cluster_id = *it;
+
+                if (!cluster_id.is_valid()) {
+                    ++it;
+                    continue;
+                }
+                
+                neighbor_clusters.push_back(cluster_id);
+                size_t num_mols_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
+                VTR_LOG("\tNumber of molecules in neighbor cluster at (%d, %d, %d): %zu\n", 
+                            neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer, num_mols_in_cluster);
+
+                std::vector<PackMoleculeId> cluster_molecules = cluster_legalizer.get_cluster_molecules(cluster_id);
+                
+                // Destroy the old cluster and update data structures accordingly
+                // Note: We may not need to update the data structures since the cluster ids will become invalid.
+                cluster_legalizer.destroy_cluster(cluster_id);
+                
+
+                LegalizationClusterId new_cluster_id = create_new_cluster(cluster_molecules[0], prepacker_, cluster_legalizer, primitive_candidate_block_types); 
+                // Remove the first element used as seed.
+                cluster_molecules.erase(cluster_molecules.begin());
+
+                // Add old molecules to the new cluster.
+                for (PackMoleculeId mol_id: cluster_molecules) {
+                    if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)){
+                        VTR_LOG("A molecule could not go its old cluster!\n");
+                        broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
+                        continue;
+                    }
+                    if (cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id) != e_block_pack_status::BLK_PASSED) {
+                        VTR_LOG("A molecule could not go its old cluster!\n");
+                        broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
+                    }
+                }
+
+                // Lastly, try to add the objective molecule to that cluster.
+                if (cluster_legalizer.is_molecule_compatible(molecule_id, new_cluster_id)){
+                    if (cluster_legalizer.add_mol_to_cluster(molecule_id, new_cluster_id) == e_block_pack_status::BLK_PASSED) {
+                        VTR_LOG("An unclustered neighbor fit in a neighbor cluster!\n");
+                        fit_in_a_neighbor = true;
+                    }
+                }
+
+                
+                //it = clusters.erase(it); // returns next valid iterator
+                // Put the new cluster to old ones place and go to next one to process.
+                *it = new_cluster_id;
+                ++it;
+            }
+        }   
+
+        if (!fit_in_a_neighbor) {
+            VTR_LOG("Current cluster could not put in any neighbor cluster!\n");
+            broken_molecules.push_back({molecule_id, loc});
+        }     
+    }
+
+    // use the broken blocks as unclustered blocks
+    unclustered_blocks = broken_molecules;
+
+    VTR_LOG("Unclusterd Blocks Before Starting Neighbor Pass: %zu\n", unclustered_blocks.size());
+
     // Save unclustered blocks
     unclustered_blocks_saved = unclustered_blocks;
     
@@ -676,123 +779,7 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     }
 
     if (!fits_on_device) {
-        VTR_LOG("Trying to cluster orphan molecules into neighbor clusters instead of creating new clusters.\n");
-
-        // Iterate over placed clusters and print number of molecules in each.
-        // for (auto& [loc, cluster_id]: loc_to_cluster_id_placed) {  
-        //     if (!cluster_id.is_valid())
-        //         continue;
-
-        //     VTR_LOG("At location (x,y,layer,subtile) = (%d,%d,%d,%d) cluster id %zu resided.\n", loc.x,loc.y,loc.layer,loc.sub_tile, cluster_id);
-            
-        //     // size_t num_cluster_inputs_available = cluster_legalizer.get_num_cluster_inputs_available(cluster_id);
-        //     // VTR_LOG("\tCluster inputs available:       %zu\n", num_cluster_inputs_available);
-        //     size_t num_mols_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
-        //     VTR_LOG("\tNumber of molecules in cluster: %zu\n", num_mols_in_cluster);
-        // }
-
-        // The molecules that could not go back in their original clusters.
-        // (Hope there will be none of them)
-        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> broken_molecules;
-
-
-        // For each unplaced block, get its neighboring clusters created.
-        for (const auto& [molecule_id, loc] : unclustered_blocks) {
-            // Use molecule_id and tile_loc here
-            VTR_LOG("Molecule ID: %zu\n", size_t(molecule_id));
-            VTR_LOG("Tile Location: (x=%d, y=%d, layer=%d, subtile=%d)\n", loc.x, loc.y, loc.layer_num);
-        
-            // Get its 8-neighbouring clusters
-            std::vector<t_pl_loc> neighbor_tile_locs = {
-                {loc.x-1, loc.y-1, -1, loc.layer_num},
-                {loc.x-1, loc.y,   -1, loc.layer_num},
-                {loc.x-1, loc.y+1, -1, loc.layer_num},
-                {loc.x,   loc.y-1, -1, loc.layer_num},
-                {loc.x,   loc.y+1, -1, loc.layer_num},
-                {loc.x+1, loc.y-1, -1, loc.layer_num},
-                {loc.x+1, loc.y,   -1, loc.layer_num},
-                {loc.x+1, loc.y+1, -1, loc.layer_num},
-            };
-
-            bool fit_in_a_neighbor = false;
-
-            std::vector<LegalizationClusterId> neighbor_clusters;
-            for (t_pl_loc neighbor_tile_loc: neighbor_tile_locs) {
-                if (fit_in_a_neighbor) {
-                    break;
-                }
-                
-                
-                if (tile_loc_to_cluster_id_placed.find(neighbor_tile_loc) == tile_loc_to_cluster_id_placed.end()) 
-                    continue;
-
-                auto& clusters = tile_loc_to_cluster_id_placed[neighbor_tile_loc]; // alias for clarity
-                for (auto it = clusters.begin(); it != clusters.end(); /* no ++ here */) {
-                    LegalizationClusterId cluster_id = *it;
-
-                    if (!cluster_id.is_valid()) {
-                        ++it;
-                        continue;
-                    }
-                    
-                    neighbor_clusters.push_back(cluster_id);
-                    size_t num_mols_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
-                    VTR_LOG("\tNumber of molecules in neighbor cluster at (%d, %d, %d): %zu\n", 
-                                neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer, num_mols_in_cluster);
-
-                    std::vector<PackMoleculeId> cluster_molecules = cluster_legalizer.get_cluster_molecules(cluster_id);
-                    
-                    // Destroy the old cluster and update data structures accordingly
-                    // Note: We may not need to update the data structures since the cluster ids will become invalid.
-                    cluster_legalizer.destroy_cluster(cluster_id);
-                    
-
-                    LegalizationClusterId new_cluster_id = create_new_cluster(cluster_molecules[0], prepacker_, cluster_legalizer, primitive_candidate_block_types); 
-                    // Remove the first element used as seed.
-                    cluster_molecules.erase(cluster_molecules.begin());
-
-                    // Add old molecules to the new cluster.
-                    for (PackMoleculeId mol_id: cluster_molecules) {
-                        if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)){
-                            VTR_LOG("A molecule could not go its old cluster!\n");
-                            broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
-                            continue;
-                        }
-                        if (cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id) != e_block_pack_status::BLK_PASSED) {
-                            VTR_LOG("A molecule could not go its old cluster!\n");
-                            broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
-                        }
-                    }
-
-                    // Lastly, try to add the objective molecule to that cluster.
-                    if (cluster_legalizer.is_molecule_compatible(molecule_id, new_cluster_id)){
-                        if (cluster_legalizer.add_mol_to_cluster(molecule_id, new_cluster_id) == e_block_pack_status::BLK_PASSED) {
-                            VTR_LOG("An unclustered neighbor fit in a neighbor cluster!\n");
-                            fit_in_a_neighbor = true;
-                        }
-                    }
-
-                    
-                    //it = clusters.erase(it); // returns next valid iterator
-                    // Put the new cluster to old ones place and go to next one to process.
-                    *it = new_cluster_id;
-                    ++it;
-                }
-            }   
-
-            if (!fit_in_a_neighbor) {
-                VTR_LOG("Current cluster could not put in any neighbor cluster!\n");
-                broken_molecules.push_back({molecule_id, loc});
-            }     
-        }
-        
-        if (!broken_molecules.empty()) {
-            VTR_LOG("Broken molecules total count: %zu\n", broken_molecules.size());
-            VPR_FATAL_ERROR(VPR_ERROR_AP, "We still have broken molecules to cluster!");
-        } else { 
-            VPR_FATAL_ERROR(VPR_ERROR_AP,
-                        "We don't have any broken molecules after trying to fit in neighboring clusters!");
-        }
+        VPR_FATAL_ERROR(VPR_ERROR_AP, "Clusters could not fit on device.");
     }
     
     
