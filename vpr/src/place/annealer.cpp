@@ -384,6 +384,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     double bb_delta_c = 0.;         // Change in the bounding box (wiring) cost.
     double timing_delta_c = 0.;     // Change in the timing cost (delay * criticality).
     double congestion_delta_c = 0.; // Change in the congestion cost
+    double pin_density_delta_c = 0.0;
 
     // Allow some fraction of moves to not be restricted by rlim,
     // in the hopes of better escaping local minima.
@@ -463,7 +464,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
                                                               bb_delta_c, timing_delta_c, congestion_delta_c);
 
-        pin_density_manager_.find_affected_channels_and_update_costs(blocks_affected_);
+        pin_density_delta_c = pin_density_manager_.find_affected_channels_and_update_costs(blocks_affected_);
 
         if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
@@ -549,7 +550,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             costs_.cost += delta_c;
             costs_.bb_cost += bb_delta_c;
             costs_.congestion_cost += congestion_delta_c;
-
+            costs_.pin_density_cost += pin_density_delta_c;
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
 

@@ -133,8 +133,7 @@ double PinDensityManager::compute_cost() {
                     VTR_ASSERT(false);
                 }
 
-                pin_count += static_cast<float>(ts_chan_output_pin_count_[sb0_loc.x][sb0_loc.y] + ts_chan_output_pin_count_[sb1_loc.x][sb1_loc.y])  / 8.0f;
-
+                pin_count += static_cast<float>(chan_output_pin_count_[sb0_loc.x][sb0_loc.y] + chan_output_pin_count_[sb1_loc.x][sb1_loc.y])  / 8.0f;
 
                 float cost;
                 if (chan_type == e_rr_type::CHANX) {
@@ -156,7 +155,6 @@ double PinDensityManager::compute_cost() {
         }
     }
 
-    std::cout << "PinDensityCost " << total_cost << std::endl;
     return total_cost;
 }
 
@@ -180,7 +178,7 @@ void PinDensityManager::print() const {
     }
 }
 
-void PinDensityManager::find_affected_channels_and_update_costs(const t_pl_blocks_to_be_moved& blocks_affected) {
+double PinDensityManager::find_affected_channels_and_update_costs(const t_pl_blocks_to_be_moved& blocks_affected) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const BlkLocRegistry& blk_loc_registry = placer_state_.blk_loc_registry();
 
@@ -236,6 +234,10 @@ void PinDensityManager::find_affected_channels_and_update_costs(const t_pl_block
         }
     }
 
+
+    affected_chans_.clear();
+    translate_affected_sb_locs_to_chans_();
+
     double cost_diff = 0.;
     for (auto [loc, chan_type] : affected_chans_) {
         float prev_pin_count, curr_pin_count;
@@ -274,6 +276,7 @@ void PinDensityManager::find_affected_channels_and_update_costs(const t_pl_block
         cost_diff += curr_cost - prev_cost;
     }
 
+    return cost_diff;
 }
 
 void PinDensityManager::update_move_channels() {

@@ -119,8 +119,8 @@ Placer::Placer(const Netlist<>& net_list,
 
     // Gets initial cost and loads bounding boxes.
     std::tie(costs_.bb_cost, std::ignore, costs_.congestion_cost) = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
-
-    double pin_density_cost = pin_density_manager_.compute_cost();
+    costs_.pin_density_cost =  pin_density_manager_.compute_cost();
+    std::cout << "initial pin cost: " << costs_.pin_density_cost  << std::endl;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         alloc_and_init_timing_objects_(net_list, analysis_opts);
@@ -380,12 +380,6 @@ void Placer::place() {
 
 void Placer::update_global_state() {
     auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
-
-    pin_density_manager_.print();
-
-    pin_density_manager_.compute_cost();
-
-    pin_density_manager_.print();
 
     // the placement location variables should be unlocked before being accessed
     mutable_palce_ctx.unlock_loc_vars();

@@ -78,6 +78,8 @@ class t_placer_costs {
     /// The congestion cost, which estimates how much routing channels are over-utilized.
     double congestion_cost = 0.;
 
+    double pin_density_cost = 0.;
+
     /// The normalization factor for the wiring cost.
     double bb_cost_norm = 0.;
 
@@ -86,6 +88,8 @@ class t_placer_costs {
 
     /// The normalization factor for the congestion cost.
     double congestion_cost_norm = 0.;
+
+    double pin_density_cost_norm = 0.;
 
     /// NoC-related cost terms.
     NocCostTerms noc_cost_terms;
@@ -111,8 +115,6 @@ class t_placer_costs {
      * @brief Compute the total normalized cost for a given placement. This
      * computation will vary depending on the placement modes.
      *
-     * @param costs The current placement cost components and their normalization
-     * factors
      * @param placer_opts Determines the placement mode
      * @param noc_opts Determines if placement includes the NoC
      * @return double The computed total cost of the current placement

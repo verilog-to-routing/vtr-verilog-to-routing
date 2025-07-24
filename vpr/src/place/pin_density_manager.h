@@ -14,7 +14,7 @@ class PinDensityManager {
                                const t_placer_opts& placer_opts);
 
 
-    void find_affected_channels_and_update_costs(const t_pl_blocks_to_be_moved& blocks_affected);
+    double find_affected_channels_and_update_costs(const t_pl_blocks_to_be_moved& blocks_affected);
 
     double compute_cost();
 
