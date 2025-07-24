@@ -27,12 +27,12 @@ struct t_sg_location {
  * 
  */
 struct t_sg_link {
-    std::string name; // Name of the sg_link.
+    std::string name;     // Name of the sg_link.
     std::string mux_name; // Name of the multiplexer used to gather connections.
     std::string seg_type; // Segment/wire used to move through the device to the scatter location.
-    int x_offset; // X offset of where the scatter happens relative to the gather. If set, the y and z offsets must be zero.
-    int y_offset; // y offset of where the scatter happens relative to the gather. If set, the x and z offsets must be zero.
-    int z_offset; // z offset of where the scatter happens relative to the gather. If set, the x and y offsets must be zero.
+    int x_offset;         // X offset of where the scatter happens relative to the gather. If set, the y and z offsets must be zero.
+    int y_offset;         // y offset of where the scatter happens relative to the gather. If set, the x and z offsets must be zero.
+    int z_offset;         // z offset of where the scatter happens relative to the gather. If set, the x and y offsets must be zero.
 };
 
 /**
@@ -44,7 +44,7 @@ struct t_sg_link {
 struct t_scatter_gather_pattern {
     std::string name;
     e_scatter_gather_type type;
-    t_wireconn_inf gather_pattern;  //TODO: Add side to t_wireconn_inf
+    t_wireconn_inf gather_pattern;
     t_wireconn_inf scatter_pattern;
     std::vector<t_sg_link> sg_links;
     std::vector<t_sg_location> sg_locations;

@@ -4247,7 +4247,7 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             auto sb_location_iter = SB_LOCATION_STRING_MAP.find(tmp);
             if (sb_location_iter == SB_LOCATION_STRING_MAP.end()) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                            vtr::string_fmt("unrecognized switchblock location: %s\n", tmp).c_str());            
+                               vtr::string_fmt("unrecognized switchblock location: %s\n", tmp).c_str());
             } else {
                 sb.location = sb_location_iter->second;
             }

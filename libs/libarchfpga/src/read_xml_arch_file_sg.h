@@ -2,7 +2,7 @@
 
 #include "read_xml_util.h"
 
- /**
+/**
  * @brief Parses a <scatter_gather_list> tag and all child tags and fills arch->scatter_gather_patterns.
  * This function should be called after read_xml_arch_file.cpp:process_switches().
  * 
