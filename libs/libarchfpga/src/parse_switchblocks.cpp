@@ -131,12 +131,25 @@ t_wireconn_inf parse_wireconn(pugi::xml_node node,
     size_t num_children = count_children(node, "from", loc_data, ReqOpt::OPTIONAL);
     num_children += count_children(node, "to", loc_data, ReqOpt::OPTIONAL);
 
+    t_wireconn_inf wireconn;
     if (num_children == 0) {
-        return parse_wireconn_inline(node, loc_data, switches);
+        wireconn = parse_wireconn_inline(node, loc_data, switches);
     } else {
         VTR_ASSERT(num_children > 0);
-        return parse_wireconn_multinode(node, loc_data, switches);
+        wireconn = parse_wireconn_multinode(node, loc_data, switches);
     }
+    
+    // Parse the optional "side" field of the <wireconn> tag
+    std::string sides_string = get_attribute(node, "side", loc_data, pugiutil::OPTIONAL).as_string();
+
+    if (sides_string.find_first_not_of("rtlbRTLB") != std::string::npos) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "Unknown side specified: %s\n", sides_string.c_str());
+    }
+    for (char side_char : sides_string) {
+        wireconn.sides.push_back(CHAR_SIDE_MAP.at(side_char));
+    }
+
+    return wireconn;
 }
 
 static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
@@ -302,66 +315,23 @@ static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
 
 //set sides for a specific conn for custom switch block pattern
 static void set_switch_func_type(SBSideConnection& conn, const char* func_type) {
-    if (0 == strcmp(func_type, "lt")) {
-        conn.set_sides(LEFT, TOP);
-    } else if (0 == strcmp(func_type, "lr")) {
-        conn.set_sides(LEFT, RIGHT);
-    } else if (0 == strcmp(func_type, "lb")) {
-        conn.set_sides(LEFT, BOTTOM);
-    } else if (0 == strcmp(func_type, "la")) {
-        conn.set_sides(LEFT, ABOVE);
-    } else if (0 == strcmp(func_type, "lu")) {
-        conn.set_sides(LEFT, UNDER);
-    } else if (0 == strcmp(func_type, "tl")) {
-        conn.set_sides(TOP, LEFT);
-    } else if (0 == strcmp(func_type, "tb")) {
-        conn.set_sides(TOP, BOTTOM);
-    } else if (0 == strcmp(func_type, "tr")) {
-        conn.set_sides(TOP, RIGHT);
-    } else if (0 == strcmp(func_type, "ta")) {
-        conn.set_sides(TOP, ABOVE);
-    } else if (0 == strcmp(func_type, "tu")) {
-        conn.set_sides(TOP, UNDER);
-    } else if (0 == strcmp(func_type, "rt")) {
-        conn.set_sides(RIGHT, TOP);
-    } else if (0 == strcmp(func_type, "rl")) {
-        conn.set_sides(RIGHT, LEFT);
-    } else if (0 == strcmp(func_type, "rb")) {
-        conn.set_sides(RIGHT, BOTTOM);
-    } else if (0 == strcmp(func_type, "ra")) {
-        conn.set_sides(RIGHT, ABOVE);
-    } else if (0 == strcmp(func_type, "ru")) {
-        conn.set_sides(RIGHT, UNDER);
-    } else if (0 == strcmp(func_type, "bl")) {
-        conn.set_sides(BOTTOM, LEFT);
-    } else if (0 == strcmp(func_type, "bt")) {
-        conn.set_sides(BOTTOM, TOP);
-    } else if (0 == strcmp(func_type, "br")) {
-        conn.set_sides(BOTTOM, RIGHT);
-    } else if (0 == strcmp(func_type, "ba")) {
-        conn.set_sides(BOTTOM, ABOVE);
-    } else if (0 == strcmp(func_type, "bu")) {
-        conn.set_sides(BOTTOM, UNDER);
-    } else if (0 == strcmp(func_type, "al")) {
-        conn.set_sides(ABOVE, LEFT);
-    } else if (0 == strcmp(func_type, "at")) {
-        conn.set_sides(ABOVE, TOP);
-    } else if (0 == strcmp(func_type, "ar")) {
-        conn.set_sides(ABOVE, RIGHT);
-    } else if (0 == strcmp(func_type, "ab")) {
-        conn.set_sides(ABOVE, BOTTOM);
-    } else if (0 == strcmp(func_type, "ul")) {
-        conn.set_sides(UNDER, LEFT);
-    } else if (0 == strcmp(func_type, "ut")) {
-        conn.set_sides(UNDER, TOP);
-    } else if (0 == strcmp(func_type, "ur")) {
-        conn.set_sides(UNDER, RIGHT);
-    } else if (0 == strcmp(func_type, "ub")) {
-        conn.set_sides(UNDER, BOTTOM);
-    } else {
-        /* unknown permutation function */
-        archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified: %s\n", func_type);
+    if (std::string(func_type).find_first_not_of("rtlbauRTLBAU") != std::string::npos) {
+        archfpga_throw(__FILE__, __LINE__, "Unknown direction specified: %s\n", func_type);
     }
+    e_side to_side = CHAR_SIDE_MAP.at(func_type[0]);
+    e_side from_side = CHAR_SIDE_MAP.at(func_type[1]);
+
+    // Can't go from side to same side
+    if (to_side == from_side) {
+        archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified, cannot go from side to same side: %s\n", func_type);
+    }
+
+    // Can't go from above/under to above/under
+    if ((to_side == ABOVE || to_side == UNDER) && (from_side == ABOVE || from_side == UNDER)) {
+        archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified, cannot go from above/under to above/under: %s\n", func_type);
+    }
+
+    conn.set_sides(from_side, to_side);
 }
 
 void read_sb_switchfuncs(pugi::xml_node node, t_switchblock_inf& sb, const pugiutil::loc_data& loc_data) {
