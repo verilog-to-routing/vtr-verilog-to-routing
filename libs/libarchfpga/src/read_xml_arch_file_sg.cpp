@@ -1,8 +1,17 @@
+#include "read_xml_arch_file_sg.h"
 #include "read_xml_util.h"
 #include "parse_switchblocks.h"
 #include "pugixml_util.hpp"
 #include "arch_error.h"
+#include "switchblock_types.h"
 
+/**
+ * @brief Parses all <sg_link> tags under a <sg_pattern> tag.
+ * 
+ * @param sg_pattern_tag XML node pointing to the <sg_pattern> tag.
+ * @param loc_data Points to the location in the architecture file where the parser is reading. Used for priting error messages.
+ * @return std::vector<t_sg_link> containing information of scatter gather links.
+ */
 static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_pattern_tag,
                                           const pugiutil::loc_data& loc_data) {
     std::vector<t_sg_link> sg_link_list;
@@ -25,38 +34,38 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_pattern_tag,
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "All offset fields in the <sg_link> are non-zero or missing.");
         }
 
-        int offset_length;
-        e_sg_link_offset_dim offset_dim;
         if (x_offset != 0) {
-            offset_length = x_offset;
-            offset_dim = e_sg_link_offset_dim::X;
+            sg_link.x_offset = x_offset;
             if (y_offset != 0 || z_offset != 0) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "More than one of the offset fields in the <sg_link> are non-zero.");
             }
         }
         if (y_offset != 0) {
-            offset_length = y_offset;
-            offset_dim = e_sg_link_offset_dim::Y;
+            sg_link.y_offset = y_offset;
             if (x_offset != 0 || z_offset != 0) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "More than one of the offset fields in the <sg_link> are non-zero.");
             }
         }
         if (z_offset != 0) {
-            offset_length = z_offset;
-            offset_dim = e_sg_link_offset_dim::Z;
+            sg_link.z_offset = z_offset;
             if (y_offset != 0 || x_offset != 0) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "More than one of the offset fields in the <sg_link> are non-zero.");
             }
         }
-
-        sg_link.offset_length = offset_length;
-        sg_link.offset_dim = offset_dim;
-
+        
         sg_link_list.push_back(sg_link);
     }
 
     return sg_link_list;
 }
+
+/**
+ * @brief Parses all <sg_location> tags under a <sg_pattern> tag.
+ * 
+ * @param sg_pattern_tag XML node pointing to the <sg_pattern> tag.
+ * @param loc_data Points to the location in the architecture file where the parser is reading. Used for priting error messages.
+ * @return std::vector<t_sg_location> containing information of scatter gather locations.
+ */
 static std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_pattern_tag,
                                                   const pugiutil::loc_data& loc_data) {
     std::vector<t_sg_location> sg_location_list;
@@ -64,13 +73,16 @@ static std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_patte
         if (strcmp(node.name(), "sg_location") != 0) continue;
 
         t_sg_location sg_location;
-        // <sg_location type="EVERYWHERE" num="10" sg_link_name="L1"/>
+
         sg_location.num = pugiutil::get_attribute(node, "num", loc_data).as_int();
         sg_location.sg_link_name = pugiutil::get_attribute(node, "sg_link_name", loc_data).as_string();
-        sg_location.type = sb_location_from_string(pugiutil::get_attribute(node, "type", loc_data).as_string());
-        if (sg_location.type == e_sb_location::E_UNRECOGNIZED) {
+
+        auto sg_location_type_iter = SB_LOCATION_STRING_MAP.find(pugiutil::get_attribute(node, "type", loc_data).as_string());
+        if (sg_location_type_iter == SB_LOCATION_STRING_MAP.end()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                            vtr::string_fmt("unrecognized switchblock location: %s\n", pugiutil::get_attribute(node, "type", loc_data).as_string()).c_str());
+        } else {
+            sg_location.type = sg_location_type_iter->second;
         }
         sg_location_list.push_back(sg_location);
     }
