@@ -12,6 +12,7 @@
 
 void t_placer_costs::update_norm_factors() {
     const ClusteredNetlist& clustered_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const DeviceGrid& deivce_grid = g_vpr_ctx.device().grid;
 
     bb_cost_norm = 1 / bb_cost;
 
@@ -19,6 +20,18 @@ void t_placer_costs::update_norm_factors() {
         congestion_cost_norm = 1 / congestion_cost;
     } else {
         congestion_cost_norm = 1. / (double)clustered_nlist.nets().size();
+    }
+
+    if (pin_density_cost > 0.) {
+        pin_density_cost_norm = 1 / pin_density_cost;
+    } else {
+        size_t num_pins = clustered_nlist.pins().size();
+        size_t grid_width = deivce_grid.width();
+        size_t grid_height = deivce_grid.height();
+
+        double pins_per_channel = (double)num_pins / (2 * grid_width * grid_height);
+
+        pin_density_cost_norm = 1. / pins_per_channel;
     }
 
     if (place_algorithm.is_timing_driven()) {
