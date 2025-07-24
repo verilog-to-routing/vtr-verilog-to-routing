@@ -633,8 +633,8 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     // (Hope there will be none of them)
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> broken_molecules;
 
-    // MAKING THE STRATEGY FULL
-    cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
+    // MAKING THE STRATEGY SPECULATIVE AT START
+    cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
 
     // For each unplaced block, get its neighboring clusters created.
     for (const auto& [molecule_id, loc] : unclustered_blocks) {
@@ -686,8 +686,8 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                 // Note: We may not need to update the data structures since the cluster ids will become invalid.
                 cluster_legalizer.destroy_cluster(cluster_id);
                 
-
-                LegalizationClusterId new_cluster_id = create_new_cluster(cluster_molecules[0], prepacker_, cluster_legalizer, primitive_candidate_block_types); 
+                PackMoleculeId seed_mol = cluster_molecules[0];
+                LegalizationClusterId new_cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types); 
                 // Remove the first element used as seed.
                 cluster_molecules.erase(cluster_molecules.begin());
 
@@ -704,6 +704,27 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                     }
                 }
 
+                // Set Legalization Strategy to FULL
+                cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
+
+
+                // Check Cluster Legality for older molecules
+                if (!cluster_legalizer.check_cluster_legality(new_cluster_id)) {
+                    cluster_legalizer.destroy_cluster(new_cluster_id);
+                    new_cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types); 
+                    for (PackMoleculeId mol_id: cluster_molecules) {
+                        if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)){
+                            VTR_LOG("A molecule could not go its old cluster!\n");
+                            broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
+                            continue;
+                        }
+                        if (cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id) != e_block_pack_status::BLK_PASSED) {
+                            VTR_LOG("A molecule could not go its old cluster!\n");
+                            broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
+                        }
+                    }
+                }
+
                 // Lastly, try to add the objective molecule to that cluster.
                 if (cluster_legalizer.is_molecule_compatible(molecule_id, new_cluster_id)){
                     if (cluster_legalizer.add_mol_to_cluster(molecule_id, new_cluster_id) == e_block_pack_status::BLK_PASSED) {
@@ -712,7 +733,12 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                     }
                 }
 
-                
+                // Clean the current cluster
+                cluster_legalizer.clean_cluster(new_cluster_id);
+
+                // Set strategy to SPECULATIVE AGAIN
+                cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
+
                 //it = clusters.erase(it); // returns next valid iterator
                 // Put the new cluster to old ones place and go to next one to process.
                 *it = new_cluster_id;
