@@ -2639,21 +2639,84 @@ The full format is documented below.
 Scatter-Gather Patterns
 ---------------------
 
-Placeholder text explaining what scatter gather patterns are
+The content under the ``<scatter_gather_list>`` tag consists of one or more ``<sg_pattern>`` tags that are used to specify a scatter-gather pattern.
 
-Example
+When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
+
+    .. code-block:: xml
+
+        <scatter_gather_list>
+            <sg_pattern name="name" type="unidir"> <!-- segment: attribute or tag? -->
+                <gather>
+                    <wireconn num_conns="30" from_type="L16" from_switchpoint="0,12,8,4" side="rltb"/> <!-- Illegal to have to_type and to_switchpoint --> <!-- No above/under side -->
+                <gather/>
+
+                <scatter>
+                    <wireconn num_conns="30" to_type="L16" to_switchpoint="0" side="rtlb"/> <!-- Illegal to have from_type and from_switchpoint -->
+                <scatter/>
+                
+                <sg_link_list>
+                    <sg_link name="L_UP" z_offset="1" x_offset="0" y_offset="0" mux="3D_SB_MUX" seg_type="TSV"/> <!-- One hot offsets -->
+                    <sg_link name="L_DOWN" z_offset="-1" mux="3D_SB_MUX" seg_type="TSV"/>
+                <sg_link_list/>
+
+                <sg_location type="EVERYWHERE" num="10" sg_link="L_UP"/> <!-- type="EVERYWHERE/PERIMETER/CORNER/FRINGE/CORE"-->
+                <sg_location type="EVERYWHERE" num="10" sg_link="L_DOWN"/>
+            <sg_pattern/>
+
+            <sg_pattern name="interposer_conn_sg" type="bidir">
+                ... <!-- Another scatter-gather pattern specification-->
+            <sg_pattern/>
+        <scatter_gather_list/>
+
+This format allows users to specify complex switchblock patterns without the verbosity of custom switchblocks.
 
 .. arch:tag:: <sg_pattern name="string" type={unidir|bidir}>
 
+    :req_param name: A unique alphanumeric string
+    :req_param type: ``unidir`` or ``bidir``.
+
 .. arch:tag:: <gather>
-    TODO: Reference the wireconn tag
+
+    Contains a <wireconn> tag specifying how the fan-in or gather connections are selected. See ``wireconn`` for the relevant specification.
 
 .. arch:tag:: <scatter>
-    TODO: Reference the wireconn tag
+
+    Contains a <wireconn> tag specifying how the fan-out or scatter connections are selected. See ``wireconn`` for the relevant specification.
+
+.. arch:tag:: <sg_link_list>
+
+    Contains one or more <sg_link> tags specifying how the connections move from the gather location to the scatter location.
+    
+    .. note:: These <sg_link> tags are not instantiations of the pattern. instead, the instantiations select one of the sg_link tags to use.
 
 .. arch:tag:: <sg_link  name="string" x_offset="int" y_offset="int" z_offset="int" mux="string" seg_type="string">
 
+    :req_param name: A unique alphanumeric string
+    :req_param mux: Name of the multiplexer used to gather connections
+    :req_param seg_type: Name of the segment/wire used to move through the device to the scatter location
+
+    :opt_param x_offset: Offset of the scatter relative to the gather in the x-axis
+    :opt_param x_offset: Offset of the scatter relative to the gather in the y-axis
+    :opt_param x_offset: Offset of the scatter relative to the gather in the z-axis
+
+    .. note:: One and only one of the offset fields for the sg_link tag must be set.
+
 .. arch:tag:: <sg_location type="string" num="int" sg_link_name="string">
+
+    Instantiates the scatter-gather pattern with the specified sg_link.
+
+    :req_param num: number of scatter-gather instances per switch_block
+    :req_param sg_link_name: name of the sg_link used in the instantiation
+    :req_param type: Can be one of the following strings:
+
+        * ``EVERYWHERE`` – at each switch block of the FPGA
+        * ``PERIMETER`` – at each perimeter switch block (x-directed and/or y-directed channel segments may terminate here)
+        * ``CORNER`` – only at the corner switch blocks (both x and y-directed channels terminate here)
+        * ``FRINGE`` – same as PERIMETER but excludes corners
+        * ``CORE`` – everywhere but the perimeter
+    Sets the location on the FPGA where the connections described by this scatter-gather pattern be instantiated.
+
 
 .. _arch_metadata:
 
