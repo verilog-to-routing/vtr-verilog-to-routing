@@ -6,16 +6,17 @@
 #include "switchblock_types.h"
 
 /**
- * @brief Parses all <sg_link> tags under a <sg_pattern> tag.
+ * @brief Parses all <sg_link> tags under a <sg_link_list> tag.
  * 
- * @param sg_pattern_tag XML node pointing to the <sg_pattern> tag.
+ * @param sg_link_list_tag XML node pointing to the <sg_link_list> tag.
  * @param loc_data Points to the location in the architecture file where the parser is reading. Used for priting error messages.
  * @return std::vector<t_sg_link> containing information of scatter gather links.
  */
-static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_pattern_tag,
+static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag,
                                           const pugiutil::loc_data& loc_data) {
     std::vector<t_sg_link> sg_link_list;
-    for (pugi::xml_node node : sg_pattern_tag.children()) {
+    pugiutil::expect_only_children(sg_link_list_tag, {"sg_link"}, loc_data);
+    for (pugi::xml_node node : sg_link_list_tag.children()) {
         if (strcmp(node.name(), "sg_link") != 0) continue;
 
         const std::vector<std::string> expected_attributes = {"name", "x_offset", "y_offset", "z_offset", "mux", "seg_type"};
@@ -94,8 +95,7 @@ void process_sg_tag(pugi::xml_node sg_list_tag,
                     const pugiutil::loc_data& loc_data,
                     const std::vector<t_arch_switch_inf>& switches) {
     std::vector<t_scatter_gather_pattern> sg_patterns;
-    std::vector<std::string> expected_children = {"sg_pattern"};
-    pugiutil::expect_only_children(sg_list_tag, expected_children, loc_data);
+    pugiutil::expect_only_children(sg_list_tag, {"sg_pattern"}, loc_data);
 
     for (pugi::xml_node sg_tag : sg_list_tag.children()) {
         t_scatter_gather_pattern sg;
@@ -127,7 +127,9 @@ void process_sg_tag(pugi::xml_node sg_list_tag,
         }
         sg.scatter_pattern = scatter_wireconn;
 
-        sg.sg_links = parse_sg_link_tags(sg_tag, loc_data);
+        pugi::xml_node sg_link_list_tag = pugiutil::get_single_child(sg_tag, "sg_link_list", loc_data);
+        sg.sg_links = parse_sg_link_tags(sg_link_list_tag, loc_data);
+
         sg.sg_locations = parse_sg_location_tags(sg_tag, loc_data);
 
         sg_patterns.push_back(sg);
