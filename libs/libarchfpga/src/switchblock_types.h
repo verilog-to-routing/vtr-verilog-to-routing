@@ -26,16 +26,19 @@ enum e_side : unsigned char {
     NUM_3D_SIDES = 6,
 };
 
-
-
 const std::unordered_map<char, e_side> CHAR_SIDE_MAP = {
-    {'T', TOP}, {'t', TOP},
-    {'R', RIGHT}, {'r', RIGHT},
-    {'B', BOTTOM}, {'b', BOTTOM},
-    {'L', LEFT}, {'l', LEFT},
-    {'A', ABOVE}, {'a', ABOVE},
-    {'U', UNDER}, {'u', UNDER}
-};
+    {'T', TOP},
+    {'t', TOP},
+    {'R', RIGHT},
+    {'r', RIGHT},
+    {'B', BOTTOM},
+    {'b', BOTTOM},
+    {'L', LEFT},
+    {'l', LEFT},
+    {'A', ABOVE},
+    {'a', ABOVE},
+    {'U', UNDER},
+    {'u', UNDER}};
 
 constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
 constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
@@ -54,12 +57,11 @@ enum class e_sb_location {
 };
 
 const std::unordered_map<std::string, e_sb_location> SB_LOCATION_STRING_MAP = {{"EVERYWHERE", e_sb_location::E_EVERYWHERE},
-                                                                                {"PERIMETER", e_sb_location::E_PERIMETER},
-                                                                                {"CORE", e_sb_location::E_CORE},
-                                                                                {"CORNER", e_sb_location::E_CORNER},
-                                                                                {"FRINGE", e_sb_location::E_FRINGE},
-                                                                                {"XY_SPECIFIED", e_sb_location::E_XY_SPECIFIED}};
-
+                                                                               {"PERIMETER", e_sb_location::E_PERIMETER},
+                                                                               {"CORE", e_sb_location::E_CORE},
+                                                                               {"CORNER", e_sb_location::E_CORNER},
+                                                                               {"FRINGE", e_sb_location::E_FRINGE},
+                                                                               {"XY_SPECIFIED", e_sb_location::E_XY_SPECIFIED}};
 
 /**
  * @brief Describes regions that a specific switch block specifications should be applied to
@@ -143,9 +145,8 @@ struct t_wireconn_inf {
                                     *          larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
                                     *          larger than 'to')
                                     */
-    
-    std::vector<e_side> sides; // Used for scatter-gather wireconns determining which sides to gather from / scatter to, ignored in other usages.
 
+    std::vector<e_side> sides; // Used for scatter-gather wireconns determining which sides to gather from / scatter to, ignored in other usages.
 };
 
 /* Use a map to index into the string permutation functions used to connect from one side to another */

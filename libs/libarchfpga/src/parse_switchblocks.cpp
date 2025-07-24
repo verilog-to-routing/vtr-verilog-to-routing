@@ -138,7 +138,7 @@ t_wireconn_inf parse_wireconn(pugi::xml_node node,
         VTR_ASSERT(num_children > 0);
         wireconn = parse_wireconn_multinode(node, loc_data, switches);
     }
-    
+
     // Parse the optional "side" field of the <wireconn> tag
     std::string sides_string = get_attribute(node, "side", loc_data, pugiutil::OPTIONAL).as_string();
 

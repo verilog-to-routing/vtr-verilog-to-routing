@@ -13,7 +13,7 @@
  * @return std::vector<t_sg_link> containing information of scatter gather links.
  */
 static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag,
-                                          const pugiutil::loc_data& loc_data) {
+                                                 const pugiutil::loc_data& loc_data) {
     std::vector<t_sg_link> sg_link_list;
     pugiutil::expect_only_children(sg_link_list_tag, {"sg_link"}, loc_data);
     for (pugi::xml_node node : sg_link_list_tag.children()) {
@@ -68,7 +68,7 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
  * @return std::vector<t_sg_location> containing information of scatter gather locations.
  */
 static std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_pattern_tag,
-                                                  const pugiutil::loc_data& loc_data) {
+                                                         const pugiutil::loc_data& loc_data) {
     std::vector<t_sg_location> sg_location_list;
     for (pugi::xml_node node : sg_pattern_tag.children()) {
         if (strcmp(node.name(), "sg_location") != 0) continue;
@@ -103,7 +103,7 @@ void process_sg_tag(pugi::xml_node sg_list_tag,
         sg.name = pugiutil::get_attribute(sg_tag, "name", loc_data).as_string();
 
         std::string sg_tag_type = pugiutil::get_attribute(sg_tag, "type", loc_data).as_string();
-        if(sg_tag_type == "unidir") {
+        if (sg_tag_type == "unidir") {
             sg.type = e_scatter_gather_type::UNIDIR;
         } else if (sg_tag_type == "bidir") {
             sg.type = e_scatter_gather_type::BIDIR;
