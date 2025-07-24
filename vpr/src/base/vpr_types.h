@@ -991,6 +991,8 @@ struct t_placer_opts {
     /// are predicted to face some congestion in the routing stage.
     float congestion_chan_util_threshold;
 
+    float pin_util_threshold = 0.6f;
+
     /// The channel width assumed if only one placement is performed.
     int place_chan_width;
 

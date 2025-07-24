@@ -48,7 +48,7 @@ Placer::Placer(const Netlist<>& net_list,
     , placer_state_(placer_opts.place_algorithm.is_timing_driven())
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_opts, placer_state_, cube_bb)
-    , pin_density_manager_(placer_state_)
+    , pin_density_manager_(placer_state_, placer_opts_)
     , place_delay_model_(std::move(place_delay_model))
     , log_printer_(*this, quiet)
     , quench_only_(placer_opts.place_quench_only)
