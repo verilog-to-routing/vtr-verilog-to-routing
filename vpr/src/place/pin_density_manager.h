@@ -4,6 +4,8 @@
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 
+#include <variant>
+
 struct t_pl_blocks_to_be_move;
 
 class PinDensityManager {
@@ -18,6 +20,8 @@ class PinDensityManager {
 
     void reset_move_channels();
 
+    void print() const;
+
   private:
     const PlacerState& placer_state_;
 
@@ -29,8 +33,18 @@ class PinDensityManager {
     vtr::Matrix<int> ts_chany_input_pin_count_;
     vtr::Matrix<int> ts_chan_output_pin_count_;
 
-    vtr::vector<ClusterPinId, t_physical_tile_loc> pin_locs_;
-    vtr::vector<ClusterPinId, e_rr_type> pin_chan_type_;
+    struct t_output_pin_sb_locs {
+        t_physical_tile_loc sb0;
+        t_physical_tile_loc sb1;
+    };
+
+    struct t_input_pin_adjacent_chan {
+        t_physical_tile_loc loc;
+        e_rr_type chan_type;
+    };
+
+    vtr::vector<ClusterPinId, std::variant<t_output_pin_sb_locs, t_input_pin_adjacent_chan>> pin_info_;
+    vtr::vector<ClusterPinId, std::variant<t_output_pin_sb_locs, t_input_pin_adjacent_chan>> ts_pin_info_;
 
     struct PhysicalLocHasher {
         std::size_t operator()(const t_physical_tile_loc& loc) const {
@@ -42,13 +56,12 @@ class PinDensityManager {
         }
     };
 
-    std::vector<std::tuple<ClusterPinId, t_physical_tile_loc, e_rr_type>> moved_pins_;
+
+
+    std::vector<std::tuple<ClusterPinId, std::variant<t_output_pin_sb_locs, t_input_pin_adjacent_chan> >> moved_pins_;
     std::unordered_set<t_physical_tile_loc, PhysicalLocHasher> affected_chan_locs_;
 
-    vtr::vector<ClusterPinId, t_physical_tile_loc> ts_pin_locs_;
-    vtr::vector<ClusterPinId, e_rr_type> ts_pin_chan_type_;
-
   private:
-    std::pair<t_physical_tile_loc, e_rr_type> input_pin_loc_chan_type_(const t_physical_tile_loc& loc, e_side side) const;
-    std::pair<t_physical_tile_loc, t_physical_tile_loc> output_pin_sb_locs_(const t_physical_tile_loc& loc, e_side side) const;
+    t_input_pin_adjacent_chan input_pin_loc_chan_type_(const t_physical_tile_loc& loc, e_side side) const;
+    t_output_pin_sb_locs output_pin_sb_locs_(const t_physical_tile_loc& loc, e_side side) const;
 };

@@ -200,6 +200,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      const PlaceMacros& place_macros,
                                      t_placer_costs& costs,
                                      NetCostHandler& net_cost_handler,
+                                     PinDensityManager& pin_density_manager,
                                      std::optional<NocCostHandler>& noc_cost_handler,
                                      const t_noc_opts& noc_opts,
                                      vtr::RngContainer& rng,
@@ -217,6 +218,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , place_macros_(place_macros)
     , costs_(costs)
     , net_cost_handler_(net_cost_handler)
+    , pin_density_manager_(pin_density_manager)
     , noc_cost_handler_(noc_cost_handler)
     , noc_opts_(noc_opts)
     , rng_(rng)
@@ -461,6 +463,8 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
                                                               bb_delta_c, timing_delta_c, congestion_delta_c);
 
+        pin_density_manager_.find_affected_channels_and_update_costs(blocks_affected_);
+
         if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
              * addition to `timing_tradeoff`, we normalize the cost values.
@@ -569,6 +573,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
             // Update net cost functions and reset flags.
             net_cost_handler_.update_move_nets();
+            pin_density_manager_.update_move_channels();
 
             // Update clb data structures since we kept the move.
             blk_loc_registry.commit_move_blocks(blocks_affected_);
@@ -590,6 +595,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
             // Reset the net cost function flags first.
             net_cost_handler_.reset_move_nets();
+            pin_density_manager_.reset_move_channels();
 
             // Restore the blk_loc_registry.block_locs data structures to their state before the move.
             blk_loc_registry.revert_move_blocks(blocks_affected_);

@@ -48,6 +48,7 @@ Placer::Placer(const Netlist<>& net_list,
     , placer_state_(placer_opts.place_algorithm.is_timing_driven())
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_opts, placer_state_, cube_bb)
+    , pin_density_manager_(placer_state_)
     , place_delay_model_(std::move(place_delay_model))
     , log_printer_(*this, quiet)
     , quench_only_(placer_opts.place_quench_only)
@@ -119,6 +120,8 @@ Placer::Placer(const Netlist<>& net_list,
     // Gets initial cost and loads bounding boxes.
     std::tie(costs_.bb_cost, std::ignore, costs_.congestion_cost) = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
 
+    double pin_density_cost = pin_density_manager_.compute_cost();
+
     if (placer_opts.place_algorithm.is_timing_driven()) {
         alloc_and_init_timing_objects_(net_list, analysis_opts);
     } else {
@@ -149,7 +152,7 @@ Placer::Placer(const Netlist<>& net_list,
 
     log_printer_.print_initial_placement_stats();
 
-    annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, place_macros, costs_, net_cost_handler_, noc_cost_handler_,
+    annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, place_macros, costs_, net_cost_handler_, pin_density_manager_, noc_cost_handler_,
                                                     noc_opts_, rng_, std::move(move_generator), std::move(move_generator2), place_delay_model_.get(),
                                                     placer_criticalities_.get(), placer_setup_slacks_.get(), timing_info_.get(), pin_timing_invalidator_.get(),
                                                     anneal_auto_init_t_scale,
@@ -377,6 +380,12 @@ void Placer::place() {
 
 void Placer::update_global_state() {
     auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
+
+    pin_density_manager_.print();
+
+    pin_density_manager_.compute_cost();
+
+    pin_density_manager_.print();
 
     // the placement location variables should be unlocked before being accessed
     mutable_palce_ctx.unlock_loc_vars();

@@ -5,6 +5,7 @@
 #include "move_generator.h" // movestats
 #include "net_cost_handler.h"
 #include "manual_move_generator.h"
+#include "pin_density_manager.h"
 #include "vtr_random.h"
 
 #include <optional>
@@ -17,6 +18,7 @@ struct t_placer_opts;
 enum class e_agent_state;
 
 class NocCostHandler;
+class PinDensityManager;
 class NetPinTimingInvalidator;
 class PlacerSetupSlacks;
 
@@ -176,6 +178,7 @@ class PlacementAnnealer {
                       const PlaceMacros& place_macros,
                       t_placer_costs& costs,
                       NetCostHandler& net_cost_handler,
+                      PinDensityManager& pin_density_manager,
                       std::optional<NocCostHandler>& noc_cost_handler,
                       const t_noc_opts& noc_opts,
                       vtr::RngContainer& rng,
@@ -277,6 +280,7 @@ class PlacementAnnealer {
     t_placer_costs& costs_;
     /// Computes bounding box for each cluster net
     NetCostHandler& net_cost_handler_;
+    PinDensityManager& pin_density_manager_;
     /// Computes NoC-related cost terms when NoC optimization are enabled
     std::optional<NocCostHandler>& noc_cost_handler_;
     /// Contains weighting factors for NoC-related cost terms

@@ -26,6 +26,7 @@
 #include "placer_state.h"
 #include "noc_place_utils.h"
 #include "net_cost_handler.h"
+#include "pin_density_manager.h"
 #include "placement_log_printer.h"
 #include "PlacerSetupSlacks.h"
 #include "PlacerCriticalities.h"
@@ -92,6 +93,9 @@ class Placer {
     vtr::RngContainer rng_;
     /// Computes and updates net bounding box cost
     NetCostHandler net_cost_handler_;
+
+    PinDensityManager pin_density_manager_;
+
     /// Compute and updates NoC-related cost terms if NoC optimization is enabled
     std::optional<NocCostHandler> noc_cost_handler_;
     /// A delay model shared between multiple instances of this class.

@@ -4,6 +4,39 @@
 #include "vpr_utils.h"
 #include "move_transactions.h"
 #include "globals.h"
+#include "read_xml_arch_file_vib.h"
+
+std::pair<double, double> maximum_pin_connections_per_channel() {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+
+    const size_t grid_width = grid.width();
+    const size_t grid_height = grid.height();
+
+    int mid_x = grid_width / 2;
+    int mid_y = grid_height / 2;
+
+    std::vector<RRNodeId> nodes = rr_graph.node_lookup().find_channel_nodes(0, mid_x, mid_y, e_rr_type::CHANX);
+
+    double estimated_chanx_num_pins = 0.;
+    for (const RRNodeId node : nodes) {
+        int node_length = rr_graph.node_length(node);
+
+        estimated_chanx_num_pins += (1. / node_length);
+    }
+
+
+    nodes = rr_graph.node_lookup().find_channel_nodes(0, mid_x, mid_y, e_rr_type::CHANY);
+
+    double estimated_chany_num_pins = 0.;
+    for (const RRNodeId node : nodes) {
+        int node_length = rr_graph.node_length(node);
+
+        estimated_chany_num_pins += (1. / node_length);
+    }
+
+    return {estimated_chanx_num_pins, estimated_chany_num_pins};
+}
 
 PinDensityManager::PinDensityManager(const PlacerState& placer_state)
     : placer_state_(placer_state) {
@@ -22,8 +55,10 @@ PinDensityManager::PinDensityManager(const PlacerState& placer_state)
     ts_chan_output_pin_count_.resize({grid_width, grid_height}, 0);
 
     const size_t num_pins = clb_nlist.pins().size();
-    pin_locs_.resize(num_pins, {OPEN, OPEN, OPEN});
-    pin_chan_type_.resize(num_pins, e_rr_type::NUM_RR_TYPES);
+    pin_info_.resize(num_pins);
+    ts_pin_info_.resize(num_pins);
+
+    auto [x_p, y_p] = maximum_pin_connections_per_channel();
 }
 
 double PinDensityManager::compute_cost() {
@@ -38,29 +73,28 @@ double PinDensityManager::compute_cost() {
 
         for (const ClusterPinId driver_pin_id : clb_nlist.block_output_pins(blk_id)) {
             t_physical_tile_loc driver_pin_loc = blk_loc_registry.get_coordinate_of_pin(driver_pin_id);
-            chan_output_pin_count_[driver_pin_loc.x][driver_pin_loc.y]++;
-            pin_locs_[driver_pin_id] = driver_pin_loc;
-            pin_chan_type_[driver_pin_id] = e_rr_type::NUM_RR_TYPES;
+            e_side driver_pin_side = blk_loc_registry.pin_side(driver_pin_id);
+            auto [sb_loc0, sb_loc1] = output_pin_sb_locs_(driver_pin_loc, driver_pin_side);
+            chan_output_pin_count_[sb_loc0.x][sb_loc0.y]++;
+            chan_output_pin_count_[sb_loc1.x][sb_loc1.y]++;
+
+            pin_info_[driver_pin_id] = t_output_pin_sb_locs{sb_loc0, sb_loc1};
         }
 
         for (const ClusterPinId sink_pin_id : clb_nlist.block_input_pins(blk_id)) {
             t_physical_tile_loc sink_pin_loc = blk_loc_registry.get_coordinate_of_pin(sink_pin_id);
             e_side sink_pin_side = blk_loc_registry.pin_side(sink_pin_id);
-            auto [adjusted_sink_pin_loc, sink_pin_chan_type] = input_pin_loc_chan_type_(sink_pin_loc, sink_pin_side);
+            const t_input_pin_adjacent_chan sink_pin_loc_chan = input_pin_loc_chan_type_(sink_pin_loc, sink_pin_side);
+            pin_info_[sink_pin_id] = sink_pin_loc_chan;
 
-            pin_locs_[sink_pin_id] = adjusted_sink_pin_loc;
-            pin_chan_type_[sink_pin_id] = sink_pin_chan_type;
-
-            if (sink_pin_chan_type == e_rr_type::CHANX) {
-                chanx_input_pin_count_[adjusted_sink_pin_loc.x][adjusted_sink_pin_loc.y]++;
-            } else if (sink_pin_chan_type == e_rr_type::CHANY) {
-                chany_input_pin_count_[adjusted_sink_pin_loc.x][adjusted_sink_pin_loc.y]++;
+            if (sink_pin_loc_chan.chan_type == e_rr_type::CHANX) {
+                chanx_input_pin_count_[sink_pin_loc_chan.loc.x][sink_pin_loc_chan.loc.y]++;
+            } else if (sink_pin_loc_chan.chan_type == e_rr_type::CHANY) {
+                chany_input_pin_count_[sink_pin_loc_chan.loc.x][sink_pin_loc_chan.loc.y]++;
             } else {
                 VTR_ASSERT(false);
             }
         }
-
-
     }
 
     ts_chanx_input_pin_count_ = chanx_input_pin_count_;
@@ -68,6 +102,26 @@ double PinDensityManager::compute_cost() {
     ts_chan_output_pin_count_ = chan_output_pin_count_;
 
     return 0;
+}
+
+void PinDensityManager::print() const {
+    const size_t grid_width = chanx_input_pin_count_.dim_size(0);
+    const size_t grid_height = chanx_input_pin_count_.dim_size(1);
+
+    // Print channel pin counts together
+    VTR_LOG("Pin counts at each grid location (x, y): [chanx_input, chany_input, chan_output]\n");
+
+    for (size_t x = 0; x < grid_width; ++x) {
+        for (size_t y = 0; y < grid_height; ++y) {
+            int chanx = chanx_input_pin_count_[x][y];
+            int chany = chany_input_pin_count_[x][y];
+            int out   = chan_output_pin_count_[x][y];
+
+            if (chanx > 0 || chany > 0 || out > 0) {
+                VTR_LOG("  [%zu][%zu] = [%d, %d, %d]\n", x, y, chanx, chany, out);
+            }
+        }
+    }
 }
 
 void PinDensityManager::find_affected_channels_and_update_costs(const t_pl_blocks_to_be_moved& blocks_affected) {
@@ -80,43 +134,49 @@ void PinDensityManager::find_affected_channels_and_update_costs(const t_pl_block
         ClusterBlockId blk_id = moved_block.block_num;
 
         for (const ClusterPinId pin_id : clb_nlist.block_output_pins(blk_id)) {
+
+            const t_output_pin_sb_locs old_sb_locs = std::get<t_output_pin_sb_locs>(pin_info_[pin_id]);
+            ts_chan_output_pin_count_[old_sb_locs.sb0.x][old_sb_locs.sb0.y]--;
+            ts_chan_output_pin_count_[old_sb_locs.sb1.x][old_sb_locs.sb1.y]--;
+
             const t_physical_tile_loc new_pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
-            const t_physical_tile_loc& old_pin_loc = pin_locs_[pin_id];
+            const e_side new_pin_side = blk_loc_registry.pin_side(pin_id);
+            const t_output_pin_sb_locs new_sb_locs = output_pin_sb_locs_(new_pin_loc, new_pin_side);
+            ts_chan_output_pin_count_[new_sb_locs.sb0.x][new_sb_locs.sb0.y]++;
+            ts_chan_output_pin_count_[new_sb_locs.sb1.x][new_sb_locs.sb1.y]++;
 
-            ts_chan_output_pin_count_[new_pin_loc.x][new_pin_loc.y]++;
-            ts_chan_output_pin_count_[old_pin_loc.x][old_pin_loc.y]--;
-
-            moved_pins_.push_back({pin_id, new_pin_loc, e_rr_type::NUM_RR_TYPES});
-            affected_chan_locs_.insert(new_pin_loc);
-            affected_chan_locs_.insert(old_pin_loc);
+            moved_pins_.push_back({pin_id, new_sb_locs});
+            affected_chan_locs_.insert(new_sb_locs.sb0);
+            affected_chan_locs_.insert(new_sb_locs.sb1);
+            affected_chan_locs_.insert(old_sb_locs.sb0);
+            affected_chan_locs_.insert(old_sb_locs.sb1);
         }
 
         for (const ClusterPinId pin_id : clb_nlist.block_input_pins(blk_id)) {
             const t_physical_tile_loc new_pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
             const e_side new_pin_side = blk_loc_registry.pin_side(pin_id);
-            const auto [new_adjusted_pin_loc, new_chan_type] = input_pin_loc_chan_type_(new_pin_loc, new_pin_side);
+            const t_input_pin_adjacent_chan new_pin_loc_chan = input_pin_loc_chan_type_(new_pin_loc, new_pin_side);
 
-            if (new_chan_type == e_rr_type::CHANX) {
-                ts_chanx_input_pin_count_[new_adjusted_pin_loc.x][new_adjusted_pin_loc.y]++;
-            } else if (new_chan_type == e_rr_type::CHANY) {
-                ts_chany_input_pin_count_[new_adjusted_pin_loc.x][new_adjusted_pin_loc.y]++;
+            if (new_pin_loc_chan.chan_type == e_rr_type::CHANX) {
+                ts_chanx_input_pin_count_[new_pin_loc_chan.loc.x][new_pin_loc_chan.loc.y]++;
+            } else if (new_pin_loc_chan.chan_type == e_rr_type::CHANY) {
+                ts_chany_input_pin_count_[new_pin_loc_chan.loc.x][new_pin_loc_chan.loc.y]++;
             } else {
                 VTR_ASSERT(false);
             }
 
-            const t_physical_tile_loc& old_pin_loc = pin_locs_[pin_id];
-            const e_rr_type old_chan_type = pin_chan_type_[pin_id];
-            if (old_chan_type == e_rr_type::CHANX) {
-                ts_chanx_input_pin_count_[old_pin_loc.x][old_pin_loc.y]--;
-            } else if (old_chan_type == e_rr_type::CHANY) {
-                ts_chany_input_pin_count_[old_pin_loc.x][old_pin_loc.y]--;
+            const t_input_pin_adjacent_chan old_pin_loc_chan = std::get<t_input_pin_adjacent_chan>(pin_info_[pin_id]);
+            if (old_pin_loc_chan.chan_type == e_rr_type::CHANX) {
+                ts_chanx_input_pin_count_[old_pin_loc_chan.loc.x][old_pin_loc_chan.loc.y]--;
+            } else if (old_pin_loc_chan.chan_type == e_rr_type::CHANY) {
+                ts_chany_input_pin_count_[old_pin_loc_chan.loc.x][old_pin_loc_chan.loc.y]--;
             } else {
                 VTR_ASSERT(false);
             }
 
-            moved_pins_.push_back({pin_id, new_adjusted_pin_loc, new_chan_type});
-            affected_chan_locs_.insert(new_adjusted_pin_loc);
-            affected_chan_locs_.insert(old_pin_loc);
+            moved_pins_.push_back({pin_id, new_pin_loc_chan});
+            affected_chan_locs_.insert(new_pin_loc_chan.loc);
+            affected_chan_locs_.insert(old_pin_loc_chan.loc);
         }
     }
 
@@ -125,9 +185,8 @@ void PinDensityManager::find_affected_channels_and_update_costs(const t_pl_block
 
 void PinDensityManager::update_move_channels() {
 
-    for (const auto& [pin_id, new_loc, new_chan_type] : moved_pins_) {
-        pin_locs_[pin_id] = new_loc;
-        pin_chan_type_[pin_id] = new_chan_type;
+    for (const auto& [pin_id, new_pin_info] : moved_pins_) {
+        pin_info_[pin_id] = new_pin_info;
     }
 
     for (const t_physical_tile_loc& affected_chan_loc : affected_chan_locs_) {
@@ -152,7 +211,7 @@ void PinDensityManager::reset_move_channels() {
     moved_pins_.clear();
 }
 
-std::pair<t_physical_tile_loc, e_rr_type> PinDensityManager::input_pin_loc_chan_type_(const t_physical_tile_loc& loc, e_side side) const {
+PinDensityManager::t_input_pin_adjacent_chan PinDensityManager::input_pin_loc_chan_type_(const t_physical_tile_loc& loc, e_side side) const {
     e_rr_type chan_type;
     t_physical_tile_loc pin_loc;
 
@@ -172,10 +231,19 @@ std::pair<t_physical_tile_loc, e_rr_type> PinDensityManager::input_pin_loc_chan_
         VTR_ASSERT(false);
     }
 
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+    const size_t grid_width = grid.width();
+    const size_t grid_height = grid.height();
+
+    pin_loc.x = std::clamp<int>(pin_loc.x, 0, grid_width - 1);
+    pin_loc.y = std::clamp<int>(pin_loc.y, 0, grid_height - 1);
+
     return {pin_loc, chan_type};
 }
 
-std::pair<t_physical_tile_loc, t_physical_tile_loc> PinDensityManager::output_pin_sb_locs_(const t_physical_tile_loc& loc, e_side side) const {
+PinDensityManager::t_output_pin_sb_locs PinDensityManager::output_pin_sb_locs_(const t_physical_tile_loc& loc, e_side side) const {
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+
     t_physical_tile_loc sb_loc0;
     t_physical_tile_loc sb_loc1;
 
@@ -196,11 +264,22 @@ std::pair<t_physical_tile_loc, t_physical_tile_loc> PinDensityManager::output_pi
             sb_loc0 = {loc.x - 1, loc.y, loc.layer_num};;
             sb_loc1 = {loc.x - 1, loc.y - 1, loc.layer_num};
             break;
-        case default:
+        default:
             VTR_ASSERT(false);
             break;
 
     }
+
+    const size_t grid_width = grid.width();
+    const size_t grid_height = grid.height();
+    const size_t grid_layers = grid.get_num_layers();
+
+    sb_loc0.x = std::clamp<int>(sb_loc0.x, 0, grid_width - 1);
+    sb_loc0.y = std::clamp<int>(sb_loc0.y, 0, grid_height - 1);
+
+    sb_loc1.x = std::clamp<int>(sb_loc1.x, 0, grid_width - 1);
+    sb_loc1.y = std::clamp<int>(sb_loc1.y, 0, grid_height - 1);
+
 
     return {sb_loc0, sb_loc1};
 }
