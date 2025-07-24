@@ -52,7 +52,7 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_pattern_tag,
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "More than one of the offset fields in the <sg_link> are non-zero.");
             }
         }
-        
+
         sg_link_list.push_back(sg_link);
     }
 
@@ -114,14 +114,18 @@ void process_sg_tag(pugi::xml_node sg_list_tag,
         // Parse gather pattern
         pugi::xml_node gather_node = pugiutil::get_single_child(sg_tag, "gather", loc_data);
         t_wireconn_inf gather_wireconn = parse_wireconn(pugiutil::get_single_child(gather_node, "wireconn", loc_data), loc_data, switches);
+        if (!gather_wireconn.to_switchpoint_set.empty()) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(sg_tag), "Gather wireconn specification should not set any 'to' switchpoints");
+        }
         sg.gather_pattern = gather_wireconn;
-        // TODO: Only 'from' should be set
 
         // Parse scatter pattern
         pugi::xml_node scatter_node = pugiutil::get_single_child(sg_tag, "scatter", loc_data);
         t_wireconn_inf scatter_wireconn = parse_wireconn(pugiutil::get_single_child(scatter_node, "wireconn", loc_data), loc_data, switches);
+        if (!gather_wireconn.from_switchpoint_set.empty()) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(sg_tag), "Scatter wireconn specification should not set any 'from' switchpoints");
+        }
         sg.scatter_pattern = scatter_wireconn;
-        // TODO: Only 'to' should be set
 
         sg.sg_links = parse_sg_link_tags(sg_tag, loc_data);
         sg.sg_locations = parse_sg_location_tags(sg_tag, loc_data);
