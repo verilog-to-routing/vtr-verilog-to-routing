@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <string>
 #include <map>
 #include <unordered_map>
@@ -23,6 +24,17 @@ enum e_side : unsigned char {
     ABOVE = 5,
     UNDER = 7,
     NUM_3D_SIDES = 6,
+};
+
+
+
+const std::unordered_map<char, e_side> CHAR_SIDE_MAP = {
+    {'T', TOP}, {'t', TOP},
+    {'R', RIGHT}, {'r', RIGHT},
+    {'B', BOTTOM}, {'b', BOTTOM},
+    {'L', LEFT}, {'l', LEFT},
+    {'A', ABOVE}, {'a', ABOVE},
+    {'U', UNDER}, {'u', UNDER}
 };
 
 constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
@@ -131,6 +143,9 @@ struct t_wireconn_inf {
                                     *          larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
                                     *          larger than 'to')
                                     */
+    
+    std::vector<e_side> sides; // Used for scatter-gather wireconns determining which sides to gather from / scatter to, ignored in other usages.
+
 };
 
 /* Use a map to index into the string permutation functions used to connect from one side to another */
