@@ -159,6 +159,10 @@ class NetCostHandler {
      */
     const ChannelData<vtr::NdMatrix<double, 3>>& get_chan_util() const;
 
+    /**
+     * @brief Returns the channel widths for each layer.
+     */
+    const ChannelData<vtr::NdMatrix<int, 3>>& get_chan_width() const;
   private:
     /// Indicates whether congestion cost modeling is enabled.
     bool congestion_modeling_started_;

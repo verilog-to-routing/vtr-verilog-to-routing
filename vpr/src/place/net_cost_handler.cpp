@@ -1890,6 +1890,10 @@ const ChannelData<vtr::NdMatrix<double, 3>>& NetCostHandler::get_chan_util() con
     return chan_util_;
 }
 
+const ChannelData<vtr::NdMatrix<int, 3>>& NetCostHandler::get_chan_width() const {
+    return chan_width_;
+}
+
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
     if (cube_bb_) {
         bb_coords_[net_id] = ts_bb_coord_new_[net_id];

@@ -21,6 +21,7 @@
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
 #include "tatum/echo_writer.hpp"
+#include "stats.h"
 
 #ifndef NO_GRAPHICS
 #include "draw_global.h"
@@ -377,6 +378,11 @@ void Placer::place() {
 
 void Placer::update_global_state() {
     auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
+
+    // Output estimated channel occupancies/utilizations
+    net_cost_handler_.estimate_routing_chan_util();
+    write_channel_occupancy_table<double>("chanx_occupancy_est.txt", net_cost_handler_.get_chan_util().x, net_cost_handler_.get_chan_width().x);
+    write_channel_occupancy_table<double>("chany_occupancy_est.txt", net_cost_handler_.get_chan_util().y, net_cost_handler_.get_chan_width().y);
 
     // the placement location variables should be unlocked before being accessed
     mutable_palce_ctx.unlock_loc_vars();

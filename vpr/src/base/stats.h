@@ -76,9 +76,9 @@ void print_device_utilization(const float target_device_utilization);
  *   TODO: extend to 3D
  *
  * @param filename      Output file path.
- * @param occupancy     Matrix of occupancy counts.
+ * @param occupancy     Matrix of occupancy counts (double for occupancy percentage, int for occupancy count).
  * @param capacity_list List of channel capacities (per y for chanx, per x for chany).
  */
-void write_channel_occupancy_table(const std::string_view filename,
-                                   const vtr::Matrix<int>& occupancy,
-                                   const std::vector<int>& capacity_list);
+template <typename T> void write_channel_occupancy_table(const std::string_view filename,
+                                   const vtr::NdMatrix<T, 3>& occupancy,
+                                   const vtr::NdMatrix<int, 3>& capacity_list);
