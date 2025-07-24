@@ -21,7 +21,7 @@ It is tested against the default compilers of all Debian and Ubuntu releases wit
 * GCC/G++: 9, 10, 11, 12
 * Clang/Clang++: 11, 12, 13, 14
 
-Other compilers may work but are untested (your milage may vary).
+Other compilers may work but are untested (your mileage may vary).
 
 ### Package Dependencies
 
@@ -118,7 +118,7 @@ $ make
 ## Other platforms
 
 CMake supports a variety of operating systems and can generate project files for a variety of build systems and IDEs.
-While VTR is developed primarily on Linux, it should be possible to build on different platforms (your milage may vary).
+While VTR is developed primarily on Linux, it should be possible to build on different platforms (your mileage may vary).
 See the [CMake documentation](https://cmake.org) for more details about using cmake and generating project files on other platforms and build systems (e.g. Eclipse, Microsoft Visual Studio).
 
 
