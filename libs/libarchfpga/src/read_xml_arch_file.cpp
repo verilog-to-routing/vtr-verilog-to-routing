@@ -4240,14 +4240,16 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             }
         }
 
-        /* get the switchblock location */
+        // get the switchblock location
         SubElem = get_single_child(Node, "switchblock_location", loc_data);
         tmp = get_attribute(SubElem, "type", loc_data).as_string(nullptr);
         if (tmp) {
-            sb.location = sb_location_from_string(tmp);
-            if (sb.location == e_sb_location::E_UNRECOGNIZED) {
+            auto sb_location_iter = SB_LOCATION_STRING_MAP.find(tmp);
+            if (sb_location_iter == SB_LOCATION_STRING_MAP.end()) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                               vtr::string_fmt("unrecognized switchblock location: %s\n", tmp).c_str());
+                            vtr::string_fmt("unrecognized switchblock location: %s\n", tmp).c_str());            
+            } else {
+                sb.location = sb_location_iter->second;
             }
         }
 

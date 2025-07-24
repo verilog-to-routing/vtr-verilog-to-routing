@@ -34,19 +34,6 @@ using vtr::t_formula_data;
 /**** Function Declarations ****/
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
-/**
- * @brief Parses a wireconn node and returns a `t_wireconn_inf` structure.
- *
- * Determines whether the wireconn is in inline or multi-node format and dispatches
- * to the appropriate parsing subroutine.
- *
- * @param node             XML node representing the wireconn.
- * @param loc_data         Location data for error reporting.
- * @param switches         List of architecture switch definitions (used for switch overrides).
- * @return                 A `t_wireconn_inf` structure populated with parsed data.
- */
-static t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data, const std::vector<t_arch_switch_inf>& switches);
-
 //Process the desired order of a wireconn
 static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order);
 
@@ -568,25 +555,4 @@ int get_sb_formula_raw_result(FormulaParser& formula_parser, const char* formula
     }
 
     return result;
-}
-
-e_sb_location sb_location_from_string(std::string sb_location_string) {
-    e_sb_location location;
-    if (sb_location_string == "EVERYWHERE") {
-        location = e_sb_location::E_EVERYWHERE;
-    } else if (sb_location_string == "PERIMETER") {
-        location = e_sb_location::E_PERIMETER;
-    } else if (sb_location_string == "CORE") {
-        location = e_sb_location::E_CORE;
-    } else if (sb_location_string == "CORNER") {
-        location = e_sb_location::E_CORNER;
-    } else if (sb_location_string == "FRINGE") {
-        location = e_sb_location::E_FRINGE;
-    } else if (sb_location_string == "XY_SPECIFIED") {
-        location = e_sb_location::E_XY_SPECIFIED;
-    } else {
-        location = e_sb_location::E_UNRECOGNIZED;
-    }
-
-    return location;
 }

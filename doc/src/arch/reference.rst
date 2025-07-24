@@ -2655,8 +2655,6 @@ Example
 
 .. arch:tag:: <sg_location type="string" num="int" sg_link_name="string">
 
-
-
 .. _arch_metadata:
 
 Architecture metadata

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <map>
+#include <unordered_map>
 #include <vector>
 
 constexpr int NO_SWITCH = -1;
@@ -37,9 +38,16 @@ enum class e_sb_location {
     E_FRINGE, /* perimeter minus corners */
     E_CORE,
     E_EVERYWHERE,
-    E_XY_SPECIFIED,
-    E_UNRECOGNIZED
+    E_XY_SPECIFIED
 };
+
+const std::unordered_map<std::string, e_sb_location> SB_LOCATION_STRING_MAP = {{"EVERYWHERE", e_sb_location::E_EVERYWHERE},
+                                                                                {"PERIMETER", e_sb_location::E_PERIMETER},
+                                                                                {"CORE", e_sb_location::E_CORE},
+                                                                                {"CORNER", e_sb_location::E_CORNER},
+                                                                                {"FRINGE", e_sb_location::E_FRINGE},
+                                                                                {"XY_SPECIFIED", e_sb_location::E_XY_SPECIFIED}};
+
 
 /**
  * @brief Describes regions that a specific switch block specifications should be applied to
