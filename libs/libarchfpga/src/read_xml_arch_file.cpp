@@ -551,7 +551,8 @@ void xml_read_arch(const char* ArchFile,
             process_noc_tag(Next, arch, loc_data);
         }
 
-        Next = get_single_child(architecture, "scatter_gather_list", loc_data);
+        // Process scatter-gather patterns (optional)
+        Next = get_single_child(architecture, "scatter_gather_list", loc_data, pugiutil::OPTIONAL);
         if (Next) {
             process_sg_tag(Next, arch, loc_data, arch->switches);
         }
