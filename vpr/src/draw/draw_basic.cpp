@@ -845,14 +845,20 @@ void draw_routing_util_heatmap(const ChannelData<vtr::NdMatrix<double, 3>>& occu
     }
     
     // Draw in-between utilization by taking the average of the surrounding channels.
-    for (size_t x = 0; x < grid_width - 2; ++x) {
-        for (size_t y = 0; y < grid_height-2; ++y) {
-            int chan_count = 2;
+    for (size_t x = 0; x < grid_width - 1; ++x) {
+        for (size_t y = 0; y < grid_height- 1; ++y) {
+            int chan_count = 0;
             float sum_util = 0.f;
             
             // Sum up neighboring channel utilizations
-            sum_util += occupancy_percent.x[layer][x + 1][y];
-            sum_util += occupancy_percent.y[layer][x][y + 1];
+            if (x < grid_width - 2) {
+                sum_util += occupancy_percent.x[layer][x + 1][y];
+                chan_count++;
+            }
+            if (y < grid_height - 2) {
+                sum_util += occupancy_percent.y[layer][x][y + 1];
+                chan_count++;
+            }
             if (x > 0) {
                 sum_util += occupancy_percent.x[layer][x][y];
                 chan_count++;
