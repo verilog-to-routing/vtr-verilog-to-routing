@@ -18,34 +18,57 @@
 #include <X11/keysym.h>
 #endif
 
-/**
- * @brief toggles net drawing status based on status of combo box
- * updates draw_state->show_nets
- * 
- * @param self ptr to gtkComboBox
- * @param app ezgl::application
- */
-void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app) {
+void toggle_show_nets_cbk(GtkSwitch* , gboolean state, ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    if(state) {
+        draw_state->show_nets = true;
+    }else{
+        draw_state->show_nets = false;
+    }
+
+    // app->update_message(draw_state->default_message);
+    app->refresh_drawing();
+}
+
+void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
     enum e_draw_nets new_state;
     t_draw_state* draw_state = get_draw_state_vars();
     gchar* setting = gtk_combo_box_text_get_active_text(
         GTK_COMBO_BOX_TEXT(self));
     // assign corresponding enum value to draw_state->show_nets
-    if (strcmp(setting, "None") == 0)
-        new_state = DRAW_NO_NETS;
-    else if (strcmp(setting, "Cluster Nets") == 0) {
-        new_state = DRAW_CLUSTER_NETS;
-    } else { // Primitive Nets - Used to be called "Logical Connections"
-        new_state = DRAW_PRIMITIVE_NETS;
+    if (strcmp(setting, "Routing") == 0) {
+        new_state = DRAW_ROUTED_NETS;
+    } else { // Flylines - direct connections between sources and sinks
+        new_state = DRAW_FLYLINES;
     }
     draw_state->reset_nets_congestion_and_rr();
-    draw_state->show_nets = new_state;
+    draw_state->draw_nets = new_state;
 
     //free dynamically allocated pointers
     g_free(setting);
 
     //redraw
-    app->update_message(draw_state->default_message);
+    
+    app->refresh_drawing();
+}
+
+void toggle_intra_cluster_nets_cbk(GtkToggleButton* self, ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    
+    // currently intra-cluster nets are only supported if flat routing is enabled
+    if(!draw_state->is_flat){
+        gtk_toggle_button_set_active(self, false);
+        return;
+    }
+    VTR_LOG("Toggle intra-cluster nets: %s\n",
+            gtk_toggle_button_get_active(self) ? "ON" : "OFF");
+    if (gtk_toggle_button_get_active(self)) {
+        draw_state->draw_intra_cluster_nets = true;
+    } else {
+        draw_state->draw_intra_cluster_nets = false;
+    }
+    
     app->refresh_drawing();
 }
 
