@@ -47,11 +47,15 @@ static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchp
  * @param node             XML node containing inline wireconn attributes.
  * @param loc_data         Location data for error reporting.
  * @param switches         List of architecture switch definitions (used for switch overrides).
+ * @param can_skip_from_to Determines if the from or to attributes are optional or mandatory.
+ * <wireconn> tags for switch blocks require mandatory from/to attributes while those for scatter-gather
+ * patterns are optional.
  * @return                 A `t_wireconn_inf` structure populated with parsed data.
  */
 static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
                                             const pugiutil::loc_data& loc_data,
-                                            const std::vector<t_arch_switch_inf>& switches);
+                                            const std::vector<t_arch_switch_inf>& switches,
+                                            bool can_skip_from_to);
 
 /**
  * @brief Parses a multi-node `<wireconn>` definition with `<from>` and `<to>` children.
@@ -126,14 +130,15 @@ void read_sb_wireconns(const std::vector<t_arch_switch_inf>& switches,
 
 t_wireconn_inf parse_wireconn(pugi::xml_node node,
                               const pugiutil::loc_data& loc_data,
-                              const std::vector<t_arch_switch_inf>& switches) {
+                              const std::vector<t_arch_switch_inf>& switches,
+                              bool can_skip_from_to) {
 
     size_t num_children = count_children(node, "from", loc_data, ReqOpt::OPTIONAL);
     num_children += count_children(node, "to", loc_data, ReqOpt::OPTIONAL);
 
     t_wireconn_inf wireconn;
     if (num_children == 0) {
-        wireconn = parse_wireconn_inline(node, loc_data, switches);
+        wireconn = parse_wireconn_inline(node, loc_data, switches, can_skip_from_to);
     } else {
         VTR_ASSERT(num_children > 0);
         wireconn = parse_wireconn_multinode(node, loc_data, switches);
@@ -154,33 +159,40 @@ t_wireconn_inf parse_wireconn(pugi::xml_node node,
 
 static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
                                             const pugiutil::loc_data& loc_data,
-                                            const std::vector<t_arch_switch_inf>& switches) {
+                                            const std::vector<t_arch_switch_inf>& switches,
+                                            bool can_skip_from_to) {
 
     // Parse an inline wireconn definition, using attributes
-    expect_only_attributes(node, {"num_conns", "from_type", "to_type", "from_switchpoint", "to_switchpoint", "from_order", "to_order", "switch_override"}, loc_data);
+    expect_only_attributes(node, {"num_conns", "from_type", "to_type", "from_switchpoint", "to_switchpoint", "from_order", "to_order", "switch_override", "side"}, loc_data);
 
     t_wireconn_inf wc;
+
+    ReqOpt from_to_required = can_skip_from_to ? ReqOpt::OPTIONAL : ReqOpt::REQUIRED;
 
     // get the connection style
     const char* char_prop = get_attribute(node, "num_conns", loc_data).value();
     parse_num_conns(char_prop, wc);
 
     // get from type
-    char_prop = get_attribute(node, "from_type", loc_data).value();
-    parse_comma_separated_wire_types(char_prop, wc.from_switchpoint_set);
-
+    char_prop = get_attribute(node, "from_type", loc_data, from_to_required).value();
+    if (!can_skip_from_to) {
+        parse_comma_separated_wire_types(char_prop, wc.from_switchpoint_set);
+    }
     // get to type
-    char_prop = get_attribute(node, "to_type", loc_data).value();
-    parse_comma_separated_wire_types(char_prop, wc.to_switchpoint_set);
-
+    char_prop = get_attribute(node, "to_type", loc_data, from_to_required).value();
+    if (!can_skip_from_to) {
+        parse_comma_separated_wire_types(char_prop, wc.to_switchpoint_set);
+    }
     // get the source wire point
-    char_prop = get_attribute(node, "from_switchpoint", loc_data).value();
-    parse_comma_separated_wire_points(char_prop, wc.from_switchpoint_set);
-
+    char_prop = get_attribute(node, "from_switchpoint", loc_data, from_to_required).value();
+    if (!can_skip_from_to) {
+        parse_comma_separated_wire_points(char_prop, wc.from_switchpoint_set);
+    }
     // get the destination wire point
-    char_prop = get_attribute(node, "to_switchpoint", loc_data).value();
-    parse_comma_separated_wire_points(char_prop, wc.to_switchpoint_set);
-
+    char_prop = get_attribute(node, "to_switchpoint", loc_data, from_to_required).value();
+    if (!can_skip_from_to) {
+        parse_comma_separated_wire_points(char_prop, wc.to_switchpoint_set);
+    }
     char_prop = get_attribute(node, "from_order", loc_data, ReqOpt::OPTIONAL).value();
     parse_switchpoint_order(char_prop, wc.from_switchpoint_order);
 
