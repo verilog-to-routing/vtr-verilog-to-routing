@@ -497,6 +497,12 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                 // Erase related data of illegal cluster
                 loc_to_cluster_id_placed.erase(it->second);
                 cluster_legalizer.destroy_cluster(it->first);
+                // Erase from the new map as well.
+                auto& vec = tile_loc_to_cluster_id_placed[{it->second.x, it->second.y, -1, it->second.layer}];
+                vec.erase(std::remove(vec.begin(), vec.end(), it->first), vec.end());
+                if (vec.empty()) {
+                    tile_loc_to_cluster_id_placed.erase({it->second.x, it->second.y, -1, it->second.layer});
+                }
                 it = cluster_ids_to_check.erase(it);
             } else {
                 ++it;
@@ -591,9 +597,6 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                                 tile_blocks,
                                 unclustered_blocks);
 
-    // Get rid off the invalid cluster ids before reporting.
-    cluster_legalizer.compress();
-
     // Reconstruction pass clustering statistics collection
     std::unordered_map<std::string, size_t> cluster_type_count_first_pass;
     std::vector<LegalizationClusterId> first_pass_clusters;
@@ -601,6 +604,9 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     size_t total_molecules_in_first_pass_clusters = 0;
     size_t total_clusters_in_first_pass = 0;
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
+        if (!cluster_id.is_valid()) {
+            continue;
+        }
         total_clusters_in_first_pass++;
         first_pass_clusters.push_back(cluster_id);
         bool block_type_set = false;
@@ -685,9 +691,11 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                 // Destroy the old cluster and update data structures accordingly
                 // Note: We may not need to update the data structures since the cluster ids will become invalid.
                 cluster_legalizer.destroy_cluster(cluster_id);
+                first_pass_clusters.erase(find(first_pass_clusters.begin(), first_pass_clusters.end(), cluster_id));
                 
                 PackMoleculeId seed_mol = cluster_molecules[0];
                 LegalizationClusterId new_cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types); 
+                first_pass_clusters.push_back(new_cluster_id);
                 // Remove the first element used as seed.
                 cluster_molecules.erase(cluster_molecules.begin());
 
@@ -710,6 +718,7 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
 
                 // Check Cluster Legality for older molecules
                 if (!cluster_legalizer.check_cluster_legality(new_cluster_id)) {
+                    VTR_LOG("An illegal cluster detected!\n");
                     cluster_legalizer.destroy_cluster(new_cluster_id);
                     new_cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types); 
                     for (PackMoleculeId mol_id: cluster_molecules) {
@@ -807,12 +816,6 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     if (!fits_on_device) {
         VPR_FATAL_ERROR(VPR_ERROR_AP, "Clusters could not fit on device.");
     }
-    
-    
-    
-
-    // Get rid off the invalid cluster ids before reporting.
-    cluster_legalizer.compress();
 
     // Neighbor pass clustering statistics collection
     std::unordered_map<std::string, size_t> cluster_type_count_second_pass;
@@ -820,6 +823,9 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     size_t total_molecules_in_second_pass_clusters = 0;
     size_t total_clusters_in_second_pass = 0;
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
+        if (!cluster_id.is_valid()) {
+            continue;
+        }
         if (std::find(first_pass_clusters.begin(), first_pass_clusters.end(), cluster_id) != first_pass_clusters.end())
             continue;
         total_clusters_in_second_pass++;
