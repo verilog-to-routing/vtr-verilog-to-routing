@@ -57,7 +57,8 @@ void read_sb_wireconns(const std::vector<t_arch_switch_inf>& switches,
  */
 t_wireconn_inf parse_wireconn(pugi::xml_node node,
                               const pugiutil::loc_data& loc_data,
-                              const std::vector<t_arch_switch_inf>& switches);
+                              const std::vector<t_arch_switch_inf>& switches,
+                              bool can_skip_from_to = false);
 
 /* checks for correctness of switch block read-in from the XML architecture file */
 void check_switchblock(const t_switchblock_inf& sb, const t_arch* arch);
