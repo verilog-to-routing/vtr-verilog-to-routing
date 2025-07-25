@@ -435,6 +435,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case e_router_lookahead::EXTENDED_MAP:
                 VTR_LOG("EXTENDED_MAP\n");
                 break;
+            case e_router_lookahead::SIMPLE:
+                VTR_LOG("SIMPLE\n");
+                break;
             case e_router_lookahead::NO_OP:
                 VTR_LOG("NO_OP\n");
                 break;
