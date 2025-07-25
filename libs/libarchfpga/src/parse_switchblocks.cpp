@@ -178,21 +178,25 @@ static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
     if (!can_skip_from_to) {
         parse_comma_separated_wire_types(char_prop, wc.from_switchpoint_set);
     }
+
     // get to type
     char_prop = get_attribute(node, "to_type", loc_data, from_to_required).value();
     if (!can_skip_from_to) {
         parse_comma_separated_wire_types(char_prop, wc.to_switchpoint_set);
     }
+
     // get the source wire point
     char_prop = get_attribute(node, "from_switchpoint", loc_data, from_to_required).value();
     if (!can_skip_from_to) {
         parse_comma_separated_wire_points(char_prop, wc.from_switchpoint_set);
     }
+
     // get the destination wire point
     char_prop = get_attribute(node, "to_switchpoint", loc_data, from_to_required).value();
     if (!can_skip_from_to) {
         parse_comma_separated_wire_points(char_prop, wc.to_switchpoint_set);
     }
+
     char_prop = get_attribute(node, "from_order", loc_data, ReqOpt::OPTIONAL).value();
     parse_switchpoint_order(char_prop, wc.from_switchpoint_order);
 
@@ -330,8 +334,9 @@ static void set_switch_func_type(SBSideConnection& conn, const char* func_type) 
     if (std::string(func_type).find_first_not_of("rtlbauRTLBAU") != std::string::npos) {
         archfpga_throw(__FILE__, __LINE__, "Unknown direction specified: %s\n", func_type);
     }
-    e_side to_side = CHAR_SIDE_MAP.at(func_type[0]);
-    e_side from_side = CHAR_SIDE_MAP.at(func_type[1]);
+    
+    e_side from_side = CHAR_SIDE_MAP.at(func_type[0]);
+    e_side to_side = CHAR_SIDE_MAP.at(func_type[1]);
 
     // Can't go from side to same side
     if (to_side == from_side) {
