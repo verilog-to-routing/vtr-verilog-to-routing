@@ -82,7 +82,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     //TODO: SM: IPIN t_linear assumes wire_to_ipin_switch which corresponds to within die switch connection
     rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
 
-    std::vector<int> ortho_costs = find_ortho_cost_index(rr_graph, segment_inf_x, segment_inf_y, X_AXIS);
+    std::vector<int> ortho_costs = find_ortho_cost_index(rr_graph, segment_inf_x, segment_inf_y, e_parallel_axis::X_AXIS);
 
     /* AA: The code below should replace find_ortho_cost_index call once we deprecate the CLASSIC lookahead as it is the only lookahead
      * that actively uses the orthogonal cost indices. To avoid complicated dependencies with the rr_graph reader, regardless of the lookahead,
@@ -262,7 +262,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
         /* The compartor behaves as operator< mostly, so the first element in the 
          * sorted vector will have the lowest cost difference from segment. */
         ortho_costs_indices[seg_index] = segment_inf_perp[0].seg_index + start_channel_cost;
-        ortho_costs_indices[seg_index] = parallel_axis == X_AXIS ? ortho_costs_indices[seg_index] + num_segments : ortho_costs_indices[seg_index];
+        ortho_costs_indices[seg_index] = parallel_axis == e_parallel_axis::X_AXIS ? ortho_costs_indices[seg_index] + num_segments : ortho_costs_indices[seg_index];
     }
 
     /*Pertubate indices to make sure all perp seg types have a corresponding perp segment.*/
@@ -283,7 +283,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
     perp_segments.resize(segment_inf_perp.size(), 0);
 
     for (int i = 0; i < num_segments; ++i) {
-        int index = parallel_axis == X_AXIS ? ortho_costs_indices[i] - num_segments - start_channel_cost : ortho_costs_indices[i] - start_channel_cost;
+        int index = parallel_axis == e_parallel_axis::X_AXIS ? ortho_costs_indices[i] - num_segments - start_channel_cost : ortho_costs_indices[i] - start_channel_cost;
         indices_map.insert(std::make_pair(index, i));
         perp_segments[index]++;
     }
@@ -309,7 +309,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
         auto itr_to_change = indices_map.find(g_index_pair.first);
         VTR_ASSERT(itr_to_change != indices_map.end());
         int index = l_index_pair.first + start_channel_cost;
-        index = parallel_axis == X_AXIS ? index + num_segments : index;
+        index = parallel_axis == e_parallel_axis::X_AXIS ? index + num_segments : index;
         ortho_costs_indices[itr_to_change->second] = index;
         indices_map.erase(itr_to_change);
 
@@ -344,6 +344,7 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 
     rr_indexed_data[RRIndexedDataId(SOURCE_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost = 0.;
+    rr_indexed_data[RRIndexedDataId(MUX_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(OPIN_COST_INDEX)].base_cost = delay_normalization_fac;
     // The IPIN_COST_INDEX base cost is changed from 0.95 to 0.875 so it is perfectly representable in binary format (this change is made for SPEC benchmark).
     // This number is perfectly representable in a binary mantissa (without round-off) so we can get the same routing result on different platforms.
@@ -739,6 +740,8 @@ static void print_rr_index_info(const vtr::vector<RRIndexedDataId, t_rr_indexed_
             string_stream << cost_index << " SOURCE";
         } else if (cost_index == SINK_COST_INDEX) {
             string_stream << cost_index << " SINK";
+        } else if (cost_index == MUX_COST_INDEX) {
+            string_stream << cost_index << " MUX";
         } else if (cost_index == OPIN_COST_INDEX) {
             string_stream << cost_index << " OPIN";
         } else if (cost_index == IPIN_COST_INDEX) {

@@ -40,8 +40,6 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 
 static bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::regex& blif_model_regex);
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
-static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
-static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 
 /******************** Subroutine definitions *********************************/
 
@@ -520,15 +518,6 @@ std::pair<int, int> get_pin_range_for_block(const ClusterBlockId blk_id) {
     int pin_high = sub_tile.sub_tile_to_tile_pin_indices[rel_pin_high];
 
     return {pin_low, pin_high};
-}
-
-t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types) {
-    for (auto const& type : types) {
-        if (type.name == name) {
-            return &type;
-        }
-    }
-    return nullptr; //Not found
 }
 
 t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat) {
@@ -1029,7 +1018,7 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
 }
 
 /* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
-static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
     t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
 
     t_pb_graph_node* pb_graph_head = type->pb_graph_head;
@@ -1057,7 +1046,7 @@ static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_
 }
 
 /* Free pb_graph_pin lookup array */
-static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
+void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
     if (pb_graph_pin_lookup_from_type == nullptr) {
         return;
     }
@@ -1351,7 +1340,7 @@ void free_pb_stats(t_pb* pb) {
  ***************************************************************************************/
 std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line) {
 
-    if (vtr::split(src_string).size() > 1) {
+    if (vtr::StringToken(src_string).split(" \t\n").size() > 1) {
         VPR_THROW(VPR_ERROR_ARCH,
                   "Only a single port pin range specification allowed for direct connect (was: '%s')", src_string);
     }
@@ -1641,7 +1630,7 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id) {
     auto node_type = rr_graph_view.node_type(node_id);
-    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::CHANZ) {
+    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::CHANZ || node_type == e_rr_type::MUX) {
         return true;
     } else {
         int x_low = rr_graph_view.node_xlow(node_id);
