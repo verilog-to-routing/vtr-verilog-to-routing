@@ -26,14 +26,6 @@
 /********************** Subroutines local to this module *********************/
 
 /**
- * @brief Loads the two arrays passed in with the total occupancy at each of the
- *        channel segments in the FPGA.
- */
-static void load_channel_occupancies(const Netlist<>& net_list,
-                                     vtr::NdMatrix<int, 3>& chanx_occ,
-                                     vtr::NdMatrix<int, 3>& chany_occ);
-
-/**
  * @brief Figures out maximum, minimum and average number of bends
  *        and net length in the routing.
  */
@@ -327,7 +319,7 @@ template void write_channel_occupancy_table<int>(const std::string_view filename
                                              const vtr::NdMatrix<int, 3>& occupancy,
                                              const vtr::NdMatrix<int, 3>& capacity_list);
 
-static void load_channel_occupancies(const Netlist<>& net_list,
+void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::NdMatrix<int, 3>& chanx_occ,
                                      vtr::NdMatrix<int, 3>& chany_occ) {
     const auto& device_ctx = g_vpr_ctx.device();

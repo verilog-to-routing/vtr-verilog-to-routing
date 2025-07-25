@@ -29,6 +29,8 @@
 #include "move_utils.h"
 #include "route_export.h"
 #include "tatum/report/TimingPathCollector.hpp"
+#include "stats.h"
+#include "net_cost_handler.h"
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
@@ -724,164 +726,284 @@ void draw_routing_util(ezgl::renderer* g) {
     if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
         return;
     }
-
-    t_draw_coords* draw_coords = get_draw_coords_vars();
+    
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const size_t num_layers = device_ctx.grid.get_num_layers();
+    const size_t grid_width = device_ctx.grid.width();
+    const size_t grid_height = device_ctx.grid.height();
 
-    auto chanx_usage = calculate_routing_usage(e_rr_type::CHANX, draw_state->is_flat, false);
-    auto chany_usage = calculate_routing_usage(e_rr_type::CHANY, draw_state->is_flat, false);
+    ChannelData<vtr::NdMatrix<double, 3>> occupancy_percent;
+    occupancy_percent.x = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0.);
+    occupancy_percent.y = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0.);
 
-    auto chanx_avail = calculate_routing_avail(e_rr_type::CHANX);
-    auto chany_avail = calculate_routing_avail(e_rr_type::CHANY);
+    ChannelData<vtr::NdMatrix<int, 3>> chan_width;
+    chan_width.x = vtr::NdMatrix<int, 3>({{num_layers, grid_width, grid_height}}, 0);
+    chan_width.y = vtr::NdMatrix<int, 3>({{num_layers, grid_width, grid_height}}, 0);
 
-    float min_util = 0.;
-    float max_util = -std::numeric_limits<float>::infinity();
-    for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
-        for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
-            max_util = std::max(max_util,
-                                routing_util(chanx_usage[x][y], chanx_avail[x][y]));
-            max_util = std::max(max_util,
-                                routing_util(chany_usage[x][y], chany_avail[x][y]));
+    vtr::NdMatrix<int, 3> chanx_occupancy_count({{num_layers, grid_width, grid_height}}, 0);
+    vtr::NdMatrix<int, 3> chany_occupancy_count({{num_layers, grid_width, grid_height}}, 0);
+
+    const Netlist<>& netlist = (const Netlist<>&)cluster_ctx.clb_nlist;
+    load_channel_occupancies(netlist, chanx_occupancy_count, chany_occupancy_count);
+    
+    std::tie(chan_width.x, chan_width.y) = calculate_channel_width();
+
+    // convert channel occupancy counts to percentages
+    for(size_t layer = 0; layer < num_layers; ++layer) {
+        for (size_t x = 0; x < grid_width; ++x) {
+            for (size_t y = 0; y < grid_height; ++y) {
+                if(chan_width.x[layer][x][y] != 0) {
+                    occupancy_percent.x[layer][x][y] = float(chanx_occupancy_count[layer][x][y]) / chan_width.x[layer][x][y];
+                }
+                if(chan_width.y[layer][x][y] != 0){
+                    occupancy_percent.y[layer][x][y] = float(chany_occupancy_count[layer][x][y]) / chan_width.y[layer][x][y];
+                }
+            }
         }
     }
-    max_util = std::max(max_util, 1.f);
 
+    draw_routing_util_heatmap(occupancy_percent, chan_width, g);
+
+}
+
+void draw_routing_util_heatmap(const ChannelData<vtr::NdMatrix<double, 3>>& occupancy_percent, const ChannelData<vtr::NdMatrix<int, 3>>& chan_width, ezgl::renderer* g){
+
+    auto& device_ctx = g_vpr_ctx.device();
+    t_draw_state* draw_state = get_draw_state_vars();
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    float tile_width = draw_coords->get_tile_width();
+    float tile_height = draw_coords->get_tile_height();
+    size_t grid_width = device_ctx.grid.width();
+    size_t grid_height = device_ctx.grid.height();
+    size_t layer = 0; // TODO: support multiple layers
+
+    // Calculate the maximum utilization values to scale the heatmap
+    double max_util = -std::numeric_limits<double>::infinity();
+    for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
+        for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
+            max_util = std::max(max_util, occupancy_percent.x[layer][x][y]);
+            max_util = std::max(max_util, occupancy_percent.y[layer][x][y]);
+        }
+    }
+    max_util = std::max(max_util, 1.);
+
+    // Create a color map for the heatmap, and clip routing util to 1 if clipping is enabled. 
+    // Routing util is exceeds 1 when the circuit is congested.
     std::unique_ptr<vtr::ColorMap> cmap;
-
     if (draw_state->clip_routing_util) {
         cmap = std::make_unique<vtr::PlasmaColorMap>(0., 1.);
     } else {
-        cmap = std::make_unique<vtr::PlasmaColorMap>(min_util, max_util);
+        cmap = std::make_unique<vtr::PlasmaColorMap>(0, max_util);
     }
 
-    float tile_width = draw_coords->get_tile_width();
-    float tile_height = draw_coords->get_tile_height();
+    // Draw CHANX utilization
+    for (size_t x = 1; x < grid_width - 1; ++x) {
+        for (size_t y = 0; y < grid_height -1; ++y) {
 
-    float ALPHA = 0.95;
-    if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
-        ALPHA = 1.;
-    }
+            float chanx_util = occupancy_percent.x[layer][x][y];
 
-    for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
-        for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
-            float sb_util = 0;
-            float chanx_util = 0;
-            float chany_util = 0;
-            int chan_count = 0;
-            if (x > 0) {
-                chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
-                if (draw_state->clip_routing_util) {
-                    chanx_util = std::min(chanx_util, 1.f);
-                }
-                ezgl::color chanx_color = to_ezgl_color(
-                    cmap->color(chanx_util));
-                chanx_color.alpha *= ALPHA;
-                g->set_color(chanx_color);
-                ezgl::rectangle bb(
-                    {draw_coords->tile_x[x], draw_coords->tile_y[y]
-                                                 + 1 * tile_height},
-                    {draw_coords->tile_x[x] + 1 * tile_width,
-                     draw_coords->tile_y[y + 1]});
-                g->fill_rectangle(bb);
-
-                g->set_color(ezgl::BLACK);
-                if (draw_state->show_routing_util
-                    == DRAW_ROUTING_UTIL_WITH_VALUE) {
-                    g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f", chanx_util).c_str(),
-                                 bb.width(), bb.height());
-                } else if (draw_state->show_routing_util
-                           == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                    g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f = %.0f / %.0f", chanx_util,
-                                                 chanx_usage[x][y], chanx_avail[x][y])
-                                     .c_str(),
-                                 bb.width(), bb.height());
-                }
-
-                sb_util += chanx_util;
-                ++chan_count;
-            }
-
-            if (y > 0) {
-                chany_util = routing_util(chany_usage[x][y], chany_avail[x][y]);
-                if (draw_state->clip_routing_util) {
-                    chany_util = std::min(chany_util, 1.f);
-                }
-                ezgl::color chany_color = to_ezgl_color(
-                    cmap->color(chany_util));
-                chany_color.alpha *= ALPHA;
-                g->set_color(chany_color);
-                ezgl::rectangle bb({draw_coords->tile_x[x] + 1 * tile_width,
-                                    draw_coords->tile_y[y]},
-                                   {draw_coords->tile_x[x + 1], draw_coords->tile_y[y]
-                                                                    + 1 * tile_height});
-                g->fill_rectangle(bb);
-
-                g->set_color(ezgl::BLACK);
-                if (draw_state->show_routing_util
-                    == DRAW_ROUTING_UTIL_WITH_VALUE) {
-                    g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f", chany_util).c_str(),
-                                 bb.width(), bb.height());
-                } else if (draw_state->show_routing_util
-                           == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                    g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f = %.0f / %.0f", chany_util,
-                                                 chany_usage[x][y], chany_avail[x][y])
-                                     .c_str(),
-                                 bb.width(), bb.height());
-                }
-
-                sb_util += chany_util;
-                ++chan_count;
-            }
-
-            //For now SB util is just average of surrounding channels
-            //TODO: calculate actual usage
-            sb_util += routing_util(chanx_usage[x + 1][y],
-                                    chanx_avail[x + 1][y]);
-            chan_count += 1;
-            sb_util += routing_util(chany_usage[x][y + 1],
-                                    chany_avail[x][y + 1]);
-            chan_count += 1;
-
-            VTR_ASSERT(chan_count > 0);
-            sb_util /= chan_count;
             if (draw_state->clip_routing_util) {
-                sb_util = std::min(sb_util, 1.f);
+                chanx_util = std::min(chanx_util, 1.f);
             }
-            ezgl::color sb_color = to_ezgl_color(cmap->color(sb_util));
-            sb_color.alpha *= ALPHA;
-            g->set_color(sb_color);
-            ezgl::rectangle bb(
-                {draw_coords->tile_x[x] + 1 * tile_width,
-                 draw_coords->tile_y[y] + 1 * tile_height},
-                {draw_coords->tile_x[x + 1], draw_coords->tile_y[y + 1]});
-            g->fill_rectangle(bb);
 
-            //Draw over blocks
-            if (draw_state->show_routing_util
-                == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
-                if (x < device_ctx.grid.width() - 2
-                    && y < device_ctx.grid.height() - 2) {
-                    ezgl::rectangle bb2({draw_coords->tile_x[x + 1],
-                                         draw_coords->tile_y[y + 1]},
-                                        {draw_coords->tile_x[x + 1] + 1 * tile_width,
-                                         draw_coords->tile_y[y + 1] + 1 * tile_width});
-                    g->fill_rectangle(bb2);
-                }
-            }
+            ezgl::color chanx_color = to_ezgl_color(cmap->color(chanx_util));
+
+            g->set_color(chanx_color);
+            ezgl::rectangle chan_x_bb({draw_coords->tile_x[x], draw_coords->tile_y[y] + tile_height},
+                {draw_coords->tile_x[x] + tile_width, draw_coords->tile_y[y] + tile_height * 2 });
+            g->fill_rectangle(chan_x_bb);
             g->set_color(ezgl::BLACK);
-            if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE
-                || draw_state->show_routing_util
-                       == DRAW_ROUTING_UTIL_WITH_FORMULA) {
-                g->draw_text(bb.center(),
-                             vtr::string_fmt("%.2f", sb_util).c_str(), bb.width(),
-                             bb.height());
-            }
+            g->draw_text(chan_x_bb.center(),
+                                 vtr::string_fmt("%.2f", chanx_util).c_str(),
+                                 chan_x_bb.width(), chan_x_bb.height());
         }
     }
+
+    // Draw CHANY utilization
+    for (size_t x = 0; x < grid_width -1; ++x) {
+        for (size_t y = 1; y < grid_height-1; ++y) {
+
+            float chany_util = occupancy_percent.y[layer][x][y];
+
+            if (draw_state->clip_routing_util) {
+                chany_util = std::min(chany_util, 1.f);
+            }
+
+            ezgl::color chany_color = to_ezgl_color(cmap->color(chany_util));
+
+           
+            g->set_color(chany_color);
+            ezgl::rectangle chan_y_bb({draw_coords->tile_x[x] + tile_width, draw_coords->tile_y[y]},
+                {draw_coords->tile_x[x] + tile_width * 2, draw_coords->tile_y[y] + tile_height});
+            g->fill_rectangle(chan_y_bb);
+            g->set_color(ezgl::BLACK);
+            g->draw_text(chan_y_bb.center(),
+                                    vtr::string_fmt("%.2f", chany_util).c_str(),    
+                                    chan_y_bb.width(), chan_y_bb.height());
+        }
+    }
+    
+    // Draw in-between utilization by taking the average of the surrounding channels.
+    for (size_t x = 0; x < grid_width - 2; ++x) {
+        for (size_t y = 0; y < grid_height-2; ++y) {
+            int chan_count = 2;
+            float sum_util = 0.f;
+            
+            // Sum up neighboring channel utilizations
+            sum_util += occupancy_percent.x[layer][x + 1][y];
+            sum_util += occupancy_percent.y[layer][x][y + 1];
+            if (x > 0) {
+                sum_util += occupancy_percent.x[layer][x][y];
+                chan_count++;
+            }
+            if (y > 0) {
+                sum_util += occupancy_percent.y[layer][x][y];
+                chan_count++;
+            }
+
+            float avg_util = sum_util / chan_count;
+
+            if (draw_state->clip_routing_util) {
+                avg_util = std::min(avg_util, 1.f);
+            }
+
+            ezgl::color avg_color = to_ezgl_color(cmap->color(avg_util));
+
+            g->set_color(avg_color);
+            ezgl::rectangle avg_bb({draw_coords->tile_x[x] + tile_width,
+                                    draw_coords->tile_y[y] + tile_height},
+                                      {draw_coords->tile_x[x] + tile_width * 2, 
+                                        draw_coords->tile_y[y] + tile_height * 2});
+            g->fill_rectangle(avg_bb);
+            g->set_color(ezgl::BLACK);
+            g->draw_text(avg_bb.center(),
+                                 vtr::string_fmt("%.2f", avg_util).c_str(),
+                                 avg_bb.width(), avg_bb.height());
+
+        }
+    }
+
+    // for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
+    //     for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
+    //         float sb_util = 0;
+    //         float chanx_util = 0;
+    //         float chany_util = 0;
+    //         int chan_count = 0;
+    //         if (x > 0) {
+    //             chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
+    //             if (draw_state->clip_routing_util) {
+    //                 chanx_util = std::min(chanx_util, 1.f);
+    //             }
+    //             ezgl::color chanx_color = to_ezgl_color(
+    //                 cmap->color(chanx_util));
+    //             chanx_color.alpha *= ALPHA;
+    //             g->set_color(chanx_color);
+    //             ezgl::rectangle bb(
+    //                 {draw_coords->tile_x[x], draw_coords->tile_y[y]
+    //                                              + 1 * tile_height},
+    //                 {draw_coords->tile_x[x] + 1 * tile_width,
+    //                  draw_coords->tile_y[y + 1]});
+    //             g->fill_rectangle(bb);
+
+    //             g->set_color(ezgl::BLACK);
+    //             if (draw_state->show_routing_util
+    //                 == DRAW_ROUTING_UTIL_WITH_VALUE) {
+    //                 g->draw_text(bb.center(),
+    //                              vtr::string_fmt("%.2f", chanx_util).c_str(),
+    //                              bb.width(), bb.height());
+    //             } else if (draw_state->show_routing_util
+    //                        == DRAW_ROUTING_UTIL_WITH_FORMULA) {
+    //                 g->draw_text(bb.center(),
+    //                              vtr::string_fmt("%.2f = %.0f / %.0f", chanx_util,
+    //                                              chanx_usage[x][y], chanx_avail[x][y])
+    //                                  .c_str(),
+    //                              bb.width(), bb.height());
+    //             }
+
+    //             sb_util += chanx_util;
+    //             ++chan_count;
+    //         }
+
+    //         if (y > 0) {
+    //             chany_util = routing_util(chany_usage[x][y], chany_avail[x][y]);
+    //             if (draw_state->clip_routing_util) {
+    //                 chany_util = std::min(chany_util, 1.f);
+    //             }
+    //             ezgl::color chany_color = to_ezgl_color(
+    //                 cmap->color(chany_util));
+    //             chany_color.alpha *= ALPHA;
+    //             g->set_color(chany_color);
+    //             ezgl::rectangle bb({draw_coords->tile_x[x] + 1 * tile_width,
+    //                                 draw_coords->tile_y[y]},
+    //                                {draw_coords->tile_x[x + 1], draw_coords->tile_y[y]
+    //                                                                 + 1 * tile_height});
+    //             g->fill_rectangle(bb);
+
+    //             g->set_color(ezgl::BLACK);
+    //             if (draw_state->show_routing_util
+    //                 == DRAW_ROUTING_UTIL_WITH_VALUE) {
+    //                 g->draw_text(bb.center(),
+    //                              vtr::string_fmt("%.2f", chany_util).c_str(),
+    //                              bb.width(), bb.height());
+    //             } else if (draw_state->show_routing_util
+    //                        == DRAW_ROUTING_UTIL_WITH_FORMULA) {
+    //                 g->draw_text(bb.center(),
+    //                              vtr::string_fmt("%.2f = %.0f / %.0f", chany_util,
+    //                                              chany_usage[x][y], chany_avail[x][y])
+    //                                  .c_str(),
+    //                              bb.width(), bb.height());
+    //             }
+
+    //             sb_util += chany_util;
+    //             ++chan_count;
+    //         }
+
+    //         //For now SB util is just average of surrounding channels
+    //         //TODO: calculate actual usage
+    //         sb_util += routing_util(chanx_usage[x + 1][y],
+    //                                 chanx_avail[x + 1][y]);
+    //         chan_count += 1;
+    //         sb_util += routing_util(chany_usage[x][y + 1],
+    //                                 chany_avail[x][y + 1]);
+    //         chan_count += 1;
+
+    //         VTR_ASSERT(chan_count > 0);
+    //         sb_util /= chan_count;
+    //         if (draw_state->clip_routing_util) {
+    //             sb_util = std::min(sb_util, 1.f);
+    //         }
+    //         ezgl::color sb_color = to_ezgl_color(cmap->color(sb_util));
+    //         sb_color.alpha *= ALPHA;
+    //         g->set_color(sb_color);
+    //         ezgl::rectangle bb(
+    //             {draw_coords->tile_x[x] + 1 * tile_width,
+    //              draw_coords->tile_y[y] + 1 * tile_height},
+    //             {draw_coords->tile_x[x + 1], draw_coords->tile_y[y + 1]});
+    //         g->fill_rectangle(bb);
+
+    //         //Draw over blocks
+    //         if (draw_state->show_routing_util
+    //             == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
+    //             if (x < device_ctx.grid.width() - 2
+    //                 && y < device_ctx.grid.height() - 2) {
+    //                 ezgl::rectangle bb2({draw_coords->tile_x[x + 1],
+    //                                      draw_coords->tile_y[y + 1]},
+    //                                     {draw_coords->tile_x[x + 1] + 1 * tile_width,
+    //                                      draw_coords->tile_y[y + 1] + 1 * tile_width});
+    //                 g->fill_rectangle(bb2);
+    //             }
+    //         }
+    //         g->set_color(ezgl::BLACK);
+    //         if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE
+    //             || draw_state->show_routing_util
+    //                    == DRAW_ROUTING_UTIL_WITH_FORMULA) {
+    //             g->draw_text(bb.center(),
+    //                          vtr::string_fmt("%.2f", sb_util).c_str(), bb.width(),
+    //                          bb.height());
+    //         }
+    //     }
+    // }
 
     draw_state->color_map = std::move(cmap);
 }

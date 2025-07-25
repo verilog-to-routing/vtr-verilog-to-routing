@@ -41,6 +41,14 @@ void print_wirelen_prob_dist(bool is_flat);
 
 void print_lambda();
 
+/**
+ * @brief Loads the two arrays passed in with the total occupancy at each of the
+ *        channel segments in the FPGA.
+ */
+void load_channel_occupancies(const Netlist<>& net_list,
+                                     vtr::NdMatrix<int, 3>& chanx_occ,
+                                     vtr::NdMatrix<int, 3>& chany_occ);
+
 void get_num_bends_and_length(ParentNetId inet, int* bends, int* length, int* segments, bool* is_absorbed_ptr);
 
 int count_netlist_clocks();

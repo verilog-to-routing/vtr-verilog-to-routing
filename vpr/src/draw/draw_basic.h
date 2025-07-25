@@ -23,6 +23,7 @@
 
 #include "ezgl/point.hpp"
 #include "ezgl/graphics.hpp"
+#include "net_cost_handler.h"
 
 /* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
  * while empty ones are lighter colours and have a dashed border. *
@@ -81,6 +82,8 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node);
  * Lighter colours (e.g. yellow) correspond to highly utilized
  * channels, while darker colours (e.g. blue) correspond to lower utilization.*/
 void draw_routing_util(ezgl::renderer* g);
+
+void draw_routing_util_heatmap(const ChannelData<vtr::NdMatrix<double, 3>>& occupancy_percent, const ChannelData<vtr::NdMatrix<int, 3>>& chan_width, ezgl::renderer* g);
 
 /* Draws the critical path if Crit. Path (in the GUI) is selected. Each stage between primitive
  * pins is shown in a different colour.
