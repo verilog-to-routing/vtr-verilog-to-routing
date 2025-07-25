@@ -660,10 +660,38 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
             {loc.x+1, loc.y+1, -1, loc.layer_num},
         };
 
+        // Sort the neighbor tile locations according to average mol count in clusters in that tile.
+        std::unordered_map<t_pl_loc, double> avg_mols_in_tile;
+        for (t_pl_loc neighbor_tile_loc: neighbor_tile_locs) {    
+            if (tile_loc_to_cluster_id_placed.find(neighbor_tile_loc) == tile_loc_to_cluster_id_placed.end()) 
+                continue;
+
+            size_t total_molecules_in_tile = 0;
+            size_t total_clusters_in_tile = 0;
+            for (LegalizationClusterId cluster_id: tile_loc_to_cluster_id_placed[neighbor_tile_loc]) {
+                total_molecules_in_tile += cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
+                total_clusters_in_tile ++;
+            }
+            if (total_clusters_in_tile) {
+                avg_mols_in_tile[neighbor_tile_loc] = double(total_molecules_in_tile) / total_clusters_in_tile;
+            }
+        }
+        // Sort tile locations by increasing avg mol count
+        std::vector<t_pl_loc> sorted_neighbor_tile_locs;
+        for (const auto& [tile_loc, _] : avg_mols_in_tile) {
+            sorted_neighbor_tile_locs.push_back(tile_loc);
+        }
+
+        std::sort(sorted_neighbor_tile_locs.begin(), sorted_neighbor_tile_locs.end(),
+                [&](const t_pl_loc& a, const t_pl_loc& b) {
+                    return avg_mols_in_tile[a] < avg_mols_in_tile[b];
+                });
+
+
         bool fit_in_a_neighbor = false;
 
         std::vector<LegalizationClusterId> neighbor_clusters;
-        for (t_pl_loc neighbor_tile_loc: neighbor_tile_locs) {
+        for (t_pl_loc neighbor_tile_loc: sorted_neighbor_tile_locs) {
             if (fit_in_a_neighbor) {
                 break;
             }
