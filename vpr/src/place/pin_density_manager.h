@@ -27,6 +27,7 @@ class PinDensityManager {
   private:
     const t_placer_opts& placer_opts_;
     const PlacerState& placer_state_;
+    bool pin_density_manager_started_;
 
     float chanx_unique_signals_per_chan_;
     float chany_unique_signals_per_chan_;

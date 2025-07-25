@@ -43,7 +43,8 @@ std::pair<float, float> maximum_pin_connections_per_channel() {
 PinDensityManager::PinDensityManager(const PlacerState& placer_state,
                                      const t_placer_opts& placer_opts)
     : placer_state_(placer_state)
-    , placer_opts_(placer_opts) {
+    , placer_opts_(placer_opts)
+    , pin_density_manager_started_(false) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
@@ -71,6 +72,8 @@ double PinDensityManager::compute_cost() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const BlkLocRegistry& blk_loc_registry = placer_state_.blk_loc_registry();
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
+
+    pin_density_manager_started_ = true;
 
     const size_t grid_width = grid.width();
     const size_t grid_height = grid.height();
@@ -181,6 +184,10 @@ void PinDensityManager::print() const {
 double PinDensityManager::find_affected_channels_and_update_costs(const t_pl_blocks_to_be_moved& blocks_affected) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const BlkLocRegistry& blk_loc_registry = placer_state_.blk_loc_registry();
+
+    if (!pin_density_manager_started_) {
+        return 0.;
+    }
 
     VTR_ASSERT(moved_pins_.empty());
 

@@ -985,6 +985,10 @@ struct t_placer_opts {
     /// Weight for how much congestion affects placement cost.
     /// Higher means congestion is more important.
     float congestion_factor;
+
+    float pin_density_factor;
+    float pin_density_threshold;
+
     /// Start using congestion cost when (current rlim / initial rlim) drops below this value.
     float congestion_rlim_trigger_ratio;
     /// Nets with average channel usage (withing their bounding box) above this threshold

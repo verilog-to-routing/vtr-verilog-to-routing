@@ -119,8 +119,7 @@ Placer::Placer(const Netlist<>& net_list,
 
     // Gets initial cost and loads bounding boxes.
     std::tie(costs_.bb_cost, std::ignore, costs_.congestion_cost) = net_cost_handler_.comp_bb_cong_cost(e_cost_methods::NORMAL);
-    costs_.pin_density_cost =  pin_density_manager_.compute_cost();
-    std::cout << "initial pin cost: " << costs_.pin_density_cost  << std::endl;
+    costs_.pin_density_cost = 0.;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         alloc_and_init_timing_objects_(net_list, analysis_opts);

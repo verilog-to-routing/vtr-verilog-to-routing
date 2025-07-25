@@ -2482,29 +2482,40 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
-
-    place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")
-        .help("Trade-off control between delay and wirelength during placement. "
-              "0.0 focuses completely on wirelength, 1.0 completely on timing")
-        .default_value("0.5")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_timing_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
+    place_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
         .help("Weighting factor for congestion cost during placement. "
               "Higher values prioritize congestion avoidance over bounding box and timing costs. "
               "When set to zero, congestion modeling and optimization is disabled in the placement stage.")
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_timing_grp.add_argument(args.place_congestion_rlim_trigger_ratio, "--congestion_rlim_trigger_ratio")
+    place_grp.add_argument(args.place_congestion_rlim_trigger_ratio, "--congestion_rlim_trigger_ratio")
         .help("Enables congestion modeling when the ratio of the current range limit to the initial range limit falls below this threshold, "
               "provided the congestion weighting factor is non-zero.")
         .default_value("1.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_timing_grp.add_argument(args.place_congestion_chan_util_threshold, "--congestion_chan_util_threshold")
+    place_grp.add_argument(args.place_congestion_chan_util_threshold, "--congestion_chan_util_threshold")
         .help("Penalizes nets in placement whose average routing channel utilization within their bounding boxes exceeds this threshold.")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_pin_density_factor, "--pin_density_factor")
+        .help("to be written")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+
+    place_grp.add_argument(args.place_pin_density_threshold, "--pin_density_threshold")
+            .help("To be written")
+            .default_value("0.5")
+            .show_in(argparse::ShowIn::HELP_ONLY);
+
+    auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
+
+    place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")
+        .help("Trade-off control between delay and wirelength during placement. "
+              "0.0 focuses completely on wirelength, 1.0 completely on timing")
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

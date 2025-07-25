@@ -164,6 +164,13 @@ struct t_options {
     argparse::ArgValue<int> floorplan_num_vertical_partitions;
     argparse::ArgValue<bool> place_quench_only;
 
+    argparse::ArgValue<float> place_congestion_factor;
+    argparse::ArgValue<float> place_congestion_rlim_trigger_ratio;
+    argparse::ArgValue<float> place_congestion_chan_util_threshold;
+    argparse::ArgValue<float> place_pin_density_factor;
+    argparse::ArgValue<float> place_pin_density_threshold;
+
+
     argparse::ArgValue<int> placer_debug_block;
     argparse::ArgValue<int> placer_debug_net;
 
@@ -187,9 +194,6 @@ struct t_options {
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
-    argparse::ArgValue<float> place_congestion_factor;
-    argparse::ArgValue<float> place_congestion_rlim_trigger_ratio;
-    argparse::ArgValue<float> place_congestion_chan_util_threshold;
 
     argparse::ArgValue<int> RecomputeCritIter;
     argparse::ArgValue<int> inner_loop_recompute_divider;

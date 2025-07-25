@@ -143,7 +143,7 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
     if (congestion_modeling_enabled) {
-        t_exit *= (1. + placer_opts.congestion_factor);
+        t_exit *= (1. + placer_opts.congestion_factor + placer_opts.pin_density_factor);
     }
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
@@ -482,7 +482,8 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            costs_.timing_cost_norm);
             delta_c = (1 - placer_opts_.timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
                       + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
-                      + placer_opts_.congestion_factor * congestion_delta_c * costs_.congestion_cost_norm;
+                      + placer_opts_.congestion_factor * congestion_delta_c * costs_.congestion_cost_norm
+                      + placer_opts_.pin_density_factor * pin_density_delta_c * costs_.pin_density_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -699,6 +700,10 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
          && placer_opts_.congestion_factor != 0.)
         || congestion_modeling_started_) {
         costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util();
+
+        costs_.pin_density_cost = pin_density_manager_.compute_cost();
+
+
 
         if (!congestion_modeling_started_) {
             VTR_LOG("Congestion modeling started.\n");

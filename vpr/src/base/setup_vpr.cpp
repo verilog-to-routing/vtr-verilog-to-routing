@@ -671,9 +671,12 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->recompute_crit_iter = Options.RecomputeCritIter;
 
     PlacerOpts->timing_tradeoff = Options.PlaceTimingTradeoff;
+
     PlacerOpts->congestion_factor = Options.place_congestion_factor;
     PlacerOpts->congestion_rlim_trigger_ratio = Options.place_congestion_rlim_trigger_ratio;
     PlacerOpts->congestion_chan_util_threshold = Options.place_congestion_chan_util_threshold;
+    PlacerOpts->pin_density_factor = Options.place_pin_density_factor;
+    PlacerOpts->pin_util_threshold = Options.place_pin_density_threshold;
 
     // Depends on PlacerOpts->place_algorithm
     PlacerOpts->delay_offset = Options.place_delay_offset;
