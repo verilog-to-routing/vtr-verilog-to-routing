@@ -57,13 +57,6 @@ void draw_routed_net(ParentNetId net, ezgl::renderer* g);
 void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw,
                         ezgl::renderer* g);
 
-/** @brief Draws an edge between two rr_nodes, which are both intra-cluster nodes.
- * @param inode The current rr_node id
- * @param prev_node The previous rr_node id
- * @param g The ezgl renderer
- */
-void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr_type, e_rr_type prev_type, ezgl::renderer* g);
-
 /**
  * @brief Returns the layer number of a timing path node
  * @param node

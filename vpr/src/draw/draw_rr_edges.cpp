@@ -10,6 +10,7 @@
 #include "vpr_error.h"
 
 #include "globals.h"
+#include "draw.h"
 #include "draw_rr.h"
 #include "draw_rr_edges.h"
 #include "draw_triangle.h"
@@ -300,39 +301,48 @@ void draw_intra_cluster_edge(RRNodeId inode, RRNodeId prev_node, ezgl::renderer*
     draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
 }
 
-void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_cluster_node, e_pin_edge_dir pin_edge_dir, e_side pin_side, ezgl::renderer* g) {
+void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_cluster_node, e_pin_edge_dir pin_edge_dir, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     if (!draw_state->is_flat) {
         return;
     }
 
-    // determine the location of the pins
-    float inter_cluster_x, inter_cluster_y;
-    ezgl::point2d intra_cluster_coord;
+    for (const e_side& pin_side : TOTAL_2D_SIDES) {
+        // Draw connections to each side of the inter-cluster node
+        if (!rr_graph.is_node_on_specific_side(inter_cluster_node, pin_side)) {
+            continue;
+        }
 
-    draw_get_rr_pin_coords(inter_cluster_node, &inter_cluster_x, &inter_cluster_y, pin_side);
+        // determine the location of the pins
+        float inter_cluster_x, inter_cluster_y;
+        ezgl::point2d intra_cluster_coord;
 
-    auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(intra_cluster_node);
-    intra_cluster_coord = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+        draw_get_rr_pin_coords(inter_cluster_node, &inter_cluster_x, &inter_cluster_y, pin_side);
 
-    // determine which coord is first based on the pin edge direction
-    ezgl::point2d prev_coord, icoord;
-    if (pin_edge_dir == FROM_INTRA_CLUSTER_TO_INTER_CLUSTER) {
-        prev_coord = intra_cluster_coord;
-        icoord = {inter_cluster_x, inter_cluster_y};
-    } else if (pin_edge_dir == FROM_INTER_CLUSTER_TO_INTRA_CLUSTER) {
-        prev_coord = {inter_cluster_x, inter_cluster_y};
-        icoord = intra_cluster_coord;
-    } else {
-        VPR_ERROR(VPR_ERROR_DRAW, "Invalid pin edge direction: %d", pin_edge_dir);
+        auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(intra_cluster_node);
+        intra_cluster_coord = draw_coords->get_absolute_pin_location(blk_id, pin_id);
+
+        // determine which coord is first based on the pin edge direction
+        ezgl::point2d prev_coord, icoord;
+        if (pin_edge_dir == FROM_INTRA_CLUSTER_TO_INTER_CLUSTER) {
+            prev_coord = intra_cluster_coord;
+            icoord = {inter_cluster_x, inter_cluster_y};
+        } else if (pin_edge_dir == FROM_INTER_CLUSTER_TO_INTRA_CLUSTER) {
+            prev_coord = {inter_cluster_x, inter_cluster_y};
+            icoord = intra_cluster_coord;
+        } else {
+            VPR_ERROR(VPR_ERROR_DRAW, "Invalid pin edge direction: %d", pin_edge_dir);
+        }
+
+        g->draw_line(prev_coord, icoord);
+        float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
+        float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
+        draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
     }
-
-    g->draw_line(prev_coord, icoord);
-    float triangle_coord_x = icoord.x + (prev_coord.x - icoord.x) / 10.;
-    float triangle_coord_y = icoord.y + (prev_coord.y - icoord.y) / 10.;
-    draw_triangle_along_line(g, triangle_coord_x, triangle_coord_y, prev_coord.x, icoord.x, prev_coord.y, icoord.y);
 }
 
 void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) {
@@ -607,6 +617,118 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
         float xend = x2 + (x1 - x2) / 10.;
         float yend = y2 + (y1 - y2) / 10.;
         draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
+    }
+}
+
+void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::renderer* g) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_graph = device_ctx.rr_graph;
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    e_rr_type rr_type = rr_graph.node_type(inode);
+    bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
+    int current_node_layer = rr_graph.node_layer(inode);
+
+    e_rr_type prev_type = rr_graph.node_type(RRNodeId(prev_node));
+    bool prev_node_inter_cluster = is_inter_cluster_node(rr_graph, prev_node);
+    int prev_node_layer = rr_graph.node_layer(prev_node);
+
+    t_draw_layer_display edge_visibility = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
+
+    // For 3D architectures, draw only visible layers
+    if (!draw_state->draw_layer_display[current_node_layer].visible || !edge_visibility.visible) {
+        return;
+    }
+
+    // Skip drawing edges to or from sources and sinks
+    if (rr_type == e_rr_type::SINK || rr_type == e_rr_type::SOURCE || prev_type == e_rr_type::SINK || prev_type == e_rr_type::SOURCE) {
+        return;
+    }
+
+    g->set_color(color, edge_visibility.alpha);
+
+    if (!inode_inter_cluster && !prev_node_inter_cluster) {
+        draw_intra_cluster_edge(inode, prev_node, g);
+        return;
+    }
+
+    if (!prev_node_inter_cluster && inode_inter_cluster) {
+        draw_intra_cluster_pin_to_pin(prev_node, inode, FROM_INTRA_CLUSTER_TO_INTER_CLUSTER, g);
+        return;
+    }
+
+    if (prev_node_inter_cluster && !inode_inter_cluster) {
+        draw_intra_cluster_pin_to_pin(inode, prev_node, FROM_INTER_CLUSTER_TO_INTRA_CLUSTER, g);
+        return;
+    }
+
+    draw_inter_cluster_rr_edge(inode, prev_node, rr_type, prev_type, g);
+}
+
+void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr_type, e_rr_type prev_type, ezgl::renderer* g) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    t_edge_size iedge = find_edge(prev_node, inode);
+    short switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
+
+    switch (rr_type) {
+        case e_rr_type::IPIN: {
+            if (prev_type == e_rr_type::OPIN) {
+                draw_pin_to_pin(prev_node, inode, g);
+            } else {
+                draw_pin_to_chan_edge(inode, prev_node, g);
+            }
+            break;
+        }
+        case e_rr_type::CHANX: {
+            switch (prev_type) {
+                case e_rr_type::CHANX: {
+                    draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
+                    break;
+                }
+                case e_rr_type::CHANY: {
+                    draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
+                    break;
+                }
+                case e_rr_type::OPIN: {
+                    draw_pin_to_chan_edge(prev_node, inode, g);
+                    break;
+                }
+                default: {
+                    VPR_ERROR(VPR_ERROR_OTHER,
+                              "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                              prev_type, rr_type);
+                }
+            }
+            break;
+        }
+        case e_rr_type::CHANY: {
+            switch (prev_type) {
+                case e_rr_type::CHANX: {
+                    draw_chanx_to_chany_edge(prev_node, inode,
+                                             FROM_X_TO_Y, switch_type, g);
+                    break;
+                }
+                case e_rr_type::CHANY: {
+                    draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
+                                             switch_type, g);
+                    break;
+                }
+                case e_rr_type::OPIN: {
+                    draw_pin_to_chan_edge(prev_node, inode, g);
+
+                    break;
+                }
+                default: {
+                    VPR_ERROR(VPR_ERROR_OTHER,
+                              "Unexpected connection from an rr_node of type %d to one of type %d.\n",
+                              prev_type, rr_type);
+                }
+            }
+            break;
+        }
+        default: {
+            break;
+        }
     }
 }
 

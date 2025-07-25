@@ -28,6 +28,15 @@ void draw_rr_edges(RRNodeId from_node, ezgl::renderer* g);
 void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g);
 
 /**
+ * @brief Draws a RR node.
+ *
+ * @param inode The RRNodeId of the node to draw.
+ * @param color The color to use for drawing the node.
+ * @param g The renderer to use for drawing.
+ */
+void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g);
+
+/**
  * @brief Draws the intra-cluster pin for a given RRNodeId when flat routing is enabled.
  */
 void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g);
