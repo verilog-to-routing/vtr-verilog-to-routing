@@ -188,6 +188,12 @@ void RRGraphBuilder::create_edge_in_cache(RRNodeId src, RRNodeId dest, RRSwitchI
     is_incoming_edge_dirty_ = true;
 }
 
+void RRGraphBuilder::create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped) {
+    edges_to_build_.emplace_back(src, dest, size_t(edge_switch), remapped);
+    is_edge_dirty_ = true; /* Adding a new edge revokes the flag */
+    is_incoming_edge_dirty_ = true;
+}
+
 void RRGraphBuilder::build_edges(const bool& uniquify) {
     if (uniquify) {
         std::sort(edges_to_build_.begin(), edges_to_build_.end());
