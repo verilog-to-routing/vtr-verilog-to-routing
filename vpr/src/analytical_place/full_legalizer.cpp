@@ -642,11 +642,13 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     // MAKING THE STRATEGY SPECULATIVE AT START
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
 
+    size_t total_molecules_in_join_with_neighbor = 0;
+    
     // For each unplaced block, get its neighboring clusters created.
     for (const auto& [molecule_id, loc] : unclustered_blocks) {
         // Use molecule_id and tile_loc here
-        VTR_LOG("Molecule ID: %zu\n", size_t(molecule_id));
-        VTR_LOG("Tile Location: (x=%d, y=%d, layer=%d, subtile=%d)\n", loc.x, loc.y, loc.layer_num);
+        // VTR_LOG("Molecule ID: %zu\n", size_t(molecule_id));
+        // VTR_LOG("Tile Location: (x=%d, y=%d, layer=%d, subtile=%d)\n", loc.x, loc.y, loc.layer_num);
     
         // Get its 8-neighbouring clusters
         std::vector<t_pl_loc> neighbor_tile_locs = {
@@ -711,8 +713,8 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                 
                 neighbor_clusters.push_back(cluster_id);
                 size_t num_mols_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
-                VTR_LOG("\tNumber of molecules in neighbor cluster at (%d, %d, %d): %zu\n", 
-                            neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer, num_mols_in_cluster);
+                // VTR_LOG("\tNumber of molecules in neighbor cluster at (%d, %d, %d): %zu\n", 
+                //             neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer, num_mols_in_cluster);
 
                 std::vector<PackMoleculeId> cluster_molecules = cluster_legalizer.get_cluster_molecules(cluster_id);
                 
@@ -730,12 +732,12 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                 // Add old molecules to the new cluster.
                 for (PackMoleculeId mol_id: cluster_molecules) {
                     if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)){
-                        VTR_LOG("A molecule could not go its old cluster!\n");
+                        // VTR_LOG("A molecule could not go its old cluster!\n");
                         broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
                         continue;
                     }
                     if (cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id) != e_block_pack_status::BLK_PASSED) {
-                        VTR_LOG("A molecule could not go its old cluster!\n");
+                        // VTR_LOG("A molecule could not go its old cluster!\n");
                         broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
                     }
                 }
@@ -746,17 +748,17 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
 
                 // Check Cluster Legality for older molecules
                 if (!cluster_legalizer.check_cluster_legality(new_cluster_id)) {
-                    VTR_LOG("An illegal cluster detected!\n");
+                    // VTR_LOG("An illegal cluster detected!\n");
                     cluster_legalizer.destroy_cluster(new_cluster_id);
                     new_cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types); 
                     for (PackMoleculeId mol_id: cluster_molecules) {
                         if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)){
-                            VTR_LOG("A molecule could not go its old cluster!\n");
+                            // VTR_LOG("A molecule could not go its old cluster!\n");
                             broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
                             continue;
                         }
                         if (cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id) != e_block_pack_status::BLK_PASSED) {
-                            VTR_LOG("A molecule could not go its old cluster!\n");
+                            // VTR_LOG("A molecule could not go its old cluster!\n");
                             broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
                         }
                     }
@@ -765,7 +767,7 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                 // Lastly, try to add the objective molecule to that cluster.
                 if (cluster_legalizer.is_molecule_compatible(molecule_id, new_cluster_id)){
                     if (cluster_legalizer.add_mol_to_cluster(molecule_id, new_cluster_id) == e_block_pack_status::BLK_PASSED) {
-                        VTR_LOG("An unclustered neighbor fit in a neighbor cluster!\n");
+                        // VTR_LOG("An unclustered neighbor fit in a neighbor cluster!\n");
                         fit_in_a_neighbor = true;
                     }
                 }
@@ -784,9 +786,11 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
         }   
 
         if (!fit_in_a_neighbor) {
-            VTR_LOG("Current cluster could not put in any neighbor cluster!\n");
+            // VTR_LOG("Current cluster could not put in any neighbor cluster!\n");
             broken_molecules.push_back({molecule_id, loc});
-        }     
+        } else {
+            total_molecules_in_join_with_neighbor++;
+        }
     }
 
     // use the broken blocks as unclustered blocks
@@ -907,6 +911,16 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     VTR_LOG("Percent of clusters created in Neighbor pass    : %.2f%%\n",
             100.0f * static_cast<float>(total_clusters_in_second_pass) / static_cast<float>(total_clusters_in_first_pass + total_clusters_in_second_pass));
     VTR_LOG("-------------------------------------------------------\n\n");
+
+    size_t total_mols_clustered = total_molecules_in_first_pass_clusters + total_molecules_in_join_with_neighbor + total_molecules_in_second_pass_clusters;
+    VTR_LOG("Molecules Clustered in each stage breakdown: (Total of %zu)\n", total_mols_clustered);
+    VTR_LOG("\tNormal Pass: %zu (%f)\n ", total_molecules_in_first_pass_clusters,
+                                          static_cast<float>(total_molecules_in_first_pass_clusters) / static_cast<float>(total_mols_clustered));
+    VTR_LOG("\tJoin with Neighbor Pass: %zu (%f)\n", total_molecules_in_join_with_neighbor,
+                                          static_cast<float>(total_molecules_in_join_with_neighbor) / static_cast<float>(total_mols_clustered));
+    VTR_LOG("\tOrphan Region Reconstruction Pass: %zu (%f)\n", total_molecules_in_second_pass_clusters,
+                                          static_cast<float>(total_molecules_in_second_pass_clusters) / static_cast<float>(total_mols_clustered));
+
 
     // Check and output the clustering.
     cluster_legalizer.compress();

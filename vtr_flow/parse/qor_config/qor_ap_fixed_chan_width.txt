@@ -38,3 +38,11 @@ num_total_clusters;vpr.out;^\s*Total\s+clusters\s*:\s*(\d+)
 pct_atoms_neighbor;vpr.out;^\s*Percent\s+of\s+atoms\s+clustered\s+in\s+Neighbor\s+pass\s*:\s*([\d.]+)%
 pct_molecules_neighbor;vpr.out;^\s*Percent\s+of\s+molecules\s+clustered\s+in\s+Neighbor\s+pass\s*:\s*([\d.]+)%
 pct_clusters_neighbor;vpr.out;^\s*Percent\s+of\s+clusters\s+created\s+in\s+Neighbor\s+pass\s*:\s*([\d.]+)%
+
+mol_clustered_normal;vpr.out;^\s*Normal Pass:\s*(\d+)
+mol_clustered_neighbor;vpr.out;^\s*Join with Neighbor Pass:\s*(\d+)
+mol_clustered_orphan;vpr.out;^\s*Orphan Region Reconstruction Pass:\s*(\d+)
+
+mol_clustered_normal_ratio;vpr.out;^\s*Normal Pass:\s*\d+\s+\(([\d.]+)\)
+mol_clustered_neighbor_ratio;vpr.out;^\s*Join with Neighbor Pass:\s*\d+\s+\(([\d.]+)\)
+mol_clustered_orphan_ratio;vpr.out;^\s*Orphan Region Reconstruction Pass:\s*\d+\s+\(([\d.]+)\)
