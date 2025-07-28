@@ -811,7 +811,7 @@ void draw_routing_util_heatmap(const ChannelData<vtr::NdMatrix<double, 3>>& occu
 
             g->set_color(chanx_color);
             ezgl::rectangle chan_x_bb({draw_coords->tile_x[x], draw_coords->tile_y[y] + tile_height},
-                {draw_coords->tile_x[x] + tile_width, draw_coords->tile_y[y] + tile_height * 2 });
+                {draw_coords->tile_x[x] + tile_width, draw_coords->tile_y[y] + tile_height * 2 + 1});
             g->fill_rectangle(chan_x_bb);
             g->set_color(ezgl::BLACK);
             g->draw_text(chan_x_bb.center(),
@@ -835,7 +835,7 @@ void draw_routing_util_heatmap(const ChannelData<vtr::NdMatrix<double, 3>>& occu
            
             g->set_color(chany_color);
             ezgl::rectangle chan_y_bb({draw_coords->tile_x[x] + tile_width, draw_coords->tile_y[y]},
-                {draw_coords->tile_x[x] + tile_width * 2, draw_coords->tile_y[y] + tile_height});
+                {draw_coords->tile_x[x] + tile_width * 2 + 1, draw_coords->tile_y[y] + tile_height});
             g->fill_rectangle(chan_y_bb);
             g->set_color(ezgl::BLACK);
             g->draw_text(chan_y_bb.center(),
@@ -844,7 +844,7 @@ void draw_routing_util_heatmap(const ChannelData<vtr::NdMatrix<double, 3>>& occu
         }
     }
     
-    // Draw in-between utilization by taking the average of the surrounding channels.
+    // Draw in-between utilization on switch blocks by taking the average of the surrounding channels.
     for (size_t x = 0; x < grid_width - 1; ++x) {
         for (size_t y = 0; y < grid_height- 1; ++y) {
             int chan_count = 0;
@@ -879,8 +879,42 @@ void draw_routing_util_heatmap(const ChannelData<vtr::NdMatrix<double, 3>>& occu
             g->set_color(avg_color);
             ezgl::rectangle avg_bb({draw_coords->tile_x[x] + tile_width,
                                     draw_coords->tile_y[y] + tile_height},
-                                      {draw_coords->tile_x[x] + tile_width * 2, 
-                                        draw_coords->tile_y[y] + tile_height * 2});
+                                      {draw_coords->tile_x[x] + tile_width * 2 + 1, 
+                                        draw_coords->tile_y[y] + tile_height * 2 + 1});
+            g->fill_rectangle(avg_bb);
+            g->set_color(ezgl::BLACK);
+            g->draw_text(avg_bb.center(),
+                                 vtr::string_fmt("%.2f", avg_util).c_str(),
+                                 avg_bb.width(), avg_bb.height());
+
+        }
+    }
+
+    // Draw in-between utilization on clbs by taking the average of the surrounding channels.
+    for (size_t x = 1; x < grid_width - 1; ++x) {
+        for (size_t y = 1; y < grid_height- 1; ++y) {
+            constexpr int chan_count = 4;
+            float sum_util = 0.f;
+            
+            // Sum up neighboring channel utilizations
+            sum_util += occupancy_percent.x[layer][x][y - 1];
+            sum_util += occupancy_percent.y[layer][x - 1][y];
+            sum_util += occupancy_percent.x[layer][x][y];
+            sum_util += occupancy_percent.y[layer][x][y];
+            
+            float avg_util = sum_util / chan_count;
+
+            if (draw_state->clip_routing_util) {
+                avg_util = std::min(avg_util, 1.f);
+            }
+
+            ezgl::color avg_color = to_ezgl_color(cmap->color(avg_util));
+
+            g->set_color(avg_color);
+            ezgl::rectangle avg_bb({draw_coords->tile_x[x],
+                                    draw_coords->tile_y[y]},
+                                      {draw_coords->tile_x[x] + tile_width, 
+                                        draw_coords->tile_y[y] + tile_height});
             g->fill_rectangle(avg_bb);
             g->set_color(ezgl::BLACK);
             g->draw_text(avg_bb.center(),
