@@ -722,10 +722,6 @@ void draw_placement_macros(ezgl::renderer* g) {
     }
 }
 
-/* Draws a heat map of routing wire utilization (i.e. fraction of wires used in each channel)
- * when a routing is shown on-screen and Routing Util (on the GUI) is selected.
- * Lighter colours (e.g. yellow) correspond to highly utilized
- * channels, while darker colours (e.g. blue) correspond to lower utilization.*/
 void draw_routing_util(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
@@ -743,8 +739,6 @@ void draw_routing_util(ezgl::renderer* g) {
     occupancy_percent.y = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0.);
 
     ChannelData<vtr::NdMatrix<int, 3>> chan_width;
-    chan_width.x = vtr::NdMatrix<int, 3>({{num_layers, grid_width, grid_height}}, 0);
-    chan_width.y = vtr::NdMatrix<int, 3>({{num_layers, grid_width, grid_height}}, 0);
 
     vtr::NdMatrix<int, 3> chanx_occupancy_count({{num_layers, grid_width, grid_height}}, 0);
     vtr::NdMatrix<int, 3> chany_occupancy_count({{num_layers, grid_width, grid_height}}, 0);
@@ -770,6 +764,25 @@ void draw_routing_util(ezgl::renderer* g) {
 
     draw_routing_util_heatmap(occupancy_percent, chan_width, g);
 
+}
+
+void draw_routing_util_est(ezgl::renderer* g){
+
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
+        return;
+    }
+
+    // Estimate routing channel utilization using the graphics block location registry
+    const auto& blk_loc_registry = draw_state->get_graphics_blk_loc_registry_ref();
+    RoutingChanUtilEstimator routing_chan_util_estimator(blk_loc_registry);
+    const ChannelData<vtr::NdMatrix<double, 3>> chan_util = routing_chan_util_estimator.estimate_routing_chan_util();
+
+    // Calculate channel widths
+    ChannelData<vtr::NdMatrix<int, 3>> chan_width;
+    std::tie(chan_width.x, chan_width.y) = calculate_channel_width();
+
+    draw_routing_util_heatmap(chan_util, chan_width, g);
 }
 
 static void draw_routing_util_bb(const ezgl::rectangle& bb, std::unique_ptr<vtr::ColorMap>& cmap, float chan_util, int chan_width, ezgl::renderer* g){

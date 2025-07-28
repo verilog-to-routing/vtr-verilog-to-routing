@@ -198,6 +198,9 @@ static void draw_main_canvas(ezgl::renderer* g) {
             default:
                 break;
         }
+
+        draw_routing_util_est(g);
+
     } else { /* ROUTING on screen */
 
         switch (draw_state->show_nets) {
@@ -287,7 +290,8 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
         default_setup(app);
 
     //Hiding unused functionality
-    hide_widget("RoutingMenuButton", app);
+    // hide_widget("RoutingMenuButton", app);
+    routing_button_setup(app);
 }
 
 /* function below initializes the interface window with a set of buttons and links
@@ -305,7 +309,8 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
      * as they don't make sense and would crash if clicked on */
     hide_crit_path_routing(app, true);
     //Hiding unused routing menu
-    hide_widget("RoutingMenuButton", app);
+    // hide_widget("RoutingMenuButton", app);
+    routing_button_setup(app);
 }
 
 /* function below initializes the interface window with a set of buttons and links
@@ -330,7 +335,8 @@ static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
         default_setup(app);
 
     //Hiding unused functionality
-    hide_widget("RoutingMenuButton", app);
+    //hide_widget("RoutingMenuButton", app);
+    routing_button_setup(app);
     crit_path_button_setup(app);
     hide_crit_path_routing(app, false);
 }

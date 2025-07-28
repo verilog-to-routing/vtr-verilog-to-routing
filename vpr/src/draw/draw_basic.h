@@ -77,12 +77,26 @@ int get_timing_path_node_layer_num(tatum::NodeId node);
  */
 bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node);
 
-/* Draws a heat map of routing wire utilization (i.e. fraction of wires used in each channel)
- * when a routing is shown on-screen and Routing Util (on the GUI) is selected.
- * Lighter colours (e.g. yellow) correspond to highly utilized
- * channels, while darker colours (e.g. blue) correspond to lower utilization.*/
+/**
+ * @brief Draws a heatmap of the channel wire utilization during the routing stage.
+ */
 void draw_routing_util(ezgl::renderer* g);
 
+/**
+ * @brief Draws a heatmap of the channel wire utilzation during the placement stage.
+ */
+void draw_routing_util_est(ezgl::renderer* g);
+
+/**
+ * Draws a heat map of channel wire utilization (i.e. fraction of wires used in each channel)
+ * when a routing is shown on-screen and Routing Util (on the GUI) is selected.
+ * Lighter colours (e.g. yellow) correspond to highly utilized
+ * channels, while darker colours (e.g. blue) correspond to lower utilization.
+ * 
+ * @param occupancy_percent 3D matrix of channel occupancy percentages, indexed by layer, x, and y.
+ * @param chan_width 3D matrix of channel widths, indexed by layer, x, and y.
+ * @param g Pointer to the ezgl::renderer object used for drawing.
+ */
 void draw_routing_util_heatmap(const ChannelData<vtr::NdMatrix<double, 3>>& occupancy_percent, const ChannelData<vtr::NdMatrix<int, 3>>& chan_width, ezgl::renderer* g);
 
 /* Draws the critical path if Crit. Path (in the GUI) is selected. Each stage between primitive
