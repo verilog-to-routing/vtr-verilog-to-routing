@@ -284,7 +284,7 @@ void draw_intra_cluster_edge(RRNodeId inode, RRNodeId prev_node, ezgl::renderer*
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    if(!draw_state->draw_intra_cluster_nets){
+    if (!draw_state->is_flat) {
         return;
     }
 
@@ -307,7 +307,7 @@ void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_c
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    if(!draw_state->draw_intra_cluster_nets){
+    if (!draw_state->is_flat) {
         return;
     }
 

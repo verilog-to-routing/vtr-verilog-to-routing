@@ -657,7 +657,7 @@ void draw_logical_connections(ezgl::renderer* g) {
                 g->set_color(DRIVES_IT_COLOR, fmin(transparency_factor, DRIVES_IT_COLOR.alpha * NET_ALPHA));
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
                 g->set_color(DRIVEN_BY_IT_COLOR, fmin(transparency_factor, DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA));
-            } else if (draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
+            } else if (draw_state->show_nets == DRAW_PRIMITIVE_NETS && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
                 g->set_color(ezgl::BLACK, fmin(transparency_factor, ezgl::BLACK.alpha * NET_ALPHA)); // if showing all, draw the other ones in black
             } else {
                 continue; // not showing all, and not the specified block, so skip

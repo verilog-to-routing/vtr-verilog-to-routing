@@ -20,31 +20,9 @@
 
 #include "ezgl/application.hpp"
 
-/**
- * @brief Callback function for toggle_nets button in main.ui.
- * Toggles whether or not nets are visualized.
- * @param app ezgl::application
- */
-void toggle_show_nets_cbk(GtkSwitch*, gboolean state, ezgl::application* app);
-
-/**
- * @brief Callback function for toggle_net_type button in main.ui.
- * Toggles value of draw_state->draw_nets.
- * 
- * @param self ptr to gtkComboBox
- * @param app ezgl::application
- */
-void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app);
-
-/**
- * @brief Callback function for toggle_intra_cluster_nets button in main.ui.
- * Toggles whether intra-cluster nets are visualized.
- * 
- * @param self pointer to GtkToggleButton
- * @param app ezgl::application
- */
-void toggle_intra_cluster_nets_cbk(GtkToggleButton* self, ezgl::application* app);
-
+/* Callback function for main.ui created toggle_nets button in ui_setup.cpp. Controls whether or not nets are visualized.
+ * Toggles value of draw_state->show_nets.*/
+void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app);
 
 /* Callback function for main.ui created netMaxFanout widget in ui_setup.cpp.
  * Sets draw_state->draw_net_max_fanout to its corresponding value in the UI. */

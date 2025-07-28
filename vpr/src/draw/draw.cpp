@@ -189,16 +189,27 @@ static void draw_main_canvas(ezgl::renderer* g) {
     draw_internal_draw_subblk(g);
 
     if (draw_state->pic_on_screen == PLACEMENT) {
-        if(draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets) {
-            drawnets(g);
+        switch (draw_state->show_nets) {
+            case DRAW_CLUSTER_NETS:
+                drawnets(g);
+                break;
+            case DRAW_PRIMITIVE_NETS:
+                break;
+            default:
+                break;
         }
     } else { /* ROUTING on screen */
 
-        if (draw_state->show_nets && draw_state->draw_nets == DRAW_ROUTED_NETS){
-            drawroute(ALL_NETS, g);
+        switch (draw_state->show_nets) {
+            case DRAW_CLUSTER_NETS:
+                drawroute(ALL_NETS, g);
+                break;
+            case DRAW_PRIMITIVE_NETS:
+                // fall through
+            default:
+                draw_rr(g);
+                break;
         }
-        
-        draw_rr(g);
 
         draw_congestion(g);
 
@@ -1249,8 +1260,8 @@ static void run_graphics_commands(const std::string& commands) {
         } else if (cmd[0] == "set_nets") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect net draw state after 'set_nets'");
-            draw_state->draw_nets = (e_draw_nets)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->draw_nets);
+            draw_state->show_nets = (e_draw_nets)vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_nets);
         } else if (cmd[0] == "set_cpd") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect cpd draw state after 'set_cpd'");

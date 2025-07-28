@@ -350,7 +350,7 @@ void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::r
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    if(!draw_state->draw_intra_cluster_nets){
+    if (!draw_state->is_flat) {
         return;
     }
 
@@ -626,7 +626,7 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
 bool highlight_rr_nodes(float x, float y) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->draw_rr_toggle == DRAW_NO_RR) {
+    if (draw_state->draw_rr_toggle == DRAW_NO_RR && !draw_state->show_nets) {
         application.update_message(draw_state->default_message);
         application.refresh_drawing();
         return false; //No rr shown

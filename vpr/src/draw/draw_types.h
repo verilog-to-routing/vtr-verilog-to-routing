@@ -41,8 +41,8 @@ enum e_draw_crit_path {
 
 enum e_draw_nets {
     DRAW_NO_NETS = 0,
-    DRAW_ROUTED_NETS,
-    DRAW_FLYLINES
+    DRAW_CLUSTER_NETS,
+    DRAW_PRIMITIVE_NETS
 };
 
 /* Draw rr_graph from less detailed to more detailed
@@ -174,14 +174,8 @@ struct t_draw_state {
     ///@brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
     pic_type pic_on_screen = NO_PICTURE;
 
-    ///@brief Whether to draw nets or not
-    bool show_nets = false;
-
-    ///@brief Whether to draw flylines or routed nets
-    e_draw_nets draw_nets = DRAW_FLYLINES;
-
-    /// @brief Whether to show intra-cluster nets
-    bool draw_intra_cluster_nets = false;
+    ///@brief Whether to show nets at placement and routing.
+    e_draw_nets show_nets = DRAW_NO_NETS;
 
     ///@brief Whether to show crit path
     e_draw_crit_path show_crit_path = DRAW_NO_CRIT_PATH;

@@ -50,25 +50,15 @@ void basic_button_setup(ezgl::application* app) {
  * @param app ezgl::application ptr
  */
 void net_button_setup(ezgl::application* app) {
-
-    GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleNets"));
-    
-    g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_show_nets_cbk), app);
-
-
     //Toggle net signal connection
-    GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNetType"));
-    g_signal_connect(toggle_nets, "changed", G_CALLBACK(toggle_draw_nets_cbk), app);
-    // gtk_widget_set_sensitive(GTK_WIDGET(toggle_nets), FALSE);
-
-    GtkToggleButton* intra_cluster_nets = GTK_TOGGLE_BUTTON(app->get_object("ToggleIntraClusterNets"));
-    g_signal_connect(intra_cluster_nets, "toggled", G_CALLBACK(toggle_intra_cluster_nets_cbk), app);
+    GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNets"));
+    g_signal_connect(toggle_nets, "changed", G_CALLBACK(toggle_nets_cbk), app);
 
     //Manages net alpha
     GtkSpinButton* net_alpha = GTK_SPIN_BUTTON(app->get_object("NetAlpha"));
     g_signal_connect(net_alpha, "value-changed", G_CALLBACK(set_net_alpha_value_cbk), app);
     gtk_spin_button_set_increments(net_alpha, 1, 1);
-    gtk_spin_button_set_range(net_alpha, 0, 255);
+    gtk_spin_button_set_range(net_alpha, 1, 255);
 
     //Manages net max fanout
     GtkSpinButton* max_fanout = GTK_SPIN_BUTTON(app->get_object("NetMaxFanout"));
@@ -123,8 +113,8 @@ void routing_button_setup(ezgl::application* app) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     //Toggle RR
-    // GtkComboBoxText* toggle_rr_box = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRR"));
-    // g_signal_connect(toggle_rr_box, "changed", G_CALLBACK(toggle_rr_cbk), app);
+    GtkComboBoxText* toggle_rr_box = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRR"));
+    g_signal_connect(toggle_rr_box, "changed", G_CALLBACK(toggle_rr_cbk), app);
 
     //Toggle Congestion
     GtkComboBoxText* toggle_congestion = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCongestion"));
