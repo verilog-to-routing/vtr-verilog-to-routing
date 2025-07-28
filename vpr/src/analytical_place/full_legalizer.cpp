@@ -643,9 +643,20 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
 
     size_t total_molecules_in_join_with_neighbor = 0;
+    VTR_LOG("Join with Neighbor Pass...\n");
     
     // For each unplaced block, get its neighboring clusters created.
     for (const auto& [molecule_id, loc] : unclustered_blocks) {
+        t_logical_block_type_ptr block_type = get_molecule_logical_block_type(molecule_id, prepacker_, primitive_candidate_block_types);
+        VTR_ASSERT(block_type && "We need a blocks type");
+
+        std::string block_name = block_type->name;
+        if (block_name == "io") {
+            VTR_LOG("Skipping io molecule of id %zu\n", molecule_id);
+            broken_molecules.push_back({molecule_id, loc});
+            continue;
+        }
+        
         // Use molecule_id and tile_loc here
         // VTR_LOG("Molecule ID: %zu\n", size_t(molecule_id));
         // VTR_LOG("Tile Location: (x=%d, y=%d, layer=%d, subtile=%d)\n", loc.x, loc.y, loc.layer_num);
@@ -710,7 +721,7 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                     ++it;
                     continue;
                 }
-                
+
                 neighbor_clusters.push_back(cluster_id);
                 size_t num_mols_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
                 // VTR_LOG("\tNumber of molecules in neighbor cluster at (%d, %d, %d): %zu\n", 
