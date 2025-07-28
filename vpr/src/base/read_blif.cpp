@@ -539,7 +539,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         LogicalModelId arch_model_id = models_.get_model_by_name(blif_model.netlist_name());
 
         if(!arch_model_id.is_valid()) {
-            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "BLIF model '%s' has no equivalent architecture model.",  // TODO-FT lineno is wrong...
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "BLIF model '%s' has no equivalent architecture model.",
                     blif_model.netlist_name().c_str());
         }
 
