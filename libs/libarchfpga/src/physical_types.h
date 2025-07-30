@@ -2248,6 +2248,6 @@ struct t_arch {
     // added for vib
     std::vector<VibInf> vib_infs;
 
-    /// Stores information for scatter-gather patterns
+    /// Stores information for scatter-gather patterns that can be used to define some of the rr-graph connectivity
     std::vector<t_scatter_gather_pattern> scatter_gather_patterns;
 };

@@ -14,7 +14,11 @@ enum e_directionality {
     BI_DIRECTIONAL
 };
 
-/* Orientations. */
+/**
+ * @brief At the intersection of routing channels, left, right, top and bottom specify the x- and y-directed channels
+ * while above and under specify the switch block wires one a layer above or below the current one. above and below
+ * are only used for multi-layer FPGAs. 
+ */
 enum e_side : unsigned char {
     TOP = 0,
     RIGHT = 1,
