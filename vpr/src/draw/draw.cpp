@@ -467,8 +467,8 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         application.flush_drawing();
     }
 
-    if (draw_state->save_graphics) {
-        std::string extension = "pdf";
+    if (draw_state->save_graphics) {        
+        std::string extension = "svg";
         save_graphics(extension, draw_state->save_graphics_file_base);
     }
 
@@ -1230,8 +1230,6 @@ static void run_graphics_commands(const std::string& commands) {
     //A very simmple command interpreter for scripting graphics
     t_draw_state* draw_state = get_draw_state_vars();
 
-    t_draw_state backup_draw_state = *draw_state;
-
     std::vector<std::vector<std::string>> cmds;
     for (const std::string& raw_cmd : vtr::StringToken(commands).split(";")) {
         cmds.push_back(vtr::StringToken(raw_cmd).split(" \t\n"));
@@ -1320,7 +1318,6 @@ static void run_graphics_commands(const std::string& commands) {
         }
     }
 
-    *draw_state = backup_draw_state; //Restor original draw state
 
     //Advance the sequence number
     ++draw_state->sequence_number;

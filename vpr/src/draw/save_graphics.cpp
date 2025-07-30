@@ -66,9 +66,7 @@ void save_graphics(std::string extension, std::string file_name) {
     if (extension == "pdf") {
         result = canvas->print_pdf(file_name.c_str(), initial_world.width(), initial_world.height());
     } else if (extension == "png") {
-        constexpr int IMAGE_WIDTH_PIXELS = 2048;
-        int image_height_pixels = IMAGE_WIDTH_PIXELS * float(initial_world.height()) / initial_world.width();
-        result = canvas->print_png(file_name.c_str(), IMAGE_WIDTH_PIXELS, image_height_pixels);
+        result = canvas->print_png(file_name.c_str(), initial_world.width(), initial_world.height());
     } else if (extension == "svg") {
         result = canvas->print_svg(file_name.c_str(), initial_world.width(), initial_world.height());
     } else {

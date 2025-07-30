@@ -41,10 +41,12 @@
 #include "route_utilization.h"
 #include "place_macro.h"
 
+extern ezgl::rectangle initial_world;
+
 /**
  * @brief Draws a single rectangle containing text describing the channel utilization.
  */
-static void draw_routing_util_bb(const ezgl::rectangle& bb, std::unique_ptr<vtr::ColorMap>& cmap, float chan_util, int chan_width, ezgl::renderer* g);
+static void draw_routing_util_bb(const ezgl::rectangle& bb, std::shared_ptr<vtr::ColorMap>& cmap, float chan_util, int chan_width, ezgl::renderer* g);
 
 /****************************** Define Macros *******************************/
 #define DEFAULT_RR_NODE_COLOR ezgl::BLACK
@@ -785,7 +787,7 @@ void draw_routing_util_est(ezgl::renderer* g){
     draw_routing_util_heatmap(chan_util, chan_width, g);
 }
 
-static void draw_routing_util_bb(const ezgl::rectangle& bb, std::unique_ptr<vtr::ColorMap>& cmap, float chan_util, int chan_width, ezgl::renderer* g){
+static void draw_routing_util_bb(const ezgl::rectangle& bb, std::shared_ptr<vtr::ColorMap>& cmap, float chan_util, int chan_width, ezgl::renderer* g){
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (draw_state->clip_routing_util) {
@@ -795,7 +797,7 @@ static void draw_routing_util_bb(const ezgl::rectangle& bb, std::unique_ptr<vtr:
     ezgl::color chan_color = to_ezgl_color(cmap->color(chan_util));
 
     g->set_color(chan_color);
-    
+    g->set_line_width(0);
     g->fill_rectangle(bb);
     g->set_color(ezgl::BLACK);
     if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_WITH_VALUE || draw_state->show_routing_util == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
@@ -832,12 +834,14 @@ void draw_routing_util_heatmap(const ChannelData<vtr::NdMatrix<double, 3>>& occu
 
     // Create a color map for the heatmap, and clip routing util to 1 if clipping is enabled. 
     // Routing util is exceeds 1 when the circuit is congested.
-    std::unique_ptr<vtr::ColorMap> cmap;
+    std::shared_ptr<vtr::ColorMap> cmap;
     if (draw_state->clip_routing_util) {
         cmap = std::make_unique<vtr::PlasmaColorMap>(0., 1.);
     } else {
         cmap = std::make_unique<vtr::PlasmaColorMap>(0, max_util);
     }
+
+    draw_state->color_map = cmap;
 
     // Draw CHANX utilization
     for (size_t x = 1; x < grid_width - 1; ++x) {
@@ -926,7 +930,6 @@ void draw_routing_util_heatmap(const ChannelData<vtr::NdMatrix<double, 3>>& occu
         }
     }
 
-    draw_state->color_map = std::move(cmap);
 }
 
 /* Draws the critical path if Crit. Path (in the GUI) is selected. Each stage between primitive
@@ -1273,15 +1276,20 @@ void draw_color_map_legend(const vtr::ColorMap& cmap,
     constexpr float LEGEND_VERT_OFFSET_FAC = 0.05;
     constexpr float TEXT_OFFSET = 10;
     constexpr size_t NUM_COLOR_POINTS = 1000;
-
+    
     g->set_coordinate_system(ezgl::SCREEN);
 
-    float screen_width = application.get_canvas(
-                                        application.get_main_canvas_id())
-                             ->width();
-    float screen_height = application.get_canvas(
-                                         application.get_main_canvas_id())
-                              ->height();
+    t_draw_state* draw_state = get_draw_state_vars();
+    ezgl::canvas* canvas = application.get_canvas(application.get_main_canvas_id());
+    float screen_width, screen_height;
+    if(draw_state->show_graphics){
+        screen_width = canvas->width();
+        screen_height = canvas->height();
+    } else{
+        screen_width = initial_world.width();
+        screen_height = initial_world.height();
+    }
+
     float vert_offset = screen_height * LEGEND_VERT_OFFSET_FAC;
     float legend_width = std::min<int>(LEGEND_WIDTH_FAC * screen_width, 100);
 
