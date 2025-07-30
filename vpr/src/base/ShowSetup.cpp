@@ -495,20 +495,16 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
     VTR_LOG("PlacerOpts.place_freq: ");
     switch (PlacerOpts.place_freq) {
-        case PLACE_ONCE:
-            VTR_LOG("PLACE_ONCE\n");
+        case e_place_freq::ONCE:
+            VTR_LOG("ONCE\n");
             break;
-        case PLACE_ALWAYS:
-            VTR_LOG("PLACE_ALWAYS\n");
-            break;
-        case PLACE_NEVER:
-            VTR_LOG("PLACE_NEVER\n");
+        case e_place_freq::ALWAYS:
+            VTR_LOG("ALWAYS\n");
             break;
         default:
             VTR_LOG_ERROR("Unknown Place Freq\n");
     }
-    if ((PLACE_ONCE == PlacerOpts.place_freq)
-        || (PLACE_ALWAYS == PlacerOpts.place_freq)) {
+    if (PlacerOpts.place_freq == e_place_freq::ONCE || PlacerOpts.place_freq == e_place_freq::ALWAYS) {
         VTR_LOG("PlacerOpts.place_algorithm: ");
         switch (PlacerOpts.place_algorithm.get()) {
             case e_place_algorithm::BOUNDING_BOX_PLACE:
