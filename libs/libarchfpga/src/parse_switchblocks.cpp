@@ -47,15 +47,15 @@ static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchp
  * @param node             XML node containing inline wireconn attributes.
  * @param loc_data         Location data for error reporting.
  * @param switches         List of architecture switch definitions (used for switch overrides).
- * @param can_skip_from_to Determines if the from or to attributes are optional or mandatory.
- * <wireconn> tags for switch blocks require mandatory from/to attributes while those for scatter-gather
- * patterns are optional.
+ * @param can_skip_from_or_to Determines if the from or to attributes are optional or mandatory.
+ * <wireconn> tags for switch blocks require both from and to attributes while those for
+ * scatter-gather use one or the other.
  * @return                 A `t_wireconn_inf` structure populated with parsed data.
  */
 static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
                                             const pugiutil::loc_data& loc_data,
                                             const std::vector<t_arch_switch_inf>& switches,
-                                            bool can_skip_from_to);
+                                            bool can_skip_from_or_to);
 
 /**
  * @brief Parses a multi-node `<wireconn>` definition with `<from>` and `<to>` children.
@@ -131,14 +131,14 @@ void read_sb_wireconns(const std::vector<t_arch_switch_inf>& switches,
 t_wireconn_inf parse_wireconn(pugi::xml_node node,
                               const pugiutil::loc_data& loc_data,
                               const std::vector<t_arch_switch_inf>& switches,
-                              bool can_skip_from_to) {
+                              bool can_skip_from_or_to) {
 
     size_t num_children = count_children(node, "from", loc_data, ReqOpt::OPTIONAL);
     num_children += count_children(node, "to", loc_data, ReqOpt::OPTIONAL);
 
     t_wireconn_inf wireconn;
     if (num_children == 0) {
-        wireconn = parse_wireconn_inline(node, loc_data, switches, can_skip_from_to);
+        wireconn = parse_wireconn_inline(node, loc_data, switches, can_skip_from_or_to);
     } else {
         VTR_ASSERT(num_children > 0);
         wireconn = parse_wireconn_multinode(node, loc_data, switches);
@@ -160,14 +160,14 @@ t_wireconn_inf parse_wireconn(pugi::xml_node node,
 static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
                                             const pugiutil::loc_data& loc_data,
                                             const std::vector<t_arch_switch_inf>& switches,
-                                            bool can_skip_from_to) {
+                                            bool can_skip_from_or_to) {
 
     // Parse an inline wireconn definition, using attributes
     expect_only_attributes(node, {"num_conns", "from_type", "to_type", "from_switchpoint", "to_switchpoint", "from_order", "to_order", "switch_override", "side"}, loc_data);
 
     t_wireconn_inf wc;
 
-    ReqOpt from_to_required = can_skip_from_to ? ReqOpt::OPTIONAL : ReqOpt::REQUIRED;
+    ReqOpt from_to_required = can_skip_from_or_to ? ReqOpt::OPTIONAL : ReqOpt::REQUIRED;
 
     // get the connection style
     const char* char_prop = get_attribute(node, "num_conns", loc_data).value();
@@ -175,25 +175,25 @@ static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
 
     // get from type
     char_prop = get_attribute(node, "from_type", loc_data, from_to_required).value();
-    if (!can_skip_from_to) {
+    if (!can_skip_from_or_to) {
         parse_comma_separated_wire_types(char_prop, wc.from_switchpoint_set);
     }
 
     // get to type
     char_prop = get_attribute(node, "to_type", loc_data, from_to_required).value();
-    if (!can_skip_from_to) {
+    if (!can_skip_from_or_to) {
         parse_comma_separated_wire_types(char_prop, wc.to_switchpoint_set);
     }
 
     // get the source wire point
     char_prop = get_attribute(node, "from_switchpoint", loc_data, from_to_required).value();
-    if (!can_skip_from_to) {
+    if (!can_skip_from_or_to) {
         parse_comma_separated_wire_points(char_prop, wc.from_switchpoint_set);
     }
 
     // get the destination wire point
     char_prop = get_attribute(node, "to_switchpoint", loc_data, from_to_required).value();
-    if (!can_skip_from_to) {
+    if (!can_skip_from_or_to) {
         parse_comma_separated_wire_points(char_prop, wc.to_switchpoint_set);
     }
 
@@ -331,6 +331,8 @@ static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
 
 //set sides for a specific conn for custom switch block pattern
 static void set_switch_func_type(SBSideConnection& conn, const char* func_type) {
+
+    // Only valid sides are right, top, left, bottom, above and under
     if (std::string(func_type).find_first_not_of("rtlbauRTLBAU") != std::string::npos) {
         archfpga_throw(__FILE__, __LINE__, "Unknown direction specified: %s\n", func_type);
     }
@@ -343,7 +345,8 @@ static void set_switch_func_type(SBSideConnection& conn, const char* func_type) 
         archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified, cannot go from side to same side: %s\n", func_type);
     }
 
-    // Can't go from above/under to above/under
+    // We don't allow specification of patterns that imply edges going over 2 or more layers
+    // (this doesn't seem electrically logical), so we disallow going from above/under to above/under.
     if ((to_side == ABOVE || to_side == UNDER) && (from_side == ABOVE || from_side == UNDER)) {
         archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified, cannot go from above/under to above/under: %s\n", func_type);
     }

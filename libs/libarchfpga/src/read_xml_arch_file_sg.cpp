@@ -10,7 +10,7 @@
  * 
  * @param sg_link_list_tag XML node pointing to the <sg_link_list> tag.
  * @param loc_data Points to the location in the architecture file where the parser is reading. Used for priting error messages.
- * @return std::vector<t_sg_link> containing information of scatter gather links.
+ * @return std::vector<t_sg_link> the information for the sg_links in the sg_link_list.
  */
 static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag,
                                                  const pugiutil::loc_data& loc_data) {
@@ -34,7 +34,8 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
         if (x_offset == 0 && y_offset == 0 && z_offset == 0) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "All offset fields in the <sg_link> are non-zero or missing.");
         }
-
+        
+        // We expect exactly one non-zero offset so the gather and scatter points are joined by a node that can be represented by a straight wire.
         if (x_offset != 0) {
             sg_link.x_offset = x_offset;
             if (y_offset != 0 || z_offset != 0) {
@@ -65,7 +66,7 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
  * 
  * @param sg_pattern_tag XML node pointing to the <sg_pattern> tag.
  * @param loc_data Points to the location in the architecture file where the parser is reading. Used for priting error messages.
- * @return std::vector<t_sg_location> containing information of scatter gather locations.
+ * @return std::vector<t_sg_location> contains information of scatter gather locations.
  */
 static std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_pattern_tag,
                                                          const pugiutil::loc_data& loc_data) {

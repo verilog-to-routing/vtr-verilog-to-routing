@@ -4,7 +4,9 @@
 #include "switchblock_types.h"
 
 /**
- * @brief Enumeration for the type field of an <sg_pattern> tag.
+ * @brief Enumeration for the type field of an <sg_pattern> tag. With UNIDIR the gather pattern makes a mux which is connected by a node
+ * to the scatter pattern of edges. With BIDIR, the structure is made symmetric with a gather mux and a scatter edge pattern on each end
+ * of the node linking them.
  * 
  */
 enum class e_scatter_gather_type {
@@ -13,7 +15,7 @@ enum class e_scatter_gather_type {
 };
 
 /**
- * @brief Struct containing information of an <sg_location> tag. An <sg_location> tag instantiates the scatter-gather pattern in some switchblocks around the device.
+ * @brief Struct containing information of an <sg_location> tag. An <sg_location> tag instantiates the scatter-gather pattern in some switchblock locations around the device.
  * 
  */
 struct t_sg_location {
