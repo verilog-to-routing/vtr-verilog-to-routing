@@ -17,8 +17,6 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
     std::vector<t_sg_link> sg_link_list;
     pugiutil::expect_only_children(sg_link_list_tag, {"sg_link"}, loc_data);
     for (pugi::xml_node node : sg_link_list_tag.children()) {
-        if (strcmp(node.name(), "sg_link") != 0) continue;
-
         const std::vector<std::string> expected_attributes = {"name", "x_offset", "y_offset", "z_offset", "mux", "seg_type"};
         pugiutil::expect_only_attributes(node, expected_attributes, loc_data);
 
@@ -27,9 +25,10 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
         sg_link.mux_name = pugiutil::get_attribute(node, "mux", loc_data).as_string();
         sg_link.seg_type = pugiutil::get_attribute(node, "seg_type", loc_data).as_string();
 
-        int x_offset = pugiutil::get_attribute(node, "x_offset", loc_data, pugiutil::OPTIONAL).as_int();
-        int y_offset = pugiutil::get_attribute(node, "y_offset", loc_data, pugiutil::OPTIONAL).as_int();
-        int z_offset = pugiutil::get_attribute(node, "z_offset", loc_data, pugiutil::OPTIONAL).as_int();
+        // Since the offset attributes are optional and might not exist, the as_int method will return a value of zero if the attribute is empty
+        int x_offset = pugiutil::get_attribute(node, "x_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
+        int y_offset = pugiutil::get_attribute(node, "y_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
+        int z_offset = pugiutil::get_attribute(node, "z_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
 
         if (x_offset == 0 && y_offset == 0 && z_offset == 0) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "All offset fields in the <sg_link> are non-zero or missing.");
