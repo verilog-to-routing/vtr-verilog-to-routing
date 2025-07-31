@@ -163,7 +163,10 @@ static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
                                             bool can_skip_from_or_to) {
 
     // Parse an inline wireconn definition, using attributes
-    expect_only_attributes(node, {"num_conns", "from_type", "to_type", "from_switchpoint", "to_switchpoint", "from_order", "to_order", "switch_override", "side"}, loc_data);
+    expect_only_attributes(node,
+                           {"num_conns", "from_type", "to_type", "from_switchpoint",
+                            "to_switchpoint", "from_order", "to_order", "switch_override", "side"},
+                           loc_data);
 
     t_wireconn_inf wc;
 
@@ -336,7 +339,7 @@ static void set_switch_func_type(SBSideConnection& conn, const char* func_type) 
     if (std::string(func_type).find_first_not_of("rtlbauRTLBAU") != std::string::npos) {
         archfpga_throw(__FILE__, __LINE__, "Unknown direction specified: %s\n", func_type);
     }
-    
+
     e_side from_side = CHAR_SIDE_MAP.at(func_type[0]);
     e_side to_side = CHAR_SIDE_MAP.at(func_type[1]);
 

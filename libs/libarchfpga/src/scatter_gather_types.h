@@ -10,8 +10,8 @@
  * 
  */
 enum class e_scatter_gather_type {
-    UNIDIR, // Unidirectional connection
-    BIDIR   // Bidirectional connection
+    UNIDIR, ///< Unidirectional connection
+    BIDIR   ///< Bidirectional connection
 };
 
 /**
@@ -29,12 +29,12 @@ struct t_sg_location {
  * 
  */
 struct t_sg_link {
-    std::string name;     // Name of the sg_link.
-    std::string mux_name; // Name of the multiplexer used to gather connections.
-    std::string seg_type; // Segment/wire used to move through the device to the scatter location.
-    int x_offset;         // X offset of where the scatter happens relative to the gather. If set, the y and z offsets must be zero.
-    int y_offset;         // y offset of where the scatter happens relative to the gather. If set, the x and z offsets must be zero.
-    int z_offset;         // z offset of where the scatter happens relative to the gather. If set, the x and y offsets must be zero.
+    std::string name;     ///< Name of the sg_link.
+    std::string mux_name; ///< Name of the multiplexer used to gather connections.
+    std::string seg_type; ///< Segment/wire used to move through the device to the scatter location.
+    int x_offset;         ///< X offset of where the scatter happens relative to the gather. If set, the y and z offsets must be zero.
+    int y_offset;         ///< y offset of where the scatter happens relative to the gather. If set, the x and z offsets must be zero.
+    int z_offset;         ///< z offset of where the scatter happens relative to the gather. If set, the x and y offsets must be zero.
 };
 
 /**

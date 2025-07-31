@@ -44,13 +44,16 @@ const std::unordered_map<char, e_side> CHAR_SIDE_MAP = {
     {'U', UNDER},
     {'u', UNDER}};
 
-constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
-constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
+constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     // Set of all side orientations
+constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; // String versions of side orientations
 
-constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         //Set of all side orientations including different layers
-constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; //String versions of side orientations including different layers
+constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         // Set of all side orientations including different layers
+constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; // String versions of side orientations including different layers
 
-/* Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere) */
+/**
+ * @brief Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere)
+ * 
+ */
 enum class e_sb_location {
     E_PERIMETER = 0,
     E_CORNER,
@@ -77,10 +80,13 @@ struct t_sb_loc_spec {
     int end = -1;
 };
 
-/* represents a connection between two sides of a switchblock */
+/**
+ * @brief represents a connection between two sides of a switchblock
+ * 
+ */
 class SBSideConnection {
   public:
-    /* specify the two SB sides that form a connection */
+    // Specify the two SB sides that form a connection
     enum e_side from_side = TOP;
     enum e_side to_side = TOP;
 
@@ -96,7 +102,7 @@ class SBSideConnection {
         , to_side(to) {
     }
 
-    /* overload < operator which will be used by std::map */
+    // Overload < operator which will be used by std::map
     bool operator<(const SBSideConnection& obj) const {
         bool result;
 
@@ -115,24 +121,30 @@ class SBSideConnection {
 };
 
 enum class SwitchPointOrder {
-    FIXED,   //Switchpoints are ordered as specified in architecture
-    SHUFFLED //Switchpoints are shuffled (more diversity)
+    FIXED,   ///< Switchpoints are ordered as specified in architecture
+    SHUFFLED ///< Switchpoints are shuffled (more diversity)
 };
 
-//A collection of switchpoints associated with a segment
+/**
+ * @brief A collection of switchpoints associated with a segment
+ * 
+ */
 struct t_wire_switchpoints {
-    std::string segment_name;      //The type of segment
-    std::vector<int> switchpoints; //The indices of wire points along the segment
+    std::string segment_name;      ///< The type of segment
+    std::vector<int> switchpoints; ///< The indices of wire points along the segment
 };
 
-/* Used to list information about a set of track segments that should connect through a switchblock */
+/**
+ * @brief Used to list information about a set of track segments that should connect through a switchblock
+ * 
+ */
 struct t_wireconn_inf {
-    std::vector<t_wire_switchpoints> from_switchpoint_set;             //The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
-    std::vector<t_wire_switchpoints> to_switchpoint_set;               //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
-    SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
-    SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   //The desired to_switchpoint_set ordering
-    int switch_override_indx = DEFAULT_SWITCH;                         // index in switch array of the switch used to override wire_switch of the 'to' set.
-                                                                       // DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
+    std::vector<t_wire_switchpoints> from_switchpoint_set;             ///< The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
+    std::vector<t_wire_switchpoints> to_switchpoint_set;               ///< The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
+    SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; ///< The desired from_switchpoint_set ordering
+    SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   ///< The desired to_switchpoint_set ordering
+    int switch_override_indx = DEFAULT_SWITCH;                         ///< index in switch array of the switch used to override wire_switch of the 'to' set.
+                                                                       ///< DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
 
     std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
                                     *
@@ -150,7 +162,7 @@ struct t_wireconn_inf {
                                     *          larger than 'to')
                                     */
 
-    std::vector<e_side> sides; // Used for scatter-gather wireconns determining which sides to gather from / scatter to, ignored in other usages.
+    std::vector<e_side> sides; ///< Used for scatter-gather wireconns determining which sides to gather from / scatter to, ignored in other usages.
 };
 
 /* Use a map to index into the string permutation functions used to connect from one side to another */

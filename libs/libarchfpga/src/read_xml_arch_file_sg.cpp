@@ -33,7 +33,7 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
         if (x_offset == 0 && y_offset == 0 && z_offset == 0) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "All offset fields in the <sg_link> are non-zero or missing.");
         }
-        
+
         // We expect exactly one non-zero offset so the gather and scatter points are joined by a node that can be represented by a straight wire.
         if (x_offset != 0) {
             sg_link.x_offset = x_offset;
