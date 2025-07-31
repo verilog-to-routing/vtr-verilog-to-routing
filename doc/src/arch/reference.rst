@@ -2485,7 +2485,7 @@ The full format is documented below.
     Defined under the ``<switchfuncs>`` XML node, one or more ``<func...>`` entries is used to specify permutation functions that connect different sides of a switch block.
 
 
-.. arch:tag:: <wireconn num_conns="expr" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." from_order="{fixed | shuffled}" to_order="{fixed | shuffled}" switch_override="string"/>
+.. arch:tag:: <wireconn num_conns="expr" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." from_order="{fixed | shuffled}" to_order="{fixed | shuffled}" switch_override="string" side="string"/>
 
     :req_param num_conns:
         Specifies how many connections should be created between the from_type/from_switchpoint set and the to_type/to_switchpoint set.
@@ -2592,6 +2592,10 @@ The full format is documented below.
         By using a zero-delay and zero-resistance switch one can also create T and L shaped wire segments.
         
         **Default:** If no override is specified, the usual wire_switch that drives the ``to`` wire will be used. 
+    
+    :opt_param side:
+       Specifies the sides that connections are gathered from or scattered to. Valid sides are right, left, top and bottom and are represented by characters 'r', 'l', 't' and 'b'.
+       For example, to select connections from right, left and bottom set this attribute to "rlb". Note that this attribute is used only for scatter-gather patterns and does not do anything for other usages of this tag.
 
     .. arch:tag:: <from type="string" switchpoint="int, int, int, ..."/>
 
@@ -2640,53 +2644,67 @@ Scatter-Gather Patterns
 ---------------------
 
 The content under the ``<scatter_gather_list>`` tag consists of one or more ``<sg_pattern>`` tags that are used to specify a scatter-gather pattern.
+Scatter-gather patterns can be used to specify multi-level switch patterns, rather than the direct wire-to-wire switch patterns of conventional switch blocks.
+These additional switches, wires and/or muxes will be added to the architecture, augmenting wires created using segment specifications and swiches created using switch box specifications.
+The number of any additional wires or muxes created by scatter-gather specifications will not vary with routing channel width.
+
+.. note:: Scatter-Gather patterns are work in progress and experimental. Currently, VPR does not support this specification and using this tag would not result in any modifications to the RR-Graph.
 
 When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
 
     .. code-block:: xml
 
         <scatter_gather_list>
-            <sg_pattern name="name" type="unidir"> <!-- segment: attribute or tag? -->
+            <sg_pattern name="name" type="unidir">
                 <gather>
-                    <wireconn num_conns="30" from_type="L16" from_switchpoint="0,12,8,4" side="rltb"/> <!-- Illegal to have to_type and to_switchpoint --> <!-- No above/under side -->
+                    <!-- Gather 30 connections from the 0, 4, 8 or 12 position of L16 wires of all four sides of a switchblock location -->
+                    <wireconn num_conns="30" from_type="L16" from_switchpoint="0,12,8,4" side="rltb"/> 
                 <gather/>
 
                 <scatter>
-                    <wireconn num_conns="30" to_type="L16" to_switchpoint="0" side="rtlb"/> <!-- Illegal to have from_type and from_switchpoint -->
+                    <!-- Scatter 30 connections to the starting position of L16 wires of all four sides of a switchblock location -->
+                    <wireconn num_conns="30" to_type="L16" to_switchpoint="0" side="rtlb"/>
                 <scatter/>
                 
                 <sg_link_list>
-                    <sg_link name="L_UP" z_offset="1" x_offset="0" y_offset="0" mux="3D_SB_MUX" seg_type="TSV"/> <!-- One hot offsets -->
+                    <!-- Link going up one layer, using the '3D_SB_MUX' multiplexer to gather connections from the bottom layer and using the 'TSV' node/wire to move up one layer -->
+                    <sg_link name="L_UP" z_offset="1" x_offset="0" y_offset="0" mux="3D_SB_MUX" seg_type="TSV"/> 
+                    <!-- Same as above but moving one layer down -->
                     <sg_link name="L_DOWN" z_offset="-1" mux="3D_SB_MUX" seg_type="TSV"/>
                 <sg_link_list/>
-
-                <sg_location type="EVERYWHERE" num="10" sg_link="L_UP"/> <!-- type="EVERYWHERE/PERIMETER/CORNER/FRINGE/CORE"-->
+                
+                <!-- Instantiate 10 'L_UP' sg_links per switchblock location everywhere on the device -->
+                <sg_location type="EVERYWHERE" num="10" sg_link="L_UP"/>
+                <!-- Instantiate 10 'L_DOWN' sg_links per switchblock location everywhere on the device -->
                 <sg_location type="EVERYWHERE" num="10" sg_link="L_DOWN"/>
             <sg_pattern/>
 
             <sg_pattern name="interposer_conn_sg" type="bidir">
-                ... <!-- Another scatter-gather pattern specification-->
+                ... <!-- Another scatter-gather pattern specification -->
             <sg_pattern/>
         <scatter_gather_list/>
-
-This format allows users to specify complex switchblock patterns without the verbosity of custom switchblocks.
 
 .. arch:tag:: <sg_pattern name="string" type={unidir|bidir}>
 
     :req_param name: A unique alphanumeric string
     :req_param type: ``unidir`` or ``bidir``.
 
+Unidir: Added connections are unidirectional; all the gather connections are combined in a mux that then drives the scatter-gather node which in turn drives the wires specified in the scatter specification.
+Bidir: The gather and scatter connections are mirrored; the same scatter pattern is implemented at each end of the scatter-gather pattern. This implies the two muxes driving the scatter-gather node can have their outputs tri-stated. 
+
 .. arch:tag:: <gather>
 
     Contains a <wireconn> tag specifying how the fan-in or gather connections are selected. See ``wireconn`` for the relevant specification.
+    This <wireconn> tag supports an additioinal 'side' attribute which selects the sides that connections are gathered from (e.g. any of the top, bottom, left and right).
 
 .. arch:tag:: <scatter>
 
     Contains a <wireconn> tag specifying how the fan-out or scatter connections are selected. See ``wireconn`` for the relevant specification.
+    This <wireconn> tag supports an additioinal 'side' attribute which selects the sides that connections are scattered to (e.g. any of the top, bottom, left and right).
 
 .. arch:tag:: <sg_link_list>
 
-    Contains one or more <sg_link> tags specifying how the connections move from the gather location to the scatter location.
+    Contains one or more <sg_link> tags specifying how the pattern of how connections move from the gather location to the scatter location.
     
     .. note:: These <sg_link> tags are not instantiations of the pattern. instead, the instantiations select one of the sg_link tags to use.
 
@@ -2694,19 +2712,19 @@ This format allows users to specify complex switchblock patterns without the ver
 
     :req_param name: A unique alphanumeric string
     :req_param mux: Name of the multiplexer used to gather connections
-    :req_param seg_type: Name of the segment/wire used to move through the device to the scatter location
+    :req_param seg_type: Name of the segment/wire used to move through the device to the scatter location (i.e. the type of the scatter-gather node)
 
     :opt_param x_offset: Offset of the scatter relative to the gather in the x-axis
     :opt_param x_offset: Offset of the scatter relative to the gather in the y-axis
     :opt_param x_offset: Offset of the scatter relative to the gather in the z-axis
 
-    .. note:: One and only one of the offset fields for the sg_link tag must be set.
+    .. note:: One and only one of the offset fields for the sg_link tag must be set. The magnitude of the offset will generally be chosen by the architecture file creator to match the length of the sg_link segment type.
 
 .. arch:tag:: <sg_location type="string" num="int" sg_link_name="string">
 
     Instantiates the scatter-gather pattern with the specified sg_link.
 
-    :req_param num: number of scatter-gather instances per switch_block
+    :req_param num: number of scatter-gather instances per matching location (e.g. per switch block)
     :req_param sg_link_name: name of the sg_link used in the instantiation
     :req_param type: Can be one of the following strings:
 
