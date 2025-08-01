@@ -1,16 +1,18 @@
-#Parameters:
+# Function - build_filelist:
+#
+#	Validates file extensions of input files and writes the names
+#	of input files to the file list to be read by yosys-slang.
+#
+# Parameters:
 #
 #	circuit_list - list of circuits passed into the flow
 #	file_list - text file being written to that will contain
 #	     		the names of circuits from circuit list.
 #
-#Function:
-#
-#	Validates file extensions of input files and writes the names
-#	of input files to the file list to be read by yosys-slang.
  
 namespace eval ::slang {
-
+	# top_map insertion syntax:
+	# <file> <top module>
 	array set top_map {
 		and_latch.v {and_latch}
 		multiclock_output_and_latch.v {multiclock_output_and_latch}
@@ -44,6 +46,10 @@ namespace eval ::slang {
 		clock.sv top
 		single_ff.v top
 		single_wire.v top
+		PWM.v top
+		flattened_pulse_width_led.sv top
+		modify_count.sv top
+		time_counter.sv top
 	}
 
 
