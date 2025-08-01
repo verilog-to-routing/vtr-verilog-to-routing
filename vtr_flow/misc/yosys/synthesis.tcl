@@ -45,6 +45,9 @@ if {$env(PARSER) == "slang" } {
 	read_slang -v $env(PRIMITIVES) {*}$slang_tops -C $readfile
 } elseif {$env(PARSER) == "default" } {
 	puts "Using Yosys read_verilog command"
+	read_verilog -nomem2reg +/parmys/vtr_primitives.v
+	setattr -mod -set keep_hierarchy 1 single_port_ram
+ 	setattr -mod -set keep_hierarchy 1 dual_port_ram
 	read_verilog -sv -nolatches XXX
 } else {
 	error "Invalid PARSER"
