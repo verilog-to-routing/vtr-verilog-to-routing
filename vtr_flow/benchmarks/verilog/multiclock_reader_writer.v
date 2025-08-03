@@ -2,7 +2,7 @@ module multiclock_reader_writer(
     clock_reader_head,
     clock_writer_head,
 	in,
-	out,
+	out
 );
 
 	//INPUT
