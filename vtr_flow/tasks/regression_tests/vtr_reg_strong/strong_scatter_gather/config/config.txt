@@ -12,7 +12,7 @@ archs_dir=arch/scatter-gather
 circuit_list_add=ch_intrinsics.v
 
 # Add architectures to list to sweep
-arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
+arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm_sg.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt

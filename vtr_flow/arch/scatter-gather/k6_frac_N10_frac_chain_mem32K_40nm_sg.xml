@@ -1578,7 +1578,7 @@
     <clock buffer_size="auto" C_wire="2.5e-10"/>
   </clocks>
   
-  <!-- Specify a scatter-gather pattern for 3D connections. However, do that this is not a 3D architecture and this file is only used to test the parsing logic for scatter-gather patterns. -->
+  <!-- Specify a scatter-gather pattern for 3D connections. However, do note that this is not a 3D architecture and this file is only used to test the parsing logic for scatter-gather patterns. -->
   <!-- Scatter-gather patterns are WIP and currently do not result in modifications to the RR-Graph -->
   <scatter_gather_list>
     <sg_pattern name="name" type="unidir">

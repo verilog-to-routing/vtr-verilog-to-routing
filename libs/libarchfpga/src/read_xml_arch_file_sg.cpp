@@ -31,7 +31,7 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
         int z_offset = pugiutil::get_attribute(node, "z_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
 
         if (x_offset == 0 && y_offset == 0 && z_offset == 0) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "All offset fields in the <sg_link> are non-zero or missing.");
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "All offset fields in the <sg_link> are zero or missing.");
         }
 
         // We expect exactly one non-zero offset so the gather and scatter points are joined by a node that can be represented by a straight wire.
@@ -115,7 +115,10 @@ void process_sg_tag(pugi::xml_node sg_list_tag,
         pugi::xml_node gather_node = pugiutil::get_single_child(sg_tag, "gather", loc_data);
         t_wireconn_inf gather_wireconn = parse_wireconn(pugiutil::get_single_child(gather_node, "wireconn", loc_data), loc_data, switches, true);
         if (!gather_wireconn.to_switchpoint_set.empty()) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(sg_tag), "Gather wireconn specification should not set any 'to' switchpoints");
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(sg_tag), "Gather wireconn specification should not set any 'to' switchpoints.");
+        }
+        if (gather_wireconn.from_switchpoint_set.empty()) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(sg_tag), "Gather wireconn specification does not include any switchpoints.");
         }
         sg.gather_pattern = gather_wireconn;
 
@@ -124,6 +127,9 @@ void process_sg_tag(pugi::xml_node sg_list_tag,
         t_wireconn_inf scatter_wireconn = parse_wireconn(pugiutil::get_single_child(scatter_node, "wireconn", loc_data), loc_data, switches, true);
         if (!gather_wireconn.from_switchpoint_set.empty()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(sg_tag), "Scatter wireconn specification should not set any 'from' switchpoints");
+        }
+        if (gather_wireconn.to_switchpoint_set.empty()) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(sg_tag), "Scatter wireconn specification does not include any switchpoints.");
         }
         sg.scatter_pattern = scatter_wireconn;
 

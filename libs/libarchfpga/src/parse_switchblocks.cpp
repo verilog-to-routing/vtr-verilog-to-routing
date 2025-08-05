@@ -151,7 +151,7 @@ t_wireconn_inf parse_wireconn(pugi::xml_node node,
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "Unknown side specified: %s\n", sides_string.c_str());
     }
     for (char side_char : sides_string) {
-        wireconn.sides.push_back(CHAR_SIDE_MAP.at(side_char));
+        wireconn.sides.insert(CHAR_SIDE_MAP.at(side_char));
     }
 
     return wireconn;
@@ -334,6 +334,10 @@ static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
 
 //set sides for a specific conn for custom switch block pattern
 static void set_switch_func_type(SBSideConnection& conn, const char* func_type) {
+
+    if (std::string(func_type).length() != 2) {
+        archfpga_throw(__FILE__, __LINE__, "Custom switchblock func type must be 2 characters long: %s\n", func_type);
+    }
 
     // Only valid sides are right, top, left, bottom, above and under
     if (std::string(func_type).find_first_not_of("rtlbauRTLBAU") != std::string::npos) {

@@ -2595,7 +2595,7 @@ The full format is documented below.
     
     :opt_param side:
        Specifies the sides that connections are gathered from or scattered to. Valid sides are right, left, top and bottom and are represented by characters 'r', 'l', 't' and 'b'.
-       For example, to select connections from right, left and bottom set this attribute to "rlb". Note that this attribute is used only for scatter-gather patterns and does not do anything for other usages of this tag.
+       For example, to select connections from right, left and bottom set this attribute to "rlb". Note that this attribute is used only for :ref:`scatter_gather_patterns` and does not do anything for other usages of this tag. 
 
     .. arch:tag:: <from type="string" switchpoint="int, int, int, ..."/>
 
@@ -2638,7 +2638,7 @@ The full format is documented below.
     The 'to' set is all L4 switchpoint 0's.
     Note that since different switchpoints are selected from different segment types it is not possible to specify this without using ``<from>`` sub-tags.
 
-.. _scatter_gathern_patterns:
+.. _scatter_gather_patterns:
 
 Scatter-Gather Patterns
 ---------------------
@@ -2694,8 +2694,9 @@ When instantiated, a scatter-gather pattern gathers connections from a switchblo
     :req_param name: A unique alphanumeric string
     :req_param type: ``unidir`` or ``bidir``.
 
-Unidir: Added connections are unidirectional; all the gather connections are combined in a mux that then drives the scatter-gather node which in turn drives the wires specified in the scatter specification.
-Bidir: The gather and scatter connections are mirrored; the same scatter pattern is implemented at each end of the scatter-gather pattern. This implies the two muxes driving the scatter-gather node can have their outputs tri-stated. 
+'unidir': Added connections are unidirectional; all the gather connections are combined in a mux that then drives the scatter-gather node which in turn drives the wires specified in the scatter specification.
+
+'bidir': The gather and scatter connections are mirrored; the same scatter pattern is implemented at each end of the scatter-gather pattern. This implies the two muxes driving the scatter-gather node can have their outputs tri-stated. 
 
 .. arch:tag:: <gather>
 
@@ -2709,9 +2710,9 @@ Bidir: The gather and scatter connections are mirrored; the same scatter pattern
 
 .. arch:tag:: <sg_link_list>
 
-    Contains one or more <sg_link> tags specifying how the pattern of how connections move from the gather location to the scatter location.
+    Contains one or more <sg_link> tags specifying how the pattern of how connections move from the gather location to the scatter location i.e. defines the used mux and scatter-gather node.
     
-    .. note:: These <sg_link> tags are not instantiations of the pattern. instead, the instantiations select one of the sg_link tags to use.
+    .. note:: <sg_link> tags are not instantiations of the pattern and would not result in any changes to the device. instead, the <sg_location> tag instantiates the pattern and selects one of the <sg_link> tags to be used for the instantiation.
 
 .. arch:tag:: <sg_link  name="string" x_offset="int" y_offset="int" z_offset="int" mux="string" seg_type="string">
 
@@ -2723,7 +2724,7 @@ Bidir: The gather and scatter connections are mirrored; the same scatter pattern
     :opt_param x_offset: Offset of the scatter relative to the gather in the y-axis
     :opt_param x_offset: Offset of the scatter relative to the gather in the z-axis
 
-    .. note:: One and only one of the offset fields for the sg_link tag must be set. The magnitude of the offset will generally be chosen by the architecture file creator to match the length of the sg_link segment type.
+    .. note:: One and only one of the offset fields for the sg_link tag should be set. The magnitude of the offset will generally be chosen by the architecture file creator to match the length of the sg_link segment type.
 
 .. arch:tag:: <sg_location type="string" num="int" sg_link_name="string">
 

@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 constexpr int NO_SWITCH = -1;
@@ -162,7 +163,7 @@ struct t_wireconn_inf {
                                     *          larger than 'to')
                                     */
 
-    std::vector<e_side> sides; ///< Used for scatter-gather wireconns determining which sides to gather from / scatter to, ignored in other usages.
+    std::unordered_set<e_side> sides; ///< Used for scatter-gather wireconns determining which sides to gather from / scatter to, ignored in other usages.
 };
 
 /* Use a map to index into the string permutation functions used to connect from one side to another */
