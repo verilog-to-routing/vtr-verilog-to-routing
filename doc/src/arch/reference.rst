@@ -2648,9 +2648,14 @@ Scatter-gather patterns can be used to specify multi-level switch patterns, rath
 These additional switches, wires and/or muxes will be added to the architecture, augmenting wires created using segment specifications and swiches created using switch box specifications.
 The number of any additional wires or muxes created by scatter-gather specifications will not vary with routing channel width.
 
+.. figure:: scatter_gather_images/scattergather_diagram.svg
+
+    Overview of how scatter-gather patterns work. First, connections from a switchblock location are selected according to the specification.
+    These selected connection are then muxed and passed through the scatter-gather node, which is typically a wire segment. The scatter-gather node then fans out or scatters in another switchblock location.
+
 .. note:: Scatter-Gather patterns are work in progress and experimental. Currently, VPR does not support this specification and using this tag would not result in any modifications to the RR-Graph.
 
-When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
+When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
 
     .. code-block:: xml
 
