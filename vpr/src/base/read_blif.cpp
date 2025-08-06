@@ -20,6 +20,7 @@
 #include <sstream>
 #include <cctype> //std::isdigit
 #include <regex>  //std::regex
+#include <optional>
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"
@@ -407,13 +408,14 @@ struct BlifAllocCallback : public blifparse::Callback {
         //Look through all the models loaded, to find the one which is non-blackbox (i.e. has real blocks
         //and is not a blackbox).  To check for errors we look at all models, even if we've already
         //found a non-blackbox model.
-        int top_model_idx = -1; //Not valid
 
-        for (int i = 0; i < static_cast<int>(blif_models_.size()); ++i) {
+        std::optional<size_t> top_model_idx; //Not valid yet
+
+        for (size_t i = 0; i < blif_models_.size(); ++i) {
             if (!blif_models_black_box_[i]) {
                 //A non-blackbox model
-                if (top_model_idx == -1) {
-                    //This is the top model
+                if (!top_model_idx.has_value()) {
+                    // Top model is first non-blackbox model found
                     top_model_idx = i;
                 } else {
                     //We already have a top model
@@ -427,14 +429,13 @@ struct BlifAllocCallback : public blifparse::Callback {
             }
         }
 
-        if (top_model_idx == -1) {
+        if (!top_model_idx.has_value()) {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
                       "No non-blackbox models found. The main model must not be a blackbox.");
         }
 
         //Return the main model
-        VTR_ASSERT(top_model_idx >= 0);
-        return static_cast<size_t>(top_model_idx);
+        return top_model_idx.value();
     }
 
   private:
@@ -536,11 +537,17 @@ struct BlifAllocCallback : public blifparse::Callback {
 
     bool verify_blackbox_model(AtomNetlist& blif_model) {
         LogicalModelId arch_model_id = models_.get_model_by_name(blif_model.netlist_name());
+
+        if(!arch_model_id.is_valid()) {
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "BLIF model '%s' has no equivalent architecture model.",
+                    blif_model.netlist_name().c_str());
+        }
+
         const t_model& arch_model = models_.get_model(arch_model_id);
 
         //Verify each port on the model
         //
-        // We parse each .model as it's own netlist so the IOs
+        // We parse each .model as its own netlist so the IOs
         // get converted to blocks
         for (auto blk_id : blif_model.blocks()) {
             //Check that the port directions match
