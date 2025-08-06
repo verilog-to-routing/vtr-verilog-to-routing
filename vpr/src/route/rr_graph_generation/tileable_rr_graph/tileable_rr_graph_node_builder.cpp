@@ -847,7 +847,11 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             size_t seg_id = chan_details.get_track_segment_id(itrack);
             e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? e_parallel_axis::X_AXIS : e_parallel_axis::Y_AXIS;
             size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
-            rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch);
+            if (Direction::DEC == chan_details.get_track_direction(itrack) && segment_infs[parallel_seg_id].arch_opin_switch_dec != -1) {
+                rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch_dec);
+            } else {
+                rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch);
+            }
 
             // Update chan_details with node_id
             chan_details.set_track_node_id(itrack, size_t(node));
