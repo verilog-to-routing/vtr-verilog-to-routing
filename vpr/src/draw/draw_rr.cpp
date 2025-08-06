@@ -237,9 +237,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    e_rr_type from_type, to_type;
-
-    from_type = rr_graph.node_type(inode);
+    e_rr_type to_type;
+    e_rr_type from_type = rr_graph.node_type(inode);
 
     // Currently don't visualize source or sinks.
     if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::SINK) {

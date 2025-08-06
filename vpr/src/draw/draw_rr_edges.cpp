@@ -311,7 +311,7 @@ void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_c
         return;
     }
 
-    for (const e_side& pin_side : TOTAL_2D_SIDES) {
+    for (const e_side pin_side : TOTAL_2D_SIDES) {
         // Draw connections to each side of the inter-cluster node
         if (!rr_graph.is_node_on_specific_side(inter_cluster_node, pin_side)) {
             continue;
@@ -359,7 +359,7 @@ void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) 
      */
     float x1 = 0, y1 = 0;
     std::vector<e_side> opin_candidate_sides;
-    for (const e_side& opin_candidate_side : TOTAL_2D_SIDES) {
+    for (const e_side opin_candidate_side : TOTAL_2D_SIDES) {
         if (rr_graph.is_node_on_specific_side(opin_node, opin_candidate_side)) {
             opin_candidate_sides.push_back(opin_candidate_side);
         }
@@ -369,7 +369,7 @@ void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) 
 
     float x2 = 0, y2 = 0;
     std::vector<e_side> ipin_candidate_sides;
-    for (const e_side& ipin_candidate_side : TOTAL_2D_SIDES) {
+    for (const e_side ipin_candidate_side : TOTAL_2D_SIDES) {
         if (rr_graph.is_node_on_specific_side(ipin_node, ipin_candidate_side)) {
             ipin_candidate_sides.push_back(ipin_candidate_side);
         }
@@ -390,7 +390,7 @@ void draw_pin_to_sink(RRNodeId ipin_node, RRNodeId sink_node, ezgl::renderer* g)
 
     float x1 = 0, y1 = 0;
     /* Draw the line for each ipin on different sides */
-    for (const e_side& pin_side : TOTAL_2D_SIDES) {
+    for (const e_side pin_side : TOTAL_2D_SIDES) {
         if (!rr_graph.is_node_on_specific_side(ipin_node, pin_side)) {
             continue;
         }
@@ -416,7 +416,7 @@ void draw_source_to_pin(RRNodeId source_node, RRNodeId opin_node, ezgl::renderer
     draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(source_node)], &x1, &y1);
 
     /* Draw the line for each ipin on different sides */
-    for (const e_side& pin_side : TOTAL_2D_SIDES) {
+    for (const e_side pin_side : TOTAL_2D_SIDES) {
         if (!rr_graph.is_node_on_specific_side(opin_node, pin_side)) {
             continue;
         }
@@ -483,7 +483,7 @@ e_side get_pin_side(RRNodeId pin_node, RRNodeId chan_node) {
      *       the actual offset of the pin in the context of grid width and height
      */
     std::vector<e_side> pin_candidate_sides;
-    for (const e_side& pin_candidate_side : TOTAL_2D_SIDES) {
+    for (const e_side pin_candidate_side : TOTAL_2D_SIDES) {
         if ((rr_graph.is_node_on_specific_side(pin_node, pin_candidate_side))
             && (grid_type->pinloc[width_offset][height_offset][pin_candidate_side][rr_graph.node_pin_num(pin_node)])) {
             pin_candidate_sides.push_back(pin_candidate_side);
@@ -629,7 +629,7 @@ void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::r
     bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
     int current_node_layer = rr_graph.node_layer(inode);
 
-    e_rr_type prev_type = rr_graph.node_type(RRNodeId(prev_node));
+    e_rr_type prev_type = rr_graph.node_type(prev_node);
     bool prev_node_inter_cluster = is_inter_cluster_node(rr_graph, prev_node);
     int prev_node_layer = rr_graph.node_layer(prev_node);
 
@@ -668,68 +668,68 @@ void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::r
 void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr_type, e_rr_type prev_type, ezgl::renderer* g) {
     const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
     t_edge_size iedge = find_edge(prev_node, inode);
-    short switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
+    short switch_type = rr_graph.edge_switch(prev_node, iedge);
 
-    switch (rr_type) {
-        case e_rr_type::IPIN: {
+    switch (rr_type) 
+        case e_rr_type::IPIN: 
             if (prev_type == e_rr_type::OPIN) {
                 draw_pin_to_pin(prev_node, inode, g);
             } else {
                 draw_pin_to_chan_edge(inode, prev_node, g);
             }
             break;
-        }
-        case e_rr_type::CHANX: {
-            switch (prev_type) {
-                case e_rr_type::CHANX: {
+        
+        case e_rr_type::CHANX: 
+            switch (prev_type) 
+                case e_rr_type::CHANX: 
                     draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
                     break;
-                }
-                case e_rr_type::CHANY: {
+                
+                case e_rr_type::CHANY: 
                     draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
                     break;
-                }
-                case e_rr_type::OPIN: {
+                
+                case e_rr_type::OPIN: 
                     draw_pin_to_chan_edge(prev_node, inode, g);
                     break;
-                }
-                default: {
+                
+                default: 
                     VPR_ERROR(VPR_ERROR_OTHER,
                               "Unexpected connection from an rr_node of type %d to one of type %d.\n",
                               prev_type, rr_type);
-                }
-            }
+                
+            
             break;
-        }
-        case e_rr_type::CHANY: {
-            switch (prev_type) {
-                case e_rr_type::CHANX: {
+        
+        case e_rr_type::CHANY: 
+            switch (prev_type) 
+                case e_rr_type::CHANX: 
                     draw_chanx_to_chany_edge(prev_node, inode,
                                              FROM_X_TO_Y, switch_type, g);
                     break;
-                }
-                case e_rr_type::CHANY: {
-                    draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
+                
+                case e_rr_type::CHANY: 
+                    draw_chany_to_chany_edge(prev_node, inode,
                                              switch_type, g);
                     break;
-                }
-                case e_rr_type::OPIN: {
+                
+                case e_rr_type::OPIN: 
                     draw_pin_to_chan_edge(prev_node, inode, g);
 
                     break;
-                }
-                default: {
+                
+                default: 
                     VPR_ERROR(VPR_ERROR_OTHER,
                               "Unexpected connection from an rr_node of type %d to one of type %d.\n",
                               prev_type, rr_type);
-                }
-            }
+                
+            
             break;
-        }
-        default: {
+        
+        default: 
             break;
-        }
-    }
+        
+    
 }
 
 #endif
