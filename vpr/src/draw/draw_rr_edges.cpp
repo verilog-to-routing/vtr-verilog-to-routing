@@ -670,7 +670,7 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
     t_edge_size iedge = find_edge(prev_node, inode);
     short switch_type = rr_graph.edge_switch(prev_node, iedge);
 
-    switch (rr_type) 
+    switch (rr_type) {
         case e_rr_type::IPIN: 
             if (prev_type == e_rr_type::OPIN) {
                 draw_pin_to_pin(prev_node, inode, g);
@@ -680,7 +680,7 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
             break;
         
         case e_rr_type::CHANX: 
-            switch (prev_type) 
+            switch (prev_type) {
                 case e_rr_type::CHANX: 
                     draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
                     break;
@@ -697,12 +697,12 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
                     VPR_ERROR(VPR_ERROR_OTHER,
                               "Unexpected connection from an rr_node of type %d to one of type %d.\n",
                               prev_type, rr_type);
-                
+            }
             
             break;
         
         case e_rr_type::CHANY: 
-            switch (prev_type) 
+            switch (prev_type) {
                 case e_rr_type::CHANX: 
                     draw_chanx_to_chany_edge(prev_node, inode,
                                              FROM_X_TO_Y, switch_type, g);
@@ -722,14 +722,14 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
                     VPR_ERROR(VPR_ERROR_OTHER,
                               "Unexpected connection from an rr_node of type %d to one of type %d.\n",
                               prev_type, rr_type);
-                
+            }
             
             break;
         
         default: 
             break;
         
-    
+    }
 }
 
 #endif
