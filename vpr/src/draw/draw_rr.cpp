@@ -66,7 +66,7 @@ void draw_rr(ezgl::renderer* g) {
                     draw_state->draw_rr_node[inode].color = ezgl::PINK;
                     break;
                 case e_rr_type::IPIN:
-                    draw_state->draw_rr_node[inode].color = blk_LIGHTSKYBLUE;
+                    draw_state->draw_rr_node[inode].color = ezgl::PURPLE;
                     break;
                 case e_rr_type::SOURCE:
                     draw_state->draw_rr_node[inode].color = ezgl::PLUM;
@@ -240,7 +240,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     e_rr_type from_type, to_type;
 
     from_type = rr_graph.node_type(inode);
-    if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::SINK || !is_inter_cluster_node(rr_graph, inode)) {
+    if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::SINK) {
         return;
     }
 
@@ -255,51 +255,51 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         to_type = rr_graph.node_type(to_node);
         bool edge_configurable = rr_graph.edge_is_configurable(inode, iedge);
 
-        if (to_type == e_rr_type::SOURCE || to_type == e_rr_type::SINK || !is_inter_cluster_node(rr_graph, to_node)) {
+        if (to_type == e_rr_type::SOURCE || to_type == e_rr_type::SINK) {
             continue;
         }
 
         ezgl::color color = DEFAULT_RR_NODE_COLOR;
-        // Determine the color based on the type of the edge
-        switch (from_type) {
-            case e_rr_type::OPIN:
-                if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
-                    color = ezgl::PINK;
-                } else if (to_type == e_rr_type::IPIN) {
-                    color = ezgl::MEDIUM_PURPLE;
-                } else {
-                    vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                              "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
-                              inode, from_type, to_node, to_type);
-                }
-                break;
-            case e_rr_type::CHANX:
-            case e_rr_type::CHANY:
-                if (to_type == e_rr_type::IPIN) {
-                    color = blk_LIGHTSKYBLUE;
-                    if (draw_state->draw_rr_node[to_node].node_highlighted && draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
-                        // If the IPIN is clicked on, draw connection to all the CHANX
-                        // wire segments fanning into the pin. If a CHANX wire is clicked
-                        // on, draw only the connection between that wire and the IPIN, with
-                        // the pin fanning out from the wire.
-                        color = ezgl::MAGENTA;
-                    }
-                } else if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
-                    if (edge_configurable) {
-                        color = blk_DARKGREEN;
-                    } else {
-                        color = blk_DARKGREY;
-                    }
-                } else {
-                    vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                              "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
-                              inode, from_type, to_node, to_type);
-                }
-                break;
-            default:
-                break;
+
+        // Color map for edges based on {from_type, to_type}
+        static const std::map<std::pair<e_rr_type, e_rr_type>, ezgl::color> edge_color_map = {
+            // Pin to pin connections
+            {{e_rr_type::IPIN, e_rr_type::IPIN}, ezgl::MEDIUM_PURPLE},
+            {{e_rr_type::OPIN, e_rr_type::IPIN}, ezgl::MEDIUM_PURPLE},
+            {{e_rr_type::OPIN, e_rr_type::OPIN}, ezgl::LIGHT_PINK},
+            {{e_rr_type::IPIN, e_rr_type::OPIN}, ezgl::LIGHT_PINK},
+
+            // Channel to pin connections
+            {{e_rr_type::OPIN, e_rr_type::CHANX}, ezgl::PINK},
+            {{e_rr_type::OPIN, e_rr_type::CHANY}, ezgl::PINK},
+            {{e_rr_type::CHANX, e_rr_type::IPIN}, ezgl::PURPLE},
+            {{e_rr_type::CHANY, e_rr_type::IPIN}, ezgl::PURPLE},
+
+            // Channel to channel connections
+            {{e_rr_type::CHANX, e_rr_type::CHANX}, blk_DARKGREEN},
+            {{e_rr_type::CHANX, e_rr_type::CHANY}, blk_DARKGREEN},
+            {{e_rr_type::CHANY, e_rr_type::CHANY}, blk_DARKGREEN},
+            {{e_rr_type::CHANY, e_rr_type::CHANX}, blk_DARKGREEN},
+        };
+
+        if (edge_color_map.find({from_type, to_type}) != edge_color_map.end()) {
+            color = edge_color_map.at({from_type, to_type});
         }
 
+        if (!edge_configurable) color = blk_DARKGREY;
+
+        if((from_type == e_rr_type::CHANX || from_type == e_rr_type::CHANY)
+           && (to_type == e_rr_type::IPIN) 
+           && draw_state->draw_rr_node[to_node].node_highlighted
+           && draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR){
+            // If the IPIN is clicked on, draw connection to all the CHANX
+            // wire segments fanning into the pin. If a CHANX wire is clicked
+            // on, draw only the connection between that wire and the IPIN, with
+            // the pin fanning out from the wire.
+            color = ezgl::MAGENTA;
+        }
+
+        // If the node is highlighted, use its color
         if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA) || rgb_is_same(draw_state->draw_rr_node[to_node].color, ezgl::MAGENTA)) {
             color = draw_state->draw_rr_node[to_node].color;
         }
