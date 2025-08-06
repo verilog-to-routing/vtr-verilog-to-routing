@@ -634,56 +634,6 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     float avg_mol_number_in_first_pass =
         static_cast<float>(total_molecules_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
 
-    // Save unclustered blocks just in case we fall back
-    unclustered_blocks_saved = unclustered_blocks;
-    cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-
-    // First attempt: Try neighbor clustering with radius 8
-    neighbor_cluster_pass(cluster_legalizer,
-                        primitive_candidate_block_types,
-                        unclustered_blocks,
-                        /*neighbor_search_radius=*/8);
-
-    // Count usage after first neighbor pass
-    //  num_used_type_instances: A map used to save the number of used
-    //                           instances from each logical block type.
-    std::map<t_logical_block_type_ptr, size_t> num_used_type_instances_first_attempt;
-    for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
-        if (!cluster_id.is_valid())
-            continue;
-        t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
-        num_used_type_instances_first_attempt[cluster_type]++;
-    }
-
-    std::map<t_logical_block_type_ptr, float> block_type_utils_first_attempt;
-    bool fits_on_device_first_attempt = try_size_device_grid(arch_,
-                                                            num_used_type_instances_first_attempt,
-                                                            block_type_utils_first_attempt,
-                                                            vpr_setup_.PackerOpts.target_device_utilization,
-                                                            vpr_setup_.PackerOpts.device_layout);
-
-    if (fits_on_device_first_attempt) {
-        VTR_LOG("Clusters fit on device with initial neighbor pass (radius 8). Skipping Join-with-Neighbor and extended Neighbor passes.\n");
-
-        // Proceed to finalization (it should be empty naturally but we will make sure its empty for now)
-        // Since unclustered_blocks is empty, next 2 pass will be passed over simly.
-        unclustered_blocks.clear();
-    } else{
-        VTR_LOG("Clusters did not fit on device, going to join with neighbor pass.\n");
-        
-        // Otherwise, destroy those neighbor pass clusters and continue to original flow
-        for (LegalizationClusterId cluster_id: neighbor_pass_clusters) {
-            if (!cluster_id.is_valid())
-                continue; // we cant destroy a already destoyed cluster
-            cluster_legalizer.destroy_cluster(cluster_id);
-        }
-        neighbor_pass_clusters.clear();   
-
-        unclustered_blocks = unclustered_blocks_saved;
-    }
-
-    
-
 
     // The molecules that could not go back in their original clusters.
     // (Hope there will be none of them)
