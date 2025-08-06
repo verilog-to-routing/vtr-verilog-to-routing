@@ -240,6 +240,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     e_rr_type from_type, to_type;
 
     from_type = rr_graph.node_type(inode);
+
+    // Currently don't visualize source or sinks.
     if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::SINK) {
         return;
     }
@@ -255,6 +257,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         to_type = rr_graph.node_type(to_node);
         bool edge_configurable = rr_graph.edge_is_configurable(inode, iedge);
 
+        // Currently don't visualize source or sinks.
         if (to_type == e_rr_type::SOURCE || to_type == e_rr_type::SINK) {
             continue;
         }
@@ -288,10 +291,10 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 
         if (!edge_configurable) color = blk_DARKGREY;
 
-        if((from_type == e_rr_type::CHANX || from_type == e_rr_type::CHANY)
-           && (to_type == e_rr_type::IPIN) 
-           && draw_state->draw_rr_node[to_node].node_highlighted
-           && draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR){
+        if ((from_type == e_rr_type::CHANX || from_type == e_rr_type::CHANY)
+            && (to_type == e_rr_type::IPIN)
+            && draw_state->draw_rr_node[to_node].node_highlighted
+            && draw_state->draw_rr_node[inode].color == DEFAULT_RR_NODE_COLOR) {
             // If the IPIN is clicked on, draw connection to all the CHANX
             // wire segments fanning into the pin. If a CHANX wire is clicked
             // on, draw only the connection between that wire and the IPIN, with
