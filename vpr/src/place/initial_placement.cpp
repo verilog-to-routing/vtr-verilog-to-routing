@@ -1738,6 +1738,7 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
 /**
  * @brief Tries to place all of the given clusters as closed to their flat
  *        placement as possible (minimum displacement from flat placement).
+ *        Returns false if any clusters could not be placed.
  *
  * This function will place clusters in passes. In the first pass, it will try
  * to place clusters exactly where their global placement is (according to the
@@ -1874,7 +1875,7 @@ static inline bool place_blocks_min_displacement(std::vector<ClusterBlockId>& cl
     if (clusters_to_place.size() > 0) {
         VTR_LOG("Unable to place all clusters.\n");
         VTR_LOG("Clusters left unplaced:\n");
-        // FIXME: Increase the log verbosity of this.
+        // TODO: Increase the log verbosity of this.
         for (ClusterBlockId blk_id : clusters_to_place) {
             VTR_LOG("\t%s\n", cluster_netlist.block_name(blk_id).c_str());
         }
@@ -1889,7 +1890,8 @@ static inline bool place_blocks_min_displacement(std::vector<ClusterBlockId>& cl
 
 /**
  * @brief Places all blocks in the clustered netlist as close to the global
- *        placement produced by the AP flow.
+ *        placement produced by the AP flow. Returns false if any blocks could
+ *        not be placed.
  *
  * This function places the blocks in stages. The goal of this stage-based
  * approach is to place clusters which are challenging to place first. Within
@@ -1934,7 +1936,7 @@ static inline bool place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
                                       flat_placement_info);
         VTR_LOG("\n");
         if (!all_clusters_placed) {
-            VTR_LOG("Could not place all constrained clusters, falling back on original IP.\n");
+            VTR_LOG("Could not place all constrained clusters, falling back on the non-AP initial placement.\n");
             return false;
         }
     }
@@ -1970,7 +1972,7 @@ static inline bool place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
                                       flat_placement_info);
         VTR_LOG("\n");
         if (!all_clusters_placed) {
-            VTR_LOG("Could not place all large macros, falling back on original IP.\n");
+            VTR_LOG("Could not place all large macros, falling back on the non-AP initial placement.\n");
             return false;
         }
     }
@@ -1998,7 +2000,7 @@ static inline bool place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
                                       flat_placement_info);
         VTR_LOG("\n");
         if (!all_clusters_placed) {
-            VTR_LOG("Could not place all clusters, falling back on original IP.\n");
+            VTR_LOG("Could not place all clusters, falling back on the non-AP initial placement.\n");
             return false;
         }
     }
