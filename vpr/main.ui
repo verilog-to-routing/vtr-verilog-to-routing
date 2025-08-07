@@ -683,8 +683,8 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="ToggleRRIntraCluster">
-            <property name="label" translatable="yes">Intra-cluster Routing Resources</property>
+          <object class="GtkCheckButton" id="ToggleRRIntraClusterNodes">
+            <property name="label" translatable="yes">Intra-cluster Nodes</property>
             <property name="visible">True</property>
             <property name="sensitive">False</property>
             <property name="can-focus">True</property>
@@ -698,6 +698,21 @@
           </packing>
         </child>
         <child>
+          <object class="GtkCheckButton" id="ToggleRRIntraClusterEdges">
+            <property name="label" translatable="yes">Intra-cluster Edges</property>
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">False</property>
+            <property name="draw-indicator">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">6</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkSeparator">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
@@ -705,7 +720,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">6</property>
+            <property name="position">7</property>
           </packing>
         </child>
         <child>
@@ -717,7 +732,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">7</property>
+            <property name="position">8</property>
           </packing>
         </child>
         <child>
@@ -734,7 +749,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">8</property>
+            <property name="position">9</property>
           </packing>
         </child>
         <child>
@@ -745,7 +760,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">9</property>
+            <property name="position">10</property>
           </packing>
         </child>
         <child>
@@ -757,7 +772,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">10</property>
+            <property name="position">11</property>
           </packing>
         </child>
         <child>
@@ -779,7 +794,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">11</property>
+            <property name="position">12</property>
           </packing>
         </child>
         <child>
@@ -790,7 +805,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">12</property>
+            <property name="position">13</property>
           </packing>
         </child>
         <child>
@@ -802,7 +817,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">13</property>
+            <property name="position">14</property>
           </packing>
         </child>
         <child>
@@ -813,7 +828,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">14</property>
+            <property name="position">15</property>
           </packing>
         </child>
         <child>
@@ -824,7 +839,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">15</property>
+            <property name="position">16</property>
           </packing>
         </child>
         <child>
@@ -836,7 +851,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">16</property>
+            <property name="position">17</property>
           </packing>
         </child>
         <child>
@@ -857,7 +872,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">17</property>
+            <property name="position">18</property>
           </packing>
         </child>
         <child>
@@ -868,7 +883,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">18</property>
+            <property name="position">19</property>
           </packing>
         </child>
         <child>
@@ -880,7 +895,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">19</property>
+            <property name="position">20</property>
           </packing>
         </child>
         <child>
@@ -899,7 +914,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">20</property>
+            <property name="position">21</property>
           </packing>
         </child>
         <child>
@@ -915,7 +930,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">21</property>
+            <property name="position">22</property>
           </packing>
         </child>
       </object>

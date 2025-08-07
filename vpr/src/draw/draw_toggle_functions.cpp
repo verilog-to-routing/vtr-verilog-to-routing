@@ -27,7 +27,6 @@ void toggle_show_nets_cbk(GtkSwitch* , gboolean state, ezgl::application* app) {
         draw_state->show_nets = false;
     }
 
-    // app->update_message(draw_state->default_message);
     app->refresh_drawing();
 }
 
