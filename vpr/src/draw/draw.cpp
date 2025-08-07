@@ -763,7 +763,7 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, doub
     // user has not clicked the window button, in regular mode
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
+    // if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
         RRNodeId hit_node = draw_check_rr_node_hit(x, y);
 
         if (hit_node) {
@@ -780,7 +780,7 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, doub
                 app->update_message(draw_state->default_message);
             }
         }
-    }
+    // }
 }
 
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {

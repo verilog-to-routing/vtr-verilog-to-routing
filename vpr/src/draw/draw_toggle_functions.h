@@ -21,6 +21,12 @@
 #include "ezgl/application.hpp"
 
 /**
+ * @brief Generalized callback function for checkboxes.
+ * Toggles the state of a boolean variable based on the checkbox state.
+ */
+void toggle_checkbox_cbk(GtkToggleButton* self, gpointer data);
+
+/**
  * @brief Callback function for toggle_nets button in main.ui.
  * Toggles whether or not nets are visualized.
  * @param app ezgl::application
@@ -72,7 +78,7 @@ void placement_macros_cbk(GtkComboBoxText* self, ezgl::application* app);
 
 /* Callback function for main.ui created toggle_rr button in ui_setup.cpp. Draws different groups of RRs depending on
  * user input. Changes value of draw_state->draw_rr_toggle. */
-void toggle_rr_cbk(GtkComboBoxText* self, ezgl::application* app);
+void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app);
 
 /* Callback function for main.ui created toggle_congestion button in ui_setup.cpp. Controls if congestion should be visualized.
  * Changes value of draw_state->show_congestion. */

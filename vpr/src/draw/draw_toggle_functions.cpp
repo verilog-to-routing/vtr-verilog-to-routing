@@ -18,6 +18,18 @@
 #include <X11/keysym.h>
 #endif
 
+void toggle_checkbox_cbk(GtkToggleButton* self, gpointer data) {
+    t_toggle_checkbox_data *toggle_data = static_cast<t_toggle_checkbox_data*>(data);
+
+    if (gtk_toggle_button_get_active(self)) {
+        toggle_data->toggle_state = true;
+    } else {
+        toggle_data->toggle_state = false;
+    }
+    
+    toggle_data->app->refresh_drawing();
+} 
+
 void toggle_show_nets_cbk(GtkSwitch* , gboolean state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -55,13 +67,6 @@ void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
 void toggle_intra_cluster_nets_cbk(GtkToggleButton* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     
-    // currently intra-cluster nets are only supported if flat routing is enabled
-    if(!draw_state->is_flat){
-        gtk_toggle_button_set_active(self, false);
-        return;
-    }
-    VTR_LOG("Toggle intra-cluster nets: %s\n",
-            gtk_toggle_button_get_active(self) ? "ON" : "OFF");
     if (gtk_toggle_button_get_active(self)) {
         draw_state->draw_intra_cluster_nets = true;
     } else {
@@ -78,34 +83,24 @@ void toggle_intra_cluster_nets_cbk(GtkToggleButton* self, ezgl::application* app
  * @param self ptr to gtkComboBoxText object
  * @param app ezgl application
  */
-void toggle_rr_cbk(GtkComboBoxText* self, ezgl::application* app) {
+void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    enum e_draw_rr_toggle new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
-    if (strcmp(combo_box_content, "None") == 0)
-        new_state = DRAW_NO_RR;
-    else if (strcmp(combo_box_content, "Nodes") == 0)
-        new_state = DRAW_NODES_RR;
-    else if (strcmp(combo_box_content, "Nodes SBox") == 0)
-        new_state = DRAW_NODES_SBOX_RR;
-    else if (strcmp(combo_box_content, "Nodes SBox CBox") == 0)
-        new_state = DRAW_NODES_SBOX_CBOX_RR;
-    else if (strcmp(combo_box_content, "Nodes SBox CBox Internal") == 0)
-        new_state = DRAW_NODES_SBOX_CBOX_INTERNAL_RR;
-    else
-        // all rr
-        new_state = DRAW_ALL_RR;
+    bool switch_state = state ? true : false;
 
-    //free dynamically allocated pointers
-    g_free(combo_box_content);
+    draw_state->show_nets = switch_state;
 
-    draw_state->reset_nets_congestion_and_rr();
-    draw_state->draw_rr_toggle = new_state;
+    // Enable/disable the rr drawing sub-options based on the switch state
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRChannels")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRSBox")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRCBox")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterNodes")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterEdges")), switch_state);
 
-    app->update_message(draw_state->default_message);
     app->refresh_drawing();
 }
+
+
 
 /**
  * @brief cbk function for toggle congestion comboBox. Updates shown cong. based on selected option

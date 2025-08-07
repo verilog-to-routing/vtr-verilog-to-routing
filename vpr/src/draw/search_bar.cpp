@@ -234,11 +234,11 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
         sprintf(message, "Selected %s", info.c_str());
         rr_highlight_message = message;
 
-        if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
+        // if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
             // If rr_graph is shown, highlight the fan-in/fan-outs for
             // this node.
             draw_highlight_fan_in_fan_out(nodes);
-        }
+        // }
     } else {
         application.update_message(draw_state->default_message);
         rr_highlight_message = "";

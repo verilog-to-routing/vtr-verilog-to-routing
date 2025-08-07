@@ -45,7 +45,7 @@ void t_draw_state::reset_block_colors() {
 
 void t_draw_state::reset_nets_congestion_and_rr() {
     // net_type = DRAW_NO_NETS; TODO: Create better reset function in next PR.
-    draw_rr_toggle = DRAW_NO_RR;
+    // draw_rr_toggle = DRAW_NO_RR;
     show_congestion = DRAW_NO_CONGEST;
 }
 

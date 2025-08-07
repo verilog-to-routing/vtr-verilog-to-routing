@@ -51,8 +51,9 @@ void basic_button_setup(ezgl::application* app) {
  */
 void net_button_setup(ezgl::application* app) {
 
+    t_draw_state* draw_state = get_draw_state_vars();
+
     GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleNets"));
-    
     g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_show_nets_cbk), app);
 
 
@@ -63,6 +64,11 @@ void net_button_setup(ezgl::application* app) {
 
     GtkToggleButton* intra_cluster_nets = GTK_TOGGLE_BUTTON(app->get_object("ToggleIntraClusterNets"));
     g_signal_connect(intra_cluster_nets, "toggled", G_CALLBACK(toggle_intra_cluster_nets_cbk), app);
+
+    // currently intra-cluster nets are only supported if flat routing is enabled
+    if(!draw_state->is_flat){
+        gtk_widget_set_sensitive(GTK_WIDGET(intra_cluster_nets), false);
+    }
 
     //Manages net alpha
     GtkSpinButton* net_alpha = GTK_SPIN_BUTTON(app->get_object("NetAlpha"));

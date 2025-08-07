@@ -45,7 +45,7 @@ void draw_rr(ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    if (draw_state->draw_rr_toggle == DRAW_NO_RR) {
+    if (!draw_state->show_rr) {
         g->set_line_width(3);
         drawroute(HIGHLIGHTED, g);
         g->set_line_width(0);
@@ -237,11 +237,11 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         return;
     }
 
-    if ((draw_state->draw_rr_toggle == DRAW_NODES_RR)
-        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && (from_type == e_rr_type::OPIN || from_type == e_rr_type::SOURCE || from_type == e_rr_type::IPIN))
-        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_CBOX_RR && (from_type == e_rr_type::SOURCE || from_type == e_rr_type::IPIN))) {
-        return; /* Nothing to draw. */
-    }
+    // if ((draw_state->draw_rr_toggle == DRAW_NODES_RR)
+    //     || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && (from_type == e_rr_type::OPIN || from_type == e_rr_type::SOURCE || from_type == e_rr_type::IPIN))
+    //     || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_CBOX_RR && (from_type == e_rr_type::SOURCE || from_type == e_rr_type::IPIN))) {
+    //     return; /* Nothing to draw. */
+    // }
 
     for (t_edge_size iedge = 0, l = rr_graph.num_edges(inode); iedge < l; iedge++) {
         RRNodeId to_node = rr_graph.edge_sink_node(inode, iedge);
@@ -618,13 +618,12 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
  * clicked upon, we highlight it in Magenta, and its fanout in red.
  */
 bool highlight_rr_nodes(float x, float y) {
-    t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->draw_rr_toggle == DRAW_NO_RR) {
-        application.update_message(draw_state->default_message);
-        application.refresh_drawing();
-        return false; //No rr shown
-    }
+    // if (draw_state->draw_rr_toggle == DRAW_NO_RR) {
+    //     application.update_message(draw_state->default_message);
+    //     application.refresh_drawing();
+    //     return false; //No rr shown
+    // }
 
     // Check which rr_node (if any) was clicked on.
     RRNodeId hit_node = draw_check_rr_node_hit(x, y);

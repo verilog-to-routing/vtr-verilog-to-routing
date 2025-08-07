@@ -45,19 +45,6 @@ enum e_draw_nets {
     DRAW_FLYLINES
 };
 
-/* Draw rr_graph from less detailed to more detailed
- * in order to speed up drawing when toggle_rr is clicked
- * on for the first time.
- */
-enum e_draw_rr_toggle {
-    DRAW_NO_RR = 0,
-    DRAW_NODES_RR,
-    DRAW_NODES_SBOX_RR,
-    DRAW_NODES_SBOX_CBOX_RR,
-    DRAW_NODES_SBOX_CBOX_INTERNAL_RR,
-    DRAW_ALL_RR,
-};
-
 enum e_draw_congestion {
     DRAW_NO_CONGEST = 0,
     DRAW_CONGESTED,
@@ -134,6 +121,14 @@ enum e_draw_noc {
     DRAW_NOC_LINK_USAGE
 };
 
+/**
+ * @brief Structure used to hold data passed into the toggle checkbox callback function.
+ */
+typedef struct {
+    ezgl::application* app;
+    bool& toggle_state;
+} t_toggle_checkbox_data;
+
 /* Structure which stores state information of a rr_node. Used
  * for controling the drawing each rr_node when ROUTING is on screen.
  * color: Color of the rr_node
@@ -206,8 +201,14 @@ struct t_draw_state {
     ///@brief toggles whether routing util is shown
     e_draw_routing_util show_routing_util = DRAW_NO_ROUTING_UTIL;
 
-    ///@brief Controls drawing of routing resources on screen, if pic_on_screen is ROUTING.
-    e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
+    ///@brief Controls drawing of routing resources on screen.
+    bool show_rr = false;
+
+    bool draw_channels = false;
+    bool draw_switch_boxes = false;
+    bool draw_connection_boxes = false;
+    bool draw_intra_cluster_nodes = false;
+    bool draw_intra_cluster_edges = false;
 
     ///@brief Whether routing util is shown
     bool clip_routing_util = false;
