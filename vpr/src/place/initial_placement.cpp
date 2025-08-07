@@ -571,12 +571,42 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
     return connected_blocks_to_update;
 }
 
+/**
+ * @brief Helper method for getting the flat position of an atom relative to a
+ *        given offset.
+ *
+ * This method is useful for chained blocks where an atom may be a member of a
+ * chain with the given offset. This gives the atom's position relative to the
+ * head macro's tile location.
+ */
+static t_flat_pl_loc get_atom_relative_flat_loc(AtomBlockId atom_blk_id,
+                                                const t_pl_offset& offset,
+                                                const FlatPlacementInfo& flat_placement_info,
+                                                const DeviceGrid& device_grid) {
+    // Get the flat location of the atom and the offset.
+    t_flat_pl_loc atom_pos = flat_placement_info.get_pos(atom_blk_id);
+    t_flat_pl_loc flat_offset = t_flat_pl_loc((float)offset.x,
+                                              (float)offset.y,
+                                              (float)offset.layer);
+    // Get the position of the head macro of the chain that this atom is a part of.
+    atom_pos -= flat_offset;
+
+    // This may put the atom off device (due to the flat placement not being fully
+    // legal), so we clamp this to be within the device.
+    atom_pos.x = std::clamp(atom_pos.x, 0.0f, (float)device_grid.width() - 0.001f);
+    atom_pos.y = std::clamp(atom_pos.y, 0.0f, (float)device_grid.height() - 0.001f);
+    atom_pos.layer = std::clamp(atom_pos.layer, 0.0f, (float)device_grid.get_num_layers() - 0.001f);
+
+    return atom_pos;
+}
+
 // TODO: Should this return the unplaced_blocks_to_update_their_score?
 static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_macro,
                                                            const FlatPlacementInfo& flat_placement_info) {
     // Use the flat placement to compute the centroid of the given macro.
     // TODO: Instead of averaging, maybe use MODE (most frequently placed location).
-    float acc_weight = 0.f;
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    unsigned acc_weight = 0;
     t_flat_pl_loc centroid({0.0f, 0.0f, 0.0f});
     for (const t_pl_macro_member& member : pl_macro.members) {
         const auto& cluster_atoms = g_vpr_ctx.clustering().atoms_lookup[member.blk_index];
@@ -585,19 +615,19 @@ static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_
             VTR_ASSERT(flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS && flat_placement_info.blk_y_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS && flat_placement_info.blk_layer[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS && flat_placement_info.blk_sub_tile[atom_blk_id] != FlatPlacementInfo::UNDEFINED_SUB_TILE);
 
             // Accumulate the x, y, layer, and sub_tile for each atom in each
-            // member of the macro. Remove the offset so the centroid would be
-            // where the head macro should be placed to put the members in the
-            // correct place.
-            t_flat_pl_loc cluster_offset({(float)member.offset.x,
-                                          (float)member.offset.y,
-                                          (float)member.offset.layer});
-            centroid += flat_placement_info.get_pos(atom_blk_id);
-            centroid -= cluster_offset;
+            // member of the macro. The position should be relative to the head
+            // macro's position such that the centroid is where all blocks think
+            // the head macro should be.
+            t_flat_pl_loc atom_pos = get_atom_relative_flat_loc(atom_blk_id,
+                                                                member.offset,
+                                                                flat_placement_info,
+                                                                device_grid);
+            centroid += atom_pos;
             acc_weight++;
         }
     }
-    if (acc_weight > 0.f) {
-        centroid /= acc_weight;
+    if (acc_weight > 0) {
+        centroid /= static_cast<float>(acc_weight);
     }
 
     // If the root cluster is constrained, project the centroid onto its
@@ -1532,26 +1562,28 @@ bool place_one_block(const ClusterBlockId blk_id,
 static inline float get_flat_variance(const t_pl_macro& macro,
                                       const FlatPlacementInfo& flat_placement_info) {
 
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+
     // Find the flat centroid location of this macro. Then find the grid location
     // that this would be.
     t_flat_pl_loc centroid_flat_loc = find_centroid_loc_from_flat_placement(macro, flat_placement_info);
     t_physical_tile_loc centroid_grid_loc(centroid_flat_loc.x,
                                           centroid_flat_loc.y,
                                           centroid_flat_loc.layer);
+    VTR_ASSERT(is_loc_on_chip(centroid_grid_loc));
 
     // Compute the variance.
-    float num_atoms = 0;
+    unsigned num_atoms = 0;
     float variance = 0.0f;
     for (const t_pl_macro_member& member : macro.members) {
         const auto& cluster_atoms = g_vpr_ctx.clustering().atoms_lookup[member.blk_index];
         for (AtomBlockId atom_blk_id : cluster_atoms) {
             // Get the atom position, offset by the member offset. This translates
             // all atoms to be as if they are in the head position of the macro.
-            t_flat_pl_loc atom_pos = flat_placement_info.get_pos(atom_blk_id);
-            t_flat_pl_loc cluster_offset({(float)member.offset.x,
-                                          (float)member.offset.y,
-                                          (float)member.offset.layer});
-            atom_pos -= cluster_offset;
+            t_flat_pl_loc atom_pos = get_atom_relative_flat_loc(atom_blk_id,
+                                                                member.offset,
+                                                                flat_placement_info,
+                                                                device_grid);
 
             // Get the amount this atom needs to be displaced in order to be
             // within the same tile as the centroid.
@@ -1564,8 +1596,8 @@ static inline float get_flat_variance(const t_pl_macro& macro,
             num_atoms++;
         }
     }
-    if (num_atoms > 0.f) {
-        variance /= num_atoms;
+    if (num_atoms > 0) {
+        variance /= static_cast<float>(num_atoms);
     }
     return variance;
 }
@@ -1676,8 +1708,9 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
         // first.
         // TODO: The cluster constrained area can be incorperated into the cost
         //       somehow.
-        if (is_cluster_constrained(blk_id)) {
-            const PartitionRegion& pr = cluster_constraints[blk_id];
+        ClusterBlockId macro_head_blk = pl_macro.members[0].blk_index;
+        if (is_cluster_constrained(macro_head_blk)) {
+            const PartitionRegion& pr = cluster_constraints[macro_head_blk];
             float area = 0.0f;
             for (const Region& region : pr.get_regions()) {
                 const vtr::Rect<int> region_rect = region.get_rect();
