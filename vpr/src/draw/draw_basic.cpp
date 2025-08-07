@@ -609,174 +609,21 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
 //Draws the set of rr_nodes specified, using the colors set in draw_state
 void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
 
     // Draw RR Nodes
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
         RRNodeId inode = rr_nodes_to_draw[i];
-        e_rr_type rr_type = rr_graph.node_type(inode);
-        bool is_inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
-        int node_layer = rr_graph.node_layer(inode);
-
         ezgl::color color = draw_state->draw_rr_node[inode].color;
 
-        
-
-        // For 3D architectures, draw only visible layers
-        if (!draw_state->draw_layer_display[node_layer].visible) {
-            continue;
-        }
-
-        // Skip drawing sources and sinks
-        if (rr_type == e_rr_type::SINK || rr_type == e_rr_type::SOURCE) {
-            continue;
-        }
-
-        // Draw intra-cluster nodes
-        if (!is_inode_inter_cluster) {
-            draw_rr_intra_cluster_pin(inode, color, g);
-            continue;
-        }
-
-        // Draw cluster-level IO Pins
-        if (rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN) {
-            draw_cluster_pin(inode, color, g);
-            continue;
-        }
-
-        // Draw Channels
-        if (rr_type == e_rr_type::CHANY || rr_type == e_rr_type::CHANX) {
-            draw_rr_chan(inode, color, g);
-            continue;
-        }
+        draw_rr_node(inode, color, g);
     }
 
     // Draw Edges
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
-
         RRNodeId inode = rr_nodes_to_draw[i];
-        auto rr_type = rr_graph.node_type(inode);
-        bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
-        int current_node_layer = rr_graph.node_layer(inode);
-
         RRNodeId prev_node = rr_nodes_to_draw[i - 1];
-        auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
-        bool prev_node_inter_cluster = is_inter_cluster_node(rr_graph, prev_node);
-        int prev_node_layer = rr_graph.node_layer(prev_node);
 
-        t_draw_layer_display edge_visibility = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
-        ezgl::color color = draw_state->draw_rr_node[inode].color;
-
-        // For 3D architectures, draw only visible layers
-        if (!draw_state->draw_layer_display[current_node_layer].visible || !edge_visibility.visible) {
-            continue;
-        }
-
-        // Skip drawing edges to or from sources and sinks
-        if (rr_type == e_rr_type::SINK || rr_type == e_rr_type::SOURCE || prev_type == e_rr_type::SINK || prev_type == e_rr_type::SOURCE) {
-            continue;
-        }
-
-        g->set_color(color, edge_visibility.alpha);
-
-        if (!inode_inter_cluster && !prev_node_inter_cluster) {
-            draw_intra_cluster_edge(inode, prev_node, g);
-            continue;
-        }
-
-        // Default side for pin in case none can be found
-        e_side pin_side = e_side::TOP;
-        if (!prev_node_inter_cluster && inode_inter_cluster) {
-            // draw intra-cluster pin to inter-cluster pin
-            // node i + 1 is the channel node
-            if (i + 1 < rr_nodes_to_draw.size()) {
-                pin_side = get_pin_side(inode, rr_nodes_to_draw[i + 1]);
-            }
-
-            draw_intra_cluster_pin_to_pin(prev_node, inode, FROM_INTRA_CLUSTER_TO_INTER_CLUSTER, pin_side, g);
-            continue;
-        }
-
-        if (prev_node_inter_cluster && !inode_inter_cluster) {
-            // draw inter-cluster pin to intra-cluster pin
-            // node i - 2 is the channel node
-            if (i >= 2) {
-                pin_side = get_pin_side(prev_node, rr_nodes_to_draw[i - 2]);
-            }
-
-            draw_intra_cluster_pin_to_pin(inode, prev_node, FROM_INTER_CLUSTER_TO_INTRA_CLUSTER, pin_side, g);
-            continue;
-        }
-
-        draw_inter_cluster_rr_edge(inode, prev_node, rr_type, prev_type, g);
-    }
-}
-
-void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr_type, e_rr_type prev_type, ezgl::renderer* g) {
-    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
-    t_edge_size iedge = find_edge(prev_node, inode);
-    short switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
-
-    switch (rr_type) {
-        case e_rr_type::IPIN: {
-            if (prev_type == e_rr_type::OPIN) {
-                draw_pin_to_pin(prev_node, inode, g);
-            } else {
-                draw_pin_to_chan_edge(inode, prev_node, g);
-            }
-            break;
-        }
-        case e_rr_type::CHANX: {
-            switch (prev_type) {
-                case e_rr_type::CHANX: {
-                    draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
-                    break;
-                }
-                case e_rr_type::CHANY: {
-                    draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
-                    break;
-                }
-                case e_rr_type::OPIN: {
-                    draw_pin_to_chan_edge(prev_node, inode, g);
-                    break;
-                }
-                default: {
-                    VPR_ERROR(VPR_ERROR_OTHER,
-                              "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                              prev_type, rr_type);
-                }
-            }
-            break;
-        }
-        case e_rr_type::CHANY: {
-            switch (prev_type) {
-                case e_rr_type::CHANX: {
-                    draw_chanx_to_chany_edge(prev_node, inode,
-                                             FROM_X_TO_Y, switch_type, g);
-                    break;
-                }
-                case e_rr_type::CHANY: {
-                    draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
-                                             switch_type, g);
-                    break;
-                }
-                case e_rr_type::OPIN: {
-                    draw_pin_to_chan_edge(prev_node, inode, g);
-
-                    break;
-                }
-                default: {
-                    VPR_ERROR(VPR_ERROR_OTHER,
-                              "Unexpected connection from an rr_node of type %d to one of type %d.\n",
-                              prev_type, rr_type);
-                }
-            }
-            break;
-        }
-        default: {
-            break;
-        }
+        draw_rr_edge(inode, prev_node, draw_state->draw_rr_node[inode].color, g);
     }
 }
 

@@ -436,14 +436,14 @@ class B2BSolver : public AnalyticalSolver {
     ///        solved solution HPWL).
     /// Decreasing this number toward zero would cause the B2B solver to run
     /// more iterations to try and reduce the HPWL further.
-    static constexpr double b2b_convergence_gap_fac_ = 0.001;
+    static constexpr double b2b_convergence_gap_fac_ = 0.0001;
 
     /// @brief The number of times the B2B loop should "converge" before stopping
     ///        the loop. Due to numerical inaccuracies, it is possible for the
     ///        HPWL to bounce up and down as it converges. Increasing this number
     ///        will allow more bounces which may get better quality; however
     ///        more iterations will need to be run.
-    static constexpr unsigned target_num_b2b_convergences_ = 2;
+    static constexpr unsigned target_num_b2b_convergences_ = 1;
 
     /// @brief Max number of bound update / solve iterations. Increasing this
     ///        number will yield better quality at the expense of runtime.
@@ -460,7 +460,7 @@ class B2BSolver : public AnalyticalSolver {
     ///        to prevent this behaviour and get good runtime.
     // TODO: Need to investigate this more to find a good number for this.
     // TODO: Should this be a proportion of the design size?
-    static constexpr unsigned max_cg_iterations_ = 150;
+    static constexpr unsigned max_cg_iterations_ = 100;
 
     // The following constants are used to configure the anchor weighting.
     // The weights of anchors grow exponentially each iteration by the following
