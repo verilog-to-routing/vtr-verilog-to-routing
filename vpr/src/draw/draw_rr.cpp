@@ -55,31 +55,23 @@ void draw_rr(ezgl::renderer* g) {
     g->set_line_dash(ezgl::line_dash::none);
 
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
-        if (!draw_state->draw_rr_node[inode].node_highlighted) {
-            /* If not highlighted node, assign color based on type. */
-            switch (rr_graph.node_type(inode)) {
-                case e_rr_type::CHANX:
-                case e_rr_type::CHANY:
-                    draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
-                    break;
-                case e_rr_type::OPIN:
-                    draw_state->draw_rr_node[inode].color = ezgl::PINK;
-                    break;
-                case e_rr_type::IPIN:
-                    draw_state->draw_rr_node[inode].color = ezgl::PURPLE;
-                    break;
-                case e_rr_type::SOURCE:
-                    draw_state->draw_rr_node[inode].color = ezgl::PLUM;
-                    break;
-                case e_rr_type::SINK:
-                    draw_state->draw_rr_node[inode].color = ezgl::DARK_SLATE_BLUE;
-                    break;
-                default:
-                    break;
-            }
-        }
+        
+        // Node colors by types
+        static const std::map<e_rr_type, ezgl::color> node_colors = {
+            {e_rr_type::CHANX, DEFAULT_RR_NODE_COLOR},
+            {e_rr_type::CHANY, DEFAULT_RR_NODE_COLOR},
+            {e_rr_type::IPIN, ezgl::PURPLE},
+            {e_rr_type::OPIN, ezgl::PINK},
+        };
+
+
+        if (!draw_state->draw_rr_node[inode].node_highlighted 
+            && node_colors.find(rr_graph.node_type(inode)) != node_colors.end()) {
+            draw_state->draw_rr_node[inode].color = node_colors.at(rr_graph.node_type(inode));
+        } 
 
         draw_rr_edges(inode, g);
+        
         draw_rr_node(inode, draw_state->draw_rr_node[inode].color, g);
     }
 
