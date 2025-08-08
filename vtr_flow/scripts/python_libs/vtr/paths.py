@@ -7,6 +7,7 @@ root_path = pathlib.Path(__file__).absolute().parent.parent.parent.parent.parent
 
 # VTR Paths
 vtr_flow_path = root_path / "vtr_flow"
+vtr_primitives_path = root_path / "build" / "share" / "yosys" / "parmys" / "vtr_primitives.v"
 
 # ODIN paths
 odin_path = root_path / "odin_ii"
