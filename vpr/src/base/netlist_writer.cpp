@@ -69,10 +69,11 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <unordered_map>
 #include <vector>
+#include "atom_lookup.h"
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
-#include "clock_modeling.h"
 #include "globals.h"
 #include "logic_vec.h"
 #include "netlist_walker.h"
@@ -148,12 +149,38 @@ struct DelayTriple {
         delay_ss << '(' << minimum_ps << ':' << typical_ps << ':' << maximum_ps << ')';
         return delay_ss.str();
     }
+
+    /**
+     * @brief Operator overloading to add the values from the provided other
+     *        delay triple with this delay triple to produce a new triple.
+     *
+     * If either this or the other delay triple have undefined values, an undefined
+     * delay triple will be returned.
+     */
+    DelayTriple operator+(const DelayTriple& other) const {
+        // Cannot add a delay which is not initialized.
+        if (!has_value() || !other.has_value())
+            return DelayTriple();
+
+        return DelayTriple(minimum + other.minimum,
+                           typical + other.typical,
+                           maximum + other.maximum);
+    }
 };
 
 // This pair cointains the following values:
 //      - double: hold, setup or clock-to-q delays of the port
 //      - string: port name of the associated source clock pin of the sequential port
 typedef std::pair<DelayTriple, std::string> sequential_port_delay_pair;
+
+/**
+ * @brief Information needed to describe a delay on a port in an SDF file.
+ */
+struct PortDelay {
+    std::string port_name;          ///<The name of the port to annotate with delay.
+    int ipin;                       ///<The pin in the port to annotate (if a multi-pin port).
+    DelayTriple port_delay_triple;  ///<The delay triple to annotate.
+};
 
 /*enum class PortType {
  * IN,
@@ -620,7 +647,7 @@ class LatchInst : public Instance {
         }
         os << indent(depth + 1) << ")\n";
         os << indent(depth) << ")\n";
-        os << indent(depth) << "\n";
+        os << "\n";
     }
 
   private:
@@ -643,9 +670,10 @@ class BlackBoxInst : public Instance {
                  std::map<std::string, std::vector<std::string>> input_port_conns,  ///<Port connections: Dictionary of <port,nets>
                  std::map<std::string, std::vector<std::string>> output_port_conns, ///<Port connections: Dictionary of <port,nets>
                  std::vector<Arc> timing_arcs,                                      ///<Combinational timing arcs
-                 std::map<std::string, sequential_port_delay_pair> ports_tsu,       ///<Port setup checks
-                 std::map<std::string, sequential_port_delay_pair> ports_thld,      ///<Port hold checks
-                 std::vector<Arc> cq_timing_arcs,                                   ///<Port clock-to-q timing arcs
+                 std::vector<Arc> su_timing_arcs,                                   ///<Pin setup constraints
+                 std::vector<Arc> hld_timing_arcs,                                  ///<Pin hold constraints
+                 std::vector<Arc> cq_timing_arcs,                                   ///<Pin clock-to-q timing arcs
+                 std::vector<PortDelay> port_delays,
                  struct t_analysis_opts opts)
         : type_name_(type_name)
         , inst_name_(inst_name)
@@ -654,9 +682,10 @@ class BlackBoxInst : public Instance {
         , input_port_conns_(input_port_conns)
         , output_port_conns_(output_port_conns)
         , timing_arcs_(timing_arcs)
-        , ports_tsu_(ports_tsu)
-        , ports_thld_(ports_thld)
+        , su_timing_arcs_(su_timing_arcs)
+        , hld_timing_arcs_(hld_timing_arcs)
         , cq_timing_arcs_(cq_timing_arcs)
+        , port_delays_(port_delays)
         , opts_(opts) {}
 
     void print_blif(std::ostream& os, size_t& unconn_count, int depth = 0) override {
@@ -763,13 +792,13 @@ class BlackBoxInst : public Instance {
     }
 
     void print_sdf(std::ostream& os, int depth = 0) override {
-        if (!timing_arcs_.empty() || !cq_timing_arcs_.empty() || !ports_tsu_.empty() || !ports_thld_.empty()) {
+        if (!timing_arcs_.empty() || !cq_timing_arcs_.empty() || !su_timing_arcs_.empty() || !hld_timing_arcs_.empty()) {
             os << indent(depth) << "(CELL\n";
             os << indent(depth + 1) << "(CELLTYPE \"" << type_name_ << "\")\n";
             os << indent(depth + 1) << "(INSTANCE " << escape_sdf_identifier(inst_name_) << ")\n";
-            os << indent(depth + 1) << "(DELAY\n";
 
-            if (!timing_arcs_.empty() || !cq_timing_arcs_.empty()) {
+            if (!timing_arcs_.empty() || !cq_timing_arcs_.empty() || !port_delays_.empty()) {
+                os << indent(depth + 1) << "(DELAY\n";
                 os << indent(depth + 2) << "(ABSOLUTE\n";
 
                 //Combinational paths
@@ -809,24 +838,56 @@ class BlackBoxInst : public Instance {
                     os << cq_arc.delay().str();
                     os << ")\n";
                 }
-                os << indent(depth + 2) << ")\n"; //ABSOLUTE
-            }
-            os << indent(depth + 1) << ")\n"; //DELAY
 
-            if (!ports_tsu_.empty() || !ports_thld_.empty()) {
-                //Setup checks
-                os << indent(depth + 1) << "(TIMINGCHECK\n";
-                for (auto kv : ports_tsu_) {
-                    DelayTriple delay_triple = kv.second.first;
-                    os << indent(depth + 2) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge  " << escape_sdf_identifier(kv.second.second) << ") " << delay_triple.str() << ")\n";
+                // Port delays
+                for (const PortDelay& port_delay : port_delays_) {
+                    os << indent(depth + 3) << "(PORT ";
+                    os << escape_sdf_identifier(port_delay.port_name);
+                    if (find_port_size(port_delay.port_name) > 1) {
+                        os << "[" << port_delay.ipin << "]";
+                    }
+                    os << " ";
+                    os << port_delay.port_delay_triple.str();
+                    os << ")\n";
                 }
-                for (auto kv : ports_thld_) {
-                    DelayTriple delay_triple = kv.second.first;
-                    os << indent(depth + 2) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge " << escape_sdf_identifier(kv.second.second) << ") " << delay_triple.str() << ")\n";
+
+                os << indent(depth + 2) << ")\n"; //ABSOLUTE
+                os << indent(depth + 1) << ")\n"; //DELAY
+            }
+
+            if (!su_timing_arcs_.empty() || !hld_timing_arcs_.empty()) {
+                //Setup and hold timing checks
+                os << indent(depth + 1) << "(TIMINGCHECK\n";
+                for (const Arc& su_arc : su_timing_arcs_) {
+                    os << indent(depth + 2) << "(SETUP ";
+                    os << escape_sdf_identifier(su_arc.source_name());
+                    if (find_port_size(su_arc.source_name()) > 1) {
+                        os << "[" << su_arc.source_ipin() << "]";
+                    }
+                    os << " (posedge  ";
+                    os << escape_sdf_identifier(su_arc.sink_name());
+                    if (find_port_size(su_arc.sink_name()) > 1) {
+                        os << "[" << su_arc.sink_ipin() << "]";
+                    }
+                    os << ") " << su_arc.delay().str() << ")\n";
+                }
+                for (const Arc& hld_arc : hld_timing_arcs_) {
+                    os << indent(depth + 2) << "(HOLD ";
+                    os << escape_sdf_identifier(hld_arc.source_name());
+                    if (find_port_size(hld_arc.source_name()) > 1) {
+                        os << "[" << hld_arc.source_ipin() << "]";
+                    }
+                    os << " (posedge  ";
+                    os << escape_sdf_identifier(hld_arc.sink_name());
+                    if (find_port_size(hld_arc.sink_name()) > 1) {
+                        os << "[" << hld_arc.sink_ipin() << "]";
+                    }
+                    os << ") " << hld_arc.delay().str() << ")\n";
                 }
                 os << indent(depth + 1) << ")\n"; //TIMINGCHECK
             }
             os << indent(depth) << ")\n"; //CELL
+            os << "\n";
         }
     }
 
@@ -854,9 +915,10 @@ class BlackBoxInst : public Instance {
     std::map<std::string, std::vector<std::string>> input_port_conns_;
     std::map<std::string, std::vector<std::string>> output_port_conns_;
     std::vector<Arc> timing_arcs_;
-    std::map<std::string, sequential_port_delay_pair> ports_tsu_;
-    std::map<std::string, sequential_port_delay_pair> ports_thld_;
+    std::vector<Arc> su_timing_arcs_;
+    std::vector<Arc> hld_timing_arcs_;
     std::vector<Arc> cq_timing_arcs_;
+    std::vector<PortDelay> port_delays_;
     struct t_analysis_opts opts_;
 };
 
@@ -1428,9 +1490,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> input_port_conns;
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
-        std::map<std::string, sequential_port_delay_pair> ports_tsu;
-        std::map<std::string, sequential_port_delay_pair> ports_thld;
+        std::vector<Arc> su_timing_arcs;
+        std::vector<Arc> hld_timing_arcs;
         std::vector<Arc> cq_timing_arcs;
+        std::vector<PortDelay> port_delays;
 
         params["ADDR_WIDTH"] = "0";
         params["DATA_WIDTH"] = "0";
@@ -1487,7 +1550,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 input_port_conns[port_name].push_back(net);
                 DelayTriple delay_triple(pin->tsu, pin->tsu, pin->tsu);
-                ports_tsu[port_name] = std::make_pair(delay_triple, pin->associated_clock_pin->port->name);
+                su_timing_arcs.emplace_back(port_name,
+                                            ipin,
+                                            pin->associated_clock_pin->port->name,
+                                            pin->associated_clock_pin->pin_number,
+                                            delay_triple);
             }
         }
 
@@ -1559,7 +1626,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, cq_timing_arcs, opts_);
+        return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs,
+                                              input_port_conns, output_port_conns,
+                                              timing_arcs, su_timing_arcs, hld_timing_arcs, cq_timing_arcs, port_delays,
+                                              opts_);
     }
 
     ///@brief Returns an Instance object representing a Multiplier
@@ -1577,9 +1647,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> input_port_conns;
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
-        std::map<std::string, sequential_port_delay_pair> ports_tsu;
-        std::map<std::string, sequential_port_delay_pair> ports_thld;
+        std::vector<Arc> su_timing_arcs;
+        std::vector<Arc> hld_timing_arcs;
         std::vector<Arc> cq_timing_arcs;
+        std::vector<PortDelay> port_delays;
 
         params["WIDTH"] = "0";
 
@@ -1654,7 +1725,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         VTR_ASSERT(pb_graph_node->num_clock_ports == 0); //No clocks
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, cq_timing_arcs, opts_);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs,
+                                              input_port_conns, output_port_conns,
+                                              timing_arcs, su_timing_arcs, hld_timing_arcs, cq_timing_arcs, port_delays,
+                                              opts_);
     }
 
     ///@brief Returns an Instance object representing an Adder
@@ -1672,9 +1746,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> input_port_conns;
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
-        std::map<std::string, sequential_port_delay_pair> ports_tsu;
-        std::map<std::string, sequential_port_delay_pair> ports_thld;
+        std::vector<Arc> su_timing_arcs;
+        std::vector<Arc> hld_timing_arcs;
         std::vector<Arc> cq_timing_arcs;
+        std::vector<PortDelay> port_delays;
 
         params["WIDTH"] = "0";
 
@@ -1753,10 +1828,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, cq_timing_arcs, opts_);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs,
+                                              input_port_conns, output_port_conns,
+                                              timing_arcs, su_timing_arcs, hld_timing_arcs, cq_timing_arcs, port_delays,
+                                              opts_);
     }
 
     std::shared_ptr<Instance> make_blackbox_instance(const t_pb* atom) {
+        const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
+        const AtomLookup& atom_lookup = g_vpr_ctx.atom().lookup();
+
         const auto& top_pb_route = find_top_pb_route(atom);
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
         const t_pb_type* pb_type = pb_graph_node->pb_type;
@@ -1770,16 +1851,14 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
 
-        // Maps to store a sink's port with the corresponding timing edge to that sink
-        //  - key   : string corresponding to the port's name
-        //  - value : pair with the delay and the associated clock pin port name
-        //
-        //  tsu : Setup
-        //  thld: Hold
-        //  tcq : Clock-to-Q
-        std::map<std::string, sequential_port_delay_pair> ports_tsu;
-        std::map<std::string, sequential_port_delay_pair> ports_thld;
+        // Vectors of the setup, hold, and clock-to-Q timing arcs.
+        std::vector<Arc> su_timing_arcs;
+        std::vector<Arc> hld_timing_arcs;
         std::vector<Arc> cq_timing_arcs;
+
+        // Vector of port delays. These are delays that are experienced at the
+        // port of the blackbox.
+        std::vector<PortDelay> port_delays;
 
         //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
         std::map<tatum::NodeId, std::vector<std::tuple<std::string, int, DelayTriple>>> tnode_delay_matrix;
@@ -1813,16 +1892,110 @@ class NetlistWriterVisitor : public NetlistVisitor {
                         tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay_triple);
                     }
                 }
-
                 input_port_conns[port->name].push_back(net);
-                if (pin->type == PB_PIN_SEQUENTIAL) {
+
+                if (pin->type == PB_PIN_SEQUENTIAL && (!std::isnan(pin->tsu) || !std::isnan(pin->thld))) {
                     if (!std::isnan(pin->tsu)) {
                         DelayTriple delay_triple(pin->tsu, pin->tsu, pin->tsu);
-                        ports_tsu[port->name] = std::make_pair(delay_triple, pin->associated_clock_pin->port->name);
+                        su_timing_arcs.emplace_back(port->name,
+                                                    ipin,
+                                                    pin->associated_clock_pin->port->name,
+                                                    pin->associated_clock_pin->pin_number,
+                                                    delay_triple);
                     }
                     if (!std::isnan(pin->thld)) {
                         DelayTriple delay_triple(pin->thld, pin->thld, pin->thld);
-                        ports_thld[port->name] = std::make_pair(delay_triple, pin->associated_clock_pin->port->name);
+                        hld_timing_arcs.emplace_back(port->name,
+                                                     ipin,
+                                                     pin->associated_clock_pin->port->name,
+                                                     pin->associated_clock_pin->pin_number,
+                                                     delay_triple);
+                    }
+                } else if (top_pb_route.count(cluster_pin_idx) > 0) {
+                    // If this pin is not sequential, but has a timing path which
+                    // ultimately leads to an internal register, then this pin
+                    // will have setup and hold constraints. This pin will absorb
+                    // the maximum setup and hold constraints of all paths. To
+                    // account for the internal delays of the black-box, we add
+                    // port delays equal to the max/min path delays to registers.
+
+                    // Maintain a mapping from [clock port ID][clock pin ID] -> max setup/hold time of this ipin.
+                    std::unordered_map<AtomPortId, std::unordered_map<AtomPinId, std::pair<double, double>>> ipin_su_hld_time;
+                    // Maintain the min and max propagation delays from this ipin to any internal register.
+                    DelayTriple ipin_port_delay_triple;
+
+                    // Iterate over all outgoing timing edges to this ipin.
+                    auto inode = find_tnode(atom, cluster_pin_idx);
+                    for (tatum::EdgeId edge : timing_ctx.graph->node_out_edges(inode)) {
+                        // Get the clock capture edge (if it exists)
+                        tatum::EdgeId clock_capture_edge = timing_ctx.graph->node_clock_capture_edge(timing_ctx.graph->edge_sink_node(edge));
+                        // If the sink of an outgoing edge was captured by a clock, then this pin has a CQ delay.
+                        if (clock_capture_edge.is_valid()) {
+                            DelayTriple prop_delay_triple = get_edge_delay_triple(edge, *delay_calc_, *timing_ctx.graph);
+                            double tsu = delay_calc_->setup_time(*timing_ctx.graph, clock_capture_edge);
+                            double thld = delay_calc_->hold_time(*timing_ctx.graph, clock_capture_edge);
+
+                            // Get the clock port and pin that launched this delay path.
+                            AtomPinId clk_pin_id = atom_lookup.tnode_atom_pin(timing_ctx.graph->edge_src_node(clock_capture_edge));
+                            AtomPortId clk_port_id = atom_netlist.pin_port(clk_pin_id);
+
+                            // Store the max setup and hold times.
+                            if (ipin_su_hld_time.count(clk_port_id) == 0 || ipin_su_hld_time[clk_port_id].count(clk_pin_id) == 0) {
+                                ipin_su_hld_time[clk_port_id][clk_pin_id] = std::make_pair(tsu, thld);
+                            } else {
+                                auto [old_tsu, old_thld] = ipin_su_hld_time[clk_port_id][clk_pin_id];
+                                double new_tsu = std::max(old_tsu, tsu);
+                                double new_thld = std::max(old_thld, thld);
+                                ipin_su_hld_time[clk_port_id][clk_pin_id] = std::make_pair(new_tsu, new_thld);
+                            }
+
+                            // Store the min and max propagation delays from the ipin to any internal register.
+                            if (!ipin_port_delay_triple.has_value()) {
+                                ipin_port_delay_triple = prop_delay_triple;
+                            } else {
+                                DelayTriple old_port_delay_time = ipin_port_delay_triple;
+                                DelayTriple new_port_delay_time;
+                                new_port_delay_time.maximum = std::max(old_port_delay_time.maximum, prop_delay_triple.maximum);
+                                new_port_delay_time.minimum = std::max(old_port_delay_time.minimum, prop_delay_triple.minimum);
+                                new_port_delay_time.typical = (new_port_delay_time.maximum + new_port_delay_time.minimum) / 2.0;
+
+                                ipin_port_delay_triple = new_port_delay_time;
+                            }
+
+                        }
+                    }
+
+                    // Add the setup and hold constraints for this input pin.
+                    for (const auto& port_pair : ipin_su_hld_time) {
+                        for (const auto& pin_pair : port_pair.second) {
+                            AtomPortId clk_port_id = port_pair.first;
+                            AtomPinId clk_pin_id = pin_pair.first;
+                            double tsu = pin_pair.second.first;
+                            double thld = pin_pair.second.second;
+
+                            if (!std::isnan(tsu)) {
+                                su_timing_arcs.emplace_back(port->name,
+                                                            ipin,
+                                                            atom_netlist.port_name(clk_port_id),
+                                                            atom_netlist.pin_port_bit(clk_pin_id),
+                                                            DelayTriple(tsu, tsu, tsu));
+                            }
+                            if (!std::isnan(thld)) {
+                                hld_timing_arcs.emplace_back(port->name,
+                                                             ipin,
+                                                             atom_netlist.port_name(clk_port_id),
+                                                             atom_netlist.pin_port_bit(clk_pin_id),
+                                                             DelayTriple(thld, thld, thld));
+                            }
+
+                        }
+                    }
+
+                    // Add the port delays.
+                    if (ipin_port_delay_triple.has_value()) {
+                        port_delays.emplace_back(port->name,
+                                                 ipin,
+                                                 ipin_port_delay_triple);
                     }
                 }
             }
@@ -1864,6 +2037,62 @@ class NetlistWriterVisitor : public NetlistVisitor {
                                                 port->name,
                                                 ipin,
                                                 delay_triple);
+                } else if (top_pb_route.count(cluster_pin_idx) > 0) {
+                    // If this pin is not sequential, however a path exists from
+                    // a sequential input pin to this pin, then this black-box pin
+                    // would have a clock to q delay equal to the input pin's tcq plus
+                    // the propagation delay. This tcq would need to be the min / max
+                    // delay across all clocks with timing paths going through this
+                    // output pin.
+
+                    // Maintain a mapping from [clock port ID][clock pin ID] -> min/max delay to this opin.
+                    std::unordered_map<AtomPortId, std::unordered_map<AtomPinId, DelayTriple>> opin_total_cq_delays;
+
+                    // Iterate over all incoming timing edges to this opin.
+                    auto inode = find_tnode(atom, cluster_pin_idx);
+                    for (tatum::EdgeId edge : timing_ctx.graph->node_in_edges(inode)) {
+                        // Get the clock launch edge (if it exists)
+                        tatum::EdgeId clock_launch_edge = timing_ctx.graph->node_clock_launch_edge(timing_ctx.graph->edge_src_node(edge));
+                        // If the source of an incoming edge was launched by a clock, then this pin has a CQ delay.
+                        if (clock_launch_edge.is_valid()) {
+                            // Compute the total clock to Q delay including the propagation delay to the output pin.
+                            DelayTriple prop_delay_triple = get_edge_delay_triple(edge, *delay_calc_, *timing_ctx.graph);
+                            DelayTriple cq_delay_triple = get_edge_delay_triple(clock_launch_edge, *delay_calc_, *timing_ctx.graph);
+                            DelayTriple total_cq_delay_triple = cq_delay_triple + prop_delay_triple;
+
+                            // Get the clock port and pin that launched this delay path.
+                            AtomPinId clk_pin_id = atom_lookup.tnode_atom_pin(timing_ctx.graph->edge_src_node(clock_launch_edge));
+                            AtomPortId clk_port_id = atom_netlist.pin_port(clk_pin_id);
+
+                            // Store the min and max delays from each clock port,pin pair to this output pin.
+                            if (opin_total_cq_delays.count(clk_port_id) == 0 || opin_total_cq_delays[clk_port_id].count(clk_pin_id) == 0) {
+                                opin_total_cq_delays[clk_port_id][clk_pin_id] = total_cq_delay_triple;
+                            } else {
+                                DelayTriple old_total_cq_delay = opin_total_cq_delays[clk_port_id][clk_pin_id];
+                                DelayTriple new_total_cq_delay;
+                                new_total_cq_delay.maximum = std::max(old_total_cq_delay.maximum, total_cq_delay_triple.maximum);
+                                new_total_cq_delay.minimum = std::min(old_total_cq_delay.minimum, total_cq_delay_triple.minimum);
+                                new_total_cq_delay.typical = (new_total_cq_delay.maximum + new_total_cq_delay.minimum) / 2.0;
+
+                                opin_total_cq_delays[clk_port_id][clk_pin_id] = new_total_cq_delay;
+                            }
+                        }
+                    }
+
+                    // Add the clock to Q timing arcs for this output port.
+                    for (const auto& port_pair : opin_total_cq_delays) {
+                        for (const auto& pin_pair : port_pair.second) {
+                            AtomPortId clk_port_id = port_pair.first;
+                            AtomPinId clk_pin_id = pin_pair.first;
+                            const DelayTriple& total_cq_delay_triple = pin_pair.second;
+                            cq_timing_arcs.emplace_back(atom_netlist.port_name(clk_port_id),
+                                                        atom_netlist.pin_port_bit(clk_pin_id),
+                                                        port->name,
+                                                        ipin,
+                                                        total_cq_delay_triple);
+
+                        }
+                    }
                 }
             }
         }
@@ -1903,7 +2132,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
             attrs[attr.first] = attr.second;
         }
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, cq_timing_arcs, opts_);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs,
+                                              input_port_conns, output_port_conns,
+                                              timing_arcs, su_timing_arcs, hld_timing_arcs, cq_timing_arcs, port_delays,
+                                              opts_);
     }
 
     ///@brief Returns the top level pb_route associated with the given pb
