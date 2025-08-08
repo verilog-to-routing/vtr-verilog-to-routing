@@ -6,7 +6,10 @@
 #include "alloc_and_load_rr_indexed_data.h"
 #include "get_parallel_segs.h"
 #include "physical_types_util.h"
+#include "rr_graph_view.h"
 #include "rr_rc_data.h"
+#include "switchblock_types.h"
+#include "vpr_context.h"
 #include "vtr_assert.h"
 
 #include "vtr_util.h"
@@ -62,9 +65,6 @@ std::set<int> get_layers_pin_is_connected_to(const t_physical_tile_type_ptr type
 
 ///@brief given a specific layer number and type, it returns layers which have same pin_index connected to the given layer
 std::set<int> get_layers_connected_to_pin(const t_physical_tile_type_ptr type, int to_layer, int pin_index);
-
-///@brief checks whether the channel width has been changed or not
-bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed);
 
 /**
  * @brief This routine calculates pin connections to tracks for either all input or all output pins based on the Fc value defined in the architecture file.
@@ -668,14 +668,14 @@ void create_rr_graph(e_graph_type graph_type,
                      const std::vector<t_direct_inf>& directs,
                      int* Warnings,
                      bool is_flat) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
     bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     bool load_rr_graph = !det_routing_arch.read_rr_graph_filename.empty();
 
-    if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
-        //No change in channel width, so skip re-building RR graph
+    if (device_ctx.chan_width == nodes_per_chan && !device_ctx.rr_graph.empty()) {
+        // No change in channel width, so skip re-building RR graph
         if (is_flat && !device_ctx.rr_graph_is_flat) {
             VTR_LOG("RR graph channel widths unchanged, intra-cluster resources should be added...\n");
         } else {
@@ -965,20 +965,6 @@ std::set<int> get_layers_connected_to_pin(const t_physical_tile_type_ptr type, i
     return layers_connected_to_pin;
 }
 
-bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& proposed) {
-    if (current.max != proposed.max
-        || current.x_max != proposed.x_max
-        || current.y_max != proposed.y_max
-        || current.x_min != proposed.x_min
-        || current.y_min != proposed.y_min
-        || current.x_list != proposed.x_list
-        || current.y_list != proposed.y_list) {
-        return false; //Different max/min or channel widths
-    }
-
-    return true; //Identical
-}
-
 static void build_rr_graph(e_graph_type graph_type,
                            const std::vector<t_physical_tile_type>& types,
                            const DeviceGrid& grid,
@@ -1022,8 +1008,8 @@ static void build_rr_graph(e_graph_type graph_type,
 
     VTR_ASSERT(max_chan_width_x > 0 && max_chan_width_y > 0);
 
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     std::vector<t_clb_to_clb_directs> clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
 
@@ -1232,43 +1218,38 @@ static void build_rr_graph(e_graph_type graph_type,
 
     if (is_global_graph) {
         switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, SUBSET, 3);
-    } else if (BI_DIRECTIONAL == directionality) {
-        if (sb_type == CUSTOM) {
-            sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
-                                                                  grid, inter_cluster_prog_rr,
-                                                                  switchblocks, nodes_per_chan, directionality,
-                                                                  switchpoint_rng);
-        } else {
-            switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, sb_type, Fs);
-        }
     } else {
-        VTR_ASSERT(UNI_DIRECTIONAL == directionality);
-
         if (sb_type == CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
-                                                                  grid,
-                                                                  inter_cluster_prog_rr,
-                                                                  switchblocks, nodes_per_chan, directionality,
-                                                                  switchpoint_rng);
+                                                        grid, inter_cluster_prog_rr,
+                                                        switchblocks, nodes_per_chan, directionality,
+                                                        switchpoint_rng);
         } else {
-            // it looks like we get unbalanced muxing from this switch block code with Fs > 3
-            VTR_ASSERT(Fs == 3);
+            if (directionality == BI_DIRECTIONAL) {
+                switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, sb_type, Fs);
+            } else {
+                // it looks like we get unbalanced muxing from this switch block code with Fs > 3
+                VTR_ASSERT(Fs == 3);
+                // Since directionality is a C enum it could technically be any value. This assertion makes sure it's either BI_DIRECTIONAL or UNI_DIRECTIONAL
+                VTR_ASSERT(directionality == UNI_DIRECTIONAL);
 
-            unidir_sb_pattern = alloc_sblock_pattern_lookup(grid, nodes_per_chan);
-            for (size_t i = 0; i < grid.width() - 1; i++) {
-                for (size_t j = 0; j < grid.height() - 1; j++) {
-                    load_sblock_pattern_lookup(i, j, grid, nodes_per_chan,
-                                               chan_details_x, chan_details_y,
-                                               Fs, sb_type, unidir_sb_pattern);
+                unidir_sb_pattern = alloc_sblock_pattern_lookup(grid, nodes_per_chan);
+                for (size_t i = 0; i < grid.width() - 1; i++) {
+                    for (size_t j = 0; j < grid.height() - 1; j++) {
+                        load_sblock_pattern_lookup(i, j, grid, nodes_per_chan,
+                                                chan_details_x, chan_details_y,
+                                                Fs, sb_type, unidir_sb_pattern);
+                    }
                 }
-            }
 
-            if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_SBLOCK_PATTERN)) {
-                dump_sblock_pattern(unidir_sb_pattern, max_chan_width, grid,
-                                    getEchoFileName(E_ECHO_SBLOCK_PATTERN));
+                if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_SBLOCK_PATTERN)) {
+                    dump_sblock_pattern(unidir_sb_pattern, max_chan_width, grid,
+                                        getEchoFileName(E_ECHO_SBLOCK_PATTERN));
+                }
             }
         }
     }
+
     // END SB LOOKUP
 
     // Check whether RR graph need to allocate new nodes for 3D custom switch blocks.
@@ -1291,7 +1272,7 @@ static void build_rr_graph(e_graph_type graph_type,
     t_track_to_pin_lookup track_to_pin_lookup_x(types.size());
     t_track_to_pin_lookup track_to_pin_lookup_y(types.size());
 
-    for (unsigned int itype = 0; itype < types.size(); ++itype) {
+    for (size_t itype = 0; itype < types.size(); ++itype) {
         std::set<int> type_layer = get_layers_of_physical_types(&types[itype]);
 
         ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
@@ -1333,9 +1314,9 @@ static void build_rr_graph(e_graph_type graph_type,
     // Create opin map lookups
     t_pin_to_track_lookup opin_to_track_map(types.size()); // [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1]
     if (BI_DIRECTIONAL == directionality) {
-        for (unsigned int itype = 0; itype < types.size(); ++itype) {
-            auto type_layer = get_layers_of_physical_types(&types[itype]);
-            auto perturb_opins = alloc_and_load_perturb_opins(&types[itype], Fc_out[itype],
+        for (size_t itype = 0; itype < types.size(); ++itype) {
+            std::set<int> type_layer = get_layers_of_physical_types(&types[itype]);
+            std::vector<bool> perturb_opins = alloc_and_load_perturb_opins(&types[itype], Fc_out[itype],
                                                               max_chan_width, segment_inf);
             opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
                                                                        Fc_out[itype], &types[itype], type_layer, perturb_opins, directionality,
@@ -2658,7 +2639,7 @@ void free_rr_graph() {
     // a routing graph exists and can be freed.  Hence, you can call this routine even if you're not sure of whether a rr_graph exists or not.
 
     // Before adding any more free calls here, be sure the data is NOT chunk allocated, as ALL the chunk allocated data is already free!
-    auto& device_ctx = g_vpr_ctx.mutable_device();
+    DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     device_ctx.loaded_rr_graph_filename.clear();
     device_ctx.loaded_rr_edge_override_filename.clear();
