@@ -320,8 +320,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         }
 
         // Special case for direct connections between output pins and input pins of clb.
-        if (edge_type == e_edge_type::PIN_TO_IPIN && inode_inter_cluster && to_node_inter_cluster && draw_state->draw_connection_box_edges) {
-            draw_edge = true;
+        if (edge_type == e_edge_type::PIN_TO_IPIN && inode_inter_cluster && to_node_inter_cluster) {
+            draw_edge = draw_state->draw_connection_box_edges;
         }
 
         // Select edge colors
