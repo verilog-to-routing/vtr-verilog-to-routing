@@ -247,7 +247,7 @@ module delay1x3 (datain, dataout, clk);
        end 
     end 
 
-    always @(state or trigger or count)
+    always @(*)
     begin
        case (state)
           0 :
@@ -398,20 +398,6 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
     reg next_state; 
     wire we; 
 
-    reg[27:0] temp_origx;
-    reg[27:0] temp_origy;
-    reg[27:0] temp_origz;
-    reg[15:0] temp_m11;
-    reg[15:0] temp_m12;
-    reg[15:0] temp_m13;
-    reg[15:0] temp_m21;
-    reg[15:0] temp_m22;
-    reg[15:0] temp_m23;
-    reg[15:0] temp_m31;
-    reg[15:0] temp_m32;
-    reg[15:0] temp_m33;
-    reg[20:0] temp_bkcolour;
-
     // <<X-HDL>> Can't find translated component 'spram'. Module name may not match
     spram21x4 spraminst(we, texinfo, CfgData[20:0], clk); 
     assign we = ((CfgData_Ready == 1'b1) & (CfgAddr == 4'b1110)) ? 1'b1 : 1'b0 ;
@@ -438,24 +424,26 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
        end
        else
        begin
-          state <= next_state ; 
-          origx <= temp_origx;
-          origy <= temp_origy;
-          origz <= temp_origz;
-          m11 <= temp_m11;
-          m12 <= temp_m12;
-          m13 <= temp_m13;
-          m21 <= temp_m21;
-          m22 <= temp_m22;
-          m23 <= temp_m23;
-          m31 <= temp_m31;
-          m32 <= temp_m32;
-         m33 <= temp_m33;
-          bkcolour <= bkcolour;
+          state <= next_state ;
+          if (CfgData_Ready) begin
+             if (CfgAddr == 4'b0001) origx <= CfgData;
+             if (CfgAddr == 4'b0010) origy <= CfgData;
+             if (CfgAddr == 4'b0011) origz <= CfgData;
+             if (CfgAddr == 4'b0100) m11 <= CfgData[15:0];
+             if (CfgAddr == 4'b0101) m12 <= CfgData[15:0];
+             if (CfgAddr == 4'b0110) m13 <= CfgData[15:0];
+             if (CfgAddr == 4'b0111) m21 <= CfgData[15:0];
+             if (CfgAddr == 4'b1000) m22 <= CfgData[15:0];
+             if (CfgAddr == 4'b1001) m23 <= CfgData[15:0];
+             if (CfgAddr == 4'b1010) m31 <= CfgData[15:0];
+             if (CfgAddr == 4'b1011) m32 <= CfgData[15:0];
+             if (CfgAddr == 4'b1100) m33 <= CfgData[15:0];
+             if (CfgAddr == 4'b1101) bkcolour <= CfgData[20:0];
+          end
        end 
     end 
 
-    always @(state or CfgData_Ready)
+    always @(*)
     begin
        case (state)
           0 :
@@ -470,59 +458,6 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
                       begin
                          next_state = 0 ; 
                       end 
-
-              if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0001))
-                        begin
-											temp_origx = CfgData ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0010))
-                        begin
-                                           temp_origy = CfgData ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0011))
-                        begin
-                                           temp_origz = CfgData ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0100))
-                        begin
-                                           temp_m11 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0101))
-                        begin
-                                           temp_m12 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0110))
-                        begin
-                                           temp_m13 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0111))
-                        begin
-                                           temp_m21 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1000))
-                        begin
-                                           temp_m22 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1001))
-                        begin
-                                           temp_m23 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1010))
-                        begin
-                                           temp_m31 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1011))
-                        begin
-                                           temp_m32 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1100))
-                        begin
-                                           temp_m33 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1101))
-                        begin
-                                           temp_bkcolour = CfgData[20:0] ; 
-						end
                    end
           1 :
                    begin
@@ -566,9 +501,9 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
 	 end
 //changed to odin 2 ram specifications
 
-defparam new_ram.ADDR_WIDTH = 8;
-defparam new_ram.DATA_WIDTH = 21;
-single_port_ram new_ram(
+single_port_ram 
+  # (.ADDR_WIDTH(8), .DATA_WIDTH(21))
+new_ram(
   .clk (clk),
   .we(we),
   .data(datain),
@@ -710,11 +645,7 @@ waddress <= temp_waddress;
        end 
     end 
 
-    always @(state or addr_ready or data_ready or waddress or datain or wantDir or 
-             want_read or wantwriteback or writebackdata or writebackaddr or 
-             fcount or fbpage or faddress or fbnextscanline or triID or wantshadedata or 
-             wanttexel or texeladdr)
-
+    always @(*)
     begin
        case (state)
 
@@ -1098,7 +1029,7 @@ rgAddr <= temp_rgAddr;
        end 
     end 
 
-    always @(state or ack or as or rgDone)
+    always @(*)
     begin
 
        case (state)
@@ -1378,7 +1309,7 @@ rgAddr <= temp_rgAddr;
     assign nas0 = temp_nas0;
     assign nas1 = temp_nas1;
 
-    always @(state or go or ack or busy or dirReady or addr or count or loaded)
+    always @(*)
     begin
        case (state)
           0 :
@@ -1781,7 +1712,7 @@ hit10c <= temp_hit10c;
     end 
 
 
-    always @(state or rgResultReady or rgResultSource)
+    always @(*)
     begin
        case (state)
           0 :
@@ -2000,7 +1931,6 @@ hit10c <= temp_hit10c;
 
     reg temp_pending01; 
     reg temp_pending10; 
-    reg temp_process01; 
     reg temp_texmap; 
     reg[20:0] temp_texinfol; 
     reg[20:0] temp_shadedataa; 
@@ -2040,601 +1970,592 @@ hit10c <= temp_hit10c;
        begin
           state <= next_state ; 
 
-process01 <= temp_process01;
-pending01 <= temp_pending01;
-pending10 <= temp_pending10;
-texmap <= temp_texmap;
-texinfol <= temp_texinfol;
-shadedataa <= temp_shadedataa;
-shadedatab <= temp_shadedatab;
-shadedatac <= temp_shadedatac;
-
-    dataout <= {1'b0, 
-					shadedataa[20],
-					shadedataa[19],
-					shadedataa[18],
-					shadedataa[17],
-					shadedataa[16],
-					shadedataa[15],
-					shadedataa[14],
-					shadedataa[13],
-					shadedataa[12],
-					shadedataa[11],
-					shadedataa[10],
-					shadedataa[9],
-					shadedataa[8],
-					shadedataa[7],
-					shadedataa[6],
-					shadedataa[5],
-					shadedataa[4],
-					shadedataa[3],
-					shadedataa[2],
-					shadedataa[1],
-					shadedataa[0],
-					shadedatab[20],
-					shadedatab[19],
-					shadedatab[18],
-					shadedatab[17],
-					shadedatab[16],
-					shadedatab[15],
-					shadedatab[14],
-					shadedatab[13],
-					shadedatab[12],
-					shadedatab[11],
-					shadedatab[10],
-					shadedatab[9],
-					shadedatab[8],
-					shadedatab[7],
-					shadedatab[6],
-					shadedatab[5],
-					shadedatab[4],
-					shadedatab[3],
-					shadedatab[2],
-					shadedatab[1],
-					shadedatab[0],
-					shadedatac[20],
-					shadedatac[19],
-					shadedatac[18],
-					shadedatac[17],
-					shadedatac[16],
-					shadedatac[15],
-					shadedatac[14],
-					shadedatac[13],
-					shadedatac[12],
-					shadedatac[11],
-					shadedatac[10],
-					shadedatac[9],
-					shadedatac[8],
-					shadedatac[7],
-					shadedatac[6],
-					shadedatac[5],
-					shadedatac[4],
-					shadedatac[3],
-					shadedatac[2],
-					shadedatac[1],
-					shadedatac[0]} ;
+          if (state == 0) begin
+             process01 <= pending01;
+          end
+          
+          pending01 <= temp_pending01;
+          pending10 <= temp_pending10;
+          texmap <= temp_texmap;
+          texinfol <= temp_texinfol;
+          shadedataa <= temp_shadedataa;
+          shadedatab <= temp_shadedatab;
+          shadedatac <= temp_shadedatac;
+          
+          dataout <= {1'b0, shadedataa, shadedatab, shadedatac} ;
        end 
 //    end 
 // PAJ used to be assign, but weird error, so added as register   assign dataout = {1'b0, 
     end 
     assign addrout = (process01 == 1'b1) ? addrout01 : addrout10 ;
 
-    always @(state or process01 or pending10 or ack or shadedataready or id01a or 
-             id01b or id01c or id10a or id10b or id10c or selectuv or hita or 
-             hitb or hitc or shadedata or pending01 or texmap or texelready)
-    begin
-       case (state)
+   always @(*)
+     begin
+        case (state)
           0 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       selectuv = 0;
-				       lmenable = 1'b0 ; 
-				       wanttexel = 1'b0 ; 
-                      if (pending01 == 1'b1 | pending10 == 1'b1)
-                      begin
-                         next_state = 2 ; 
-                      end
-                      else
-
-                      begin
-                         next_state = 0 ; 
-                      end 
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-                         temp_process01 = pending01 ; 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
-          2 :
-                   begin
-				       lmenable = 1'b0 ; 
-				       wanttexel = 1'b0 ; 
-                      wantshadedata = 1'b1 ; 
-                      selectuv[2] = ~process01 ; 
-                      selectuv[1:0] = 2'b00 ; 
-                      if (process01 == 1'b1)
-                      begin
-                         triID = id01a ; 
-
-                      end
-                      else
-                      begin
-                         triID = id10a ; 
-                      end 
-                      if (shadedataready == 1'b1)
-                      begin
-                         if (hita == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
-                         begin
-                            next_state = 3 ; 
-                         end
-                         else
-
-                         begin
-                            next_state = 4 ; 
-                         end 
-                      end
-                      else
-                      begin
-                         next_state = 2 ; 
-                      end 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-
-                         if (hita == 1'b1)
-                         begin
-                            temp_shadedataa = shadedata[20:0] ; 
-                            temp_texmap = (~shadedata[63]) & shadedata[62] ; 
-                         end
-                         else
-                         begin
-                            temp_shadedataa = bkcolour ; 
-                         end 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
-          3 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       lmenable = 1'b0 ; 
-				       wanttexel = 1'b0 ; 
-                      selectuv[2] = ~process01 ; 
-
-                      selectuv[1:0] = 2'b00 ; 
-                      next_state = 8 ; 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-                         temp_texinfol = texinfo ; 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-
-                   end
-          8 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       wanttexel = 1'b0 ; 
-                      selectuv[2] = ~process01 ; 
-                      selectuv[1:0] = 2'b00 ; 
-                      lmenable = 1'b1 ; 
-                      if (texmap == 1'b1)
-                      begin
-
-                         next_state = 11 ; 
-                      end
-                      else
-                      begin
-                         next_state = 4 ; 
-                      end 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-                         temp_shadedataa[6:0] = blb ; 
-                         temp_shadedataa[13:7] = blg ; 
-                         temp_shadedataa[20:14] = blr ; 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
-          11 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       selectuv = 0;
-				       lmenable = 1'b0 ; 
-
-                      wanttexel = 1'b1 ; 
-                      if (texelready == 1'b1)
-                      begin
-                         next_state = 4 ; 
-                      end
-                      else
-                      begin
-                         next_state = 11 ; 
-                      end 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-
-                         temp_shadedataa[6:0] = texelb ; 
-                         temp_shadedataa[13:7] = texelg ; 
-                         temp_shadedataa[20:14] = texelr ; 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
-          12 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       selectuv = 0;
-				       lmenable = 1'b0 ; 
-
-                      wanttexel = 1'b1 ; 
-                      if (texelready == 1'b1)
-                      begin
-                         next_state = 5 ; 
-                      end
-                      else
-                      begin
-                         next_state = 12 ; 
-                      end 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-                         temp_shadedatab[6:0] = texelb ; 
-                         temp_shadedatab[13:7] = texelg ; 
-                         temp_shadedatab[20:14] = texelr ; 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
-          13 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       selectuv = 0;
-				       lmenable = 1'b0 ; 
-
-                      wanttexel = 1'b1 ; 
-                      if (texelready == 1'b1)
-                      begin
-                         next_state = 1 ; 
-                      end
-                      else
-                      begin
-                         next_state = 13 ; 
-                      end 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-
-                         temp_shadedatac[6:0] = texelb ; 
-                         temp_shadedatac[13:7] = texelg ; 
-                         temp_shadedatac[20:14] = texelr ; 
-
-                   end
-          6 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       lmenable = 1'b0 ; 
-				       wanttexel = 1'b0 ; 
-
-                      selectuv[2] = ~process01 ; 
-                      selectuv[1:0] = 2'b01 ; 
-                      next_state = 9 ; 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-                         temp_texinfol = texinfo ; 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
-          9 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       wanttexel = 1'b0 ; 
-                      selectuv[2] = ~process01 ; 
-                      selectuv[1:0] = 2'b01 ; 
-                      lmenable = 1'b1 ; 
-                      if (texmap == 1'b1)
-                      begin
-                         next_state = 12 ; 
-
-                      end
-                      else
-                      begin
-                         next_state = 5 ; 
-                      end 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-
-                         temp_shadedatab[6:0] = blb ; 
-                         temp_shadedatab[13:7] = blg ; 
-                         temp_shadedatab[20:14] = blr ; 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
-          7 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       lmenable = 1'b0 ; 
-				       wanttexel = 1'b0 ; 
-                      selectuv[2] = ~process01 ; 
-                      selectuv[1:0] = 2'b10 ; 
-                      next_state = 10 ; 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-                         temp_texinfol = texinfo ; 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
-
-          10 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       wanttexel = 1'b0 ; 
-                      selectuv[2] = ~process01 ; 
-                      selectuv[1:0] = 2'b10 ; 
-                      if (texmap == 1'b1)
-                      begin
-                         next_state = 13 ; 
-                      end
-                      else
-                      begin
-                         next_state = 1 ; 
-                      end 
-
-                      lmenable = 1'b1 ; 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-                         temp_shadedatac[6:0] = blb ; 
-                         temp_shadedatac[13:7] = blg ; 
-                         temp_shadedatac[20:14] = blr ; 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
-          4 :
-                   begin
-				       wantshadedata = 1'b0 ; 
-				       lmenable = 1'b0 ; 
-				       wanttexel = 1'b0 ; 
-                      selectuv[2] = ~process01 ; 
-                      selectuv[1:0] = 2'b01 ; 
-                      if (process01 == 1'b1)
-                      begin
-                         triID = id01b ; 
-                      end
-                      else
-                      begin
-
-                         triID = id10b ; 
-                      end 
-                      if (shadedataready == 1'b1)
-                      begin
-                         if (hitb == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
-                         begin
-                            next_state = 6 ; 
-                         end
-                         else
-                         begin
-                            next_state = 5 ; 
-                         end 
-
-                      end
-                      else
-                      begin
-                         next_state = 4 ; 
-                      end 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-
-                         if (hitb == 1'b1)
-                         begin
-                            temp_shadedatab = shadedata[20:0] ; 
-                            temp_texmap = (~shadedata[63]) & shadedata[62] ; 
-                         end
-                         else
-                         begin
-                            temp_shadedatab = bkcolour ; 
-                         end 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
-          5 :
-                   begin
-				       lmenable = 1'b0 ; 
-				       wanttexel = 1'b0 ; 
-                      wantshadedata = 1'b1 ; 
-                      selectuv[2] = ~process01 ; 
-                      selectuv[1:0] = 2'b10 ; 
-                      if (process01 == 1'b1)
-
-                      begin
-                         triID = id01c ; 
-                      end
-                      else
-                      begin
-                         triID = id10c ; 
-                      end 
-                      if (shadedataready == 1'b1)
-                      begin
-                         if (hitc == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
-                         begin
-                            next_state = 7 ; 
-
-                         end
-                         else
-                         begin
-                            next_state = 1 ; 
-                         end 
-                      end
-                      else
-                      begin
-                         next_state = 5 ; 
-                      end 
-
-	          if (valid01 == 1'b1)
-				          begin
-				             temp_pending01 = 1'b1 ; 
-				          end 
-				          if (valid10 == 1'b1)
-				          begin
-				             temp_pending10 = 1'b1 ; 
-				          end 
-
-                         if (hitc == 1'b1)
-                          begin
-                            temp_shadedatac = shadedata[20:0] ; 
-                            temp_texmap = (~shadedata[63]) & shadedata[62] ; 
-                         end
-                         else
-                         begin
-                            temp_shadedatac = bkcolour ; 
-                         end 
-
-							temp_shiften01 = 1'b0;
-							temp_shiften10 = 1'b0;
-					    	temp_write = 1'b0;
-                   end
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       selectuv = 0;
+	       lmenable = 1'b0 ; 
+	       wanttexel = 1'b0 ; 
+            end
           1 :
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       selectuv = 0;
+	       lmenable = 1'b0 ; 
+	       wanttexel = 1'b0 ; 
+            end
+          2 :
+            begin
+	       lmenable = 1'b0 ; 
+	       wanttexel = 1'b0 ; 
+               wantshadedata = 1'b1 ; 
+               selectuv[2] = ~process01 ; 
+               selectuv[1:0] = 2'b00 ; 
+               if (process01 == 1'b1)
+                 begin
+                    triID = id01a ; 
 
-                   begin
-				       wantshadedata = 1'b0 ; 
-   				       triID = 0;
-				       selectuv = 0;
-				       lmenable = 1'b0 ; 
-				       wanttexel = 1'b0 ; 
-                      if (ack == 1'b1)
+                 end
+               else
+                 begin
+                    triID = id10a ; 
+                 end 
+            end
+          3 :
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       lmenable = 1'b0 ; 
+	       wanttexel = 1'b0 ; 
+               selectuv[2] = ~process01 ; 
+               selectuv[1:0] = 2'b00 ; 
+            end
+          4 :
+            begin
+	       wantshadedata = 1'b0 ; 
+	       lmenable = 1'b0 ; 
+	       wanttexel = 1'b0 ; 
+               selectuv[2] = ~process01 ; 
+               selectuv[1:0] = 2'b01 ; 
+               if (process01 == 1'b1)
+                 begin
+                    triID = id01b ; 
+                 end
+               else
+                 begin
+                    triID = id10b ; 
+                 end 
+            end
+          5 :
+            begin
+	       lmenable = 1'b0 ; 
+	       wanttexel = 1'b0 ; 
+               wantshadedata = 1'b1 ; 
+               selectuv[2] = ~process01 ; 
+               selectuv[1:0] = 2'b10 ; 
+               if (process01 == 1'b1)
+                 begin
+                    triID = id01c ; 
+                 end
+               else
+                 begin
+                    triID = id10c ; 
+                 end 
+            end
+          6 :
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       lmenable = 1'b0 ; 
+	       wanttexel = 1'b0 ;
+               selectuv[2] = ~process01 ; 
+               selectuv[1:0] = 2'b01 ; 
+            end
+           7 :
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       lmenable = 1'b0 ; 
+	       wanttexel = 1'b0 ; 
+               selectuv[2] = ~process01 ; 
+               selectuv[1:0] = 2'b10 ; 
+            end
+          8 :
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       wanttexel = 1'b0 ; 
+               selectuv[2] = ~process01 ; 
+               selectuv[1:0] = 2'b00 ; 
+               lmenable = 1'b1 ; 
+            end
+          9 :
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       wanttexel = 1'b0 ; 
+               selectuv[2] = ~process01 ; 
+               selectuv[1:0] = 2'b01 ; 
+               lmenable = 1'b1 ; 
+            end
+          10 :
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       wanttexel = 1'b0 ; 
+               selectuv[2] = ~process01 ; 
+               selectuv[1:0] = 2'b10 ; 
+               lmenable = 1'b1 ; 
+            end
+          11 :
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       selectuv = 0;
+	       lmenable = 1'b0 ; 
+               wanttexel = 1'b1 ; 
+            end
+          12 :
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       selectuv = 0;
+	       lmenable = 1'b0 ; 
+               wanttexel = 1'b1 ; 
+            end
+          13 :
+            begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       selectuv = 0;
+	       lmenable = 1'b0 ; 
+               wanttexel = 1'b1 ; 
+            end
+          // Default needed to prevent latch inference; set everything to zero
+          // for undefined state.  This represents a change in design intent
+          // vs. original code, albeit a subtle one
+          default: begin
+	       wantshadedata = 1'b0 ; 
+   	       triID = 0;
+	       selectuv = 0;
+	       lmenable = 1'b0 ; 
+               wanttexel = 1'b0 ; 
+          end
+        endcase 
+   end 
+
+   always @(*)
+     begin
+        case (state)
+          1 :
+            begin
+               if (ack == 1'b1 & process01 == 1'b1)
+                 begin
+                    temp_pending01 = 1'b0 ; 
+                    temp_pending10 = pending10;
+                 end
+
+               else if (ack == 1'b1 & process01 == 1'b0)
+                 begin
+                    temp_pending10 = 1'b0 ; 
+                    temp_pending01 = pending01;
+                 end
+               //add an else to hold the register value to prevent
+               //latch inference while preserving design intent
+               else begin
+                  temp_pending01 = pending01;
+                  temp_pending10 = pending10;
+               end
+            end
+          // Create a default to avoid latch inference.  This has a couple of side effects:
+          // 1.  the two unused states in the FSM will pick up this logic (subtle change
+          //     in design intent)
+          // 2.  We can collapse the case statement to eliminate redundancy -- most
+          //     states calculate these values as follows:
+          default :
+            begin
+	       if (valid01 == 1'b1)
+		 begin
+		    temp_pending01 = 1'b1 ; 
+		 end
+               //add an else to hold the register value to prevent
+               //latch inference while preserving design intent
+               else begin
+                  temp_pending01 = pending01;
+               end
+               
+	       if (valid10 == 1'b1)
+		 begin
+		    temp_pending10 = 1'b1 ; 
+		 end 
+               //add an else to hold the register value to prevent
+               //latch inference while preserving design intent
+               else begin
+                  temp_pending10 = pending10;
+               end
+            end
+        endcase 
+     end 
+
+   always @(*)
+     begin
+        case (state)
+          1 :
+            begin
+    	       if (process01 == 1'b1 &  ack == 1'b1)
+		 begin
+		    temp_shiften01 = 1'b1;
+		    temp_shiften10 = 1'b1;
+		 end
+               else begin
+                  temp_shiften01 = 1'b0;
+                  temp_shiften10 = 1'b0;
+               end
+	       temp_write = 1'b1;
+            end
+          // Create a default to avoid latch inference.  This has a couple of side effects:
+          // 1.  the two unused states in the FSM will pick up this logic (subtle change
+          //     in design intent)
+          // 2.  We can collapse the case statement to eliminate redundancy -- most
+          //     states calculate these values as follows:
+          default: begin
+	       temp_shiften01 = 1'b0;
+	       temp_shiften10 = 1'b0;
+	       temp_write = 1'b0;
+          end             
+        endcase 
+     end 
+
+   always @(*)
+     begin
+        case (state)
+          2 :
+            begin
+               if (hita == 1'b1)
+                 begin
+                    temp_shadedataa = shadedata[20:0] ; 
+                    temp_texmap = (~shadedata[63]) & shadedata[62] ; 
+                 end
+               else
+                 begin
+                    temp_shadedataa = bkcolour ;
+                    temp_texmap = texmap;
+                 end
+
+               temp_shadedatab = shadedatab;
+               temp_shadedatac = shadedatac;
+               temp_texinfol = texinfol;
+               
+            end
+          3 :
+            begin
+               temp_texinfol = texinfo ;
+
+               temp_shadedataa = shadedataa;
+               temp_shadedatab = shadedatab;
+               temp_shadedatac = shadedatac;
+               temp_texmap = texmap;
+            end
+          4 :
+            begin
+               if (hitb == 1'b1)
+                 begin
+                    temp_shadedatab = shadedata[20:0] ; 
+                    temp_texmap = (~shadedata[63]) & shadedata[62] ; 
+                 end
+               else
+                 begin
+                    temp_shadedatab = bkcolour ; 
+                    temp_texmap = texmap;
+                 end 
+               temp_shadedataa = shadedataa;
+               temp_shadedatac = shadedatac;
+               temp_texinfol = texinfol;
+            end
+          5 :
+            begin
+               if (hitc == 1'b1)
+                 begin
+                    temp_shadedatac = shadedata[20:0] ; 
+                    temp_texmap = (~shadedata[63]) & shadedata[62] ; 
+                 end
+               else
+                 begin
+                    temp_shadedatac = bkcolour ; 
+                    temp_texmap = texmap;
+                 end 
+               temp_shadedataa = shadedataa;
+               temp_shadedatab = shadedatab;
+               temp_texinfol = texinfol;
+            end
+          6 :
+            begin
+               temp_texinfol = texinfo ; 
+
+               temp_shadedataa = shadedataa;
+               temp_shadedatab = shadedatab;
+               temp_shadedatac = shadedatac;
+               temp_texmap = texmap;
+            end
+          7 :
+            begin
+               temp_texinfol = texinfo ; 
+ 
+               temp_shadedataa = shadedataa;
+               temp_shadedatab = shadedatab;
+               temp_shadedatac = shadedatac;
+               temp_texmap = texmap;
+            end
+          8 :
+            begin
+               temp_shadedataa[6:0] = blb ; 
+               temp_shadedataa[13:7] = blg ; 
+               temp_shadedataa[20:14] = blr ; 
+ 
+               temp_shadedatab = shadedatab;
+               temp_shadedatac = shadedatac;
+               temp_texinfol = texinfol ; 
+               temp_texmap = texmap;
+            end
+          9 :
+            begin
+               temp_shadedatab[6:0] = blb ; 
+               temp_shadedatab[13:7] = blg ; 
+               temp_shadedatab[20:14] = blr ; 
+
+               temp_shadedataa = shadedataa;
+               temp_shadedatac = shadedatac;
+               temp_texinfol = texinfol ; 
+               temp_texmap = texmap;
+            end
+          10 :
+            begin
+               temp_shadedatac[6:0] = blb ; 
+               temp_shadedatac[13:7] = blg ; 
+               temp_shadedatac[20:14] = blr ; 
+
+               temp_shadedataa = shadedataa;
+               temp_shadedatab = shadedatab;
+               temp_texinfol = texinfol ; 
+               temp_texmap = texmap;
+            end
+          11 :
+            begin
+               temp_shadedataa[6:0] = texelb ; 
+               temp_shadedataa[13:7] = texelg ; 
+               temp_shadedataa[20:14] = texelr ; 
+
+               temp_shadedatab = shadedatab;
+               temp_shadedatac = shadedatac;
+               temp_texinfol = texinfol ; 
+               temp_texmap = texmap;
+            end
+          12 :
+            begin
+               temp_shadedatab[6:0] = texelb ; 
+               temp_shadedatab[13:7] = texelg ; 
+               temp_shadedatab[20:14] = texelr ; 
+
+               temp_shadedataa = shadedataa;
+               temp_shadedatac = shadedatac;
+               temp_texinfol = texinfol ; 
+               temp_texmap = texmap;
+            end
+          13 :
+            begin
+               temp_shadedatac[6:0] = texelb ; 
+               temp_shadedatac[13:7] = texelg ; 
+               temp_shadedatac[20:14] = texelr ; 
+
+               temp_shadedataa = shadedataa;
+               temp_shadedatab = shadedatab;
+               temp_texinfol = texinfol ; 
+               temp_texmap = texmap;
+            end
+          //create a default to avoid latch inference; use to hold
+          //previous state and thus preserve design intent
+          default: begin
+             temp_shadedataa = shadedataa;
+             temp_shadedatab = shadedatab;
+             temp_shadedatac = shadedatac;
+             temp_texinfol = texinfol;
+             temp_texmap = texmap;
+          end
+        endcase 
+     end 
+
+   always @(*)
+     begin
+        case (state)
+          0 :
+            begin
+               if (pending01 == 1'b1 | pending10 == 1'b1)
+                 begin
+                    next_state = 2 ; 
+                 end
+               else
+                 begin
+                    next_state = 0 ; 
+                 end 
+            end
+          1 :
+            begin
+               if (ack == 1'b1)
+                 begin
+                    next_state = 0 ; 
+                 end
+               else
+                 begin
+                    next_state = 1 ; 
+                 end 
+            end
+          2 :
+            begin
+               if (shadedataready == 1'b1)
+                 begin
+                    if (hita == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
                       begin
-                         next_state = 0 ; 
+                         next_state = 3 ; 
                       end
-                      else
+                    else
+
+                      begin
+                         next_state = 4 ; 
+                      end 
+                 end
+               else
+                 begin
+                    next_state = 2 ; 
+                 end 
+            end
+          3 :
+            begin
+               next_state = 8 ; 
+            end
+          4 :
+            begin
+               if (shadedataready == 1'b1)
+                 begin
+                    if (hitb == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
+                      begin
+                         next_state = 6 ; 
+                      end
+                    else
+                      begin
+                         next_state = 5 ; 
+                      end 
+
+                 end
+               else
+                 begin
+                    next_state = 4 ; 
+                 end 
+            end
+          5 :
+            begin
+               if (shadedataready == 1'b1)
+                 begin
+                    if (hitc == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
+                      begin
+                         next_state = 7 ; 
+
+                      end
+                    else
                       begin
                          next_state = 1 ; 
                       end 
+                 end
+               else
+                 begin
+                    next_state = 5 ; 
+                 end 
+            end
+          6 :
+            begin
+               next_state = 9 ; 
+            end
+          7 :
+            begin
+               next_state = 10 ; 
+            end
+          8 :
+            begin
+               if (texmap == 1'b1)
+                 begin
+                    next_state = 11 ; 
+                 end
+               else
+                 begin
+                    next_state = 4 ; 
+                 end 
+            end
+          9 :
+            begin
+               if (texmap == 1'b1)
+                 begin
+                    next_state = 12 ; 
 
-                         if (ack == 1'b1 & process01 == 1'b1)
-                         begin
-                            temp_pending01 = 1'b0 ; 
-                         end
-
-                          else if (ack == 1'b1 & process01 == 1'b0)
-                         begin
-                            temp_pending10 = 1'b0 ; 
-                         end 
-
-    				if (process01 == 1'b1 &  ack == 1'b1)
-						begin
-							temp_shiften01 = 1'b1;
-							temp_shiften10 = 1'b1;
-						end
-					    temp_write = 1'b1;
-                   end
-       endcase 
-    end 
+                 end
+               else
+                 begin
+                    next_state = 5 ; 
+                 end 
+            end
+          10 :
+            begin
+               if (texmap == 1'b1)
+                 begin
+                    next_state = 13 ; 
+                 end
+               else
+                 begin
+                    next_state = 1 ; 
+                 end 
+            end
+          11 :
+            begin
+               if (texelready == 1'b1)
+                 begin
+                    next_state = 4 ; 
+                 end
+               else
+                 begin
+                    next_state = 11 ; 
+                 end 
+            end
+          12 :
+            begin
+               if (texelready == 1'b1)
+                 begin
+                    next_state = 5 ; 
+                 end
+               else
+                 begin
+                    next_state = 12 ; 
+                 end 
+            end
+          13 :
+            begin
+               if (texelready == 1'b1)
+                 begin
+                    next_state = 1 ; 
+                 end
+               else
+                 begin
+                    next_state = 13 ; 
+                 end 
+            end
+          // create a default to avoid latch inference; preserving intent by holding
+          // circuit in invalid states
+          default: begin
+             next_state = state;
+          end
+        endcase 
+     end 
  endmodule
  //////////////////////////////////////////////////////////////////////////////////////////////
  //
@@ -2664,7 +2585,7 @@ shadedatac <= temp_shadedatac;
 
     reg[15:0] col16; 
 
-    always @(dataline or texelselect)
+    always @(*)
     begin
        case (texelselect)
           2'b00 :
@@ -2815,8 +2736,7 @@ shadedatac <= temp_shadedatac;
         reg[6:0] bvl; 
         reg[6:0] bwl; 
 
-        always @(selectuv or u01a or u01b or u01c or v01a or v01b or v01c or u10a or 
-                 u10b or u10c or v10a or v10b or v10c)
+        always @(*)
         begin
            case (selectuv)
               3'b000 :

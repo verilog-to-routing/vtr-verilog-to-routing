@@ -2,7 +2,7 @@ module multiclock_reader_writer(
     clock_reader_head,
     clock_writer_head,
 	in,
-	out,
+	out
 );
 
 	//INPUT
@@ -11,7 +11,7 @@ module multiclock_reader_writer(
 	input	in;
 
 	//OUTPUT
-	output	out;
+	output reg out;
 
 	reg	[2:0]	reader_head;
 	reg	[2:0]	writer_head;

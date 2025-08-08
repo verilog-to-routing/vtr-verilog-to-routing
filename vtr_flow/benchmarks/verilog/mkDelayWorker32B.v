@@ -310,16 +310,6 @@ module mkDelayWorker32B(wciS0_Clk,
   wire dummy7;
   wire dummy8;
   wire dummy9;
-  assign dummy1 = &mesgRF_memory__DOB;
-  assign dummy2 = &mesgWF_memory__DOB;
-  assign dummy3 = &metaRF__D_OUT;
-  assign dummy4 = &metaWF__D_OUT ;
-  assign dummy5 = &wci_reqF__D_OUT;
-  assign dummy6 = &wide16Fa__D_OUT;
-  assign dummy7 = &wide16Fb__D_OUT;
-  assign dummy8 = &wmemi_respF__D_OUT;
-  assign dummy9 = &wsiS_reqFifo__D_OUT;
-  
   wire prevent_hang_wire;
   assign prevent_hang_wire =  dummy1 & dummy2 & dummy3 & dummy4 &dummy5 & dummy6 & dummy7 & dummy8 & dummy9;
   assign prevent_hanging_nodes = prevent_hang_wire;
@@ -1331,6 +1321,16 @@ module mkDelayWorker32B(wciS0_Clk,
        metaWF_RDY_deq__58_AND_NOT_wrtSerPos_11_EQ_3_1_ETC___d365,
        wci_cState_9_EQ_2_0_AND_dlyCtrl_4_BITS_3_TO_0__ETC___d397;
 
+  assign dummy1 = &mesgRF_memory__DOB;
+  assign dummy2 = &mesgWF_memory__DOB;
+  assign dummy3 = &metaRF__D_OUT;
+  assign dummy4 = &metaWF__D_OUT ;
+  assign dummy5 = &wci_reqF__D_OUT;
+  assign dummy6 = &wide16Fa__D_OUT;
+  assign dummy7 = &wide16Fb__D_OUT;
+  assign dummy8 = &wmemi_respF__D_OUT;
+  assign dummy9 = &wsiS_reqFifo__D_OUT;
+  
   // action method wciS0_mCmd
   assign CAN_FIRE_wciS0_mCmd = 1'b1 ;
   assign WILL_FIRE_wciS0_mCmd = 1'b1 ;
@@ -1503,9 +1503,9 @@ module mkDelayWorker32B(wciS0_Clk,
 wire [255:0] dp_out_not_used1;
 wire [255:0] dp_out_not_used2;
 
-  defparam dpram1.ADDR_WIDTH = 10;
-  defparam dpram1.DATA_WIDTH = 256;
-  dual_port_ram dpram1 (
+  dual_port_ram 
+    # (.ADDR_WIDTH(10), .DATA_WIDTH(256))
+    dpram1 (
 						.clk(wciS0_Clk),
 					    .addr1(mesgRF_memory__ADDRA),
 					    .addr2(mesgRF_memory__ADDRB),
@@ -1523,9 +1523,9 @@ wire [255:0] dp_out_not_used2;
 //	  .DATA_WIDTH(32'b1056),
 //	  .MEMSIZE(11'b1024)) mesgWF_memory(
 
- defparam dpram2.ADDR_WIDTH = 10;
- defparam dpram2.DATA_WIDTH = 256;  
- dual_port_ram dpram2   (
+ dual_port_ram 
+    # (.ADDR_WIDTH(10), .DATA_WIDTH(256))
+   dpram2   (
 						.clk(wciS0_Clk),
 					    .addr1(mesgWF_memory__ADDRA),
 					    .addr2(mesgWF_memory__ADDRB),
@@ -2190,10 +2190,7 @@ wire [255:0] dp_out_not_used2;
   assign MUX_wmemi_reqF_x_wire__wset_1__VAL_1 = { 4'b0101, addr__h20994, 12'b01 } ;
   assign MUX_wmemi_reqF_x_wire__wset_1__VAL_2 = { 4'b0011, addr__h21166, 12'b01 } ;
   assign MUX_wci_respF_x_wire__wset_1__VAL_1 = { 2'b01, x_data__h21804 } ;
-  always@(WILL_FIRE_RL_wci_cfrd or
-	  MUX_wci_respF_x_wire__wset_1__VAL_1 or
-	  WILL_FIRE_RL_wci_ctl_op_complete or
-	  MUX_wci_respF_x_wire__wset_1__VAL_2 or WILL_FIRE_RL_wci_cfwr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wci_cfrd:
@@ -2266,9 +2263,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wmemi_reqF_incCtr && wmemi_reqF_c_r == 2'b00 ;
   assign MUX_wmemi_reqF_q_1__write_1__SEL_2 =
 	     WILL_FIRE_RL_wmemi_reqF_incCtr && wmemi_reqF_c_r == 2'b01 ;
-  always@(wrtSerPos or
-	  IF_wrtSerPos_11_EQ_2_14_THEN_0x0_ELSE_mesgWF_w_ETC___d354 or
-	  x1__h19969 or x1__h19978)
+  always@(*)
   begin
     case (wrtSerPos)
       2'b00: MUX_wide16Fa__enq_1__VAL_2 = x1__h19969;
@@ -2277,9 +2272,7 @@ wire [255:0] dp_out_not_used2;
 		   IF_wrtSerPos_11_EQ_2_14_THEN_0x0_ELSE_mesgWF_w_ETC___d354;
     endcase
   end
-  always@(wrtSerPos or
-	  IF_wrtSerPos_11_EQ_2_14_THEN_0x0_ELSE_metaWF_f_ETC___d377 or
-	  x1__h20492 or x1__h20501)
+  always@(*)
   begin
     case (wrtSerPos)
       2'b00: MUX_wide16Fa__enq_1__VAL_1 = x1__h20492;
@@ -2557,9 +2550,7 @@ wire [255:0] dp_out_not_used2;
 //	      wsiS_reqFifo__D_OUT[39:8] != 32'b00000000000000000000000000000000) ;
 
   // register impreciseBurst
-  always@(WILL_FIRE_RL_wmwt_doAbort or
-	  MUX_impreciseBurst__write_1__SEL_2 or
-	  WILL_FIRE_RL_wmwt_messageFinalize)
+  always@(*)
   case (1'b1)
     WILL_FIRE_RL_wmwt_doAbort: impreciseBurst__D_IN = 1'b0;
     MUX_impreciseBurst__write_1__SEL_2: impreciseBurst__D_IN = 1'b1;
@@ -2572,11 +2563,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wmwt_doAbort ;
 
   // register mesgLength
-  always@(WILL_FIRE_RL_wmwt_doAbort or
-	  MUX_mesgLength__write_1__SEL_2 or
-	  MUX_mesgLength__write_1__VAL_2 or
-	  MUX_endOfMessage__write_1__SEL_1 or
-	  MUX_mesgLength__write_1__VAL_3 or WILL_FIRE_RL_wmwt_messageFinalize)
+  always@(*)
   case (1'b1)
     WILL_FIRE_RL_wmwt_doAbort: mesgLength__D_IN = 15'b010101010101010;
     MUX_mesgLength__write_1__SEL_2:
@@ -2650,9 +2637,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wmwt_messageFinalize || WILL_FIRE_RL_wci_ctrl_IsO ;
 
   // register opcode
-  always@(WILL_FIRE_RL_wmwt_doAbort or
-	  WILL_FIRE_RL_wmwt_mesgBegin or
-	  MUX_opcode__write_1__VAL_2 or WILL_FIRE_RL_wmwt_messageFinalize)
+  always@(*)
   case (1'b1)
     WILL_FIRE_RL_wmwt_doAbort: opcode__D_IN = 9'b010101010;
     WILL_FIRE_RL_wmwt_mesgBegin: opcode__D_IN = MUX_opcode__write_1__VAL_2;
@@ -2664,8 +2649,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wmwt_mesgBegin ;
 
   // register preciseBurst
-  always@(WILL_FIRE_RL_wmwt_doAbort or
-	  MUX_mesgLength__write_1__SEL_2 or WILL_FIRE_RL_wmwt_messageFinalize)
+  always@(*)
   case (1'b1)
     WILL_FIRE_RL_wmwt_doAbort: preciseBurst__D_IN = 1'b0;
     MUX_mesgLength__write_1__SEL_2: preciseBurst__D_IN = 1'b1;
@@ -2733,10 +2717,7 @@ wire [255:0] dp_out_not_used2;
   assign rdSerUnroll__EN = MUX_rdSerEmpty__write_1__PSEL_1 ;
 
   // register rdSyncWord
-  always@(WILL_FIRE_RL_rdSer_body or
-	  MUX_rdSyncWord__write_1__VAL_1 or
-	  WILL_FIRE_RL_rdSer_begin or
-	  MUX_rdSyncWord__write_1__VAL_2 or WILL_FIRE_RL_rdSer_sync)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_rdSer_body:
@@ -2756,9 +2737,7 @@ wire [255:0] dp_out_not_used2;
   assign readMeta__EN = CAN_FIRE_RL_wmrd_mesgBegin ;
 
   // register readyToPush
-  always@(WILL_FIRE_RL_wmwt_doAbort or
-	  MUX_impreciseBurst__write_1__SEL_2 or
-	  MUX_endOfMessage__write_1__SEL_1)
+  always@(*)
   case (1'b1)
     WILL_FIRE_RL_wmwt_doAbort: readyToPush__D_IN = 1'b0;
     MUX_impreciseBurst__write_1__SEL_2: readyToPush__D_IN = 1'b1;
@@ -2821,7 +2800,7 @@ wire [255:0] dp_out_not_used2;
 	     MUX_wci_illegalEdge__write_1__SEL_2 ;
 
   // register wci_nState
-  always@(wci_reqF__D_OUT)
+  always@(*)
   begin
     case (wci_reqF__D_OUT[36:34])
       3'b000: wci_nState__D_IN = 3'b001;
@@ -2860,11 +2839,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wci_respF_both ||
 	     WILL_FIRE_RL_wci_respF_incCtr && wci_respF_c_r == 2'b00 ||
 	     WILL_FIRE_RL_wci_respF_decCtr ;
-  always@(WILL_FIRE_RL_wci_respF_both or
-	  MUX_wci_respF_q_0__write_1__VAL_1 or
-	  MUX_wci_respF_q_0__write_1__SEL_2 or
-	  MUX_wci_respF_q_0__write_1__VAL_2 or
-	  WILL_FIRE_RL_wci_respF_decCtr or wci_respF_q_1)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wci_respF_both:
@@ -2881,10 +2856,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wci_respF_both ||
 	     WILL_FIRE_RL_wci_respF_incCtr && wci_respF_c_r == 2'b01 ||
 	     WILL_FIRE_RL_wci_respF_decCtr ;
-  always@(WILL_FIRE_RL_wci_respF_both or
-	  MUX_wci_respF_q_1__write_1__VAL_1 or
-	  MUX_wci_respF_q_1__write_1__SEL_2 or
-	  MUX_wci_respF_q_0__write_1__VAL_2 or WILL_FIRE_RL_wci_respF_decCtr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wci_respF_both:
@@ -2929,11 +2901,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wmemi_dhF_decCtr || WILL_FIRE_RL_wmemi_dhF_incCtr ;
 
   // register wmemi_dhF_q_0
-  always@(WILL_FIRE_RL_wmemi_dhF_both or
-	  MUX_wmemi_dhF_q_0__write_1__VAL_1 or
-	  MUX_wmemi_dhF_q_0__write_1__SEL_2 or
-	  MUX_wmemi_dhF_q_0__write_1__VAL_2 or
-	  WILL_FIRE_RL_wmemi_dhF_decCtr or wmemi_dhF_q_1)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wmemi_dhF_both:
@@ -2951,10 +2919,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wmemi_dhF_decCtr ;
 
   // register wmemi_dhF_q_1
-  always@(WILL_FIRE_RL_wmemi_dhF_both or
-	  MUX_wmemi_dhF_q_1__write_1__VAL_1 or
-	  MUX_wmemi_dhF_q_1__write_1__SEL_2 or
-	  MUX_wmemi_dhF_q_0__write_1__VAL_2 or WILL_FIRE_RL_wmemi_dhF_decCtr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wmemi_dhF_both:
@@ -2994,11 +2959,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wmemi_reqF_incCtr ;
 
   // register wmemi_reqF_q_0
-  always@(WILL_FIRE_RL_wmemi_reqF_both or
-	  MUX_wmemi_reqF_q_0__write_1__VAL_1 or
-	  MUX_wmemi_reqF_q_0__write_1__SEL_2 or
-	  MUX_wmemi_reqF_q_0__write_1__VAL_2 or
-	  WILL_FIRE_RL_wmemi_reqF_decCtr or wmemi_reqF_q_1)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wmemi_reqF_both:
@@ -3016,10 +2977,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wmemi_reqF_decCtr ;
 
   // register wmemi_reqF_q_1
-  always@(WILL_FIRE_RL_wmemi_reqF_both or
-	  MUX_wmemi_reqF_q_1__write_1__VAL_1 or
-	  MUX_wmemi_reqF_q_1__write_1__SEL_2 or
-	  MUX_wmemi_reqF_q_0__write_1__VAL_2 or WILL_FIRE_RL_wmemi_reqF_decCtr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wmemi_reqF_both:
@@ -3166,11 +3124,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wsiM_reqFifo_both ||
 	     WILL_FIRE_RL_wsiM_reqFifo_incCtr && wsiM_reqFifo_c_r == 2'b00 ||
 	     WILL_FIRE_RL_wsiM_reqFifo_decCtr ;
-  always@(WILL_FIRE_RL_wsiM_reqFifo_both or
-	  MUX_wsiM_reqFifo_q_0__write_1__VAL_1 or
-	  MUX_wsiM_reqFifo_q_0__write_1__SEL_2 or
-	  MUX_wsiM_reqFifo_q_0__write_1__VAL_2 or
-	  WILL_FIRE_RL_wsiM_reqFifo_decCtr or wsiM_reqFifo_q_1)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wsiM_reqFifo_both:
@@ -3189,11 +3143,7 @@ wire [255:0] dp_out_not_used2;
 	     WILL_FIRE_RL_wsiM_reqFifo_both ||
 	     WILL_FIRE_RL_wsiM_reqFifo_incCtr && wsiM_reqFifo_c_r == 2'b01 ||
 	     WILL_FIRE_RL_wsiM_reqFifo_decCtr ;
-  always@(WILL_FIRE_RL_wsiM_reqFifo_both or
-	  MUX_wsiM_reqFifo_q_1__write_1__VAL_1 or
-	  MUX_wsiM_reqFifo_q_1__write_1__SEL_2 or
-	  MUX_wsiM_reqFifo_q_0__write_1__VAL_2 or
-	  WILL_FIRE_RL_wsiM_reqFifo_decCtr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wsiM_reqFifo_both:
@@ -3341,8 +3291,7 @@ wire [255:0] dp_out_not_used2;
 	     CAN_FIRE_RL_wrtSer_body ? x__h15126[9:0] : mesgWF_rRdPtr[9:0] ;
 
   // submodule metaRF
-  always@(rdSerPos or
-	  rdSerStage_3 or wide16Fb__D_OUT or rdSerStage_1 or rdSerStage_2)
+  always@(*)
   begin
     case (rdSerPos)
       2'b00: metaRF__D_IN = wide16Fb__D_OUT[31:0];
@@ -3470,20 +3419,7 @@ wire [255:0] dp_out_not_used2;
   assign x_burstLength__h22437 =
 	     (readMeta[23:0] == 24'b000000000000000000000000) ? 12'b01 : readMeta[16:5] ;
   assign x_byteEn__h22438 = (readMeta[23:0] == 24'b000000000000000000000000) ? 32'b00000000000000000000000000000000 : 32'hFFFFFFFF ;
-  always@(wci_reqF__D_OUT or
-	  dlyCtrl or
-	  dlyHoldoffBytes or
-	  dlyHoldoffCycles or
-	  mesgWtCount or
-	  mesgRdCount or
-	  bytesWritten or
-	  rdat__h21847 or
-	  wsiS_extStatusW__wget or
-	  wsiM_extStatusW__wget or
-	  wmemiWrReq or
-	  wmemiRdReq or
-	  wmemiRdResp or
-	  rdat__h22030 or rdat__h22038 or rdat__h22046 or rdat__h22054)
+  always@(*)
   begin
     case (wci_reqF__D_OUT[51:32])
       20'h0: x_data__h21804 = dlyCtrl;
@@ -3510,7 +3446,7 @@ wire [255:0] dp_out_not_used2;
       default: x_data__h21804 = 32'b00000000000000000000000000000000;
     endcase
   end
-  always@(wrtSerPos or wide16Fa__FULL_N)
+  always@(*)
   begin
     case (wrtSerPos)
      // 2'b00, 2'b01, 2'b10
@@ -3528,7 +3464,7 @@ wire [255:0] dp_out_not_used2;
 	      wrtSerPos != 2'b11 || wide16Fa__FULL_N;
     endcase
   end
-  always@(wrtSerPos)
+  always@(*)
   begin
     case (wrtSerPos)
      // 2'b00, 2'b01, 2'b10, 2'b11: CASE_wrtSerPos_0b1_0_1_1_1_2_1_3_0b1__q1 = 1'b1;
@@ -4137,9 +4073,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 32'b00000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awa;
-defparam ram1.DATA_WIDTH = `dwa;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwa))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -4537,9 +4473,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 32'b00000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awa;
-defparam ram1.DATA_WIDTH = `dwa;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwa))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -4941,9 +4877,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awa;
-defparam ram1.DATA_WIDTH = `dwc;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwc))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -5345,9 +5281,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 128'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awa;
-defparam ram1.DATA_WIDTH = `dwd;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwd))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -5693,9 +5629,6 @@ parameter n=32;
 parameter max_size = 1<<aw;
  */
  
- `define dwc  60
-`define awc 3
-
 module generic_fifo_sc_f(clk, rst, clr, din, we, dout, re,
 			 full, empty,
              full_n, empty_n,
@@ -5708,10 +5641,14 @@ parameter aw=8;
 parameter n=32;
 parameter max_size = 1<<aw;
  */
+
+parameter dwc = 60;
+parameter awc = 3;
+
 input			clk, rst, clr;
-input	[`dwc-1:0]	din;
+input	[dwc-1:0]	din;
 input			we;
-output	[`dwc-1:0]	dout;
+output	[dwc-1:0]	dout;
 input			re;
 output			full, full_r;
 output			empty, empty_r;
@@ -5724,16 +5661,16 @@ output	[1:0]		level;
 // Local Wires
 //
  
-reg	[`awc-1:0]	wp;
-wire	[`awc-1:0]	wp_pl1;
-wire	[`awc-1:0]	wp_pl2;
-reg	[`awc-1:0]	rp;
-wire	[`awc-1:0]	rp_pl1;
+reg	[awc-1:0]	wp;
+wire	[awc-1:0]	wp_pl1;
+wire	[awc-1:0]	wp_pl2;
+reg	[awc-1:0]	rp;
+wire	[awc-1:0]	rp_pl1;
 reg			full_r;
 reg			empty_r;
 reg			gb;
 reg			gb2;
-reg	[`awc:0]		cnt;
+reg	[awc:0]		cnt;
 wire			full_n, empty_n;
 reg			full_n_r, empty_n_r;
  
@@ -5743,16 +5680,16 @@ reg			full_n_r, empty_n_r;
 //
  wire always_zero;
  assign always_zero = 1'b0;
- wire [`dwc-1:0] junk_out;
+ wire [dwc-1:0] junk_out;
  
- wire [`dwc-1:0] junk_in;
+ wire [dwc-1:0] junk_in;
  
  // manually assign
  assign junk_in = 60'b000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awc;
-defparam ram1.DATA_WIDTH = `dwc;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(awc), .DATA_WIDTH(dwc))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -5846,7 +5783,7 @@ always @(posedge clk )
  
 assign empty_n = cnt < `n;
 assign full_n  = !(cnt < (`max_size-`n+1));
-assign level = {{cnt[`awc]}, {cnt[`awc]}} | cnt[`awc-1:`awc-2];
+assign level = {{cnt[awc]}, {cnt[awc]}} | cnt[awc-1:awc-2];
  
 // N entries status
 always @(posedge clk )
@@ -6152,9 +6089,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 313'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awf;
-defparam ram1.DATA_WIDTH = `dwf;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwf))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -6557,9 +6494,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 131'b00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awx;
-defparam ram1.DATA_WIDTH = `dwx;
-dual_port_ram   ram1(
+dual_port_ram   
+    # (.ADDR_WIDTH(`awx), .DATA_WIDTH(`dwx))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -6661,7 +6598,7 @@ always @(posedge clk )
 	else
 	if(clr)		cnt <=  {3'b000};
 	else
-	if( re & !we)	cnt <=  cnt + { 3'b1111};
+	if( re & !we)	cnt <=  cnt + { 4'b1111};
 	else
 	if(!re &  we)	cnt <=  cnt + { {2'b00}, 1'b1};
  

@@ -234,7 +234,7 @@ assign raygroupout = raygroupout01 | raygroupout10 ;
     assign cntreset = cntreset01 | cntreset10 ;
 
     //  reset <= reset01 or reset10;
-    always @(BoundNodeID01 or BoundNodeID10 or resultid)
+    always @(*)
     begin
        if (resultid == 2'b01)
        begin
@@ -406,7 +406,7 @@ reg[31:0] temp_rgResultData;
        end 
     end 
 
-    always @(state or pending01 or pending10)
+    always @(*)
     begin
        case (state)
           0 :
@@ -1398,7 +1398,7 @@ endmodule
        end 
     end 
 
-    always @(state or trigger or count)
+    always @(*)
     begin
        case (state)
           0 :
@@ -1442,6 +1442,10 @@ endmodule
 
                       end 
                    end
+           //Before adding default this could infer latches, so
+           //defaulting to holding previous state preserves deisgn intent
+           default: next_state = state;
+         
        endcase 
     end 
  endmodule
@@ -1509,7 +1513,7 @@ reg     temp_datavalid;
        end 
     end 
 
-    always @(state or addr_ready or data_ready or addrvalid or datavalid)
+    always @(*)
 
     begin
        case (state)
@@ -1648,9 +1652,9 @@ reg     temp_datavalid;
 
 
 
-defparam new_ram.ADDR_WIDTH = 10;
-defparam new_ram.DATA_WIDTH = 32;
-single_port_ram new_ram(
+single_port_ram 
+  # (.ADDR_WIDTH(10), .DATA_WIDTH(32))
+new_ram(
   .clk (clk),
   .we(we),
   .data(datain),
@@ -1734,8 +1738,7 @@ single_port_ram new_ram(
        end 
     end 
 
-    always @(state or addr_ready or data_ready or waddress or datain or addrvalid or 
-             datavalid or addr)
+    always @(*)
     begin
        case (state)
           0 :
@@ -2009,7 +2012,7 @@ module resultinterface (t1b, t2b, t3b, u1b, u2b, u3b, v1b, v2b, v3b, id1b, id2b,
        end 
     end 
 
-    always @(state or resultready)
+    always @(*)
     begin
        case (state)
           0 :
@@ -2217,7 +2220,7 @@ module sortedstack (keyin, datain, write, reset, peekdata, globalreset, clk);
     assign peekdata[(7 + 1) * (13) - 1:7 * (13)] = ((full7) == 1'b1) ? data7 : 0;
 
     // Select the proper insertion point
-    always @(keyin or key0 or key1 or key2 or key3 or key4 or key5 or key6 or key7 or full0 or full1 or full2 or full3 or full4 or full5 or full6 or full7)
+    always @(*)
     begin
 		
 /* PAJ -- changed for loops */
@@ -2498,7 +2501,7 @@ module listhandler (dataarrayin, commit, hitmask, ack, boundnodeID, level, empty
     assign empty = (lvempty == 3'b111 & busy == 1'b0) ? 1'b1 : 1'b0 ;
     assign dataready = ((((dataout[10]) == 1'b1 & (hitmask[0]) == 1'b1) | ((dataout[11]) == 1'b1 & (hitmask[1]) == 1'b1) | ((dataout[12]) == 1'b1 & (hitmask[2]) == 1'b1)) & (empty == 1'b0) & (busy == 1'b0)) ? 1'b1 : 1'b0 ;
 
-    always @(offset0 or offset1 or offset2 or address)
+    always @(*)
     begin
 	    address[4:3] = readlevel ;
 
@@ -2550,8 +2553,7 @@ module listhandler (dataarrayin, commit, hitmask, ack, boundnodeID, level, empty
        end 
     end 
 
-    always @(state or commit or ack or address or dataarrayin or reset or dataready or 
-             empty)
+    always @(*)
     begin
 
        case (state)
