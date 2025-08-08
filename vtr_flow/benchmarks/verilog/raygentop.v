@@ -1345,13 +1345,19 @@ rgAddr <= temp_rgAddr;
                  begin
                     if (active == 1'b0)
                       begin
-                         temp_loaded[0] = 1'b1 ; 
+                         temp_loaded[0] = 1'b1 ;
+                         temp_loaded[1] = loaded[1];
                       end
                     else
                       begin
-                         temp_loaded[1] = 1'b1 ; 
+                         temp_loaded[1] = 1'b1 ;
+                         temp_loaded[0] = loaded[0];
                       end 
-                 end 
+                 end
+               else begin
+                  temp_loaded = loaded;
+               end
+               
                temp_addr[1:0] = addr;
                temp_groupID = groupID; 
                temp_count = count; 
@@ -1397,7 +1403,14 @@ rgAddr <= temp_rgAddr;
                          temp_addr[1:0] = 2'b00 ; 
                          temp_raygroupvalid0 = raygroupvalid0;
                          temp_raygroupvalid1 = raygroupvalid1;
-                      end 
+                      end
+                    else
+                      begin
+                         temp_addr[1:0] = addr;
+                         temp_active = active;
+                         temp_raygroupvalid0 = raygroupvalid0;
+                         temp_raygroupvalid1 = raygroupvalid1;
+                      end
                  end
                else begin
                   temp_addr[1:0] = addr;
@@ -1514,6 +1527,10 @@ rgAddr <= temp_rgAddr;
 		    temp_nas0 = 1'b1;
 		    temp_nas1 = 1'b1;
 		 end
+               else begin
+                  temp_nas0 = 1'b0;
+                  temp_nas1 = 1'b0;
+               end
             end
           2 :
             begin
@@ -1652,245 +1669,14 @@ rgAddr <= temp_rgAddr;
                     next_state = 0 ; 
                  end 
             end
+          // add a default to prevent latch inference
+          // hold previous state to preserve original design
+          // intent, even if this is not optimal behavior
+          default:
+            next_state = state;
         endcase 
     end 
 
-   /* Original below -- delete when done */
-
-   always @(*)
-     begin
-        case (state)
-          0 :
-            begin
-       	       as = 1'b0 ; 
-       	       wantDir = 1'b0 ; 
-               if (go == 1'b1)
-                 begin
-                    next_state = 1 ; 
-                 end
-               else
-                 begin
-                    next_state = 0 ; 
-                 end 
-               statepeek = 3'b001 ; 
-	       temp_busyout = 1'b0;
-	       temp_nas0 = 1'b0;
-	       temp_nas1 = 1'b0;
-
-
-               if (go == 1'b1)
-                 begin
-                    temp_cycles = 0;
-                 end 
-               temp_addr[1:0] = 2'b00 ; 
-               temp_loaded = 2'b00 ; 
-               temp_groupID = 2'b00 ; 
-               temp_count = initcount ; 
-               temp_active = 1'b0 ; 
-
-            end
-          1 :
-            begin
-               as = dirReady ; 
-               wantDir = 1'b1 ; 
-               if (dirReady == 1'b1)
-                 begin
-                    next_state = 2 ; 
-                 end
-               else
-                 begin
-                    next_state = 1 ; 
-                 end 
-               statepeek = 3'b010 ; 
-	       temp_busyout = 1'b1;
-    	       if (addr[1:0] == 2'b00 & dirReady == 1'b1 & active == 1'b0) 
-		 begin
-		    temp_nas0 = 1'b1;
-		    temp_nas1 = 1'b1;
-		 end
-
-               temp_dir = dirIn ; 
-               if (dirReady == 1'b1 & addr[1:0] == 2'b10)
-                 begin
-                    if (active == 1'b0)
-                      begin
-                         temp_loaded[0] = 1'b1 ; 
-                      end
-                    else
-                      begin
-                         temp_loaded[1] = 1'b1 ; 
-                      end 
-                 end 
-               temp_cycles = cycles + 1 ; 
-
-
-            end
-          2 :
-            begin
-               wantDir = 1'b0 ; 
-               as = 1'b1 ; 
-               if ((ack == 1'b1) & (addr[1:0] != 2'b10))
-                 begin
-                    next_state = 1 ; 
-                 end
-               else if (ack == 1'b1)
-                 begin
-                    if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
-                      begin
-                         next_state = 3 ; 
-                      end
-                    else if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
-                      begin
-                         next_state = 4 ; 
-                      end
-                    else if (loaded != 2'b11)
-                      begin
-
-                         next_state = 1 ; 
-                      end
-                    else
-                      begin
-                         next_state = 2 ; 
-                      end 
-                 end
-               else
-                 begin
-                    next_state = 2 ; 
-                 end 
-               statepeek = 3'b011 ; 
-	       temp_busyout = 1'b1;
-	       temp_nas0 = 1'b0;
-	       temp_nas1 = 1'b0;
-
-               if ((ack == 1'b1) & (addr[1:0] != 2'b10))
-                 begin
-                    temp_addr[1:0] = addr[1:0] + 2'b01 ; 
-                 end 
-               else if ((ack == 1'b1) & addr[1:0] == 2'b10)
-                 begin
-                    if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
-                      begin
-                         temp_raygroupvalid0 = 1'b1 ; 
-                      end
-                    else if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
-                      begin
-
-                         temp_raygroupvalid1 = 1'b1 ; 
-                      end
-                    else if ((loaded[0]) == 1'b0)
-                      begin
-                         temp_active = 1'b0 ; 
-                         temp_addr[1:0] = 2'b00 ; 
-                      end
-                    else if ((loaded[1]) == 1'b0)
-                      begin
-                         temp_active = 1'b1 ; 
-                         temp_addr[1:0] = 2'b00 ; 
-                      end 
-                 end 
-
-               temp_cycles = cycles + 1 ; 
-            end
-          3 :
-            begin
-               if ((busy[0]) == 1'b0)
-                 begin
-                    next_state = 3 ; 
-
-                 end
-               else if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
-                 begin
-                    next_state = 4 ; 
-                 end
-               else if (count > 0)
-                 begin
-                    next_state = 1 ; 
-                 end
-               else
-                 begin
-                    next_state = 0 ; 
-
-                 end 
-               statepeek = 3'b100 ; 
-	       temp_busyout = 1'b1;
-	       temp_nas0 = 1'b0;
-	       temp_nas1 = 1'b0;
-
-               if ((busy[0]) == 1'b1)
-                 begin
-                    temp_groupID[0] = ~groupID[0] ; 
-                    temp_raygroupvalid0 = 1'b0 ; 
-                    temp_count = count - 1 ; 
-                    if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
-                      begin
-                         temp_raygroupvalid1 = 1'b1 ; 
-
-                      end
-                    else if ((loaded[1]) == 1'b0)
-                      begin
-                         temp_active = 1'b1 ; 
-                      end
-                    else
-                      begin
-                         temp_active = 1'b0 ; 
-                      end 
-                 end 
-               temp_loaded[0] = 1'b0 ; 
-               temp_addr[1:0] = 2'b00 ; 
-
-
-               temp_cycles = cycles + 1 ; 
-            end
-          4 :
-            begin
-               if ((busy[1]) == 1'b0)
-                 begin
-                    next_state = 4 ; 
-                 end
-               else if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
-                 begin
-                    next_state = 3 ; 
-                 end
-               else if (count > 0)
-                 begin
-
-                    next_state = 1 ; 
-                 end
-               else
-                 begin
-                    next_state = 0 ; 
-                 end 
-               statepeek = 3'b101 ; 
-	       temp_busyout = 1'b1;
-	       temp_nas0 = 1'b0;
-	       temp_nas1 = 1'b0;
-
-               if ((busy[1]) == 1'b1)
-                 begin
-                    temp_groupID[1] = ~groupID[1] ; 
-                    temp_raygroupvalid1 = 1'b0 ; 
-                    temp_count = count - 1 ; 
-                    if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
-                      begin
-                         temp_raygroupvalid0 = 1'b1 ; 
-                      end
-
-                    else if ((loaded[0]) == 1'b0)
-                      begin
-                         temp_active = 1'b0 ; 
-                      end
-                    else
-                      begin
-                         temp_active = 1'b1 ; 
-                      end 
-                 end 
-               temp_loaded[1] = 1'b0 ; 
-               temp_addr[1:0] = 2'b00 ; 
-
-               temp_cycles = cycles + 1 ; 
-            end
-        endcase 
-    end 
  endmodule
     
     
