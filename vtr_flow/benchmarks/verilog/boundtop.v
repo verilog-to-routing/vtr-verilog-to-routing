@@ -406,7 +406,7 @@ reg[31:0] temp_rgResultData;
        end 
     end 
 
-    always @(state or pending01 or pending10)
+    always @(*)
     begin
        case (state)
           0 :
@@ -1398,7 +1398,7 @@ endmodule
        end 
     end 
 
-    always @(state or trigger or count)
+    always @(*)
     begin
        case (state)
           0 :
@@ -1442,6 +1442,10 @@ endmodule
 
                       end 
                    end
+           //Before adding default this could infer latches, so
+           //defaulting to holding previous state preserves deisgn intent
+           default: next_state = state;
+         
        endcase 
     end 
  endmodule
