@@ -529,120 +529,20 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
     VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu .\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
 }
 
-void FlatRecon::neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
-                                      const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                      std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-                                      int search_radius) {
-    std::string timer_label = "Neighbor Pass Clustering with search radius " + std::to_string(search_radius);
-    vtr::ScopedStartFinishTimer neighbor_pass_clustering(timer_label);
-    // For each unclustered molecule
-    while (!unclustered_blocks.empty()) {
-        // Pick the first seed molecule and erase it from unclustered data
-        auto seed_it = unclustered_blocks.begin();
-        PackMoleculeId seed_mol = seed_it->first;
-        t_physical_tile_loc seed_loc = seed_it->second;
-        unclustered_blocks.erase(seed_it);
-
-        // Get molecues in our search radius.
-        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> neighbor_molecules;
-        for (const auto& [mol_id, loc] : unclustered_blocks) {
-            int distance = std::abs(seed_loc.x - loc.x) + std::abs(seed_loc.y - loc.y) + std::abs(seed_loc.layer_num - loc.layer_num);
-            if (distance <= search_radius) {
-                neighbor_molecules.emplace_back(mol_id, loc);
-            }
-        }
-
-        // Sort by Manhattan distance to seed.
-        std::sort(neighbor_molecules.begin(), neighbor_molecules.end(),
-                  [&](const auto& a, const auto& b) {
-                      int da = std::abs(seed_loc.x - a.second.x) + std::abs(seed_loc.y - a.second.y) + std::abs(seed_loc.layer_num - a.second.layer_num);
-                      int db = std::abs(seed_loc.x - b.second.x) + std::abs(seed_loc.y - b.second.y) + std::abs(seed_loc.layer_num - b.second.layer_num);
-                      return da < db;
-                  });
-
-        // Try to cluster them
-        LegalizationClusterId cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-        neighbor_pass_clusters.push_back(cluster_id);
-        for (const auto& [neighbor_mol, neighbor_loc] : neighbor_molecules) {
-            if (!cluster_legalizer.is_molecule_compatible(neighbor_mol, cluster_id))
-                continue;
-            if (cluster_legalizer.add_mol_to_cluster(neighbor_mol, cluster_id) == e_block_pack_status::BLK_PASSED) {
-                // If added, remove from unclustered data
-                unclustered_blocks.erase(std::remove(unclustered_blocks.begin(), unclustered_blocks.end(), std::pair(neighbor_mol, neighbor_loc)), unclustered_blocks.end());
-            }
-        }
-    }
-}
-
-ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
-                                            const PartialPlacement& p_placement) {
-    vtr::ScopedStartFinishTimer creating_clusters("Creating Clusters");
-
-    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
-    VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid.width(), device_grid.height());
-
-    // Sort the blocks according to their used external pin numbers while
-    // prioritizing the long carry chain molecules respectively. Then,
-    // group the sorted blocks by each tile.
-    auto tile_blocks = sort_and_group_blocks_by_tile(p_placement);
-
-    vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
-        primitive_candidate_block_types = identify_primitive_candidate_block_types();
-
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
-
-    reconstruction_cluster_pass(cluster_legalizer,
-                                device_grid,
-                                primitive_candidate_block_types,
-                                tile_blocks,
-                                unclustered_blocks);
-
-    // Reconstruction pass clustering statistics collection
-    std::unordered_map<std::string, size_t> cluster_type_count_first_pass;
-    std::vector<LegalizationClusterId> first_pass_clusters;
-    size_t total_atoms_in_first_pass_clusters = 0;
-    size_t total_molecules_in_first_pass_clusters = 0;
-    size_t total_clusters_in_first_pass = 0;
-    for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
-        if (!cluster_id.is_valid()) {
-            continue;
-        }
-        total_clusters_in_first_pass++;
-        first_pass_clusters.push_back(cluster_id);
-        bool block_type_set = false;
-        for (PackMoleculeId mol_id : cluster_legalizer.get_cluster_molecules(cluster_id)) {
-            // We still need to iterate over the atom ids due to invalid ones.
-            total_molecules_in_first_pass_clusters++;
-            for (AtomBlockId atom_id : prepacker_.get_molecule(mol_id).atom_block_ids) {
-                if (atom_id.is_valid()) {
-                    total_atoms_in_first_pass_clusters++;
-                }
-            }
-            // Set block type only once per cluster
-            if (!block_type_set) {
-                t_logical_block_type_ptr block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
-                if (block_type) {
-                    std::string block_name = block_type->name;
-                    cluster_type_count_first_pass[block_name]++;
-                    block_type_set = true;
-                }
-            }
-        }
-    }
-    float avg_atom_number_in_first_pass =
-        static_cast<float>(total_atoms_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
-    float avg_mol_number_in_first_pass =
-        static_cast<float>(total_molecules_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
-
+void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
+                                    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                                    std::vector<LegalizationClusterId>& first_pass_clusters,
+                                    size_t& total_molecules_in_join_with_neighbor) {
+    vtr::ScopedStartFinishTimer neigh_pass_clustering("Neighbor Pass Clustering");
 
     // The molecules that could not go back in their original clusters.
-    // (Hope there will be none of them)
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> broken_molecules;
 
     // MAKING THE STRATEGY SPECULATIVE AT START
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
 
-    size_t total_molecules_in_join_with_neighbor = 0;
+    //size_t total_molecules_in_join_with_neighbor = 0;
     VTR_LOG("Join with Neighbor Pass...\n");
     
     // For each unplaced block, get its neighboring clusters created.
@@ -806,6 +706,120 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
 
     // use the broken blocks as unclustered blocks
     unclustered_blocks = broken_molecules;
+}
+
+void FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
+                                         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                         std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                                         int search_radius) {
+    std::string timer_label = "Orphan Window Clustering with search radius " + std::to_string(search_radius);
+    vtr::ScopedStartFinishTimer orphan_window_clustering(timer_label);
+    // For each unclustered molecule
+    while (!unclustered_blocks.empty()) {
+        // Pick the first seed molecule and erase it from unclustered data
+        auto seed_it = unclustered_blocks.begin();
+        PackMoleculeId seed_mol = seed_it->first;
+        t_physical_tile_loc seed_loc = seed_it->second;
+        unclustered_blocks.erase(seed_it);
+
+        // Get molecues in our search radius.
+        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> neighbor_molecules;
+        for (const auto& [mol_id, loc] : unclustered_blocks) {
+            int distance = std::abs(seed_loc.x - loc.x) + std::abs(seed_loc.y - loc.y) + std::abs(seed_loc.layer_num - loc.layer_num);
+            if (distance <= search_radius) {
+                neighbor_molecules.emplace_back(mol_id, loc);
+            }
+        }
+
+        // Sort by Manhattan distance to seed.
+        std::sort(neighbor_molecules.begin(), neighbor_molecules.end(),
+                  [&](const auto& a, const auto& b) {
+                      int da = std::abs(seed_loc.x - a.second.x) + std::abs(seed_loc.y - a.second.y) + std::abs(seed_loc.layer_num - a.second.layer_num);
+                      int db = std::abs(seed_loc.x - b.second.x) + std::abs(seed_loc.y - b.second.y) + std::abs(seed_loc.layer_num - b.second.layer_num);
+                      return da < db;
+                  });
+
+        // Try to cluster them
+        LegalizationClusterId cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types);
+        neighbor_pass_clusters.push_back(cluster_id);
+        for (const auto& [neighbor_mol, neighbor_loc] : neighbor_molecules) {
+            if (!cluster_legalizer.is_molecule_compatible(neighbor_mol, cluster_id))
+                continue;
+            if (cluster_legalizer.add_mol_to_cluster(neighbor_mol, cluster_id) == e_block_pack_status::BLK_PASSED) {
+                // If added, remove from unclustered data
+                unclustered_blocks.erase(std::remove(unclustered_blocks.begin(), unclustered_blocks.end(), std::pair(neighbor_mol, neighbor_loc)), unclustered_blocks.end());
+            }
+        }
+    }
+}
+
+ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
+                                            const PartialPlacement& p_placement) {
+    vtr::ScopedStartFinishTimer creating_clusters("Creating Clusters");
+
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid.width(), device_grid.height());
+
+    // Sort the blocks according to their used external pin numbers while
+    // prioritizing the long carry chain molecules respectively. Then,
+    // group the sorted blocks by each tile.
+    auto tile_blocks = sort_and_group_blocks_by_tile(p_placement);
+
+    vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
+        primitive_candidate_block_types = identify_primitive_candidate_block_types();
+
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
+
+    reconstruction_cluster_pass(cluster_legalizer,
+                                device_grid,
+                                primitive_candidate_block_types,
+                                tile_blocks,
+                                unclustered_blocks);
+
+    // Reconstruction pass clustering statistics collection
+    std::unordered_map<std::string, size_t> cluster_type_count_first_pass;
+    std::vector<LegalizationClusterId> first_pass_clusters;
+    size_t total_atoms_in_first_pass_clusters = 0;
+    size_t total_molecules_in_first_pass_clusters = 0;
+    size_t total_clusters_in_first_pass = 0;
+    for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
+        if (!cluster_id.is_valid()) {
+            continue;
+        }
+        total_clusters_in_first_pass++;
+        first_pass_clusters.push_back(cluster_id);
+        bool block_type_set = false;
+        for (PackMoleculeId mol_id : cluster_legalizer.get_cluster_molecules(cluster_id)) {
+            // We still need to iterate over the atom ids due to invalid ones.
+            total_molecules_in_first_pass_clusters++;
+            for (AtomBlockId atom_id : prepacker_.get_molecule(mol_id).atom_block_ids) {
+                if (atom_id.is_valid()) {
+                    total_atoms_in_first_pass_clusters++;
+                }
+            }
+            // Set block type only once per cluster
+            if (!block_type_set) {
+                t_logical_block_type_ptr block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
+                if (block_type) {
+                    std::string block_name = block_type->name;
+                    cluster_type_count_first_pass[block_name]++;
+                    block_type_set = true;
+                }
+            }
+        }
+    }
+    float avg_atom_number_in_first_pass =
+        static_cast<float>(total_atoms_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
+    float avg_mol_number_in_first_pass =
+        static_cast<float>(total_molecules_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
+
+    // Perform the neighbor clustering
+    size_t total_molecules_in_join_with_neighbor = 0;
+    neighbor_clustering(cluster_legalizer,
+                        primitive_candidate_block_types,
+                        unclustered_blocks,
+                        first_pass_clusters,
+                        total_molecules_in_join_with_neighbor);
 
     VTR_LOG("Unclusterd Blocks Before Starting Neighbor Pass: %zu\n", unclustered_blocks.size());
 
@@ -819,7 +833,7 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     // Try all radiuses untill clusters fit into device
     for (int neighbor_search_radius: neighbor_search_radius_vector) {
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-        neighbor_cluster_pass(cluster_legalizer,
+        orphan_window_clustering(cluster_legalizer,
                               primitive_candidate_block_types,
                               unclustered_blocks,
                               neighbor_search_radius);

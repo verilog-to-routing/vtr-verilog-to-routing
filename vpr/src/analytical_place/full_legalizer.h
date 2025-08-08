@@ -193,8 +193,20 @@ class FlatRecon : public FullLegalizer {
                                      const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                                      std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
                                      std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks);
+
     /**
-     * @brief Helper method to perform neighbor clustering pass.
+     * @brief Helper method to perform neighbor clustering.
+     *
+     * TODO: Add detailed description.
+     *
+     */
+    void neighbor_clustering(ClusterLegalizer& cluster_legalizer,
+                             const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                             std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                             std::vector<LegalizationClusterId>& first_pass_clusters,
+                             size_t& total_molecules_in_join_with_neighbor);
+    /**
+     * @brief Helper method to perform orphan window clustering.
      *
      * Pops and selects the first molecule as seed for the cluster. Selects seed
      * molecule's neighboring molecules that are at most N tiles away (in Manhattan
@@ -202,10 +214,10 @@ class FlatRecon : public FullLegalizer {
      * molecules to the cluster created by seed molecule. Continues until no
      * unclustered molecules left.
      */
-    void neighbor_cluster_pass(ClusterLegalizer& cluster_legalizer,
-                               const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                               std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-                               int search_radius);
+    void orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
+                                  const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                  std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                                  int search_radius);
 
     /**
      * @brief Helper method to create clusters with reconstruction and neighbor pass.
