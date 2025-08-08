@@ -455,7 +455,7 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
        end 
     end 
 
-    always @(state or CfgData_Ready)
+    always @(*)
     begin
        case (state)
           0 :
@@ -710,11 +710,7 @@ waddress <= temp_waddress;
        end 
     end 
 
-    always @(state or addr_ready or data_ready or waddress or datain or wantDir or 
-             want_read or wantwriteback or writebackdata or writebackaddr or 
-             fcount or fbpage or faddress or fbnextscanline or triID or wantshadedata or 
-             wanttexel or texeladdr)
-
+    always @(*)
     begin
        case (state)
 
@@ -1098,7 +1094,7 @@ rgAddr <= temp_rgAddr;
        end 
     end 
 
-    always @(state or ack or as or rgDone)
+    always @(*)
     begin
 
        case (state)
@@ -1378,7 +1374,7 @@ rgAddr <= temp_rgAddr;
     assign nas0 = temp_nas0;
     assign nas1 = temp_nas1;
 
-    always @(state or go or ack or busy or dirReady or addr or count or loaded)
+    always @(*)
     begin
        case (state)
           0 :
@@ -1781,7 +1777,7 @@ hit10c <= temp_hit10c;
     end 
 
 
-    always @(state or rgResultReady or rgResultSource)
+    always @(*)
     begin
        case (state)
           0 :
@@ -2119,9 +2115,7 @@ shadedatac <= temp_shadedatac;
     end 
     assign addrout = (process01 == 1'b1) ? addrout01 : addrout10 ;
 
-    always @(state or process01 or pending10 or ack or shadedataready or id01a or 
-             id01b or id01c or id10a or id10b or id10c or selectuv or hita or 
-             hitb or hitc or shadedata or pending01 or texmap or texelready)
+    always @(*)
     begin
        case (state)
           0 :
@@ -2664,7 +2658,7 @@ shadedatac <= temp_shadedatac;
 
     reg[15:0] col16; 
 
-    always @(dataline or texelselect)
+    always @(*)
     begin
        case (texelselect)
           2'b00 :
@@ -2815,8 +2809,7 @@ shadedatac <= temp_shadedatac;
         reg[6:0] bvl; 
         reg[6:0] bwl; 
 
-        always @(selectuv or u01a or u01b or u01c or v01a or v01b or v01c or u10a or 
-                 u10b or u10c or v10a or v10b or v10c)
+        always @(*)
         begin
            case (selectuv)
               3'b000 :
