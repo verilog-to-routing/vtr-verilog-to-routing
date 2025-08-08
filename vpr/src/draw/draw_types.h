@@ -121,6 +121,16 @@ enum e_draw_noc {
     DRAW_NOC_LINK_USAGE
 };
 
+/// Different types of edges in the routing resource graph
+enum class e_edge_type {
+    PIN_TO_OPIN,
+    PIN_TO_IPIN,
+    OPIN_TO_CHAN,
+    CHAN_TO_IPIN,
+    CHAN_TO_CHAN,
+    NUM_EDGE_TYPES
+};
+
 /**
  * @brief Structure used to hold data passed into the toggle checkbox callback function.
  */
@@ -213,6 +223,7 @@ struct t_draw_state {
     bool draw_connection_box_edges = false;
     bool draw_intra_cluster_nodes = false;
     bool draw_intra_cluster_edges = false;
+    bool highlight_rr_edges = false;
 
     ///@brief Whether routing util is shown
     bool clip_routing_util = false;

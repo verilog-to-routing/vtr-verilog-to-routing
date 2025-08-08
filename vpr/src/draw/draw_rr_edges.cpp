@@ -272,12 +272,7 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_c
 }
 
 void draw_intra_cluster_edge(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {
-    t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
-
-    if(!draw_state->draw_intra_cluster_nets){
-        return;
-    }
 
     auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
     auto [prev_blk_id, prev_pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(prev_node);
@@ -293,14 +288,9 @@ void draw_intra_cluster_edge(RRNodeId inode, RRNodeId prev_node, ezgl::renderer*
 }
 
 void draw_intra_cluster_pin_to_pin(RRNodeId intra_cluster_node, RRNodeId inter_cluster_node, e_pin_edge_dir pin_edge_dir, ezgl::renderer* g) {
-    t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-
-    if(!draw_state->draw_intra_cluster_nets){
-        return;
-    }
 
     for (const e_side pin_side : TOTAL_2D_SIDES) {
         // Draw connections to each side of the inter-cluster node

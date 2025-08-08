@@ -79,10 +79,12 @@ void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
 
     // Enable/disable the rr drawing sub-options based on the switch state
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRChannels")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterPinNodes")), switch_state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRSBox")), switch_state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRCBox")), switch_state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterNodes")), switch_state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterEdges")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleHighlightRR")), switch_state);
 
     app->refresh_drawing();
 }
