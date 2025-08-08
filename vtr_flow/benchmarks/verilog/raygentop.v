@@ -252,7 +252,7 @@ module delay1x3 (datain, dataout, clk);
        case (state)
           0 :
                    begin
-       				  output_xhdl0 = 1'b0 ; 
+       		      output_xhdl0 = 1'b0 ; 
                       if (trigger == 1'b1)
                       begin
                          next_state = 1 ; 
@@ -280,7 +280,7 @@ module delay1x3 (datain, dataout, clk);
                    end
           2 :
                    begin
-       				  output_xhdl0 = 1'b0 ; 
+       		      output_xhdl0 = 1'b0 ; 
                       if (trigger == 1'b0)
                       begin
                          next_state = 0 ; 
@@ -289,8 +289,23 @@ module delay1x3 (datain, dataout, clk);
                       begin
                          next_state = 2 ; 
 
-                      end 
+                      end
+                      temp_count = count;
                    end
+         // Create a default case to avoid inferring latches.
+         // Preserve original behavior by holding state, even if
+         // this is suboptimal for real designs
+         default: begin
+            //Note that output_xhdl is combinational and drives
+            //a top level signal called go.  To eliminate inferred
+            //latch for it, default it to zero here to hypothetically
+            //make sure that go is not asserted when the FSM goes
+            //awry
+            output_xhdl0 = 1'b0;
+            
+            next_state = state;
+            temp_count = count;
+         end
        endcase 
     end 
  endmodule
