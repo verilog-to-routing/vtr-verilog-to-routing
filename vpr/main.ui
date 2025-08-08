@@ -663,8 +663,8 @@
           </packing>
         </child>
         <child>
-          <object class="GtkCheckButton" id="ToggleIONodes">
-            <property name="label" translatable="yes">Inter-cluster I/O Nodes</property>
+          <object class="GtkCheckButton" id="ToggleInterClusterPinNodes">
+            <property name="label" translatable="yes">Inter-cluster Pin Nodes</property>
             <property name="visible">True</property>
             <property name="sensitive">False</property>
             <property name="can-focus">True</property>

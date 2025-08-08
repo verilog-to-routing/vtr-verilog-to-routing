@@ -175,6 +175,9 @@ struct t_draw_state {
     ///@brief Whether to draw flylines or routed nets
     e_draw_nets draw_nets = DRAW_FLYLINES;
 
+    ///@brief Whether to show inter-cluster nets
+    bool draw_inter_cluster_nets = false;
+
     /// @brief Whether to show intra-cluster nets
     bool draw_intra_cluster_nets = false;
 
@@ -204,9 +207,10 @@ struct t_draw_state {
     ///@brief Controls drawing of routing resources on screen.
     bool show_rr = false;
 
-    bool draw_channels = false;
-    bool draw_switch_boxes = false;
-    bool draw_connection_boxes = false;
+    bool draw_channel_nodes = false;
+    bool draw_inter_cluster_pins = false;
+    bool draw_switch_box_edges = false;
+    bool draw_connection_box_edges = false;
     bool draw_intra_cluster_nodes = false;
     bool draw_intra_cluster_edges = false;
 
