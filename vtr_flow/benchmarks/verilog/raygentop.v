@@ -1183,7 +1183,7 @@ rgAddr <= temp_rgAddr;
                          else begin
                             temp_rgData = rgData;
                             temp_rgWE = rgWE;
-                            temp_rgAddrValid = temp_rgAddrValid;
+                            temp_rgAddrValid = rgAddrValid;
                             temp_rgAddr = addr ; 
                          end
                          if (as == 1'b0 & ack == 1'b1)
@@ -1222,7 +1222,7 @@ rgAddr <= temp_rgAddr;
                       //need to hold previous value explicitly to prevent
                       //latch inference
                          else begin
-                            temp_rgAddrValid = temp_rgAddrValid;
+                            temp_rgAddrValid = rgAddrValid;
                          end
                       temp_ack = ack;
                    end
@@ -1249,7 +1249,7 @@ rgAddr <= temp_rgAddr;
                             temp_rgAddrValid = 1'b0 ; 
                          end 
                          else begin
-                            temp_rgAddrValid = temp_rgAddrValid;
+                            temp_rgAddrValid = rgAddrValid;
                          end
 
                       temp_ack = ack;
@@ -1277,7 +1277,7 @@ rgAddr <= temp_rgAddr;
                             temp_rgAddrValid = 1'b0 ; 
                          end 
                          else begin
-                            temp_rgAddrValid = temp_rgAddrValid;
+                            temp_rgAddrValid = rgAddrValid;
                          end
 
                       temp_ack = ack;
@@ -1305,7 +1305,7 @@ rgAddr <= temp_rgAddr;
                             temp_rgAddrValid = 1'b0 ; 
                          end 
                          else begin
-                            temp_rgAddrValid = temp_rgAddrValid;
+                            temp_rgAddrValid = rgAddrValid;
                          end
                       temp_ack = ack;
                    end
@@ -1334,7 +1334,7 @@ rgAddr <= temp_rgAddr;
                             temp_rgAddrValid = 1'b0 ; 
                          end 
                          else begin
-                            temp_rgAddrValid = temp_rgAddrValid;
+                            temp_rgAddrValid = rgAddrValid;
                          end
 
                    end
