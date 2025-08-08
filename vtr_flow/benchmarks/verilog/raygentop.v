@@ -247,7 +247,7 @@ module delay1x3 (datain, dataout, clk);
        end 
     end 
 
-    always @(state or trigger or count)
+    always @(*)
     begin
        case (state)
           0 :

@@ -2202,7 +2202,7 @@ output [31:0] d_writedataout;
 reg [3:0] d_byteena;
 reg [31:0] d_writedataout;
 
-always @(write_data or d_address or store_size)
+always @(*)
 begin
 	case (store_size)
 		2'b11:
@@ -2276,7 +2276,7 @@ assign d_address [1:0] =d_readdatain [25:24];
 
 
 //assume always full-word-access
-always @(d_readdatain or d_address )
+always @(*)
 begin
 	d_loadresult[31:0]=d_readdatain[31:0];
 end
@@ -2404,7 +2404,7 @@ output [31:0] result;
 
 reg [31:0] logic_result;
 
-always@(opA or opB or op )
+always@(*)
 	case(op)
 		2'b00:
 			logic_result=opA&opB;
@@ -2876,7 +2876,7 @@ output stalled;
   reg T,Tnext;
 
   // State machine for Stalling 1 cycle
-  always@(request or T)
+  always@(*)
   begin
 	case(T) 
 	  1'b0: Tnext=request;
