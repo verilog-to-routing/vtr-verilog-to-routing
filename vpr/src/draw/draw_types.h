@@ -126,8 +126,8 @@ enum e_draw_noc {
  */
 typedef struct {
     ezgl::application* app;
-    bool& toggle_state;
-} t_toggle_checkbox_data;
+    bool* toggle_state;
+} t_checkbox_data;
 
 /* Structure which stores state information of a rr_node. Used
  * for controling the drawing each rr_node when ROUTING is on screen.
@@ -318,6 +318,9 @@ struct t_draw_state {
     void reset_block_colors();
 
     std::vector<std::pair<t_pl_loc, ezgl::color>> colored_locations;
+
+    /// @brief Stores UI checkbox struct for passing into the callback functions
+    std::list<t_checkbox_data> checkbox_data;
 
     /**
      * @brief Set the reference to placement location variable.

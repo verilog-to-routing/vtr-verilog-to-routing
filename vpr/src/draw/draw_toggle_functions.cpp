@@ -18,16 +18,15 @@
 #include <X11/keysym.h>
 #endif
 
-void toggle_checkbox_cbk(GtkToggleButton* self, gpointer data) {
-    t_toggle_checkbox_data *toggle_data = static_cast<t_toggle_checkbox_data*>(data);
+void toggle_checkbox_cbk(GtkToggleButton* self, t_checkbox_data* data) {
 
     if (gtk_toggle_button_get_active(self)) {
-        toggle_data->toggle_state = true;
+        *data->toggle_state = true;
     } else {
-        toggle_data->toggle_state = false;
+        *data->toggle_state = false;
     }
     
-    toggle_data->app->refresh_drawing();
+    data->app->refresh_drawing();
 } 
 
 void toggle_show_nets_cbk(GtkSwitch* , gboolean state, ezgl::application* app) {
@@ -64,18 +63,6 @@ void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-void toggle_intra_cluster_nets_cbk(GtkToggleButton* self, ezgl::application* app) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    
-    if (gtk_toggle_button_get_active(self)) {
-        draw_state->draw_intra_cluster_nets = true;
-    } else {
-        draw_state->draw_intra_cluster_nets = false;
-    }
-    
-    app->refresh_drawing();
-}
-
 /**
  * @brief cbk function for toggle rr combo-box. sets rr draw state based on selected option
  * updates draw_state->draw_rr_toggle
@@ -88,7 +75,7 @@ void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
 
     bool switch_state = state ? true : false;
 
-    draw_state->show_nets = switch_state;
+    draw_state->show_rr = switch_state;
 
     // Enable/disable the rr drawing sub-options based on the switch state
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRChannels")), switch_state);

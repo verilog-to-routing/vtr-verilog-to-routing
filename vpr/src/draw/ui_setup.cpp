@@ -63,7 +63,8 @@ void net_button_setup(ezgl::application* app) {
     // gtk_widget_set_sensitive(GTK_WIDGET(toggle_nets), FALSE);
 
     GtkToggleButton* intra_cluster_nets = GTK_TOGGLE_BUTTON(app->get_object("ToggleIntraClusterNets"));
-    g_signal_connect(intra_cluster_nets, "toggled", G_CALLBACK(toggle_intra_cluster_nets_cbk), app);
+    draw_state->checkbox_data.emplace_back(app, &draw_state->draw_intra_cluster_nets);
+    g_signal_connect(intra_cluster_nets, "toggled", G_CALLBACK(toggle_checkbox_cbk), &draw_state->checkbox_data.back());
 
     // currently intra-cluster nets are only supported if flat routing is enabled
     if(!draw_state->is_flat){
@@ -129,8 +130,14 @@ void routing_button_setup(ezgl::application* app) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     //Toggle RR
-    // GtkComboBoxText* toggle_rr_box = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRR"));
-    // g_signal_connect(toggle_rr_box, "changed", G_CALLBACK(toggle_rr_cbk), app);
+    GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleRR"));
+    g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_rr_cbk), app);
+
+    // RR Checkboxes
+    // GtkToggleButton* channel_nodes = GTK_TOGGLE_BUTTON(app->get_object("ToggleIntraClusterNets"));
+    // draw_state->checkbox_data.emplace_back(app, &draw_state->draw_intra_cluster_nets);
+    // g_signal_connect(intra_cluster_nets, "toggled", G_CALLBACK(toggle_checkbox_cbk), &draw_state->checkbox_data.back());
+
 
     //Toggle Congestion
     GtkComboBoxText* toggle_congestion = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCongestion"));
