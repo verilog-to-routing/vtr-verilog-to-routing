@@ -398,20 +398,6 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
     reg next_state; 
     wire we; 
 
-    reg[27:0] temp_origx;
-    reg[27:0] temp_origy;
-    reg[27:0] temp_origz;
-    reg[15:0] temp_m11;
-    reg[15:0] temp_m12;
-    reg[15:0] temp_m13;
-    reg[15:0] temp_m21;
-    reg[15:0] temp_m22;
-    reg[15:0] temp_m23;
-    reg[15:0] temp_m31;
-    reg[15:0] temp_m32;
-    reg[15:0] temp_m33;
-    reg[20:0] temp_bkcolour;
-
     // <<X-HDL>> Can't find translated component 'spram'. Module name may not match
     spram21x4 spraminst(we, texinfo, CfgData[20:0], clk); 
     assign we = ((CfgData_Ready == 1'b1) & (CfgAddr == 4'b1110)) ? 1'b1 : 1'b0 ;
@@ -438,20 +424,22 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
        end
        else
        begin
-          state <= next_state ; 
-          origx <= temp_origx;
-          origy <= temp_origy;
-          origz <= temp_origz;
-          m11 <= temp_m11;
-          m12 <= temp_m12;
-          m13 <= temp_m13;
-          m21 <= temp_m21;
-          m22 <= temp_m22;
-          m23 <= temp_m23;
-          m31 <= temp_m31;
-          m32 <= temp_m32;
-         m33 <= temp_m33;
-          bkcolour <= bkcolour;
+          state <= next_state ;
+          if (CfgData_Ready) begin
+             if (CfgAddr == 4'b0001) origx <= CfgData;
+             if (CfgAddr == 4'b0010) origy <= CfgData;
+             if (CfgAddr == 4'b0011) origz <= CfgData;
+             if (CfgAddr == 4'b0100) m11 <= CfgData[15:0];
+             if (CfgAddr == 4'b0101) m12 <= CfgData[15:0];
+             if (CfgAddr == 4'b0110) m13 <= CfgData[15:0];
+             if (CfgAddr == 4'b0111) m21 <= CfgData[15:0];
+             if (CfgAddr == 4'b1000) m22 <= CfgData[15:0];
+             if (CfgAddr == 4'b1001) m23 <= CfgData[15:0];
+             if (CfgAddr == 4'b1010) m31 <= CfgData[15:0];
+             if (CfgAddr == 4'b1011) m32 <= CfgData[15:0];
+             if (CfgAddr == 4'b1100) m33 <= CfgData[15:0];
+             if (CfgAddr == 4'b1101) bkcolour <= CfgData[20:0];
+          end
        end 
     end 
 
@@ -470,59 +458,6 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
                       begin
                          next_state = 0 ; 
                       end 
-
-              if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0001))
-                        begin
-											temp_origx = CfgData ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0010))
-                        begin
-                                           temp_origy = CfgData ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0011))
-                        begin
-                                           temp_origz = CfgData ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0100))
-                        begin
-                                           temp_m11 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0101))
-                        begin
-                                           temp_m12 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0110))
-                        begin
-                                           temp_m13 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0111))
-                        begin
-                                           temp_m21 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1000))
-                        begin
-                                           temp_m22 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1001))
-                        begin
-                                           temp_m23 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1010))
-                        begin
-                                           temp_m31 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1011))
-                        begin
-                                           temp_m32 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1100))
-                        begin
-                                           temp_m33 = CfgData[15:0] ; 
-						end
-                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1101))
-                        begin
-                                           temp_bkcolour = CfgData[20:0] ; 
-						end
                    end
           1 :
                    begin
