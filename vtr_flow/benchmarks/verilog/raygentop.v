@@ -635,327 +635,448 @@ module rgsramcontroller (want_addr, addr_ready, addrin, want_data, data_ready, d
           fbdata <= tm3_sram_data_in ; 
           fbdatavalid <= fbdatavalidl ; 
 
-fbdatavalidl <= temp_fbdatavalidl;
-texelready <= temp_texelready;
-shadedataready <= temp_shadedataready;
-fcount <= temp_fcount;
-faddress <= temp_faddress;
-waddress <= temp_waddress;
+          fbdatavalidl <= temp_fbdatavalidl;
+          texelready <= temp_texelready;
+          shadedataready <= temp_shadedataready;
+          fcount <= temp_fcount;
+          faddress <= temp_faddress;
+          waddress <= temp_waddress;
 
        end 
     end 
 
-    always @(*)
-    begin
-       case (state)
 
+   always @(*)
+     begin
+        case (state)
           0 :
-                   begin
-				       tm3_sram_we = 8'b11111111 ; 
-				       tm3_sram_oe = 2'b01 ; 
-				       tm3_sram_adsp = 1'b0 ; 
-				       tm3_sram_data_xhdl0 = 0;
-				       tm3_sram_addr = {1'b0, waddress} ; 
-				       want_addr = 1'b1 ; 
-				       want_data = 1'b1 ; 
-				       read_ready = 1'b1 ; 
-				       dirReady = 1'b0 ; 
-				       writebackack = 1'b0 ; 
-                      if (addr_ready == 1'b1)
-                      begin
-                         next_state = 1 ; 
-                      end
-                      else if (want_read == 1'b1)
-                      begin
-                         next_state = 2 ; 
-                      end
-                      else if (data_ready == 1'b1)
-                      begin
+            begin
+	       tm3_sram_we = 8'b11111111 ; 
+	       tm3_sram_oe = 2'b01 ; 
+	       tm3_sram_adsp = 1'b0 ; 
+	       tm3_sram_data_xhdl0 = 0;
+	       tm3_sram_addr = {1'b0, waddress} ; 
+	       want_addr = 1'b1 ; 
+	       want_data = 1'b1 ; 
+	       read_ready = 1'b1 ; 
+	       dirReady = 1'b0 ; 
+	       writebackack = 1'b0 ; 
 
-                         next_state = 3 ; 
-                      end
-                      else if (wantDir == 1'b1)
-                      begin
-                         next_state = 5 ; 
-                      end
-                      else if (wantwriteback == 1'b1)
-                      begin
-                         next_state = 6 ; 
-                      end
-                      else if (wantshadedata == 1'b1)
-                      begin
+	       temp_fbdatavalidl = 1'b0 ; 
+	       temp_shadedataready = 1'b0 ; 
+	       temp_texelready = 1'b0 ; 
+               if (addr_ready == 1'b1)
 
-                         next_state = 9 ; 
-                      end
-                      else if (wanttexel == 1'b1)
-                      begin
-                         next_state = 10 ; 
-                      end
-                      else if (fcount != 0)
-                      begin
-                         next_state = 7 ; 
-                      end
-                      else if (fbnextscanline == 1'b1)
-                      begin
-
-                         next_state = 8 ; 
-                      end
-                      else
-                      begin
-                         next_state = 0 ; 
-                      end 
-				          temp_fbdatavalidl = 1'b0 ; 
-				          temp_shadedataready = 1'b0 ; 
-				          temp_texelready = 1'b0 ; 
-                         if (addr_ready == 1'b1)
-
-                         begin
-                            temp_waddress = addrin ; 
-                         end 
-
-                   end
+                 begin
+                    temp_waddress = addrin ; 
+                 end 
+               else begin
+                  temp_waddress = waddress;
+               end
+               temp_faddress = faddress;
+               temp_fcount = fcount;
+               
+            end
           1 :
-                   begin
-				       tm3_sram_we = 8'b11111111 ; 
-				       tm3_sram_oe = 2'b01 ; 
-				       tm3_sram_adsp = 1'b0 ; 
-				       tm3_sram_data_xhdl0 = 0;
-				       tm3_sram_addr = {1'b0, waddress} ; 
-				       want_data = 1'b1 ; 
-				       read_ready = 1'b1 ; 
-				       dirReady = 1'b0 ; 
-				       writebackack = 1'b0 ; 
-                      want_addr = 1'b0 ; 
-                      if (addr_ready == 1'b0)
-                      begin
-                         next_state = 0 ; 
+            begin
+	       tm3_sram_we = 8'b11111111 ; 
+	       tm3_sram_oe = 2'b01 ; 
+	       tm3_sram_adsp = 1'b0 ; 
+	       tm3_sram_data_xhdl0 = 0;
+	       tm3_sram_addr = {1'b0, waddress} ; 
+               want_addr = 1'b0 ; 
+	       want_data = 1'b1 ; 
+	       read_ready = 1'b1 ; 
+	       dirReady = 1'b0 ; 
+	       writebackack = 1'b0 ; 
 
-                      end
-                      else
-                      begin
-                         next_state = 1 ; 
-                      end 
-                   end
+               temp_fbdatavalidl = fbdatavalidl;
+               temp_shadedataready = shadedataready;
+               temp_texelready = texelready;
+               temp_waddress = waddress;
+               temp_faddress = faddress;
+               temp_fcount = fcount;
+               
+            end
           2 :
-                   begin
-				       tm3_sram_we = 8'b11111111 ; 
-				       tm3_sram_oe = 2'b01 ; 
-				       tm3_sram_adsp = 1'b0 ; 
-				       tm3_sram_data_xhdl0 = 0;
-				       tm3_sram_addr = {1'b0, waddress} ; 
-				       want_addr = 1'b1 ; 
-				       want_data = 1'b1 ; 
-				       dirReady = 1'b0 ; 
-				       writebackack = 1'b0 ; 
+            begin
+	       tm3_sram_we = 8'b11111111 ; 
+	       tm3_sram_oe = 2'b01 ; 
+	       tm3_sram_adsp = 1'b0 ; 
+	       tm3_sram_data_xhdl0 = 0;
+	       tm3_sram_addr = {1'b0, waddress} ; 
+	       want_addr = 1'b1 ; 
+	       want_data = 1'b1 ; 
+               read_ready = 1'b0 ; 
+	       dirReady = 1'b0 ; 
+	       writebackack = 1'b0 ; 
 
-                      read_ready = 1'b0 ; 
-                      if (want_read == 1'b0)
-                      begin
-                         next_state = 0 ; 
-                      end
-                      else
-                      begin
-                         next_state = 2 ; 
-                      end 
+	       temp_fbdatavalidl = 1'b0 ; 
+	       temp_shadedataready = 1'b0 ; 
+	       temp_texelready = 1'b0 ; 
+               if (want_read == 1'b0)
+                 begin
 
-				          temp_fbdatavalidl = 1'b0 ; 
-				          temp_shadedataready = 1'b0 ; 
-				          temp_texelready = 1'b0 ; 
-                         if (want_read == 1'b0)
-                         begin
-
-                            temp_waddress = waddress + 1 ; 
-                         end 
-
-                   end
+                    temp_waddress = waddress + 1 ; 
+                 end 
+               else begin
+                  temp_waddress = waddress;
+               end
+               temp_faddress = faddress;
+               temp_fcount = fcount;
+            end
           3 :
-                   begin
-				       tm3_sram_addr = {1'b0, waddress} ; 
-				       want_addr = 1'b1 ; 
-				       read_ready = 1'b1 ; 
-				       dirReady = 1'b0 ; 
-				       writebackack = 1'b0 ; 
-                      tm3_sram_data_xhdl0 = datain ; 
-                      tm3_sram_we = 8'b00000000 ; 
+            begin
+               tm3_sram_we = 8'b00000000 ; 
+               tm3_sram_oe = 2'b11 ; 
+               tm3_sram_adsp = 1'b0 ; 
+               tm3_sram_data_xhdl0 = datain ; 
+	       tm3_sram_addr = {1'b0, waddress} ; 
+	       want_addr = 1'b1 ; 
+               want_data = 1'b0 ; 
+	       read_ready = 1'b1 ; 
+	       dirReady = 1'b0 ; 
+	       writebackack = 1'b0 ; 
+ 
+	       temp_fbdatavalidl = 1'b0 ; 
+	       temp_shadedataready = 1'b0 ; 
+	       temp_texelready = 1'b0 ; 
+               temp_waddress = waddress + 1 ; 
+               temp_faddress = faddress;
+               temp_fcount = fcount;
 
-
-                   tm3_sram_oe = 2'b11 ; 
-                      tm3_sram_adsp = 1'b0 ; 
-                      want_data = 1'b0 ; 
-                      next_state = 4 ; 
-
-				          temp_fbdatavalidl = 1'b0 ; 
-				          temp_shadedataready = 1'b0 ; 
-				          temp_texelready = 1'b0 ; 
-                         temp_waddress = waddress + 1 ; 
-
-                   end
+            end
           4 :
-                   begin
-				       tm3_sram_we = 8'b11111111 ; 
-				       tm3_sram_oe = 2'b01 ; 
-				       tm3_sram_adsp = 1'b0 ; 
-				       tm3_sram_data_xhdl0 = 0;
-				       tm3_sram_addr = {1'b0, waddress} ; 
-				       want_addr = 1'b1 ; 
-				       read_ready = 1'b1 ; 
-				       dirReady = 1'b0 ; 
-				       writebackack = 1'b0 ; 
-                      if (data_ready == 1'b0)
-                      begin
+            begin
+	       tm3_sram_we = 8'b11111111 ; 
+	       tm3_sram_oe = 2'b01 ; 
+	       tm3_sram_adsp = 1'b0 ; 
+	       tm3_sram_data_xhdl0 = 0;
+	       tm3_sram_addr = {1'b0, waddress} ; 
+	       want_addr = 1'b1 ; 
+               want_data = 1'b0 ; 
+	       read_ready = 1'b1 ; 
+	       dirReady = 1'b0 ; 
+	       writebackack = 1'b0 ; 
 
-                         next_state = 0 ; 
-                      end
-                      else
-                      begin
-                         next_state = 4 ; 
-                      end 
-                      want_data = 1'b0 ; 
-                   end
+               temp_fbdatavalidl = fbdatavalidl;
+               temp_shadedataready = shadedataready;
+               temp_texelready = texelready;
+               temp_waddress = waddress;
+               temp_faddress = faddress;
+               temp_fcount = fcount;
+            end
 
           5 :
-                   begin
-				       tm3_sram_we = 8'b11111111 ; 
-				       tm3_sram_oe = 2'b01 ; 
-				       tm3_sram_adsp = 1'b0 ; 
-				       tm3_sram_data_xhdl0 = 0;
-				       tm3_sram_addr = {1'b0, waddress} ; 
-				       want_addr = 1'b1 ; 
-				       want_data = 1'b1 ; 
-				       read_ready = 1'b1 ; 
-				       writebackack = 1'b0 ; 
+            begin
+	       tm3_sram_we = 8'b11111111 ; 
+	       tm3_sram_oe = 2'b01 ; 
+	       tm3_sram_adsp = 1'b0 ; 
+	       tm3_sram_data_xhdl0 = 0;
+	       tm3_sram_addr = {1'b0, waddress} ; 
+	       want_addr = 1'b1 ; 
+	       want_data = 1'b1 ; 
+	       read_ready = 1'b1 ; 
+               dirReady = 1'b1 ; 
+	       writebackack = 1'b0 ; 
 
-                     dirReady = 1'b1 ; 
-                      if (wantDir == 1'b0)
-                      begin
-                         next_state = 0 ; 
-
-                      end
-                      else
-                      begin
-                         next_state = 5 ; 
-                      end 
-
-				          temp_fbdatavalidl = 1'b0 ; 
-				          temp_shadedataready = 1'b0 ; 
-				          temp_texelready = 1'b0 ; 
-                         if (wantDir == 1'b0)
-                         begin
-                            temp_waddress = waddress + 1 ; 
-                         end 
-
-                   end
+	       temp_fbdatavalidl = 1'b0 ; 
+	       temp_shadedataready = 1'b0 ; 
+	       temp_texelready = 1'b0 ; 
+               if (wantDir == 1'b0)
+                 begin
+                    temp_waddress = waddress + 1 ; 
+                 end 
+               else begin
+                  temp_waddress = waddress;
+               end
+               temp_faddress = faddress;
+               temp_fcount = fcount;
+            end
           6 :
-                   begin
-				       want_addr = 1'b1 ; 
-				       want_data = 1'b1 ; 
-				       read_ready = 1'b1 ; 
-				       dirReady = 1'b0 ; 
+            begin
+               tm3_sram_we = 8'b00000000 ; 
+               tm3_sram_oe = 2'b11 ; 
+               tm3_sram_adsp = 1'b0 ; 
+               tm3_sram_data_xhdl0 = writebackdata ; 
+               tm3_sram_addr = {1'b0, writebackaddr} ; 
+	       want_addr = 1'b1 ; 
+	       want_data = 1'b1 ; 
+	       read_ready = 1'b1 ; 
+	       dirReady = 1'b0 ; 
+               writebackack = 1'b1 ; 
 
-                      tm3_sram_data_xhdl0 = writebackdata ; 
-                      tm3_sram_we = 8'b00000000 ; 
-                      tm3_sram_oe = 2'b11 ; 
-                      tm3_sram_adsp = 1'b0 ; 
-                      tm3_sram_addr = {1'b0, writebackaddr} ; 
-                      writebackack = 1'b1 ; 
-                      next_state = 0 ; 
-                   end
+               temp_fbdatavalidl = fbdatavalidl;
+               temp_shadedataready = shadedataready;
+               temp_texelready = texelready;
+               temp_waddress = waddress;
+               temp_faddress = faddress;
+               temp_fcount = fcount;
+            end
 
           7 :
-                   begin
-				       tm3_sram_we = 8'b11111111 ; 
-				       tm3_sram_oe = 2'b01 ; 
-				       tm3_sram_adsp = 1'b0 ; 
-				       tm3_sram_data_xhdl0 = 0;
-				       want_addr = 1'b1 ; 
-				       want_data = 1'b1 ; 
-				       read_ready = 1'b1 ; 
-				       dirReady = 1'b0 ; 
-				       writebackack = 1'b0 ; 
-                      tm3_sram_addr = {3'b011, fbpage, faddress} ; 
-                      if ((fcount == 1) | (addr_ready == 1'b1) | (want_read == 1'b1) | (data_ready == 1'b1) | (wantDir == 1'b1) | (wantwriteback == 1'b1))
-                      begin
-                         next_state = 0 ; 
+            begin
+	       tm3_sram_we = 8'b11111111 ; 
+	       tm3_sram_oe = 2'b01 ; 
+	       tm3_sram_adsp = 1'b0 ; 
+	       tm3_sram_data_xhdl0 = 0;
+               tm3_sram_addr = {3'b011, fbpage, faddress} ; 
+	       want_addr = 1'b1 ; 
+	       want_data = 1'b1 ; 
+	       read_ready = 1'b1 ; 
+	       dirReady = 1'b0 ; 
+	       writebackack = 1'b0 ; 
 
-                      end
-                      else
-                      begin
-                         next_state = 7 ; 
-                      end 
-
-
-				          temp_shadedataready = 1'b0 ; 
-				          temp_texelready = 1'b0 ; 
-                         temp_fbdatavalidl = 1'b1 ; 
-                         if (fcount != 0)
-                         begin
-                            temp_faddress = faddress + 1 ; 
-                            temp_fcount = fcount - 1 ; 
-                         end 
-
-                   end
+	       temp_shadedataready = 1'b0 ; 
+	       temp_texelready = 1'b0 ; 
+               temp_fbdatavalidl = 1'b1 ; 
+               temp_waddress = waddress;
+               if (fcount != 0)
+                 begin
+                    temp_faddress = faddress + 1 ; 
+                    temp_fcount = fcount - 1 ; 
+                 end 
+               else begin
+                  temp_faddress = faddress;
+                  temp_fcount = fcount;
+               end
+            end
           8 :
-                   begin
-				       tm3_sram_we = 8'b11111111 ; 
-				       tm3_sram_oe = 2'b01 ; 
-				       tm3_sram_adsp = 1'b0 ; 
-				       tm3_sram_data_xhdl0 = 0;
-				       tm3_sram_addr = {1'b0, waddress} ; 
-				       want_addr = 1'b1 ; 
-				       want_data = 1'b1 ; 
-				       read_ready = 1'b1 ; 
-				       dirReady = 1'b0 ; 
-				       writebackack = 1'b0 ; 
-                      next_state = 7 ; 
-
-				   				          temp_fbdatavalidl = 1'b0 ; 
-				          temp_shadedataready = 1'b0 ; 
-				          temp_texelready = 1'b0 ; 
-                         temp_fcount = 7'b1101011 ; 
-                         if (faddress == 25680)
-                         begin
-                            temp_faddress = 0;
-                         end 
-                   end
+            begin
+	       tm3_sram_we = 8'b11111111 ; 
+	       tm3_sram_oe = 2'b01 ; 
+	       tm3_sram_adsp = 1'b0 ; 
+	       tm3_sram_data_xhdl0 = 0;
+	       tm3_sram_addr = {1'b0, waddress} ; 
+	       want_addr = 1'b1 ; 
+	       want_data = 1'b1 ; 
+	       read_ready = 1'b1 ; 
+	       dirReady = 1'b0 ; 
+	       writebackack = 1'b0 ; 
+ 
+	       temp_fbdatavalidl = 1'b0 ; 
+	       temp_shadedataready = 1'b0 ; 
+	       temp_texelready = 1'b0 ; 
+               temp_waddress = waddress;
+               temp_fcount = 7'b1101011 ; 
+               if (faddress == 25680)
+                 begin
+                    temp_faddress = 0;
+                 end
+               else begin
+                  temp_faddress = faddress;
+               end
+            end
           9 :
-                   begin
-				       tm3_sram_we = 8'b11111111 ; 
-				       tm3_sram_oe = 2'b01 ; 
-				       tm3_sram_adsp = 1'b0 ; 
-				       tm3_sram_data_xhdl0 = 0;
-				       want_addr = 1'b1 ; 
-				       want_data = 1'b1 ; 
-				       read_ready = 1'b1 ; 
-				       dirReady = 1'b0 ; 
-				       writebackack = 1'b0 ; 
-                      tm3_sram_addr = {3'b010, triID} ; 
-                      next_state = 0 ; 
+            begin
+	       tm3_sram_we = 8'b11111111 ; 
+	       tm3_sram_oe = 2'b01 ; 
+	       tm3_sram_adsp = 1'b0 ; 
+	       tm3_sram_data_xhdl0 = 0;
+	       want_addr = 1'b1 ; 
+	       want_data = 1'b1 ; 
+	       read_ready = 1'b1 ; 
+	       dirReady = 1'b0 ; 
+	       writebackack = 1'b0 ; 
+               tm3_sram_addr = {3'b010, triID} ; 
 
-				          temp_fbdatavalidl = 1'b0 ; 
-				          temp_texelready = 1'b0 ; 
-                         temp_shadedataready = 1'b1 ; 
-                   end
+	       temp_fbdatavalidl = 1'b0 ; 
+	       temp_texelready = 1'b0 ; 
+               temp_shadedataready = 1'b1 ; 
+               temp_waddress = waddress;
+               temp_faddress = faddress;
+               temp_fcount = fcount;
+            end
 
           10 :
-                   begin
-				       tm3_sram_we = 8'b11111111 ; 
-				       tm3_sram_oe = 2'b01 ; 
-				       tm3_sram_adsp = 1'b0 ; 
-				       tm3_sram_data_xhdl0 = 0;
-				       want_addr = 1'b1 ; 
-				       want_data = 1'b1 ; 
-				       read_ready = 1'b1 ; 
-				       dirReady = 1'b0 ; 
-				       writebackack = 1'b0 ; 
-                      tm3_sram_addr = {1'b0, texeladdr} ; 
-                      next_state = 0 ; 
+            begin
+	       tm3_sram_we = 8'b11111111 ; 
+	       tm3_sram_oe = 2'b01 ; 
+	       tm3_sram_adsp = 1'b0 ; 
+	       tm3_sram_data_xhdl0 = 0;
+	       want_addr = 1'b1 ; 
+	       want_data = 1'b1 ; 
+	       read_ready = 1'b1 ; 
+	       dirReady = 1'b0 ; 
+	       writebackack = 1'b0 ; 
+               tm3_sram_addr = {1'b0, texeladdr} ; 
 
-				          temp_fbdatavalidl = 1'b0 ; 
-				          temp_shadedataready = 1'b0 ; 
-                         temp_texelready = 1'b1 ; 
-                   end
-       endcase 
-    end 
+	       temp_fbdatavalidl = 1'b0 ; 
+	       temp_shadedataready = 1'b0 ; 
+               temp_texelready = 1'b1 ; 
+               temp_waddress = waddress;
+               temp_faddress = faddress;
+               temp_fcount = fcount;
+            end
+          // Create a default case to avoid inferring latches.
+          // for temp_* variables we can hold previous state to
+          // preserve design intent.  For variables that are
+          // not re-registered, we must make a choice about
+          // what the default behavior should be that will
+          // potentially change functionality vs. previous revision
+          // for previously undefined state decoding.  Make a best
+          // effort based on how the signals appear to idle when
+          // not being used by the FSM by matching state 0
+          default: begin
+	     tm3_sram_we = 8'b11111111 ; 
+	     tm3_sram_oe = 2'b01 ; 
+	     tm3_sram_adsp = 1'b0 ; 
+	     tm3_sram_data_xhdl0 = 0;
+	     tm3_sram_addr = {1'b0, waddress} ; 
+	     want_addr = 1'b1 ; 
+	     want_data = 1'b1 ; 
+	     read_ready = 1'b1 ; 
+	     dirReady = 1'b0 ; 
+	     writebackack = 1'b0 ; 
+
+             temp_fbdatavalidl = fbdatavalidl;
+             temp_shadedataready = shadedataready;
+             temp_texelready = texelready;
+             temp_waddress = waddress;
+             temp_faddress = faddress;
+             temp_fcount = fcount;
+          end
+        endcase 
+     end 
+
+   always @(*)
+     begin
+        case (state)
+          0 :
+            begin
+               if (addr_ready == 1'b1)
+                 begin
+                    next_state = 1 ; 
+                 end
+               else if (want_read == 1'b1)
+                 begin
+                    next_state = 2 ; 
+                 end
+               else if (data_ready == 1'b1)
+                 begin
+
+                    next_state = 3 ; 
+                 end
+               else if (wantDir == 1'b1)
+                 begin
+                    next_state = 5 ; 
+                 end
+               else if (wantwriteback == 1'b1)
+                 begin
+                    next_state = 6 ; 
+                 end
+               else if (wantshadedata == 1'b1)
+                 begin
+
+                    next_state = 9 ; 
+                 end
+               else if (wanttexel == 1'b1)
+                 begin
+                    next_state = 10 ; 
+                 end
+               else if (fcount != 0)
+                 begin
+                    next_state = 7 ; 
+                 end
+               else if (fbnextscanline == 1'b1)
+                 begin
+
+                    next_state = 8 ; 
+                 end
+               else
+                 begin
+                    next_state = 0 ; 
+                 end 
+            end
+          1 :
+            begin
+               if (addr_ready == 1'b0)
+                 begin
+                    next_state = 0 ; 
+
+                 end
+               else
+                 begin
+                    next_state = 1 ; 
+                 end 
+            end
+          2 :
+            begin
+               if (want_read == 1'b0)
+                 begin
+                    next_state = 0 ; 
+                 end
+               else
+                 begin
+                    next_state = 2 ; 
+                 end 
+            end
+          3 :
+            begin
+               next_state = 4 ; 
+            end
+          4 :
+            begin
+               if (data_ready == 1'b0)
+                 begin
+
+                    next_state = 0 ; 
+                 end
+               else
+                 begin
+                    next_state = 4 ; 
+                 end 
+            end
+          5 :
+            begin
+               if (wantDir == 1'b0)
+                 begin
+                    next_state = 0 ; 
+
+                 end
+               else
+                 begin
+                    next_state = 5 ; 
+                 end 
+            end
+          6 :
+            begin
+               next_state = 0 ; 
+            end
+
+          7 :
+            begin
+               if ((fcount == 1) | (addr_ready == 1'b1) | (want_read == 1'b1) | (data_ready == 1'b1) | (wantDir == 1'b1) | (wantwriteback == 1'b1))
+                 begin
+                    next_state = 0 ; 
+
+                 end
+               else
+                 begin
+                    next_state = 7 ; 
+                 end 
+            end
+          8 :
+            begin
+               next_state = 7 ; 
+            end
+          9 :
+            begin
+               next_state = 0 ; 
+            end
+
+          10 :
+            begin
+               next_state = 0 ; 
+            end
+          // Add a default to avoid inferring latches.  Preserve original functionality
+          // by holding previous state, even if this is suboptimal for real circuits:
+          default: begin
+             next_state = state;
+          end
+        endcase 
+     end 
+
  endmodule
 
     
