@@ -959,17 +959,7 @@ waddress <= temp_waddress;
  endmodule
 
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-
- module raysend (as, ack, addr, dir, origx, origy, origz, rgData, rgAddr, rgWE, rgAddrValid, rgDone, globalreset, clk, statepeek);
+  module raysend (as, ack, addr, dir, origx, origy, origz, rgData, rgAddr, rgWE, rgAddrValid, rgDone, globalreset, clk, statepeek);
 
     input as; 
     output ack; 
@@ -1051,11 +1041,24 @@ rgAddr <= temp_rgAddr;
                             temp_rgWE = 3'b001 ; 
                             temp_rgAddrValid = 1'b1 ; 
                             temp_rgAddr = addr ; 
-                         end 
+                         end
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                         else begin
+                            temp_rgData = rgData;
+                            temp_rgWE = rgWE;
+                            temp_rgAddrValid = temp_rgAddrValid;
+                            temp_rgAddr = addr ; 
+                         end
                          if (as == 1'b0 & ack == 1'b1)
                          begin
                             temp_ack = 1'b0 ; 
-                         end 
+                         end
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                         else begin
+                           temp_ack = ack;
+                         end
 
                    end
           1 :
@@ -1070,11 +1073,22 @@ rgAddr <= temp_rgAddr;
                       end 
                       statepeek = 3'b010 ; 
 
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                      temp_rgData = rgData;
+                      temp_rgWE = rgWE;
+                      temp_rgAddr = rgAddr;
+ 
                          if (rgDone == 1'b1)
                          begin
                             temp_rgAddrValid = 1'b0 ; 
                          end 
-
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                         else begin
+                            temp_rgAddrValid = temp_rgAddrValid;
+                         end
+                      temp_ack = ack;
                    end
           2 :
                    begin
@@ -1088,11 +1102,21 @@ rgAddr <= temp_rgAddr;
                       end 
                       statepeek = 3'b011 ; 
 
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                      temp_rgData = rgData;
+                      temp_rgWE = rgWE;
+                      temp_rgAddr = rgAddr;
+ 
                          if (rgDone == 1'b1)
                          begin
                             temp_rgAddrValid = 1'b0 ; 
                          end 
+                         else begin
+                            temp_rgAddrValid = temp_rgAddrValid;
+                         end
 
+                      temp_ack = ack;
                    end
            3 :
                    begin
@@ -1106,11 +1130,21 @@ rgAddr <= temp_rgAddr;
                       end 
                       statepeek = 3'b100 ; 
 
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                      temp_rgData = rgData;
+                      temp_rgWE = rgWE;
+                      temp_rgAddr = rgAddr;
+ 
                          if (rgDone == 1'b1)
                          begin
                             temp_rgAddrValid = 1'b0 ; 
                          end 
+                         else begin
+                            temp_rgAddrValid = temp_rgAddrValid;
+                         end
 
+                      temp_ack = ack;
                    end
          4 :
                    begin
@@ -1124,10 +1158,20 @@ rgAddr <= temp_rgAddr;
                       end 
                       statepeek = 3'b101 ; 
 
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                      temp_rgData = rgData;
+                      temp_rgWE = rgWE;
+                      temp_rgAddr = rgAddr;
+ 
                          if (rgDone == 1'b1)
                          begin
                             temp_rgAddrValid = 1'b0 ; 
                          end 
+                         else begin
+                            temp_rgAddrValid = temp_rgAddrValid;
+                         end
+                      temp_ack = ack;
                    end
 
           5 :
@@ -1142,11 +1186,20 @@ rgAddr <= temp_rgAddr;
                       end 
                       statepeek = 3'b110 ; 
 
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                      temp_rgData = rgData;
+                      temp_rgWE = rgWE;
+                      temp_rgAddr = rgAddr;
+ 
                          temp_ack = 1'b1 ; 
                          if (rgDone == 1'b1)
                          begin
                             temp_rgAddrValid = 1'b0 ; 
                          end 
+                         else begin
+                            temp_rgAddrValid = temp_rgAddrValid;
+                         end
 
                    end
 
@@ -1154,6 +1207,11 @@ rgAddr <= temp_rgAddr;
                    begin
                       next_state = 2 ; 
 
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                      temp_rgAddr = rgAddr;
+                      temp_ack = ack;
+                      
                          temp_rgData = {4'b0000, origy} ; 
                          temp_rgWE = 3'b010 ; 
                          temp_rgAddrValid = 1'b1 ; 
@@ -1163,6 +1221,11 @@ rgAddr <= temp_rgAddr;
                    begin
                       next_state = 3 ; 
 
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                      temp_rgAddr = rgAddr;
+                      temp_ack = ack;
+                      
                          temp_rgData = {4'b0000, origz} ; 
                          temp_rgWE = 3'b011 ; 
                          temp_rgAddrValid = 1'b1 ; 
@@ -1171,6 +1234,11 @@ rgAddr <= temp_rgAddr;
                    begin
                       next_state = 4 ; 
 
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                      temp_rgAddr = rgAddr;
+                      temp_ack = ack;
+                      
                          temp_rgData = {dir[31:16], dir[47:32]} ; 
                          temp_rgWE = 3'b100 ; 
                          temp_rgAddrValid = 1'b1 ; 
@@ -1179,19 +1247,32 @@ rgAddr <= temp_rgAddr;
                    begin
                       next_state = 5 ; 
 
+                      //need to hold previous value explicitly to prevent
+                      //latch inference
+                      temp_rgAddr = rgAddr;
+                      temp_ack = ack;
+                      
                          temp_rgData = {16'b0000000000000000, dir[15:0]} ; 
                           temp_rgWE = 3'b101 ; 
                          temp_rgAddrValid = 1'b1 ; 
                    end
+           // The original FSM did not have a default case.  We want to add one
+           // to prevent modern synthesis tools from inferring latches in this
+           // logic.  To preserve as much of the original behavior as possible,
+           // hold the previous flop values whereever possible, even though
+           // this will cause the FSM to lock up if it gets in an illegal state
+           default: begin
+              temp_rgData = rgData;
+              temp_rgWE = rgWE;
+              temp_rgAddrValid = rgAddrValid;
+              temp_rgAddr = rgAddr;
+              temp_ack = ack;
+              next_state = state;
+           end
        endcase 
     end 
- endmodule
-
-    
-    
-    
-    
-    
+ endmodule   
+        
 
  module raygencont (go, initcount, busyout, cycles, nextaddr, nas0, nas1, page, dirReady, wantDir, dirIn, addrIn, as, addr, ack, dir, raygroup0, raygroupvalid0, busy0, raygroup1, raygroupvalid1, busy1, globalreset, clk, statepeek);
 
