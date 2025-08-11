@@ -1,11 +1,6 @@
 yosys -import
 plugin -i parmys
 
-#read_verilog -lib -nomem2reg +/parmys/vtr_primitives.v
-#setattr -mod -set blackbox 1 single_port_ram
-#setattr -mod -set blackbox 1 dual_port_ram
-#setattr -mod -set keep 1 dual_port_ram
-
 # yosys-slang plugin error handling
 if {$env(PARSER) == "slang" } {
 	if {![info exists ::env(yosys_slang_path)]} {
