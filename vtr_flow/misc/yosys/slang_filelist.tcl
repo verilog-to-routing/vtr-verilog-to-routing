@@ -7,71 +7,10 @@
 
 
 namespace eval ::slang {
-	# INFO: Maps HDL files to respective top module(s) 
-	# top_map insertion syntax:
-	# <file> <top module>
-	array set top_map {
-		and_latch.v and_latch
-		multiclock_output_and_latch.v multiclock_output_and_latch
-		multiclock_reader_writer.v multiclock_reader_writer
-		multiclock_separate_and_latch.v multiclock_separate_and_latch
-		arm_core.v arm_core
-		bgm.v bgm
-		blob_merge.v RLE_BlobMerging
-		boundtop.v paj_boundtop_hierarchy_no_mem
-		ch_intrinsics.v memset
-		diffeq1.v diffeq_paj_convert
-		diffeq2.v diffeq_f_systemC
-		LU8PEEng.v LU8PEEng
-		LU32PEEng.v LU32PEEng
-		LU64PEEng.v LU64PEEng
-		mcml.v mcml
-		mkDelayWorker32B.v mkDelayWorker32B
-		mkPktMerge.v mkPktMerge
-		mkSMAdapter4B.v mkSMAdapter4B
-		or1200.v or1200_flat
-		raygentop.v paj_raygentop_hierarchy_no_mem
-		sha.v sha1
-		stereovision0.v sv_chip0_hierarchy_no_mem
-		stereovision1.v sv_chip1_hierarchy_no_mem
-		stereovision2.v sv_chip2_hierarchy_no_mem
-		stereovision3.v sv_chip3_hierarchy_no_mem
-		button_controller.sv top
-		display_control.sv top
-		debounce.sv top
-		timer.sv top
-		deepfreeze.style1.sv top
-		pulse_led.v top
-		clock.sv top
-		single_ff.v top
-		single_wire.v top
-		PWM.v top
-		flattened_pulse_width_led.sv top
-		modify_count.sv top
-		time_counter.sv top
-		spree.v system
-		attention_layer.v attention_layer
-		bnn.v bnn
-		tpu_like.small.os.v top
-		tpu_like.small.ws.v top
-		dla_like.small.v DLA
-		conv_layer_hls.v top
-		conv_layer.v conv_layer
-		eltwise_layer.v eltwise_layer
-		robot_rl.v robot_maze
-		reduction_layer.v reduction_layer
-		spmv.v spmv
-		softmax.v softmax
-	}
-	# INFO: List of HDL includes files 
-	# includes_map insertion syntax:
-	# <file> include
-	array set includes_map {
-		hard_block_include.v include
-	}
 
 
-	variable top_args {}
+	variable top_mods_slang {}
+	variable top_mods_verilog {}
 
 # Function - build_filelist:
 #
@@ -85,11 +24,14 @@ namespace eval ::slang {
 #	file_list - text file being written to that will contain
 #	     		the names of circuits from circuit list.
 #
-	proc build_filelist { circuit_list file_list } {
-		variable top_args
+	proc build_filelist { circuit_list file_list tops_path} {
+		variable top_mods_slang
+		variable top_mods_verilog
 		variable top_map
 		variable includes_map
-		set top_args {}
+		source [file join [pwd] "$tops_path"]
+		set top_mods_slang {}
+		set top_mods_verilog {}
 		set fh [open $file_list "w"]
 		foreach f $circuit_list {
 			set ext [string tolower [file extension $f]]
@@ -105,7 +47,8 @@ namespace eval ::slang {
 					} else {
 						puts $fh $f
 						set top_name $top_map($f)
-						lappend top_args --top $top_name
+						lappend top_mods_slang --top $top_name
+						lappend top_mods_verilog -top $top_name
 					}
 				}
 			} else {
@@ -114,6 +57,6 @@ namespace eval ::slang {
 			}
 		}
 		close $fh
-		return $top_args
+		return [list $top_mods_slang $top_mods_verilog]
 	}
 }
