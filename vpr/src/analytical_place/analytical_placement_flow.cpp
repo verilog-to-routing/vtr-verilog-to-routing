@@ -81,6 +81,7 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
  * to be generated on ap_netlist or have the same blocks.
  */
 static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, const Prepacker& prepacker, PartialPlacement& p_placement) {
+    size_t num_mols_assigned_to_center = 0;
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
         // Get the molecule that AP block represents
         PackMoleculeId mol_id = ap_netlist.block_molecule(ap_blk_id);
@@ -106,9 +107,14 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                                     current_loc_x, current_loc_y, current_loc_layer, current_loc_sub_tile,
                                     atom_loc_x, atom_loc_y, atom_loc_layer, atom_loc_sub_tile);
             } else {
-                if (current_loc_x != -1 && current_loc_y != -1 && current_loc_layer != -1 && current_loc_sub_tile != -1) {
+                if (current_loc_x != -1 && current_loc_y != -1) {
                     atom_loc_x = current_loc_x;
                     atom_loc_y = current_loc_y;
+                    // If current_loc_layer or current_loc_sub_tile are unset (-1), default to layer 0 and sub_tile 0.
+                    if (current_loc_layer == -1)
+                        current_loc_layer = 0;
+                    if (current_loc_sub_tile == -1)
+                        current_loc_sub_tile = 0;
                     atom_loc_layer = current_loc_layer;
                     atom_loc_sub_tile = current_loc_sub_tile;
                     found_valid_atom = true;
@@ -119,6 +125,7 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
         // for the entire AP block. Otherwise, assign the AP block to the center
         // of the device grid and update the flat placement info for all its atoms accordingly.
         if (!found_valid_atom) {
+            num_mols_assigned_to_center++;
             VTR_LOG_WARN("No atoms of molecule ID %zu provided in the flat placement. Assigning it to the device center.\n", mol_id);
             p_placement.block_x_locs[ap_blk_id] = g_vpr_ctx.device().grid.width() / 2.0f;
             p_placement.block_y_locs[ap_blk_id] = g_vpr_ctx.device().grid.height() / 2.0f;
@@ -131,6 +138,9 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                 g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_layer[atom_blk_id] = 0;
                 g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_sub_tile[atom_blk_id] = 0;
             }
+            // TODO: If an atom's location is specified in the placement constraints,
+            //       verify it matches the assigned flat placement. If not, override the
+            //       flat placement with the constraint location and warn the user.
         } else {
             // Pass the placement information
             p_placement.block_x_locs[ap_blk_id] = atom_loc_x;
@@ -139,6 +149,8 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
             p_placement.block_sub_tiles[ap_blk_id] = atom_loc_sub_tile;
         }
     }
+    VTR_LOG("%zu of %zu molecules placed at device center (no atoms of these molecules found in flat placement).\n",
+        num_mols_assigned_to_center, ap_netlist.blocks().size());
 }
 
 /**
