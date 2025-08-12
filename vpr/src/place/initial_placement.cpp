@@ -421,12 +421,18 @@ static bool find_centroid_neighbor(ClusterBlockId block_id,
                                                              centroid_loc,
                                                              num_layers);
 
+    // If no compressed location can be found on this layer, return false.
+    // TODO: Maybe search in the layers above or below.
+    const t_physical_tile_loc& compressed_loc_on_layer = compressed_centroid_loc[centroid_loc.layer];
+    if (compressed_loc_on_layer.x == OPEN && compressed_loc_on_layer.y == OPEN && compressed_loc_on_layer.layer_num == OPEN)
+        return false;
+
     //range limit (rlim) set a limit for the neighbor search in the centroid placement
     //the neighbor location should be within the defined range to calculated centroid location
     int first_rlim = rlim;
 
     auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
-                                                                compressed_centroid_loc[centroid_loc_layer_num],
+                                                                compressed_loc_on_layer,
                                                                 first_rlim);
 
     int delta_cx = search_range.xmax - search_range.xmin;

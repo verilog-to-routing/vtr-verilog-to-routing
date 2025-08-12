@@ -121,11 +121,17 @@ struct t_compressed_block_grid {
      * Useful when the point is of a different block type from coords.
      *
      *   @param grid_loc non-compressed physical tile location in the grid
-     *   @return Nearest x and y compressed locations in the grid (in the same layer)
+     *   @return Nearest x and y compressed locations in the grid (in the same layer),
+     *           or OPEN if a location does not exist.
      */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx(t_physical_tile_loc grid_loc) const {
         auto find_closest_compressed_point = [](int loc, const std::vector<int>& compressed_grid_dim) -> int {
-            VTR_ASSERT_DEBUG(compressed_grid_dim.size() > 0);
+            // If the compressed grid dim's size is 0, this means that there are
+            // no compatible locations for a block of the given type. Returns OPEN
+            // in that case.
+            if (compressed_grid_dim.size() == 0) {
+                return OPEN;
+            }
 
             // Find the first element not less than loc
             auto itr = std::lower_bound(compressed_grid_dim.begin(), compressed_grid_dim.end(), loc);
@@ -162,6 +168,8 @@ struct t_compressed_block_grid {
     }
 
     inline const vtr::flat_map2<int, t_physical_tile_loc>& get_column_block_map(int cx, int layer_num) const {
+        VTR_ASSERT_SAFE(layer_num < (int)grid.size());
+        VTR_ASSERT_SAFE(cx < (int)grid[layer_num].size());
         return grid[layer_num][cx];
     }
 
