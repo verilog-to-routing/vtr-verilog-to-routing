@@ -43,6 +43,8 @@ sudo apt install -y \
   gcc-13 \
   g++-14 \
   gcc-14 \
+  g++-15 \
+  gcc-15 \
   clang-15 \
   clang-16 \
   clang-17 \

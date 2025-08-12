@@ -632,6 +632,7 @@ jobs:
         include:
         - { name: 'GCC 12 (Ubuntu Noble - 24.04)',    CC: 'gcc-12',   CXX: 'g++-12',     }
         - { name: 'GCC 14 (Ubuntu Noble - 24.04)',    CC: 'gcc-14',   CXX: 'g++-14',     }
+        - { name: 'GCC 15 (Ubuntu Noble - 24.04)',    CC: 'gcc-15',   CXX: 'g++-15',     }
         - { name: 'Clang 16 (Ubuntu Noble - 24.04)',  CC: 'clang-16', CXX: 'clang++-16', }
         - { name: 'Clang 17 (Ubuntu Noble - 24.04)',  CC: 'clang-17', CXX: 'clang++-17', }
         - { name: 'Clang 18 (Ubuntu Noble - 24.04)',  CC: 'clang-18', CXX: 'clang++-18', }
