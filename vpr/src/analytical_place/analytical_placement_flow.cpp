@@ -266,8 +266,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
 
     // Write out a flat placement file at the end of Full Legalization if the
     // option is specified.
-    if (!vpr_setup.FileNameOpts.write_flat_place_file.empty()) {
-        write_flat_placement(vpr_setup.FileNameOpts.write_flat_place_file.c_str(),
+    if (!vpr_setup.FileNameOpts.write_legalized_flat_place_file.empty()) {
+        write_flat_placement(vpr_setup.FileNameOpts.write_legalized_flat_place_file.c_str(),
                              g_vpr_ctx.clustering().clb_nlist,
                              g_vpr_ctx.placement().block_locs(),
                              g_vpr_ctx.clustering().atoms_lookup);
