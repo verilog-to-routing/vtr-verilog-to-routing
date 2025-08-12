@@ -716,7 +716,7 @@ always @(posedge clk)
 	opa_r1 <= opa_r[30:0];
 
 //always @(fpu_op_r3 or prod)
-always @(prod)
+always @(*)
 	fract_denorm = prod;
 
 always @(posedge clk)
@@ -1141,7 +1141,7 @@ always @(posedge clk)
 //
 
 // sign: 0=Posetive Number; 1=Negative Number
-always @(signa or signb)
+always @(*)
    case({signa, signb})		// synopsys full_case parallel_case
 	2'b00: sign_d = 0;
 	2'b01: sign_d = 1;
@@ -1526,7 +1526,7 @@ module post_norm( fpu_op, opas, sign, rmode, fract_in, exp_in, exp_ovf,
 
 	// Choose rounding mode
 
-	always @(rmode or exp_out_rnd0 or exp_out_rnd1 or exp_out_rnd2)
+	always @(*)
 		case(rmode)	// synopsys full_case parallel_case
 		   2'b00: exp_out_rnd = exp_out_rnd0;
 		   2'b01: exp_out_rnd = exp_out_rnd1;
@@ -1534,7 +1534,7 @@ module post_norm( fpu_op, opas, sign, rmode, fract_in, exp_in, exp_ovf,
 		2'b11: exp_out_rnd = exp_out_rnd2;
 		endcase
 
-	always @(rmode or fract_out_rnd0 or fract_out_rnd1 or fract_out_rnd2)
+	always @(*)
 		case (rmode)	// synopsys full_case parallel_case
 			2'b00: fract_out_rnd = fract_out_rnd0;
 			2'b01: fract_out_rnd = fract_out_rnd1;
@@ -1684,7 +1684,7 @@ reg [5:0] fi_ldz_r0;
 
 assign fi_ldz = fi_ldz_r0;
 
-always @(fract_in)
+always @(*)
 begin
 	if (fract_in[47:47] == 1'b1) 
 		 fi_ldz_r0 = 6'd1;
@@ -1784,6 +1784,7 @@ begin
 		 fi_ldz_r0 = 6'd48;
 	else if (fract_in[47:0]  == 48'b000000000000000000000000000000000000000000000000) 
 		 fi_ldz_r0 = 6'd48;
+        else fi_ldz_r0 = 6'd0;
 end
 
 endmodule
@@ -1800,7 +1801,7 @@ input [5:0] shift_value;
 output [47:0] shift_out;
 reg [47:0] shift_out; 
 
-always @(shift_value)
+always @(*)
 begin
 	case (shift_value)	
 		6'b000000: shift_out = shift_in;
@@ -1852,8 +1853,8 @@ begin
 		6'b101110: shift_out = shift_in >> 46;
 		6'b101111: shift_out = shift_in >> 47;	
 		6'b110000: shift_out = shift_in >> 48;
-		
-	endcase
+	        default: shift_out = shift_in;
+        endcase
 end
 
 //assign shift_out = shift_in >> shift_value;
@@ -1871,7 +1872,7 @@ input [5:0] shift_value;
 output [47:0] shift_out;
 reg [47:0] shift_out;
 
-always @(shift_value)
+always @(*)
 begin
 	case (shift_value)	
 		6'b000000: shift_out = shift_in;
@@ -1923,7 +1924,7 @@ begin
 		6'b101110: shift_out = shift_in << 46;
 		6'b101111: shift_out = shift_in << 47;	
 		6'b110000: shift_out = shift_in << 48;
-		
+	        default: shift_out = shift_in;
 	endcase
 end
 
@@ -1941,7 +1942,7 @@ input [5:0] shift_value;
 output [55:0] shift_out;
 reg [55:0] shift_out;
 
-always @(shift_value)
+always @(*)
 begin
 	case (shift_value)	
 		6'b000000: shift_out = shift_in;
@@ -2000,7 +2001,8 @@ begin
 		6'b110101: shift_out = shift_in << 53;	
 		6'b110110: shift_out = shift_in << 54;	
 		6'b110111: shift_out = shift_in << 55;	
-		6'b111000: shift_out = shift_in << 56;			
+		6'b111000: shift_out = shift_in << 56;	
+               default: shift_out = shift_in;
 	endcase
 end
 
@@ -2459,7 +2461,7 @@ assign adj_op_out[26:0]	= {adj_op_out_sft[26:1], temp2 };
 // ---------------------------------------------------------------------
 // Get truncated portion (sticky bit)
 
-always @(exp_diff_sft or adj_op_tmp)
+always @(*)
    case(exp_diff_sft)		// synopsys full_case parallel_case
 	5'd00: sticky = 1'h0;
 	5'd01: sticky =  adj_op_tmp[0]; 
@@ -2489,6 +2491,7 @@ always @(exp_diff_sft or adj_op_tmp)
 	5'd25: sticky = |adj_op_tmp[24:0];
 	5'd26: sticky = |adj_op_tmp[25:0];
 	5'd27: sticky = |adj_op_tmp[26:0];
+        default: sticky = 1'h0;
    endcase
 
 // ---------------------------------------------------------------------
@@ -2514,7 +2517,7 @@ always @(posedge clk)
 // Determine sign for the output
 
 // sign: 0=Positive Number; 1=Negative Number
-always @(signa or signb or add or fractb_lt_fracta)
+always @(*)
    case({signa, signb, add})		// synopsys full_case parallel_case
 
    	// Add
@@ -2567,7 +2570,7 @@ always @(posedge clk)
 //
 
 // add: 1=Add; 0=Subtract
-always @(signa or signb or add)
+always @(*)
    case({signa, signb, add})		// synopsys full_case parallel_case
    
    	// Add
@@ -2599,7 +2602,7 @@ input [4:0] shift_value;
 output [26:0] shift_out;
 reg [26:0] shift_out;
 
-always @(shift_value)
+always @(*)
 begin
 	case (shift_value)	
 		5'b00000: shift_out = shift_in;
@@ -2630,7 +2633,8 @@ begin
 		5'b11001: shift_out = shift_in >> 25;
 		5'b11010: shift_out = shift_in >> 26;
 		5'b11011: shift_out = shift_in >> 27;
-	endcase
+                default: shift_out = shift_in;
+        endcase
 end
 
 
