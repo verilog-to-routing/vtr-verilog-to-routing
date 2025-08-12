@@ -252,6 +252,7 @@ def run(
     if parmys_args["parser"] in YOSYS_PARSERS:
         os.environ["PARSER"] = parmys_args["parser"]
         os.environ["PRIMITIVES"] = str(vtr.paths.vtr_primitives_path)
+        os.environ["TOPS"] = str(vtr.paths.HDL_top_mods_path)
         del parmys_args["parser"]
     else:
         raise vtr.VtrError(
