@@ -33,7 +33,9 @@ static inline bool post_target_prune_node(float new_total_cost,
     // Max function to prevent the heuristic from going negative
     new_expected_cost = std::max(0.f, new_expected_cost);
     new_expected_cost *= params.post_target_prune_fac;
-    if ((new_back_cost + new_expected_cost) > best_back_cost_to_target)
+
+    // NOTE: in the check below, the multiplication factor is used to account for floating point errors.
+    if ((new_back_cost + new_expected_cost) * 0.999f > best_back_cost_to_target)
         return true;
     // NOTE: we do NOT check for equality here. Equality does not matter for
     //       determinism when draining the queues (may just lead to a bit more work).
