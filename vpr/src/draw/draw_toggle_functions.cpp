@@ -32,11 +32,18 @@ void toggle_checkbox_cbk(GtkToggleButton* self, t_checkbox_data* data) {
 void toggle_show_nets_cbk(GtkSwitch* , gboolean state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if(state) {
-        draw_state->show_nets = true;
-    }else{
-        draw_state->show_nets = false;
+    bool switch_state = state ? true : false;
+
+    draw_state->show_nets = switch_state;
+    
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleNetType")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterNets")), switch_state);
+    if (draw_state->is_flat) {
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), switch_state);
     }
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("FanInFanOut")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("NetAlpha")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("NetMaxFanout")), switch_state);
 
     app->refresh_drawing();
 }
@@ -82,8 +89,12 @@ void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterPinNodes")), switch_state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRSBox")), switch_state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRCBox")), switch_state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterNodes")), switch_state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterEdges")), switch_state);
+
+    //currently intra-cluster nodes and edges are only supported if flat routing is enabled
+    if (draw_state->is_flat) {
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterNodes")), switch_state);
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterEdges")), switch_state);
+    }
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleHighlightRR")), switch_state);
 
     app->refresh_drawing();
@@ -401,7 +412,7 @@ void set_net_max_fanout_cbk(GtkSpinButton* self, ezgl::application* app) {
  */
 void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->net_alpha = (255 - gtk_spin_button_get_value_as_int(self)) / 255.0;
+    draw_state->net_alpha = 255 - gtk_spin_button_get_value_as_int(self);
     app->refresh_drawing();
 }
 

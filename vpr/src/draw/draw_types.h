@@ -191,6 +191,9 @@ struct t_draw_state {
     /// @brief Whether to show intra-cluster nets
     bool draw_intra_cluster_nets = false;
 
+    ///@brief Whether to show block fan-in and fan-out
+    bool highlight_fan_in_fan_out = false;
+
     ///@brief Whether to show crit path
     e_draw_crit_path show_crit_path = DRAW_NO_CRIT_PATH;
 
@@ -289,7 +292,9 @@ struct t_draw_state {
     bool forced_pause = false;
 
     int sequence_number = 0;
-    float net_alpha = 0.1;
+
+    ///@brief net transparency factor (0 - Transparent, 255 - Opaque)
+    int net_alpha = 255;
 
     ///@brief Present congestion cost factor used when drawing. Is a copy of router's current pres_fac
     float pres_fac = 1.;

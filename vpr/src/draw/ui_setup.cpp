@@ -75,11 +75,7 @@ void net_button_setup(ezgl::application* app) {
 
     setup_checkbox_button("ToggleIntraClusterNets", app, &draw_state->draw_intra_cluster_nets);
     
-
-    // currently intra-cluster nets are only supported if flat routing is enabled
-    if(!draw_state->is_flat){
-        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), false);
-    }
+    setup_checkbox_button("FanInFanOut", app, &draw_state->highlight_fan_in_fan_out);
 
     //Manages net alpha
     GtkSpinButton* net_alpha = GTK_SPIN_BUTTON(app->get_object("NetAlpha"));

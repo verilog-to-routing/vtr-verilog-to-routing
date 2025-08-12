@@ -248,6 +248,7 @@ void drawnets(ezgl::renderer* g) {
 
             //Take the highest of the 2 transparency values that the user can select from the UI
             // Compare the current cross layer transparency to the overall Net transparency set by the user.
+            // VTR_LOG("Transparency factor: %f, 2: %f\n", transparency_factor, draw_state->net_color[net_id].alpha * NET_ALPHA);
             g->set_color(draw_state->net_color[net_id], fmin(transparency_factor, draw_state->net_color[net_id].alpha * NET_ALPHA));
 
             ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).center();

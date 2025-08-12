@@ -612,8 +612,6 @@ void draw_logical_connections(ezgl::renderer* g) {
 
     g->set_line_dash(ezgl::line_dash::none);
 
-    //constexpr float NET_ALPHA = 0.0275;
-    float NET_ALPHA = draw_state->net_alpha;
     int transparency_factor;
 
     // iterate over all the atom nets
@@ -654,11 +652,13 @@ void draw_logical_connections(ezgl::renderer* g) {
             //color selection
             //transparency factor is the most transparent of the 2 options that the user selects from the UI
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVES_IT_COLOR, fmin(transparency_factor, DRIVES_IT_COLOR.alpha * NET_ALPHA));
+                g->set_color(DRIVES_IT_COLOR, std::min(transparency_factor, DRIVES_IT_COLOR.alpha * draw_state->net_alpha / 255));
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVEN_BY_IT_COLOR, fmin(transparency_factor, DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA));
+                g->set_color(DRIVEN_BY_IT_COLOR, std::min(transparency_factor, DRIVEN_BY_IT_COLOR.alpha * draw_state->net_alpha / 255));
             } else if (draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
-                g->set_color(ezgl::BLACK, fmin(transparency_factor, ezgl::BLACK.alpha * NET_ALPHA)); // if showing all, draw the other ones in black
+
+                VTR_LOG("transparency_factor: %d, net_alpha: %d\n", transparency_factor, draw_state->net_alpha);
+                g->set_color(ezgl::BLACK, std::min(transparency_factor, draw_state->net_alpha)); // if showing all, draw the other ones in black
             } else {
                 continue; // not showing all, and not the specified block, so skip
             }
