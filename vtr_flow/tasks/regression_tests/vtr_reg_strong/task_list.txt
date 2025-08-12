@@ -1,4 +1,5 @@
 regression_tests/vtr_reg_strong/basic_ap
+regression_tests/vtr_reg_strong/basic_3d
 regression_tests/vtr_reg_strong/strong_ap/mcnc
 regression_tests/vtr_reg_strong/strong_ap/vtr_chain
 regression_tests/vtr_reg_strong/strong_ap/bipartitioning_partial_legalizer
