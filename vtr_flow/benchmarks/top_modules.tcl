@@ -71,5 +71,8 @@ namespace eval ::slang {
 		hard_block_include.v include
 		complex_dsp_include.v include
 		hard_mem_include.v include
+		generic_definitions1.vh include
+		generic_definitions2.vh include
+		memory_controller.v include
 	}
 }
