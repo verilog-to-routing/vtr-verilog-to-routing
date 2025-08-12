@@ -31,7 +31,7 @@ enum e_side : unsigned char {
     NUM_3D_SIDES = 6,
 };
 
-const std::unordered_map<char, e_side> CHAR_SIDE_MAP = {
+inline const std::unordered_map<char, e_side> CHAR_SIDE_MAP = {
     {'T', TOP},
     {'t', TOP},
     {'R', RIGHT},
@@ -64,12 +64,12 @@ enum class e_sb_location {
     E_XY_SPECIFIED
 };
 
-const std::unordered_map<std::string, e_sb_location> SB_LOCATION_STRING_MAP = {{"EVERYWHERE", e_sb_location::E_EVERYWHERE},
-                                                                               {"PERIMETER", e_sb_location::E_PERIMETER},
-                                                                               {"CORE", e_sb_location::E_CORE},
-                                                                               {"CORNER", e_sb_location::E_CORNER},
-                                                                               {"FRINGE", e_sb_location::E_FRINGE},
-                                                                               {"XY_SPECIFIED", e_sb_location::E_XY_SPECIFIED}};
+inline const std::unordered_map<std::string, e_sb_location> SB_LOCATION_STRING_MAP = {{"EVERYWHERE", e_sb_location::E_EVERYWHERE},
+                                                                                      {"PERIMETER", e_sb_location::E_PERIMETER},
+                                                                                      {"CORE", e_sb_location::E_CORE},
+                                                                                      {"CORNER", e_sb_location::E_CORNER},
+                                                                                      {"FRINGE", e_sb_location::E_FRINGE},
+                                                                                      {"XY_SPECIFIED", e_sb_location::E_XY_SPECIFIED}};
 
 /**
  * @brief Describes regions that a specific switch block specifications should be applied to
