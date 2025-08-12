@@ -12,6 +12,7 @@ namespace eval ::slang {
 		blob_merge.v RLE_BlobMerging
 		boundtop.v paj_boundtop_hierarchy_no_mem
 		ch_intrinsics.v memset
+		ch_intrinsics_modified.v memset
 		diffeq1.v diffeq_paj_convert
 		diffeq2.v diffeq_f_systemC
 		LU8PEEng.v LU8PEEng
