@@ -758,7 +758,7 @@ PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
         const t_appack_options& appack_options = appack_ctx_.appack_options;
         if (appack_options.use_appack) {
             t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
-            int cluster_max_attempts = appack_options.max_unrelated_clustering_attempts[cluster_type->index];
+            int cluster_max_attempts = appack_ctx_.unrelated_clustering_manager.get_max_unrelated_clustering_attempts(*cluster_type);
             if (num_unrelated_clustering_attempts_ < cluster_max_attempts) {
                 best_molecule = get_unrelated_candidate_for_cluster_appack(cluster_gain_stats,
                                                                            cluster_id,
@@ -1276,10 +1276,13 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
 
     // Get the max unrelated tile distance for the block type of this cluster.
     t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
-    float max_dist = appack_ctx_.appack_options.max_unrelated_tile_distance[cluster_type->index];
+    float max_dist = appack_ctx_.unrelated_clustering_manager.get_max_unrelated_tile_dist(*cluster_type);
+
+    // Do not let the max unrelated distance exceed the max distance threshold.
+    float max_candidate_dist = appack_ctx_.max_distance_threshold_manager.get_max_dist_threshold(*cluster_type);
 
     // Keep track of the closest compatible molecule and its distance.
-    float best_distance = std::numeric_limits<float>::max();
+    float best_distance = max_candidate_dist + 0.0001;
     PackMoleculeId closest_compatible_molecule = PackMoleculeId::INVALID();
 
     while (!search_queue.empty()) {
