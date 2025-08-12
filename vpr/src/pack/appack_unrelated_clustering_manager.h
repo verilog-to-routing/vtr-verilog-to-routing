@@ -16,10 +16,10 @@
  * @brief Manager class for unrelated clustering in APPack.
  *
  * After searching for candidates by connectivity and timing, the user may
- * turn on unrelated clustering, which will allow molecules which are
- * unrelated to the cluster being created to be attempted to be packed in.
- * APPack uses flat placement information to decide which unrelated
- * molecules to try.
+ * turn on unrelated clustering, which attempt to pack into the cluster molecules
+ * which are not attracted to the molecules within the current cluster (according
+ * to the standard packing heuristics). APPack uses flat placement information
+ * to decide which unrelated molecules to try.
  *
  * APPack will search for unrelated molecules in the tile which contains
  * the flat location of the cluster.  It will then look farther out, tile

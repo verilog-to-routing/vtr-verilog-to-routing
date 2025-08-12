@@ -1030,7 +1030,7 @@ bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& bl
 }
 
 bool pb_type_contains_memory_pbs(const t_pb_type* pb_type) {
-    // TODO: This should eb a graph traversal instead of a recursive function.
+    // TODO: This should be a graph traversal instead of a recursive function.
 
     if (pb_type == nullptr)
         return false;

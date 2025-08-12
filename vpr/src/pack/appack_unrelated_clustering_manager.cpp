@@ -25,12 +25,14 @@ void APPackUnrelatedClusteringManager::init(
     max_unrelated_clustering_attempts_.resize(logical_block_types.size(),
                                               default_max_unrelated_clustering_attempts_);
 
-    // For memories, we do not perform unrelated clustering.
+    // For memories (such as BRAMs and MLABs), we do not perform unrelated clustering.
     for (const t_logical_block_type& lb_ty : logical_block_types) {
         // Skip the empty logical block type. This should not have any blocks.
         if (lb_ty.is_empty())
             continue;
 
+        // If the logical block type contains a pb_type which is a memory class,
+        // it is assumed to be a BRAM or an MLAB.
         bool has_memory = pb_type_contains_memory_pbs(lb_ty.pb_type);
         if (!has_memory)
             continue;

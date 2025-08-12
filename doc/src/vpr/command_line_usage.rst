@@ -1384,14 +1384,17 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``auto``
 
-.. option:: --appack_max_dist_th { auto | <regex>:<float>,<float> }
+.. option:: --appack_unrelated_clustering_args { auto | <regex>:<float>,<float> }
 
-   Sets parameters used for unrelated clustering for the logical block types
-   used by APPack. APPack uses the primitive-level placement produced by the
+   Sets parameters used for unrelated clustering (the max search distance and max attempts)
+   used by APPack.
+   APPack uses the primitive-level placement produced by the
    global placer to cluster primitives together. APPack uses this information
    to help increase the density of clusters (if needed) by searching for
    unrelated molecules to pack together. It does this by searching out from
    the centroid of the cluster being created until it finds a valid molecule.
+   If a valid molecule is found, but it fails, the packer may do another attempt
+   (up to a maximum number of attempts).
    This argument allows the user to select the maximum distance the code will
    search and how many attempts it will try to search for each cluster.
 
