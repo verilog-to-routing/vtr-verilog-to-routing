@@ -257,12 +257,6 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         return;
     }
 
-    // if ((draw_state->draw_rr_toggle == DRAW_NODES_RR)
-    //     || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && (from_type == e_rr_type::OPIN || from_type == e_rr_type::SOURCE || from_type == e_rr_type::IPIN))
-    //     || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_CBOX_RR && (from_type == e_rr_type::SOURCE || from_type == e_rr_type::IPIN))) {
-    //     return; /* Nothing to draw. */
-    // }
-
     for (t_edge_size iedge = 0, l = rr_graph.num_edges(inode); iedge < l; iedge++) {
         RRNodeId to_node = rr_graph.edge_sink_node(inode, iedge);
         to_type = rr_graph.node_type(to_node);
@@ -348,11 +342,16 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
             color = ezgl::MAGENTA;
         }
 
-        // If the node is highlighted, use its color
-        if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA) || rgb_is_same(draw_state->draw_rr_node[to_node].color, ezgl::MAGENTA)) {
+        // If the node is highlighted, color the edges as blue for fanin and red for fanout
+        
+        if(rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA)){
             color = draw_state->draw_rr_node[to_node].color;
-            draw_edge = true; 
+            draw_edge = true;
+        } else if (rgb_is_same(draw_state->draw_rr_node[to_node].color, ezgl::MAGENTA)){
+            color = draw_state->draw_rr_node[inode].color;
+            draw_edge = true;
         }
+        
 
         if (!draw_edge) {
             continue;
@@ -673,12 +672,16 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
  * clicked upon, we highlight it in Magenta, and its fanout in red.
  */
 bool highlight_rr_nodes(float x, float y) {
+    t_draw_state* draw_state = get_draw_state_vars();
 
-    // if (draw_state->draw_rr_toggle == DRAW_NO_RR) {
-    //     application.update_message(draw_state->default_message);
-    //     application.refresh_drawing();
-    //     return false; //No rr shown
-    // }
+    if (!draw_state->show_rr || !draw_state->highlight_rr_edges) {
+        
+        // need to turn of current highlighting
+        application.update_message(draw_state->default_message);
+        application.refresh_drawing();
+
+        return false;
+    } 
 
     // Check which rr_node (if any) was clicked on.
     RRNodeId hit_node = draw_check_rr_node_hit(x, y);
