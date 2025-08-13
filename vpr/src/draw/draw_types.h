@@ -30,6 +30,7 @@
 
 #include "ezgl/rectangle.hpp"
 #include "ezgl/color.hpp"
+#include "ezgl/application.hpp"
 
 enum e_draw_crit_path {
     DRAW_NO_CRIT_PATH,
