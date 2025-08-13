@@ -526,6 +526,12 @@ void draw_selected_pb_flylines(ezgl::renderer* g) {
 }
 
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer* g) {
+
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (!draw_state->highlight_fan_in_fan_out || !draw_state->show_nets) {
+        return;
+    }
+
     std::set<AtomBlockId> atoms_set(atoms.begin(), atoms.end());
 
     auto& atom_nl = g_vpr_ctx.atom().netlist();
@@ -651,7 +657,8 @@ void draw_logical_connections(ezgl::renderer* g) {
             //transparency factor is the most transparent of the 2 options that the user selects from the UI
             transparency = std::min(element_visibility.alpha, draw_state->net_alpha);
 
-            //color selection
+            // color selection
+            // TODO: Figure out what this code does. We can select sources and sinks?!? This code might be a bit outdated. 
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
                 color = DRIVES_IT_COLOR;
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {

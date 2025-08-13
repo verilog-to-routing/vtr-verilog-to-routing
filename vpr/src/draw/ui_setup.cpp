@@ -34,7 +34,6 @@ static void setup_checkbox_button(std::string button_id, ezgl::application* app,
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
-    gtk_button_set_label(window, "Window");
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
 
     //button to search, created in main.ui

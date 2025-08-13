@@ -1057,7 +1057,7 @@
                 <property name="can-focus">False</property>
                 <child>
                   <object class="GtkButton" id="Window">
-                    <property name="label" translatable="yes">Zoom to Selection</property>
+                    <property name="label" translatable="yes">Zoom Select</property>
                     <property name="width-request">1</property>
                     <property name="height-request">-1</property>
                     <property name="visible">True</property>
