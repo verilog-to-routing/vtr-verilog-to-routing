@@ -319,7 +319,7 @@ void draw_congestion(ezgl::renderer* g) {
             }
         }
         g->set_line_width(0);
-        drawroute(HIGHLIGHTED, g);
+        draw_route(HIGHLIGHTED, g);
 
         //Reset colors
         for (RRNodeId inode : congested_rr_nodes) {
@@ -533,7 +533,7 @@ void draw_x(float x, float y, float size, ezgl::renderer* g) {
 /* Draws the nets in the positions fixed by the router.  If draw_net_type is *
  * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
  * that are not coloured black (useful for drawing over the rr_graph).       */
-void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
+void draw_route(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     /* Next free track in each channel segment if routing is GLOBAL */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -615,6 +615,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
 
+        
         if(inter_cluster_node && !draw_state->draw_inter_cluster_nets){
             continue;
         }

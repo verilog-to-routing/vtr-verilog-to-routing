@@ -46,9 +46,6 @@ void draw_rr(ezgl::renderer* g) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     if (!draw_state->show_rr) {
-        g->set_line_width(3);
-        drawroute(HIGHLIGHTED, g);
-        g->set_line_width(0);
         return;
     }
 
@@ -95,7 +92,6 @@ void draw_rr(ezgl::renderer* g) {
         draw_rr_node(inode, draw_state->draw_rr_node[inode].color, g);
     }
 
-    drawroute(HIGHLIGHTED, g);
 }
 
 void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {

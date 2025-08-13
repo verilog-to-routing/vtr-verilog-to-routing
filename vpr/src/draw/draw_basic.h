@@ -49,7 +49,7 @@ void draw_x(float x, float y, float size, ezgl::renderer* g);
 /* Draws the nets in the positions fixed by the router.  If draw_net_type is *
  * ALL_NETS, draw all the nets.  If it is HIGHLIGHTED, draw only the nets    *
  * that are not coloured black (useful for drawing over the rr_graph).       */
-void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g);
+void draw_route(enum e_draw_net_type draw_net_type, ezgl::renderer* g);
 
 void draw_routed_net(ParentNetId net, ezgl::renderer* g);
 

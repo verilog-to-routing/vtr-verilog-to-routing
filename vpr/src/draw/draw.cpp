@@ -195,7 +195,11 @@ static void draw_main_canvas(ezgl::renderer* g) {
     } else { /* ROUTING on screen */
 
         if (draw_state->show_nets && draw_state->draw_nets == DRAW_ROUTED_NETS){
-            drawroute(ALL_NETS, g);
+            draw_route(ALL_NETS, g);
+
+            if(draw_state->highlight_fan_in_fan_out) {
+                draw_route(HIGHLIGHTED, g);
+            }
         }
         
         draw_rr(g);
