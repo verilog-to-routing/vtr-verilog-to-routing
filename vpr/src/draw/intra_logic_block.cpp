@@ -612,7 +612,8 @@ void draw_logical_connections(ezgl::renderer* g) {
 
     g->set_line_dash(ezgl::line_dash::none);
 
-    int transparency_factor;
+    int transparency;
+    ezgl::color color;
 
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.netlist().nets()) {
@@ -647,21 +648,21 @@ void draw_logical_connections(ezgl::renderer* g) {
                 continue; /* Don't Draw */
             }
 
-            transparency_factor = element_visibility.alpha;
+            //transparency factor is the most transparent of the 2 options that the user selects from the UI
+            transparency = std::min(element_visibility.alpha, draw_state->net_alpha);
 
             //color selection
-            //transparency factor is the most transparent of the 2 options that the user selects from the UI
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVES_IT_COLOR, std::min(transparency_factor, DRIVES_IT_COLOR.alpha * draw_state->net_alpha / 255));
+                color = DRIVES_IT_COLOR;
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVEN_BY_IT_COLOR, std::min(transparency_factor, DRIVEN_BY_IT_COLOR.alpha * draw_state->net_alpha / 255));
-            } else if (draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
-
-                VTR_LOG("transparency_factor: %d, net_alpha: %d\n", transparency_factor, draw_state->net_alpha);
-                g->set_color(ezgl::BLACK, std::min(transparency_factor, draw_state->net_alpha)); // if showing all, draw the other ones in black
+                color = DRIVEN_BY_IT_COLOR;
+            } else if (draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets) {
+                color = ezgl::BLACK;
             } else {
-                continue; // not showing all, and not the specified block, so skip
+                continue;
             }
+
+            g->set_color(color, transparency);
 
             draw_one_logical_connection(driver_pin_id, sink_pin_id, g);
         }

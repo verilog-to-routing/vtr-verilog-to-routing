@@ -763,24 +763,26 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, doub
     // user has not clicked the window button, in regular mode
     t_draw_state* draw_state = get_draw_state_vars();
 
-    // if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-        RRNodeId hit_node = draw_check_rr_node_hit(x, y);
+    if (!draw_state->show_rr) {
+        return;
+    }
 
-        if (hit_node) {
-            //Update message
+    RRNodeId hit_node = draw_check_rr_node_hit(x, y);
 
-            const auto& device_ctx = g_vpr_ctx.device();
-            std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
-            std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
-            app->update_message(msg.c_str());
+    if (hit_node) {
+        //Update message
+        const auto& device_ctx = g_vpr_ctx.device();
+        std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
+        std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
+        app->update_message(msg.c_str());
+    } else {
+        if (!rr_highlight_message.empty()) {
+            app->update_message(rr_highlight_message.c_str());
         } else {
-            if (!rr_highlight_message.empty()) {
-                app->update_message(rr_highlight_message.c_str());
-            } else {
-                app->update_message(draw_state->default_message);
-            }
+            app->update_message(draw_state->default_message);
         }
-    // }
+    }
+    
 }
 
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {

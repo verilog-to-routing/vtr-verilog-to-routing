@@ -202,8 +202,6 @@ void drawnets(ezgl::renderer* g) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
-    float NET_ALPHA = draw_state->net_alpha;
-
     g->set_line_dash(ezgl::line_dash::none);
     g->set_line_width(0);
 
@@ -244,12 +242,12 @@ void drawnets(ezgl::renderer* g) {
             if (!element_visibility.visible) {
                 continue; /* Don't Draw */
             }
-            float transparency_factor = element_visibility.alpha;
-
-            //Take the highest of the 2 transparency values that the user can select from the UI
+            
+            // Take the highest of the 2 transparency values that the user can select from the UI
             // Compare the current cross layer transparency to the overall Net transparency set by the user.
-            // VTR_LOG("Transparency factor: %f, 2: %f\n", transparency_factor, draw_state->net_color[net_id].alpha * NET_ALPHA);
-            g->set_color(draw_state->net_color[net_id], fmin(transparency_factor, draw_state->net_color[net_id].alpha * NET_ALPHA));
+            int transparency = std::min(element_visibility.alpha, draw_state->net_color[net_id].alpha * draw_state->net_alpha / 255);
+            
+            g->set_color(draw_state->net_color[net_id], transparency);
 
             ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).center();
             g->draw_line(driver_center, sink_center);
@@ -543,10 +541,8 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-    float NET_ALPHA = draw_state->net_alpha;
-
     g->set_line_dash(ezgl::line_dash::none);
-    g->set_color(ezgl::BLACK, ezgl::BLACK.alpha * NET_ALPHA);
+    g->set_color(ezgl::BLACK, draw_state->net_alpha);
 
     /* Now draw each net, one by one.      */
     if (draw_state->is_flat) {

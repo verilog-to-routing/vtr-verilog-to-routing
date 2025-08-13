@@ -207,51 +207,51 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
     //TODO: fixed sized char array may cause overflow.
     char message[250] = "";
 
-    if (hit_node) {
-        const auto& device_ctx = g_vpr_ctx.device();
-        auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
-        for (auto node : nodes) {
-            if (draw_state->draw_rr_node[node].color != ezgl::MAGENTA) {
-                /* If the node hasn't been clicked on before, highlight it
-                 * in magenta.
-                 */
-                draw_state->draw_rr_node[node].color = ezgl::MAGENTA;
-                draw_state->draw_rr_node[node].node_highlighted = true;
-
-            } else {
-                //Using white color to represent de-highlighting (or
-                //de-selecting) of node.
-                draw_state->draw_rr_node[node].color = ezgl::WHITE;
-                draw_state->draw_rr_node[node].node_highlighted = false;
-            }
-            //Print info about all nodes to terminal
-            VTR_LOG("%s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, node, draw_state->is_flat).c_str());
-        }
-
-        //Show info about *only* hit node to graphics
-        std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
-
-        sprintf(message, "Selected %s", info.c_str());
-        rr_highlight_message = message;
-
-        // if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-            // If rr_graph is shown, highlight the fan-in/fan-outs for
-            // this node.
-            draw_highlight_fan_in_fan_out(nodes);
-        // }
-    } else {
+    if (!hit_node) {
         application.update_message(draw_state->default_message);
         rr_highlight_message = "";
         application.refresh_drawing();
-        return false; //No hit
+        return false;
     }
 
-    if (draw_state->show_nets)
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    // Highlight neighboring non_configurable nodes in magenta as well 
+    auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
+
+    for (auto node : nodes) {
+        if (draw_state->draw_rr_node[node].color != ezgl::MAGENTA) {
+            // If the node hasn't been clicked on before, highlight it in magenta.
+            draw_state->draw_rr_node[node].color = ezgl::MAGENTA;
+            draw_state->draw_rr_node[node].node_highlighted = true;
+
+        } else {
+            //Using white color to represent de-highlighting (or de-selecting) of node.
+            draw_state->draw_rr_node[node].color = ezgl::WHITE;
+            draw_state->draw_rr_node[node].node_highlighted = false;
+        }
+
+        //Print info about all nodes to terminal including neighboring non-configurable nodes
+        VTR_LOG("%s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, node, draw_state->is_flat).c_str());
+    }
+
+    //Show info about *only* hit node to graphics
+    std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
+    sprintf(message, "Selected %s", info.c_str());
+    rr_highlight_message = message;
+
+    // Highlight RR Edges if the user has selected this option
+    if (draw_state->show_rr && draw_state->highlight_rr_edges) {
+        draw_highlight_fan_in_fan_out(nodes);
+    }
+    
+    if (draw_state->show_nets) {
         highlight_nets(message, hit_node);
+    }
 
     application.update_message(message);
-
     application.refresh_drawing();
+
     return true;
 }
 

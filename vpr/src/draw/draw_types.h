@@ -328,10 +328,6 @@ struct t_draw_state {
     t_draw_state(const t_draw_state&) = default;
     t_draw_state& operator=(const t_draw_state&) = default;
 
-    void reset_nets_congestion_and_rr();
-
-    bool showing_sub_blocks();
-
     ezgl::color block_color(ClusterBlockId blk) const;
     void set_block_color(ClusterBlockId blk, ezgl::color color);
     void reset_block_color(ClusterBlockId blk);
