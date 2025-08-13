@@ -606,11 +606,22 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
 //Draws the set of rr_nodes specified, using the colors set in draw_state
 void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
+    auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     // Draw RR Nodes
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
         RRNodeId inode = rr_nodes_to_draw[i];
         ezgl::color color = draw_state->draw_rr_node[inode].color;
+
+        bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
+
+        if(inter_cluster_node && !draw_state->draw_inter_cluster_nets){
+            continue;
+        }
+
+        if(!inter_cluster_node && !draw_state->draw_intra_cluster_nets){
+            continue;
+        }
 
         draw_rr_node(inode, color, g);
     }
@@ -619,6 +630,16 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
     for (size_t i = 1; i < rr_nodes_to_draw.size(); ++i) {
         RRNodeId inode = rr_nodes_to_draw[i];
         RRNodeId prev_node = rr_nodes_to_draw[i - 1];
+        bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
+        bool prev_inter_cluster_node = is_inter_cluster_node(rr_graph, prev_node);
+
+        if((inter_cluster_node && prev_inter_cluster_node) && !draw_state->draw_inter_cluster_nets){
+            continue;
+        }
+
+        if((!inter_cluster_node || !prev_inter_cluster_node) && !draw_state->draw_intra_cluster_nets){
+            continue;
+        }
 
         draw_rr_edge(inode, prev_node, draw_state->draw_rr_node[inode].color, g);
     }
