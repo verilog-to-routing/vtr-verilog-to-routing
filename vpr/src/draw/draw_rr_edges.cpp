@@ -106,8 +106,8 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch
     g->draw_line({x1, y1}, {x2, y2});
 
     draw_rr_switch(x1, y1, x2, y2,
-                    rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
-                    rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
+                   rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
+                   rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
 }
 
 void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch_type, ezgl::renderer* g) {
@@ -194,9 +194,8 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch
     g->draw_line({x1, y1}, {x2, y2});
 
     draw_rr_switch(x1, y1, x2, y2,
-                    rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
-                    rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
-    
+                   rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
+                   rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
 }
 
 void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_chan_edge_dir edge_dir, short switch_type, ezgl::renderer* g) {
@@ -258,17 +257,15 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_c
 
     g->draw_line({x1, y1}, {x2, y2});
 
-    
     if (edge_dir == FROM_X_TO_Y) {
         draw_rr_switch(x1, y1, x2, y2,
-                        rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
-                        rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
+                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
+                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
     } else {
         draw_rr_switch(x2, y2, x1, y1,
-                        rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
-                        rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
+                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
+                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
     }
-    
 }
 
 void draw_intra_cluster_edge(RRNodeId inode, RRNodeId prev_node, ezgl::renderer* g) {

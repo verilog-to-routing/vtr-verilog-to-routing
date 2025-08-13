@@ -25,17 +25,17 @@ void toggle_checkbox_cbk(GtkToggleButton* self, t_checkbox_data* data) {
     } else {
         *data->toggle_state = false;
     }
-    
-    data->app->refresh_drawing();
-} 
 
-void toggle_show_nets_cbk(GtkSwitch* , gboolean state, ezgl::application* app) {
+    data->app->refresh_drawing();
+}
+
+void toggle_show_nets_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     bool switch_state = state ? true : false;
 
     draw_state->show_nets = switch_state;
-    
+
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleNetType")), switch_state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterNets")), switch_state);
     if (draw_state->is_flat) {
@@ -52,7 +52,7 @@ void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
     enum e_draw_nets new_state;
     t_draw_state* draw_state = get_draw_state_vars();
     gchar* setting = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(self));
-    
+
     // assign corresponding enum value to draw_state->show_nets
     if (strcmp(setting, "Routing") == 0) {
         new_state = DRAW_ROUTED_NETS;
@@ -65,7 +65,7 @@ void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
     //free dynamically allocated pointers
     g_free(setting);
 
-    //redraw    
+    //redraw
     app->refresh_drawing();
 }
 
@@ -98,8 +98,6 @@ void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
 
     app->refresh_drawing();
 }
-
-
 
 /**
  * @brief cbk function for toggle congestion comboBox. Updates shown cong. based on selected option

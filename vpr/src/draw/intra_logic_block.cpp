@@ -658,7 +658,7 @@ void draw_logical_connections(ezgl::renderer* g) {
             transparency = std::min(element_visibility.alpha, draw_state->net_alpha);
 
             // color selection
-            // TODO: Figure out what this code does. We can select sources and sinks?!? This code might be a bit outdated. 
+            // TODO: Figure out what this code does. We can select sources and sinks?!? This code might be a bit outdated.
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
                 color = DRIVES_IT_COLOR;
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {

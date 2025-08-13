@@ -24,7 +24,7 @@
 /**
  * @brief Helper function to connect a toggle button to a callback function
  */
-static void setup_checkbox_button(std::string button_id, ezgl::application* app, bool* toggle_state){
+static void setup_checkbox_button(std::string button_id, ezgl::application* app, bool* toggle_state) {
     t_draw_state* draw_state = get_draw_state_vars();
     GtkToggleButton* checkbox_button = GTK_TOGGLE_BUTTON(app->get_object(button_id.c_str()));
     draw_state->checkbox_data.emplace_back(app, toggle_state);
@@ -65,7 +65,6 @@ void net_button_setup(ezgl::application* app) {
     GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleNets"));
     g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_show_nets_cbk), app);
 
-
     //Toggle net signal connection
     GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNetType"));
     g_signal_connect(toggle_nets, "changed", G_CALLBACK(toggle_draw_nets_cbk), app);
@@ -73,7 +72,7 @@ void net_button_setup(ezgl::application* app) {
     setup_checkbox_button("ToggleInterClusterNets", app, &draw_state->draw_inter_cluster_nets);
 
     setup_checkbox_button("ToggleIntraClusterNets", app, &draw_state->draw_intra_cluster_nets);
-    
+
     setup_checkbox_button("FanInFanOut", app, &draw_state->highlight_fan_in_fan_out);
 
     //Manages net alpha

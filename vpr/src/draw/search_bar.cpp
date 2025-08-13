@@ -216,7 +216,7 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
 
     const auto& device_ctx = g_vpr_ctx.device();
 
-    // Highlight neighboring non_configurable nodes in magenta as well 
+    // Highlight neighboring non_configurable nodes in magenta as well
     auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
 
     for (auto node : nodes) {
@@ -244,7 +244,7 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
     if (draw_state->show_rr && draw_state->highlight_rr_edges) {
         draw_highlight_fan_in_fan_out(nodes);
     }
-    
+
     if (draw_state->show_nets) {
         highlight_nets(message, hit_node);
     }

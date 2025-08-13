@@ -56,7 +56,7 @@ void draw_rr(ezgl::renderer* g) {
         e_rr_type node_type = rr_graph.node_type(inode);
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
         bool node_highlighted = draw_state->draw_rr_node[inode].node_highlighted;
-        
+
         // Node colors by types
         static const std::map<e_rr_type, ezgl::color> node_colors = {
             {e_rr_type::CHANX, DEFAULT_RR_NODE_COLOR},
@@ -68,13 +68,13 @@ void draw_rr(ezgl::renderer* g) {
         // Apply color to the node if it is not highlighted
         if (!node_highlighted && node_colors.find(node_type) != node_colors.end()) {
             draw_state->draw_rr_node[inode].color = node_colors.at(node_type);
-        } 
+        }
 
         draw_rr_edges(inode, g);
-        
-        if(!node_highlighted) {
+
+        if (!node_highlighted) {
             // Draw channel nodes if enabled
-            if((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && !draw_state->draw_channel_nodes) {
+            if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && !draw_state->draw_channel_nodes) {
                 continue;
             }
 
@@ -84,14 +84,13 @@ void draw_rr(ezgl::renderer* g) {
             }
 
             // Draw intra-cluster nodes if enabled
-            if (!inter_cluster_node && !draw_state->draw_intra_cluster_nodes){
+            if (!inter_cluster_node && !draw_state->draw_intra_cluster_nodes) {
                 continue;
             }
         }
 
         draw_rr_node(inode, draw_state->draw_rr_node[inode].color, g);
     }
-
 }
 
 void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
@@ -298,15 +297,15 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         // Determine whether to draw the edge based on user options
 
         if ((edge_type == e_edge_type::PIN_TO_OPIN || edge_type == e_edge_type::PIN_TO_IPIN) && !draw_state->draw_intra_cluster_edges) {
-            draw_edge = false;   
+            draw_edge = false;
         }
 
         if ((edge_type == e_edge_type::OPIN_TO_CHAN || edge_type == e_edge_type::CHAN_TO_IPIN) && !draw_state->draw_connection_box_edges) {
-            draw_edge = false;   
+            draw_edge = false;
         }
 
         if (edge_type == e_edge_type::CHAN_TO_CHAN && !draw_state->draw_switch_box_edges) {
-            draw_edge = false;   
+            draw_edge = false;
         }
 
         // Special case for direct connections between output pins and input pins of clb.
@@ -320,8 +319,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
             {e_edge_type::PIN_TO_IPIN, ezgl::MEDIUM_PURPLE},
             {e_edge_type::OPIN_TO_CHAN, ezgl::PINK},
             {e_edge_type::CHAN_TO_IPIN, ezgl::PURPLE},
-            {e_edge_type::CHAN_TO_CHAN, blk_DARKGREEN}
-        };
+            {e_edge_type::CHAN_TO_CHAN, blk_DARKGREEN}};
 
         color = edge_color_map.at(edge_type);
 
@@ -339,23 +337,21 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         }
 
         // If the node is highlighted, color the edges as blue for fanin and red for fanout
-        if(draw_state->highlight_rr_edges){
-            if(rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA)){
+        if (draw_state->highlight_rr_edges) {
+            if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA)) {
                 color = draw_state->draw_rr_node[to_node].color;
                 draw_edge = true;
-            } else if (rgb_is_same(draw_state->draw_rr_node[to_node].color, ezgl::MAGENTA)){
+            } else if (rgb_is_same(draw_state->draw_rr_node[to_node].color, ezgl::MAGENTA)) {
                 color = draw_state->draw_rr_node[inode].color;
                 draw_edge = true;
             }
         }
-        
 
         if (!draw_edge) {
             continue;
         }
 
         draw_rr_edge(to_node, inode, color, g);
-
     }
 }
 

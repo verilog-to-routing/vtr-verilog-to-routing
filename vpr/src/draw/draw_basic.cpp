@@ -242,11 +242,11 @@ void drawnets(ezgl::renderer* g) {
             if (!element_visibility.visible) {
                 continue; /* Don't Draw */
             }
-            
+
             // Take the highest of the 2 transparency values that the user can select from the UI
             // Compare the current cross layer transparency to the overall Net transparency set by the user.
             int transparency = std::min(element_visibility.alpha, draw_state->net_color[net_id].alpha * draw_state->net_alpha / 255);
-            
+
             g->set_color(draw_state->net_color[net_id], transparency);
 
             ezgl::point2d sink_center = draw_coords->get_absolute_clb_bbox(b2, cluster_ctx.clb_nlist.block_type(b2)).center();
@@ -615,12 +615,11 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
 
-        
-        if(inter_cluster_node && !draw_state->draw_inter_cluster_nets){
+        if (inter_cluster_node && !draw_state->draw_inter_cluster_nets) {
             continue;
         }
 
-        if(!inter_cluster_node && !draw_state->draw_intra_cluster_nets){
+        if (!inter_cluster_node && !draw_state->draw_intra_cluster_nets) {
             continue;
         }
 
@@ -634,11 +633,11 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
         bool prev_inter_cluster_node = is_inter_cluster_node(rr_graph, prev_node);
 
-        if((inter_cluster_node && prev_inter_cluster_node) && !draw_state->draw_inter_cluster_nets){
+        if ((inter_cluster_node && prev_inter_cluster_node) && !draw_state->draw_inter_cluster_nets) {
             continue;
         }
 
-        if((!inter_cluster_node || !prev_inter_cluster_node) && !draw_state->draw_intra_cluster_nets){
+        if ((!inter_cluster_node || !prev_inter_cluster_node) && !draw_state->draw_intra_cluster_nets) {
             continue;
         }
 

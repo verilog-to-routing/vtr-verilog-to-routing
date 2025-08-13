@@ -189,19 +189,19 @@ static void draw_main_canvas(ezgl::renderer* g) {
     draw_internal_draw_subblk(g);
 
     if (draw_state->pic_on_screen == PLACEMENT) {
-        if(draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets) {
+        if (draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets) {
             drawnets(g);
         }
     } else { /* ROUTING on screen */
 
-        if (draw_state->show_nets && draw_state->draw_nets == DRAW_ROUTED_NETS){
+        if (draw_state->show_nets && draw_state->draw_nets == DRAW_ROUTED_NETS) {
             draw_route(ALL_NETS, g);
 
-            if(draw_state->highlight_fan_in_fan_out) {
+            if (draw_state->highlight_fan_in_fan_out) {
                 draw_route(HIGHLIGHTED, g);
             }
         }
-        
+
         draw_rr(g);
 
         draw_congestion(g);
@@ -786,7 +786,6 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, doub
             app->update_message(draw_state->default_message);
         }
     }
-    
 }
 
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
