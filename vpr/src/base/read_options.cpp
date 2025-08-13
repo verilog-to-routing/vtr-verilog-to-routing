@@ -2010,6 +2010,32 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value({"auto"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument(args.appack_unrelated_clustering_args, "--appack_unrelated_clustering_args")
+        .help(
+            "Sets parameters used for unrelated clustering (the max search distance and max attempts) "
+            "used by APPack. "
+            "APPack uses the primitive-level placement produced by the "
+            "global placer to cluster primitives together. APPack uses this information "
+            "to help increase the density of clusters (if needed) by searching for "
+            "unrelated molecules to pack together. It does this by searching out from "
+            "the centroid of the cluster being created until it finds a valid molecule. "
+            "If a valid molecule is found, but it fails, the packer may do another attempt "
+            "(up to a maximum number of attempts). "
+            "This argument allows the user to select the maximum distance the code will "
+            "search and how many attempts it will try to search for each cluster."
+            "\n"
+            "When this option is set to auto, VPR will select good values for these "
+            "parameters based on the primitives contained within each logical block type."
+            "\n"
+            "This option is similar to the appack_max_dist_th argument, where the "
+            "parameters are passed by the user in the form <regex>:<float>,<float> where "
+            "regex is used to match the name of the logical block type to set, the "
+            "first float is the max unrelated tile distance, and the second float "
+            "is the max unrelated clustering attempts.")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
         .help(
             "Controls how verbose the AP flow's log messages will be. Higher "
