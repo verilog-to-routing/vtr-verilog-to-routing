@@ -1128,6 +1128,9 @@ struct t_placer_opts {
  *   @param appack_max_dist_th
  *              Array of string passed by the user to configure the max candidate
  *              distance thresholds.
+ *   @param appack_unrelated_clustering_args
+ *              Array of strings passed by the user to configure the unrelated
+ *              clustering parameters used by APPack.
  *   @param num_threads
  *              The number of threads the AP flow can use.
  *   @param log_verbosity
@@ -1154,6 +1157,8 @@ struct t_ap_opts {
     std::vector<std::string> ap_partial_legalizer_target_density;
 
     std::vector<std::string> appack_max_dist_th;
+
+    std::vector<std::string> appack_unrelated_clustering_args;
 
     unsigned num_threads;
 
