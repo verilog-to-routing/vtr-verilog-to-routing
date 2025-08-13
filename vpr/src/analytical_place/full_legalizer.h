@@ -105,29 +105,29 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
  * either being read from an '.fplace' file or with the GP output. However, in
  * both cases it expects the given flat placement to be close to legal.
  *
- * Before packing, it sorts the molecules such that long carry chain elements
- * are being first, and then molecules with highest external input pin numbers
- * becoming first among long carry chain elements and the others. It then
- * groups the molecules according to the tiles that they want to be placed.
+ * Before packing, molecules are sorted so that long carry chain molecules are
+ * priorizited. For molecules in the same priority group, higher external pins
+ * are used as a tie-breaker. It then groups the molecules according to the tiles
+ * determined from their flat placement.
  *
  * The packing consists of two passes: reconstruction and neighbor. In the
  * reconstruction pass, it iterates over each tile and tries to create least
  * amount of clusters with the molecules that want to be in that tile. It
  * first tries to cluster with SKIP_INTRA_LB_ROUTE strategy and then tries with
  * the FULL strategy with the failing molecules in that tile. Any molecule that
- * could not clustered in tha pass (either by not being compatible with the
+ * could not clustered in that pass (either by not being compatible with the
  * desired tile or not being able to add created clusters) is passed to neighbor
  * pass. In the neighbor pass, the first molecule inserted in the reconstruction
  * pass is popped and selected as the seed molecule. Then, its N-neighboring
  * molecules that are at most N tiles away (in Manhattan distance) are selected
  * to be candidate molecules. If candidate molecules are added successfully,
- * they are pooped as well. Then, next unclustered molecule is popped and it
- * continues until no all molecules are clustered. The neighbor search radius
+ * they are pooped as well. Then, the next unclustered molecule is popped and it
+ * continues until all molecules are clustered. The neighbor search radius
  * is set to 8 based on experiments on Titan benchmarks. Radius 8 was giving
- * the least amount of clusterd without hurting the maximum displacement.
+ * the least amount of clusters without hurting the maximum displacement.
  *
- * The placement uses the initial placement in the AP flow. It is guided to
- * place the clusters according to where its atoms are desired to be placed.
+ * After cluster creation, each cluster is placed by the initial placer at the
+ * grid location nearest to the centroid of its atoms.
  *
  */
 class FlatRecon : public FullLegalizer {
@@ -142,6 +142,9 @@ class FlatRecon : public FullLegalizer {
   private:
     /// @brief Mapping from subtile location to legalization cluster id to keep
     ///        track of clusters created.
+    /// TODO: It would make sense to store this as a 3D NDMatrix of arrays where we can
+    ///       index into the [layer][x][y][subtile] and get the cluster ID at that location.
+    ///       It will be faster than using an unordered map and likely more space efficient.
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
 
     /// @brief Mapping from physical tile location to legalization cluster ids
@@ -161,7 +164,7 @@ class FlatRecon : public FullLegalizer {
      * @return Mapping from tile location to sorted vector of molecules that
      *         wants to be in that tile.
      */
-    std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>
+    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>
     sort_and_group_blocks_by_tile(const PartialPlacement& p_placement);
 
     /**
@@ -191,7 +194,7 @@ class FlatRecon : public FullLegalizer {
     void reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                                      const DeviceGrid& device_grid,
                                      const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                     std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
+                                     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
                                      std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks);
 
     /**
@@ -224,10 +227,8 @@ class FlatRecon : public FullLegalizer {
      *
      * This will call sorting and grouping molecules by tile, reconstruction
      * clustering pass, and neighbor clustering pass.
-     *
-     * @return The generated clustered netlist.
      */
-    ClusteredNetlist create_clusters(ClusterLegalizer& cluster_legalizer,
+    void create_clusters(ClusterLegalizer& cluster_legalizer,
                                      const PartialPlacement& p_placement);
 
     /**

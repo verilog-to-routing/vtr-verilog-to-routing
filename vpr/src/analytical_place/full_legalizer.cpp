@@ -367,7 +367,7 @@ static bool try_size_device_grid(const t_arch& arch,
     return fits_on_device;
 }
 
-std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>
+std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>
 FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer pack_reconstruction_timer("Sorting and Grouping Blocks by Tile");
     // Block sorting information. This can be altered easily to try different sorting strategies.
@@ -405,7 +405,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
 
     // Group the molecules by root tile. Any non-zero offset gets
     // pulled back to its root.
-    std::map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
+    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
     for (const auto& [mol_id, ext_pins, is_long_chain, tile_loc] : sorted_blocks) {
         int width_offset = device_grid_.get_width_offset(tile_loc);
         int height_offset = device_grid_.get_height_offset(tile_loc);
@@ -465,7 +465,7 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
 void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                                             const DeviceGrid& device_grid,
                                             const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                            std::map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
+                                            std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
                                             std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks) {
     vtr::ScopedStartFinishTimer reconstruction_pass_clustering("Reconstruction Pass Clustering");
     for (const auto& [key, value] : tile_blocks) {
@@ -753,7 +753,7 @@ void FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
     }
 }
 
-ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
+void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                                             const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer creating_clusters("Creating Clusters");
 
@@ -958,13 +958,10 @@ ClusteredNetlist FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     // FIXME: This writing and loading from a file is wasteful. Should generate
     //        the clusters directly from the cluster legalizer.
     vpr_load_packing(vpr_setup_, arch_);
-    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Verify the packing
     check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
     writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
-
-    return clb_nlist;
 }
 
 void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
@@ -1080,7 +1077,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
         vpr_setup_.PackerOpts.pack_verbosity);
 
     // Perform clustering using partial placement
-    const ClusteredNetlist& clb_nlist = create_clusters(cluster_legalizer, p_placement);
+    create_clusters(cluster_legalizer, p_placement);
 
     // Verify that the clustering created by the full legalizer is valid.
     unsigned num_clustering_errors = verify_clustering(g_vpr_ctx);

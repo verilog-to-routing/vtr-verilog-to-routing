@@ -897,7 +897,27 @@ struct t_physical_tile_loc {
         if (lhs.x != rhs.x) return lhs.x < rhs.x;
         return lhs.y < rhs.y;
     }
+
+    friend bool operator==(const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
+        return a.layer_num == b.layer_num && a.x == b.x && a.y == b.y;
+    }
+
+    friend bool operator!=(const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
+        return !(a == b);
+    }
 };
+
+namespace std {
+template<>
+struct hash<t_physical_tile_loc> {
+    std::size_t operator()(const t_physical_tile_loc& v) const noexcept {
+        std::size_t seed = std::hash<int>{}(v.x);
+        vtr::hash_combine(seed, v.y);
+        vtr::hash_combine(seed, v.layer_num);
+        return seed;
+    }
+};
+} // namespace std
 
 /** Describes I/O and clock ports of a physical tile type
  *
