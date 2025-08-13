@@ -360,7 +360,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 
         draw_rr_edge(to_node, inode, color, g);
 
-    } /* End of for each edge loop */
+    }
 }
 
 void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {

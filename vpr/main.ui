@@ -177,7 +177,7 @@
           <object class="GtkLabel" id="toggleBlkInternalLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Toggle Block Internals:</property>
+            <property name="label" translatable="yes">Block Internals</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -200,7 +200,7 @@
           <object class="GtkLabel" id="BlkPinUtilLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Toggle Block Pin Util:</property>
+            <property name="label" translatable="yes">Block Pin Utilization</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -231,7 +231,7 @@
           <object class="GtkLabel" id="PlacementMacrosLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Toggle Placement Macros:</property>
+            <property name="label" translatable="yes">Placement Macros</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -260,7 +260,7 @@
           <object class="GtkLabel" id="NocLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Toggle NoC Display</property>
+            <property name="label" translatable="yes">NoC Display</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -409,7 +409,7 @@
           <object class="GtkLabel" id="CritPathLabel">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="label" translatable="yes">Toggle Critical Path:</property>
+            <property name="label" translatable="yes">Critical Path</property>
           </object>
           <packing>
             <property name="left-attach">0</property>
@@ -1057,7 +1057,7 @@
                 <property name="can-focus">False</property>
                 <child>
                   <object class="GtkButton" id="Window">
-                    <property name="label" translatable="yes">Window</property>
+                    <property name="label" translatable="yes">Zoom to Selection</property>
                     <property name="width-request">1</property>
                     <property name="height-request">-1</property>
                     <property name="visible">True</property>
