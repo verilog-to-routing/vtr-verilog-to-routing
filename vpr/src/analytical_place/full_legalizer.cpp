@@ -421,6 +421,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
                                         tile_loc.y - height_offset,
                                         tile_loc.layer_num};
         tile_blocks[root_loc].push_back(mol_id);
+        mol_desired_physical_tile_loc[mol_id] = root_loc;
     }
 
     return tile_blocks;
@@ -431,14 +432,12 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
                                           const std::vector<PackMoleculeId>& tile_molecules,
                                           ClusterLegalizer& cluster_legalizer,
                                           const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                          std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                                           std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check) {
     for (PackMoleculeId mol_id : tile_molecules) {
         // Get the block type for compatibility check.
         t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
 
         // Try all subtiles in a single loop
-        bool placed = false;
         for (int sub_tile = 0; sub_tile < tile_type->capacity; ++sub_tile) {
             const t_pl_loc loc{tile_loc.x, tile_loc.y, sub_tile, tile_loc.layer_num};
             auto cluster_it = loc_to_cluster_id_placed.find(loc);
@@ -450,23 +449,16 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
                     continue;
 
                 e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id);
-                if (pack_status == e_block_pack_status::BLK_PASSED) {
-                    placed = true;
+                if (pack_status == e_block_pack_status::BLK_PASSED)
                     break;
-                }
             } else if (is_tile_compatible(tile_type, block_type)) {
                 // Create new cluster
                 LegalizationClusterId new_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
                 cluster_ids_to_check[new_id] = loc;
                 loc_to_cluster_id_placed[loc] = new_id;
                 tile_loc_to_cluster_id_placed[{tile_loc.x, tile_loc.y, -1, tile_loc.layer_num}].push_back(new_id);
-                placed = true;
                 break;
             }
-        }
-
-        if (!placed) {
-            unclustered_blocks.push_back({mol_id, tile_loc});
         }
     }
 }
@@ -474,8 +466,7 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
 void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                                             const DeviceGrid& device_grid,
                                             const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                            std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
-                                            std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks) {
+                                            std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks) {
     vtr::ScopedStartFinishTimer reconstruction_pass_clustering("Reconstruction Pass Clustering");
     for (const auto& [key, value] : tile_blocks) {
         // Get tile and molecules aimed to be placed in that tile
@@ -492,7 +483,6 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                                   tile_molecules,
                                   cluster_legalizer,
                                   primitive_candidate_block_types,
-                                  unclustered_blocks,
                                   cluster_ids_to_check);
 
         // Check legality of clusters created with fast pass. Store the
@@ -525,7 +515,6 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                                   illegal_cluster_mols,
                                   cluster_legalizer,
                                   primitive_candidate_block_types,
-                                  unclustered_blocks,
                                   cluster_ids_to_check);
 
         // Clean all clusters created in that tile not to increase memory footprint.
@@ -535,12 +524,11 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
         // Set the legalization strategy to fast check again for next the tile
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
     }
-    VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu .\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
+    //VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu .\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
 }
 
 void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                                     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                                     std::vector<LegalizationClusterId>& first_pass_clusters,
                                     size_t& total_molecules_in_join_with_neighbor) {
     vtr::ScopedStartFinishTimer neigh_pass_clustering("Neighbor Pass Clustering");
@@ -555,7 +543,14 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
     VTR_LOG("Join with Neighbor Pass...\n");
     
     // For each unplaced block, get its neighboring clusters created.
-    for (const auto& [molecule_id, loc] : unclustered_blocks) {
+    for (APBlockId blk_id : ap_netlist_.blocks()) {
+        // Get unclustered block and its location.
+        PackMoleculeId molecule_id = ap_netlist_.block_molecule(blk_id);
+        if (cluster_legalizer.is_mol_clustered(molecule_id))
+            continue;
+        t_physical_tile_loc loc = mol_desired_physical_tile_loc[molecule_id];
+
+
         t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(molecule_id, prepacker_, primitive_candidate_block_types);
         VTR_ASSERT(block_type && "We need a blocks type");
 
@@ -712,9 +707,6 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
             total_molecules_in_join_with_neighbor++;
         }
     }
-
-    // use the broken blocks as unclustered blocks
-    unclustered_blocks = broken_molecules;
 }
 
 void FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
@@ -763,7 +755,7 @@ void FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
 }
 
 void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
-                                            const PartialPlacement& p_placement) {
+                                const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer creating_clusters("Creating Clusters");
 
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
@@ -777,13 +769,10 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
         primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
-
     reconstruction_cluster_pass(cluster_legalizer,
                                 device_grid,
                                 primitive_candidate_block_types,
-                                tile_blocks,
-                                unclustered_blocks);
+                                tile_blocks);
 
     // Reconstruction pass clustering statistics collection
     std::unordered_map<std::string, size_t> cluster_type_count_first_pass;
@@ -826,15 +815,28 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     size_t total_molecules_in_join_with_neighbor = 0;
     neighbor_clustering(cluster_legalizer,
                         primitive_candidate_block_types,
-                        unclustered_blocks,
                         first_pass_clusters,
                         total_molecules_in_join_with_neighbor);
 
-    VTR_LOG("Unclusterd Blocks Before Starting Neighbor Pass: %zu\n", unclustered_blocks.size());
+    //VTR_LOG("Unclusterd Blocks Before Starting Neighbor Pass: %zu\n", unclustered_blocks.size());
 
-    // Save unclustered blocks
-    unclustered_blocks_saved = unclustered_blocks;
+
+
+    // Create unclustered blocks spatial data for orphan window clustering.
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
     
+    for (APBlockId blk_id : ap_netlist_.blocks()) {
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(blk_id);
+
+        if (cluster_legalizer.is_mol_clustered(mol_id))
+            continue;
+
+        t_physical_tile_loc tile_loc = mol_desired_physical_tile_loc[mol_id];
+        unclustered_blocks.push_back({mol_id, tile_loc});
+    }
+    unclustered_blocks_saved = unclustered_blocks;
+
+
     // Neighbor Search Radius Values to Try
     std::vector<int> neighbor_search_radius_vector = {8, 16, static_cast<int>(device_grid.width() + device_grid.height())};
 

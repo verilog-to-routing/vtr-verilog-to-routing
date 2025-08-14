@@ -147,6 +147,9 @@ class FlatRecon : public FullLegalizer {
     ///       It will be faster than using an unordered map and likely more space efficient.
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
 
+    /// @brief Mapping from a molecule id to its desired physical tile location.
+    std::unordered_map<PackMoleculeId, t_physical_tile_loc> mol_desired_physical_tile_loc;
+
     /// @brief Mapping from physical tile location to legalization cluster ids
     ///        to keep track of clusters created.
     std::unordered_map<t_pl_loc, std::vector<LegalizationClusterId>> tile_loc_to_cluster_id_placed;
@@ -181,7 +184,6 @@ class FlatRecon : public FullLegalizer {
                                    const std::vector<PackMoleculeId>& tile_molecules,
                                    ClusterLegalizer& cluster_legalizer,
                                    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                   std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                                    std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check);
 
     /**
@@ -194,8 +196,7 @@ class FlatRecon : public FullLegalizer {
     void reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                                      const DeviceGrid& device_grid,
                                      const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
-                                     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks);
+                                     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks);
 
     /**
      * @brief Helper method to perform neighbor clustering.
@@ -205,7 +206,6 @@ class FlatRecon : public FullLegalizer {
      */
     void neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                              const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                             std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                              std::vector<LegalizationClusterId>& first_pass_clusters,
                              size_t& total_molecules_in_join_with_neighbor);
     /**
