@@ -2721,8 +2721,8 @@ When instantiated, a scatter-gather pattern gathers connections from a switchblo
     :req_param seg_type: Name of the segment/wire used to move through the device to the scatter location (i.e. the type of the scatter-gather node)
 
     :opt_param x_offset: Offset of the scatter relative to the gather in the x-axis
-    :opt_param x_offset: Offset of the scatter relative to the gather in the y-axis
-    :opt_param x_offset: Offset of the scatter relative to the gather in the z-axis
+    :opt_param y_offset: Offset of the scatter relative to the gather in the y-axis
+    :opt_param z_offset: Offset of the scatter relative to the gather in the z-axis
 
     .. note:: One and only one of the offset fields for the sg_link tag should be set. The magnitude of the offset will generally be chosen by the architecture file creator to match the length of the sg_link segment type.
 
