@@ -298,7 +298,7 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
  *  @param primitive_candidate_block_types  Candidate logical block types for the given molecule.
  *
  */
-static t_logical_block_type_ptr get_molecule_logical_block_type(PackMoleculeId mol_id,
+static t_logical_block_type_ptr infer_molecule_logical_block_type(PackMoleculeId mol_id,
                                                                 const Prepacker& prepacker,
                                                                 const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     // Get the root atom and its model id. Ensure that both is valid.
@@ -392,16 +392,24 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
         sorted_blocks.push_back({mol_id, num_ext_inputs, long_chain, tile_loc});
     }
 
-    // Sort the blocks: molecules of a long chain should come first, then
-    // sort by descending external input pin counts.
+    // Sort the blocks so that:
+    // 1) Long carry-chain molecules are placed first. They have strict placement
+    //    constraints, so we want to place them before the layout becomes constrained
+    //    by other blocks. This will avoid increasing the displacement.
+    // 2) Within the same category (both long-chain or both non-long-chain), sort
+    //    by descending number of external input pins. (empirically best for reconstructing
+    //    dense clusters compared to external outputs or external total pins).
     std::sort(sorted_blocks.begin(), sorted_blocks.end(),
-              [](const BlockInformation& a, const BlockInformation& b) {
-                  if (a.is_long_chain != b.is_long_chain) {
-                      return a.is_long_chain > b.is_long_chain; // Long chains first
-                  } else {
-                      return a.ext_inps > b.ext_inps; // Then external inputs
-                  }
-              });
+            [](const BlockInformation& a, const BlockInformation& b) {
+                // Long chains should always come before non-long chains
+                if (a.is_long_chain && !b.is_long_chain)
+                    return true;
+                if (!a.is_long_chain && b.is_long_chain)
+                    return false;
+
+                // If both blocks are chains / not chains, sort in decreasing order of external inputs.
+                return a.ext_inps > b.ext_inps;
+            });
 
     // Group the molecules by root tile. Any non-zero offset gets
     // pulled back to its root.
@@ -427,7 +435,7 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
                                           std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check) {
     for (PackMoleculeId mol_id : tile_molecules) {
         // Get the block type for compatibility check.
-        const auto block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
+        t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
 
         // Try all subtiles in a single loop
         bool placed = false;
@@ -441,7 +449,8 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
                 if (!cluster_legalizer.is_molecule_compatible(mol_id, cluster_id))
                     continue;
 
-                if (cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id) == e_block_pack_status::BLK_PASSED) {
+                e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id);
+                if (pack_status == e_block_pack_status::BLK_PASSED) {
                     placed = true;
                     break;
                 }
@@ -547,7 +556,7 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
     
     // For each unplaced block, get its neighboring clusters created.
     for (const auto& [molecule_id, loc] : unclustered_blocks) {
-        t_logical_block_type_ptr block_type = get_molecule_logical_block_type(molecule_id, prepacker_, primitive_candidate_block_types);
+        t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(molecule_id, prepacker_, primitive_candidate_block_types);
         VTR_ASSERT(block_type && "We need a blocks type");
 
         std::string block_name = block_type->name;
@@ -799,7 +808,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
             }
             // Set block type only once per cluster
             if (!block_type_set) {
-                t_logical_block_type_ptr block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
+                t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
                 if (block_type) {
                     std::string block_name = block_type->name;
                     cluster_type_count_first_pass[block_name]++;
@@ -897,7 +906,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
             }
             // Set block type only once per cluster
             if (!block_type_set) {
-                t_logical_block_type_ptr block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
+                t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
                 if (block_type) {
                     std::string block_name = block_type->name;
                     cluster_type_count_second_pass[block_name]++;
