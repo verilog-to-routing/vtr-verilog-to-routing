@@ -59,7 +59,7 @@ void draw_rr(ezgl::renderer* g) {
 
         // Node colors by types
         // colors for Source, Sink, IPIN, OPIN, CHANX, CHANY, MUX, CHANZ
-        constexpr vtr::array<e_rr_type, ezgl::color, (size_t)e_rr_type::NUM_RR_TYPES> node_colors {DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, ezgl::PURPLE, ezgl::PINK, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR};
+        constexpr vtr::array<e_rr_type, ezgl::color, (size_t)e_rr_type::NUM_RR_TYPES> node_colors{DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, ezgl::PURPLE, ezgl::PINK, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR};
 
         // Apply color to the node if it is not highlighted
         if (!node_highlighted) {

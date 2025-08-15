@@ -1221,9 +1221,9 @@ static void build_rr_graph(e_graph_type graph_type,
     } else {
         if (sb_type == CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
-                                                        grid, inter_cluster_prog_rr,
-                                                        switchblocks, nodes_per_chan, directionality,
-                                                        switchpoint_rng);
+                                                                  grid, inter_cluster_prog_rr,
+                                                                  switchblocks, nodes_per_chan, directionality,
+                                                                  switchpoint_rng);
         } else {
             if (directionality == BI_DIRECTIONAL) {
                 switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, sb_type, Fs);
@@ -1237,8 +1237,8 @@ static void build_rr_graph(e_graph_type graph_type,
                 for (size_t i = 0; i < grid.width() - 1; i++) {
                     for (size_t j = 0; j < grid.height() - 1; j++) {
                         load_sblock_pattern_lookup(i, j, grid, nodes_per_chan,
-                                                chan_details_x, chan_details_y,
-                                                Fs, sb_type, unidir_sb_pattern);
+                                                   chan_details_x, chan_details_y,
+                                                   Fs, sb_type, unidir_sb_pattern);
                     }
                 }
 
@@ -1317,7 +1317,7 @@ static void build_rr_graph(e_graph_type graph_type,
         for (size_t itype = 0; itype < types.size(); ++itype) {
             std::set<int> type_layer = get_layers_of_physical_types(&types[itype]);
             std::vector<bool> perturb_opins = alloc_and_load_perturb_opins(&types[itype], Fc_out[itype],
-                                                              max_chan_width, segment_inf);
+                                                                           max_chan_width, segment_inf);
             opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
                                                                        Fc_out[itype], &types[itype], type_layer, perturb_opins, directionality,
                                                                        segment_inf, sets_per_seg_type);
