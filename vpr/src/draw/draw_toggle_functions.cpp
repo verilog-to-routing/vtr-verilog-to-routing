@@ -32,18 +32,16 @@ void toggle_checkbox_cbk(GtkToggleButton* self, t_checkbox_data* data) {
 void toggle_show_nets_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    bool switch_state = state ? true : false;
+    draw_state->show_nets = state;
 
-    draw_state->show_nets = switch_state;
-
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleNetType")), switch_state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterNets")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleNetType")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterNets")), state);
     if (draw_state->is_flat) {
-        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), switch_state);
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), state);
     }
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("FanInFanOut")), switch_state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("NetAlpha")), switch_state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("NetMaxFanout")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("FanInFanOut")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("NetAlpha")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("NetMaxFanout")), state);
 
     app->refresh_drawing();
 }
@@ -79,22 +77,20 @@ void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
 void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    bool switch_state = state ? true : false;
-
-    draw_state->show_rr = switch_state;
+    draw_state->show_rr = state;
 
     // Enable/disable the rr drawing sub-options based on the switch state
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRChannels")), switch_state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterPinNodes")), switch_state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRSBox")), switch_state);
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRCBox")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRChannels")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterPinNodes")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRSBox")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRCBox")), state);
 
     //currently intra-cluster nodes and edges are only supported if flat routing is enabled
     if (draw_state->is_flat) {
-        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterNodes")), switch_state);
-        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterEdges")), switch_state);
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterNodes")), state);
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterEdges")), state);
     }
-    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleHighlightRR")), switch_state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleHighlightRR")), state);
 
     app->refresh_drawing();
 }

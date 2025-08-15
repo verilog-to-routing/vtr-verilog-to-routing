@@ -615,10 +615,12 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
 
+        // skip drawing INTER-cluster nets if the user has disabled them
         if (inter_cluster_node && !draw_state->draw_inter_cluster_nets) {
             continue;
         }
 
+        // skip drawing INTRA-cluster nets if the user has disabled them
         if (!inter_cluster_node && !draw_state->draw_intra_cluster_nets) {
             continue;
         }
@@ -633,10 +635,12 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
         bool prev_inter_cluster_node = is_inter_cluster_node(rr_graph, prev_node);
 
+        // If this is an edge between two inter-cluster nodes, draw only if the user has enabled inter-cluster nets
         if ((inter_cluster_node && prev_inter_cluster_node) && !draw_state->draw_inter_cluster_nets) {
             continue;
         }
 
+        // If this is an edge containing an intra-cluster node, draw only if the user has enabled intra-cluster nets
         if ((!inter_cluster_node || !prev_inter_cluster_node) && !draw_state->draw_intra_cluster_nets) {
             continue;
         }

@@ -618,9 +618,6 @@ void draw_logical_connections(ezgl::renderer* g) {
 
     g->set_line_dash(ezgl::line_dash::none);
 
-    int transparency;
-    ezgl::color color;
-
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.netlist().nets()) {
         if ((int)atom_ctx.netlist().net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) {
@@ -653,6 +650,9 @@ void draw_logical_connections(ezgl::renderer* g) {
             if (!element_visibility.visible) {
                 continue; /* Don't Draw */
             }
+
+            int transparency;
+            ezgl::color color;
 
             //transparency factor is the most transparent of the 2 options that the user selects from the UI
             transparency = std::min(element_visibility.alpha, draw_state->net_alpha);

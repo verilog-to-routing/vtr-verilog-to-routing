@@ -217,9 +217,9 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     // Highlight neighboring non_configurable nodes in magenta as well
-    auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
+    std::set<RRNodeId> nodes = draw_expand_non_configurable_rr_nodes(hit_node);
 
-    for (auto node : nodes) {
+    for (RRNodeId node : nodes) {
         if (draw_state->draw_rr_node[node].color != ezgl::MAGENTA) {
             // If the node hasn't been clicked on before, highlight it in magenta.
             draw_state->draw_rr_node[node].color = ezgl::MAGENTA;

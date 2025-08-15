@@ -58,15 +58,11 @@ void draw_rr(ezgl::renderer* g) {
         bool node_highlighted = draw_state->draw_rr_node[inode].node_highlighted;
 
         // Node colors by types
-        static const std::map<e_rr_type, ezgl::color> node_colors = {
-            {e_rr_type::CHANX, DEFAULT_RR_NODE_COLOR},
-            {e_rr_type::CHANY, DEFAULT_RR_NODE_COLOR},
-            {e_rr_type::IPIN, ezgl::PURPLE},
-            {e_rr_type::OPIN, ezgl::PINK},
-        };
+        // colors for Source, Sink, IPIN, OPIN, CHANX, CHANY, MUX, CHANZ
+        constexpr vtr::array<e_rr_type, ezgl::color, (size_t)e_rr_type::NUM_RR_TYPES> node_colors {DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, ezgl::PURPLE, ezgl::PINK, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR};
 
         // Apply color to the node if it is not highlighted
-        if (!node_highlighted && node_colors.find(node_type) != node_colors.end()) {
+        if (!node_highlighted) {
             draw_state->draw_rr_node[inode].color = node_colors.at(node_type);
         }
 
@@ -269,7 +265,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         bool to_node_inter_cluster = is_inter_cluster_node(rr_graph, to_node);
 
         // Color map for edges based on {from_type, to_type}
-        static const std::map<std::pair<e_rr_type, e_rr_type>, e_edge_type> edge_type_map = {
+        const std::map<std::pair<e_rr_type, e_rr_type>, e_edge_type> edge_type_map = {
             // Pin to pin connections
             {{e_rr_type::IPIN, e_rr_type::IPIN}, e_edge_type::PIN_TO_IPIN},
             {{e_rr_type::OPIN, e_rr_type::IPIN}, e_edge_type::PIN_TO_IPIN},
@@ -314,7 +310,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         }
 
         // Select edge colors
-        static const std::map<e_edge_type, ezgl::color> edge_color_map = {
+        const std::map<e_edge_type, ezgl::color> edge_color_map = {
             {e_edge_type::PIN_TO_OPIN, ezgl::LIGHT_PINK},
             {e_edge_type::PIN_TO_IPIN, ezgl::MEDIUM_PURPLE},
             {e_edge_type::OPIN_TO_CHAN, ezgl::PINK},
