@@ -433,7 +433,7 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
                                           const std::vector<PackMoleculeId>& tile_molecules,
                                           ClusterLegalizer& cluster_legalizer,
                                           const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                          std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check) {
+                                          std::unordered_set<LegalizationClusterId>& created_clusters) {
     for (PackMoleculeId mol_id : tile_molecules) {
         // Get the block type for compatibility check.
         t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
@@ -455,9 +455,11 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
             } else if (is_tile_compatible(tile_type, block_type)) {
                 // Create new cluster
                 LegalizationClusterId new_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-                cluster_ids_to_check[new_id] = loc;
+                created_clusters.insert(new_id);
+                cluster_locs[new_id] = loc;
                 loc_to_cluster_id_placed[loc] = new_id;
                 tile_loc_to_cluster_id_placed[{tile_loc.x, tile_loc.y, -1, tile_loc.layer_num}].push_back(new_id);
+                tile_clusters_matrix[tile_loc.layer_num][tile_loc.x][tile_loc.y].insert(new_id);
                 break;
             }
         }
@@ -475,48 +477,49 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
 
         // Try to create clusters with fast strategy checking the compatibility
         // with tile and its capacity. Store the cluster ids to check their legality.
-        std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_ids_to_check;
+        std::unordered_set<LegalizationClusterId> created_clusters;
         cluster_molecules_in_tile(tile_loc,
                                   tile_type,
                                   tile_molecules,
                                   cluster_legalizer,
                                   primitive_candidate_block_types,
-                                  cluster_ids_to_check);
+                                  created_clusters);
 
         // Check legality of clusters created with fast pass. Store the
         // illegal cluster molecules for full strategy pass.
         std::vector<PackMoleculeId> illegal_cluster_mols;
-        for (auto it = cluster_ids_to_check.begin(); it != cluster_ids_to_check.end();) {
-            if (!cluster_legalizer.check_cluster_legality(it->first)) {
-                for (PackMoleculeId mol_id : cluster_legalizer.get_cluster_molecules(it->first)) {
+        for (LegalizationClusterId cluster_id: created_clusters) {
+            if (!cluster_legalizer.check_cluster_legality(cluster_id)) {
+                for (PackMoleculeId mol_id : cluster_legalizer.get_cluster_molecules(cluster_id)) {
                     illegal_cluster_mols.push_back(mol_id);
                 }
                 // Erase related data of illegal cluster
-                loc_to_cluster_id_placed.erase(it->second);
-                cluster_legalizer.destroy_cluster(it->first);
-                // Erase from the new map as well.
-                auto& vec = tile_loc_to_cluster_id_placed[{it->second.x, it->second.y, -1, it->second.layer}];
-                vec.erase(std::remove(vec.begin(), vec.end(), it->first), vec.end());
+                loc_to_cluster_id_placed.erase(cluster_locs[cluster_id]);
+                cluster_legalizer.destroy_cluster(cluster_id);
+                tile_clusters_matrix[tile_loc.layer_num][tile_loc.x][tile_loc.y].erase(cluster_id);
+
+                // Below data structure will be removed.
+                auto& vec = tile_loc_to_cluster_id_placed[{cluster_locs[cluster_id].x, cluster_locs[cluster_id].y, -1, cluster_locs[cluster_id].layer}];
+                vec.erase(std::remove(vec.begin(), vec.end(), cluster_id), vec.end());
                 if (vec.empty()) {
-                    tile_loc_to_cluster_id_placed.erase({it->second.x, it->second.y, -1, it->second.layer});
+                    tile_loc_to_cluster_id_placed.erase({cluster_locs[cluster_id].x, cluster_locs[cluster_id].y, -1, cluster_locs[cluster_id].layer});
                 }
-                it = cluster_ids_to_check.erase(it);
-            } else {
-                ++it;
             }
         }
+
         // Set the legalization strategy to full and try to cluster the
         // unclustered molecules in same tile again.
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
+        created_clusters.clear();
         cluster_molecules_in_tile(tile_loc,
                                   tile_type,
                                   illegal_cluster_mols,
                                   cluster_legalizer,
                                   primitive_candidate_block_types,
-                                  cluster_ids_to_check);
+                                  created_clusters);
 
         // Clean all clusters created in that tile not to increase memory footprint.
-        for (const auto& [cluster_id, loc] : cluster_ids_to_check) {
+        for (LegalizationClusterId cluster_id : created_clusters) {
             cluster_legalizer.clean_cluster(cluster_id);
         }
         // Set the legalization strategy to fast check again for next the tile
@@ -530,9 +533,6 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                                     std::vector<LegalizationClusterId>& first_pass_clusters,
                                     size_t& total_molecules_in_join_with_neighbor) {
     vtr::ScopedStartFinishTimer neigh_pass_clustering("Neighbor Pass Clustering");
-
-    // The molecules that could not go back in their original clusters.
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> broken_molecules;
 
     // MAKING THE STRATEGY SPECULATIVE AT START
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
@@ -555,7 +555,6 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
         std::string block_name = block_type->name;
         if (block_name == "io") {
             VTR_LOG("Skipping io molecule of id %zu\n", molecule_id);
-            broken_molecules.push_back({molecule_id, loc});
             continue;
         }
         
@@ -645,14 +644,10 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                 // Add old molecules to the new cluster.
                 for (PackMoleculeId mol_id: cluster_molecules) {
                     if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)){
-                        // VTR_LOG("A molecule could not go its old cluster!\n");
-                        broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
                         continue;
                     }
-                    if (cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id) != e_block_pack_status::BLK_PASSED) {
-                        // VTR_LOG("A molecule could not go its old cluster!\n");
-                        broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
-                    }
+                    // Try to add old molecule to the new cluster.
+                    cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id);
                 }
 
                 // Set Legalization Strategy to FULL
@@ -666,14 +661,10 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                     new_cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types); 
                     for (PackMoleculeId mol_id: cluster_molecules) {
                         if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)){
-                            // VTR_LOG("A molecule could not go its old cluster!\n");
-                            broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
                             continue;
                         }
-                        if (cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id) != e_block_pack_status::BLK_PASSED) {
-                            // VTR_LOG("A molecule could not go its old cluster!\n");
-                            broken_molecules.push_back({mol_id, {neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer}});
-                        }
+                        // Try to add old molecule to the new cluster.
+                        cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id);
                     }
                 }
 
@@ -698,10 +689,7 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
             }
         }   
 
-        if (!fit_in_a_neighbor) {
-            // VTR_LOG("Current cluster could not put in any neighbor cluster!\n");
-            broken_molecules.push_back({molecule_id, loc});
-        } else {
+        if (fit_in_a_neighbor) {
             total_molecules_in_join_with_neighbor++;
         }
     }
@@ -819,6 +807,8 @@ void FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
                 loc_queue.push(new_tile_loc);
             }
         }
+        // Clean the new created cluster to avoid memory footprint increase.
+        cluster_legalizer.clean_cluster(cluster_id);
     }
 }
 
@@ -833,6 +823,11 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     // prioritizing the long carry chain molecules respectively. Then,
     // group the sorted blocks by each tile.
     auto tile_blocks = sort_and_group_blocks_by_tile(p_placement);
+
+    // Initialize the tile clusters matrix to be updated in reconstruction pass
+    // and to be used in neighbor pass.
+    auto [layers, width, height] = device_grid_.dim_sizes();
+    tile_clusters_matrix = vtr::NdMatrix<std::unordered_set<LegalizationClusterId>, 3>({layers, width, height});
 
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
         primitive_candidate_block_types = identify_primitive_candidate_block_types();

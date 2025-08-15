@@ -150,11 +150,20 @@ class FlatRecon : public FullLegalizer {
     /// @brief Mapping from a molecule id to its desired physical tile location.
     std::unordered_map<PackMoleculeId, t_physical_tile_loc> mol_desired_physical_tile_loc;
 
+    /// @brief Mappign from legalization cluster ids to subtile locations.
+    std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_locs;
+
     /// @brief Mapping from physical tile location to legalization cluster ids
     ///        to keep track of clusters created for neighbor clustering pass.
     /// TODO: Use physical tile loc here instead of passing -1 as subtile each
     ///       you create or modify.
     std::unordered_map<t_pl_loc, std::vector<LegalizationClusterId>> tile_loc_to_cluster_id_placed;
+
+    /// @brief 3D NDMatrix of legalization cluster ids. Stores the clusters ids at
+    ///        that tile location and can be accessed in the format of [layer][x][y].
+    ///        Cluster spatial data corresponding to physical tile locations is
+    ///        stored to be used in the neighbor pass.
+    vtr::NdMatrix<std::unordered_set<LegalizationClusterId>, 3> tile_clusters_matrix;
 
     /// @brief Vector of neighbor pass clusters
     std::vector<LegalizationClusterId> neighbor_pass_clusters;
@@ -183,7 +192,7 @@ class FlatRecon : public FullLegalizer {
                                    const std::vector<PackMoleculeId>& tile_molecules,
                                    ClusterLegalizer& cluster_legalizer,
                                    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                   std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check);
+                                   std::unordered_set<LegalizationClusterId>& created_clusters);
 
     /**
      * @brief Helper method to perform reconstruction clustering pass.
