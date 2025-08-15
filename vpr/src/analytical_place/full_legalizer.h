@@ -151,11 +151,10 @@ class FlatRecon : public FullLegalizer {
     std::unordered_map<PackMoleculeId, t_physical_tile_loc> mol_desired_physical_tile_loc;
 
     /// @brief Mapping from physical tile location to legalization cluster ids
-    ///        to keep track of clusters created.
+    ///        to keep track of clusters created for neighbor clustering pass.
+    /// TODO: Use physical tile loc here instead of passing -1 as subtile each
+    ///       you create or modify.
     std::unordered_map<t_pl_loc, std::vector<LegalizationClusterId>> tile_loc_to_cluster_id_placed;
-
-    /// @brief Unclustered blocks after first pass
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks_saved;
 
     /// @brief Vector of neighbor pass clusters
     std::vector<LegalizationClusterId> neighbor_pass_clusters;
@@ -219,7 +218,6 @@ class FlatRecon : public FullLegalizer {
      */
     void orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
                                   const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                  std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                                   int search_radius);
 
     /**
