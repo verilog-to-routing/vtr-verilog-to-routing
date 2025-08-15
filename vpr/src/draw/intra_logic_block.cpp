@@ -90,7 +90,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 
 void draw_internal_alloc_blk() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     t_pb_graph_node* pb_graph_head;
 
     /* Create a vector holding coordinate information for each type of physical logic
@@ -120,7 +120,7 @@ void draw_internal_init_blk() {
 
     t_pb_graph_node* pb_graph_head_node;
 
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     for (const auto& type : device_ctx.logical_block_types) {
         /* Empty block has no sub_blocks */
         if (is_empty_type(&type)) {
@@ -181,8 +181,8 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     if (!draw_state->show_blk_internal) {
         return;
     }
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     int total_layer_num = device_ctx.grid.get_num_layers();
@@ -589,7 +589,7 @@ std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb) {
 }
 
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     if (pb->is_primitive()) {
         //Base case
@@ -613,7 +613,7 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
 void draw_logical_connections(ezgl::renderer* g) {
     const t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     g->set_line_dash(ezgl::line_dash::none);
@@ -690,7 +690,7 @@ void draw_logical_connections(ezgl::renderer* g) {
  * inputs (if true) or outputs (if false).
  */
 void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk_id, int* pin_index, int* total_pins) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
     AtomPortId port_id = atom_ctx.netlist().pin_port(pin_id);
@@ -739,7 +739,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
     // draw a link connecting the pins.
     g->draw_line(src_point, sink_point);
 
-    const auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     if (atom_ctx.lookup().atom_clb(atom_ctx.netlist().pin_block(src_pin)) == atom_ctx.lookup().atom_clb(atom_ctx.netlist().pin_block(sink_pin))) {
         // if they are in the same clb, put one arrow in the center
         float center_x = (src_point.x + sink_point.x) / 2;
@@ -866,7 +866,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterB
     sources.clear();
     in_selected_subtree.clear();
 
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     if (has_selection()) {
         add_all_children(selected_pb, containing_block_index, in_selected_subtree);
@@ -946,7 +946,7 @@ t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(ClusterBlockId clb_index
 }
 
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const AtomPinId atom_pin) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     clb_index = atom_ctx.lookup().atom_clb(atom_ctx.netlist().pin_block(atom_pin));
     pb_gnode = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(atom_ctx.netlist().pin_block(atom_pin));
 }

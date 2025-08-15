@@ -42,8 +42,8 @@ constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
  */
 void draw_rr(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     if (!draw_state->show_rr) {
         return;
@@ -94,8 +94,8 @@ void draw_rr(ezgl::renderer* g) {
 }
 
 void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     int transparency_factor = get_rr_node_transparency(inode);
 
@@ -241,8 +241,8 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
  * connects to.  inode is assumed to be a CHANX, CHANY, or IPIN.           */
 void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     e_rr_type to_type;
     e_rr_type from_type = rr_graph.node_type(inode);
@@ -357,8 +357,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 
 void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     e_rr_type rr_type = rr_graph.node_type(inode);
     bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
     int node_layer = rr_graph.node_layer(inode);
@@ -415,8 +415,8 @@ void draw_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* 
 
     float xcen, ycen;
     char str[vtr::bufsize];
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     if (!is_inter_cluster_node(rr_graph, inode)) {
         return;
     }
@@ -450,8 +450,8 @@ void draw_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* 
 void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     if (!is_inter_cluster_node(rr_graph, inode)) {
         return;
     }
@@ -478,8 +478,8 @@ void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g) {
 void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = node.id();
     t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
                                                                             rr_graph.node_ylow(rr_node),
@@ -539,8 +539,8 @@ void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buf
 
 void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node,
                                                   std::set<RRNodeId>& expanded_nodes) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     expanded_nodes.insert(from_node);
 
     for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(from_node); ++iedge) {
@@ -569,8 +569,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
         int layer_num = rr_graph.node_layer(inode);
@@ -677,8 +677,8 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
 
     /* Draws routing costs */
 
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     g->set_line_width(0);
 
@@ -758,7 +758,7 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
  * inode gives the node number, and iside gives the side of the clb or pad  *
  * the physical pin is on.                                                  */
 void draw_get_rr_pin_coords(RRNodeId inode, float* xcen, float* ycen, const e_side& pin_side) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     draw_get_rr_pin_coords(device_ctx.rr_graph.rr_nodes()[size_t(inode)], xcen, ycen, pin_side);
 }
 
@@ -768,8 +768,8 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
     int i, j, k, ipin, pins_per_sub_tile;
     float offset, xc, yc, step;
     t_physical_tile_type_ptr type;
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     auto rr_node = node.id();
 
     i = rr_graph.node_xlow(rr_node);
@@ -823,8 +823,8 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
 
 int get_rr_node_transparency(RRNodeId rr_node) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     int layer_num = rr_graph.node_layer(rr_node);
 

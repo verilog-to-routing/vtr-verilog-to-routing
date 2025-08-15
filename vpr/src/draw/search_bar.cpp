@@ -44,9 +44,9 @@
 extern std::string rr_highlight_message;
 
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     // get ID from search bar
     GtkEntry* text_entry = (GtkEntry*)app->get_object("TextInput");
@@ -214,7 +214,7 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
         return false;
     }
 
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     // Highlight neighboring non_configurable nodes in magenta as well
     auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
@@ -257,8 +257,8 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
 
 void auto_zoom_rr_node(RRNodeId rr_node_id) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     ezgl::rectangle rr_node;
 
     // find the location of the node
@@ -308,7 +308,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
 void highlight_cluster_block(ClusterBlockId clb_index) {
     char msg[vtr::bufsize];
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     /// determine block ///
@@ -346,9 +346,9 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
  * @return false | If sub-block not found (impossible in search case) or not shown at current zoom lvl
  */
 bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::application* app) {
-    const auto& atom_ctx = g_vpr_ctx.atom();
-    const auto& cl_ctx = g_vpr_ctx.clustering();
-    t_pb* pb = cl_ctx.clb_nlist.block_pb(cl_blk);
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    t_pb* pb = cluster_ctx.clb_nlist.block_pb(cl_blk);
 
     //Getting the pb* for the atom block
     auto atom_block_pb = find_atom_block_in_pb(atom_ctx.netlist().block_name(atom_blk), pb);
@@ -367,7 +367,7 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
 }
 
 void highlight_nets(ClusterNetId net_id) {
-    auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     t_draw_state* draw_state = get_draw_state_vars();
 

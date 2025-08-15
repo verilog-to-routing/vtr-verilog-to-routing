@@ -173,7 +173,7 @@ void toggle_cong_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
  */
 void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
     // get the pointer to the toggle_routing_bounding_box button
 
     if (route_ctx.route_bb.size() == 0)

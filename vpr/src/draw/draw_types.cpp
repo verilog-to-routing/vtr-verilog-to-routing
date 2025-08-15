@@ -12,7 +12,7 @@
  *******************************************/
 ezgl::color t_draw_state::block_color(ClusterBlockId blk) const {
     if (use_default_block_color_[blk]) {
-        auto& cluster_ctx = g_vpr_ctx.clustering();
+        const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
         const auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
 
         t_physical_tile_type_ptr tile_type = nullptr;
@@ -78,7 +78,7 @@ float t_draw_coords::get_tile_height() {
 ezgl::rectangle t_draw_coords::get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode) {
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     return get_pb_bbox(block_locs[clb_index].loc.layer,
                        block_locs[clb_index].loc.x,
@@ -89,7 +89,7 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(ClusterBlockId clb_index, const t_pb_
 }
 
 ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type, const t_pb_graph_node& pb_gnode) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     t_draw_pb_type_info& blk_type_info = this->blk_info.at(logical_block_type->index);
 
     ezgl::rectangle result = blk_type_info.get_pb_bbox(pb_gnode);
@@ -108,7 +108,7 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer, int grid_x, int grid_
 }
 
 ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     t_draw_pb_type_info& blk_type_info = this->blk_info.at(logical_block_type->index);
 
     auto& pb_gnode = *logical_block_type->pb_graph_head;
@@ -172,8 +172,8 @@ ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_in
 }
 
 ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& type = device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer});
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const t_physical_tile_type_ptr& type = device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer});
     return get_pb_bbox(grid_layer, grid_x, grid_y, sub_block_index, pick_logical_type(type));
 }
 

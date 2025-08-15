@@ -131,7 +131,7 @@ void block_button_setup(ezgl::application* app) {
  * buttons.
  */
 void routing_button_setup(ezgl::application* app) {
-    auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
     t_draw_state* draw_state = get_draw_state_vars();
 
     //Toggle RR
@@ -176,7 +176,7 @@ void routing_button_setup(ezgl::application* app) {
 void view_button_setup(ezgl::application* app) {
     int num_layers;
 
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     num_layers = device_ctx.grid.get_num_layers();
 
     // Hide the button if we only have one layer
@@ -297,8 +297,8 @@ void show_widget(std::string widgetName, ezgl::application* app) {
  */
 void load_block_names(ezgl::application* app) {
     auto blockStorage = GTK_LIST_STORE(app->get_object("BlockNames"));
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
     for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
@@ -319,7 +319,7 @@ void load_block_names(ezgl::application* app) {
  */
 void load_net_names(ezgl::application* app) {
     auto netStorage = GTK_LIST_STORE(app->get_object("NetNames"));
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
     //Loading net names
     for (AtomNetId id : atom_ctx.netlist().nets()) {
