@@ -11,8 +11,8 @@
 #include "vpr_error.h"
 
 void APPackUnrelatedClusteringManager::init(
-        const std::vector<std::string>& unrelated_clustering_args,
-        const std::vector<t_logical_block_type>& logical_block_types) {
+    const std::vector<std::string>& unrelated_clustering_args,
+    const std::vector<t_logical_block_type>& logical_block_types) {
 
     // Set the max unrelated tile distances for all logical block types.
     // By default, we set this to a low value to only allow unrelated molecules

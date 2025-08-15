@@ -133,7 +133,6 @@ class APPackUnrelatedClusteringManager {
         VTR_ASSERT_SAFE_MSG((size_t)logical_block_ty.index < max_unrelated_clustering_attempts_.size(),
                             "Logical block type does not have a max unrelated clustering attempts.");
 
-
         max_unrelated_clustering_attempts_[logical_block_ty.index] = new_max_unrelated_clustering_attempts;
     }
 

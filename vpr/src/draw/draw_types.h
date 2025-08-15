@@ -30,6 +30,7 @@
 
 #include "ezgl/rectangle.hpp"
 #include "ezgl/color.hpp"
+#include "ezgl/application.hpp"
 
 enum e_draw_crit_path {
     DRAW_NO_CRIT_PATH,
@@ -41,21 +42,8 @@ enum e_draw_crit_path {
 
 enum e_draw_nets {
     DRAW_NO_NETS = 0,
-    DRAW_CLUSTER_NETS,
-    DRAW_PRIMITIVE_NETS
-};
-
-/* Draw rr_graph from less detailed to more detailed
- * in order to speed up drawing when toggle_rr is clicked
- * on for the first time.
- */
-enum e_draw_rr_toggle {
-    DRAW_NO_RR = 0,
-    DRAW_NODES_RR,
-    DRAW_NODES_SBOX_RR,
-    DRAW_NODES_SBOX_CBOX_RR,
-    DRAW_NODES_SBOX_CBOX_INTERNAL_RR,
-    DRAW_ALL_RR,
+    DRAW_ROUTED_NETS,
+    DRAW_FLYLINES
 };
 
 enum e_draw_congestion {
@@ -134,6 +122,24 @@ enum e_draw_noc {
     DRAW_NOC_LINK_USAGE
 };
 
+/// Different types of edges in the routing resource graph
+enum class e_edge_type {
+    PIN_TO_OPIN,
+    PIN_TO_IPIN,
+    OPIN_TO_CHAN,
+    CHAN_TO_IPIN,
+    CHAN_TO_CHAN,
+    NUM_EDGE_TYPES
+};
+
+/**
+ * @brief Structure used to hold data passed into the toggle checkbox callback function.
+ */
+typedef struct {
+    ezgl::application* app;
+    bool* toggle_state;
+} t_checkbox_data;
+
 /* Structure which stores state information of a rr_node. Used
  * for controling the drawing each rr_node when ROUTING is on screen.
  * color: Color of the rr_node
@@ -174,8 +180,20 @@ struct t_draw_state {
     ///@brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
     pic_type pic_on_screen = NO_PICTURE;
 
-    ///@brief Whether to show nets at placement and routing.
-    e_draw_nets show_nets = DRAW_NO_NETS;
+    ///@brief Whether to draw nets or not
+    bool show_nets = false;
+
+    ///@brief Whether to draw flylines or routed nets
+    e_draw_nets draw_nets = DRAW_FLYLINES;
+
+    ///@brief Whether to show inter-cluster nets
+    bool draw_inter_cluster_nets = false;
+
+    /// @brief Whether to show intra-cluster nets
+    bool draw_intra_cluster_nets = false;
+
+    ///@brief Whether to show block fan-in and fan-out
+    bool highlight_fan_in_fan_out = false;
 
     ///@brief Whether to show crit path
     e_draw_crit_path show_crit_path = DRAW_NO_CRIT_PATH;
@@ -200,8 +218,16 @@ struct t_draw_state {
     ///@brief toggles whether routing util is shown
     e_draw_routing_util show_routing_util = DRAW_NO_ROUTING_UTIL;
 
-    ///@brief Controls drawing of routing resources on screen, if pic_on_screen is ROUTING.
-    e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
+    ///@brief Controls drawing of routing resources on screen.
+    bool show_rr = false;
+
+    bool draw_channel_nodes = false;
+    bool draw_inter_cluster_pins = false;
+    bool draw_switch_box_edges = false;
+    bool draw_connection_box_edges = false;
+    bool draw_intra_cluster_nodes = false;
+    bool draw_intra_cluster_edges = false;
+    bool highlight_rr_edges = false;
 
     ///@brief Whether routing util is shown
     bool clip_routing_util = false;
@@ -267,7 +293,9 @@ struct t_draw_state {
     bool forced_pause = false;
 
     int sequence_number = 0;
-    float net_alpha = 0.1;
+
+    ///@brief net transparency factor (0 - Transparent, 255 - Opaque)
+    int net_alpha = 255;
 
     ///@brief Present congestion cost factor used when drawing. Is a copy of router's current pres_fac
     float pres_fac = 1.;
@@ -301,16 +329,15 @@ struct t_draw_state {
     t_draw_state(const t_draw_state&) = default;
     t_draw_state& operator=(const t_draw_state&) = default;
 
-    void reset_nets_congestion_and_rr();
-
-    bool showing_sub_blocks();
-
     ezgl::color block_color(ClusterBlockId blk) const;
     void set_block_color(ClusterBlockId blk, ezgl::color color);
     void reset_block_color(ClusterBlockId blk);
     void reset_block_colors();
 
     std::vector<std::pair<t_pl_loc, ezgl::color>> colored_locations;
+
+    /// @brief Stores UI checkbox struct for passing into the callback functions
+    std::list<t_checkbox_data> checkbox_data;
 
     /**
      * @brief Set the reference to placement location variable.

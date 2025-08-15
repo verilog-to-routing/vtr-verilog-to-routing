@@ -17,8 +17,10 @@
 
 #include "ezgl/graphics.hpp"
 
-/* Draws the routing resources that exist in the FPGA, if the user wants *
- * them drawn. */
+/** 
+ * @brief Draws the routing resources that exist in the FPGA, if the user wants
+ * them drawn. 
+ */
 void draw_rr(ezgl::renderer* g);
 
 /* Draws all the edges that the user wants shown between inode and what it

@@ -18,70 +18,80 @@
 #include <X11/keysym.h>
 #endif
 
-/**
- * @brief toggles net drawing status based on status of combo box
- * updates draw_state->show_nets
- * 
- * @param self ptr to gtkComboBox
- * @param app ezgl::application
- */
-void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app) {
+void toggle_checkbox_cbk(GtkToggleButton* self, t_checkbox_data* data) {
+
+    if (gtk_toggle_button_get_active(self)) {
+        *data->toggle_state = true;
+    } else {
+        *data->toggle_state = false;
+    }
+
+    data->app->refresh_drawing();
+}
+
+void toggle_show_nets_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    draw_state->show_nets = state;
+
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleNetType")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterNets")), state);
+    if (draw_state->is_flat) {
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), state);
+    }
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("FanInFanOut")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("NetAlpha")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("NetMaxFanout")), state);
+
+    app->refresh_drawing();
+}
+
+void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
     enum e_draw_nets new_state;
     t_draw_state* draw_state = get_draw_state_vars();
-    gchar* setting = gtk_combo_box_text_get_active_text(
-        GTK_COMBO_BOX_TEXT(self));
+    gchar* setting = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(self));
+
     // assign corresponding enum value to draw_state->show_nets
-    if (strcmp(setting, "None") == 0)
-        new_state = DRAW_NO_NETS;
-    else if (strcmp(setting, "Cluster Nets") == 0) {
-        new_state = DRAW_CLUSTER_NETS;
-    } else { // Primitive Nets - Used to be called "Logical Connections"
-        new_state = DRAW_PRIMITIVE_NETS;
+    if (strcmp(setting, "Routing") == 0) {
+        new_state = DRAW_ROUTED_NETS;
+    } else { // Flylines - direct connections between sources and sinks
+        new_state = DRAW_FLYLINES;
     }
-    draw_state->reset_nets_congestion_and_rr();
-    draw_state->show_nets = new_state;
+
+    draw_state->draw_nets = new_state;
 
     //free dynamically allocated pointers
     g_free(setting);
 
     //redraw
-    app->update_message(draw_state->default_message);
     app->refresh_drawing();
 }
 
 /**
  * @brief cbk function for toggle rr combo-box. sets rr draw state based on selected option
- * updates draw_state->draw_rr_toggle
+ * updates draw_state->show_rr
  * 
  * @param self ptr to gtkComboBoxText object
  * @param app ezgl application
  */
-void toggle_rr_cbk(GtkComboBoxText* self, ezgl::application* app) {
+void toggle_rr_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    enum e_draw_rr_toggle new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
-    if (strcmp(combo_box_content, "None") == 0)
-        new_state = DRAW_NO_RR;
-    else if (strcmp(combo_box_content, "Nodes") == 0)
-        new_state = DRAW_NODES_RR;
-    else if (strcmp(combo_box_content, "Nodes SBox") == 0)
-        new_state = DRAW_NODES_SBOX_RR;
-    else if (strcmp(combo_box_content, "Nodes SBox CBox") == 0)
-        new_state = DRAW_NODES_SBOX_CBOX_RR;
-    else if (strcmp(combo_box_content, "Nodes SBox CBox Internal") == 0)
-        new_state = DRAW_NODES_SBOX_CBOX_INTERNAL_RR;
-    else
-        // all rr
-        new_state = DRAW_ALL_RR;
+    draw_state->show_rr = state;
 
-    //free dynamically allocated pointers
-    g_free(combo_box_content);
+    // Enable/disable the rr drawing sub-options based on the switch state
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRChannels")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterPinNodes")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRSBox")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRCBox")), state);
 
-    draw_state->reset_nets_congestion_and_rr();
-    draw_state->draw_rr_toggle = new_state;
+    //currently intra-cluster nodes and edges are only supported if flat routing is enabled
+    if (draw_state->is_flat) {
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterNodes")), state);
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleRRIntraClusterEdges")), state);
+    }
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleHighlightRR")), state);
 
-    app->update_message(draw_state->default_message);
     app->refresh_drawing();
 }
 
@@ -104,7 +114,6 @@ void toggle_cong_cbk(GtkComboBoxText* self, ezgl::application* app) {
         // congested with nets
         new_state = DRAW_CONGESTED_WITH_NETS;
 
-    draw_state->reset_nets_congestion_and_rr();
     draw_state->show_congestion = new_state;
     if (draw_state->show_congestion == DRAW_NO_CONGEST) {
         app->update_message(draw_state->default_message);
@@ -143,7 +152,6 @@ void toggle_cong_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
     else
         new_state = DRAW_BASE_ROUTING_COSTS;
 
-    draw_state->reset_nets_congestion_and_rr();
     draw_state->show_routing_costs = new_state;
     g_free(combo_box_content);
     if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) {
@@ -161,7 +169,7 @@ void toggle_cong_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
  */
 void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
     // get the pointer to the toggle_routing_bounding_box button
 
     if (route_ctx.route_bb.size() == 0)
@@ -395,7 +403,7 @@ void set_net_max_fanout_cbk(GtkSpinButton* self, ezgl::application* app) {
  */
 void set_net_alpha_value_cbk(GtkSpinButton* self, ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    draw_state->net_alpha = (255 - gtk_spin_button_get_value_as_int(self)) / 255.0;
+    draw_state->net_alpha = 255 - gtk_spin_button_get_value_as_int(self);
     app->refresh_drawing();
 }
 

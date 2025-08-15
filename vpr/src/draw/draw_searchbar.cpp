@@ -34,8 +34,8 @@
 ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
     double left = 0, right = 0, top = 0, bottom = 0;
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     switch (rr_graph.node_type(inode)) {
         case e_rr_type::CHANX:
@@ -72,7 +72,7 @@ ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
 void draw_highlight_blocks_color(t_logical_block_type_ptr type,
                                  ClusterBlockId blk_id) {
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     for (int k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
@@ -132,9 +132,9 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
  * If so, and toggle nets is selected, highlight the whole net in that colour.
  */
 void highlight_nets(char* message, RRNodeId hit_node) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& route_ctx = g_vpr_ctx.routing();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     // Don't crash if there's no routing
     if (route_ctx.route_trees.empty())
@@ -163,7 +163,7 @@ std::string draw_get_net_name(ParentNetId parent_id) {
 }
 
 void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId hit_node) {
-    auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
     t_draw_state* draw_state = get_draw_state_vars();
 
     if (!route_ctx.route_trees[parent_net_id])
@@ -194,8 +194,8 @@ void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId
  */
 void draw_highlight_fan_in_fan_out(const std::set<RRNodeId>& nodes) {
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     for (auto node : nodes) {
         /* Highlight the fanout nodes in red. */
@@ -250,9 +250,9 @@ void deselect_all() {
     // as well as clearing the highlighted sub-block
 
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     /* Create some colour highlighting */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {

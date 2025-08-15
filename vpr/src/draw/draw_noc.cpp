@@ -12,8 +12,8 @@
 
 void draw_noc(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& noc_ctx = g_vpr_ctx.noc();
-    auto& device_ctx = g_vpr_ctx.device();
+    const NocContext& noc_ctx = g_vpr_ctx.noc();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     // vector of routers in the NoC
     const vtr::vector<NocRouterId, NocRouter>& router_list = noc_ctx.noc_model.get_noc_routers();
@@ -76,7 +76,7 @@ void draw_noc(ezgl::renderer* g) {
  */
 void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& noc_ctx = g_vpr_ctx.noc();
+    const NocContext& noc_ctx = g_vpr_ctx.noc();
     const auto& noc_link_bandwidth_usages = draw_state->get_noc_link_bandwidth_usages_ref();
 
     // check to see if a color map was already created previously
@@ -210,7 +210,7 @@ void draw_noc_links(ezgl::renderer* g,
                     ezgl::rectangle noc_connection_marker_bbox,
                     const vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& noc_ctx = g_vpr_ctx.noc();
+    const NocContext& noc_ctx = g_vpr_ctx.noc();
 
     // vector of routers in the NoC
     const vtr::vector<NocRouterId, NocRouter>& router_list = noc_ctx.noc_model.get_noc_routers();
@@ -296,7 +296,7 @@ void draw_noc_links(ezgl::renderer* g,
 }
 
 void determine_direction_to_shift_noc_links(vtr::vector<NocLinkId, NocLinkShift>& list_of_noc_link_shift_directions) {
-    auto& noc_ctx = g_vpr_ctx.noc();
+    const NocContext& noc_ctx = g_vpr_ctx.noc();
 
     int number_of_links = list_of_noc_link_shift_directions.size();
 

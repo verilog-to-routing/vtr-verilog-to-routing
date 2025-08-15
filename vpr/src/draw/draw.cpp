@@ -189,27 +189,20 @@ static void draw_main_canvas(ezgl::renderer* g) {
     draw_internal_draw_subblk(g);
 
     if (draw_state->pic_on_screen == PLACEMENT) {
-        switch (draw_state->show_nets) {
-            case DRAW_CLUSTER_NETS:
-                drawnets(g);
-                break;
-            case DRAW_PRIMITIVE_NETS:
-                break;
-            default:
-                break;
+        if (draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets) {
+            drawnets(g);
         }
     } else { /* ROUTING on screen */
 
-        switch (draw_state->show_nets) {
-            case DRAW_CLUSTER_NETS:
-                drawroute(ALL_NETS, g);
-                break;
-            case DRAW_PRIMITIVE_NETS:
-                // fall through
-            default:
-                draw_rr(g);
-                break;
+        if (draw_state->show_nets && draw_state->draw_nets == DRAW_ROUTED_NETS) {
+            draw_route(ALL_NETS, g);
+
+            if (draw_state->highlight_fan_in_fan_out) {
+                draw_route(HIGHLIGHTED, g);
+            }
         }
+
+        draw_rr(g);
 
         draw_congestion(g);
 
@@ -487,8 +480,8 @@ void alloc_draw_structs(const t_arch* arch) {
     /* Call accessor functions to retrieve global variables. */
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     /* Allocate the structures needed to draw the placement and routing->  Set *
@@ -550,8 +543,8 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 #ifndef NO_GRAPHICS
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     /* Store a reference to block location variables so that other drawing
      * functions can access block location information without accessing
@@ -626,8 +619,8 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
 
     int i, j;
     e_rr_type rr_type;
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = RRNodeId(inode);
 
     if (get_draw_state_vars()->draw_route_type == e_route_type::DETAILED)
@@ -774,28 +767,29 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, doub
     // user has not clicked the window button, in regular mode
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-        RRNodeId hit_node = draw_check_rr_node_hit(x, y);
+    if (!draw_state->show_rr) {
+        return;
+    }
 
-        if (hit_node) {
-            //Update message
+    RRNodeId hit_node = draw_check_rr_node_hit(x, y);
 
-            const auto& device_ctx = g_vpr_ctx.device();
-            std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
-            std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
-            app->update_message(msg.c_str());
+    if (hit_node) {
+        //Update message
+        const DeviceContext& device_ctx = g_vpr_ctx.device();
+        std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
+        std::string msg = vtr::string_fmt("Moused over %s", info.c_str());
+        app->update_message(msg.c_str());
+    } else {
+        if (!rr_highlight_message.empty()) {
+            app->update_message(rr_highlight_message.c_str());
         } else {
-            if (!rr_highlight_message.empty()) {
-                app->update_message(rr_highlight_message.c_str());
-            } else {
-                app->update_message(draw_state->default_message);
-            }
+            app->update_message(draw_state->default_message);
         }
     }
 }
 
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     AtomBlockId blk = atom_ctx.netlist().pin_block(pin);
     ClusterBlockId clb_index = atom_ctx.lookup().atom_clb(blk);
@@ -826,7 +820,7 @@ std::vector<RRNodeId> trace_routed_connection_rr_nodes(
     ClusterNetId net_id,
     int driver_pin,
     int sink_pin) {
-    auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     VTR_ASSERT(route_ctx.route_trees[net_id]);
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
@@ -875,8 +869,8 @@ bool trace_routed_connection_rr_nodes_recurr(const RouteTreeNode& rt_node,
 
 //Find the edge between two rr nodes
 t_edge_size find_edge(RRNodeId prev_inode, RRNodeId inode) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     for (t_edge_size iedge = 0;
          iedge < rr_graph.num_edges(prev_inode); ++iedge) {
         if (rr_graph.edge_sink_node(prev_inode, iedge) == inode) {
@@ -913,13 +907,13 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
         return;
     }
 
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& routing_ctx = g_vpr_ctx.routing();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     vtr::vector<RRNodeId, float> rr_costs(device_ctx.rr_graph.num_nodes());
 
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
-        float cost = get_router_expansion_cost(routing_ctx.rr_node_route_inf[inode],
+        float cost = get_router_expansion_cost(route_ctx.rr_node_route_inf[inode],
                                                draw_state->show_router_expansion_cost);
         rr_costs[inode] = cost;
     }
@@ -975,7 +969,7 @@ static void highlight_blocks(double x, double y) {
         return; /* Nothing was found on any layer*/
     }
 
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
@@ -1017,8 +1011,8 @@ static void highlight_blocks(double x, double y) {
 ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     /// determine block ///
@@ -1260,8 +1254,8 @@ static void run_graphics_commands(const std::string& commands) {
         } else if (cmd[0] == "set_nets") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect net draw state after 'set_nets'");
-            draw_state->show_nets = (e_draw_nets)vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->show_nets);
+            draw_state->draw_nets = (e_draw_nets)vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->draw_nets);
         } else if (cmd[0] == "set_cpd") {
             VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect cpd draw state after 'set_cpd'");
@@ -1321,7 +1315,7 @@ static void run_graphics_commands(const std::string& commands) {
 }
 
 ezgl::point2d tnode_draw_coord(tatum::NodeId node) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     AtomPinId pin = atom_ctx.lookup().tnode_atom_pin(node);
     return atom_pin_draw_coord(pin);
@@ -1333,7 +1327,7 @@ ezgl::point2d tnode_draw_coord(tatum::NodeId node) {
  * Currently, it is used in placer debugger when breakpoint is reached */
 void highlight_moved_block_and_its_terminals(
     const t_pl_blocks_to_be_moved& blocks_affected) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     //clear all selected blocks
     deselect_all();
@@ -1412,13 +1406,13 @@ ezgl::color lighten_color(ezgl::color color, float amount) {
  */
 size_t get_max_fanout() {
     //find maximum fanout
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
     size_t max_fanout = 0;
     for (ClusterNetId net_id : clb_nlist.nets())
         max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
 
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     auto& atom_nlist = atom_ctx.netlist();
     size_t max_fanout2 = 0;
     for (AtomNetId net_id : atom_nlist.nets())

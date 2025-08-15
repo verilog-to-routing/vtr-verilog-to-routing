@@ -102,7 +102,7 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     //Loading the context/data structures needed.
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     //Getting entry values
     GtkWidget* block_entry = gtk_grid_get_child_at((GtkGrid*)grid, 0, 1);
@@ -157,8 +157,8 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 }
 
 bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
@@ -283,7 +283,7 @@ void manual_move_cost_summary_dialog() {
 
 void manual_move_highlight_new_block_location() {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     //Unselects all blocks first
     deselect_all();
     //Highlighting the block

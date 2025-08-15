@@ -1929,11 +1929,11 @@ static inline bool place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
     if (constrained_clusters.size() > 0) {
         VTR_LOG("Placing constrained clusters...\n");
         bool all_clusters_placed = place_blocks_min_displacement(constrained_clusters,
-                                      pad_loc_type,
-                                      blk_loc_registry,
-                                      place_macros,
-                                      cluster_netlist,
-                                      flat_placement_info);
+                                                                 pad_loc_type,
+                                                                 blk_loc_registry,
+                                                                 place_macros,
+                                                                 cluster_netlist,
+                                                                 flat_placement_info);
         VTR_LOG("\n");
         if (!all_clusters_placed) {
             VTR_LOG("Could not place all constrained clusters, falling back on the non-AP initial placement.\n");
@@ -1965,11 +1965,11 @@ static inline bool place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
     if (large_macro_clusters.size() > 0) {
         VTR_LOG("Placing clusters that are part of larger macros...\n");
         bool all_clusters_placed = place_blocks_min_displacement(large_macro_clusters,
-                                      pad_loc_type,
-                                      blk_loc_registry,
-                                      place_macros,
-                                      cluster_netlist,
-                                      flat_placement_info);
+                                                                 pad_loc_type,
+                                                                 blk_loc_registry,
+                                                                 place_macros,
+                                                                 cluster_netlist,
+                                                                 flat_placement_info);
         VTR_LOG("\n");
         if (!all_clusters_placed) {
             VTR_LOG("Could not place all large macros, falling back on the non-AP initial placement.\n");
@@ -1993,11 +1993,11 @@ static inline bool place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
     if (clusters_to_place.size() > 0) {
         VTR_LOG("Placing general clusters...\n");
         bool all_clusters_placed = place_blocks_min_displacement(clusters_to_place,
-                                      pad_loc_type,
-                                      blk_loc_registry,
-                                      place_macros,
-                                      cluster_netlist,
-                                      flat_placement_info);
+                                                                 pad_loc_type,
+                                                                 blk_loc_registry,
+                                                                 place_macros,
+                                                                 cluster_netlist,
+                                                                 flat_placement_info);
         VTR_LOG("\n");
         if (!all_clusters_placed) {
             VTR_LOG("Could not place all clusters, falling back on the non-AP initial placement.\n");
