@@ -458,7 +458,6 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
                 created_clusters.insert(new_id);
                 cluster_locs[new_id] = loc;
                 loc_to_cluster_id_placed[loc] = new_id;
-                tile_loc_to_cluster_id_placed[{tile_loc.x, tile_loc.y, -1, tile_loc.layer_num}].push_back(new_id);
                 tile_clusters_matrix[tile_loc.layer_num][tile_loc.x][tile_loc.y].insert(new_id);
                 break;
             }
@@ -478,6 +477,7 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
         // Try to create clusters with fast strategy checking the compatibility
         // with tile and its capacity. Store the cluster ids to check their legality.
         std::unordered_set<LegalizationClusterId> created_clusters;
+        cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
         cluster_molecules_in_tile(tile_loc,
                                   tile_type,
                                   tile_molecules,
@@ -497,35 +497,26 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                 loc_to_cluster_id_placed.erase(cluster_locs[cluster_id]);
                 cluster_legalizer.destroy_cluster(cluster_id);
                 tile_clusters_matrix[tile_loc.layer_num][tile_loc.x][tile_loc.y].erase(cluster_id);
-
-                // Below data structure will be removed.
-                auto& vec = tile_loc_to_cluster_id_placed[{cluster_locs[cluster_id].x, cluster_locs[cluster_id].y, -1, cluster_locs[cluster_id].layer}];
-                vec.erase(std::remove(vec.begin(), vec.end(), cluster_id), vec.end());
-                if (vec.empty()) {
-                    tile_loc_to_cluster_id_placed.erase({cluster_locs[cluster_id].x, cluster_locs[cluster_id].y, -1, cluster_locs[cluster_id].layer});
-                }
             }
         }
 
-        // Set the legalization strategy to full and try to cluster the
+        // If we have illagal cluster molecuels, Sset the legalization strategy to full and try to cluster the
         // unclustered molecules in same tile again.
-        cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-        created_clusters.clear();
-        cluster_molecules_in_tile(tile_loc,
-                                  tile_type,
-                                  illegal_cluster_mols,
-                                  cluster_legalizer,
-                                  primitive_candidate_block_types,
-                                  created_clusters);
+        if (!illegal_cluster_mols.empty()) {
+            cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
+            cluster_molecules_in_tile(tile_loc,
+                                    tile_type,
+                                    illegal_cluster_mols,
+                                    cluster_legalizer,
+                                    primitive_candidate_block_types,
+                                    created_clusters);
+        }
 
         // Clean all clusters created in that tile not to increase memory footprint.
         for (LegalizationClusterId cluster_id : created_clusters) {
             cluster_legalizer.clean_cluster(cluster_id);
         }
-        // Set the legalization strategy to fast check again for next the tile
-        cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
     }
-    //VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu .\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
 }
 
 void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
@@ -558,31 +549,28 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
             continue;
         }
         
-        // Use molecule_id and tile_loc here
-        // VTR_LOG("Molecule ID: %zu\n", size_t(molecule_id));
-        // VTR_LOG("Tile Location: (x=%d, y=%d, layer=%d, subtile=%d)\n", loc.x, loc.y, loc.layer_num);
-    
         // Get its 8-neighbouring clusters
-        std::vector<t_pl_loc> neighbor_tile_locs = {
-            {loc.x-1, loc.y-1, -1, loc.layer_num},
-            {loc.x-1, loc.y,   -1, loc.layer_num},
-            {loc.x-1, loc.y+1, -1, loc.layer_num},
-            {loc.x,   loc.y-1, -1, loc.layer_num},
-            {loc.x,   loc.y+1, -1, loc.layer_num},
-            {loc.x+1, loc.y-1, -1, loc.layer_num},
-            {loc.x+1, loc.y,   -1, loc.layer_num},
-            {loc.x+1, loc.y+1, -1, loc.layer_num},
+        // TODO: Add bounds-filter for device edges.
+        std::vector<t_physical_tile_loc> neighbor_tile_locs = {
+            {loc.x-1, loc.y-1, loc.layer_num},
+            {loc.x-1, loc.y,   loc.layer_num},
+            {loc.x-1, loc.y+1, loc.layer_num},
+            {loc.x,   loc.y-1, loc.layer_num},
+            {loc.x,   loc.y+1, loc.layer_num},
+            {loc.x+1, loc.y-1, loc.layer_num},
+            {loc.x+1, loc.y,   loc.layer_num},
+            {loc.x+1, loc.y+1, loc.layer_num}
         };
 
         // Sort the neighbor tile locations according to average mol count in clusters in that tile.
-        std::unordered_map<t_pl_loc, double> avg_mols_in_tile;
-        for (t_pl_loc neighbor_tile_loc: neighbor_tile_locs) {    
-            if (tile_loc_to_cluster_id_placed.find(neighbor_tile_loc) == tile_loc_to_cluster_id_placed.end()) 
+        std::unordered_map<t_physical_tile_loc, double> avg_mols_in_tile;
+        for (t_physical_tile_loc neighbor_tile_loc: neighbor_tile_locs) {
+            if (tile_clusters_matrix[neighbor_tile_loc.layer_num][neighbor_tile_loc.x][neighbor_tile_loc.y].empty())
                 continue;
 
             size_t total_molecules_in_tile = 0;
             size_t total_clusters_in_tile = 0;
-            for (LegalizationClusterId cluster_id: tile_loc_to_cluster_id_placed[neighbor_tile_loc]) {
+            for (LegalizationClusterId cluster_id: tile_clusters_matrix[neighbor_tile_loc.layer_num][neighbor_tile_loc.x][neighbor_tile_loc.y]) {
                 total_molecules_in_tile += cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
                 total_clusters_in_tile ++;
             }
@@ -591,30 +579,27 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
             }
         }
         // Sort tile locations by increasing avg mol count
-        std::vector<t_pl_loc> sorted_neighbor_tile_locs;
+        std::vector<t_physical_tile_loc> sorted_neighbor_tile_locs;
         for (const auto& [tile_loc, _] : avg_mols_in_tile) {
             sorted_neighbor_tile_locs.push_back(tile_loc);
         }
 
         std::sort(sorted_neighbor_tile_locs.begin(), sorted_neighbor_tile_locs.end(),
-                [&](const t_pl_loc& a, const t_pl_loc& b) {
+                [&](const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
                     return avg_mols_in_tile[a] < avg_mols_in_tile[b];
                 });
 
 
         bool fit_in_a_neighbor = false;
-
-        std::vector<LegalizationClusterId> neighbor_clusters;
-        for (t_pl_loc neighbor_tile_loc: sorted_neighbor_tile_locs) {
+        for (t_physical_tile_loc neighbor_tile_loc: sorted_neighbor_tile_locs) {
             if (fit_in_a_neighbor) {
                 break;
             }
             
-            
-            if (tile_loc_to_cluster_id_placed.find(neighbor_tile_loc) == tile_loc_to_cluster_id_placed.end()) 
+            if (tile_clusters_matrix[neighbor_tile_loc.layer_num][neighbor_tile_loc.x][neighbor_tile_loc.y].empty())
                 continue;
 
-            auto& clusters = tile_loc_to_cluster_id_placed[neighbor_tile_loc]; // alias for clarity
+            std::unordered_set<LegalizationClusterId>& clusters = tile_clusters_matrix[neighbor_tile_loc.layer_num][neighbor_tile_loc.x][neighbor_tile_loc.y]; // alias for clarity
             for (auto it = clusters.begin(); it != clusters.end(); /* no ++ here */) {
                 LegalizationClusterId cluster_id = *it;
 
@@ -622,11 +607,6 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                     ++it;
                     continue;
                 }
-
-                neighbor_clusters.push_back(cluster_id);
-                size_t num_mols_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
-                // VTR_LOG("\tNumber of molecules in neighbor cluster at (%d, %d, %d): %zu\n", 
-                //             neighbor_tile_loc.x, neighbor_tile_loc.y, neighbor_tile_loc.layer, num_mols_in_cluster);
 
                 std::vector<PackMoleculeId> cluster_molecules = cluster_legalizer.get_cluster_molecules(cluster_id);
                 
@@ -682,10 +662,8 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                 // Set strategy to SPECULATIVE AGAIN
                 cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
 
-                //it = clusters.erase(it); // returns next valid iterator
-                // Put the new cluster to old ones place and go to next one to process.
-                *it = new_cluster_id;
-                ++it;
+                it = clusters.erase(it);          // erase old_id; returns iterator to next
+                clusters.insert(new_cluster_id);          // insert new_id; does not affect 'it'
             }
         }   
 

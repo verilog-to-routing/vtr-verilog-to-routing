@@ -142,7 +142,7 @@ class FlatRecon : public FullLegalizer {
   private:
     /// @brief Mapping from subtile location to legalization cluster id to keep
     ///        track of clusters created.
-    /// TODO: It would make sense to store this as a 3D NDMatrix of arrays where we can
+    /// TODO: It might make sense to store this as a 4D NDMatrix of arrays where we can
     ///       index into the [layer][x][y][subtile] and get the cluster ID at that location.
     ///       It will be faster than using an unordered map and likely more space efficient.
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
@@ -153,16 +153,9 @@ class FlatRecon : public FullLegalizer {
     /// @brief Mappign from legalization cluster ids to subtile locations.
     std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_locs;
 
-    /// @brief Mapping from physical tile location to legalization cluster ids
-    ///        to keep track of clusters created for neighbor clustering pass.
-    /// TODO: Use physical tile loc here instead of passing -1 as subtile each
-    ///       you create or modify.
-    std::unordered_map<t_pl_loc, std::vector<LegalizationClusterId>> tile_loc_to_cluster_id_placed;
-
-    /// @brief 3D NDMatrix of legalization cluster ids. Stores the clusters ids at
+    /// @brief 3D NDMatrix of legalization cluster ids. Stores the cluster ids at
     ///        that tile location and can be accessed in the format of [layer][x][y].
-    ///        Cluster spatial data corresponding to physical tile locations is
-    ///        stored to be used in the neighbor pass.
+    ///        This is stored to be used in the neighbor pass.
     vtr::NdMatrix<std::unordered_set<LegalizationClusterId>, 3> tile_clusters_matrix;
 
     /// @brief Vector of neighbor pass clusters
