@@ -528,73 +528,68 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                                     size_t& total_molecules_in_join_with_neighbor) {
     vtr::ScopedStartFinishTimer neigh_pass_clustering("Neighbor Pass Clustering");
 
-    // MAKING THE STRATEGY SPECULATIVE AT START
+    // Starting with the fast strategy.
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
-
-    //size_t total_molecules_in_join_with_neighbor = 0;
-    VTR_LOG("Join with Neighbor Pass...\n");
     
-    // For each unplaced block, get its neighboring clusters created.
+    // Iterate over molecules and try to join the unclustered ones to their
+    // already created 8-neighboring tile clusters.
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         // Get unclustered block and its location.
         PackMoleculeId molecule_id = ap_netlist_.block_molecule(blk_id);
-        if (cluster_legalizer.is_mol_clustered(molecule_id))
-            continue;
         t_physical_tile_loc loc = mol_desired_physical_tile_loc[molecule_id];
 
-
-        t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(molecule_id, prepacker_, primitive_candidate_block_types);
-        VTR_ASSERT(block_type && "We need a blocks type");
-
-        std::string block_name = block_type->name;
-        if (block_name == "io") {
-            VTR_LOG("Skipping io molecule of id %zu\n", molecule_id);
+        // Skip the already clustered molecules.
+        if (cluster_legalizer.is_mol_clustered(molecule_id))
             continue;
-        }
-        
-        // Get its 8-neighbouring clusters
-        // TODO: Add bounds-filter for device edges.
-        std::vector<t_physical_tile_loc> neighbor_tile_locs = {
-            {loc.x-1, loc.y-1, loc.layer_num},
-            {loc.x-1, loc.y,   loc.layer_num},
-            {loc.x-1, loc.y+1, loc.layer_num},
-            {loc.x,   loc.y-1, loc.layer_num},
-            {loc.x,   loc.y+1, loc.layer_num},
-            {loc.x+1, loc.y-1, loc.layer_num},
-            {loc.x+1, loc.y,   loc.layer_num},
-            {loc.x+1, loc.y+1, loc.layer_num}
-        };
 
-        // Sort the neighbor tile locations according to average mol count in clusters in that tile.
+        // Skip the io blocks in that pass. This aims to avoid unneccessary recreation of clusters neighboring io blocks.
+        // TODO: This might be handled more generally instead of checking block name.
+        t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(molecule_id, prepacker_, primitive_candidate_block_types);
+        std::string block_name = block_type->name;
+        if (block_name == "io")
+            continue;
+
+        // Get 8-neighbouring tile locations of the current molecule in the same layer.
+        std::vector<t_physical_tile_loc> neighbor_tile_locs;
+        neighbor_tile_locs.reserve(8);
+        auto [layers, width, height] = device_grid_.dim_sizes();
+        for (int dx : {-1, 0, 1}) {
+            for (int dy : {-1, 0, 1}) {
+                if (dx == 0 && dy == 0) continue;
+                int neighbor_x = loc.x + dx, neighbor_y = loc.y + dy;
+                if (0 <= neighbor_x && neighbor_x < (int)width  && 0 <= neighbor_y && neighbor_y < (int)height) {
+                    neighbor_tile_locs.push_back({neighbor_x, neighbor_y, loc.layer_num});
+                }
+            }
+        }
+
+        // Get the average molecule count in each neighbor tile location.
+        // Also remove empty neighbor tiles from neighbor_tile_locs.
         std::unordered_map<t_physical_tile_loc, double> avg_mols_in_tile;
-        for (t_physical_tile_loc neighbor_tile_loc: neighbor_tile_locs) {
-            if (tile_clusters_matrix[neighbor_tile_loc.layer_num][neighbor_tile_loc.x][neighbor_tile_loc.y].empty())
+        avg_mols_in_tile.reserve(8);
+        for (auto it = neighbor_tile_locs.begin(); it != neighbor_tile_locs.end(); ) {
+            const std::unordered_set<LegalizationClusterId>& clusters = tile_clusters_matrix[it->layer_num][it->x][it->y];
+            if (clusters.empty()) {
+                it = neighbor_tile_locs.erase(it);
                 continue;
-
+            }
             size_t total_molecules_in_tile = 0;
-            size_t total_clusters_in_tile = 0;
-            for (LegalizationClusterId cluster_id: tile_clusters_matrix[neighbor_tile_loc.layer_num][neighbor_tile_loc.x][neighbor_tile_loc.y]) {
+            for (const LegalizationClusterId& cluster_id: clusters) {
                 total_molecules_in_tile += cluster_legalizer.get_num_molecules_in_cluster(cluster_id);
-                total_clusters_in_tile ++;
             }
-            if (total_clusters_in_tile) {
-                avg_mols_in_tile[neighbor_tile_loc] = double(total_molecules_in_tile) / total_clusters_in_tile;
-            }
-        }
-        // Sort tile locations by increasing avg mol count
-        std::vector<t_physical_tile_loc> sorted_neighbor_tile_locs;
-        for (const auto& [tile_loc, _] : avg_mols_in_tile) {
-            sorted_neighbor_tile_locs.push_back(tile_loc);
+            avg_mols_in_tile[*it] = double(total_molecules_in_tile) / clusters.size();
+            ++it;
         }
 
-        std::sort(sorted_neighbor_tile_locs.begin(), sorted_neighbor_tile_locs.end(),
-                [&](const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
-                    return avg_mols_in_tile[a] < avg_mols_in_tile[b];
-                });
+        // Sort tile locations by increasing average molecule count.
+        std::sort(neighbor_tile_locs.begin(), neighbor_tile_locs.end(),
+            [&](const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
+                return avg_mols_in_tile[a] < avg_mols_in_tile[b];
+            });
 
 
         bool fit_in_a_neighbor = false;
-        for (t_physical_tile_loc neighbor_tile_loc: sorted_neighbor_tile_locs) {
+        for (t_physical_tile_loc neighbor_tile_loc: neighbor_tile_locs) {
             if (fit_in_a_neighbor) {
                 break;
             }
