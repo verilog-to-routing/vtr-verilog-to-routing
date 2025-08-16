@@ -497,24 +497,27 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
                 loc_to_cluster_id_placed.erase(cluster_locs[cluster_id]);
                 cluster_legalizer.destroy_cluster(cluster_id);
                 tile_clusters_matrix[tile_loc.layer_num][tile_loc.x][tile_loc.y].erase(cluster_id);
+            } else {
+                cluster_legalizer.clean_cluster(cluster_id);
             }
         }
 
-        // If we have illagal cluster molecuels, Sset the legalization strategy to full and try to cluster the
-        // unclustered molecules in same tile again.
+        // If there are any illegal molecules, set the legalization strategy to
+        // full and try to cluster the unclustered molecules in same tile again.
         if (!illegal_cluster_mols.empty()) {
             cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
+            created_clusters.clear();
             cluster_molecules_in_tile(tile_loc,
                                     tile_type,
                                     illegal_cluster_mols,
                                     cluster_legalizer,
                                     primitive_candidate_block_types,
                                     created_clusters);
-        }
 
-        // Clean all clusters created in that tile not to increase memory footprint.
-        for (LegalizationClusterId cluster_id : created_clusters) {
-            cluster_legalizer.clean_cluster(cluster_id);
+            // Clean clusters created with full strategy not to increase memory footprint.
+            for (LegalizationClusterId cluster_id : created_clusters) {
+                cluster_legalizer.clean_cluster(cluster_id);
+            }
         }
     }
 }
