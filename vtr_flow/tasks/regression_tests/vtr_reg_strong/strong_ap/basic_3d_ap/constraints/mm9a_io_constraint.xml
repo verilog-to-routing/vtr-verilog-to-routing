@@ -1,0 +1,70 @@
+<!-- These IO constraints were made by hand, they are intended to just be for testing -->
+<vpr_constraints tool_name="vpr">
+
+    <partition_list>
+        <!-- Put the clock in the bottom-left corner -->
+        <partition name="clk">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="0" x_high="0" y_low="1" y_high="1" />
+            <add_atom name_pattern="pclk" />
+        </partition>
+
+        <!-- Add the inputs on the left edge of the chip -->
+        <partition name="p_1-2">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="0" x_high="0" y_low="2" y_high="2" />
+            <add_atom name_pattern="p_1" />
+            <add_atom name_pattern="p_2" />
+        </partition>
+        <partition name="p_3-4">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="0" x_high="0" y_low="3" y_high="3" />
+            <add_atom name_pattern="p_3" />
+            <add_atom name_pattern="p_4" />
+        </partition>
+        <partition name="p_5-6">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="0" x_high="0" y_low="4" y_high="4" />
+            <add_atom name_pattern="p_5" />
+            <add_atom name_pattern="p_6" />
+        </partition>
+        <partition name="p_7-8">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="0" x_high="0" y_low="5" y_high="5" />
+            <add_atom name_pattern="p_7" />
+            <add_atom name_pattern="p_8" />
+        </partition>
+        <partition name="p_9-10">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="0" x_high="0" y_low="6" y_high="6" />
+            <add_atom name_pattern="p_9" />
+            <add_atom name_pattern="p_10" />
+        </partition>
+        <partition name="p_11-12">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="0" x_high="0" y_low="7" y_high="7" />
+            <add_atom name_pattern="p_11" />
+            <add_atom name_pattern="p_12" />
+        </partition>
+
+        <!-- Add the outputs on the right edge of the chip -->
+        <partition name="p_40-41">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="9" x_high="9" y_low="1" y_high="1" />
+            <add_atom name_pattern="out:p_40" />
+            <add_atom name_pattern="out:p_41" />
+        </partition>
+        <partition name="p_42-43">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="9" x_high="9" y_low="2" y_high="2" />
+            <add_atom name_pattern="out:p_42" />
+            <add_atom name_pattern="out:p_43" />
+        </partition>
+        <partition name="p_44-45">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="9" x_high="9" y_low="4" y_high="4" />
+            <add_atom name_pattern="out:p_44" />
+            <add_atom name_pattern="out:p_45" />
+        </partition>
+        <partition name="p_46-47">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="9" x_high="9" y_low="6" y_high="6" />
+            <add_atom name_pattern="out:p_44" />
+            <add_atom name_pattern="out:p_45" />
+        </partition>
+        <partition name="p_48">
+            <add_region subtile="-1" layer_low="1" layer_high="1" x_low="9" x_high="9" y_low="8" y_high="8" />
+            <add_atom name_pattern="out:p_48" />
+        </partition>
+    </partition_list>
+
+</vpr_constraints>
