@@ -153,6 +153,9 @@ static inline void print_seed_gains(const char* fname,
     fprintf(fp, "\n");
     for (auto mol_id : seed_mols) {
         for (AtomBlockId blk_id : prepacker.get_molecule(mol_id).atom_block_ids) {
+            if (!blk_id.is_valid()) {
+                continue;
+            }
             std::string name = atom_netlist.block_name(blk_id);
             fprintf(fp, "%-*s ", max_name_len, name.c_str());
 

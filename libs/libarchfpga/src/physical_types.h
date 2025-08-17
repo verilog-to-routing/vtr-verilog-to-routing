@@ -174,6 +174,8 @@ enum e_interconnect {
     MUX_INTERC = 3,
     NUM_INTERC_TYPES = 4
 };
+/* String version of interconnect types. Use for debugging messages */
+constexpr std::array<const char*, NUM_INTERC_TYPES> INTERCONNECT_TYPE_STRING = {{"unknown", "complete", "direct", "mux"}};
 
 /* pin location distributions */
 enum class e_pin_location_distr {

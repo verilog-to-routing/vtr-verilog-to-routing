@@ -877,6 +877,17 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     VTR_ASSERT_SAFE_MSG(p_placement.block_layer_nums[driver_blk] == layer_num && p_placement.block_layer_nums[sink_blk] == layer_num,
                         "3D FPGAs not supported yet in the B2B solver");
 
+    // Special case: If the distance between the driver and sink is as large as
+    // the device, we cannot take the forward difference (since it will go off
+    // chip). We can still approximate the derivative by taking one tile step
+    // back and getting the central difference at that point. This avoids the
+    // boundary condition, which should be very rare to occur.
+    // TODO: Investigate better ways of doing this.
+    if ((int)flat_dx + 1 > (int)device_grid_width_ - 1)
+        flat_dx = device_grid_width_ - 2;
+    if ((int)flat_dy + 1 > (int)device_grid_height_ - 1)
+        flat_dy = device_grid_height_ - 2;
+
     // Get the physical tile location of the legalized driver block. The PlaceDelayModel
     // may use this position to determine the physical tile the wire is coming from.
     // When the placement is being solved, the driver may be moved to a physical tile
@@ -899,8 +910,10 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
 
     int tile_dx = sink_block_loc.x - driver_block_loc.x;
     int tile_dy = sink_block_loc.y - driver_block_loc.y;
-    VTR_ASSERT_SAFE(tile_dx < (int)device_grid_width_);
-    VTR_ASSERT_SAFE(tile_dy < (int)device_grid_height_);
+    // The following asserts are to protect the "delay" calls used for the forward
+    // difference calculations below.
+    VTR_ASSERT_SAFE(tile_dx + 1 < (int)device_grid_width_);
+    VTR_ASSERT_SAFE(tile_dy + 1 < (int)device_grid_height_);
 
     // Get the delay of a wire going from the given driver block location to the
     // given sink block location. This should only use the physical tile type of
