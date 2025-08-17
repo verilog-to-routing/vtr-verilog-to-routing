@@ -204,7 +204,7 @@ class FlatRecon : public FullLegalizer {
      */
     void neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                              const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                             size_t& total_molecules_in_join_with_neighbor);
+                             size_t& num_of_mols_clustered);
     /**
      * @brief Helper method to perform orphan window clustering.
      *
@@ -218,6 +218,13 @@ class FlatRecon : public FullLegalizer {
                                   const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                                   std::unordered_set<LegalizationClusterId>& created_clusters,
                                   int search_radius);
+    /**
+     * @brief Helper method to report the clustering summary.
+     */
+    void report_clustering_summary(ClusterLegalizer& cluster_legalizer,
+                                   const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                   size_t num_of_mols_clustered_neighbor_pass,
+                                   std::unordered_set<LegalizationClusterId>& orphan_window_clusters);
 
     /**
      * @brief Helper method to create clusters with reconstruction and neighbor pass.
