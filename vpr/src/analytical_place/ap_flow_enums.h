@@ -26,8 +26,9 @@ enum class e_ap_analytical_solver {
  * Partial Legalizers.
  */
 enum class e_ap_partial_legalizer {
+    Identity,       ///< Partial Legalizer which does not perform any legalization on the placement. Used as a placeholder when partial legalization should not be used.
     BiPartitioning, ///< Partial Legalizer which forms minimum windows around dense regions and uses bipartitioning to spread blocks over windows.
-    FlowBased       ///> Partial Legalizer which flows blocks from overfilled bins to underfilled bins.
+    FlowBased       ///< Partial Legalizer which flows blocks from overfilled bins to underfilled bins.
 };
 
 /**

@@ -172,7 +172,9 @@ struct ParseAPAnalyticalSolver {
 struct ParseAPPartialLegalizer {
     ConvertedValue<e_ap_partial_legalizer> from_str(const std::string& str) {
         ConvertedValue<e_ap_partial_legalizer> conv_value;
-        if (str == "bipartitioning")
+        if (str == "none")
+            conv_value.set_value(e_ap_partial_legalizer::Identity);
+        else if (str == "bipartitioning")
             conv_value.set_value(e_ap_partial_legalizer::BiPartitioning);
         else if (str == "flow-based")
             conv_value.set_value(e_ap_partial_legalizer::FlowBased);
@@ -187,6 +189,9 @@ struct ParseAPPartialLegalizer {
     ConvertedValue<std::string> to_str(e_ap_partial_legalizer val) {
         ConvertedValue<std::string> conv_value;
         switch (val) {
+            case e_ap_partial_legalizer::Identity:
+                conv_value.set_value("none");
+                break;
             case e_ap_partial_legalizer::BiPartitioning:
                 conv_value.set_value("bipartitioning");
                 break;
@@ -200,7 +205,7 @@ struct ParseAPPartialLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"bipartitioning", "flow-based"};
+        return {"none", "bipartitioning", "flow-based"};
     }
 };
 
@@ -1931,6 +1936,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     ap_grp.add_argument<e_ap_partial_legalizer, ParseAPPartialLegalizer>(args.ap_partial_legalizer, "--ap_partial_legalizer")
         .help(
             "Controls which Partial Legalizer the Global Placer will use in the AP Flow.\n"
+            " * none: Does not perform any partial legalization. This is used for testing and debugging the AP flow and is not intended to be used as part of a real AP flow.\n"
             " * bipartitioning: Creates minimum windows around over-dense regions of the device bi-partitions the atoms in these windows such that the region is no longer over-dense and the atoms are in tiles that they can be placed into.\n"
             " * flow-based: Flows atoms from regions that are overfilled to regions that are underfilled.")
         .default_value("bipartitioning")
