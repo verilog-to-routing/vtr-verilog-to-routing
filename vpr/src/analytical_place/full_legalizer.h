@@ -158,9 +158,6 @@ class FlatRecon : public FullLegalizer {
     ///        This is stored to be used in the neighbor pass.
     vtr::NdMatrix<std::unordered_set<LegalizationClusterId>, 3> tile_clusters_matrix;
 
-    /// @brief Vector of neighbor pass clusters
-    std::vector<LegalizationClusterId> neighbor_pass_clusters;
-
     /**
      * @brief Helper method to sort and group molecules by desired tile location.
      *        It first sorts by being in a long carry chain, then by external input
@@ -207,7 +204,6 @@ class FlatRecon : public FullLegalizer {
      */
     void neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                              const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                             std::vector<LegalizationClusterId>& first_pass_clusters,
                              size_t& total_molecules_in_join_with_neighbor);
     /**
      * @brief Helper method to perform orphan window clustering.
@@ -220,6 +216,7 @@ class FlatRecon : public FullLegalizer {
      */
     void orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
                                   const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                  std::unordered_set<LegalizationClusterId>& created_clusters,
                                   int search_radius);
 
     /**
