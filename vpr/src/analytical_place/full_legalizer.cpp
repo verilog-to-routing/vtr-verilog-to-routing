@@ -767,119 +767,66 @@ void FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
 }
 
 void FlatRecon::report_clustering_summary(ClusterLegalizer& cluster_legalizer,
-                                          const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                          size_t num_of_mols_clustered_neighbor_pass,
+                                          size_t num_of_mols_clustered_in_neighbor_pass,
                                           std::unordered_set<LegalizationClusterId>& orphan_window_clusters) {
-    // Reconstruction pass clustering statistics collection
-    std::unordered_map<std::string, size_t> cluster_type_count_first_pass;
-    std::vector<LegalizationClusterId> first_pass_clusters;
-    //size_t total_atoms_in_first_pass_clusters = 0;
-    size_t total_molecules_in_first_pass_clusters = 0;
-    size_t total_clusters_in_first_pass = 0;
+    // Define stat collection variables.
+    std::unordered_map<std::string, size_t> cluster_type_count_self_pass,
+        cluster_type_count_orphan_window_pass;
+    size_t num_of_mols_clustered_in_self_pass = 0,
+        num_of_mols_clustered_in_orphan_window_pass = 0;
+    size_t num_of_clusters_in_self_pass = 0,
+        num_of_clusters_in_orphan_window_pass = 0;
+
+    // Collect statistics.
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
         if (!cluster_id.is_valid())  continue;
 
-        if (orphan_window_clusters.count(cluster_id)) continue;
+        t_logical_block_type_ptr block_type = cluster_legalizer.get_cluster_type(cluster_id);
+        std::string block_name = block_type->name;
 
-        total_clusters_in_first_pass++;
-        first_pass_clusters.push_back(cluster_id);
-        bool block_type_set = false;
-        for (PackMoleculeId mol_id : cluster_legalizer.get_cluster_molecules(cluster_id)) {
-            // We still need to iterate over the atom ids due to invalid ones.
-            total_molecules_in_first_pass_clusters++;
-            // for (AtomBlockId atom_id : prepacker_.get_molecule(mol_id).atom_block_ids) {
-            //     if (atom_id.is_valid()) {
-            //         total_atoms_in_first_pass_clusters++;
-            //     }
-            // }
-            // Set block type only once per cluster
-            if (!block_type_set) {
-                t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
-                if (block_type) {
-                    std::string block_name = block_type->name;
-                    cluster_type_count_first_pass[block_name]++;
-                    block_type_set = true;
-                }
-            }
+        if (orphan_window_clusters.count(cluster_id)) {
+            num_of_clusters_in_orphan_window_pass++;
+            num_of_mols_clustered_in_orphan_window_pass += cluster_legalizer.get_cluster_molecules(cluster_id).size();
+            cluster_type_count_orphan_window_pass[block_name]++;
+        } else {
+            num_of_clusters_in_self_pass++;
+            num_of_mols_clustered_in_self_pass += cluster_legalizer.get_cluster_molecules(cluster_id).size();
+            cluster_type_count_self_pass[block_name]++;
         }
     }
-    // float avg_atom_number_in_first_pass =
-    //     static_cast<float>(total_atoms_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
-    float avg_mol_number_in_first_pass =
-        static_cast<float>(total_molecules_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
 
+    // Note: neighbor-pass molecules were initially counted in 'self' because they
+    // joined clusters created in the self pass. To report disjoint pass totals,
+    // remove them from the self-pass count here.
+    num_of_mols_clustered_in_self_pass -= num_of_mols_clustered_in_neighbor_pass;
 
-
-
-    // Neighbor pass clustering statistics collection
-    std::unordered_map<std::string, size_t> cluster_type_count_second_pass;
-    //size_t total_atoms_in_second_pass_clusters = 0;
-    size_t total_molecules_in_second_pass_clusters = 0;
-    size_t total_clusters_in_second_pass = 0;
-    for (LegalizationClusterId cluster_id : orphan_window_clusters) {
-        if (!cluster_id.is_valid()) {
-            continue;
-        }
-        total_clusters_in_second_pass++;
-        bool block_type_set = false;
-        for (PackMoleculeId mol_id : cluster_legalizer.get_cluster_molecules(cluster_id)) {
-            total_molecules_in_second_pass_clusters++;
-            // We still need to iterate over the atom ids due to invalid ones.
-            // for (AtomBlockId atom_blk_id : prepacker_.get_molecule(mol_id).atom_block_ids) {
-            //     if (atom_blk_id.is_valid()) {
-            //         total_atoms_in_second_pass_clusters++;
-            //     }
-            // }
-            // Set block type only once per cluster
-            if (!block_type_set) {
-                t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
-                if (block_type) {
-                    std::string block_name = block_type->name;
-                    cluster_type_count_second_pass[block_name]++;
-                    block_type_set = true;
-                }
-            }
-        }
-    }
-    // float avg_atom_number_in_neighbor_pass =
-    //     static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_clusters_in_second_pass);
-    float avg_mol_number_in_neighbor_pass =
-        static_cast<float>(total_molecules_in_second_pass_clusters) / static_cast<float>(total_clusters_in_second_pass);
+    size_t total_mols_clustered = num_of_mols_clustered_in_self_pass + num_of_mols_clustered_in_neighbor_pass + num_of_mols_clustered_in_orphan_window_pass;
 
     // Report clustering summary. If there are any type with non-zero clusters,
     // their individual cluster number will also be printed.
-    VTR_LOG("-------------------------------------------------------\n");
-    VTR_LOG("                   Clustering Summary                  \n");
-    VTR_LOG("-------------------------------------------------------\n");
-    VTR_LOG("Clusters created (Reconstruction pass)          : %zu\n", total_clusters_in_first_pass);
-    for (const auto& [block_name, count] : cluster_type_count_first_pass) {
+    VTR_LOG("----------------------------------------------------------------\n");
+    VTR_LOG("                       Clustering Summary                       \n");
+    VTR_LOG("----------------------------------------------------------------\n");
+    VTR_LOG("Clusters created (Self Clustering)                       : %zu\n", num_of_clusters_in_self_pass);
+    for (const auto& [block_name, count] : cluster_type_count_self_pass) {
         VTR_LOG("    %-10s : %zu\n", block_name.c_str(), count);
     }
-    VTR_LOG("Clusters created (Neighbor pass)                : %zu\n", total_clusters_in_second_pass);
-    for (const auto& [block_name, count] : cluster_type_count_second_pass) {
+    VTR_LOG("Clusters created (Orphan Window Clustering)              : %zu\n", num_of_clusters_in_orphan_window_pass);
+    for (const auto& [block_name, count] : cluster_type_count_orphan_window_pass) {
         VTR_LOG("    %-10s : %zu\n", block_name.c_str(), count);
     }
-    VTR_LOG("Total clusters                                  : %zu\n", total_clusters_in_first_pass + total_clusters_in_second_pass);
-    //VTR_LOG("Avg atoms per cluster (Reconstruction pass)     : %.2f\n", avg_atom_number_in_first_pass);
-    //VTR_LOG("Avg atoms per cluster (Neighbor pass)           : %.2f\n", avg_atom_number_in_neighbor_pass);
-    VTR_LOG("Avg molecules per cluster (Reconstruction pass) : %.2f\n", avg_mol_number_in_first_pass);
-    VTR_LOG("Avg molecules per cluster (Neighbor pass)       : %.2f\n", avg_mol_number_in_neighbor_pass);
-    //VTR_LOG("Percent of atoms clustered in Neighbor pass     : %.2f%%\n",
-    //        100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_atoms_in_first_pass_clusters + total_atoms_in_second_pass_clusters));
-    VTR_LOG("Percent of molecules clustered in Neighbor pass : %.2f%%\n",
-            100.0f * static_cast<float>(total_molecules_in_second_pass_clusters) / static_cast<float>(total_molecules_in_first_pass_clusters + total_molecules_in_second_pass_clusters));
-    VTR_LOG("Percent of clusters created in Neighbor pass    : %.2f%%\n",
-            100.0f * static_cast<float>(total_clusters_in_second_pass) / static_cast<float>(total_clusters_in_first_pass + total_clusters_in_second_pass));
-    VTR_LOG("-------------------------------------------------------\n\n");
+    VTR_LOG("Total clusters                                           : %zu\n", num_of_clusters_in_self_pass + num_of_clusters_in_orphan_window_pass);
+    VTR_LOG("Percent of clusters created in Orphan Window Clustering  : %.2f%%\n",
+            100.0f * static_cast<float>(num_of_clusters_in_orphan_window_pass) / static_cast<float>(num_of_clusters_in_self_pass + num_of_clusters_in_orphan_window_pass));
 
-    size_t total_mols_clustered = total_molecules_in_first_pass_clusters + num_of_mols_clustered_neighbor_pass + total_molecules_in_second_pass_clusters;
-    VTR_LOG("Molecules Clustered in each stage breakdown: (Total of %zu)\n", total_mols_clustered);
-    VTR_LOG("\tNormal Pass: %zu (%f)\n ", total_molecules_in_first_pass_clusters,
-                                          static_cast<float>(total_molecules_in_first_pass_clusters) / static_cast<float>(total_mols_clustered));
-    VTR_LOG("\tJoin with Neighbor Pass: %zu (%f)\n", num_of_mols_clustered_neighbor_pass,
-                                          static_cast<float>(num_of_mols_clustered_neighbor_pass) / static_cast<float>(total_mols_clustered));
-    VTR_LOG("\tOrphan Region Reconstruction Pass: %zu (%f)\n", total_molecules_in_second_pass_clusters,
-                                          static_cast<float>(total_molecules_in_second_pass_clusters) / static_cast<float>(total_mols_clustered));
+    VTR_LOG("Molecules clustered in each stage breakdown  : (Total of %zu)\n", total_mols_clustered);
+    VTR_LOG("\tSelf Clustering          (%f)  : %zu\n ",
+            static_cast<float>(num_of_mols_clustered_in_self_pass) / static_cast<float>(total_mols_clustered), num_of_mols_clustered_in_self_pass);
+    VTR_LOG("\tNeighbor Clustering      (%f)  : %zu\n",
+            static_cast<float>(num_of_mols_clustered_in_neighbor_pass) / static_cast<float>(total_mols_clustered), num_of_mols_clustered_in_neighbor_pass);
+    VTR_LOG("\tOrphan Window Clustering (%f)  : %zu\n",
+            static_cast<float>(num_of_mols_clustered_in_orphan_window_pass) / static_cast<float>(total_mols_clustered), num_of_mols_clustered_in_orphan_window_pass);
+    VTR_LOG("----------------------------------------------------------------\n\n");
 }
 
 void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
@@ -908,10 +855,10 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                                 tile_blocks);
 
     // Perform the neighbor clustering.
-    size_t num_of_mols_clustered_neighbor_pass = 0;
+    size_t num_of_mols_clustered_in_neighbor_pass = 0;
     neighbor_clustering(cluster_legalizer,
                         primitive_candidate_block_types,
-                        num_of_mols_clustered_neighbor_pass);
+                        num_of_mols_clustered_in_neighbor_pass);
 
     // Orphan window clustering search radius values to try. As the search radius
     // increases, the number of clusters created decreases, while displacement increases.
@@ -960,8 +907,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
 
     // Report the clustering summary.
     report_clustering_summary(cluster_legalizer,
-                              primitive_candidate_block_types,
-                              num_of_mols_clustered_neighbor_pass,
+                              num_of_mols_clustered_in_neighbor_pass,
                               orphan_window_clusters);
 
     // Check and output the clustering.

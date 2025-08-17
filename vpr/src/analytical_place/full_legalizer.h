@@ -222,8 +222,7 @@ class FlatRecon : public FullLegalizer {
      * @brief Helper method to report the clustering summary.
      */
     void report_clustering_summary(ClusterLegalizer& cluster_legalizer,
-                                   const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                   size_t num_of_mols_clustered_neighbor_pass,
+                                   size_t num_of_mols_clustered_in_neighbor_pass,
                                    std::unordered_set<LegalizationClusterId>& orphan_window_clusters);
 
     /**
