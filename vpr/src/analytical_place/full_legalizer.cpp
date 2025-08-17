@@ -562,7 +562,7 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
         // Get the average molecule count in each neighbor tile location.
         // Also remove empty neighbor tiles from neighbor_tile_locs.
         std::unordered_map<t_physical_tile_loc, double> avg_mols_in_tile;
-        avg_mols_in_tile.reserve(8);
+        avg_mols_in_tile.reserve(neighbor_tile_locs.size());
         for (auto it = neighbor_tile_locs.begin(); it != neighbor_tile_locs.end(); ) {
             const std::unordered_set<LegalizationClusterId>& clusters = tile_clusters_matrix[it->layer_num][it->x][it->y];
             if (clusters.empty()) {
@@ -585,72 +585,67 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
 
         // Try to fit the unclustered molecule to sorted neighbor tile clusters.
         bool fit_in_a_neighbor = false;
-        for (t_physical_tile_loc neighbor_tile_loc: neighbor_tile_locs) {
-            // Get the neighbor tile clusters.
+        for (const t_physical_tile_loc& neighbor_tile_loc: neighbor_tile_locs) {
+            // Get the current neighbor tile clusters.
             std::unordered_set<LegalizationClusterId>& clusters = tile_clusters_matrix[neighbor_tile_loc.layer_num][neighbor_tile_loc.x][neighbor_tile_loc.y];
 
-            for (auto it = clusters.begin(); it != clusters.end(); /* no ++ here */) {
+            // Iterate over the current tile clusters until unclustered molecule fit in one.
+            for (auto it = clusters.begin(); it != clusters.end() && !fit_in_a_neighbor; ) {
                 LegalizationClusterId cluster_id = *it;
-
                 if (!cluster_id.is_valid()) {
                     ++it;
                     continue;
                 }
 
+                // Get the cluster molecules and destroy the old cluster.
                 std::vector<PackMoleculeId> cluster_molecules = cluster_legalizer.get_cluster_molecules(cluster_id);
-                
-                // Destroy the old cluster.
                 cluster_legalizer.destroy_cluster(cluster_id);
 
                 // Set the legalization strategy to speculative for fast try.
                 cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
                 
+                // Use the first molecule as seed to recreate the cluster.
                 PackMoleculeId seed_mol = cluster_molecules[0];
                 LegalizationClusterId new_cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types); 
-                // Remove the first element used as seed.
                 cluster_molecules.erase(cluster_molecules.begin());
 
-                // Add old molecules to the new cluster.
+                // Add remaining old molecules to the new cluster.
                 for (PackMoleculeId mol_id: cluster_molecules) {
-                    if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)){
+                    if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id))
                         continue;
-                    }
-                    // Try to add old molecule to the new cluster.
                     cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id);
                 }
 
-                // Set Legalization Strategy to FULL
+                // Set the legalization strategy to full for adding new unclustered molecule.
+                // Also if recreated clusters if illegal, try to create with full strategy.
                 cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
 
-
-                // Check Cluster Legality for older molecules
+                // If recreated cluster is illegal, try again with full strategy.
                 if (!cluster_legalizer.check_cluster_legality(new_cluster_id)) {
                     cluster_legalizer.destroy_cluster(new_cluster_id);
                     new_cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types); 
                     for (PackMoleculeId mol_id: cluster_molecules) {
-                        if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)){
+                        if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id))
                             continue;
-                        }
-                        // Try to add old molecule to the new cluster.
                         cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id);
                     }
                 }
 
-                // Lastly, try to add the objective molecule to that cluster.
+                // Lastly, try to add the new unclustered molecule to the recreated cluster.
                 if (cluster_legalizer.is_molecule_compatible(molecule_id, new_cluster_id)){
-                    if (cluster_legalizer.add_mol_to_cluster(molecule_id, new_cluster_id) == e_block_pack_status::BLK_PASSED) {
+                    e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(molecule_id, new_cluster_id);
+                    if (pack_status == e_block_pack_status::BLK_PASSED)
                         fit_in_a_neighbor = true;
-                    }
                 }
 
-                // Clean the current cluster
+                // Clean the new cluster to avoid increasing memory footprint.
                 cluster_legalizer.clean_cluster(new_cluster_id);
 
                 // Erase old cluster id and add new one.
                 it = clusters.erase(it);
                 clusters.insert(new_cluster_id);
             }
-            // Stop if current molecule already fit into a neighbor cluster.
+            // Stop iterating neighbor tiles if current molecule already fit in a neighbor cluster.
             if (fit_in_a_neighbor) {
                 total_molecules_in_join_with_neighbor++;
                 break;
