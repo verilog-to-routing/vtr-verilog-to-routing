@@ -1252,13 +1252,18 @@ Analytical Placement is generally split into three stages:
 
     Analytical Placement is experimental and under active development.
 
-.. option:: --ap_analytical_solver {qp-hybrid | lp-b2b}
+.. option:: --ap_analytical_solver {identity | qp-hybrid | lp-b2b}
 
     Controls which Analytical Solver the Global Placer will use in the AP Flow.
     The Analytical Solver solves for a placement which optimizes some objective
     function, ignorant of the FPGA legality constraints. This provides a "lower-
     bound" solution. The Global Placer will legalize this solution and feed it
     back to the analytical solver to make its solution more legal.
+
+    * ``identity`` Does not formulate any equations and just passes the last
+      legalized solution through. In the first iteration, it initializes all blocks
+      to the center of the device. This solver is only used for testing and
+      debugging and should not be part of any real AP flow.
 
     * ``qp-hybrid`` Solves for a placement that minimizes the quadratic HPWL of
       the flat placement using a hybrid clique/star net model (as described in
@@ -1399,6 +1404,41 @@ Analytical Placement is generally split into three stages:
    This will set all of the logical block types to their "auto" thresholds, except
    for logical blocks with the name clb/LAB which will be set to 0.2 * (W + H) or
    5 (whichever is larger).
+
+    **Default:** ``auto``
+
+.. option:: --appack_unrelated_clustering_args { auto | <regex>:<float>,<float> }
+
+   Sets parameters used for unrelated clustering (the max search distance and max attempts)
+   used by APPack.
+   APPack uses the primitive-level placement produced by the
+   global placer to cluster primitives together. APPack uses this information
+   to help increase the density of clusters (if needed) by searching for
+   unrelated molecules to pack together. It does this by searching out from
+   the centroid of the cluster being created until it finds a valid molecule.
+   If a valid molecule is found, but it fails, the packer may do another attempt
+   (up to a maximum number of attempts).
+   This argument allows the user to select the maximum distance the code will
+   search and how many attempts it will try to search for each cluster.
+
+   When this option is set to auto, VPR will select good values for these
+   parameters based on the primitives contained within each logical block type.
+
+   This option is similar to the appack_max_dist_th argument, where the
+   parameters are passed by the user in the form <regex>:<float>,<float> where
+   regex is used to match the name of the logical block type to set, the
+   first float is the max unrelated tile distance, and the second float
+   is the max unrelated clustering attempts.
+
+   For example:
+
+     .. code-block:: none
+
+        --appack_max_dist_th "clb|LAB:10,5"
+
+   This will set all of the logical block types to their "auto" parameters, except
+   for logical blocks with the name clb/LAB which will have a max search distance of
+   10 tiles and a maximum of 5 unrelated clustering attempts.
 
     **Default:** ``auto``
 

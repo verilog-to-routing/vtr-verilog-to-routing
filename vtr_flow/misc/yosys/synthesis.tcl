@@ -1,11 +1,6 @@
 yosys -import
 plugin -i parmys
 
-read_verilog -nomem2reg +/parmys/vtr_primitives.v
-setattr -mod -set keep_hierarchy 1 single_port_ram
-setattr -mod -set keep_hierarchy 1 dual_port_ram
-setattr -mod -set keep 1 dual_port_ram
-
 # yosys-slang plugin error handling
 if {$env(PARSER) == "slang" } {
 	if {![info exists ::env(yosys_slang_path)]} {
@@ -39,11 +34,15 @@ if {$env(PARSER) == "slang" } {
 	source [file join [pwd] "slang_filelist.tcl"]
 	set readfile [file join [pwd] "filelist.txt"]
 	#Writing names of circuit files to file list
-	build_filelist {XXX} $readfile
+	set slang_tops [::slang::build_filelist {XXX} $readfile]
 	puts "Using Yosys read_slang command"
-	read_slang -C $readfile
+	#Read vtr_primitives library and user design verilog in same command
+	read_slang -v $env(PRIMITIVES) {*}$slang_tops -C $readfile
 } elseif {$env(PARSER) == "default" } {
 	puts "Using Yosys read_verilog command"
+	read_verilog -nomem2reg +/parmys/vtr_primitives.v
+	setattr -mod -set keep_hierarchy 1 single_port_ram
+ 	setattr -mod -set keep_hierarchy 1 dual_port_ram
 	read_verilog -sv -nolatches XXX
 } else {
 	error "Invalid PARSER"

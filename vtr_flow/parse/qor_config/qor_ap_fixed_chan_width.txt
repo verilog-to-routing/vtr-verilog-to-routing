@@ -24,27 +24,11 @@ post_fl_avg_disp;vpr.out;\s*Average atom displacement of initial placement from 
 post_fl_max_disp;vpr.out;\s*Max atom displacement of initial placement from flat placement: (.*)
 ap_runtime;vpr.out;Analytical Placement took (.*) seconds
 ap_gp_runtime;vpr.out;AP Global Placer took (.*) seconds
-ap_gp_solver_runtime;vpr.out;Time spent in solver: (.*) seconds
-ap_gp_legalizer_runtime;vpr.out;Time spent in legalizer: (.*) seconds
 ap_fl_runtime;vpr.out;AP Full Legalizer took (.*) seconds
 ap_dp_runtime;vpr.out;AP Detailed Placer took (.*) seconds
 route_runtime;vpr.out;Routing took (.*) seconds
 total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 num_lab;vpr.out;Netlist LAB blocks:\s*(\d+)
-ap_fl_max_rss;vpr.out;AP Full Legalizer took .*max_rss (.*?) MiB
-total_max_rss;vpr.out;The entire flow of VPR took .*max_rss (.*?) MiB
 
-num_total_clusters;vpr.out;^\s*Total\s+clusters\s*:\s*(\d+)
-
-clusters_created_self;vpr.out;^\s*Clusters\s+created\s+\(Self\s+Clustering\)\s*:\s*(\d+)
-clusters_created_orphan;vpr.out;^\s*Clusters\s+created\s+\(Orphan\s+Window\s+Clustering\)\s*:\s*(\d+)
-pct_clusters_orphan;vpr.out;^\s*Percent\s+of\s+clusters\s+created\s+in\s+Orphan\s+Window\s+Clustering\s*:\s*([\d.]+)%
-
-mol_clustered_self;vpr.out;^\s*Self\s+Clustering\s*\([\d.]+\)\s*:\s*(\d+)
-mol_clustered_neighbor;vpr.out;^\s*Neighbor\s+Clustering\s*\([\d.]+\)\s*:\s*(\d+)
-mol_clustered_orphan;vpr.out;^\s*Orphan\s+Window\s+Clustering\s*\([\d.]+\)\s*:\s*(\d+)
-
-mol_clustered_self_ratio;vpr.out;^\s*Self\s+Clustering\s*\(([\d.]+)\)
-mol_clustered_neighbor_ratio;vpr.out;^\s*Neighbor\s+Clustering\s*\(([\d.]+)\)
-mol_clustered_orphan_ratio;vpr.out;^\s*Orphan\s+Window\s+Clustering\s*\(([\d.]+)\)
+num_pre_packed_blocks;vpr.out;\s+total blocks:\s*(\d+),.*

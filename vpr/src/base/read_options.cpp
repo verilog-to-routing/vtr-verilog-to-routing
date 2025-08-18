@@ -137,7 +137,9 @@ struct ParseCircuitFormat {
 struct ParseAPAnalyticalSolver {
     ConvertedValue<e_ap_analytical_solver> from_str(const std::string& str) {
         ConvertedValue<e_ap_analytical_solver> conv_value;
-        if (str == "qp-hybrid")
+        if (str == "identity")
+            conv_value.set_value(e_ap_analytical_solver::Identity);
+        else if (str == "qp-hybrid")
             conv_value.set_value(e_ap_analytical_solver::QP_Hybrid);
         else if (str == "lp-b2b")
             conv_value.set_value(e_ap_analytical_solver::LP_B2B);
@@ -152,6 +154,9 @@ struct ParseAPAnalyticalSolver {
     ConvertedValue<std::string> to_str(e_ap_analytical_solver val) {
         ConvertedValue<std::string> conv_value;
         switch (val) {
+            case e_ap_analytical_solver::Identity:
+                conv_value.set_value("identity");
+                break;
             case e_ap_analytical_solver::QP_Hybrid:
                 conv_value.set_value("qp-hybrid");
                 break;
@@ -165,7 +170,7 @@ struct ParseAPAnalyticalSolver {
     }
 
     std::vector<std::string> default_choices() {
-        return {"qp-hybrid", "lp-b2b"};
+        return {"identity", "qp-hybrid", "lp-b2b"};
     }
 };
 
@@ -1928,7 +1933,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     ap_grp.add_argument<e_ap_analytical_solver, ParseAPAnalyticalSolver>(args.ap_analytical_solver, "--ap_analytical_solver")
         .help(
             "Controls which Analytical Solver the Global Placer will use in the AP Flow.\n"
-            " * qp-hybrid: olves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
+            " * identity: Does not formulate any equations and just passes the last legalized solution through. This solver is only used for testing and debugging.\n"
+            " * qp-hybrid: Solves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
             " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
         .default_value("lp-b2b")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2011,6 +2017,32 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "When multiple strings are provided, the thresholds are set from left to right,"
             "and any logical block types which have been unset will be set to their auto"
             "values.")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument(args.appack_unrelated_clustering_args, "--appack_unrelated_clustering_args")
+        .help(
+            "Sets parameters used for unrelated clustering (the max search distance and max attempts) "
+            "used by APPack. "
+            "APPack uses the primitive-level placement produced by the "
+            "global placer to cluster primitives together. APPack uses this information "
+            "to help increase the density of clusters (if needed) by searching for "
+            "unrelated molecules to pack together. It does this by searching out from "
+            "the centroid of the cluster being created until it finds a valid molecule. "
+            "If a valid molecule is found, but it fails, the packer may do another attempt "
+            "(up to a maximum number of attempts). "
+            "This argument allows the user to select the maximum distance the code will "
+            "search and how many attempts it will try to search for each cluster."
+            "\n"
+            "When this option is set to auto, VPR will select good values for these "
+            "parameters based on the primitives contained within each logical block type."
+            "\n"
+            "This option is similar to the appack_max_dist_th argument, where the "
+            "parameters are passed by the user in the form <regex>:<float>,<float> where "
+            "regex is used to match the name of the logical block type to set, the "
+            "first float is the max unrelated tile distance, and the second float "
+            "is the max unrelated clustering attempts.")
         .nargs('+')
         .default_value({"auto"})
         .show_in(argparse::ShowIn::HELP_ONLY);

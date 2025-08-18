@@ -11,6 +11,8 @@ struct t_chan_width {
     int y_min = 0;
     std::vector<int> x_list;
     std::vector<int> y_list;
+
+    bool operator==(const t_chan_width&) const = default;
 };
 
 /// @brief Specifies whether global routing or combined global and detailed routing is performed.
