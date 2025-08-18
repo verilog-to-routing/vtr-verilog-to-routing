@@ -320,54 +320,6 @@ static t_logical_block_type_ptr infer_molecule_logical_block_type(PackMoleculeId
     VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
 }
 
-static bool try_size_device_grid(const t_arch& arch,
-                                 const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
-                                 std::map<t_logical_block_type_ptr, float>& type_util,
-                                 float target_device_utilization,
-                                 const std::string& device_layout_name) {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    //Build the device
-    auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization);
-
-    /*
-     *Report on the device
-     */
-    VTR_LOG("FPGA sized to %zu x %zu (%s)\n", grid.width(), grid.height(), grid.name().c_str());
-
-    bool fits_on_device = true;
-
-    float device_utilization = calculate_device_utilization(grid, num_type_instances);
-    VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
-    for (const auto& type : device_ctx.logical_block_types) {
-        if (is_empty_type(&type)) continue;
-
-        auto itr = num_type_instances.find(&type);
-        if (itr == num_type_instances.end()) continue;
-
-        float num_instances = itr->second;
-        float util = 0.;
-
-        float num_total_instances = 0.;
-        for (const auto& equivalent_tile : type.equivalent_tiles) {
-            num_total_instances += device_ctx.grid.num_instances(equivalent_tile, -1);
-        }
-
-        if (num_total_instances != 0) {
-            util = num_instances / num_total_instances;
-        }
-        type_util[&type] = util;
-
-        if (util > 1.) {
-            fits_on_device = false;
-        }
-        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name.c_str());
-    }
-    VTR_LOG("\n");
-
-    return fits_on_device;
-}
-
 std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>
 FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     vtr::ScopedStartFinishTimer pack_reconstruction_timer("Sorting and Grouping Blocks by Tile");
@@ -1039,7 +991,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
         arch_.models,
         vpr_setup_.PackerOpts.pack_verbosity);
 
-    // Perform clustering using partial placement
+    // Perform clustering using partial placement.
     create_clusters(cluster_legalizer, p_placement);
 
     // Verify that the clustering created by the full legalizer is valid.
@@ -1053,7 +1005,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    // Perform the initial placement on created clusters
+    // Perform the initial placement on created clusters.
     place_clusters(p_placement);
 }
 
