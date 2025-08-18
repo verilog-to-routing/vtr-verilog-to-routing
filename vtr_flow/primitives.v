@@ -266,9 +266,9 @@ module single_port_ram #(
    
     always@(posedge clk) begin
         if(we) begin
-            Mem[addr] = data;
+            Mem[addr] <= data;
         end
-    	out = Mem[addr]; //New data read-during write behaviour (blocking assignments)
+    	out <= Mem[addr]; //New data read-during write behaviour (blocking assignments)
     end
    
 endmodule // single_port_RAM
@@ -321,9 +321,9 @@ module dual_port_ram #(
 
     always@(posedge clk) begin //Port 2
         if(we2) begin
-            Mem[addr2] = data2;
+            Mem[addr2] <= data2;
         end
-        out2 = Mem[addr2]; //New data read-during write behaviour (blocking assignments)
+        out2 <= Mem[addr2]; //New data read-during write behaviour (blocking assignments)
     end
    
 endmodule // dual_port_ram
