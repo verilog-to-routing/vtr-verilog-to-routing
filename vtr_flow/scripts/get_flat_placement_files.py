@@ -43,7 +43,8 @@ def main():
 
     # A list of the zipped flat placements to uncompress.
     flat_placement_files = [
-        f"{args.vtr_flow_dir}/tasks/regression_tests/vtr_reg_nightly_test7/ap_reconstruction/constraints/flat_placements.zip",
+        f"{args.vtr_flow_dir}/tasks/regression_tests/"
+        "vtr_reg_nightly_test7/ap_reconstruction/constraints/flat_placements.zip",
     ]
 
     # For each zipped flat placement, unzip it into its directory.
