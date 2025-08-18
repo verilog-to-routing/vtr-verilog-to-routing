@@ -899,64 +899,45 @@ void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     // Create the RNG container for the initial placer.
     vtr::RngContainer rng(vpr_setup_.PlacerOpts.seed);
 
-    // Run the initial placer on the clusters created by the packer, using the
-    // flat placement information from the global placer or using the read flat
-    // placement to guide where to place the clusters. If flat placement is not being read,
-    // cast the partia placement to flat placement (when used with direct output of GP).
-    // TODO: Currently, the way initial placer sort the blocks to place is aligned
-    //       how reconstruction pass clusters created, so there is no need to explicitely
-    //       prioritize these clusters. However, if it changes in time, the atoms clustered
-    //       in neighbor pass and atoms misplaced might not match exactly.
-    if (g_vpr_ctx.atom().flat_placement_info().valid) {
-        initial_placement(vpr_setup_.PlacerOpts,
-                          vpr_setup_.PlacerOpts.constraints_file.c_str(),
-                          vpr_setup_.NocOpts,
-                          blk_loc_registry,
-                          *g_vpr_ctx.placement().place_macros,
-                          noc_cost_handler,
-                          g_vpr_ctx.atom().flat_placement_info(),
-                          rng);
-        // Log some information on how good the reconstruction was.
-        log_flat_placement_reconstruction_info(g_vpr_ctx.atom().flat_placement_info(),
-                                               blk_loc_registry.block_locs(),
-                                               g_vpr_ctx.clustering().atoms_lookup,
-                                               g_vpr_ctx.atom().lookup(),
-                                               atom_netlist_,
-                                               g_vpr_ctx.clustering().clb_nlist);
-    } else {
-        // If a flat placement is not being read or casted at that point, cast
-        // the partial placement to flat placement here. So that it can be used
-        // to guide the initial placer and for logging results. This part is
-        // added for using the FlatRecon with GP output.
-        FlatPlacementInfo flat_placement_info(atom_netlist_);
-        for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-            PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
-            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-                if (!atom_blk_id.is_valid())
-                    continue;
-                flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
-                flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
-                flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
-                flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
-            }
+    // Cast the partial placement to flat placement here. So that it can be
+    // used to guide the initial placer and for logging results. This enables
+    // the flow to be used with direct output of GP as well.
+    FlatPlacementInfo flat_placement_info(atom_netlist_);
+    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
+        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+            flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
+            flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
+            flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
+            flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
         }
-        initial_placement(vpr_setup_.PlacerOpts,
-                          vpr_setup_.PlacerOpts.constraints_file.c_str(),
-                          vpr_setup_.NocOpts,
-                          blk_loc_registry,
-                          *g_vpr_ctx.placement().place_macros,
-                          noc_cost_handler,
-                          flat_placement_info,
-                          rng);
-        // Log some information on how good the reconstruction was.
-        log_flat_placement_reconstruction_info(flat_placement_info,
-                                               blk_loc_registry.block_locs(),
-                                               g_vpr_ctx.clustering().atoms_lookup,
-                                               g_vpr_ctx.atom().lookup(),
-                                               atom_netlist_,
-                                               g_vpr_ctx.clustering().clb_nlist);
     }
+
+    // Run the initial placer on the clusters created.
+    // TODO: Currently, the way initial placer sort the blocks to place is aligned
+    //       how self clustering pass clusters created, so there is no need to explicitely
+    //       prioritize these clusters. However, if it changes in time, the atoms clustered
+    //       in neighbor pass and atoms misplaced might not match exactly. It might be safer
+    //       to write FlatRecon's own placer in that case.
+    initial_placement(vpr_setup_.PlacerOpts,
+                        vpr_setup_.PlacerOpts.constraints_file.c_str(),
+                        vpr_setup_.NocOpts,
+                        blk_loc_registry,
+                        *g_vpr_ctx.placement().place_macros,
+                        noc_cost_handler,
+                        flat_placement_info,
+                        rng);
+
+    // Log some information on how good the reconstruction was.
+    log_flat_placement_reconstruction_info(flat_placement_info,
+                                            blk_loc_registry.block_locs(),
+                                            g_vpr_ctx.clustering().atoms_lookup,
+                                            g_vpr_ctx.atom().lookup(),
+                                            atom_netlist_,
+                                            g_vpr_ctx.clustering().clb_nlist);
 
     // Verify that the placement is valid for the VTR flow.
     unsigned num_errors = verify_placement(blk_loc_registry,
