@@ -476,7 +476,7 @@ void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
 
 void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                                     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                    size_t& num_of_mols_clustered) {
+                                    std::unordered_set<PackMoleculeId>& mols_clustered) {
     vtr::ScopedStartFinishTimer neigh_pass_clustering("Neighbor Pass Clustering");
     
     // Iterate over molecules and try to join the unclustered ones to their
@@ -559,10 +559,11 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                 // Use the first molecule as seed to recreate the cluster.
                 PackMoleculeId seed_mol = cluster_molecules[0];
                 LegalizationClusterId new_cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types); 
-                cluster_molecules.erase(cluster_molecules.begin());
 
                 // Add remaining old molecules to the new cluster.
                 for (PackMoleculeId mol_id: cluster_molecules) {
+                    if (mol_id == seed_mol)
+                        continue;
                     if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id))
                         continue;
                     cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id);
@@ -599,7 +600,7 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
             }
             // Stop iterating neighbor tiles if current molecule already fit in a neighbor cluster.
             if (fit_in_a_neighbor) {
-                num_of_mols_clustered++;
+                mols_clustered.insert(molecule_id);
                 break;
             }
         }   
@@ -719,7 +720,7 @@ void FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
 }
 
 void FlatRecon::report_clustering_summary(ClusterLegalizer& cluster_legalizer,
-                                          size_t num_of_mols_clustered_in_neighbor_pass,
+                                          std::unordered_set<PackMoleculeId>& neighbor_pass_molecules,
                                           std::unordered_set<LegalizationClusterId>& orphan_window_clusters) {
     // Define stat collection variables.
     std::unordered_map<std::string, size_t> cluster_type_count_self_pass,
@@ -750,6 +751,7 @@ void FlatRecon::report_clustering_summary(ClusterLegalizer& cluster_legalizer,
     // Note: neighbor-pass molecules were initially counted in 'self' because they
     // joined clusters created in the self pass. To report disjoint pass totals,
     // remove them from the self-pass count here.
+    size_t num_of_mols_clustered_in_neighbor_pass = neighbor_pass_molecules.size();
     num_of_mols_clustered_in_self_pass -= num_of_mols_clustered_in_neighbor_pass;
 
     size_t total_mols_clustered = num_of_mols_clustered_in_self_pass + num_of_mols_clustered_in_neighbor_pass + num_of_mols_clustered_in_orphan_window_pass;
@@ -801,22 +803,24 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
         primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
+    // Perform self clustering pass.
     reconstruction_cluster_pass(cluster_legalizer,
                                 device_grid,
                                 primitive_candidate_block_types,
                                 tile_blocks);
 
-    // Perform the neighbor clustering.
-    size_t num_of_mols_clustered_in_neighbor_pass = 0;
+    // Perform neighbor clustering pass.
+    std::unordered_set<PackMoleculeId> neighbor_pass_molecules;
     neighbor_clustering(cluster_legalizer,
                         primitive_candidate_block_types,
-                        num_of_mols_clustered_in_neighbor_pass);
+                        neighbor_pass_molecules);
 
-    // Orphan window clustering search radius values to try. As the search radius
-    // increases, the number of clusters created decreases, while displacement increases.
-    // The initial value of 8 was selected empirically, as it provides minimal displacement
-    // without creating too many clusters. However, if the clusters created do not fit on
-    // the device, it retries with larger values (16, and finally the whole device size).
+    // Perform orphan window clustering pass.
+    // We retry orphan-window clustering with progressively larger Manhattan radii,
+    // trading fewer clusters for higher displacement. Radius 8 was chosen
+    // empirically as a good starting point (low displacement, reasonable cluster
+    // count). If those clusters still don't fit the device, we retry with 16, and
+    // finally with the whole device.
     std::vector<int> orphan_window_search_radii = {8, 16, static_cast<int>(device_grid.width() + device_grid.height())};
     bool fits_on_device = false;
     std::unordered_set<LegalizationClusterId> orphan_window_clusters;
@@ -859,7 +863,7 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
 
     // Report the clustering summary.
     report_clustering_summary(cluster_legalizer,
-                              num_of_mols_clustered_in_neighbor_pass,
+                              neighbor_pass_molecules,
                               orphan_window_clusters);
 
     // Check and output the clustering.
