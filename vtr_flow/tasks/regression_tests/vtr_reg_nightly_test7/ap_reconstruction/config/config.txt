@@ -2,6 +2,11 @@
 # Configuration file for running experiments
 ##############################################
 
+# NOTE: To run this task, the Flat Placement Files are needed. These files needs to be
+#       decompressed in order to run. In the root VTR directory, run:
+#               make get_flat_placements
+
+
 # Path to directory of circuits to use
 circuits_dir=benchmarks/titan_blif/titan23/stratixiv
 
