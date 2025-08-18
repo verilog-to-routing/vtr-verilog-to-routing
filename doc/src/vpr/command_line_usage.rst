@@ -1298,11 +1298,11 @@ Analytical Placement is generally split into three stages:
 
     * ``appack`` Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.
 
-    * ``flat-recon`` Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement
-      that is as close to the incoming flat placement as possible. It can be used to read flat placement from an '.fplace' file
-      or with Global Placement output. In both cases, it expects the given solution to be close to legal. If used with
-      an '.fplace' file, each atom of a molecule should share same location information. If none of the atoms in a molecule
-      have a specified location in the file, the molecule will be assigned to the center of the device.
+    * ``flat-recon`` Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement that is
+      as close to the incoming flat placement as possible. It can be used to read a flat placement from a ``.fplace`` file (see :option:`--read_flat_place`)
+      or with Global Placement output. In both cases, it expects the given solution to be close to legal. If used with a ``.fplace`` file (see :option:`--read_flat_place`),
+      each atom of a molecule should share same location information. It is legal to leave some molecules unconstrained; the reconstruction phase will choose where
+      to place them but does not attempt to optimize these locations.
 
     **Default:** ``appack``
 
