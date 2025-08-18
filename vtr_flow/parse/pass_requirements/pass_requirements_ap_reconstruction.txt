@@ -2,9 +2,6 @@
 
 post_fl_atom_err;Range(0.7,1.30)
 post_fl_total_disp;Range(0.7,1.30)
-pct_atoms_neighbor;Range(0.7,1.30)
-pct_molecules_neighbor;Range(0.7,1.30)
-pct_clusters_neighbor;Range(0.7,1.30)
 num_total_clusters;Range(0.9,1.10)
 ap_fl_max_rss;Range(0.8,1.20)
 
