@@ -608,6 +608,9 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
     VTR_LOG("AnalyticalPlacerOpts.analytical_solver_type: ");
     switch (APOpts.analytical_solver_type) {
+        case e_ap_analytical_solver::Identity:
+            VTR_LOG("identity\n");
+            break;
         case e_ap_analytical_solver::QP_Hybrid:
             VTR_LOG("qp-hybrid\n");
             break;

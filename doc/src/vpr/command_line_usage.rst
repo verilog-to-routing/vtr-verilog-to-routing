@@ -1240,13 +1240,18 @@ Analytical Placement is generally split into three stages:
 
     Analytical Placement is experimental and under active development.
 
-.. option:: --ap_analytical_solver {qp-hybrid | lp-b2b}
+.. option:: --ap_analytical_solver {identity | qp-hybrid | lp-b2b}
 
     Controls which Analytical Solver the Global Placer will use in the AP Flow.
     The Analytical Solver solves for a placement which optimizes some objective
     function, ignorant of the FPGA legality constraints. This provides a "lower-
     bound" solution. The Global Placer will legalize this solution and feed it
     back to the analytical solver to make its solution more legal.
+
+    * ``identity`` Does not formulate any equations and just passes the last
+      legalized solution through. In the first iteration, it initializes all blocks
+      to the center of the device. This solver is only used for testing and
+      debugging and should not be part of any real AP flow.
 
     * ``qp-hybrid`` Solves for a placement that minimizes the quadratic HPWL of
       the flat placement using a hybrid clique/star net model (as described in
