@@ -417,10 +417,10 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
     }
 }
 
-void FlatRecon::reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
-                                            const DeviceGrid& device_grid,
-                                            const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                            std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks) {
+void FlatRecon::self_clustering(ClusterLegalizer& cluster_legalizer,
+                                const DeviceGrid& device_grid,
+                                const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks) {
     vtr::ScopedStartFinishTimer reconstruction_pass_clustering("Reconstruction Pass Clustering");
     for (const auto& [tile_loc, tile_molecules] : tile_blocks) {
         // Get tile type of current tile location.
@@ -804,10 +804,10 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
         primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
     // Perform self clustering pass.
-    reconstruction_cluster_pass(cluster_legalizer,
-                                device_grid,
-                                primitive_candidate_block_types,
-                                tile_blocks);
+    self_clustering(cluster_legalizer,
+                    device_grid,
+                    primitive_candidate_block_types,
+                    tile_blocks);
 
     // Perform neighbor clustering pass.
     std::unordered_set<PackMoleculeId> neighbor_pass_molecules;
@@ -901,7 +901,8 @@ void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
 
     // Run the initial placer on the clusters created by the packer, using the
     // flat placement information from the global placer or using the read flat
-    // placement to guide where to place the clusters.
+    // placement to guide where to place the clusters. If flat placement is not being read,
+    // cast the partia placement to flat placement (when used with direct output of GP).
     // TODO: Currently, the way initial placer sort the blocks to place is aligned
     //       how reconstruction pass clusters created, so there is no need to explicitely
     //       prioritize these clusters. However, if it changes in time, the atoms clustered

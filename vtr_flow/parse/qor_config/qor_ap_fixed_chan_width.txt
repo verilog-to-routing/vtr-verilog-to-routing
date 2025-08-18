@@ -34,15 +34,17 @@ num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 num_lab;vpr.out;Netlist LAB blocks:\s*(\d+)
 ap_fl_max_rss;vpr.out;AP Full Legalizer took .*max_rss (.*?) MiB
 total_max_rss;vpr.out;The entire flow of VPR took .*max_rss (.*?) MiB
+
 num_total_clusters;vpr.out;^\s*Total\s+clusters\s*:\s*(\d+)
-pct_atoms_neighbor;vpr.out;^\s*Percent\s+of\s+atoms\s+clustered\s+in\s+Neighbor\s+pass\s*:\s*([\d.]+)%
-pct_molecules_neighbor;vpr.out;^\s*Percent\s+of\s+molecules\s+clustered\s+in\s+Neighbor\s+pass\s*:\s*([\d.]+)%
-pct_clusters_neighbor;vpr.out;^\s*Percent\s+of\s+clusters\s+created\s+in\s+Neighbor\s+pass\s*:\s*([\d.]+)%
 
-mol_clustered_normal;vpr.out;^\s*Normal Pass:\s*(\d+)
-mol_clustered_neighbor;vpr.out;^\s*Join with Neighbor Pass:\s*(\d+)
-mol_clustered_orphan;vpr.out;^\s*Orphan Region Reconstruction Pass:\s*(\d+)
+clusters_created_self;vpr.out;^\s*Clusters\s+created\s+\(Self\s+Clustering\)\s*:\s*(\d+)
+clusters_created_orphan;vpr.out;^\s*Clusters\s+created\s+\(Orphan\s+Window\s+Clustering\)\s*:\s*(\d+)
+pct_clusters_orphan;vpr.out;^\s*Percent\s+of\s+clusters\s+created\s+in\s+Orphan\s+Window\s+Clustering\s*:\s*([\d.]+)%
 
-mol_clustered_normal_ratio;vpr.out;^\s*Normal Pass:\s*\d+\s+\(([\d.]+)\)
-mol_clustered_neighbor_ratio;vpr.out;^\s*Join with Neighbor Pass:\s*\d+\s+\(([\d.]+)\)
-mol_clustered_orphan_ratio;vpr.out;^\s*Orphan Region Reconstruction Pass:\s*\d+\s+\(([\d.]+)\)
+mol_clustered_self;vpr.out;^\s*Self\s+Clustering\s*\([\d.]+\)\s*:\s*(\d+)
+mol_clustered_neighbor;vpr.out;^\s*Neighbor\s+Clustering\s*\([\d.]+\)\s*:\s*(\d+)
+mol_clustered_orphan;vpr.out;^\s*Orphan\s+Window\s+Clustering\s*\([\d.]+\)\s*:\s*(\d+)
+
+mol_clustered_self_ratio;vpr.out;^\s*Self\s+Clustering\s*\(([\d.]+)\)
+mol_clustered_neighbor_ratio;vpr.out;^\s*Neighbor\s+Clustering\s*\(([\d.]+)\)
+mol_clustered_orphan_ratio;vpr.out;^\s*Orphan\s+Window\s+Clustering\s*\(([\d.]+)\)

@@ -100,31 +100,36 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
 /**
  * @brief FlatRecon: The Flat Placement Reconstruction Full Legalizer.
  *
- * The idea of the FlatRecon is to reconstruct (pack and place) a given flat
- * placement with minimum disturbance. It can be used with the flat placement
- * either being read from an '.fplace' file or with the GP output. However, in
- * both cases it expects the given flat placement to be close to legal.
+ * Reconstructs (packs and places) an input flat placement with minimal
+ * disturbance. The flat placement may be read from a ``.fplace`` file or
+ * taken from Global Placement (GP). In both cases the input is expected to be
+ * near-legal.
  *
  * Before packing, molecules are sorted so that long carry chain molecules are
  * priorizited. For molecules in the same priority group, higher external pins
  * are used as a tie-breaker. It then groups the molecules according to the tiles
  * determined from their flat placement.
  *
- * The packing consists of two passes: reconstruction and neighbor. In the
- * reconstruction pass, it iterates over each tile and tries to create least
- * amount of clusters with the molecules that want to be in that tile. It
- * first tries to cluster with SKIP_INTRA_LB_ROUTE strategy and then tries with
- * the FULL strategy with the failing molecules in that tile. Any molecule that
- * could not clustered in that pass (either by not being compatible with the
- * desired tile or not being able to add created clusters) is passed to neighbor
- * pass. In the neighbor pass, the first molecule inserted in the reconstruction
- * pass is popped and selected as the seed molecule. Then, its N-neighboring
- * molecules that are at most N tiles away (in Manhattan distance) are selected
- * to be candidate molecules. If candidate molecules are added successfully,
- * they are pooped as well. Then, the next unclustered molecule is popped and it
- * continues until all molecules are clustered. The neighbor search radius
- * is set to 8 based on experiments on Titan benchmarks. Radius 8 was giving
- * the least amount of clusters without hurting the maximum displacement.
+ * The packing consists of three passes:
+ * 1) Self clustering: For each tile, form as few clusters as possible from
+ *    molecules targeting that tile. Try with SKIP_INTRA_LB_ROUTE strategy
+ *    first; any failures are retried with FULL. Molecules that still cannot be
+ *    clustered (incompatible with the tile or with the newly formed clusters)
+ *    are passed to the neighbor pass.
+ *
+ * 2) Neighbor clustering: For each unclustered molecule, inspect clusters in
+ *    the 8 neighboring tiles within the same layer. Tiles are processed in
+ *    ascending order of average molecules-per-cluster. The unclustered molecule
+ *    added to an existing cluster if compatible; no new clusters are created in this pass.
+ *
+ * 3) Orphan-window clustering: Remaining “orphan” molecules are clustered by
+ *    repeated BFS expansions centered at seeds chosen by highest external input
+ *    pin count. From each seed’s assigned location, try to cluster orphan molecules
+ *    within a Manhattan distance ≤ radius. The default radius is 8 (empirically
+ *    minimizes cluster count without inflating displacement on Titan benchmarks).
+ *    If the resulting clusters do not fit the device, the pass is retried with
+ *    radius 16, and finally with a radius spanning the whole device. Larger radii
+ *    reduce cluster count but can increase displacement.
  *
  * After cluster creation, each cluster is placed by the initial placer at the
  * grid location nearest to the centroid of its atoms.
@@ -185,22 +190,24 @@ class FlatRecon : public FullLegalizer {
                                    std::unordered_set<LegalizationClusterId>& created_clusters);
 
     /**
-     * @brief Helper method to perform reconstruction clustering pass.
+     * @brief Helper method to perform self clustering pass.
      *
      * Iterates over each tile and first tries to create least amount of
      * cluster in that tile with SKIP_INTRA_LB_ROUTE strategy. For the illegal
      * cluster molecules, tries with FULL strategy once before going to next tile.
      */
-    void reconstruction_cluster_pass(ClusterLegalizer& cluster_legalizer,
-                                     const DeviceGrid& device_grid,
-                                     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks);
+    void self_clustering(ClusterLegalizer& cluster_legalizer,
+                         const DeviceGrid& device_grid,
+                         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                         std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks);
 
     /**
      * @brief Helper method to perform neighbor clustering.
      *
-     * TODO: Add detailed description.
-     *
+     * For each unclustered molecule, examines clusters in the 8 neighboring tiles.
+     * Neighbor tiles are processed in order of increasing average molecule density.
+     * The molecule is then added to an existing cluster if compatible. No new
+     * clusters are created in this pass.
      */
     void neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                              const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
@@ -208,11 +215,12 @@ class FlatRecon : public FullLegalizer {
     /**
      * @brief Helper method to perform orphan window clustering.
      *
-     * Pops and selects the first molecule as seed for the cluster. Selects seed
-     * molecule's neighboring molecules that are at most N tiles away (in Manhattan
-     * distance) from it. Starting from the nearest neighbor, tries to add neighbor
-     * molecules to the cluster created by seed molecule. Continues until no
-     * unclustered molecules left.
+     * Iteratively selects a seed orphan molecule (highest external input pins).
+     * From the seed’s assigned location, expands within the given Manhattan
+     * search radius in a BFS manner to find nearby orphan molecules. Compatible
+     * neighbors are added to the seed’s cluster in order of proximity. After
+     * reaching the search radius, the process repeats with new seeds until all
+     * orphan molecules are clustered.
      */
     void orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
                                   const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
@@ -228,8 +236,8 @@ class FlatRecon : public FullLegalizer {
     /**
      * @brief Helper method to create clusters with reconstruction and neighbor pass.
      *
-     * This will call sorting and grouping molecules by tile, reconstruction
-     * clustering pass, and neighbor clustering pass.
+     * Each cluster is placed by the initial placer at the grid location nearest
+     * to the centroid of its atoms.
      */
     void create_clusters(ClusterLegalizer& cluster_legalizer,
                                      const PartialPlacement& p_placement);
