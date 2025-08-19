@@ -855,8 +855,12 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     // If no compressed location can be found on this layer, return false.
     // TODO: Maybe search in the layers above or below.
     const t_physical_tile_loc& compressed_loc_on_layer = centroid_compressed_loc[to_layer_num];
-    if (compressed_loc_on_layer.x == OPEN && compressed_loc_on_layer.y == OPEN && compressed_loc_on_layer.layer_num == OPEN)
+    if (compressed_loc_on_layer.x == OPEN || compressed_loc_on_layer.y == OPEN) {
+        VTR_ASSERT_MSG(compressed_loc_on_layer.x == OPEN && compressed_loc_on_layer.y == OPEN,
+                       "When searching for a compressed location, and a location cannot be found "
+                       "both x and y should be OPEN.");
         return false;
+    }
 
     //Determine the valid compressed grid location ranges
     int delta_cx;
