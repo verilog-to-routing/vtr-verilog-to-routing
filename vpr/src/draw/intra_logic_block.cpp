@@ -662,14 +662,14 @@ void draw_logical_connections(ezgl::renderer* g) {
                 color = DRIVEN_BY_IT_COLOR;
             } else if (draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets) {
                 color = ezgl::BLACK;
-                
+
                 // Turn on and off intra-cluster/inter-cluster flyline drawing based on user options
 
-                if(src_clb == sink_clb && !draw_state->draw_intra_cluster_nets) {
+                if (src_clb == sink_clb && !draw_state->draw_intra_cluster_nets) {
                     continue;
                 }
 
-                if(src_clb != sink_clb && !draw_state->draw_inter_cluster_nets) {
+                if (src_clb != sink_clb && !draw_state->draw_inter_cluster_nets) {
                     continue;
                 }
 

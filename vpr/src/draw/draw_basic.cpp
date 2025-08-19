@@ -576,18 +576,16 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
     for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
         RRNodeId inode = rt_node.inode;
 
-        
-
-            // If a net has been highlighted, highlight all the nodes in the net the same color.
-            if (draw_if_net_highlighted(net_id)) {
-                draw_state->draw_rr_node[inode].color = draw_state->net_color[net_id];
-                draw_state->draw_rr_node[inode].node_highlighted = true;
-            } else {
-                // If not highlighted, draw the node in default color.
-                if (!draw_state->draw_rr_node[inode].node_highlighted) {
-                    draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
-                }
+        // If a net has been highlighted, highlight all the nodes in the net the same color.
+        if (draw_if_net_highlighted(net_id)) {
+            draw_state->draw_rr_node[inode].color = draw_state->net_color[net_id];
+            draw_state->draw_rr_node[inode].node_highlighted = true;
+        } else {
+            // If not highlighted, draw the node in default color.
+            if (!draw_state->draw_rr_node[inode].node_highlighted) {
+                draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
             }
+        }
 
         // When drawing a new branch, add the parent node to the vector to ensure that the conenction is drawn.
         if (rr_nodes_to_draw.empty() && rt_node.parent().has_value()) {
