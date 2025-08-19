@@ -224,11 +224,13 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
             // If the node hasn't been clicked on before, highlight it in magenta.
             draw_state->draw_rr_node[node].color = ezgl::MAGENTA;
             draw_state->draw_rr_node[node].node_highlighted = true;
+            draw_state->draw_rr_node[node].node_hit = true;
 
         } else {
             //Using white color to represent de-highlighting (or de-selecting) of node.
             draw_state->draw_rr_node[node].color = ezgl::WHITE;
             draw_state->draw_rr_node[node].node_highlighted = false;
+            draw_state->draw_rr_node[node].node_hit = false;
         }
 
         //Print info about all nodes to terminal including neighboring non-configurable nodes
@@ -240,13 +242,13 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
     sprintf(message, "Selected %s", info.c_str());
     rr_highlight_message = message;
 
+    if (draw_state->show_nets) {
+        highlight_nets(message, hit_node);
+    }
+
     // Highlight RR Edges if the user has selected this option
     if (draw_state->show_rr && draw_state->highlight_rr_edges) {
         draw_highlight_fan_in_fan_out(nodes);
-    }
-
-    if (draw_state->show_nets) {
-        highlight_nets(message, hit_node);
     }
 
     application.update_message(message);

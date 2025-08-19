@@ -562,6 +562,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
         for (RRNodeId inode : rr_graph.nodes()) {
             draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
             draw_state->draw_rr_node[inode].node_highlighted = false;
+            draw_state->draw_rr_node[inode].node_hit = false;
         }
     }
     draw_coords->set_tile_width(clb_width);

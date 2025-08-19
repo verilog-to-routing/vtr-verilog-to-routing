@@ -334,10 +334,10 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 
         // If the node is highlighted, color the edges as blue for fanin and red for fanout
         if (draw_state->highlight_rr_edges) {
-            if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA)) {
+            if (draw_state->draw_rr_node[inode].node_hit) {
                 color = draw_state->draw_rr_node[to_node].color;
                 draw_edge = true;
-            } else if (rgb_is_same(draw_state->draw_rr_node[to_node].color, ezgl::MAGENTA)) {
+            } else if (draw_state->draw_rr_node[to_node].node_hit) {
                 color = draw_state->draw_rr_node[inode].color;
                 draw_edge = true;
             }

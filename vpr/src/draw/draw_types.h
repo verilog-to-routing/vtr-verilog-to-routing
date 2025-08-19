@@ -146,9 +146,17 @@ typedef struct {
  * node_highlighted: Whether the node is highlighted. Useful for
  *					 highlighting routing resources on rr_graph
  */
+/**
+ * @brief Structure used to store the state information of an rr_node. 
+ * Used to control drawing each rr_node when ROUTING is on screen.
+ * color: Color of the rr_node
+ * node_highlighted: Whether the node is highlighted. Useful for highlighting routing resources on rr_graph.
+ * node_hit: Whether the node is hit by a mouse click. Required since multiple RR nodes can be clicked on at the same time.
+ */
 typedef struct {
     ezgl::color color;
     bool node_highlighted;
+    bool node_hit;
 } t_draw_rr_node;
 
 /**

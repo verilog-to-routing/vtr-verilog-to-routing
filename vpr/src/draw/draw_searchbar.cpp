@@ -271,6 +271,7 @@ void deselect_all() {
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
         draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
         draw_state->draw_rr_node[inode].node_highlighted = false;
+        draw_state->draw_rr_node[inode].node_hit = false;
     }
     get_selected_sub_block_info().clear();
 }
