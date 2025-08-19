@@ -137,7 +137,9 @@ struct ParseCircuitFormat {
 struct ParseAPAnalyticalSolver {
     ConvertedValue<e_ap_analytical_solver> from_str(const std::string& str) {
         ConvertedValue<e_ap_analytical_solver> conv_value;
-        if (str == "qp-hybrid")
+        if (str == "identity")
+            conv_value.set_value(e_ap_analytical_solver::Identity);
+        else if (str == "qp-hybrid")
             conv_value.set_value(e_ap_analytical_solver::QP_Hybrid);
         else if (str == "lp-b2b")
             conv_value.set_value(e_ap_analytical_solver::LP_B2B);
@@ -152,6 +154,9 @@ struct ParseAPAnalyticalSolver {
     ConvertedValue<std::string> to_str(e_ap_analytical_solver val) {
         ConvertedValue<std::string> conv_value;
         switch (val) {
+            case e_ap_analytical_solver::Identity:
+                conv_value.set_value("identity");
+                break;
             case e_ap_analytical_solver::QP_Hybrid:
                 conv_value.set_value("qp-hybrid");
                 break;
@@ -165,7 +170,7 @@ struct ParseAPAnalyticalSolver {
     }
 
     std::vector<std::string> default_choices() {
-        return {"qp-hybrid", "lp-b2b"};
+        return {"identity", "qp-hybrid", "lp-b2b"};
     }
 };
 
@@ -1923,7 +1928,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     ap_grp.add_argument<e_ap_analytical_solver, ParseAPAnalyticalSolver>(args.ap_analytical_solver, "--ap_analytical_solver")
         .help(
             "Controls which Analytical Solver the Global Placer will use in the AP Flow.\n"
-            " * qp-hybrid: olves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
+            " * identity: Does not formulate any equations and just passes the last legalized solution through. This solver is only used for testing and debugging.\n"
+            " * qp-hybrid: Solves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
             " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
         .default_value("lp-b2b")
         .show_in(argparse::ShowIn::HELP_ONLY);

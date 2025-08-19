@@ -72,6 +72,12 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
 
     // Based on the solver type passed in, build the solver.
     switch (solver_type) {
+        case e_ap_analytical_solver::Identity:
+            return std::make_unique<IdentityAnalyticalSolver>(netlist,
+                                                              device_grid,
+                                                              atom_netlist,
+                                                              ap_timing_tradeoff,
+                                                              log_verbosity);
         case e_ap_analytical_solver::QP_Hybrid:
 #ifdef EIGEN_INSTALLED
             return std::make_unique<QPHybridSolver>(netlist,
@@ -126,6 +132,7 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
     , net_weights_(netlist.nets().size(), 1.0f)
     , device_grid_width_(device_grid.width())
     , device_grid_height_(device_grid.height())
+    , device_grid_num_layers_(device_grid.get_num_layers())
     , ap_timing_tradeoff_(ap_timing_tradeoff)
     , log_verbosity_(log_verbosity) {
 
@@ -165,6 +172,38 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
         current_row_id++;
         num_moveable_blocks_++;
     }
+}
+
+void IdentityAnalyticalSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
+    // If this is not the first iteration, return the partial placement (i.e.
+    // the previously partially legalized solution).
+    if (iteration != 0)
+        return;
+
+    // If this is the first iteration, we need to create a starting placement
+    // to act as the starting point.
+    // TODO: It may be convenient to create a class which creates the initial
+    //       placement. That way we can use different intial placements with
+    //       the identity solver not optimizing.
+    // Place all of the moveable blocks at the center of the device.
+    for (APBlockId blk_id : netlist_.blocks()) {
+        VTR_ASSERT_DEBUG(blk_id.is_valid());
+        if (netlist_.block_mobility(blk_id) != APBlockMobility::MOVEABLE)
+            continue;
+
+        p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
+        p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
+        p_placement.block_layer_nums[blk_id] = device_grid_num_layers_ / 2.0;
+    }
+}
+
+void IdentityAnalyticalSolver::update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager) {
+    (void)pre_cluster_timing_manager;
+    // Do nothing.
+}
+
+void IdentityAnalyticalSolver::print_statistics() {
+    // Do nothing.
 }
 
 #ifdef EIGEN_INSTALLED
