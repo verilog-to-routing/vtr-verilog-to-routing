@@ -82,7 +82,6 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
 #ifndef NO_GRAPHICS
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g);
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer* g);
-void draw_selected_pb_flylines(ezgl::renderer* g);
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer* g);
 #endif /* NO_GRAPHICS */
 
@@ -222,9 +221,6 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
             }
         }
     }
-    //Draw the atom-level net flylines for the selected pb
-    //(inputs: blue, outputs: red, internal: orange)
-    draw_selected_pb_flylines(g);
 }
 #endif /* NO_GRAPHICS */
 
@@ -617,6 +613,7 @@ void draw_logical_connections(ezgl::renderer* g) {
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     g->set_line_dash(ezgl::line_dash::none);
+    g->set_line_width(1);
 
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.netlist().nets()) {
@@ -665,6 +662,17 @@ void draw_logical_connections(ezgl::renderer* g) {
                 color = DRIVEN_BY_IT_COLOR;
             } else if (draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets) {
                 color = ezgl::BLACK;
+                
+                // Turn on and off intra-cluster/inter-cluster flyline drawing based on user options
+
+                if(src_clb == sink_clb && !draw_state->draw_intra_cluster_nets) {
+                    continue;
+                }
+
+                if(src_clb != sink_clb && !draw_state->draw_inter_cluster_nets) {
+                    continue;
+                }
+
             } else {
                 continue;
             }

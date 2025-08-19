@@ -230,6 +230,8 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     draw_logical_connections(g);
 
+    draw_selected_pb_flylines(g);
+
     draw_noc(g);
 
     if (draw_state->draw_partitions) {
