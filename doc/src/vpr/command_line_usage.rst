@@ -1887,6 +1887,9 @@ The following options are only valid when the router is in timing-driven mode (t
 
      * ``classic``: The classic VPR lookahead
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
+     * ``compressed_map``: The algorithm is similar to map lookahead with the exception of sparse sampling of the chip to reduce the run-time to build the router lookahead and also its memory footprint.
+     * ``extended_map``: A more advanced and extended lookahead which accounts for a more exhaustive node sampling method.
+     * ``simple``: A purely distance-based lookahead loaded from an external file using :option:`--read_router_lookahead`. This lookahead returns a cost estimate for channel nodes by querying a lookup table, while for any other node type it returns zero.
 
      **Default:** ``map``
 
