@@ -903,8 +903,10 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
                 && (0 < from_grid_edge_map.at(side).count(opin_id))) {
                 chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_grid_edge_map[side][opin_id]);
             }
-        }
+        } 
+    }
 
+    for (size_t side = 0 ; side < get_num_sides(); ++side) {
         /* Edges from routing tracks are the 2nd part */
         for (size_t itrack = 0; itrack < chan_node_[side].get_chan_width(); ++itrack) {
             if ((0 < from_track_edge_map.count(side))
