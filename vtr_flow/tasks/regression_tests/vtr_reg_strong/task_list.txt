@@ -1,4 +1,5 @@
 regression_tests/vtr_reg_strong/basic_ap
+regression_tests/vtr_reg_strong/basic_3d
 regression_tests/vtr_reg_strong/strong_ap/mcnc
 regression_tests/vtr_reg_strong/strong_ap/vtr_chain
 regression_tests/vtr_reg_strong/strong_ap/bipartitioning_partial_legalizer
@@ -9,6 +10,7 @@ regression_tests/vtr_reg_strong/strong_ap/annealer_detailed_placer
 regression_tests/vtr_reg_strong/strong_ap/none_detailed_placer
 regression_tests/vtr_reg_strong/strong_ap/no_fixed_blocks
 regression_tests/vtr_reg_strong/strong_ap/unrelated_clustering
+regression_tests/vtr_reg_strong/strong_ap/identity_analytical_solver
 regression_tests/vtr_reg_strong/strong_ap/qp_hybrid_analytical_solver
 regression_tests/vtr_reg_strong/strong_ap/lp_b2b_analytical_solver
 regression_tests/vtr_reg_strong/strong_ap/gen_mass_report
