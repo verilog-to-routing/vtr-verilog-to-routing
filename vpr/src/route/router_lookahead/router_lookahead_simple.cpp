@@ -36,7 +36,7 @@
 /******** File-Scope Variables ********/
 
 //Look-up table from CHANX/CHANY (to SINKs) for various distances
-t_simple_cost_map simple_cost_map;
+static t_simple_cost_map simple_cost_map;
 
 /******** File-Scope Functions ********/
 
