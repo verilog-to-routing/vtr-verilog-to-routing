@@ -111,8 +111,8 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     }
 
     VTR_LOG("\n");
-    VTR_LOG("Segment occupancy by length: Length utilization\n");
-    VTR_LOG("                             ------ -----------\n");
+    VTR_LOG("Segment occupancy by length: Length Occupancy Capacity Utilization\n");
+    VTR_LOG("                             ------ --------- -------- -----------\n");
     for (const int seg_length : segment_lengths) {
         if (directed_cap_by_length[e_parallel_axis::X_AXIS][seg_length] != 0 || directed_cap_by_length[e_parallel_axis::Y_AXIS][seg_length] != 0) {
             std::string seg_name = "L" + std::to_string(seg_length);
@@ -124,7 +124,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
                 cap += directed_cap_by_length[ax][seg_length];
             }
             utilization = (float)occ / (float)cap;
-            VTR_LOG("                             %s     %11.3g\n", seg_name.c_str(), utilization);
+            VTR_LOG("                             %-6s %9d %8d %11.3g\n", seg_name.c_str(), occ, cap, utilization);
         }
     }
 
