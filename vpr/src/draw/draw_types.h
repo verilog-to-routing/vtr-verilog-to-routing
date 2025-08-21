@@ -124,8 +124,8 @@ enum e_draw_noc {
 
 /// Different types of edges in the routing resource graph. Used to determine color of edges when drawn.
 enum class e_edge_type {
-    PIN_TO_OPIN, // any pin to output pin
-    PIN_TO_IPIN, // any pin to input pin
+    PIN_TO_OPIN,  // any pin to output pin
+    PIN_TO_IPIN,  // any pin to input pin
     OPIN_TO_CHAN, // output pin to channel
     CHAN_TO_IPIN, // channel to input pin
     CHAN_TO_CHAN, // channel to channel
@@ -137,9 +137,8 @@ enum class e_edge_type {
  */
 typedef struct {
     ezgl::application* app; // Pointer to the ezgl application instance
-    bool* toggle_state; // Pointer to the boolean variable that will be toggled
+    bool* toggle_state;     // Pointer to the boolean variable that will be toggled
 } t_checkbox_data;
-
 
 /**
  * @brief Structure used to store the state information of an rr_node. 

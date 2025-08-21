@@ -270,30 +270,30 @@ void hide_crit_path_routing(ezgl::application* app) {
 
     // Enable the option to show critical path only when timing info is available
     if (!draw_state->setup_timing_info || draw_state->pic_on_screen != ROUTING) {
-        if(crit_path_item_index != -1) {
+        if (crit_path_item_index != -1) {
             gtk_combo_box_text_remove(toggle_crit_path, crit_path_item_index);
             gtk_combo_box_text_remove(toggle_crit_path, crit_path_item_index + 1);
         }
     } else {
-        if(crit_path_item_index == -1){
+        if (crit_path_item_index == -1) {
             gtk_combo_box_text_insert_text(toggle_crit_path, 3, "Crit Path Routing");
             gtk_combo_box_text_insert_text(toggle_crit_path, 4, "Crit Path Routing Delays");
-        }        
+        }
     }
 }
 
 void hide_draw_routing(ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
     GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNetType"));
-    
+
     // Enable the option to draw routing only during the routing stage
     int route_item_index = get_item_index_by_text(toggle_nets, "Routing");
-    if(draw_state->pic_on_screen == PLACEMENT){
+    if (draw_state->pic_on_screen == PLACEMENT) {
         if (route_item_index != -1) {
             gtk_combo_box_text_remove(toggle_nets, route_item_index);
         }
     } else {
-        if(route_item_index == -1){
+        if (route_item_index == -1) {
             gtk_combo_box_text_append(toggle_nets, "2", "Routing");
         }
     }

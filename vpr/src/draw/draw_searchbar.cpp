@@ -85,7 +85,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
 
         // Convert to atom net id if flat routing is enabled
         ParentNetId net_id = cluster_net_id;
-        if (draw_state->is_flat){
+        if (draw_state->is_flat) {
             net_id = atom_lookup.atom_net(cluster_net_id);
         }
 

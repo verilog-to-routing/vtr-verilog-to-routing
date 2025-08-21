@@ -84,7 +84,6 @@ static void draw_main_canvas(ezgl::renderer* g);
  */
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
-
 static void setup_default_ezgl_callbacks(ezgl::application* app);
 static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
@@ -180,7 +179,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
     drawplace(g);
     draw_internal_draw_subblk(g);
 
-    if(draw_state->pic_on_screen == ROUTING) { // ROUTING on screen
+    if (draw_state->pic_on_screen == ROUTING) { // ROUTING on screen
 
         draw_rr(g);
 
@@ -242,11 +241,10 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 }
 
-
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
-    
+
     // default setup for new window
-    if(is_new_window) {
+    if (is_new_window) {
         basic_button_setup(app);
         net_button_setup(app);
         block_button_setup(app);
@@ -267,9 +265,8 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
         show_widget("RoutingMenuButton", app);
 
         draw_state->save_graphics_file_base = "vpr_routing";
-
     }
-    
+
     // show/hide critical path routing UI elements
     hide_crit_path_routing(app);
 
