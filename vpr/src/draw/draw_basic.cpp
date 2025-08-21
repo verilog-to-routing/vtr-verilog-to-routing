@@ -1241,6 +1241,7 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
 
             for (RRNodeId inode : routed_rr_nodes) {
                 draw_state->draw_rr_node[inode].color = color;
+                draw_state->draw_rr_node[inode].node_highlighted = true;
             }
 
             //draw_partial_route() takes care of layer visibility and cross-layer settings

@@ -78,21 +78,13 @@ static float get_router_expansion_cost(const t_rr_node_route_inf& node_inf,
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_main_canvas(ezgl::renderer* g);
-static void default_setup(ezgl::application* app);
-static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
-                                                  bool is_new_window);
-static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
-    ezgl::application* app,
-    bool is_new_window);
-static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
-                                               bool is_new_window);
-static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
-                                               bool is_new_window);
-static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
-                                                bool is_new_window);
-static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
-    ezgl::application* app,
-    bool is_new_window);
+
+/**
+ * @brief Generalized callback function to setup the UI when the stage changes.
+ */
+static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
+
+
 static void setup_default_ezgl_callbacks(ezgl::application* app);
 static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
@@ -254,108 +246,40 @@ static void draw_main_canvas(ezgl::renderer* g) {
     }
 }
 
-/**
- * @brief Default setup function, connects signals/sets up ui created in main.ui file
- *
- * To minimize code repetition, this function sets up all buttons that ALWAYS get set up.
- * If you want to add to the initial setup functions, and your new setup function will always be called,
- * please put it here instead of writing it 5 independent times. Thanks!
- * @param app ezgl application
- */
-static void default_setup(ezgl::application* app) {
-    basic_button_setup(app);
-    net_button_setup(app);
-    block_button_setup(app);
-    search_setup(app);
-    view_button_setup(app);
+
+static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
+    
+    // default setup for new window
+    if(is_new_window) {
+        basic_button_setup(app);
+        net_button_setup(app);
+        block_button_setup(app);
+        search_setup(app);
+        routing_button_setup(app);
+        view_button_setup(app);
+        crit_path_button_setup(app);
+    }
+
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    if (draw_state->pic_on_screen == PLACEMENT) {
+        hide_widget("RoutingMenuButton", app);
+
+        draw_state->save_graphics_file_base = "vpr_placement";
+
+    } else if (draw_state->pic_on_screen == ROUTING) {
+        show_widget("RoutingMenuButton", app);
+
+        draw_state->save_graphics_file_base = "vpr_routing";
+
+    }
+    
+    // show/hide critical path routing UI elements
+    hide_crit_path_routing(app);
+
+    hide_draw_routing(app);
 }
 
-// Initial Setup functions run default setup if they are a new window. Then, they will run
-// the specific hiding/showing functions that separate them from the other init. setup functions
-
-/* function below initializes the interface window with a set of buttons and links
- * signals to corresponding functions for situation where the window is opened from
- * NO_PICTURE_to_PLACEMENT */
-static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app,
-                                                  bool is_new_window) {
-    if (is_new_window)
-        default_setup(app);
-
-    //Hiding unused functionality
-    hide_widget("RoutingMenuButton", app);
-}
-
-/* function below initializes the interface window with a set of buttons and links
- * signals to corresponding functions for situation where the window is opened from
- * NO_PICTURE_to_PLACEMENT_with_crit_path */
-static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(
-    ezgl::application* app,
-    bool is_new_window) {
-    if (is_new_window)
-        default_setup(app);
-
-    //Showing given functionality
-    crit_path_button_setup(app);
-    /* Routing hasn't been done yet, so hide the display options that show routing
-     * as they don't make sense and would crash if clicked on */
-    hide_crit_path_routing(app, true);
-    //Hiding unused routing menu
-    hide_widget("RoutingMenuButton", app);
-}
-
-/* function below initializes the interface window with a set of buttons and links
- * signals to corresponding functions for situation where the window is opened from
- * PLACEMENT_to_ROUTING */
-static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app,
-                                               bool is_new_window) {
-    if (is_new_window)
-        default_setup(app);
-
-    routing_button_setup(app);
-    crit_path_button_setup(app);
-    hide_crit_path_routing(app, false);
-}
-
-/* function below initializes the interface window with a set of buttons and links
- * signals to corresponding functions for situation where the window is opened from
- * ROUTING_to_PLACEMENT */
-static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app,
-                                               bool is_new_window) {
-    if (is_new_window)
-        default_setup(app);
-
-    //Hiding unused functionality
-    hide_widget("RoutingMenuButton", app);
-    crit_path_button_setup(app);
-    hide_crit_path_routing(app, false);
-}
-
-/* function below initializes the interface window with a set of buttons and links
- * signals to corresponding functions for situation where the window is opened from
- * NO_PICTURE_to_ROUTING */
-static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app,
-                                                bool is_new_window) {
-    if (is_new_window)
-        default_setup(app);
-
-    routing_button_setup(app);
-    crit_path_button_setup(app);
-    hide_crit_path_routing(app, false);
-}
-
-/* function below initializes the interface window with a set of buttons and links
- * signals to corresponding functions for situation where the window is opened from
- * NO_PICTURE_to_ROUTING_with_crit_path */
-static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
-    ezgl::application* app,
-    bool is_new_window) {
-    if (is_new_window)
-        default_setup(app);
-
-    routing_button_setup(app);
-    crit_path_button_setup(app);
-    hide_crit_path_routing(app, false);
-}
 #endif //NO_GRAPHICS
 
 void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<const SetupTimingInfo> setup_timing_info) {
@@ -378,49 +302,14 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
 
         if (draw_state->pic_on_screen == NO_PICTURE) {
-            //Only add the canvas the first time we open graphics
+            // Only add the canvas the first time we open graphics
             application.add_canvas("MainCanvas", draw_main_canvas,
                                    initial_world);
         }
 
         draw_state->setup_timing_info = setup_timing_info;
-
-        if (pic_on_screen_val == PLACEMENT
-            && draw_state->pic_on_screen == NO_PICTURE) {
-            if (setup_timing_info) {
-                init_setup = initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path;
-            } else {
-                init_setup = initial_setup_NO_PICTURE_to_PLACEMENT;
-            }
-            draw_state->save_graphics_file_base = "vpr_placement";
-
-        } else if (pic_on_screen_val == ROUTING
-                   && draw_state->pic_on_screen == PLACEMENT) {
-            //Routing, opening after placement
-            init_setup = initial_setup_PLACEMENT_to_ROUTING;
-            draw_state->save_graphics_file_base = "vpr_routing";
-
-        } else if (pic_on_screen_val == PLACEMENT
-                   && draw_state->pic_on_screen == ROUTING) {
-            init_setup = initial_setup_ROUTING_to_PLACEMENT;
-            draw_state->save_graphics_file_base = "vpr_placement";
-
-        } else if (pic_on_screen_val == ROUTING
-                   && draw_state->pic_on_screen == NO_PICTURE) {
-            //Routing opening first
-            if (setup_timing_info) {
-                init_setup = initial_setup_NO_PICTURE_to_ROUTING_with_crit_path;
-            } else {
-                init_setup = initial_setup_NO_PICTURE_to_ROUTING;
-            }
-            draw_state->save_graphics_file_base = "vpr_routing";
-        }
-
         draw_state->pic_on_screen = pic_on_screen_val;
-
-    } else {
-        //No change (e.g. paused)
-        init_setup = nullptr;
+        init_setup = on_stage_change_setup;
     }
 
     bool state_change = (init_setup != nullptr);
