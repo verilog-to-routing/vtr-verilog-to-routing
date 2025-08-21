@@ -626,6 +626,9 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
 
     VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
     switch (APOpts.partial_legalizer_type) {
+        case e_ap_partial_legalizer::Identity:
+            VTR_LOG("none\n");
+            break;
         case e_ap_partial_legalizer::BiPartitioning:
             VTR_LOG("bipartitioning\n");
             break;
