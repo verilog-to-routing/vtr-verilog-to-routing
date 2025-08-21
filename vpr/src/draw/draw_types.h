@@ -40,8 +40,8 @@ enum e_draw_crit_path {
     DRAW_CRIT_PATH_ROUTING_DELAYS
 };
 
+/// @brief Whether to draw routed nets or flylines (direct lines between sources and sinks).
 enum e_draw_nets {
-    DRAW_NO_NETS = 0,
     DRAW_ROUTED_NETS,
     DRAW_FLYLINES
 };
@@ -122,13 +122,13 @@ enum e_draw_noc {
     DRAW_NOC_LINK_USAGE
 };
 
-/// Different types of edges in the routing resource graph
+/// Different types of edges in the routing resource graph. Used to determine color of edges when drawn.
 enum class e_edge_type {
-    PIN_TO_OPIN,
-    PIN_TO_IPIN,
-    OPIN_TO_CHAN,
-    CHAN_TO_IPIN,
-    CHAN_TO_CHAN,
+    PIN_TO_OPIN, // any pin to output pin
+    PIN_TO_IPIN, // any pin to input pin
+    OPIN_TO_CHAN, // output pin to channel
+    CHAN_TO_IPIN, // channel to input pin
+    CHAN_TO_CHAN, // channel to channel
     NUM_EDGE_TYPES
 };
 
@@ -136,8 +136,8 @@ enum class e_edge_type {
  * @brief Structure used to hold data passed into the toggle checkbox callback function.
  */
 typedef struct {
-    ezgl::application* app;
-    bool* toggle_state;
+    ezgl::application* app; // Pointer to the ezgl application instance
+    bool* toggle_state; // Pointer to the boolean variable that will be toggled
 } t_checkbox_data;
 
 

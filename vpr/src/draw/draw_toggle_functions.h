@@ -23,6 +23,8 @@
 /**
  * @brief Generalized callback function for checkboxes.
  * Toggles the state of a boolean variable based on the checkbox state.
+ * @param self ptr to gtkToggleButton
+ * @param data ptr to t_checkbox_data struct containing the ezgl::application and the boolean to toggle
  */
 void toggle_checkbox_cbk(GtkToggleButton* self, t_checkbox_data* data);
 
