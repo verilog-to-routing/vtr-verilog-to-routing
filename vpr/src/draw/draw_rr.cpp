@@ -336,10 +336,10 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         // Need to check both highlighting and hit nodes since when the user clicks off a node, the node is de-highlighted but still in the hit nodes.
         if (draw_state->highlight_rr_edges) {
             if (draw_state->draw_rr_node[inode].node_highlighted && draw_state->hit_nodes.find(inode) != draw_state->hit_nodes.end()) {
-                color = draw_state->draw_rr_node[to_node].color;
+                color = ezgl::RED;
                 draw_edge = true;
             } else if (draw_state->draw_rr_node[to_node].node_highlighted && draw_state->hit_nodes.find(to_node) != draw_state->hit_nodes.end()) {
-                color = draw_state->draw_rr_node[inode].color;
+                color = ezgl::BLUE;
                 draw_edge = true;
             }
         }

@@ -582,9 +582,7 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
             draw_state->draw_rr_node[inode].node_highlighted = true;
         } else {
             // If not highlighted, draw the node in default color.
-            if (!draw_state->draw_rr_node[inode].node_highlighted) {
-                draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
-            }
+            draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
         }
 
         // When drawing a new branch, add the parent node to the vector to ensure that the conenction is drawn.

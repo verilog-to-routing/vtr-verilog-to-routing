@@ -29,9 +29,10 @@
  * Blocks are drawn in layer order (so that semi-transparent blocks/grids render well)*/
 void drawplace(ezgl::renderer* g);
 
-/* This routine draws the nets on the placement.  The nets have not *
- * yet been routed, so we just draw a chain showing a possible path *
- * for each net.  This gives some idea of future congestion.        */
+/** This routine draws the nets on the placement.  The nets have not
+ * yet been routed, so we just draw a chain showing a possible path
+ * for each net.  This gives some idea of future congestion. 
+ * This function may be deprecated. draw_logical_connections() is preferred. */
 void draw_flylines_placement(ezgl::renderer* g);
 
 /* Draws all the overused routing resources (i.e. congestion) in various contrasting colors showing congestion ratio.  */
