@@ -251,7 +251,7 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
             // chosen. In this case, just choose the last action.
             // For example, for three actions:
             //      [0.33, 0.66, 0.99]
-            //   Notice that the last ation does not perfectly add up to 1.0. To
+            //   Notice that the last action does not perfectly add up to 1.0. To
             //   get around this, we just pretend that it rounded up to 1.0.
             action_type_q_pos = num_available_actions_ - 1;
         }
