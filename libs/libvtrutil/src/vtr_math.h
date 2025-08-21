@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <iterator>
 #include <map>
 #include <vector>
@@ -36,8 +37,10 @@ T safe_ratio(T numerator, T denominator) {
 ///@brief Returns the median of the elements in range [first, last)
 ///       If there are an odd number of elements in the range, returns the
 ///       average of the two middle elements (equal distance from the start and end).
+/// NOTE: This method assumes that the container that first and last point to are
+///       pre-sorted
 template<typename ResultTy = double, typename InputIterator>
-ResultTy median(InputIterator first, InputIterator last) {
+ResultTy median_presorted(const InputIterator first, const InputIterator last) {
     // If the distance between first and last is 0 (meaning the set is empty),
     // return a quiet NaN. This should be handled by the user of this code.
     // NOTE: This returns a NaN of double type.
@@ -66,10 +69,22 @@ ResultTy median(InputIterator first, InputIterator last) {
     }
 }
 
-///@brief Returns the median of a whole container
+///@brief Returns the median of a whole container, assuming the container has
+///       not been pre-sorted.
+/// Note: This function is pass by value since the container needs to be
+///       sorted. If the container is already sorted, use median_presorted to
+///       avoid the copy.
 template<typename ResultTy = double, typename Container>
 ResultTy median(Container c) {
-    return median<ResultTy>(std::begin(c), std::end(c));
+    std::sort(std::begin(c), std::end(c));
+    return median_presorted<ResultTy>(std::begin(c), std::end(c));
+}
+
+///@brief Returns the median of a whole container, assuming that it is already
+///       sorted.
+template<typename ResultTy = double, typename Container>
+ResultTy median_presorted(const Container &c) {
+    return median_presorted<ResultTy>(std::begin(c), std::end(c));
 }
 
 /**
@@ -84,7 +99,7 @@ ResultTy median(Container c) {
  *      geomean = exp( (1 / n) * (log(v_1) + log(v_2) + ... + log(v_n)))
  */
 template<typename InputIterator>
-double geomean(InputIterator first, InputIterator last, double init = 1.) {
+double geomean(const InputIterator first, const InputIterator last, double init = 1.) {
     double log_sum = std::log(init);
     size_t n = 0;
     for (auto iter = first; iter != last; ++iter) {
@@ -101,13 +116,13 @@ double geomean(InputIterator first, InputIterator last, double init = 1.) {
 
 ///@brief Returns the geometric mean of a whole container
 template<typename Container>
-double geomean(Container c) {
+double geomean(const Container &c) {
     return geomean(std::begin(c), std::end(c));
 }
 
 ///@brief Returns the arithmatic mean of the elements in range [first, last)
 template<typename InputIterator>
-double arithmean(InputIterator first, InputIterator last, double init = 0.) {
+double arithmean(const InputIterator first, const InputIterator last, double init = 0.) {
     double sum = init;
     size_t n = 0;
     for (auto iter = first; iter != last; ++iter) {
@@ -124,7 +139,7 @@ double arithmean(InputIterator first, InputIterator last, double init = 0.) {
 
 ///@brief Returns the aritmatic mean of a whole container
 template<typename Container>
-double arithmean(Container c) {
+double arithmean(const Container &c) {
     return arithmean(std::begin(c), std::end(c));
 }
 
