@@ -186,12 +186,12 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
     //   / = (high_x, low_y)
     //   \ = (low_x, high_y)
     //   + = device edge
-    const size_t mid_x = vtr::nint(device_width / 2);
-    const size_t mid_y = vtr::nint(device_height / 2);
+    const size_t mid_x = device_width / 2;
+    const size_t mid_y = device_height / 2;
     const size_t low_x = std::min(longest_length, mid_x);
     const size_t low_y = std::min(longest_length, mid_y);
     const size_t high_x = (longest_length <= device_width) ? std::max(device_width - longest_length, mid_x) : mid_x;
-    const size_t high_y = (longest_length <= device_height) ? std::max(device_width - longest_length, mid_y) : mid_y;
+    const size_t high_y = (longest_length <= device_height) ? std::max(device_height - longest_length, mid_y) : mid_y;
 
     vtr::NdMatrix<float, 4> delta_delays({num_layers, num_layers, device_width, device_height});
 
