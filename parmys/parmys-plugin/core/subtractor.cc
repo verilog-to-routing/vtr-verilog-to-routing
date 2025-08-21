@@ -570,13 +570,15 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
         // add_output_pin_to_node(nodeo, p, nodeo->num_output_pins - 1);
         // nodeo->output_pins[nodeo->num_output_pins - 1] = p;
     //}
-
+    // int W = nodeo->num_output_pins - 1;
+    // int sums_mapped = 0;
     if (count > 1 || configuration.adder_cin_global) {
         // remap the output pins of each adder to nodeo
-        for (int i = offset; i < count; i++) {
+        for (int i = offset; i < count - 1; i++) {
             for (int j = 0; j < node[i]->num_output_pins - 1; j++) {
-                if ((i * sizea + j - offset) < nodeo->num_output_pins)
+                if ((i * sizea + j - offset) < nodeo->num_output_pins-1){
                     remap_pin_to_new_node(nodeo->output_pins[i * sizea + j - offset], node[i], j + 1);
+                }
                 else {
                     node[i]->output_pins[j + 1] = allocate_npin();
                     // Pad outputs with a unique and descriptive name to avoid collisions.
@@ -584,11 +586,12 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
                 }
             }
         }
+        remap_pin_to_new_node(nodeo->output_pins[nodeo->num_output_pins - 1], node[count - 1], 0);
     }
-    node[count - 1]->output_pins[0] = allocate_npin();
+    //node[count - 1]->output_pins[1] = allocate_npin();
     //printf("Net of tail node: %s\n", node[5]->output_pins[1]->net);
-    std::cout << "TESTING " << node[5]->output_pins[1]->net->fanout_pins << "\n";
-    std::cout << "TESTING " << node[3]->output_pins[1]->net->fanout_pins << "\n";
+    //std::cout << "TESTING " << node[5]->output_pins[1]->net->fanout_pins << "\n";
+    //std::cout << "TESTING " << node[3]->output_pins[1]->net->fanout_pins << "\n";
     //remap_pin_to_new_node(nodeo->output_pins[nodeo->num_output_pins - 1], node[count - 1], 0);
     // Pad outputs with a unique and descriptive name to avoid collisions.
     //node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), 0);
