@@ -415,18 +415,29 @@ static bool find_centroid_neighbor(ClusterBlockId block_id,
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int centroid_loc_layer_num = centroid_loc.layer;
+    VTR_ASSERT(centroid_loc_layer_num != OPEN);
 
     //Determine centroid location in the compressed space of the current block
     auto compressed_centroid_loc = get_compressed_loc_approx(compressed_block_grid,
                                                              centroid_loc,
                                                              num_layers);
 
+    // If no compressed location can be found on this layer, return false.
+    // TODO: Maybe search in the layers above or below.
+    const t_physical_tile_loc& compressed_loc_on_layer = compressed_centroid_loc[centroid_loc.layer];
+    if (compressed_loc_on_layer.x == OPEN || compressed_loc_on_layer.y == OPEN) {
+        VTR_ASSERT_MSG(compressed_loc_on_layer.x == OPEN && compressed_loc_on_layer.y == OPEN,
+                       "When searching for a compressed location, and a location cannot be found "
+                       "both x and y should be OPEN.");
+        return false;
+    }
+
     //range limit (rlim) set a limit for the neighbor search in the centroid placement
     //the neighbor location should be within the defined range to calculated centroid location
     int first_rlim = rlim;
 
     auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
-                                                                compressed_centroid_loc[centroid_loc_layer_num],
+                                                                compressed_loc_on_layer,
                                                                 first_rlim);
 
     int delta_cx = search_range.xmax - search_range.xmin;

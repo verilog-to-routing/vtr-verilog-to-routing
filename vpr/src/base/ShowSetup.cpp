@@ -435,6 +435,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case e_router_lookahead::EXTENDED_MAP:
                 VTR_LOG("EXTENDED_MAP\n");
                 break;
+            case e_router_lookahead::SIMPLE:
+                VTR_LOG("SIMPLE\n");
+                break;
             case e_router_lookahead::NO_OP:
                 VTR_LOG("NO_OP\n");
                 break;
@@ -608,6 +611,9 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
     VTR_LOG("AnalyticalPlacerOpts.analytical_solver_type: ");
     switch (APOpts.analytical_solver_type) {
+        case e_ap_analytical_solver::Identity:
+            VTR_LOG("identity\n");
+            break;
         case e_ap_analytical_solver::QP_Hybrid:
             VTR_LOG("qp-hybrid\n");
             break;
@@ -620,6 +626,9 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
 
     VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
     switch (APOpts.partial_legalizer_type) {
+        case e_ap_partial_legalizer::Identity:
+            VTR_LOG("none\n");
+            break;
         case e_ap_partial_legalizer::BiPartitioning:
             VTR_LOG("bipartitioning\n");
             break;

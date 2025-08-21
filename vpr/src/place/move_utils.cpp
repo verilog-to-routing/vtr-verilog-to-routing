@@ -852,6 +852,16 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                                                          centroid,
                                                                                          num_layers);
 
+    // If no compressed location can be found on this layer, return false.
+    // TODO: Maybe search in the layers above or below.
+    const t_physical_tile_loc& compressed_loc_on_layer = centroid_compressed_loc[to_layer_num];
+    if (compressed_loc_on_layer.x == OPEN || compressed_loc_on_layer.y == OPEN) {
+        VTR_ASSERT_MSG(compressed_loc_on_layer.x == OPEN && compressed_loc_on_layer.y == OPEN,
+                       "When searching for a compressed location, and a location cannot be found "
+                       "both x and y should be OPEN.");
+        return false;
+    }
+
     //Determine the valid compressed grid location ranges
     int delta_cx;
     t_bb search_range;
@@ -860,12 +870,12 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     // If not --> search around the current location of the block but in the direction of the center location that the move proposed
     if (range_limiters.original_rlim > 0.15 * range_limiters.first_rlim) {
         search_range = get_compressed_grid_target_search_range(compressed_block_grid,
-                                                               centroid_compressed_loc[to_layer_num],
+                                                               compressed_loc_on_layer,
                                                                std::min<float>(range_limiters.original_rlim, range_limiters.dm_rlim));
     } else {
         search_range = get_compressed_grid_bounded_search_range(compressed_block_grid,
                                                                 from_compressed_loc[to_layer_num],
-                                                                centroid_compressed_loc[to_layer_num],
+                                                                compressed_loc_on_layer,
                                                                 std::min<float>(range_limiters.original_rlim, range_limiters.dm_rlim));
     }
     delta_cx = search_range.xmax - search_range.xmin;
