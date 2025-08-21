@@ -1,5 +1,6 @@
 #include "alloc_and_load_rr_indexed_data.h"
 
+#include <algorithm>
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
 #include <fstream>
 #include <iomanip>
@@ -592,8 +593,10 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
             auto switch_Cinternal_total_histogram = build_histogram(switch_Cinternal_total[RRIndexedDataId(cost_index)], 10);
 
             // Sort Rnode and Cnode
-            float Cnode = vtr::median(C_total[RRIndexedDataId(cost_index)]);
-            float Rnode = vtr::median(R_total[RRIndexedDataId(cost_index)]);
+            std::sort(C_total[RRIndexedDataId(cost_index)].begin(), C_total[RRIndexedDataId(cost_index)].end());
+            std::sort(R_total[RRIndexedDataId(cost_index)].begin(), R_total[RRIndexedDataId(cost_index)].end());
+            float Cnode = vtr::median_presorted<float>(C_total[RRIndexedDataId(cost_index)]);
+            float Rnode = vtr::median_presorted<float>(R_total[RRIndexedDataId(cost_index)]);
             float Rsw = get_histogram_mode(switch_R_total_histogram);
             float Tsw = get_histogram_mode(switch_T_total_histogram);
             float Cinternalsw = get_histogram_mode(switch_Cinternal_total_histogram);
