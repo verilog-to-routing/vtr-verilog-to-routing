@@ -1,5 +1,4 @@
 #include <map>
-#include <algorithm>
 
 #include "vtr_assert.h"
 #include "vtr_error.h"
@@ -20,19 +19,6 @@ int ipow(int base, int exp) {
         base *= base;
     }
     return result;
-}
-
-float median(std::vector<float> vector) {
-    VTR_ASSERT(vector.size() > 0);
-
-    std::sort(vector.begin(), vector.end());
-
-    auto size = vector.size();
-    if (size % 2 == 0) {
-        return (float)(vector[size / 2 - 1] + vector[size / 2]) / 2;
-    }
-
-    return (float)vector[size / 2];
 }
 
 /**

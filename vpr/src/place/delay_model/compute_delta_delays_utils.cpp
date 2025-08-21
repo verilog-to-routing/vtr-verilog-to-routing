@@ -706,7 +706,7 @@ static float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
         delay = *itr;
     } else if (reducer == e_reducer::MEDIAN) {
         std::stable_sort(delays.begin(), delays.end());
-        delay = vtr::median(delays.begin(), delays.end());
+        delay = vtr::median<float>(delays.begin(), delays.end());
     } else if (reducer == e_reducer::ARITHMEAN) {
         delay = vtr::arithmean(delays.begin(), delays.end());
     } else if (reducer == e_reducer::GEOMEAN) {

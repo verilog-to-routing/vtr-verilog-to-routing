@@ -1,3 +1,4 @@
+#include <cmath>
 #include <limits>
 
 #include "catch2/catch_test_macros.hpp"
@@ -55,4 +56,52 @@ TEST_CASE("Is Close", "[vtr_math]") {
     //Absolute tolerance tests
     REQUIRE(vtr::isclose(32.2, 32.4, 1e-9, 0.2));
     REQUIRE(!vtr::isclose(32.2, 32.4, 1e-9, 0.1));
+}
+
+TEST_CASE("Median", "[vtr_math]") {
+    // Check the median of a vector with a singular value.
+    std::vector<double> single_vec = {1.0};
+    REQUIRE(vtr::median(single_vec) == 1.0);
+
+    // Check the median of a vector with two elements.
+    std::vector<double> double_vec = {1.0, 2.0};
+    REQUIRE(vtr::median(double_vec) == 1.5);
+
+    // Check the median of a vector with an odd length.
+    std::vector<double> odd_vec = {1.0, 2.0, 3.0, 4.0, 5.0};
+    REQUIRE(vtr::median(odd_vec) == 3.0);
+
+    // Check the median of a vector with a median length.
+    std::vector<double> even_vec = {1.0, 2.0, 3.0, 4.0};
+    REQUIRE(vtr::median(even_vec) == 2.5);
+
+    // Check the median of a negative, odd-lengthed vector works.
+    std::vector<double> negative_odd_vec = {-1.0, -2.0, -3.0, -4.0, -5.0};
+    REQUIRE(vtr::median(negative_odd_vec) == -3.0);
+
+    // Check the median of a negative, even-lengthed vector works.
+    std::vector<double> negative_even_vec = {-1.0, -2.0, -3.0, -4.0};
+    REQUIRE(vtr::median(negative_even_vec) == -2.5);
+
+    // Check the median of an fp vector with an odd length.
+    std::vector<float> fp_odd_vec = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
+    REQUIRE(vtr::median(fp_odd_vec) == 3.0);
+    REQUIRE(vtr::median<float>(fp_odd_vec) == 3.0f);
+
+    // Check the median of an fp vector with a median length.
+    std::vector<float> fp_even_vec = {1.0f, 2.0f, 3.0f, 4.0f};
+    REQUIRE(vtr::median(fp_even_vec) == 2.5);
+    REQUIRE(vtr::median<float>(fp_even_vec) == 2.5f);
+
+    // Check the median of an integral, odd-lengthed vecor.
+    std::vector<int> int_vec_odd = {1, 2, 3, 4, 5};
+    REQUIRE(vtr::median(int_vec_odd) == 3.0);
+
+    // Check the median of an integral, even-lengthed vecor.
+    std::vector<int> int_vec_even = {1, 2, 3, 4};
+    REQUIRE(vtr::median(int_vec_even) == 2.5);
+
+    // Check that trying to get the median of an empty vector returns a NaN.
+    std::vector<double> empty_vec;
+    REQUIRE(std::isnan(vtr::median(empty_vec)));
 }
