@@ -68,6 +68,7 @@
 #include "vtr_expr_eval.h"
 
 #include "read_xml_arch_file_noc_tag.h"
+#include "read_xml_arch_file_sg.h"
 
 using namespace std::string_literals;
 using pugiutil::ReqOpt;
@@ -548,6 +549,12 @@ void xml_read_arch(const char* ArchFile,
         Next = get_single_child(architecture, "noc", loc_data, pugiutil::OPTIONAL);
         if (Next) {
             process_noc_tag(Next, arch, loc_data);
+        }
+
+        // Process scatter-gather patterns (optional)
+        Next = get_single_child(architecture, "scatter_gather_list", loc_data, pugiutil::OPTIONAL);
+        if (Next) {
+            process_sg_tag(Next, arch, loc_data, arch->switches);
         }
 
         SyncModelsPbTypes(arch, LogicalBlockTypes);
@@ -4234,25 +4241,16 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             }
         }
 
-        /* get the switchblock location */
+        // get the switchblock location
         SubElem = get_single_child(Node, "switchblock_location", loc_data);
         tmp = get_attribute(SubElem, "type", loc_data).as_string(nullptr);
         if (tmp) {
-            if (strcmp(tmp, "EVERYWHERE") == 0) {
-                sb.location = e_sb_location::E_EVERYWHERE;
-            } else if (strcmp(tmp, "PERIMETER") == 0) {
-                sb.location = e_sb_location::E_PERIMETER;
-            } else if (strcmp(tmp, "CORE") == 0) {
-                sb.location = e_sb_location::E_CORE;
-            } else if (strcmp(tmp, "CORNER") == 0) {
-                sb.location = e_sb_location::E_CORNER;
-            } else if (strcmp(tmp, "FRINGE") == 0) {
-                sb.location = e_sb_location::E_FRINGE;
-            } else if (strcmp(tmp, "XY_SPECIFIED") == 0) {
-                sb.location = e_sb_location::E_XY_SPECIFIED;
-            } else {
+            auto sb_location_iter = SB_LOCATION_STRING_MAP.find(tmp);
+            if (sb_location_iter == SB_LOCATION_STRING_MAP.end()) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
                                vtr::string_fmt("unrecognized switchblock location: %s\n", tmp).c_str());
+            } else {
+                sb.location = sb_location_iter->second;
             }
         }
 
