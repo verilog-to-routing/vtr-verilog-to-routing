@@ -2,6 +2,7 @@ regression_tests/vtr_reg_strong/basic_ap
 regression_tests/vtr_reg_strong/basic_3d
 regression_tests/vtr_reg_strong/strong_ap/mcnc
 regression_tests/vtr_reg_strong/strong_ap/vtr_chain
+regression_tests/vtr_reg_strong/strong_ap/none_partial_legalizer
 regression_tests/vtr_reg_strong/strong_ap/bipartitioning_partial_legalizer
 regression_tests/vtr_reg_strong/strong_ap/flowbased_partial_legalizer
 regression_tests/vtr_reg_strong/strong_ap/naive_full_legalizer
@@ -115,3 +116,4 @@ regression_tests/vtr_reg_strong/strong_3d/3d_cb
 regression_tests/vtr_reg_strong/strong_3d/3d_sb
 regression_tests/vtr_reg_strong/strong_xilinx_simple
 regression_tests/vtr_reg_strong/strong_xilinx_flagship
+regression_tests/vtr_reg_strong/strong_scatter_gather

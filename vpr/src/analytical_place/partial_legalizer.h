@@ -101,6 +101,26 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          int log_verbosity);
 
 /**
+ * @brief A partial legalizer which does not legalize anything. This solver acts
+ *        like an identity matrix where it just passes the given solution along.
+ *        This partial legalizer should only be used for testing.
+ */
+class IdentityPartialLegalizer : public PartialLegalizer {
+  public:
+    IdentityPartialLegalizer(const APNetlist& netlist, int log_verbosity)
+        : PartialLegalizer(netlist, log_verbosity) {}
+
+    void legalize(PartialPlacement& p_placement) final {
+        (void)p_placement;
+        // Do nothing.
+    }
+
+    void print_statistics() final {
+        // Do nothing.
+    }
+};
+
+/**
  * @brief A multi-commodity flow-based spreading partial legalizer.
  *
  * This puts the current blocks into bins based on the given placement. It then
