@@ -73,13 +73,20 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
                                  ClusterBlockId blk_id) {
     t_draw_state* draw_state = get_draw_state_vars();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomLookup& atom_lookup = g_vpr_ctx.atom().lookup();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     for (int k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
-        ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
+        ClusterNetId cluster_net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
 
-        if (net_id == ClusterNetId::INVALID()) {
+        if (cluster_net_id == ClusterNetId::INVALID()) {
             continue;
+        }
+
+        // Convert to atom net id if flat routing is enabled
+        ParentNetId net_id = cluster_net_id;
+        if (draw_state->is_flat){
+            net_id = atom_lookup.atom_net(cluster_net_id);
         }
 
         t_pl_loc block_loc = block_locs[blk_id].loc;
@@ -92,14 +99,14 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
             if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
-                for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+                for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(cluster_net_id)) {
                     ClusterBlockId fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
                     draw_reset_blk_color(fanblk);
                 }
             } else {
                 /* Highlight the fanout */
                 draw_state->net_color[net_id] = DRIVES_IT_COLOR;
-                for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+                for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(cluster_net_id)) {
                     ClusterBlockId fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
                     draw_state->set_block_color(fanblk, DRIVES_IT_COLOR);
                 }
@@ -108,12 +115,12 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
             if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanin. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
-                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
+                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(cluster_net_id); /* DRIVER to net */
                 draw_reset_blk_color(fanblk);
             } else {
                 /* Highlight the fanin */
                 draw_state->net_color[net_id] = DRIVEN_BY_IT_COLOR;
-                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
+                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(cluster_net_id); /* DRIVER to net */
                 draw_state->set_block_color(fanblk, DRIVEN_BY_IT_COLOR);
             }
         }
@@ -271,7 +278,6 @@ void deselect_all() {
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
         draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
         draw_state->draw_rr_node[inode].node_highlighted = false;
-        draw_state->draw_rr_node[inode].node_hit = false;
     }
     get_selected_sub_block_info().clear();
 }

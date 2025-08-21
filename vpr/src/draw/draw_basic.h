@@ -32,7 +32,7 @@ void drawplace(ezgl::renderer* g);
 /* This routine draws the nets on the placement.  The nets have not *
  * yet been routed, so we just draw a chain showing a possible path *
  * for each net.  This gives some idea of future congestion.        */
-void drawnets(ezgl::renderer* g);
+void draw_flylines_placement(ezgl::renderer* g);
 
 /* Draws all the overused routing resources (i.e. congestion) in various contrasting colors showing congestion ratio.  */
 void draw_congestion(ezgl::renderer* g);

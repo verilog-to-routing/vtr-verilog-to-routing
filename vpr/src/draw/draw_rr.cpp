@@ -332,12 +332,13 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
             color = ezgl::MAGENTA;
         }
 
-        // If the node is highlighted, color the edges as blue for fanin and red for fanout
+        // If the node is clicked on, color the edges as blue for fanin and red for fanout
+        // Need to check both highlighting and hit nodes since when the user clicks off a node, the node is de-highlighted but still in the hit nodes.
         if (draw_state->highlight_rr_edges) {
-            if (draw_state->draw_rr_node[inode].node_hit) {
+            if (draw_state->draw_rr_node[inode].node_highlighted && draw_state->hit_nodes.find(inode) != draw_state->hit_nodes.end()) {
                 color = draw_state->draw_rr_node[to_node].color;
                 draw_edge = true;
-            } else if (draw_state->draw_rr_node[to_node].node_hit) {
+            } else if (draw_state->draw_rr_node[to_node].node_highlighted && draw_state->hit_nodes.find(to_node) != draw_state->hit_nodes.end()) {
                 color = draw_state->draw_rr_node[inode].color;
                 draw_edge = true;
             }

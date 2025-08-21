@@ -196,7 +196,7 @@ void drawplace(ezgl::renderer* g) {
 /* This routine draws the nets on the placement.  The nets have not *
  * yet been routed, so we just draw a chain showing a possible path *
  * for each net.  This gives some idea of future congestion.        */
-void drawnets(ezgl::renderer* g) {
+void draw_flylines_placement(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
@@ -616,14 +616,16 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
 
-        // skip drawing INTER-cluster nets if the user has disabled them
-        if (inter_cluster_node && !draw_state->draw_inter_cluster_nets) {
-            continue;
-        }
+        if(!(draw_state->draw_rr_node[inode].node_highlighted && draw_state->highlight_fan_in_fan_out)){
+            // skip drawing INTER-cluster nets if the user has disabled them
+            if (inter_cluster_node && !draw_state->draw_inter_cluster_nets) {
+                continue;
+            }
 
-        // skip drawing INTRA-cluster nets if the user has disabled them
-        if (!inter_cluster_node && !draw_state->draw_intra_cluster_nets) {
-            continue;
+            // skip drawing INTRA-cluster nets if the user has disabled them
+            if (!inter_cluster_node && !draw_state->draw_intra_cluster_nets) {
+                continue;
+            }
         }
 
         draw_rr_node(inode, color, g);
@@ -636,14 +638,16 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
         bool prev_inter_cluster_node = is_inter_cluster_node(rr_graph, prev_node);
 
-        // If this is an edge between two inter-cluster nodes, draw only if the user has enabled inter-cluster nets
-        if ((inter_cluster_node && prev_inter_cluster_node) && !draw_state->draw_inter_cluster_nets) {
-            continue;
-        }
+        if(!(draw_state->draw_rr_node[inode].node_highlighted && draw_state->highlight_fan_in_fan_out)){
+            // If this is an edge between two inter-cluster nodes, draw only if the user has enabled inter-cluster nets
+            if ((inter_cluster_node && prev_inter_cluster_node) && !draw_state->draw_inter_cluster_nets) {
+                continue;
+            }
 
-        // If this is an edge containing an intra-cluster node, draw only if the user has enabled intra-cluster nets
-        if ((!inter_cluster_node || !prev_inter_cluster_node) && !draw_state->draw_intra_cluster_nets) {
-            continue;
+            // If this is an edge containing an intra-cluster node, draw only if the user has enabled intra-cluster nets
+            if ((!inter_cluster_node || !prev_inter_cluster_node) && !draw_state->draw_intra_cluster_nets) {
+                continue;
+            }
         }
 
         // avoid highlighting edge unless both nodes are highlighted

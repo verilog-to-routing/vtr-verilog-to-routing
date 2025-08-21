@@ -190,9 +190,9 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     if (draw_state->pic_on_screen == PLACEMENT) {
         if (draw_state->draw_nets == DRAW_FLYLINES && draw_state->show_nets) {
-            drawnets(g);
+            draw_flylines_placement(g);
         }
-    } else { /* ROUTING on screen */
+    } else { // ROUTING on screen
 
         if (draw_state->show_nets && draw_state->draw_nets == DRAW_ROUTED_NETS) {
             draw_route(ALL_NETS, g);
@@ -564,7 +564,6 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
         for (RRNodeId inode : rr_graph.nodes()) {
             draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
             draw_state->draw_rr_node[inode].node_highlighted = false;
-            draw_state->draw_rr_node[inode].node_hit = false;
         }
     }
     draw_coords->set_tile_width(clb_width);

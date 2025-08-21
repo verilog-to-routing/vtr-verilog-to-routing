@@ -140,23 +140,16 @@ typedef struct {
     bool* toggle_state;
 } t_checkbox_data;
 
-/* Structure which stores state information of a rr_node. Used
- * for controling the drawing each rr_node when ROUTING is on screen.
- * color: Color of the rr_node
- * node_highlighted: Whether the node is highlighted. Useful for
- *					 highlighting routing resources on rr_graph
- */
+
 /**
  * @brief Structure used to store the state information of an rr_node. 
  * Used to control drawing each rr_node when ROUTING is on screen.
  * color: Color of the rr_node
  * node_highlighted: Whether the node is highlighted. Useful for highlighting routing resources on rr_graph.
- * node_hit: Whether the node is hit by a mouse click. Required since multiple RR nodes can be clicked on at the same time.
  */
 typedef struct {
     ezgl::color color;
     bool node_highlighted;
-    bool node_hit;
 } t_draw_rr_node;
 
 /**
@@ -275,6 +268,9 @@ struct t_draw_state {
 
     ///@brief color in which each net should be drawn. [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ParentNetId, ezgl::color> net_color;
+
+    ///@brief RR Nodes which the user has clicked on.
+    std::set<RRNodeId> hit_nodes;
 
     /**
      * @brief stores the state information of each routing resource.
