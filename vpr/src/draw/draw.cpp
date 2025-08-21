@@ -271,6 +271,10 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     hide_crit_path_routing(app);
 
     hide_draw_routing(app);
+
+    app->update_message(draw_state->default_message);
+    app->refresh_drawing();
+    app->flush_drawing();
 }
 
 #endif //NO_GRAPHICS
@@ -283,16 +287,20 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
     t_draw_state* draw_state = get_draw_state_vars();
 
+    strcpy(draw_state->default_message, msg);
+
     if (!draw_state->show_graphics)
         ezgl::set_disable_event_loop(true);
     else
         ezgl::set_disable_event_loop(false);
 
-    ezgl::setup_callback_fn init_setup = nullptr;
+    bool state_change = false;
 
     /* If it's the type of picture displayed has changed, set up the proper  *
      * buttons.                                                              */
     if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
+        
+        state_change = true;
 
         if (draw_state->pic_on_screen == NO_PICTURE) {
             // Only add the canvas the first time we open graphics
@@ -302,10 +310,9 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
         draw_state->setup_timing_info = setup_timing_info;
         draw_state->pic_on_screen = pic_on_screen_val;
-        init_setup = on_stage_change_setup;
     }
 
-    bool state_change = (init_setup != nullptr);
+    
     bool should_pause = int(priority) >= draw_state->gr_automode;
 
     //If there was a state change, we must call ezgl::application::run() to update the buttons.
@@ -324,18 +331,12 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
             draw_state->forced_pause = false; //Reset pause flag
         }
 
-        application.run(init_setup, act_on_mouse_press, act_on_mouse_move,
+        application.run(on_stage_change_setup, act_on_mouse_press, act_on_mouse_move,
                         act_on_key_press);
 
         if (!draw_state->graphics_commands.empty()) {
             run_graphics_commands(draw_state->graphics_commands);
         }
-    }
-
-    if (draw_state->show_graphics) {
-        application.update_message(msg);
-        application.refresh_drawing();
-        application.flush_drawing();
     }
 
     if (draw_state->save_graphics) {

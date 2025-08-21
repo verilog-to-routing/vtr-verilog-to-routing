@@ -1025,7 +1025,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
 
             //Update status
             VTR_LOG("Circuit successfully routed with a channel width factor of %d.\n", route_status.chan_width());
-            graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.\n", route_status.chan_width());
+            graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.", route_status.chan_width());
         } else {
             //Update status
             VTR_LOG("Circuit is unroutable with a channel width factor of %d.\n", route_status.chan_width());
