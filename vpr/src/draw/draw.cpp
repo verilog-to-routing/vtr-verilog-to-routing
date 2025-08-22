@@ -354,8 +354,10 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
 #ifndef NO_GRAPHICS
 void toggle_window_mode(GtkWidget* /*widget*/,
-                        ezgl::application* /*app*/) {
+                        ezgl::application* app) {
     window_mode = true;
+    app->update_message("Zoom to Selection: Click on two points to define a rectangle to zoom into.");
+    app->refresh_drawing();
 }
 
 #endif // NO_GRAPHICS
@@ -607,6 +609,8 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
                 //reset flags
                 window_mode = false;
                 window_point_1_collected = false;
+                app->update_message(get_draw_state_vars()->default_message);
+                app->refresh_drawing();
             }
             app->refresh_drawing();
         } else {
