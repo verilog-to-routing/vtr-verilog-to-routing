@@ -78,7 +78,6 @@ The Inter-Cluster Nets and Intra-Cluster Nets options allow the user to choose w
 
 .. figure:: ../Images/Net_Settings.png
     :align: center 
-    :height: 200
 
     Net Tab
 
@@ -90,7 +89,7 @@ Multiple nets can be highlighted by pressing ctrl + mouse click.
 
     Visualizing Nets
 
-When the **Highlight Block Fan-in and Fan-out** option is enabled, clicking on an internal block will draw its fan-in, fan-out, and internal connections in blue, red, and yellow, respectively. 
+When the **Highlight Block Fan-in and Fan-out** option is enabled, clicking on an internal block will draw its fan-in, fan-out, and internal flylines in blue, red, and yellow, respectively. 
 
 .. figure:: ../Images/highlight_flylines.png
     :align: center
@@ -131,11 +130,11 @@ During the route stage, the **Route** tab provides various options to visualize 
 
     Routing Options
 
-To visualize routing architecture, first enable the Display Routing Resources switch under the Route tab. Then, click on the checkboxes below to show/hide the types of nodes and edges you want to visualize. 
+To visualize routing architecture, first enable the **Display Routing Resources** switch under the Route tab. Then, click on the checkboxes below to show/hide the types of nodes and edges you want to visualize. 
 
 The intra-cluster options are currently only available when **flat routing is enabled**. 
 
-The highlight fan-in and fan-out option will highlight the fan-in and fan-out edges of the selected routing resource in blue and red, respectively. 
+The **Highlight Fan-In Fan-Out Edges** option will highlight the fan-in and fan-out edges of the selected routing resource in blue and red, respectively. 
 
 Multiple routing resources can be highlighted by pressing ctrl + mouse click.
 
