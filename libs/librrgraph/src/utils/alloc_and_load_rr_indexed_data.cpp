@@ -578,13 +578,14 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         }
     }
 
+    unsigned num_occurences_of_no_instances_with_cost_index = 0;
     for (size_t cost_index = CHANX_COST_INDEX_START;
          cost_index < rr_indexed_data.size(); cost_index++) {
         if (num_nodes_of_index[RRIndexedDataId(cost_index)] == 0) { /* Segments don't exist. */
-            VTR_LOG_WARN("Found no instances of RR node with cost index %d\n", cost_index);
             rr_indexed_data[RRIndexedDataId(cost_index)].T_linear = 0.0;
             rr_indexed_data[RRIndexedDataId(cost_index)].T_quadratic = 0.0;
             rr_indexed_data[RRIndexedDataId(cost_index)].C_load = 0.0;
+            num_occurences_of_no_instances_with_cost_index++;
         } else {
             auto C_total_histogram = build_histogram(C_total[RRIndexedDataId(cost_index)], 10);
             auto R_total_histogram = build_histogram(R_total[RRIndexedDataId(cost_index)], 10);
@@ -624,6 +625,10 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
                                                                            * Cnode;
             }
         }
+    }
+    if (num_occurences_of_no_instances_with_cost_index > 0) {
+        VTR_LOG_WARN("Found %u cost indices where no instances of RR nodes could be found\n",
+                     num_occurences_of_no_instances_with_cost_index);
     }
 }
 

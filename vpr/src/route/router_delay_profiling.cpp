@@ -18,7 +18,8 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
           g_vpr_ctx.device().rr_rc_data,
           g_vpr_ctx.device().rr_graph.rr_switch(),
           g_vpr_ctx.mutable_routing().rr_node_route_inf,
-          is_flat)
+          is_flat,
+          /*route_verbosity=*/1)
     , is_flat_(is_flat) {
     const auto& grid = g_vpr_ctx.device().grid;
     int num_layers = grid.get_num_layers();
@@ -163,7 +164,8 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     auto router_lookahead = make_router_lookahead(det_routing_arch, e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
                                                   /*segment_inf=*/{},
-                                                  is_flat);
+                                                  is_flat,
+                                                  /*route_verbosity=*/1);
 
     SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
@@ -173,7 +175,8 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
         route_ctx.rr_node_route_inf,
-        is_flat);
+        is_flat,
+        /*route_verbosity=*/1);
     RouterStats router_stats;
     ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
     vtr::vector<RRNodeId, RTExploredNode> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
