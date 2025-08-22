@@ -118,7 +118,7 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
   /* No previous driver implies that this is either a top-level input pin
     * or a primitive output pin */
   int prev_node = iter->second.driver_pb_pin_id;
-  if(prev_node == OPEN) {
+  if(prev_node == fasm::UNDEFINED) {
     return;
   }
 

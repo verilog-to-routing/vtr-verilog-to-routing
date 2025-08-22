@@ -261,7 +261,7 @@ struct DeviceContext : public Context {
 
     std::map<int, t_arch_switch_inf> all_sw_inf;
 
-    int delayless_switch_idx = OPEN;
+    int delayless_switch_idx = UNDEFINED;
 
     bool rr_graph_is_flat = false;
 

@@ -11,6 +11,7 @@
 
 #include "atom_netlist_fwd.h"
 #include "physical_types.h"
+#include "vpr_types.h"
 
 class t_pack_molecule;
 
@@ -149,8 +150,8 @@ struct t_expansion_node {
     float cost;
 
     t_expansion_node() {
-        node_index = OPEN;
-        prev_index = OPEN;
+        node_index = UNDEFINED;
+        prev_index = UNDEFINED;
         cost = 0;
     }
 };
@@ -175,10 +176,10 @@ struct t_explored_node_tb {
     float enqueue_cost; /* cost of node pused on exploration priority queue */
 
     t_explored_node_tb() {
-        prev_index = OPEN;
-        explored_id = OPEN;
-        enqueue_id = OPEN;
-        inet = OPEN;
+        prev_index = UNDEFINED;
+        explored_id = UNDEFINED;
+        enqueue_id = UNDEFINED;
+        inet = UNDEFINED;
         enqueue_cost = 0;
     }
 };

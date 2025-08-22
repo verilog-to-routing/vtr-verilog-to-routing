@@ -120,8 +120,8 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     }
 
     /* This initializes the whole matrix to OPEN which is an invalid value*/
-    ts_layer_sink_pin_count_.resize({num_nets, size_t(num_layers)}, OPEN);
-    num_sink_pin_layer_.resize({num_nets, size_t(num_layers)}, OPEN);
+    ts_layer_sink_pin_count_.resize({num_nets, size_t(num_layers)}, UNDEFINED);
+    num_sink_pin_layer_.resize({num_nets, size_t(num_layers)}, UNDEFINED);
 
     ts_nets_to_update_.resize(num_nets, ClusterNetId::INVALID());
 
@@ -1366,7 +1366,7 @@ double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        VTR_ASSERT(layer_pin_sink_count[layer_num] != OPEN);
+        VTR_ASSERT(layer_pin_sink_count[layer_num] != UNDEFINED);
         if (layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
@@ -1425,7 +1425,7 @@ double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) co
     VTR_ASSERT_SAFE((int)bb.size() == g_vpr_ctx.device().grid.get_num_layers());
 
     for (size_t layer_num = 0; layer_num < bb.size(); layer_num++) {
-        VTR_ASSERT_SAFE(net_layer_pin_sink_count[layer_num] != OPEN);
+        VTR_ASSERT_SAFE(net_layer_pin_sink_count[layer_num] != UNDEFINED);
         if (net_layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
@@ -1640,32 +1640,32 @@ t_bb NetCostHandler::union_2d_bb(ClusterNetId net_id) const {
     t_bb merged_bb;
     const std::vector<t_2D_bb>& bb_vec = layer_bb_coords_[net_id];
 
-    // Not all 2d_bbs are valid. Thus, if one of the coordinates in the 2D_bb is not valid (equal to OPEN),
+    // Not all 2d_bbs are valid. Thus, if one of the coordinates in the 2D_bb is not valid (equal to UNDEFINED),
     // we need to skip it.
     for (const t_2D_bb& layer_bb : bb_vec) {
-        if (layer_bb.xmin == OPEN) {
-            VTR_ASSERT_DEBUG(layer_bb.xmax == OPEN);
-            VTR_ASSERT_DEBUG(layer_bb.ymin == OPEN);
-            VTR_ASSERT_DEBUG(layer_bb.ymax == OPEN);
-            VTR_ASSERT_DEBUG(layer_bb.layer_num == OPEN);
+        if (layer_bb.xmin == UNDEFINED) {
+            VTR_ASSERT_DEBUG(layer_bb.xmax == UNDEFINED);
+            VTR_ASSERT_DEBUG(layer_bb.ymin == UNDEFINED);
+            VTR_ASSERT_DEBUG(layer_bb.ymax == UNDEFINED);
+            VTR_ASSERT_DEBUG(layer_bb.layer_num == UNDEFINED);
             continue;
         }
-        if (merged_bb.xmin == OPEN || layer_bb.xmin < merged_bb.xmin) {
+        if (merged_bb.xmin == UNDEFINED || layer_bb.xmin < merged_bb.xmin) {
             merged_bb.xmin = layer_bb.xmin;
         }
-        if (merged_bb.xmax == OPEN || layer_bb.xmax > merged_bb.xmax) {
+        if (merged_bb.xmax == UNDEFINED || layer_bb.xmax > merged_bb.xmax) {
             merged_bb.xmax = layer_bb.xmax;
         }
-        if (merged_bb.ymin == OPEN || layer_bb.ymin < merged_bb.ymin) {
+        if (merged_bb.ymin == UNDEFINED || layer_bb.ymin < merged_bb.ymin) {
             merged_bb.ymin = layer_bb.ymin;
         }
-        if (merged_bb.ymax == OPEN || layer_bb.ymax > merged_bb.ymax) {
+        if (merged_bb.ymax == UNDEFINED || layer_bb.ymax > merged_bb.ymax) {
             merged_bb.ymax = layer_bb.ymax;
         }
-        if (merged_bb.layer_min == OPEN || layer_bb.layer_num < merged_bb.layer_min) {
+        if (merged_bb.layer_min == UNDEFINED || layer_bb.layer_num < merged_bb.layer_min) {
             merged_bb.layer_min = layer_bb.layer_num;
         }
-        if (merged_bb.layer_max == OPEN || layer_bb.layer_num > merged_bb.layer_max) {
+        if (merged_bb.layer_max == UNDEFINED || layer_bb.layer_num > merged_bb.layer_max) {
             merged_bb.layer_max = layer_bb.layer_num;
         }
     }
@@ -1681,61 +1681,61 @@ std::pair<t_bb, t_bb> NetCostHandler::union_2d_bb_incr(ClusterNetId net_id) cons
     const std::vector<t_2D_bb>& bb_vec = layer_bb_coords_[net_id];
 
     for (const t_2D_bb& layer_bb : bb_vec) {
-        if (layer_bb.xmin == OPEN) {
-            VTR_ASSERT_SAFE(layer_bb.xmax == OPEN);
-            VTR_ASSERT_SAFE(layer_bb.ymin == OPEN);
-            VTR_ASSERT_SAFE(layer_bb.ymax == OPEN);
-            VTR_ASSERT_SAFE(layer_bb.layer_num == OPEN);
+        if (layer_bb.xmin == UNDEFINED) {
+            VTR_ASSERT_SAFE(layer_bb.xmax == UNDEFINED);
+            VTR_ASSERT_SAFE(layer_bb.ymin == UNDEFINED);
+            VTR_ASSERT_SAFE(layer_bb.ymax == UNDEFINED);
+            VTR_ASSERT_SAFE(layer_bb.layer_num == UNDEFINED);
             continue;
         }
-        if (merged_bb.xmin == OPEN || layer_bb.xmin <= merged_bb.xmin) {
+        if (merged_bb.xmin == UNDEFINED || layer_bb.xmin <= merged_bb.xmin) {
             if (layer_bb.xmin == merged_bb.xmin) {
-                VTR_ASSERT_SAFE(merged_num_edge.xmin != OPEN);
+                VTR_ASSERT_SAFE(merged_num_edge.xmin != UNDEFINED);
                 merged_num_edge.xmin += num_edge_vec[layer_bb.layer_num].xmin;
             } else {
                 merged_num_edge.xmin = num_edge_vec[layer_bb.layer_num].xmin;
             }
             merged_bb.xmin = layer_bb.xmin;
         }
-        if (merged_bb.xmax == OPEN || layer_bb.xmax >= merged_bb.xmax) {
+        if (merged_bb.xmax == UNDEFINED || layer_bb.xmax >= merged_bb.xmax) {
             if (layer_bb.xmax == merged_bb.xmax) {
-                VTR_ASSERT_SAFE(merged_num_edge.xmax != OPEN);
+                VTR_ASSERT_SAFE(merged_num_edge.xmax != UNDEFINED);
                 merged_num_edge.xmax += num_edge_vec[layer_bb.layer_num].xmax;
             } else {
                 merged_num_edge.xmax = num_edge_vec[layer_bb.layer_num].xmax;
             }
             merged_bb.xmax = layer_bb.xmax;
         }
-        if (merged_bb.ymin == OPEN || layer_bb.ymin <= merged_bb.ymin) {
+        if (merged_bb.ymin == UNDEFINED || layer_bb.ymin <= merged_bb.ymin) {
             if (layer_bb.ymin == merged_bb.ymin) {
-                VTR_ASSERT_SAFE(merged_num_edge.ymin != OPEN);
+                VTR_ASSERT_SAFE(merged_num_edge.ymin != UNDEFINED);
                 merged_num_edge.ymin += num_edge_vec[layer_bb.layer_num].ymin;
             } else {
                 merged_num_edge.ymin = num_edge_vec[layer_bb.layer_num].ymin;
             }
             merged_bb.ymin = layer_bb.ymin;
         }
-        if (merged_bb.ymax == OPEN || layer_bb.ymax >= merged_bb.ymax) {
+        if (merged_bb.ymax == UNDEFINED || layer_bb.ymax >= merged_bb.ymax) {
             if (layer_bb.ymax == merged_bb.ymax) {
-                VTR_ASSERT_SAFE(merged_num_edge.ymax != OPEN);
+                VTR_ASSERT_SAFE(merged_num_edge.ymax != UNDEFINED);
                 merged_num_edge.ymax += num_edge_vec[layer_bb.layer_num].ymax;
             } else {
                 merged_num_edge.ymax = num_edge_vec[layer_bb.layer_num].ymax;
             }
             merged_bb.ymax = layer_bb.ymax;
         }
-        if (merged_bb.layer_min == OPEN || layer_bb.layer_num <= merged_bb.layer_min) {
+        if (merged_bb.layer_min == UNDEFINED || layer_bb.layer_num <= merged_bb.layer_min) {
             if (layer_bb.layer_num == merged_bb.layer_min) {
-                VTR_ASSERT_SAFE(merged_num_edge.layer_min != OPEN);
+                VTR_ASSERT_SAFE(merged_num_edge.layer_min != UNDEFINED);
                 merged_num_edge.layer_min += num_edge_vec[layer_bb.layer_num].layer_num;
             } else {
                 merged_num_edge.layer_min = num_edge_vec[layer_bb.layer_num].layer_num;
             }
             merged_bb.layer_min = layer_bb.layer_num;
         }
-        if (merged_bb.layer_max == OPEN || layer_bb.layer_num >= merged_bb.layer_max) {
+        if (merged_bb.layer_max == UNDEFINED || layer_bb.layer_num >= merged_bb.layer_max) {
             if (layer_bb.layer_num == merged_bb.layer_max) {
-                VTR_ASSERT_SAFE(merged_num_edge.layer_max != OPEN);
+                VTR_ASSERT_SAFE(merged_num_edge.layer_max != UNDEFINED);
                 merged_num_edge.layer_max += num_edge_vec[layer_bb.layer_num].layer_num;
             } else {
                 merged_num_edge.layer_max = num_edge_vec[layer_bb.layer_num].layer_num;

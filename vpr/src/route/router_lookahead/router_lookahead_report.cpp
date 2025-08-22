@@ -126,7 +126,7 @@ static void profile_sample_routes(std::ofstream& os,
     RouteTree tree(sample_rr_node);
     e_rr_type sample_rr_node_type = rr_graph.node_type(sample_rr_node);
     RouterStats router_stats;
-    ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
+    ConnectionParameters conn_params(ParentNetId::INVALID(), UNDEFINED, false, std::unordered_map<RRNodeId, int>());
     vtr::vector<RRNodeId, RTExploredNode> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
                                                                                                                         cost_params,
                                                                                                                         bounding_box,

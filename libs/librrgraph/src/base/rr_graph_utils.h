@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include "librrgraph_types.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
@@ -14,8 +15,8 @@
 class RRGraphView;
 
 struct t_pin_chain_node {
-    int pin_physical_num = OPEN;
-    int nxt_node_idx = OPEN;
+    int pin_physical_num = LIBRRGRAPH_UNDEFINED_VAL;
+    int nxt_node_idx = LIBRRGRAPH_UNDEFINED_VAL;
 
     t_pin_chain_node() = default;
     t_pin_chain_node(int pin_num, int nxt_idx) noexcept

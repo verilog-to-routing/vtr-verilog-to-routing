@@ -218,7 +218,7 @@ static void check_sink(const Netlist<>& net_list,
 
     VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::SINK);
 
-    if (net_pin_index == OPEN) { /* If there is no legal net pin index associated with this sink node */
+    if (net_pin_index == UNDEFINED) { /* If there is no legal net pin index associated with this sink node */
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_sink: node %d does not connect to any terminal of net %s #%lu.\n"
                         "This error is usually caused by incorrectly specified logical equivalence in your architecture file.\n"

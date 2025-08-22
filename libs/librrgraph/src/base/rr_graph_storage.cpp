@@ -1,7 +1,9 @@
 #include <climits>
 #include "arch_types.h"
 #include "rr_graph_storage.h"
+#include "physical_types.h"
 #include "vtr_error.h"
+#include "librrgraph_types.h"
 
 #include <algorithm>
 
@@ -466,7 +468,7 @@ size_t t_rr_graph_storage::count_rr_switches(
 
             if (arch_switch_inf[iswitch].fixed_Tdel()) {
                 //If delay is independent of fanin drop the unique fanin info
-                fanin = ARCH_FPGA_UNDEFINED_VAL;
+                fanin = LIBRRGRAPH_UNDEFINED_VAL;
             }
 
             if (arch_switch_fanins[iswitch].count(fanin) == 0) {        //New fanin for this switch
@@ -484,7 +486,7 @@ size_t t_rr_graph_storage::count_rr_switches(
     for(size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
         if(arch_switch_fanins[iswitch].empty()){
             if(arch_switch_inf[iswitch].fixed_Tdel()){
-                arch_switch_fanins[iswitch][ARCH_FPGA_UNDEFINED_VAL] = num_rr_switches++;
+                arch_switch_fanins[iswitch][LIBRRGRAPH_UNDEFINED_VAL] = num_rr_switches++;
             }
         }
     }
@@ -506,8 +508,8 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
         int switch_index = edge_switch_[edge];
         int fanin = node_fan_in_[to_node];
 
-        if (switch_fanin[switch_index].count(ARCH_FPGA_UNDEFINED_VAL) == 1) {
-            fanin = ARCH_FPGA_UNDEFINED_VAL;
+        if (switch_fanin[switch_index].count(LIBRRGRAPH_UNDEFINED_VAL) == 1) {
+            fanin = LIBRRGRAPH_UNDEFINED_VAL;
         }
 
         auto itr = switch_fanin[switch_index].find(fanin);

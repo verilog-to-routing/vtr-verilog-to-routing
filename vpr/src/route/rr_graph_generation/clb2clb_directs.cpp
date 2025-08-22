@@ -34,7 +34,7 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
 
         t_physical_tile_port tile_port = find_tile_port_by_name(physical_tile, port_name);
 
-        if (start_pin_index == OPEN) {
+        if (start_pin_index == UNDEFINED) {
             VTR_ASSERT(start_pin_index == end_pin_index);
             start_pin_index = 0;
             end_pin_index = tile_port.num_pins - 1;
@@ -58,7 +58,7 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
 
         tile_port = find_tile_port_by_name(physical_tile, port_name);
 
-        if (start_pin_index == OPEN) {
+        if (start_pin_index == UNDEFINED) {
             VTR_ASSERT(start_pin_index == end_pin_index);
             start_pin_index = 0;
             end_pin_index = tile_port.num_pins - 1;

@@ -650,7 +650,7 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                       "in get_track_num: Unexpected node type %d for node %d.\n",
                       rr_type, inode);
-            return OPEN;
+            return UNDEFINED;
     }
 }
 
@@ -884,7 +884,7 @@ t_edge_size find_edge(RRNodeId prev_inode, RRNodeId inode) {
         }
     }
     VTR_ASSERT(false);
-    return OPEN;
+    return UNDEFINED;
 }
 
 ezgl::color to_ezgl_color(vtr::Color<float> color) {

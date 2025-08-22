@@ -11,6 +11,7 @@
 #include <ctime>
 #include <map>
 
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
@@ -484,7 +485,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
             }
 
             found = false;
-            pb_index = OPEN;
+            pb_index = UNDEFINED;
             for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
                 if (pb_type->modes[pb->mode].pb_type_children[i].name == tokens[0].data) {
                     pb_index = vtr::atoi(tokens[2].data);
@@ -579,7 +580,7 @@ static int add_net_to_hash(t_hash** nhash, const char* net_name, int* ncount) {
     t_hash* hash_value;
 
     if (strcmp(net_name, "open") == 0) {
-        return OPEN;
+        return UNDEFINED;
     }
 
     hash_value = insert_in_hash_table(nhash, net_name, *ncount);
@@ -986,7 +987,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 
             if (clb_net_id != ClusterNetId::INVALID()) {
                 //Verify old and new CLB netlists have the same # of pins per net
-                if (RECEIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin)) {
+                if (e_pin_type::RECEIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin)) {
                     count[clb_net_id]++;
 
                     if (count[clb_net_id] > (int)clb_nlist.net_sinks(clb_net_id).size()) {
@@ -1013,7 +1014,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
                     /* Error check performed later to ensure no mixing of ignored and non ignored signals */
 
                 } else {
-                    VTR_ASSERT(DRIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin));
+                    VTR_ASSERT(e_pin_type::DRIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin));
                     VTR_ASSERT(j == clb_nlist.pin_logical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
                     VTR_ASSERT(j == clb_nlist.net_pin_logical_index(clb_net_id, 0));
                 }
@@ -1126,7 +1127,7 @@ static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type,
     for (int i = 0; i < num_pins; i++) {
         if (!pb_route.count(i)) continue;
 
-        if (pb_route[i].driver_pb_pin_id != OPEN && !pb_route[i].atom_net_id) {
+        if (pb_route[i].driver_pb_pin_id != UNDEFINED && !pb_route[i].atom_net_id) {
             load_atom_index_for_pb_pin(pb_route, i);
         }
     }
@@ -1135,7 +1136,7 @@ static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type,
 static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin) {
     int driver = pb_route[ipin].driver_pb_pin_id;
 
-    VTR_ASSERT(driver != OPEN);
+    VTR_ASSERT(driver != UNDEFINED);
     VTR_ASSERT(!pb_route[ipin].atom_net_id);
 
     if (!pb_route[driver].atom_net_id) {

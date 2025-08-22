@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "globals.h"
+#include "vpr_types.h"
 #include "vtr_math.h"
 #include "vtr_geometry.h"
 #include "vtr_time.h"
@@ -131,11 +132,11 @@ static std::tuple<int, int, int> get_node_info(const t_rr_node& node, int num_se
     RRNodeId rr_node = node.id();
 
     if (rr_graph.node_type(rr_node) != e_rr_type::CHANX && rr_graph.node_type(rr_node) != e_rr_type::CHANY) {
-        return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
+        return std::tuple<int, int, int>(UNDEFINED, UNDEFINED, UNDEFINED);
     }
 
     if (rr_graph.node_capacity(rr_node) == 0 || rr_graph.num_edges(rr_node) == 0) {
-        return std::tuple<int, int, int>(OPEN, OPEN, OPEN);
+        return std::tuple<int, int, int>(UNDEFINED, UNDEFINED, UNDEFINED);
     }
 
     int x = rr_graph.node_xlow(rr_node);
@@ -143,7 +144,7 @@ static std::tuple<int, int, int> get_node_info(const t_rr_node& node, int num_se
 
     int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(rr_node)].seg_index;
 
-    VTR_ASSERT(seg_index != OPEN);
+    VTR_ASSERT(seg_index != UNDEFINED);
     VTR_ASSERT(seg_index < num_segments);
 
     return std::tuple<int, int, int>(seg_index, x, y);
@@ -207,7 +208,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
         if (rr_graph.node_capacity(node.id()) == 0 || rr_graph.num_edges(node.id()) == 0) continue;
         int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(node.id())].seg_index;
 
-        VTR_ASSERT(seg_index != OPEN);
+        VTR_ASSERT(seg_index != UNDEFINED);
         VTR_ASSERT(seg_index < num_segments);
 
         bounding_box_for_segment[seg_index].expand_bounding_box(bounding_box_for_node(node.id()));
@@ -224,7 +225,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
         int seg_index, x, y;
         std::tie(seg_index, x, y) = get_node_info(node, num_segments);
 
-        if (seg_index == OPEN) continue;
+        if (seg_index == UNDEFINED) continue;
 
         segment_counts[seg_index][x][y] += 1;
     }
@@ -250,7 +251,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
         int seg_index, x, y;
         std::tie(seg_index, x, y) = get_node_info(node, num_segments);
 
-        if (seg_index == OPEN) continue;
+        if (seg_index == UNDEFINED) continue;
 
         auto point = sample_point_index.find(std::make_tuple(seg_index, x, y));
         if (point != sample_point_index.end()) {

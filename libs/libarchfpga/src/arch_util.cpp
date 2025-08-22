@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "logic_types.h"
+#include "physical_types.h"
 #include "vtr_assert.h"
 #include "vtr_list.h"
 #include "vtr_memory.h"
@@ -669,12 +670,12 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
     mem_pb_type->modes[0].parent_pb_type = mem_pb_type;
     mem_pb_type->modes[0].index = 0;
     mem_pb_type->modes[0].mode_power = new t_mode_power();
-    num_pb = OPEN;
+    num_pb = ARCH_FPGA_UNDEFINED_VAL;
     for (i = 0; i < mem_pb_type->num_ports; i++) {
         if (mem_pb_type->ports[i].port_class != nullptr
             && strstr(mem_pb_type->ports[i].port_class, "data")
                    == mem_pb_type->ports[i].port_class) {
-            if (num_pb == OPEN) {
+            if (num_pb == ARCH_FPGA_UNDEFINED_VAL) {
                 num_pb = mem_pb_type->ports[i].num_pins;
             } else if (num_pb != mem_pb_type->ports[i].num_pins) {
                 archfpga_throw(get_arch_file_name(), 0,
@@ -1206,7 +1207,7 @@ void setup_pin_classes(t_physical_tile_type* type) {
     int num_class;
 
     for (int i = 0; i < type->num_pins; i++) {
-        type->pin_class.push_back(OPEN);
+        type->pin_class.push_back(ARCH_FPGA_UNDEFINED_VAL);
         type->is_ignored_pin.push_back(true);
         type->is_pin_global.push_back(true);
     }
@@ -1229,10 +1230,10 @@ void setup_pin_classes(t_physical_tile_type* type) {
                     class_inf.equivalence = port.equivalent;
 
                     if (port.type == IN_PORT) {
-                        class_inf.type = RECEIVER;
+                        class_inf.type = e_pin_type::RECEIVER;
                     } else {
                         VTR_ASSERT(port.type == OUT_PORT);
-                        class_inf.type = DRIVER;
+                        class_inf.type = e_pin_type::DRIVER;
                     }
 
                     for (int k = 0; k < port.num_pins; ++k) {
@@ -1263,10 +1264,10 @@ void setup_pin_classes(t_physical_tile_type* type) {
                         class_inf.equivalence = port.equivalent;
 
                         if (port.type == IN_PORT) {
-                            class_inf.type = RECEIVER;
+                            class_inf.type = e_pin_type::RECEIVER;
                         } else {
                             VTR_ASSERT(port.type == OUT_PORT);
-                            class_inf.type = DRIVER;
+                            class_inf.type = e_pin_type::DRIVER;
                         }
 
                         type->pin_class[pin_count] = num_class;

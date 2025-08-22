@@ -20,7 +20,7 @@
  *                            which do not correspond to an actual netlist connection),
  *                            the value for this member should be set to OPEN (-1).
  *   @param iswitch  Index of the switch type used to go from this rr_node to
- *                   the next one in the routing.  OPEN if there is no next node
+ *                   the next one in the routing.  UNDEFINED if there is no next node
  *                   (i.e. this node is the last one (a SINK) in a branch of the
  *                   net's routing).
  *   @param next     Pointer to the next traceback element in this route.

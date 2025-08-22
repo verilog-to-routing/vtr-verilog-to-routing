@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <iostream>
 
+#include "physical_types.h"
 #include "rr_graph_uxsdcxx_interface.h"
 
 #include "rr_node.h"
@@ -17,6 +18,7 @@
 
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
+#include "librrgraph_types.h"
 
 #include "device_grid.h"
 #include "alloc_and_load_rr_indexed_data.h"
@@ -36,9 +38,9 @@ class MetadataBind {
         : is_node_(false)
         , is_edge_(false)
         , ignore_(false)
-        , inode_(OPEN)
-        , sink_node_(OPEN)
-        , switch_id_(OPEN)
+        , inode_(LIBRRGRAPH_UNDEFINED_VAL)
+        , sink_node_(LIBRRGRAPH_UNDEFINED_VAL)
+        , switch_id_(LIBRRGRAPH_UNDEFINED_VAL)
         , strings_(strings)
         , name_(empty)
         , value_(empty)
@@ -2117,11 +2119,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     e_pin_type from_uxsd_pin_type(uxsd::enum_pin_type type) {
         switch (type) {
             case uxsd::enum_pin_type::OPEN:
-                return OPEN;
+                return e_pin_type::OPEN;
             case uxsd::enum_pin_type::OUTPUT:
-                return DRIVER;
+                return e_pin_type::DRIVER;
             case uxsd::enum_pin_type::INPUT:
-                return RECEIVER;
+                return e_pin_type::RECEIVER;
             default:
                 report_error(
                     "Unknown pin class type %d", type);
@@ -2130,11 +2132,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     uxsd::enum_pin_type to_uxsd_pin_type(e_pin_type type) {
         switch (type) {
-            case OPEN:
+            case e_pin_type::OPEN:
                 return uxsd::enum_pin_type::OPEN;
-            case DRIVER:
+            case e_pin_type::DRIVER:
                 return uxsd::enum_pin_type::OUTPUT;
-            case RECEIVER:
+            case e_pin_type::RECEIVER:
                 return uxsd::enum_pin_type::INPUT;
             default:
                 report_error(

@@ -576,7 +576,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in comp_width: Unknown channel type %d.\n", chan->type);
-            val = OPEN;
+            val = UNDEFINED;
             break;
     }
 

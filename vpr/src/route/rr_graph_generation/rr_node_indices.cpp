@@ -3,6 +3,7 @@
 
 #include "describe_rr_node.h"
 #include "globals.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "rr_graph2.h"
 #include "vpr_utils.h"
@@ -243,10 +244,10 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
     for (const int class_num : class_num_vec) {
         e_pin_type class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
         e_rr_type node_type = e_rr_type::SINK;
-        if (class_type == DRIVER) {
+        if (class_type == e_pin_type::DRIVER) {
             node_type = e_rr_type::SOURCE;
         } else {
-            VTR_ASSERT(class_type == RECEIVER);
+            VTR_ASSERT(class_type == e_pin_type::RECEIVER);
         }
 
         for (int x_offset = 0; x_offset < block_width; x_offset++) {
@@ -290,11 +291,11 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             int x_tile = root_x + x_offset[pin_coord_idx];
             int y_tile = root_y + y_offset[pin_coord_idx];
             e_side side = pin_sides[pin_coord_idx];
-            if (pin_type == DRIVER) {
+            if (pin_type == e_pin_type::DRIVER) {
                 rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, x_tile, y_tile, e_rr_type::OPIN, pin_num, side);
                 assigned_to_rr_node = true;
             } else {
-                VTR_ASSERT(pin_type == RECEIVER);
+                VTR_ASSERT(pin_type == e_pin_type::RECEIVER);
                 rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, x_tile, y_tile, e_rr_type::IPIN, pin_num, side);
                 assigned_to_rr_node = true;
             }

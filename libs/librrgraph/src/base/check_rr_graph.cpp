@@ -1,3 +1,4 @@
+#include "physical_types.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
 
@@ -470,7 +471,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     }
 
 
-    e_pin_type class_type = OPEN;
+    e_pin_type class_type = e_pin_type::OPEN;
     int class_num_pins = -1;
     switch (rr_type) {
         case e_rr_type::SOURCE:
@@ -478,7 +479,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             class_type = get_class_type_from_class_physical_num(type, ptc_num);
             class_num_pins = get_class_num_pins_from_class_physical_num(type, ptc_num);
             if (ptc_num >= class_max_ptc
-                || class_type != ((rr_type == e_rr_type::SOURCE) ? DRIVER : RECEIVER)) {
+                || class_type != ((rr_type == e_rr_type::SOURCE) ? e_pin_type::DRIVER : e_pin_type::RECEIVER)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
@@ -502,7 +503,7 @@ void check_rr_node(const RRGraphView& rr_graph,
         case e_rr_type::IPIN:
             class_type = get_pin_type_from_pin_physical_num(type, ptc_num);
             if (ptc_num >= pin_max_ptc
-                || class_type != ((rr_type == e_rr_type::OPIN) ? DRIVER : RECEIVER)) {
+                || class_type != ((rr_type == e_rr_type::OPIN) ? e_pin_type::DRIVER : e_pin_type::RECEIVER)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }

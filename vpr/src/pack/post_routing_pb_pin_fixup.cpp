@@ -3,6 +3,7 @@
  * after routing optimization
  *******************************************************************/
 /* Headers from vtrutil library */
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vtr_time.h"
 #include "vtr_assert.h"
@@ -125,10 +126,10 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
         auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
         e_rr_type rr_node_type;
-        if (pin_type == DRIVER) {
+        if (pin_type == e_pin_type::DRIVER) {
             rr_node_type = e_rr_type::OPIN;
         } else {
-            VTR_ASSERT(pin_type == RECEIVER);
+            VTR_ASSERT(pin_type == e_pin_type::RECEIVER);
             rr_node_type = e_rr_type::IPIN;
         }
 
@@ -682,7 +683,7 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
         /* Modify the source pb_graph_pin if we reuse routing trace from another pin */
         if (new_pb_route.pb_graph_pin != pb_graph_pin) {
             new_pb_route.pb_graph_pin = pb_graph_pin;
-            new_pb_route.driver_pb_pin_id = OPEN;
+            new_pb_route.driver_pb_pin_id = UNDEFINED;
         }
 
         /* Check if the sink pb_pins are accessible from the driver pb_pin

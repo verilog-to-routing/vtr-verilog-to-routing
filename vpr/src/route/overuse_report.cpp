@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include "globals.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vpr_utils.h"
 #include "vtr_log.h"
@@ -487,7 +488,7 @@ static void print_block_pins_nets(std::ostream& os,
     }
 
     for (int pin = pin_num_range.low; pin <= pin_num_range.high; pin++) {
-        e_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
+        e_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == e_pin_type::DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
         RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, layer, root_x, root_y, pin);
         // When flat router is enabled, RR Node chains collapse into a single node. Thus, when
         // looking up the RR Node ID, it may return an invalid node ID. In this case, we skip

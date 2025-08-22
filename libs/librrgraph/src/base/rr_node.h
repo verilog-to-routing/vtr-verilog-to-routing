@@ -1,7 +1,8 @@
 #pragma once
 
 #include <limits>
-#include "physical_types.h"
+#include "switchblock_types.h"
+#include "librrgraph_types.h"
 #include "rr_node_fwd.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
@@ -134,8 +135,8 @@ class t_rr_node {
 struct t_rr_indexed_data {
     float base_cost = std::numeric_limits<float>::quiet_NaN();
     float saved_base_cost = std::numeric_limits<float>::quiet_NaN();
-    int ortho_cost_index = OPEN;
-    int seg_index = OPEN;
+    int ortho_cost_index = LIBRRGRAPH_UNDEFINED_VAL;
+    int seg_index = LIBRRGRAPH_UNDEFINED_VAL;
     float inv_length = std::numeric_limits<float>::quiet_NaN();
     float T_linear = std::numeric_limits<float>::quiet_NaN();
     float T_quadratic = std::numeric_limits<float>::quiet_NaN();

@@ -5,6 +5,7 @@
 
 #include "vtr_assert.h"
 #include "vtr_flat_map.h"
+#include "vpr_types.h"
 
 struct t_compressed_block_grid {
     // The compressed grid of a block type stores only the coordinates that are occupied by that particular block type.
@@ -40,8 +41,8 @@ struct t_compressed_block_grid {
     }
 
     inline t_physical_tile_loc grid_loc_to_compressed_loc(t_physical_tile_loc grid_loc) const {
-        int cx = OPEN;
-        int cy = OPEN;
+        int cx = UNDEFINED;
+        int cy = UNDEFINED;
         int layer_num = grid_loc.layer_num;
 
         auto itr_x = std::lower_bound(compressed_to_grid_x[layer_num].begin(), compressed_to_grid_x[layer_num].end(), grid_loc.x);
@@ -130,7 +131,7 @@ struct t_compressed_block_grid {
             // no compatible locations for a block of the given type. Returns OPEN
             // in that case.
             if (compressed_grid_dim.size() == 0) {
-                return OPEN;
+                return UNDEFINED;
             }
 
             // Find the first element not less than loc

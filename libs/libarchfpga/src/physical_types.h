@@ -25,6 +25,7 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
+#include <cstdint>
 #include <functional>
 #include <utility>
 #include <vector>
@@ -42,6 +43,7 @@
 #include "logic_types.h"
 #include "clock_types.h"
 #include "switchblock_types.h"
+#include "arch_types.h"
 
 #include "vib_inf.h"
 
@@ -163,7 +165,7 @@ struct t_metadata_dict : vtr::flat_map<
 
 /* Pins describe I/O into clustered logic block.
  * A pin may be unconnected, driving a net or in the fanout, respectively. */
-enum e_pin_type {
+enum class e_pin_type : int8_t {
     OPEN = -1,
     DRIVER = 0,
     RECEIVER = 1
@@ -873,9 +875,9 @@ struct t_physical_pin {
  *                  above the base die, the layer_num is 1 and so on.
  */
 struct t_physical_tile_loc {
-    int x = OPEN;
-    int y = OPEN;
-    int layer_num = OPEN;
+    int x = ARCH_FPGA_UNDEFINED_VAL;
+    int y = ARCH_FPGA_UNDEFINED_VAL;
+    int layer_num = ARCH_FPGA_UNDEFINED_VAL;
 
     t_physical_tile_loc() = default;
 
@@ -884,9 +886,9 @@ struct t_physical_tile_loc {
         , y(y_val)
         , layer_num(layer_num_val) {}
 
-    // Returns true if this type location layer_num/x/y is not equal to OPEN
+    // Returns true if this type location layer_num/x/y is not equal to ARCH_FPGA_UNDEFINED_VAL
     operator bool() const {
-        return !(x == OPEN || y == OPEN || layer_num == OPEN);
+        return !(x == ARCH_FPGA_UNDEFINED_VAL || y == ARCH_FPGA_UNDEFINED_VAL || layer_num == ARCH_FPGA_UNDEFINED_VAL);
     }
 };
 
@@ -1369,7 +1371,7 @@ class t_pb_graph_node {
      * There is a root-level pb_graph_node assigned to each logical type. Each logical type can contain multiple primitives.
      * If this pb_graph_node is associated with a primitive, a unique number is assigned to it within the logical block level.
      */
-    int primitive_num = OPEN;
+    int primitive_num = ARCH_FPGA_UNDEFINED_VAL;
 
     /* Contains a collection of mode indices that cannot be used as they produce conflicts during VPR packing stage
      *
@@ -1578,7 +1580,7 @@ class t_pb_graph_edge {
     int* pack_pattern_indices;
     bool infer_pattern;
 
-    int switch_type_idx = OPEN; /* architecture switch id of the edge - used when flat_routing is enabled */
+    int switch_type_idx = ARCH_FPGA_UNDEFINED_VAL; /* architecture switch id of the edge - used when flat_routing is enabled */
 
     // class member functions
   public:

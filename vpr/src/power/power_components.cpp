@@ -453,7 +453,7 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
                 for (pin_idx = 0;
                      pin_idx < interc->interconnect_power->num_pins_per_port;
                      pin_idx++) {
-                    int selected_input = OPEN;
+                    int selected_input = UNDEFINED;
 
                     /* Clear input densities */
                     for (in_port_idx = 0;
@@ -490,7 +490,7 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
                             }
 
                             /* Check that the input pin was found with a matching net to the output pin */
-                            VTR_ASSERT(selected_input != OPEN);
+                            VTR_ASSERT(selected_input != UNDEFINED);
                         }
                     } else {
                         selected_input = 0;
@@ -546,7 +546,7 @@ void power_usage_mux_multilevel(t_power_usage* power_usage,
 
     auto& power_ctx = g_vpr_ctx.power();
 
-    VTR_ASSERT(selected_input != OPEN);
+    VTR_ASSERT(selected_input != UNDEFINED);
 
     power_zero_usage(power_usage);
 

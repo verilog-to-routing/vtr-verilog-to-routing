@@ -4,6 +4,7 @@
 #include "rr_graph_obj.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_view.h"
+#include "librrgraph_types.h"
 
 /*
  * @brief Walk backwards from origin SINK, and insert all cluster-edge IPINs to which origin is connected to sink_ipins
@@ -98,7 +99,7 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in seg_index_of_sblock: to_node %d is of type %d.\n",
                             to_node, to_rr_type);
-            return OPEN; //Should not reach here once thrown
+            return LIBRRGRAPH_UNDEFINED_VAL; //Should not reach here once thrown
         }
     }
     /* End from_rr_type is CHANX */
@@ -115,7 +116,7 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in seg_index_of_sblock: to_node %d is of type %d.\n",
                             to_node, to_rr_type);
-            return OPEN; //Should not reach here once thrown
+            return LIBRRGRAPH_UNDEFINED_VAL; //Should not reach here once thrown
         }
     }
     /* End from_rr_type is CHANY */
@@ -123,7 +124,7 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in seg_index_of_sblock: from_node %d is of type %d.\n",
                         from_node, from_rr_type);
-        return OPEN; //Should not reach here once thrown
+        return LIBRRGRAPH_UNDEFINED_VAL; //Should not reach here once thrown
     }
 }
 

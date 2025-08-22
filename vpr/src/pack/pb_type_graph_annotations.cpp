@@ -14,6 +14,7 @@
 #include "vtr_token.h"
 
 #include "vpr_error.h"
+#include "vpr_types.h"
 
 #include "pb_type_graph.h"
 #include "pb_type_graph_annotations.h"
@@ -50,7 +51,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
                         || key == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
                         || key == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
                         || key == E_ANNOT_PIN_TO_PIN_DELAY_THOLD) {
-                        load_delay_annotations(annotation.line_num, pb_graph_node, OPEN,
+                        load_delay_annotations(annotation.line_num, pb_graph_node, UNDEFINED,
                                                annotation.format, (enum e_pin_to_pin_delay_annotations)key,
                                                annotation.input_pins,
                                                annotation.output_pins,
@@ -207,7 +208,7 @@ static void load_delay_annotations(const int line_num,
 
     /* Determine what pins to read based on delay type */
     num_inputs = num_outputs = 0;
-    if (mode == OPEN) {
+    if (mode == UNDEFINED) {
         children = nullptr;
     } else {
         children = pb_graph_node->child_pb_graph_nodes[mode];

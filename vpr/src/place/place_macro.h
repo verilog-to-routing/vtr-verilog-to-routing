@@ -200,7 +200,7 @@ class PlaceMacros {
     /**
      * @brief This array allow us to quickly find pins that could be in a direct connection.
      * @details Values stored is the index of the possible direct connection as specified in the arch file,
-     * OPEN (-1) is stored for pins that could not be part of a direct chain connection.
+     * UNDEFINED (-1) is stored for pins that could not be part of a direct chain connection.
      * [0...device_ctx.num_block_types-1][0...num_pins-1]
      */
     std::vector<std::vector<int>> idirect_from_blk_pin_;
