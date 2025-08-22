@@ -65,12 +65,6 @@ enum class e_packer_state {
 
 } // namespace
 
-static bool try_size_device_grid(const t_arch& arch,
-                                 const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
-                                 std::map<t_logical_block_type_ptr, float>& type_util,
-                                 float target_device_utilization,
-                                 const std::string& device_layout_name);
-
 /**
  * @brief The packer iteratively re-packes the netlist if it fails to find a
  *        valid clustering. Each iteration is a state the packer is in, where
@@ -634,11 +628,11 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
     return (is_clock);
 }
 
-static bool try_size_device_grid(const t_arch& arch,
-                                 const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
-                                 std::map<t_logical_block_type_ptr, float>& type_util,
-                                 float target_device_utilization,
-                                 const std::string& device_layout_name) {
+bool try_size_device_grid(const t_arch& arch,
+                          const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
+                          std::map<t_logical_block_type_ptr, float>& type_util,
+                          float target_device_utilization,
+                          const std::string& device_layout_name) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //Build the device

@@ -495,6 +495,18 @@ Use the options below to override this default naming behaviour.
       linearized ID of primitive locations in a cluster. This may be used as a
       hint to reconstruct clusters.
 
+.. option:: --write_legalized_flat_place <file>
+
+    Writes the post-legalization locations of each atom into a flat placement file.
+
+    For each atom in the netlist, the following information is stored into the
+    flat placement file:
+
+    * The x, y, and sub_tile location of the cluster that contains this atom.
+    * The flat site index of this atom in its cluster. The flat site index is a
+      linearized ID of primitive locations in a cluster. This may be used as a
+      hint to reconstruct clusters.
+
 .. _netlist_options:
 
 Netlist Options
@@ -1294,6 +1306,12 @@ Analytical Placement is generally split into three stages:
     * ``naive`` Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.
 
     * ``appack`` Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.
+
+    * ``flat-recon`` Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement that is
+      as close to the incoming flat placement as possible. It can be used to read a flat placement from a ``.fplace`` file (see :option:`--read_flat_place`)
+      or with Global Placement output. In both cases, it expects the given solution to be close to legal. If used with a ``.fplace`` file (see :option:`--read_flat_place`),
+      each atom of a molecule should share same location information. It is legal to leave some molecules unconstrained; the reconstruction phase will choose where
+      to place them but does not attempt to optimize these locations.
 
     **Default:** ``appack``
 

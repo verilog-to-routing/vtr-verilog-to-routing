@@ -888,7 +888,38 @@ struct t_physical_tile_loc {
     operator bool() const {
         return !(x == OPEN || y == OPEN || layer_num == OPEN);
     }
+
+    /**
+     * @brief Comparison operator for t_physical_tile_loc
+     *
+     * Tiles are ordered first by layer number, then by x, and finally by y.
+     */
+    friend bool operator<(const t_physical_tile_loc& lhs, const t_physical_tile_loc& rhs) {
+        if (lhs.layer_num != rhs.layer_num) return lhs.layer_num < rhs.layer_num;
+        if (lhs.x != rhs.x) return lhs.x < rhs.x;
+        return lhs.y < rhs.y;
+    }
+
+    friend bool operator==(const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
+        return a.layer_num == b.layer_num && a.x == b.x && a.y == b.y;
+    }
+
+    friend bool operator!=(const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
+        return !(a == b);
+    }
 };
+
+namespace std {
+template<>
+struct hash<t_physical_tile_loc> {
+    std::size_t operator()(const t_physical_tile_loc& v) const noexcept {
+        std::size_t seed = std::hash<int>{}(v.x);
+        vtr::hash_combine(seed, v.y);
+        vtr::hash_combine(seed, v.layer_num);
+        return seed;
+    }
+};
+} // namespace std
 
 /** Describes I/O and clock ports of a physical tile type
  *

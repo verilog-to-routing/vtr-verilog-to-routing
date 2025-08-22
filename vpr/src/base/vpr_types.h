@@ -677,6 +677,7 @@ struct t_file_name_opts {
     std::string write_constraints_file;
     std::string read_flat_place_file;
     std::string write_flat_place_file;
+    std::string write_legalized_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
 };

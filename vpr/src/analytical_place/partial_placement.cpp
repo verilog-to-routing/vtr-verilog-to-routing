@@ -102,6 +102,13 @@ bool PartialPlacement::verify_locs(const APNetlist& netlist,
             return false;
         if (netlist.block_mobility(blk_id) == APBlockMobility::FIXED) {
             const APFixedBlockLoc& fixed_loc = netlist.block_loc(blk_id);
+            if (g_vpr_ctx.atom().flat_placement_info().valid) {
+                // In gen_ap_netlist_from_atoms, we add 0.5f to each atom but do not consider
+                // it here. Adding these buffers here as well if the flat placement provided.
+                // TODO: This should be handled more explicitely.
+                x_pos += 0.5f;
+                y_pos += 0.5f;
+            }
             if (fixed_loc.x != -1 && x_pos != fixed_loc.x)
                 return false;
             if (fixed_loc.y != -1 && y_pos != fixed_loc.y)
