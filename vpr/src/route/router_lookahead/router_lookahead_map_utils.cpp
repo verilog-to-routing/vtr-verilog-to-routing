@@ -14,6 +14,7 @@
 #include "globals.h"
 #include "physical_types_util.h"
 #include "vpr_context.h"
+#include "vpr_error.h"
 #include "vpr_utils.h"
 #include "vtr_math.h"
 #include "vtr_time.h"
@@ -263,8 +264,9 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
      * with the largest number of entries */
 
     // This is code that needs to be revisited. For the time being, if the median entry
-    // method calculation is used an assertion is thrown.
-    VTR_ASSERT_MSG(false, "Get median entry calculation method is not implemented!");
+    // method calculation is used an error is thrown.
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                    "Get median entry calculation method is not implemented!");
 
     int num_bins = 10;
 
