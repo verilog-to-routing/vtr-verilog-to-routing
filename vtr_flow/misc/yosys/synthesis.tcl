@@ -28,16 +28,20 @@ if {$env(PARSER) == "slang" } {
 
 parmys_arch -a QQQ
 
+variable HDL_tops
+
+# Create a file list containing the name(s) of file(s) \
+# to read together with read_slang
+source [file join [pwd] "slang_filelist.tcl"]
+set readfile [file join [pwd] "filelist.txt"]
+#Writing names of circuit files to file list
+set HDL_tops [::slang::build_filelist {XXX} $readfile $env(TOPS)]
+lassign $HDL_tops top_mods_slang top_mods_verilog
+
 if {$env(PARSER) == "slang" } {
-	# Create a file list containing the name(s) of file(s) \
-	# to read together with read_slang
-	source [file join [pwd] "slang_filelist.tcl"]
-	set readfile [file join [pwd] "filelist.txt"]
-	#Writing names of circuit files to file list
-	set slang_tops [::slang::build_filelist {XXX} $readfile]
 	puts "Using Yosys read_slang command"
 	#Read vtr_primitives library and user design verilog in same command
-	read_slang -v $env(PRIMITIVES) {*}$slang_tops -C $readfile
+	read_slang -v $env(PRIMITIVES) {*}$top_mods_slang -C $readfile
 } elseif {$env(PARSER) == "default" } {
 	puts "Using Yosys read_verilog command"
 	read_verilog -nomem2reg +/parmys/vtr_primitives.v
@@ -53,7 +57,8 @@ scc -select
 select -assert-none %
 select -clear
 
-hierarchy -check -auto-top -purge_lib
+#hierarchy -check -auto-top -purge_lib
+hierarchy -check {*}$top_mods_verilog -purge_lib
 
 opt_expr
 opt_clean
@@ -97,6 +102,7 @@ opt -fast -noff
 
 stat
 
-hierarchy -check -auto-top -purge_lib
+#hierarchy -check -auto-top -purge_lib
+hierarchy -check {*}$top_mods_verilog -purge_lib
 
 write_blif -true + vcc -false + gnd -undef + unconn -blackbox ZZZ
