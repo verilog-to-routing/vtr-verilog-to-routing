@@ -93,9 +93,8 @@ constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
 
 #define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
-#ifndef UNDEFINED
-#define UNDEFINED (-1)
-#endif
+
+constexpr int UNDEFINED = -1;
 
 ///@brief Router lookahead types.
 enum class e_router_lookahead {
@@ -342,7 +341,7 @@ class t_pb {
 ///@brief Representation of intra-logic block routing
 struct t_pb_route {
     AtomNetId atom_net_id;                        ///<which net in the atom netlist uses this pin
-    int driver_pb_pin_id = OPEN;                  ///<The pb_pin id of the pb_pin that drives this pin
+    int driver_pb_pin_id = UNDEFINED;                  ///<The pb_pin id of the pb_pin that drives this pin
     std::vector<int> sink_pb_pin_ids;             ///<The pb_pin id's of the pb_pins driven by this node
     const t_pb_graph_pin* pb_graph_pin = nullptr; ///<The graph pin associated with this node
 };
@@ -434,12 +433,12 @@ struct t_bb {
         VTR_ASSERT(ymax_ >= ymin_);
         VTR_ASSERT(layer_max_ >= layer_min_);
     }
-    int xmin = OPEN;
-    int xmax = OPEN;
-    int ymin = OPEN;
-    int ymax = OPEN;
-    int layer_min = OPEN;
-    int layer_max = OPEN;
+    int xmin = UNDEFINED;
+    int xmax = UNDEFINED;
+    int ymin = UNDEFINED;
+    int ymax = UNDEFINED;
+    int layer_min = UNDEFINED;
+    int layer_max = UNDEFINED;
 };
 
 /**
@@ -459,11 +458,11 @@ struct t_2D_bb {
         VTR_ASSERT(layer_num_ >= 0);
     }
 
-    int xmin = OPEN;
-    int xmax = OPEN;
-    int ymin = OPEN;
-    int ymax = OPEN;
-    int layer_num = OPEN;
+    int xmin = UNDEFINED;
+    int xmax = UNDEFINED;
+    int ymin = UNDEFINED;
+    int ymax = UNDEFINED;
+    int layer_num = UNDEFINED;
 };
 
 /**
@@ -573,10 +572,10 @@ struct t_pl_loc {
         , sub_tile(sub_tile_loc)
         , layer(phy_loc.layer_num) {}
 
-    int x = OPEN;
-    int y = OPEN;
-    int sub_tile = OPEN;
-    int layer = OPEN;
+    int x = UNDEFINED;
+    int y = UNDEFINED;
+    int sub_tile = UNDEFINED;
+    int layer = UNDEFINED;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
         layer += rhs.layer;

@@ -16,6 +16,7 @@
 #include "vpr_context.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
+#include "vpr_types.h"
 #include "vtr_math.h"
 #include "vtr_time.h"
 #include "route_common.h"
@@ -373,7 +374,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
 
     t_src_opin_delays src_opin_delays;
     src_opin_delays.resize(num_layers);
-    std::vector<int> tile_max_ptc(device_ctx.physical_tile_types.size(), OPEN);
+    std::vector<int> tile_max_ptc(device_ctx.physical_tile_types.size(), UNDEFINED);
 
     // Get the maximum OPIN ptc for each tile type to reserve src_opin_delays
     for (int itile = 0; itile < (int)device_ctx.physical_tile_types.size(); itile++) {
@@ -399,7 +400,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
                 continue;
             }
             for (e_rr_type rr_type : {e_rr_type::SOURCE, e_rr_type::OPIN}) {
-                t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
+                t_physical_tile_loc sample_loc(UNDEFINED, UNDEFINED, UNDEFINED);
 
                 size_t num_sampled_locs = 0;
                 bool ptcs_with_no_delays = true;
@@ -410,7 +411,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
                                                   &device_ctx.physical_tile_types[itile],
                                                   sample_loc);
 
-                    if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
+                    if (sample_loc.x == UNDEFINED && sample_loc.y == UNDEFINED && sample_loc.layer_num == UNDEFINED) {
                         //No untried instances of the current tile type left
                         VTR_LOGV_WARN(route_verbosity > 1,
                                       "Found no %ssample locations for %s in %s\n",
@@ -486,11 +487,11 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity) {
             if (device_ctx.grid.num_instances(&tile_type, layer_num) == 0) {
                 continue;
             }
-            t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
+            t_physical_tile_loc sample_loc(UNDEFINED, UNDEFINED, UNDEFINED);
 
             sample_loc = pick_sample_tile(layer_num, &tile_type, sample_loc);
 
-            if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
+            if (sample_loc.x == UNDEFINED && sample_loc.y == UNDEFINED && sample_loc.layer_num == UNDEFINED) {
                 //No untried instances of the current tile type left
                 VTR_LOGV_WARN(route_verbosity > 1,
                               "Found no sample locations for %s\n",
@@ -777,7 +778,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
             if (rr_graph.node_layer(rr_node) != from_layer_num) continue;
 
             auto cost_index = rr_graph.node_cost_index(rr_node);
-            VTR_ASSERT(cost_index != RRIndexedDataId(OPEN));
+            VTR_ASSERT(cost_index != RRIndexedDataId(UNDEFINED));
 
             int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
@@ -1180,7 +1181,7 @@ static int get_tile_src_opin_max_ptc(int itile) {
 
 static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev) {
     //Very simple for now, just pick the fist matching tile found
-    t_physical_tile_loc loc(OPEN, OPEN, OPEN);
+    t_physical_tile_loc loc(UNDEFINED, UNDEFINED, UNDEFINED);
 
     //VTR_LOG("Prev: %d,%d\n", prev.x, prev.y);
 
@@ -1209,7 +1210,7 @@ static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_
             }
         }
 
-        if (loc.x != OPEN && loc.y != OPEN && loc.layer_num != OPEN) {
+        if (loc.x != UNDEFINED && loc.y != UNDEFINED && loc.layer_num != UNDEFINED) {
             break;
         } else {
             y_init = 0; //Prepare to search next column

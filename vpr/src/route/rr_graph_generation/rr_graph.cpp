@@ -5,6 +5,7 @@
 #include <vector>
 #include "alloc_and_load_rr_indexed_data.h"
 #include "get_parallel_segs.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "rr_graph_view.h"
 #include "rr_rc_data.h"
@@ -781,7 +782,7 @@ void create_rr_graph(e_graph_type graph_type,
 
     if (is_flat) {
         int delayless_switch = get_delayless_switch_id(det_routing_arch, load_rr_graph);
-        VTR_ASSERT(delayless_switch != OPEN);
+        VTR_ASSERT(delayless_switch != UNDEFINED);
         build_intra_cluster_rr_graph(graph_type,
                                      grid,
                                      block_types,
@@ -1275,12 +1276,12 @@ static void build_rr_graph(e_graph_type graph_type,
     for (size_t itype = 0; itype < types.size(); ++itype) {
         std::set<int> type_layer = get_layers_of_physical_types(&types[itype]);
 
-        ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
+        ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(e_pin_type::RECEIVER,
                                                                      Fc_in[itype], &types[itype], type_layer,
                                                                      perturb_ipins[itype], directionality,
                                                                      segment_inf_x, sets_per_seg_type_x);
 
-        ipin_to_track_map_y[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
+        ipin_to_track_map_y[itype] = alloc_and_load_pin_to_track_map(e_pin_type::RECEIVER,
                                                                      Fc_in[itype], &types[itype], type_layer,
                                                                      perturb_ipins[itype], directionality,
                                                                      segment_inf_y, sets_per_seg_type_y);
@@ -1318,7 +1319,7 @@ static void build_rr_graph(e_graph_type graph_type,
             std::set<int> type_layer = get_layers_of_physical_types(&types[itype]);
             std::vector<bool> perturb_opins = alloc_and_load_perturb_opins(&types[itype], Fc_out[itype],
                                                                            max_chan_width, segment_inf);
-            opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
+            opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(e_pin_type::DRIVER,
                                                                        Fc_out[itype], &types[itype], type_layer, perturb_opins, directionality,
                                                                        segment_inf, sets_per_seg_type);
         }
@@ -1505,7 +1506,7 @@ static void build_intra_cluster_rr_graph(e_graph_type graph_type,
 static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
                                    bool load_rr_graph) {
     const auto& device_ctx = g_vpr_ctx.device();
-    int delayless_switch = OPEN;
+    int delayless_switch = UNDEFINED;
     if (load_rr_graph) {
         const auto& rr_switches = device_ctx.rr_graph.rr_switch();
         for (size_t switch_id = 0; switch_id < rr_switches.size(); switch_id++) {
@@ -1627,7 +1628,7 @@ void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
         //
         //Instead of throwing an error we issue a warning. This means that check_rr_graph() etc. will run to give more information
         //and allow graphics to be brought up for users to debug their architectures.
-        (*wire_to_rr_ipin_switch) = OPEN;
+        (*wire_to_rr_ipin_switch) = UNDEFINED;
         VTR_LOG_WARN("No switch found for the ipin cblock in RR graph. Check if there is an error in arch file, or if no connection blocks are being built in RR graph\n");
     }
 }
@@ -2251,7 +2252,7 @@ static vtr::vector<ClusterBlockId, std::unordered_set<int>> get_pin_chains_flat(
         const auto& cluster_pin_chain_num = pin_chains[cluster_id].pin_chain_idx;
         chain_pin_nums[cluster_id].reserve(cluster_pin_chain_num.size());
         for (int pin_num = 0; pin_num < (int)cluster_pin_chain_num.size(); pin_num++) {
-            if (cluster_pin_chain_num[pin_num] != OPEN) {
+            if (cluster_pin_chain_num[pin_num] != UNDEFINED) {
                 chain_pin_nums[cluster_id].insert(pin_num);
             }
         }
@@ -2353,11 +2354,11 @@ static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
         RRNodeId class_inode = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type, layer, root_x, root_y, class_num);
         VTR_ASSERT(class_inode != RRNodeId::INVALID());
         int class_num_pins = get_class_num_pins_from_class_physical_num(physical_type, class_num);
-        if (class_type == DRIVER) {
+        if (class_type == e_pin_type::DRIVER) {
             rr_graph_builder.set_node_cost_index(class_inode, RRIndexedDataId(SOURCE_COST_INDEX));
             rr_graph_builder.set_node_type(class_inode, e_rr_type::SOURCE);
         } else {
-            VTR_ASSERT(class_type == RECEIVER);
+            VTR_ASSERT(class_type == e_pin_type::RECEIVER);
 
             rr_graph_builder.set_node_cost_index(class_inode, RRIndexedDataId(SINK_COST_INDEX));
             rr_graph_builder.set_node_type(class_inode, e_rr_type::SINK);
@@ -2385,7 +2386,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
     const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
     for (int pin_num : pin_num_vec) {
         e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_type, pin_num);
-        VTR_ASSERT(pin_type == DRIVER || pin_type == RECEIVER);
+        VTR_ASSERT(pin_type == e_pin_type::DRIVER || pin_type == e_pin_type::RECEIVER);
         std::vector<int> x_offset_vec;
         std::vector<int> y_offset_vec;
         std::vector<e_side> pin_sides_vec;
@@ -2395,7 +2396,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
             int x_offset = x_offset_vec[pin_coord];
             int y_offset = y_offset_vec[pin_coord];
             e_side pin_side = pin_sides_vec[pin_coord];
-            e_rr_type node_type = (pin_type == DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
+            e_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
             RRNodeId node_id = node_lookup.find_node(layer,
                                                      i + x_offset,
                                                      j + y_offset,
@@ -2403,10 +2404,10 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                      pin_num,
                                                      pin_side);
             if (node_id != RRNodeId::INVALID()) {
-                if (pin_type == RECEIVER) {
+                if (pin_type == e_pin_type::RECEIVER) {
                     rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(IPIN_COST_INDEX));
                 } else {
-                    VTR_ASSERT(pin_type == DRIVER);
+                    VTR_ASSERT(pin_type == e_pin_type::DRIVER);
                     rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(OPIN_COST_INDEX));
                 }
 
@@ -2459,12 +2460,12 @@ static void connect_tile_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                 continue;
             }
             auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
-            if (class_type == DRIVER) {
-                VTR_ASSERT(pin_type == DRIVER);
+            if (class_type == e_pin_type::DRIVER) {
+                VTR_ASSERT(pin_type == e_pin_type::DRIVER);
                 rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, delayless_switch, false);
             } else {
-                VTR_ASSERT(class_type == RECEIVER);
-                VTR_ASSERT(pin_type == RECEIVER);
+                VTR_ASSERT(class_type == e_pin_type::RECEIVER);
+                VTR_ASSERT(pin_type == e_pin_type::RECEIVER);
                 rr_edges_to_create.emplace_back(pin_rr_node_id, class_rr_node_id, delayless_switch, false);
             }
         }
@@ -2497,12 +2498,12 @@ static void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                 continue;
             }
             e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
-            if (class_type == DRIVER) {
-                VTR_ASSERT(pin_type == DRIVER);
+            if (class_type == e_pin_type::DRIVER) {
+                VTR_ASSERT(pin_type == e_pin_type::DRIVER);
                 rr_edges_to_create.emplace_back(class_rr_node_id, pin_rr_node_id, delayless_switch, switches_remapped);
             } else {
-                VTR_ASSERT(class_type == RECEIVER);
-                VTR_ASSERT(pin_type == RECEIVER);
+                VTR_ASSERT(class_type == e_pin_type::RECEIVER);
+                VTR_ASSERT(pin_type == e_pin_type::RECEIVER);
                 rr_edges_to_create.emplace_back(pin_rr_node_id, class_rr_node_id, delayless_switch, switches_remapped);
             }
         }
@@ -2599,7 +2600,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
         // We only are working with opins so skip non-drivers
-        if (get_pin_type_from_pin_physical_num(type, pin_index) != DRIVER) {
+        if (get_pin_type_from_pin_physical_num(type, pin_index) != e_pin_type::DRIVER) {
             continue;
         }
 
@@ -2761,7 +2762,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
         int chain_num = pin_chain_idx[pin_physical_num];
         bool primitive_pin = is_primitive_pin(physical_type, pin_physical_num);
         bool pin_on_tile = is_pin_on_tile(physical_type, pin_physical_num);
-        if (chain_num != OPEN && chain_sinks[chain_num] != pin_physical_num && !primitive_pin && !pin_on_tile) {
+        if (chain_num != UNDEFINED && chain_sinks[chain_num] != pin_physical_num && !primitive_pin && !pin_on_tile) {
             continue;
         }
         auto parent_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
@@ -2781,7 +2782,7 @@ static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
             int conn_pin_chain_num = pin_chain_idx[conn_pin_physical_num];
             primitive_pin = is_primitive_pin(physical_type, conn_pin_physical_num);
             pin_on_tile = is_pin_on_tile(physical_type, conn_pin_physical_num);
-            if (conn_pin_chain_num != OPEN && chain_sinks[conn_pin_chain_num] != conn_pin_physical_num && !primitive_pin && !pin_on_tile) {
+            if (conn_pin_chain_num != UNDEFINED && chain_sinks[conn_pin_chain_num] != conn_pin_physical_num && !primitive_pin && !pin_on_tile) {
                 continue;
             }
             auto conn_pin_node_id = get_pin_rr_node_id(rr_graph_builder.node_lookup(),
@@ -2942,7 +2943,7 @@ static void add_chain_node_fan_in_edges(RRGraphBuilder& rr_graph_builder,
                                                     pin_physical_num);
             for (auto src_pin : src_pins) {
                 // If the source pin is located on the current chain no edge should be added since the nodes should be collapsed.
-                if (pin_chain_idx[src_pin] != OPEN) {
+                if (pin_chain_idx[src_pin] != UNDEFINED) {
                     if ((pin_chain_idx[src_pin] == chain_idx)) {
                         continue;
                     } else {
@@ -3282,7 +3283,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
                                                                           const std::vector<int>& sets_per_seg_type) {
-    // allocate 'result' matrix and initialize entries to OPEN. also allocate and intialize matrix which will be used
+    // allocate 'result' matrix and initialize entries to UNDEFINED. also allocate and intialize matrix which will be used
     // to index into the correct entries when loading up 'result'
     auto& grid = g_vpr_ctx.device().grid;
     auto result = vtr::NdMatrix<std::vector<int>, 5>({
@@ -3328,7 +3329,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const 
                             for (int iconn = 0; iconn < cur_Fc; iconn++) {
                                 for (auto connected_layer : get_layers_pin_is_connected_to(tile_type, type_layer_index, ipin)) {
                                     int relative_track_ind = pin_to_seg_type_map[ipin][iwidth][iheight][connected_layer][iside][iconn];
-                                    if (relative_track_ind != OPEN) {
+                                    if (relative_track_ind != UNDEFINED) {
                                         VTR_ASSERT(relative_track_ind <= num_seg_type_tracks);
                                         int absolute_track_ind = relative_track_ind + seg_type_start_track;
 
@@ -3367,7 +3368,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     // no pin on that side, or that pin is of the wrong type.
     // Probably not enough memory to worry about, esp. as it's temporary.
     // If pin ipin on side iside does not exist or is of the wrong type,
-    // tracks_connected_to_pin[ipin][iside][0] = OPEN.
+    // tracks_connected_to_pin[ipin][iside][0] = UNDEFINED.
 
     auto& grid = g_vpr_ctx.device().grid;
 
@@ -3383,7 +3384,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                                                              NUM_2D_SIDES,                  // [0..NUM_2D_SIDES-1]
                                                              size_t(max_Fc)                 // [0..Fc-1]
                                                          },
-                                                         OPEN); // Unconnected
+                                                         UNDEFINED); // Unconnected
 
     // Number of *physical* pins on each side.
     // Note that his may be more than the logical number of pins (i.e.
@@ -3957,7 +3958,7 @@ static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
         for (int width = 0; width < type->width; ++width) {
             for (int height = 0; height < type->height; ++height) {
                 for (int side = 0; side < 4; ++side) {
-                    if (tracks_connected_to_pin[pin][width][height][side][0] != OPEN) { /* Pin exists */
+                    if (tracks_connected_to_pin[pin][width][height][side][0] != UNDEFINED) { /* Pin exists */
                         for (int conn = 0; conn < Fc; ++conn) {
                             int track = tracks_connected_to_pin[pin][width][height][side][conn];
                             num_conns_to_track[track]++;
@@ -4090,7 +4091,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
         /* Skip global pins and pins that are not of DRIVER type */
         e_pin_type pin_type = get_pin_type_from_pin_physical_num(type, pin_index);
-        if (pin_type != DRIVER) {
+        if (pin_type != e_pin_type::DRIVER) {
             continue;
         }
         if (type->is_ignored_pin[pin_index]) {
@@ -4228,7 +4229,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                     && z + directs[i].sub_tile_offset < int(target_type->capacity)
                     && z + directs[i].sub_tile_offset >= 0) {
                     // Compute index of opin with regards to given pins
-                    int max_index = OPEN, min_index = OPEN;
+                    int max_index = UNDEFINED, min_index = UNDEFINED;
                     bool swap = false;
                     if (clb_to_clb_directs[i].from_clb_pin_start_index > clb_to_clb_directs[i].from_clb_pin_end_index) {
                         swap = true;
@@ -4243,7 +4244,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                     if (max_index >= relative_opin && min_index <= relative_opin) {
                         int offset = relative_opin - min_index;
                         // This opin is specified to connect directly to an ipin, now compute which ipin to connect to
-                        int relative_ipin = OPEN;
+                        int relative_ipin = UNDEFINED;
                         if (clb_to_clb_directs[i].to_clb_pin_start_index > clb_to_clb_directs[i].to_clb_pin_end_index) {
                             if (swap) {
                                 relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
@@ -4340,7 +4341,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
     /* get Fc_max */
     for (i = 0; i < type->num_pins; ++i) {
         auto pin_type = get_pin_type_from_pin_physical_num(type, i);
-        if (Fc_out[i][0] > Fc_max && pin_type == DRIVER) {
+        if (Fc_out[i][0] > Fc_max && pin_type == e_pin_type::DRIVER) {
             Fc_max = Fc_out[i][0];
         }
     }
@@ -4521,7 +4522,7 @@ bool pins_connected(t_block_loc cluster_loc,
                                                         logical_block,
                                                         rel_cap,
                                                         from_pb_pin);
-    VTR_ASSERT(from_pin_physical_num != OPEN);
+    VTR_ASSERT(from_pin_physical_num != UNDEFINED);
 
     auto to_pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(to_pin_logical_num);
     int to_pin_physical_num = get_pb_pin_physical_num(physical_type,
@@ -4530,7 +4531,7 @@ bool pins_connected(t_block_loc cluster_loc,
                                                       rel_cap,
                                                       to_pb_pin);
 
-    VTR_ASSERT(to_pin_physical_num != OPEN);
+    VTR_ASSERT(to_pin_physical_num != UNDEFINED);
 
     RRNodeId from_node = get_pin_rr_node_id(rr_spatial_look_up, physical_type, layer, x, y, from_pin_physical_num);
     VTR_ASSERT(from_node != RRNodeId::INVALID());
@@ -4556,7 +4557,7 @@ static t_cluster_pin_chain get_cluster_directly_connected_nodes(const std::vecto
     std::unordered_set<int> cluster_pins_set(cluster_pins.begin(), cluster_pins.end()); // Faster for search
 
     VTR_ASSERT(is_flat);
-    std::vector<int> pin_index_vec(get_tile_total_num_pin(physical_type), OPEN);
+    std::vector<int> pin_index_vec(get_tile_total_num_pin(physical_type), UNDEFINED);
 
     std::vector<std::vector<t_pin_chain_node>> chains;
     for (auto pin_physical_num : cluster_pins) {
@@ -4565,7 +4566,7 @@ static t_cluster_pin_chain get_cluster_directly_connected_nodes(const std::vecto
                                                        physical_type,
                                                        logical_block,
                                                        pin_physical_num);
-        VTR_ASSERT(pin_type != OPEN);
+        VTR_ASSERT(pin_type != e_pin_type::OPEN);
         // Continue if the fan-out or fan-in of pin_physical_num is not equal to one or pin is already assigned to a chain.
         if (pin_index_vec[pin_physical_num] >= 0 || conn_sink_pins.size() != 1) {
             continue;
@@ -4653,7 +4654,7 @@ static bool is_node_chain_sorted(t_physical_tile_type_ptr physical_type,
             if (pin_index_vec[curr_pin_num] != chain_idx) {
                 return false;
             }
-            if (nxt_idx == OPEN) {
+            if (nxt_idx == UNDEFINED) {
                 continue;
             }
             auto conn_pin_vec = get_sink_pins_in_cluster(pins_in_cluster, physical_type, logical_block, curr_node.pin_physical_num);
@@ -4676,7 +4677,7 @@ static std::vector<int> get_node_chain_sinks(const std::vector<std::vector<t_pin
 
         bool sink_node_found = false;
         for (int node_idx = 0; node_idx < num_nodes; node_idx++) {
-            if (chain[node_idx].nxt_node_idx == OPEN) {
+            if (chain[node_idx].nxt_node_idx == UNDEFINED) {
                 // Each chain should only contain ONE sink pin
                 VTR_ASSERT(!sink_node_found);
                 sink_node_found = true;
@@ -4726,15 +4727,15 @@ static std::vector<int> get_src_pins_in_cluster(const std::unordered_set<int>& p
 }
 
 static int get_chain_idx(const std::vector<int>& pin_idx_vec, const std::vector<int>& pin_chain, int new_idx) {
-    int chain_idx = OPEN;
+    int chain_idx = UNDEFINED;
     for (auto pin_num : pin_chain) {
         int pin_chain_num = pin_idx_vec[pin_num];
-        if (pin_chain_num != OPEN) {
+        if (pin_chain_num != UNDEFINED) {
             chain_idx = pin_chain_num;
             break;
         }
     }
-    if (chain_idx == OPEN) {
+    if (chain_idx == UNDEFINED) {
         chain_idx = new_idx;
     }
     return chain_idx;
@@ -4756,7 +4757,7 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
         int nxt_node_idx = 1;
         for (auto pin_num : pin_chain) {
             // Since we assume that none of the pins in the pin_chain has seen before
-            VTR_ASSERT(pin_index_vec[pin_num] == OPEN);
+            VTR_ASSERT(pin_index_vec[pin_num] == UNDEFINED);
             // Assign the pin its chain index
             pin_index_vec[pin_num] = chain_idx;
             new_pin_chain.emplace_back(pin_num, nxt_node_idx);
@@ -4764,7 +4765,7 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
         }
 
         // For the last pin in the chain, there is no next pin.
-        new_pin_chain[new_pin_chain.size() - 1].nxt_node_idx = OPEN;
+        new_pin_chain[new_pin_chain.size() - 1].nxt_node_idx = UNDEFINED;
 
         all_chains.push_back(new_pin_chain);
 
@@ -4780,7 +4781,7 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
         bool is_new_pin_added = false;
         bool found_pin_in_chain = false;
         for (auto pin_num : pin_chain) {
-            if (pin_index_vec[pin_num] == OPEN) {
+            if (pin_index_vec[pin_num] == UNDEFINED) {
                 pin_index_vec[pin_num] = chain_idx;
                 node_chain.emplace_back(pin_num, nxt_node_idx);
                 nxt_node_idx++;
@@ -4788,7 +4789,7 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
             } else {
                 found_pin_in_chain = true;
                 // pin_num is the pin_number of a pin which is the first pin in the chain that is added to all_chains
-                int first_pin_in_chain_idx = OPEN;
+                int first_pin_in_chain_idx = UNDEFINED;
                 for (int pin_idx = 0; pin_idx < pin_chain_init_size; pin_idx++) {
                     if (node_chain[pin_idx].pin_physical_num == pin_num) {
                         first_pin_in_chain_idx = pin_idx;
@@ -4796,7 +4797,7 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
                     }
                 }
                 // We assume that this pin is already added to all_chains
-                VTR_ASSERT(first_pin_in_chain_idx != OPEN);
+                VTR_ASSERT(first_pin_in_chain_idx != UNDEFINED);
                 // We assume than if this block is being run, at least one new pin should be added to the chain
                 VTR_ASSERT(is_new_pin_added);
 

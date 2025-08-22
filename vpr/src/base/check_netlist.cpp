@@ -186,11 +186,11 @@ static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup
 
         VTR_ASSERT(pb_route.count(i));
 
-        if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != OPEN) {
+        if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != UNDEFINED) {
             const t_pb_graph_pin* pb_gpin = pb_graph_pin_lookup.pb_gpin(type->index, i);
             if ((pb_gpin->port->type == IN_PORT && pb_gpin->is_root_block_pin())
                 || (pb_gpin->port->type == OUT_PORT && pb_gpin->parent_node->is_primitive())) {
-                if (pb_route[i].driver_pb_pin_id != OPEN) {
+                if (pb_route[i].driver_pb_pin_id != UNDEFINED) {
                     VTR_LOG_ERROR(
                         "Internal connectivity error in logic block #%d with output %s."
                         " Internal node %d driven when it shouldn't be driven \n",
@@ -198,7 +198,7 @@ static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup
                     error++;
                 }
             } else {
-                if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == OPEN) {
+                if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == UNDEFINED) {
                     VTR_LOG_ERROR(
                         "Internal connectivity error in logic block #%d with output %s."
                         " Internal node %d dangling\n",

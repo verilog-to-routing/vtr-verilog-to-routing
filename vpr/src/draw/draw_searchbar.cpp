@@ -1,4 +1,5 @@
 /*draw_searchbar.cpp contains all functions related to searchbar actions.*/
+#include "physical_types.h"
 #ifndef NO_GRAPHICS
 
 #include <cstdio>
@@ -95,7 +96,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
 
         auto class_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
-        if (class_type == DRIVER) { /* Fanout */
+        if (class_type == e_pin_type::DRIVER) { /* Fanout */
             if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
