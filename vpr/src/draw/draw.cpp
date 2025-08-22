@@ -1146,12 +1146,11 @@ static void run_graphics_commands(const std::string& commands) {
             draw_state->draw_nets = (e_draw_nets)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->draw_nets);
         } else if (cmd[0] == "set_cpd") {
-            VTR_ASSERT_MSG(cmd.size() == 4,
+            VTR_ASSERT_MSG(cmd.size() == 2,
                            "Expect show critical path delay (bool), show critical path flylines (bool), and show critical path routing (bool) after 'set_cpd'");
             draw_state->show_crit_path = true;
+            draw_state->show_crit_path_flylines = true;
             draw_state->show_crit_path_delays= (bool)vtr::atoi(cmd[1]);
-            draw_state->show_crit_path_flylines = (bool)vtr::atoi(cmd[2]);
-            draw_state->show_crit_path_routing = (bool)vtr::atoi(cmd[3]);
             VTR_LOG("%d\n", (int)draw_state->show_crit_path);
         } else if (cmd[0] == "set_routing_util") {
             VTR_ASSERT_MSG(cmd.size() == 2,

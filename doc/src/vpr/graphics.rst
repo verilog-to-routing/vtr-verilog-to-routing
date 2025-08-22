@@ -143,7 +143,7 @@ Multiple routing resources can be highlighted by pressing ctrl + mouse click.
 
     Visualizing Routing Architecture
 
-**Pin Colors**:
+**Node Colors**:
 
 +------------+--------+
 | Node Type  | Color  |
