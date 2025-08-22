@@ -36,7 +36,7 @@ void toggle_show_nets_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
 
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleNetType")), state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterNets")), state);
-    if (draw_state->is_flat) {
+    if (draw_state->is_flat || draw_state->draw_nets != DRAW_ROUTED_NETS) {
         gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), state);
     }
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("FanInFanOut")), state);
@@ -54,8 +54,18 @@ void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
     // assign corresponding enum value to draw_state->show_nets
     if (strcmp(setting, "Routing") == 0) {
         new_state = DRAW_ROUTED_NETS;
+
+        // Make sure that intra-cluster routed nets is never enabled when flat routing is off
+        if (!draw_state->is_flat) {
+            gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), false);
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(app->get_object("ToggleIntraClusterNets")), false);
+            draw_state->draw_intra_cluster_nets = false;
+        }
+
     } else { // Flylines - direct connections between sources and sinks
         new_state = DRAW_FLYLINES;
+
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), true);
     }
 
     draw_state->draw_nets = new_state;

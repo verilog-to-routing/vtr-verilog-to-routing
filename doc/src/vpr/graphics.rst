@@ -74,7 +74,7 @@ To visualize nets, first enable the **Display Nets** switch under the **Net** Ta
 The user can choose between drawing nets as **Flylines** (direct connections between sources and sinks) or as **Routing** (the actual routed path of the net).
 Only the **Flylines** option is available during placement, as routing has not yet been performed.
 
-The Inter-Cluster Nets and Intra-Cluster Nets options allow the user to choose whether to visualize nets between clbs or within a clb, respectively. The Intra-Cluster Nets option is currently only available when **flat routing is enabled**.
+The Inter-Cluster Nets and Intra-Cluster Nets options allow the user to choose whether to visualize nets between clbs or within a clb, respectively. The Intra-Cluster Routed Nets option is currently only available when **flat routing is enabled**.
 
 .. figure:: ../Images/Net_Settings.png
     :align: center 
