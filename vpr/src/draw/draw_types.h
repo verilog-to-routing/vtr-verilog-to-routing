@@ -32,13 +32,6 @@
 #include "ezgl/color.hpp"
 #include "ezgl/application.hpp"
 
-enum e_draw_crit_path {
-    DRAW_NO_CRIT_PATH,
-    DRAW_CRIT_PATH_FLYLINES,
-    DRAW_CRIT_PATH_FLYLINES_DELAYS,
-    DRAW_CRIT_PATH_ROUTING,
-    DRAW_CRIT_PATH_ROUTING_DELAYS
-};
 
 /// @brief Whether to draw routed nets or flylines (direct lines between sources and sinks).
 enum e_draw_nets {
@@ -196,7 +189,11 @@ struct t_draw_state {
     bool highlight_fan_in_fan_out = false;
 
     ///@brief Whether to show crit path
-    e_draw_crit_path show_crit_path = DRAW_NO_CRIT_PATH;
+    bool show_crit_path = false;
+
+    bool show_crit_path_flylines = false;
+    bool show_crit_path_delays = false;
+    bool show_crit_path_routing = false;
 
     ///@brief Controls if congestion is shown, when ROUTING is on screen.
     e_draw_congestion show_congestion = DRAW_NO_CONGEST;

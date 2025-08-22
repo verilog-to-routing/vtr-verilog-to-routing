@@ -252,9 +252,17 @@ void search_setup(ezgl::application* app) {
  * @param app ezgl application
  */
 void crit_path_button_setup(ezgl::application* app) {
-    GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
-    g_signal_connect(toggle_crit_path, "changed", G_CALLBACK(toggle_crit_path_cbk), app);
-    show_widget("ToggleCritPath", app);
+
+    t_draw_state* draw_state = get_draw_state_vars();
+
+     //Toggle Critical Path
+    GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleCritPath"));
+    g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_crit_path_cbk), app);
+
+    // Checkboxes for critical path
+    setup_checkbox_button("ToggleCritPathFlylines", app, &draw_state->show_crit_path_flylines);
+    setup_checkbox_button("ToggleCritPathRouting", app, &draw_state->show_crit_path_routing);
+    setup_checkbox_button("ToggleCritPathDelays", app, &draw_state->show_crit_path_delays);
 }
 
 /*
@@ -263,23 +271,10 @@ void crit_path_button_setup(ezgl::application* app) {
  * @param app ezgl app
  */
 void hide_crit_path_routing(ezgl::application* app) {
-    GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
     t_draw_state* draw_state = get_draw_state_vars();
+    bool state = draw_state->setup_timing_info && draw_state->pic_on_screen == ROUTING && draw_state->show_crit_path;
 
-    int crit_path_item_index = get_item_index_by_text(toggle_crit_path, "Crit Path Routing");
-
-    // Enable the option to show critical path only when timing info is available
-    if (!draw_state->setup_timing_info || draw_state->pic_on_screen != ROUTING) {
-        if (crit_path_item_index != -1) {
-            gtk_combo_box_text_remove(toggle_crit_path, crit_path_item_index);
-            gtk_combo_box_text_remove(toggle_crit_path, crit_path_item_index + 1);
-        }
-    } else {
-        if (crit_path_item_index == -1) {
-            gtk_combo_box_text_insert_text(toggle_crit_path, 3, "Crit Path Routing");
-            gtk_combo_box_text_insert_text(toggle_crit_path, 4, "Crit Path Routing Delays");
-        }
-    }
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathRouting")), state);
 }
 
 void hide_draw_routing(ezgl::application* app) {

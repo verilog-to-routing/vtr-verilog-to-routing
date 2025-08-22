@@ -92,9 +92,12 @@ void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app);
  * Draws different types of routing utils based on user input: . Changes value of draw_state->show_routing_util. */
 void toggle_router_util_cbk(GtkComboBoxText* self, ezgl::application* app);
 
-/* Callback function for main.ui created toggle_crit_path button in ui_setup.cpp.
- * Draws different types of critical path based on user input. Changes value of draw_state->show_crit_path. */
-void toggle_crit_path_cbk(GtkComboBoxText* self, ezgl::application* app);
+/** 
+ * @brief Master switch callback function for showing critical paths. 
+ * Changes value of draw_state->show_crit_path. 
+ */
+void toggle_crit_path_cbk(GtkSwitch*, gboolean state, ezgl::application* app);
+
 
 /* Callback function for main.ui created toggle_router_expansion_costs in ui_setup.cpp.
  * Draws different router expansion costs based on user input. Changes value of draw_state->show_router_expansion_cost. */
