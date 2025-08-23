@@ -36,7 +36,7 @@ void toggle_show_nets_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
 
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleNetType")), state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleInterClusterNets")), state);
-    if (draw_state->is_flat) {
+    if (draw_state->is_flat || draw_state->draw_nets != DRAW_ROUTED_NETS) {
         gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), state);
     }
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("FanInFanOut")), state);
@@ -54,8 +54,18 @@ void toggle_draw_nets_cbk(GtkComboBox* self, ezgl::application* app) {
     // assign corresponding enum value to draw_state->show_nets
     if (strcmp(setting, "Routing") == 0) {
         new_state = DRAW_ROUTED_NETS;
+
+        // Make sure that intra-cluster routed nets is never enabled when flat routing is off
+        if (!draw_state->is_flat) {
+            gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), false);
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(app->get_object("ToggleIntraClusterNets")), false);
+            draw_state->draw_intra_cluster_nets = false;
+        }
+
     } else { // Flylines - direct connections between sources and sinks
         new_state = DRAW_FLYLINES;
+
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleIntraClusterNets")), true);
     }
 
     draw_state->draw_nets = new_state;
@@ -293,29 +303,21 @@ void placement_macros_cbk(GtkComboBoxText* self, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-/**
- * @brief cbk fn for toggling critical path. 
- * alters draw_state->show_crit_path to reflect new state
- * 
- * @param self ptr to combo box w setting
- * @param app ezgl app
- */
-void toggle_crit_path_cbk(GtkComboBoxText* self, ezgl::application* app) {
-    t_draw_state* draw_state = get_draw_state_vars();
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(self);
-    if (strcmp(combo_box_content, "None") == 0) {
-        draw_state->show_crit_path = DRAW_NO_CRIT_PATH;
-    } else if (strcmp(combo_box_content, "Crit Path Flylines") == 0)
-        draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES;
-    else if (strcmp(combo_box_content, "Crit Path Flylines Delays") == 0)
-        draw_state->show_crit_path = DRAW_CRIT_PATH_FLYLINES_DELAYS;
-    else if (strcmp(combo_box_content, "Crit Path Routing") == 0)
-        draw_state->show_crit_path = DRAW_CRIT_PATH_ROUTING;
-    else
-        // Crit Path Routing Delays
-        draw_state->show_crit_path = DRAW_CRIT_PATH_ROUTING_DELAYS;
 
-    g_free(combo_box_content);
+void toggle_crit_path_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
+
+
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    draw_state->show_crit_path = state;
+
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathFlylines")), state);
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathDelays")), state);
+
+    if(draw_state->setup_timing_info && draw_state->pic_on_screen == ROUTING) {
+        gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathRouting")), state);
+    }
+
     app->refresh_drawing();
 }
 

@@ -271,6 +271,10 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     hide_crit_path_routing(app);
 
     hide_draw_routing(app);
+
+    app->update_message(draw_state->default_message);
+    app->refresh_drawing();
+    app->flush_drawing();
 }
 
 #endif //NO_GRAPHICS
@@ -283,16 +287,20 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
     t_draw_state* draw_state = get_draw_state_vars();
 
+    strcpy(draw_state->default_message, msg);
+
     if (!draw_state->show_graphics)
         ezgl::set_disable_event_loop(true);
     else
         ezgl::set_disable_event_loop(false);
 
-    ezgl::setup_callback_fn init_setup = nullptr;
+    bool state_change = false;
 
     /* If it's the type of picture displayed has changed, set up the proper  *
      * buttons.                                                              */
     if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
+        
+        state_change = true;
 
         if (draw_state->pic_on_screen == NO_PICTURE) {
             // Only add the canvas the first time we open graphics
@@ -302,10 +310,9 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
         draw_state->setup_timing_info = setup_timing_info;
         draw_state->pic_on_screen = pic_on_screen_val;
-        init_setup = on_stage_change_setup;
     }
 
-    bool state_change = (init_setup != nullptr);
+    
     bool should_pause = int(priority) >= draw_state->gr_automode;
 
     //If there was a state change, we must call ezgl::application::run() to update the buttons.
@@ -324,18 +331,12 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
             draw_state->forced_pause = false; //Reset pause flag
         }
 
-        application.run(init_setup, act_on_mouse_press, act_on_mouse_move,
+        application.run(on_stage_change_setup, act_on_mouse_press, act_on_mouse_move,
                         act_on_key_press);
 
         if (!draw_state->graphics_commands.empty()) {
             run_graphics_commands(draw_state->graphics_commands);
         }
-    }
-
-    if (draw_state->show_graphics) {
-        application.update_message(msg);
-        application.refresh_drawing();
-        application.flush_drawing();
     }
 
     if (draw_state->save_graphics) {
@@ -353,8 +354,10 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
 #ifndef NO_GRAPHICS
 void toggle_window_mode(GtkWidget* /*widget*/,
-                        ezgl::application* /*app*/) {
+                        ezgl::application* app) {
     window_mode = true;
+    app->update_message("Zoom to Selection: Click on two points to define a rectangle to zoom into.");
+    app->refresh_drawing();
 }
 
 #endif // NO_GRAPHICS
@@ -606,6 +609,8 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
                 //reset flags
                 window_mode = false;
                 window_point_1_collected = false;
+                app->update_message(get_draw_state_vars()->default_message);
+                app->refresh_drawing();
             }
             app->refresh_drawing();
         } else {
@@ -1142,8 +1147,10 @@ static void run_graphics_commands(const std::string& commands) {
             VTR_LOG("%d\n", (int)draw_state->draw_nets);
         } else if (cmd[0] == "set_cpd") {
             VTR_ASSERT_MSG(cmd.size() == 2,
-                           "Expect cpd draw state after 'set_cpd'");
-            draw_state->show_crit_path = (e_draw_crit_path)vtr::atoi(cmd[1]);
+                           "Expect show critical path delay (bool), show critical path flylines (bool), and show critical path routing (bool) after 'set_cpd'");
+            draw_state->show_crit_path = true;
+            draw_state->show_crit_path_flylines = true;
+            draw_state->show_crit_path_delays= (bool)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_crit_path);
         } else if (cmd[0] == "set_routing_util") {
             VTR_ASSERT_MSG(cmd.size() == 2,

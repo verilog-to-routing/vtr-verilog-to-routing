@@ -279,6 +279,8 @@ void deselect_all() {
         draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
         draw_state->draw_rr_node[inode].node_highlighted = false;
     }
+    draw_state->hit_nodes.clear();
+
     get_selected_sub_block_info().clear();
 }
 

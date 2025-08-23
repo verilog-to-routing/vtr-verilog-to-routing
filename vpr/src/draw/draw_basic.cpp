@@ -614,7 +614,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
 
-        if (!(draw_state->draw_rr_node[inode].node_highlighted && draw_state->highlight_fan_in_fan_out)) {
+        if (!(draw_state->draw_rr_node[inode].node_highlighted)) {
             // skip drawing INTER-cluster nets if the user has disabled them
             if (inter_cluster_node && !draw_state->draw_inter_cluster_nets) {
                 continue;
@@ -636,7 +636,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
         bool prev_inter_cluster_node = is_inter_cluster_node(rr_graph, prev_node);
 
-        if (!(draw_state->draw_rr_node[inode].node_highlighted && draw_state->highlight_fan_in_fan_out)) {
+        if (!(draw_state->draw_rr_node[inode].node_highlighted)) {
             // If this is an edge between two inter-cluster nodes, draw only if the user has enabled inter-cluster nets
             if ((inter_cluster_node && prev_inter_cluster_node) && !draw_state->draw_inter_cluster_nets) {
                 continue;
@@ -926,7 +926,7 @@ void draw_crit_path(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     const TimingContext& timing_ctx = g_vpr_ctx.timing();
 
-    if (draw_state->show_crit_path == DRAW_NO_CRIT_PATH) {
+    if (!draw_state->show_crit_path) {
         return;
     }
 
@@ -963,26 +963,7 @@ void draw_crit_path(ezgl::renderer* g) {
 
             t_draw_layer_display flyline_visibility = get_element_visibility_and_transparency(src_block_layer, sink_block_layer);
 
-            if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES
-                || draw_state->show_crit_path
-                       == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
-                // FLylines for critical path are drawn based on the layer visibility of the source and sink
-                if (flyline_visibility.visible) {
-                    g->set_color(color, flyline_visibility.alpha);
-                    g->set_line_dash(ezgl::line_dash::none);
-                    g->set_line_width(4);
-                    draw_flyline_timing_edge(tnode_draw_coord(prev_node),
-                                             tnode_draw_coord(node), delay, g);
-                    g->set_line_width(0);
-                }
-            } else {
-                VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
-
-                // Draws critical path shown by both flylines and routed net connections.
-
-                //Draw the routed version of the timing edge
-                draw_routed_timing_edge_connection(prev_node, node, color, g);
-
+            if (draw_state->show_crit_path_flylines) {
                 // FLylines for critical path are drawn based on the layer visibility of the source and sink
                 if (flyline_visibility.visible) {
                     g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
@@ -995,6 +976,11 @@ void draw_crit_path(ezgl::renderer* g) {
                     g->set_line_dash(ezgl::line_dash::none);
                     g->set_line_width(0);
                 }
+            } 
+            
+            if(draw_state->show_crit_path_routing) {
+                //Draw the routed version of the timing edge
+                draw_routed_timing_edge_connection(prev_node, node, color, g);
             }
         }
         prev_node = node;
@@ -1049,22 +1035,17 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 
                 if (prev_node) {
                     float delay = arr_time - prev_arr_time;
-                    if ((draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES) || (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS)) {
+                    if (draw_state->show_crit_path_flylines) {
                         if (draw_current_element) {
-                            draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::none, /*line_width*/ 4, delay, prev_node, node);
-                        } else if (draw_crit_path_contour) {
-                            draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/ true);
-                        }
-                    } else {
-                        VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
-
-                        if (draw_current_element) {
-                            //Draw the routed version of the timing edge
-                            draw_routed_timing_edge_connection(prev_node, node, color, g);
-
                             draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/ 3, delay, prev_node, node);
                         } else if (draw_crit_path_contour) {
                             draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/ true);
+                        }
+                    }
+                    if (draw_state->show_crit_path_routing) {
+                        if (draw_current_element) {
+                            //Draw the routed version of the timing edge
+                            draw_routed_timing_edge_connection(prev_node, node, color, g);
                         }
                     }
                 }
@@ -1109,11 +1090,8 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
     draw_triangle_along_line(g, start, end, 0.95, 40 * DEFAULT_ARROW_SIZE);
     draw_triangle_along_line(g, start, end, 0.05, 40 * DEFAULT_ARROW_SIZE);
 
-    bool draw_delays = (get_draw_state_vars()->show_crit_path
-                            == DRAW_CRIT_PATH_FLYLINES_DELAYS
-                        || get_draw_state_vars()->show_crit_path
-                               == DRAW_CRIT_PATH_ROUTING_DELAYS)
-                       && !skip_draw_delays;
+    bool draw_delays = get_draw_state_vars()->show_crit_path_delays && !skip_draw_delays;
+
     if (draw_delays) {
         //Determine the strict bounding box based on the lines start/end
         float min_x = std::min(start.x, end.x);

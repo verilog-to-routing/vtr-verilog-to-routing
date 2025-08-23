@@ -213,7 +213,7 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     VTR_LOG("\n");
 
     sprintf(msg_.data(),
-            "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
+            "Initial Placement:  Cost=%g,  BB Cost=%g,  TD Cost=%g, Channel Factor=%d",
             costs.cost, costs.bb_cost, costs.timing_cost, placer_opts.place_chan_width);
 
     // Draw the initial placement
@@ -266,7 +266,7 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     }
 
     sprintf(msg_.data(),
-            "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
+            "Placement Completed: Cost=%g,  bb_cost=%g, td_cost=%g, Channel Factor=%d",
             placer_.costs_.cost, placer_.costs_.bb_cost, placer_.costs_.timing_cost, placer_.placer_opts_.place_chan_width);
     VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n", placer_.costs_.cost,
             placer_.costs_.bb_cost, placer_.costs_.timing_cost);
