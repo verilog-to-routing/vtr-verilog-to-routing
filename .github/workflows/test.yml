@@ -47,7 +47,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -88,7 +88,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -194,7 +194,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v4
@@ -237,7 +237,11 @@ jobs:
       id: cpu-cores
 
     - name: 'Install dependencies'
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
+
+    - name: 'Install Python Requirements'
+      run: |
+        pip install -r requirements.txt
 
     - name: 'ccache'
       uses: hendrikmuhs/ccache-action@v1.2
@@ -320,19 +324,23 @@ jobs:
         include: [
           {
             name: 'Basic',
-            suite: 'vtr_reg_basic'
+            suite: 'vtr_reg_basic',
+            extra_pkgs: ''
           },
           {
             name: 'Strong',
-            suite: 'vtr_reg_strong'
+            suite: 'vtr_reg_strong',
+            extra_pkgs: ''
           },
           {
             name: 'SystemVerilog',
-            suite: 'vtr_reg_system_verilog'
+            suite: 'vtr_reg_system_verilog',
+            extra_pkgs: ''
           },
           {
             name: 'Valgrind Memory',
-            suite: 'vtr_reg_valgrind_small'
+            suite: 'vtr_reg_valgrind_small',
+            extra_pkgs: 'valgrind'
           }
         ]
     name: 'R: ${{ matrix.name }}'
@@ -351,7 +359,17 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
+
+    - name: Install Extra Dependencies
+      if: ${{ matrix.extra_pkgs != '' }}
+      run: |
+        sudo apt update
+        sudo apt install -y ${{ matrix.extra_pkgs }}
+
+    - name: Install Python Requirements
+      run: |
+        pip install -r requirements.txt
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v4
@@ -398,15 +416,18 @@ jobs:
         include: [
           {
             name: 'Basic_odin',
-            suite: 'vtr_reg_basic_odin'
+            suite: 'vtr_reg_basic_odin',
+            extra_pkgs: ''
           },
           {
             name: 'Strong_odin',
-            suite: 'vtr_reg_strong_odin'
+            suite: 'vtr_reg_strong_odin',
+            extra_pkgs: ''
           },
           {
             name: 'Valgrind Memory Odin',
-            suite: 'vtr_reg_valgrind_small_odin'
+            suite: 'vtr_reg_valgrind_small_odin',
+            extra_pkgs: 'valgrind'
           }
         ]
     name: 'R: ${{ matrix.name }}'
@@ -425,7 +446,17 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
+
+    - name: Install Extra Dependencies
+      if: ${{ matrix.extra_pkgs != '' }}
+      run: |
+        sudo apt update
+        sudo apt install -y ${{ matrix.extra_pkgs }}
+
+    - name: Install Python Requirements
+      run: |
+        pip install -r requirements.txt
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v4
@@ -493,7 +524,11 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
+
+    - name: Install Python Requirements
+      run: |
+        pip install -r requirements.txt
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -536,7 +571,11 @@ jobs:
         id: cpu-cores
 
       - name: Install dependencies
-        run: ./.github/scripts/install_dependencies.sh
+        run: ./install_apt_packages.sh
+
+      - name: Install Python Requirements
+        run: |
+          pip install -r requirements.txt
 
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
@@ -571,7 +610,11 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
+
+    - name: Install Python Requirements
+      run: |
+        pip install -r requirements.txt
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v4
@@ -607,7 +650,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v4
@@ -652,7 +695,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -683,7 +726,7 @@ jobs:
       id: cpu-cores
 
     - name: Install Dependencies
-      run: ./.github/scripts/install_jammy_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
