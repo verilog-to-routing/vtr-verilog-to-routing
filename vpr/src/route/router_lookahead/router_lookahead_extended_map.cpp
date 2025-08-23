@@ -602,9 +602,9 @@ void ExtendedMapLookahead::read(const std::string& file) {
 #ifndef VTR_ENABLE_CAPNPROTO
     cost_map_.read(file);
 
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
 
-    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
+    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_);
 #else  // VTR_ENABLE_CAPNPROTO
     (void)file;
     VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read not implemented");
