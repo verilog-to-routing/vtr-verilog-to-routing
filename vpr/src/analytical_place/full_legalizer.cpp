@@ -578,6 +578,8 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                     cluster_legalizer.destroy_cluster(new_cluster_id);
                     new_cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types); 
                     for (PackMoleculeId mol_id: cluster_molecules) {
+                        if (mol_id == seed_mol)
+                            continue;
                         if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id))
                             continue;
                         cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id);

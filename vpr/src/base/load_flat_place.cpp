@@ -40,7 +40,7 @@ static void print_flat_placement_file_header(FILE* fp) {
             vtr::BUILD_TIMESTAMP);
     fprintf(fp, "#\n");
     fprintf(fp, "# This file prints the following information for each atom in the netlist:\n");
-    fprintf(fp, "# <atom_name> <x> <y> <layer> <atom_sub_tile> <atom_site_idx> #<clb_blk_id> <atom_pb_type>\n");
+    fprintf(fp, "# <atom_name> <x> <y> <layer> <atom_sub_tile> #<clb_blk_id> <atom_pb_type>\n");
     fprintf(fp, "\n");
 }
 
@@ -75,11 +75,10 @@ static void print_flat_cluster(FILE* fp,
         t_pb_graph_node* atom_pbgn = atom_ctx.lookup().atom_pb_bimap().atom_pb(atom)->pb_graph_node;
 
         // Print the flat placement information for this atom.
-        fprintf(fp, "%s  %d %d %d %d %d #%zu %s\n",
+        fprintf(fp, "%s  %d %d %d %d #%zu %s\n",
                 atom_ctx.netlist().block_name(atom).c_str(),
                 blk_loc.x, blk_loc.y, blk_loc.layer,
                 blk_loc.sub_tile,
-                atom_pbgn->flat_site_index,
                 static_cast<size_t>(blk_id),
                 atom_pbgn->pb_type->name);
     }
@@ -177,10 +176,6 @@ FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_pa
 
         // Parse the sub-tile as an integer.
         flat_placement_info.blk_sub_tile[atom_blk_id] = vtr::atoi(tokens[4]);
-
-        // If a site index is given, parse the site index as an integer.
-        if (tokens.size() >= 6 && tokens[5][0] != '#')
-            flat_placement_info.blk_site_idx[atom_blk_id] = vtr::atoi(tokens[5]);
 
         // Ignore any further tokens.
 
