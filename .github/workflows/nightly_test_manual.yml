@@ -144,6 +144,7 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: 3.12.3
+
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
@@ -153,7 +154,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
