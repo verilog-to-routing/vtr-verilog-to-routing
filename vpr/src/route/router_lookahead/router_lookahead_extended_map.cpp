@@ -419,9 +419,9 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
 
 // compute the cost maps for lookahead
 void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
 
-    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
+    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_);
 
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
 
@@ -602,9 +602,9 @@ void ExtendedMapLookahead::read(const std::string& file) {
 #ifndef VTR_ENABLE_CAPNPROTO
     cost_map_.read(file);
 
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
 
-    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead();
+    this->chan_ipins_delays = util::compute_router_chan_ipin_lookahead(route_verbosity_);
 #else  // VTR_ENABLE_CAPNPROTO
     (void)file;
     VPR_THROW(VPR_ERROR_ROUTE, "MapLookahead::read not implemented");

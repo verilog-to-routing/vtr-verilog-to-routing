@@ -95,7 +95,8 @@ static void do_one_route(const Netlist<>& net_list,
                                                   router_opts.write_router_lookahead,
                                                   router_opts.read_router_lookahead,
                                                   segment_inf,
-                                                  is_flat);
+                                                  is_flat,
+                                                  router_opts.route_verbosity);
 
     SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
@@ -105,7 +106,8 @@ static void do_one_route(const Netlist<>& net_list,
             device_ctx.rr_rc_data,
             device_ctx.rr_graph.rr_switch(),
             g_vpr_ctx.mutable_routing().rr_node_route_inf,
-            is_flat);
+            is_flat,
+            router_opts.route_verbosity);
     enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
     bool found_path;
     RTExploredNode cheapest;
@@ -160,7 +162,8 @@ static void profile_source(const Netlist<>& net_list,
                                                   router_opts.write_router_lookahead,
                                                   router_opts.read_router_lookahead,
                                                   segment_inf,
-                                                  is_flat);
+                                                  is_flat,
+                                                  router_opts.route_verbosity);
     RouterDelayProfiler profiler(net_list, router_lookahead.get(), is_flat);
 
     int start_x = 0;

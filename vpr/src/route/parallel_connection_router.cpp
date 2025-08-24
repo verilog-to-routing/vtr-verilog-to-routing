@@ -455,6 +455,7 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_hea
                                                                            const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
                                                                            vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
                                                                            bool is_flat,
+                                                                           int route_verbosity,
                                                                            int multi_queue_num_threads,
                                                                            int multi_queue_num_queues,
                                                                            bool multi_queue_direct_draining) {
@@ -469,6 +470,7 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_hea
                 rr_switch_inf,
                 rr_node_route_inf,
                 is_flat,
+                route_verbosity,
                 multi_queue_num_threads,
                 multi_queue_num_queues,
                 multi_queue_direct_draining);
@@ -482,6 +484,7 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_hea
                 rr_switch_inf,
                 rr_node_route_inf,
                 is_flat,
+                route_verbosity,
                 multi_queue_num_threads,
                 multi_queue_num_queues,
                 multi_queue_direct_draining);

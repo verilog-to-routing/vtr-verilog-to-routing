@@ -278,7 +278,8 @@ static void profile_lookahead_overestimation(std::ofstream& os,
     std::unique_ptr<RouterLookahead> temp_router_lookahead = make_router_lookahead(temp_det_routing_arch, e_router_lookahead::NO_OP,
                                                                                    /*write_lookahead=*/"", /*read_lookahead=*/"",
                                                                                    /*segment_inf=*/{},
-                                                                                   false /*is_flat*/);
+                                                                                   false /*is_flat*/,
+                                                                                   1 /*route_verbosity*/);
 
     // Create the router to perform the all-destination dijkstra search,
     // TODO: The parallel connection router would be ideal for this use case.
@@ -291,7 +292,8 @@ static void profile_lookahead_overestimation(std::ofstream& os,
         device_ctx.rr_rc_data,
         rr_graph.rr_switch(),
         route_ctx.rr_node_route_inf,
-        false /*is_flat*/);
+        false /*is_flat*/,
+        router_opts.route_verbosity);
 
     // Collect the sink RR nodes. Only sink RR nodes can be the target of the
     // heuristic, so they are the only ones that we care about.

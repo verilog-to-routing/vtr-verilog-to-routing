@@ -865,7 +865,8 @@ void vpr_place(const Netlist<>& net_list,
             vpr_setup.RouterOpts.write_router_lookahead,
             vpr_setup.RouterOpts.read_router_lookahead,
             vpr_setup.Segments,
-            is_flat);
+            is_flat,
+            vpr_setup.RouterOpts.route_verbosity);
     }
 
     // Read in the flat placement if a flat placement file is provided and it
@@ -1082,7 +1083,8 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
         vpr_setup.RouterOpts.write_router_lookahead,
         vpr_setup.RouterOpts.read_router_lookahead,
         vpr_setup.Segments,
-        is_flat);
+        is_flat,
+        vpr_setup.RouterOpts.route_verbosity);
 
     vtr::ScopedStartFinishTimer timer("Routing");
 

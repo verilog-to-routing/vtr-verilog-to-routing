@@ -128,7 +128,8 @@ bool route(const Netlist<>& net_list,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
                                                                           segment_inf,
-                                                                          is_flat);
+                                                                          is_flat,
+                                                                          router_opts.route_verbosity);
 
     if (is_flat) {
         // If is_flat is true, the router lookahead maps related to intra-cluster resources should be initialized since
@@ -148,7 +149,8 @@ bool route(const Netlist<>& net_list,
                                                        router_opts.write_router_lookahead,
                                                        router_opts.read_router_lookahead,
                                                        segment_inf,
-                                                       is_flat);
+                                                       is_flat,
+                                                       router_opts.route_verbosity);
         if (!router_opts.write_intra_cluster_router_lookahead.empty()) {
             router_lookahead->write_intra_cluster(router_opts.write_intra_cluster_router_lookahead);
         }
@@ -227,7 +229,8 @@ bool route(const Netlist<>& net_list,
         budgeting_inf,
         routing_predictor,
         choking_spots,
-        is_flat);
+        is_flat,
+        router_opts.route_verbosity);
 
     RouterStats router_stats;
     float prev_iter_cumm_time = 0;
