@@ -87,8 +87,13 @@ jobs:
       uses: SimenB/github-actions-cpu-cores@v2
       id: cpu-cores
 
+    # NOTE: BlifExplorer requires Qt5 to build. We do not currently actually
+    #       run the executable as part of the CI, but we at least want to test
+    #       that it can be compiled.
     - name: Install dependencies
-      run: ./install_apt_packages.sh
+      run: |
+        ./install_apt_packages.sh
+        sudo apt-get install qtbase5-dev
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
