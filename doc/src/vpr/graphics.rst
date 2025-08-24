@@ -81,7 +81,7 @@ The Inter-Cluster Nets and Intra-Cluster Nets options allow the user to choose w
 
     Net Tab
 
-If routing is shown, clicking on a pin or channel wire whill highlight the whole net in magenta. 
+If routing is shown, clicking on a pin or channel wire will highlight the whole net in magenta.
 Multiple nets can be highlighted by pressing ctrl + mouse click.
 
 .. figure:: ../Images/show_nets.gif
