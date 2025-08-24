@@ -63,7 +63,7 @@ void check_netlist(int verbosity) {
     }
     free_hash_table(net_hash_table);
     if (global_to_non_global_connection_count > 0) {
-        VTR_LOG_WARN("Netlist contains %d global net to non-global architecture pin connections\n", global_to_non_global_connection_count);
+        VTR_LOG("Netlist contains %d global net to non-global architecture pin connections\n", global_to_non_global_connection_count);
     }
 
     auto& device_ctx = g_vpr_ctx.device();

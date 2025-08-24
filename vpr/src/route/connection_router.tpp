@@ -83,7 +83,7 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     if (std::isinf(rr_node_route_inf_[sink_node].path_cost)) {
         //Found no path, that may be due to an unlucky choice of existing route tree sub-set,
         //try again with the full route tree to be sure this is not an artifact of high-fanout routing
-        VTR_LOGV_WARN(route_verbosity_ > 1, "No routing path found in high-fanout mode for net %zu connection (to sink_rr %d), retrying with full route tree\n", size_t(conn_params.net_id_), sink_node);
+        VTR_LOGV(route_verbosity_ > 1, "No routing path found in high-fanout mode for net %zu connection (to sink_rr %d), retrying with full route tree\n", size_t(conn_params.net_id_), sink_node);
 
         //Reset any previously recorded node costs so timing_driven_route_connection()
         //starts over from scratch.
@@ -154,7 +154,7 @@ bool ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
         }
 
         // Otherwise, leave unrouted and bubble up a signal to retry this net with a full-device bounding box
-        VTR_LOGV_WARN(route_verbosity_ > 1, "No routing path for connection to sink_rr %d, leaving unrouted to retry later\n", sink_node);
+        VTR_LOGV(route_verbosity_ > 1, "No routing path for connection to sink_rr %d, leaving unrouted to retry later\n", sink_node);
         return true;
     }
 
