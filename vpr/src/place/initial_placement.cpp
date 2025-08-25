@@ -738,35 +738,39 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     const int num_layers = device_grid.get_num_layers();
-    // This method does not support 3D FPGAs yet. The search performed will only
-    // traverse the same layer as the src_loc.
-    VTR_ASSERT(num_layers == 1);
-    constexpr int layer = 0;
-
-    // Get the closest (approximately) compressed location to the src location.
-    // This does not need to be perfect (in fact I do not think it is), but the
-    // closer it is, the faster the BFS will find the best solution.
-    t_physical_tile_loc src_grid_loc(src_flat_loc.x, src_flat_loc.y, src_flat_loc.layer);
-    const t_physical_tile_loc compressed_src_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx(src_grid_loc);
 
     // Weighted-BFS search the compressed grid for an empty compatible subtile.
-    size_t num_rows = compressed_block_grid.get_num_rows(layer);
-    size_t num_cols = compressed_block_grid.get_num_columns(layer);
-    vtr::NdMatrix<bool, 2> visited({num_cols, num_rows}, false);
+    std::vector<vtr::NdMatrix<bool, 2>> per_layer_visited(num_layers);
+    for (int layer = 0; layer < num_layers; layer++) {
+        size_t num_rows = compressed_block_grid.get_num_rows(layer);
+        size_t num_cols = compressed_block_grid.get_num_columns(layer);
+        per_layer_visited[layer].resize({num_cols, num_rows}, false);
+    }
     float best_dist = std::numeric_limits<float>::max();
     t_pl_loc best_loc(OPEN, OPEN, OPEN, OPEN);
 
+    // Get the closest (approximately) compressed location to the src location
+    // on each layer and enqueue them. We only want to enqueue locations onto
+    // layers that can feasibly implement this block.
+    // This does not need to be perfect (in fact I do not think it is), but the
+    // closer it is, the faster the BFS will find the best solution.
     std::queue<t_physical_tile_loc> loc_queue;
-    loc_queue.push(compressed_src_loc);
+    for (int layer_num : compressed_block_grid.get_layer_nums()) {
+        t_physical_tile_loc src_grid_loc(src_flat_loc.x, src_flat_loc.y, layer_num);
+        const t_physical_tile_loc compressed_src_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx(src_grid_loc);
+        if (compressed_src_loc.x != OPEN && compressed_src_loc.y != OPEN)
+            loc_queue.push(compressed_src_loc);
+    }
+
     while (!loc_queue.empty()) {
         // Pop the top element off the queue.
         t_physical_tile_loc loc = loc_queue.front();
         loc_queue.pop();
 
         // If this location has already been visited, skip it.
-        if (visited[loc.x][loc.y])
+        if (per_layer_visited[loc.layer_num][loc.x][loc.y])
             continue;
-        visited[loc.x][loc.y] = true;
+        per_layer_visited[loc.layer_num][loc.x][loc.y] = true;
 
         // Get the minimum distance the cluster would need to move (relative to
         // its global placement solution) to be within the tile at the given
@@ -795,7 +799,7 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
         // (i.e. no tile exists there). This is fine, we just need to check for
         // them to ensure we never try to put a cluster there.
         bool is_valid_compressed_loc = false;
-        const auto& compressed_col_blk_map = compressed_block_grid.get_column_block_map(loc.x, layer);
+        const auto& compressed_col_blk_map = compressed_block_grid.get_column_block_map(loc.x, loc.layer_num);
         if (compressed_col_blk_map.count(loc.y) != 0)
             is_valid_compressed_loc = true;
 
@@ -837,6 +841,8 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
         // been visited. The code above checks for these cases to prevent extra
         // work and invalid lookups. This must be done this way to ensure that
         // the closest location can be found efficiently.
+        size_t num_rows = compressed_block_grid.get_num_rows(loc.layer_num);
+        size_t num_cols = compressed_block_grid.get_num_columns(loc.layer_num);
         if (loc.x > 0) {
             t_physical_tile_loc new_comp_loc = t_physical_tile_loc(loc.x - 1,
                                                                    loc.y,
