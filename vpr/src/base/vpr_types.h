@@ -94,6 +94,7 @@ constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
 #define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
 
+// Used for illegal/undefined values of indices, where legal values should be greater or equal to zero
 constexpr int UNDEFINED = -1;
 
 ///@brief Router lookahead types.
