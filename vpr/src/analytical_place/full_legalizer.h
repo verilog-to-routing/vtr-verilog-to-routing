@@ -147,15 +147,18 @@ class FlatRecon : public FullLegalizer {
   private:
     /// @brief Mapping from subtile location to legalization cluster id to keep
     ///        track of clusters created.
-    /// TODO: It might make sense to store this as a 4D NDMatrix of arrays where we can
+    /// TODO: It might make sense to store this as a 3D NDMatrix of arrays where we can
     ///       index into the [layer][x][y][subtile] and get the cluster ID at that location.
     ///       It will be faster than using an unordered map and likely more space efficient.
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
 
     /// @brief Mapping from a molecule id to its desired physical tile location.
-    std::unordered_map<PackMoleculeId, t_physical_tile_loc> mol_desired_physical_tile_loc;
+    vtr::vector<PackMoleculeId, t_physical_tile_loc> mol_desired_physical_tile_loc;
 
-    /// @brief Mappign from legalization cluster ids to subtile locations.
+    /// @brief Mapping from legalization cluster ids to subtile locations. Using
+    ///        unordered_map instead of vtr::vector since LegalizationClusterIds
+    ///        can have significant gaps as you create a new ID for each cluster
+    ///        you attempt to create.
     std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_locs;
 
     /// @brief 3D NDMatrix of legalization cluster ids. Stores the cluster ids at
@@ -168,7 +171,7 @@ class FlatRecon : public FullLegalizer {
      *        It first sorts by being in a long carry chain, then by external input
      *        pin count.
      * @return Mapping from tile location to sorted vector of molecules that
-     *         wants to be in that tile.
+     *         want to be in that tile.
      */
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>
     sort_and_group_blocks_by_tile(const PartialPlacement& p_placement);
@@ -178,23 +181,37 @@ class FlatRecon : public FullLegalizer {
      *        given vector of molecules.
      *
      * Iterates over each subtile in the same order each time, hence trying to
-     * create least amount of clusters in that tile. It also checks the compatibility
+     * create the fewest clusters in that tile. It also checks the compatibility
      * of the molecules with the tile before creating a cluster. Stores the cluster
      * ids' to check their legality or clean afterwards if needed.
+     *
+     *  @param tile_loc                        The physical tile location that clusters aimed to be created.
+     *  @param tile_type                       The physical type of the tile that clusters aimed to be created.
+     *  @param tile_molecules                  A vector of molecule ids aimed to be placed in that tile.
+     *  @param cluster_legalizer               The cluster legalizer which is used to create and grow clusters.
+     *  @param primitive_candidate_block_types A list of candidate block types for the given molecule to create a cluster.
+     *  @return The set of LegalizationClusterIds created in that tile.
      */
-    void cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
-                                   const t_physical_tile_type_ptr& tile_type,
-                                   const std::vector<PackMoleculeId>& tile_molecules,
-                                   ClusterLegalizer& cluster_legalizer,
-                                   const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                   std::unordered_set<LegalizationClusterId>& created_clusters);
+    std::unordered_set<LegalizationClusterId>
+    cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
+                              const t_physical_tile_type_ptr& tile_type,
+                              const std::vector<PackMoleculeId>& tile_molecules,
+                              ClusterLegalizer& cluster_legalizer,
+                              const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
     /**
      * @brief Helper method to perform self clustering pass.
      *
      * Iterates over each tile and first tries to create least amount of
-     * cluster in that tile with SKIP_INTRA_LB_ROUTE strategy. For the illegal
-     * cluster molecules, tries with FULL strategy once before going to next tile.
+     * cluster in that tile with SKIP_INTRA_LB_ROUTE strategy. If the resulting
+     * cluster is found to be unroutable when fully checked, retry adding the
+     * molecules with the FULL strategy before going to next tile.
+     *
+     *  @param cluster_legalizer               The cluster legalizer which is used to create and grow clusters. The result of
+     *                                         this pass is an updated cluster_legalizer.
+     *  @param device_grid                     The device grid used to get physical tile types.
+     *  @param primitive_candidate_block_types A list of candidate block types for the given molecule to create a cluster.
+     *  @param tile_blocks                     The list of molecules to pack in each non-empty tile.
      */
     void self_clustering(ClusterLegalizer& cluster_legalizer,
                          const DeviceGrid& device_grid,
@@ -208,10 +225,13 @@ class FlatRecon : public FullLegalizer {
      * Neighbor tiles are processed in order of increasing average molecule density.
      * The molecule is then added to an existing cluster if compatible. No new
      * clusters are created in this pass.
+     *
+     *  @return The set of molecule ids clustered in that pass.
      */
-    void neighbor_clustering(ClusterLegalizer& cluster_legalizer,
-                             const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                             std::unordered_set<PackMoleculeId>& mols_clustered);
+    std::unordered_set<PackMoleculeId>
+    neighbor_clustering(ClusterLegalizer& cluster_legalizer,
+                        const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+
     /**
      * @brief Helper method to perform orphan window clustering.
      *
@@ -221,11 +241,17 @@ class FlatRecon : public FullLegalizer {
      * neighbors are added to the seed’s cluster in order of proximity. After
      * reaching the search radius, the process repeats with new seeds until all
      * orphan molecules are clustered.
+     *
+     *  @param cluster_legalizer               The cluster legalizer which is used to create and grow clusters.
+     *  @param primitive_candidate_block_types A list of candidate block types for the given molecule to create a cluster.
+     *  @param search_radius                   The search radius that determines the allowed max distance from the seed
+     *                                         molecule to candidate molecules.
+     *  @return The set of LegalizationClusterIds created in that pass.
      */
-    void orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
-                                  const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                  std::unordered_set<LegalizationClusterId>& created_clusters,
-                                  int search_radius);
+    std::unordered_set<LegalizationClusterId>
+    orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
+                             const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                             int search_radius);
     /**
      * @brief Helper method to report the clustering summary.
      */
@@ -234,20 +260,20 @@ class FlatRecon : public FullLegalizer {
                                    std::unordered_set<LegalizationClusterId>& orphan_window_clusters);
 
     /**
-     * @brief Helper method to create clusters with reconstruction and neighbor pass.
+     * @brief Helper method to create clusters with self, neighbor, and orphan window clustering.
      *
-     * Each cluster is placed by the initial placer at the grid location nearest
-     * to the centroid of its atoms.
+     *  @param cluster_legalizer The cluster legalizer which is used to create and grow clusters. Keeps track of
+     *                           the clusters created and molecules clustered while checking cluster legality.
+     *  @param p_placement       The partial placement used to guide where each molecule should be placed.
      */
     void create_clusters(ClusterLegalizer& cluster_legalizer,
-                                     const PartialPlacement& p_placement);
+                         const PartialPlacement& p_placement);
 
     /**
      * @brief Helper method to perform initial placement on clusters created.
      *
-     * It uses the initial placement in the AP flow. It is guided to place the
-     * clusters according to where its atoms are desired to be placed and can
-     * also be used with GP output.
+     * Each cluster is placed by the initial placer at the grid location nearest
+     * to the centroid of its atoms.
      */
     void place_clusters(const PartialPlacement& p_placement);
 };

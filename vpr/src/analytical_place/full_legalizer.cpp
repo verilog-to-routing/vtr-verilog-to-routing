@@ -367,6 +367,7 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     // Group the molecules by root tile. Any non-zero offset gets
     // pulled back to its root.
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
+    mol_desired_physical_tile_loc.reserve(ap_netlist_.blocks().size());
     for (const auto& [mol_id, ext_pins, is_long_chain, tile_loc] : sorted_blocks) {
         int width_offset = device_grid_.get_width_offset(tile_loc);
         int height_offset = device_grid_.get_height_offset(tile_loc);
@@ -380,12 +381,13 @@ FlatRecon::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     return tile_blocks;
 }
 
-void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
-                                          const t_physical_tile_type_ptr& tile_type,
-                                          const std::vector<PackMoleculeId>& tile_molecules,
-                                          ClusterLegalizer& cluster_legalizer,
-                                          const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                          std::unordered_set<LegalizationClusterId>& created_clusters) {
+std::unordered_set<LegalizationClusterId>
+FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
+                                     const t_physical_tile_type_ptr& tile_type,
+                                     const std::vector<PackMoleculeId>& tile_molecules,
+                                     ClusterLegalizer& cluster_legalizer,
+                                     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+    std::unordered_set<LegalizationClusterId> created_clusters;
     for (PackMoleculeId mol_id : tile_molecules) {
         // Get the block type for compatibility check.
         t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
@@ -415,6 +417,7 @@ void FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
             }
         }
     }
+    return created_clusters;
 }
 
 void FlatRecon::self_clustering(ClusterLegalizer& cluster_legalizer,
@@ -428,15 +431,12 @@ void FlatRecon::self_clustering(ClusterLegalizer& cluster_legalizer,
 
         // Try to create clusters with fast strategy checking the compatibility
         // with tile and its capacity. Store the cluster ids to check their legality.
-        std::unordered_set<LegalizationClusterId> created_clusters;
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
-        cluster_molecules_in_tile(tile_loc,
-                                  tile_type,
-                                  tile_molecules,
-                                  cluster_legalizer,
-                                  primitive_candidate_block_types,
-                                  created_clusters);
-
+        std::unordered_set<LegalizationClusterId> created_clusters = cluster_molecules_in_tile(tile_loc,
+                                                                                               tile_type,
+                                                                                               tile_molecules,
+                                                                                               cluster_legalizer,
+                                                                                               primitive_candidate_block_types);
         // Check legality of clusters created with fast pass. Store the
         // illegal cluster molecules for full strategy pass.
         std::vector<PackMoleculeId> illegal_cluster_mols;
@@ -458,14 +458,11 @@ void FlatRecon::self_clustering(ClusterLegalizer& cluster_legalizer,
         // full and try to cluster the unclustered molecules in same tile again.
         if (!illegal_cluster_mols.empty()) {
             cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-            created_clusters.clear();
-            cluster_molecules_in_tile(tile_loc,
-                                    tile_type,
-                                    illegal_cluster_mols,
-                                    cluster_legalizer,
-                                    primitive_candidate_block_types,
-                                    created_clusters);
-
+            created_clusters = cluster_molecules_in_tile(tile_loc,
+                                                         tile_type,
+                                                         illegal_cluster_mols,
+                                                         cluster_legalizer,
+                                                         primitive_candidate_block_types);
             // Clean clusters created with full strategy not to increase memory footprint.
             for (LegalizationClusterId cluster_id : created_clusters) {
                 cluster_legalizer.clean_cluster(cluster_id);
@@ -474,13 +471,14 @@ void FlatRecon::self_clustering(ClusterLegalizer& cluster_legalizer,
     }
 }
 
-void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
-                                    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                    std::unordered_set<PackMoleculeId>& mols_clustered) {
+std::unordered_set<PackMoleculeId>
+FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
+                               const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     vtr::ScopedStartFinishTimer neigh_pass_clustering("Neighbor Pass Clustering");
-    
+
     // Iterate over molecules and try to join the unclustered ones to their
     // already created 8-neighboring tile clusters.
+    std::unordered_set<PackMoleculeId> mols_clustered;
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         // Get unclustered block and its location.
         PackMoleculeId molecule_id = ap_netlist_.block_molecule(blk_id);
@@ -607,12 +605,13 @@ void FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
             }
         }   
     }
+    return mols_clustered;
 }
 
-void FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
-                                         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                         std::unordered_set<LegalizationClusterId>& created_clusters,
-                                         int search_radius) {
+std::unordered_set<LegalizationClusterId>
+FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
+                                    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                    int search_radius) {
     std::string timer_label = "Orphan Window Clustering with search radius " + std::to_string(search_radius);
     vtr::ScopedStartFinishTimer orphan_window_clustering(timer_label);
 
@@ -638,6 +637,7 @@ void FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
                 return ext_pins_a > ext_pins_b;
             });
 
+    std::unordered_set<LegalizationClusterId> created_clusters;
     for (PackMoleculeId seed_mol_id: unclustered_blocks) {
         if (cluster_legalizer.is_mol_clustered(seed_mol_id))
             continue;
@@ -719,6 +719,7 @@ void FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
         // Clean the new created cluster to avoid memory footprint increase.
         cluster_legalizer.clean_cluster(cluster_id);
     }
+    return created_clusters;
 }
 
 void FlatRecon::report_clustering_summary(ClusterLegalizer& cluster_legalizer,
@@ -812,10 +813,8 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
                     tile_blocks);
 
     // Perform neighbor clustering pass.
-    std::unordered_set<PackMoleculeId> neighbor_pass_molecules;
-    neighbor_clustering(cluster_legalizer,
-                        primitive_candidate_block_types,
-                        neighbor_pass_molecules);
+    std::unordered_set<PackMoleculeId> neighbor_pass_molecules = neighbor_clustering(cluster_legalizer,
+                                                                                     primitive_candidate_block_types);
 
     // Perform orphan window clustering pass.
     // We retry orphan-window clustering with progressively larger Manhattan radii,
@@ -827,10 +826,9 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     bool fits_on_device = false;
     std::unordered_set<LegalizationClusterId> orphan_window_clusters;
     for (int orphan_window_search_radius: orphan_window_search_radii) {
-        orphan_window_clustering(cluster_legalizer,
-                                 primitive_candidate_block_types,
-                                 orphan_window_clusters,
-                                 orphan_window_search_radius);
+        orphan_window_clusters = orphan_window_clustering(cluster_legalizer,
+                                                          primitive_candidate_block_types,
+                                                          orphan_window_search_radius);
 
         // Count used instances per block type.
         std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;

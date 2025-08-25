@@ -893,13 +893,15 @@ struct t_physical_tile_loc {
      * Tiles are ordered first by layer number, then by x, and finally by y.
      */
     friend bool operator<(const t_physical_tile_loc& lhs, const t_physical_tile_loc& rhs) {
-        if (lhs.layer_num != rhs.layer_num) return lhs.layer_num < rhs.layer_num;
-        if (lhs.x != rhs.x) return lhs.x < rhs.x;
+        if (lhs.layer_num != rhs.layer_num)
+            return lhs.layer_num < rhs.layer_num;
+        if (lhs.x != rhs.x)
+            return lhs.x < rhs.x;
         return lhs.y < rhs.y;
     }
 
     friend bool operator==(const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
-        return a.layer_num == b.layer_num && a.x == b.x && a.y == b.y;
+        return a.x == b.x && a.y == b.y && a.layer_num == b.layer_num;
     }
 
     friend bool operator!=(const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
