@@ -56,7 +56,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     /* Calculate the median region */
     t_pl_loc to;
 
-    t_bb coords(OPEN, OPEN, OPEN, OPEN, OPEN, OPEN);
+    t_bb coords(UNDEFINED, UNDEFINED, UNDEFINED, UNDEFINED, UNDEFINED, UNDEFINED);
     t_bb limit_coords;
 
     //clear the vectors that saves X & Y coords
@@ -193,12 +193,12 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
      * as the moving block. If not, we set this flag to false. */
     skip_net = true;
 
-    int xmin = OPEN;
-    int xmax = OPEN;
-    int ymin = OPEN;
-    int ymax = OPEN;
-    int layer_min = OPEN;
-    int layer_max = OPEN;
+    int xmin = UNDEFINED;
+    int xmax = UNDEFINED;
+    int ymin = UNDEFINED;
+    int ymax = UNDEFINED;
+    int layer_min = UNDEFINED;
+    int layer_max = UNDEFINED;
 
     ClusterBlockId driver_block_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
     bool first_block = false;

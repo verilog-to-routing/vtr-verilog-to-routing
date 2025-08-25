@@ -703,9 +703,9 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
 
         for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][track_layer][side]) {
             /* Skip unconnected connections */
-            if (OPEN == to_track || is_connected_track) {
+            if (UNDEFINED == to_track || is_connected_track) {
                 is_connected_track = true;
-                VTR_ASSERT(OPEN == opin_to_track_map[type->index][ipin][width_offset][height_offset][track_layer][side][0]);
+                VTR_ASSERT(UNDEFINED == opin_to_track_map[type->index][ipin][width_offset][height_offset][track_layer][side][0]);
                 continue;
             }
 
@@ -1494,7 +1494,7 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
         /* There are up to two switch edges allowed from track to track */
         for (i = 0; i < 2; ++i) {
             /* If the switch_type entry is empty, skip it */
-            if (OPEN == switch_types[i]) {
+            if (UNDEFINED == switch_types[i]) {
                 continue;
             }
 
@@ -1782,7 +1782,7 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
             if (should_apply_switch_override(switch_override)) {
                 iswitch = switch_override;
             }
-            VTR_ASSERT(iswitch != OPEN);
+            VTR_ASSERT(iswitch != UNDEFINED);
 
             /* Add edge to list. */
             rr_edges_to_create.emplace_back(from_rr_node, to_node, iswitch, false);
@@ -1836,7 +1836,7 @@ static void get_switch_type(bool is_from_sblock,
      * and what type of switch is used to connect *to* each type of node       *
      * (from_node_switch and to_node_switch).  It decides what type of switch, *
      * if any, should be used to go from from_node to to_node.  If no switch   *
-     * should be inserted (i.e. no connection), it returns OPEN.  Its returned *
+     * should be inserted (i.e. no connection), it returns NO_SWITCH.  Its returned *
      * values are in the switch_types array.  It needs to return an array      *
      * because some topologies (e.g. bi-dir pass gates) result in two switches.*/
 

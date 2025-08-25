@@ -3,6 +3,7 @@
 #include <string>
 
 #include "rr_graph_clock.h"
+#include "vpr_types.h"
 
 class ClockRRGraphBuilder;
 
@@ -32,7 +33,7 @@ class RoutingToClockConnection : public ClockConnection {
     std::string clock_to_connect_to;
     std::string switch_point_name;
     t_physical_tile_loc switch_location;
-    int arch_switch_idx = OPEN;
+    int arch_switch_idx = UNDEFINED;
     float fc = 0.;
 
     int seed = 101;
@@ -62,7 +63,7 @@ class ClockToClockConneciton : public ClockConnection {
     std::string from_switch;
     std::string to_clock;
     std::string to_switch;
-    int arch_switch_idx = OPEN;
+    int arch_switch_idx = UNDEFINED;
     float fc = 0.;
 
   public:
@@ -90,7 +91,7 @@ class ClockToPinsConnection : public ClockConnection {
   private:
     std::string clock_to_connect_from;
     std::string switch_point_name;
-    int arch_switch_idx = OPEN;
+    int arch_switch_idx = UNDEFINED;
     float fc = 0.;
 
   public:

@@ -502,8 +502,8 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
                 if (router_data->explore_id_index > 2000000000) {
                     /* overflow protection */
                     for (unsigned int id = 0; id < lb_type_graph.size(); id++) {
-                        router_data->explored_node_tb[id].explored_id = OPEN;
-                        router_data->explored_node_tb[id].enqueue_id = OPEN;
+                        router_data->explored_node_tb[id].explored_id = UNDEFINED;
+                        router_data->explored_node_tb[id].enqueue_id = UNDEFINED;
                         router_data->explore_id_index = 1;
                     }
                 }
@@ -565,7 +565,7 @@ t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_
     t_pb_routes pb_route;
 
     for (const auto& lb_net : lb_nets) {
-        load_trace_to_pb_route(pb_route, lb_net.atom_net_id, OPEN, lb_net.rt_tree, logic_block_type, intra_lb_pb_pin_lookup);
+        load_trace_to_pb_route(pb_route, lb_net.atom_net_id, UNDEFINED, lb_net.rt_tree, logic_block_type, intra_lb_pb_pin_lookup);
     }
 
     return pb_route;
@@ -603,7 +603,7 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
                                    const IntraLbPbPinLookup& intra_lb_pb_pin_lookup) {
     int ipin = trace->current_node;
     int driver_pb_pin_id = prev_pin_id;
-    int cur_pin_id = OPEN;
+    int cur_pin_id = UNDEFINED;
     const int total_pins = logic_block_type->pb_graph_head->total_pb_pins;
     if (ipin < total_pins) {
         /* This routing node corresponds with a pin.  This node is virtual (ie. sink or source node) */
@@ -717,7 +717,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPin
 
         VTR_ASSERT_MSG(lb_type_graph[lb_nets[ipos].terminals[0]].type == LB_SOURCE, "Driver must be a source");
 
-        int sink_terminal = OPEN;
+        int sink_terminal = UNDEFINED;
         if (lb_nets[ipos].terminals.size() < atom_ctx.netlist().net_pins(net_id).size()) {
             //Not all of the pins are within the cluster
             if (lb_nets[ipos].terminals.size() == 1) {
@@ -1018,7 +1018,7 @@ static void commit_remove_rt(t_lb_trace* rt, t_lb_router_data* router_data, e_co
         }
     } else {
         incr = -1;
-        explored_node_tb[inode].inet = OPEN;
+        explored_node_tb[inode].inet = UNDEFINED;
     }
 
     lb_rr_node_stats[inode].occ += incr;
@@ -1089,7 +1089,7 @@ static void expand_rt(t_lb_router_data* router_data, int inet, reservable_pq<t_e
 
     VTR_ASSERT(pq.empty());
 
-    expand_rt_rec(lb_nets[inet].rt_tree, OPEN, router_data->explored_node_tb, pq, irt_net, router_data->explore_id_index);
+    expand_rt_rec(lb_nets[inet].rt_tree, UNDEFINED, router_data->explored_node_tb, pq, irt_net, router_data->explore_id_index);
 }
 
 /* Expand all nodes found in route tree into priority queue recursively */
@@ -1102,7 +1102,7 @@ static void expand_rt_rec(t_lb_trace* rt, int prev_index, t_explored_node_tb* ex
     enode.prev_index = prev_index;
     pq.push(enode);
     explored_node_tb[enode.node_index].inet = irt_net;
-    explored_node_tb[enode.node_index].explored_id = OPEN;
+    explored_node_tb[enode.node_index].explored_id = UNDEFINED;
     explored_node_tb[enode.node_index].enqueue_id = explore_id_index;
     explored_node_tb[enode.node_index].enqueue_cost = 0;
     explored_node_tb[enode.node_index].prev_index = prev_index;
@@ -1238,7 +1238,7 @@ static bool add_to_rt(t_lb_trace* rt, int node_index, t_lb_router_data* router_d
     while (explored_node_tb[rt_index].inet != irt_net) {
         trace_forward.push_back(rt_index);
         rt_index = explored_node_tb[rt_index].prev_index;
-        VTR_ASSERT(rt_index != OPEN);
+        VTR_ASSERT(rt_index != UNDEFINED);
     }
 
     /* Find rt_index on the route tree */
@@ -1342,10 +1342,10 @@ static void print_trace(FILE* fp, t_lb_trace* trace, t_lb_router_data* router_da
 static void reset_explored_node_tb(t_lb_router_data* router_data) {
     std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     for (unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
-        router_data->explored_node_tb[inode].prev_index = OPEN;
-        router_data->explored_node_tb[inode].explored_id = OPEN;
-        router_data->explored_node_tb[inode].inet = OPEN;
-        router_data->explored_node_tb[inode].enqueue_id = OPEN;
+        router_data->explored_node_tb[inode].prev_index = UNDEFINED;
+        router_data->explored_node_tb[inode].explored_id = UNDEFINED;
+        router_data->explored_node_tb[inode].inet = UNDEFINED;
+        router_data->explored_node_tb[inode].enqueue_id = UNDEFINED;
         router_data->explored_node_tb[inode].enqueue_cost = 0;
     }
 }

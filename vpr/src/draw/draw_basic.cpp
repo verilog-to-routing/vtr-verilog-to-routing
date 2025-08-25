@@ -467,14 +467,14 @@ void draw_routing_costs(ezgl::renderer* g) {
 void draw_routing_bb(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->show_routing_bb == OPEN) {
+    if (draw_state->show_routing_bb == UNDEFINED) {
         return;
     }
 
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
-    VTR_ASSERT(draw_state->show_routing_bb != OPEN);
+    VTR_ASSERT(draw_state->show_routing_bb != UNDEFINED);
     VTR_ASSERT(draw_state->show_routing_bb < (int)route_ctx.route_bb.size());
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -705,8 +705,8 @@ void draw_placement_macros(ezgl::renderer* g) {
         int xhigh = std::numeric_limits<int>::min();
         int yhigh = std::numeric_limits<int>::min();
 
-        int x_root = OPEN;
-        int y_root = OPEN;
+        int x_root = UNDEFINED;
+        int y_root = UNDEFINED;
         for (size_t imember = 0; imember < pl_macro.members.size(); ++imember) {
             const t_pl_macro_member& member = pl_macro.members[imember];
 
