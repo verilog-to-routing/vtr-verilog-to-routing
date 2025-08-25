@@ -125,10 +125,10 @@ void process_sg_tag(pugi::xml_node sg_list_tag,
         // Parse scatter pattern
         pugi::xml_node scatter_node = pugiutil::get_single_child(sg_tag, "scatter", loc_data);
         t_wireconn_inf scatter_wireconn = parse_wireconn(pugiutil::get_single_child(scatter_node, "wireconn", loc_data), loc_data, switches, true);
-        if (!gather_wireconn.from_switchpoint_set.empty()) {
+        if (!scatter_wireconn.from_switchpoint_set.empty()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(sg_tag), "Scatter wireconn specification should not set any 'from' switchpoints");
         }
-        if (gather_wireconn.to_switchpoint_set.empty()) {
+        if (scatter_wireconn.to_switchpoint_set.empty()) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(sg_tag), "Scatter wireconn specification does not include any switchpoints.");
         }
         sg.scatter_pattern = scatter_wireconn;
