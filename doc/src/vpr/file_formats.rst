@@ -728,7 +728,7 @@ the sub-tile of an atom is unkown (allowing the packing algorithm to choose
 any sub-tile at the given (x, y, layer) location).
 
 When used with ``flat-recon`` full legalizer (see :option:`vpr --ap_full_legalizer`),
-each atom of a molecule should share same location information. It is legal to
+each atom in a molecule should have compatible location information. It is legal to
 leave some molecules unconstrained; the reconstruction phase will choose where
 to place them but does not attempt to optimize these locations.
 

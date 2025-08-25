@@ -1297,9 +1297,9 @@ Analytical Placement is generally split into three stages:
 
     * ``flat-recon`` Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement that is
       as close to the incoming flat placement as possible. It can be used to read a flat placement from a :ref:`.fplace <vpr_flat_place_file>` file
-      or with Global Placement output. In both cases, it expects the given solution to be close to legal. If used with a :ref:`.fplace <vpr_flat_place_file>` file,
-      each atom of a molecule should share same location information. It is legal to leave some molecules unconstrained; the reconstruction phase will choose where
-      to place them but does not attempt to optimize these locations.
+      or on the (in memory) output of VTR's integrated Global Placement algorithm. In both cases, it expects the given solution to be close to legal.
+      If used with a :ref:`.fplace <vpr_flat_place_file>` file, each atom in a molecule should have compatible location information. It is legal to
+      leave some molecules unconstrained; the reconstruction phase will choose where to place them but does not attempt to optimize these locations.
 
     **Default:** ``appack``
 
