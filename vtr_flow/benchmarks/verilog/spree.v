@@ -1121,7 +1121,6 @@ assign ctrl_pipereg11_squashn = 1'b1;
 assign ctrl_pipereg12_squashn = 1'b1;
 assign ctrl_pipereg13_squashn = 1'b1;
 assign ctrl_ifetch_squashn = 1'b1;
-wire ctrl_ifetch_squashn;
 
 assign squash_stage2 = ((stall_out_stage2))|~resetn;
 
@@ -1717,9 +1716,10 @@ assign a_readdataout = a_readdataout_temp;
 
 wire wren1;
 assign wren1 = (c_we & (|c_reg));
-defparam regfile1_replace.ADDR_WIDTH = 5;
-defparam regfile1_replace.DATA_WIDTH = 32;
-single_port_ram regfile1_replace (
+
+single_port_ram 
+  # (.ADDR_WIDTH(5), .DATA_WIDTH(32))
+regfile1_replace (
 	.clk (clk),
 	.we(wren1),
 	.data(c_writedatain),
@@ -1731,9 +1731,9 @@ single_port_ram regfile1_replace (
 //between 2 read and 1 write
 //MORE MEMORY
 
-defparam regfile2_replace.ADDR_WIDTH = 5;
-defparam regfile2_replace.DATA_WIDTH = 32;
-single_port_ram regfile2_replace(
+single_port_ram 
+  # (.ADDR_WIDTH(5), .DATA_WIDTH(32))
+regfile2_replace(
 	.clk (clk),
 	.we(wren1),
 	.data(c_writedatain),
@@ -1980,9 +1980,9 @@ assign next_pc_wire = next_pc [9:0];
 
 wire [31:0]dummyout2;
 
-defparam imem_replace.ADDR_WIDTH = 10;
-defparam imem_replace.DATA_WIDTH = `I_DATAWIDTH;
-dual_port_ram imem_replace(
+dual_port_ram 
+  # (.ADDR_WIDTH(10), .DATA_WIDTH(`I_DATAWIDTH))
+imem_replace(
 	.clk (clk),
 	.we1(wren1),
 	.we2(boot_iwe),
@@ -2153,9 +2153,9 @@ wire [9:0] memaddr_wrd;
 
 assign memaddr_wrd = d_address[`DM_ADDRESSWIDTH:2];
 
-defparam dmem_replace.ADDR_WIDTH = 10;
-defparam dmem_replace.DATA_WIDTH = `DM_DATAWIDTH;
-single_port_ram dmem_replace(
+single_port_ram 
+  # (.ADDR_WIDTH(10), .DATA_WIDTH(`DM_DATAWIDTH))
+dmem_replace(
 	.clk (clk),
 	.we(will_be_wren1),
 	.data(d_writedatamem),
@@ -2202,7 +2202,7 @@ output [31:0] d_writedataout;
 reg [3:0] d_byteena;
 reg [31:0] d_writedataout;
 
-always @(write_data or d_address or store_size)
+always @(*)
 begin
 	case (store_size)
 		2'b11:
@@ -2268,15 +2268,15 @@ input [31:0] d_readdatain;
 output [31:0] d_loadresult;
 
 wire d_adr_one;
-assign d_adr_one = d_address [1];
 reg [31:0] d_loadresult;
 reg sign;
 wire [1:0] d_address;
+assign d_adr_one = d_address [1];
 assign d_address [1:0] =d_readdatain [25:24];
 
 
 //assume always full-word-access
-always @(d_readdatain or d_address )
+always @(*)
 begin
 	d_loadresult[31:0]=d_readdatain[31:0];
 end
@@ -2404,7 +2404,7 @@ output [31:0] result;
 
 reg [31:0] logic_result;
 
-always@(opA or opB or op )
+always@(*)
 	case(op)
 		2'b00:
 			logic_result=opA&opB;
@@ -2876,7 +2876,7 @@ output stalled;
   reg T,Tnext;
 
   // State machine for Stalling 1 cycle
-  always@(request or T)
+  always@(*)
   begin
 	case(T) 
 	  1'b0: Tnext=request;

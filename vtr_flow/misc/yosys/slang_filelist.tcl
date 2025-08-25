@@ -108,6 +108,7 @@ namespace eval ::slang {
 						lappend top_args --top $top_name
 					}
 				}
+
 			} else {
 				close $fh
 				error "Unsupported file type. Yosys-Slang accepts .sv .svh .v .vh. File {$f}"

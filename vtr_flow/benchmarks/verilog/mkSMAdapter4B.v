@@ -1305,6 +1305,8 @@ wire full_not_used;
 					);
 					
 wire dummy1;
+wire dummy2;
+wire dummy3;
 assign dummy1 = &wci_reqF__D_OUT;
 assign prevent_sweep_node = dummy1 & dummy2 & dummy3;
 
@@ -1323,7 +1325,6 @@ assign prevent_sweep_node = dummy1 & dummy2 & dummy3;
 						     .FULL_N(wmi_respF__FULL_N),
 						     .EMPTY_N(wmi_respF__EMPTY_N)
 							 );
-wire dummy2;
 assign dummy2 = &wmi_respF__D_OUT;
 
   // submodule wsiM_isReset
@@ -1351,7 +1352,6 @@ assign dummy2 = &wmi_respF__D_OUT;
 					    .EMPTY_N(wsiS_reqFifo__EMPTY_N)
 						);
 
-wire dummy3;
 assign dummy3 = &wsiS_reqFifo__D_OUT;
 
 
@@ -1819,10 +1819,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
   assign MUX_wsiM_reqFifo_c_r__write_1__VAL_1 = wsiM_reqFifo_c_r - 2'b01 ;
   assign MUX_wsiM_reqFifo_c_r__write_1__VAL_2 = wsiM_reqFifo_c_r + 2'b01 ;
   assign MUX_wci_respF_x_wire__wset_1__VAL_2 = { 2'b01, x_data__h15447 } ;
-  always@(WILL_FIRE_RL_wci_ctl_op_complete or
-	  MUX_wci_respF_x_wire__wset_1__VAL_1 or
-	  WILL_FIRE_RL_wci_cfrd or
-	  MUX_wci_respF_x_wire__wset_1__VAL_2 or WILL_FIRE_RL_wci_cfwr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wci_ctl_op_complete:
@@ -1923,12 +1920,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     { 4'b0101, x__h18884, 1'b0, mesgReqAddr, fabWordsCurReq[11:0] } ;
   assign MUX_wmi_reqF_x_wire__wset_1__VAL_3 =
 	     { 4'b0011, x__h16715, 1'b0, addr__h16647, 12'b000000000001 } ;
-  always@(WILL_FIRE_RL_wmwt_requestPrecise or
-	  MUX_wmi_reqF_x_wire__wset_1__VAL_1 or
-	  WILL_FIRE_RL_wmrd_mesgBodyRequest or
-	  MUX_wmi_reqF_x_wire__wset_1__VAL_2 or
-	  WILL_FIRE_RL_wmwt_messagePushImprecise or
-	  MUX_wmi_reqF_x_wire__wset_1__VAL_3)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wmwt_requestPrecise:
@@ -2177,9 +2169,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
   assign firstMsgReq__D_IN = 1'b0 ;
 
   // register impreciseBurst
-  always@(WILL_FIRE_RL_wmwt_doAbort or
-	  MUX_impreciseBurst__write_1__SEL_2 or
-	  WILL_FIRE_RL_wmwt_messageFinalize)
+  always@(*)
   case (1'b1)
     WILL_FIRE_RL_wmwt_doAbort: impreciseBurst__D_IN = 1'b0;
     MUX_impreciseBurst__write_1__SEL_2: impreciseBurst__D_IN = 1'b1;
@@ -2204,9 +2194,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wci_ctrl_IsO ;
 
   // register mesgCount
-  always@(MUX_mesgCount__write_1__SEL_1 or
-	  MUX_mesgCount__write_1__VAL_1 or
-	  WILL_FIRE_RL_wmwt_messageFinalize or WILL_FIRE_RL_wci_ctrl_IsO)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       MUX_mesgCount__write_1__SEL_1:
@@ -2223,11 +2211,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wci_ctrl_IsO ;
 
   // register mesgLength
-  always@(WILL_FIRE_RL_wmwt_doAbort or
-	  MUX_mesgLength__write_1__SEL_2 or
-	  MUX_mesgLength__write_1__VAL_2 or
-	  WILL_FIRE_RL_wmwt_messageFinalize or
-	  MUX_endOfMessage__write_1__SEL_1 or MUX_mesgLength__write_1__VAL_4)
+  always@(*)
   case (1'b1)
     WILL_FIRE_RL_wmwt_doAbort: mesgLength__D_IN = 15'b010101010101010;
     MUX_mesgLength__write_1__SEL_2:
@@ -2279,9 +2263,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wmwt_requestPrecise ;
 
   // register opcode
-  always@(WILL_FIRE_RL_wmwt_doAbort or
-	  WILL_FIRE_RL_wmwt_mesgBegin or
-	  MUX_opcode__write_1__VAL_2 or WILL_FIRE_RL_wmwt_messageFinalize)
+  always@(*)
   case (1'b1)
     WILL_FIRE_RL_wmwt_doAbort: opcode__D_IN = 9'b010101010;
     WILL_FIRE_RL_wmwt_mesgBegin: opcode__D_IN = MUX_opcode__write_1__VAL_2;
@@ -2294,8 +2276,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wmwt_doAbort ;
 
   // register preciseBurst
-  always@(WILL_FIRE_RL_wmwt_doAbort or
-	  MUX_mesgLength__write_1__SEL_2 or WILL_FIRE_RL_wmwt_messageFinalize)
+  always@(*)
   case (1'b1)
     WILL_FIRE_RL_wmwt_doAbort: preciseBurst__D_IN = 1'b0;
     MUX_mesgLength__write_1__SEL_2: preciseBurst__D_IN = 1'b1;
@@ -2308,9 +2289,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wmwt_doAbort ;
 
   // register readyToPush
-  always@(WILL_FIRE_RL_wmwt_doAbort or
-	  MUX_impreciseBurst__write_1__SEL_2 or
-	  MUX_endOfMessage__write_1__SEL_1)
+  always@(*)
   case (1'b1)
     WILL_FIRE_RL_wmwt_doAbort: readyToPush__D_IN = 1'b0;
     MUX_impreciseBurst__write_1__SEL_2: readyToPush__D_IN = 1'b1;
@@ -2333,11 +2312,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
   assign smaCtrl__EN = WILL_FIRE_RL_wci_cfwr && wci_reqF__D_OUT[39:32] == 8'h0 ;
 
   // register thisMesg
-  always@(MUX_endOfMessage__write_1__SEL_1 or
-	  MUX_thisMesg__write_1__VAL_1 or
-	  WILL_FIRE_RL_wmrd_mesgBegin or
-	  MUX_thisMesg__write_1__VAL_2 or
-	  WILL_FIRE_RL_wmwt_requestPrecise or WILL_FIRE_RL_wci_ctrl_IsO)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       MUX_endOfMessage__write_1__SEL_1:
@@ -2399,7 +2374,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     MUX_wci_illegalEdge__write_1__SEL_2 ;
 
   // register wci_nState
-  always@(wci_reqF__D_OUT)
+  always@(*)
   begin
     case (wci_reqF__D_OUT[36:34])
       3'b000: wci_nState__D_IN = 3'b001;
@@ -2438,11 +2413,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wci_respF_incCtr && wci_respF_c_r == 2'b00 ||
 	     WILL_FIRE_RL_wci_respF_both ||
 	     WILL_FIRE_RL_wci_respF_decCtr ;
-  always@(MUX_wci_respF_q_0__write_1__SEL_1 or
-	  MUX_wci_respF_q_0__write_1__VAL_1 or
-	  WILL_FIRE_RL_wci_respF_both or
-	  MUX_wci_respF_q_0__write_1__VAL_2 or
-	  WILL_FIRE_RL_wci_respF_decCtr or wci_respF_q_1)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       MUX_wci_respF_q_0__write_1__SEL_1:
@@ -2459,10 +2430,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wci_respF_incCtr && wci_respF_c_r == 2'b01 ||
 	     WILL_FIRE_RL_wci_respF_both ||
 	     WILL_FIRE_RL_wci_respF_decCtr ;
-  always@(MUX_wci_respF_q_1__write_1__SEL_1 or
-	  MUX_wci_respF_q_0__write_1__VAL_1 or
-	  WILL_FIRE_RL_wci_respF_both or
-	  MUX_wci_respF_q_1__write_1__VAL_2 or WILL_FIRE_RL_wci_respF_decCtr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       MUX_wci_respF_q_1__write_1__SEL_1:
@@ -2495,11 +2463,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wmi_dhF_decCtr || WILL_FIRE_RL_wmi_dhF_incCtr ;
 
   // register wmi_dhF_q_0
-  always@(WILL_FIRE_RL_wmi_dhF_both or
-	  MUX_wmi_dhF_q_0__write_1__VAL_1 or
-	  MUX_wmi_dhF_q_0__write_1__SEL_2 or
-	  MUX_wmi_dhF_q_0__write_1__VAL_2 or
-	  WILL_FIRE_RL_wmi_dhF_decCtr or wmi_dhF_q_1)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wmi_dhF_both:
@@ -2516,10 +2480,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wmi_dhF_decCtr ;
 
   // register wmi_dhF_q_1
-  always@(WILL_FIRE_RL_wmi_dhF_both or
-	  MUX_wmi_dhF_q_1__write_1__VAL_1 or
-	  MUX_wmi_dhF_q_1__write_1__SEL_2 or
-	  MUX_wmi_dhF_q_0__write_1__VAL_2 or WILL_FIRE_RL_wmi_dhF_decCtr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wmi_dhF_both:
@@ -2545,10 +2506,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wmi_mFlagF_incCtr ;
 
   // register wmi_mFlagF_q_0
-  always@(WILL_FIRE_RL_wmi_mFlagF_both or
-	  MUX_wmi_mFlagF_q_0__write_1__VAL_1 or
-	  MUX_wmi_mFlagF_q_0__write_1__SEL_2 or
-	  value__h6065 or WILL_FIRE_RL_wmi_mFlagF_decCtr or wmi_mFlagF_q_1)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wmi_mFlagF_both:
@@ -2564,10 +2522,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wmi_mFlagF_decCtr ;
 
   // register wmi_mFlagF_q_1
-  always@(WILL_FIRE_RL_wmi_mFlagF_both or
-	  MUX_wmi_mFlagF_q_1__write_1__VAL_1 or
-	  MUX_wmi_mFlagF_q_1__write_1__SEL_2 or
-	  value__h6065 or WILL_FIRE_RL_wmi_mFlagF_decCtr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wmi_mFlagF_both:
@@ -2599,11 +2554,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wmi_reqF_decCtr || WILL_FIRE_RL_wmi_reqF_incCtr ;
 
   // register wmi_reqF_q_0
-  always@(MUX_wmi_reqF_q_0__write_1__SEL_1 or
-	  MUX_wmi_reqF_q_0__write_1__VAL_1 or
-	  WILL_FIRE_RL_wmi_reqF_both or
-	  MUX_wmi_reqF_q_0__write_1__VAL_2 or
-	  WILL_FIRE_RL_wmi_reqF_decCtr or wmi_reqF_q_1)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       MUX_wmi_reqF_q_0__write_1__SEL_1:
@@ -2620,10 +2571,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wmi_reqF_decCtr ;
 
   // register wmi_reqF_q_1
-  always@(MUX_wmi_reqF_q_1__write_1__SEL_1 or
-	  MUX_wmi_reqF_q_0__write_1__VAL_1 or
-	  WILL_FIRE_RL_wmi_reqF_both or
-	  MUX_wmi_reqF_q_1__write_1__VAL_2 or WILL_FIRE_RL_wmi_reqF_decCtr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       MUX_wmi_reqF_q_1__write_1__SEL_1:
@@ -2705,11 +2653,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wsiM_reqFifo_both ||
 	     WILL_FIRE_RL_wsiM_reqFifo_incCtr && wsiM_reqFifo_c_r == 2'b00 ||
 	     WILL_FIRE_RL_wsiM_reqFifo_decCtr ;
-  always@(WILL_FIRE_RL_wsiM_reqFifo_both or
-	  MUX_wsiM_reqFifo_q_0__write_1__VAL_1 or
-	  MUX_wsiM_reqFifo_q_0__write_1__SEL_2 or
-	  MUX_wsiM_reqFifo_q_0__write_1__VAL_2 or
-	  WILL_FIRE_RL_wsiM_reqFifo_decCtr or wsiM_reqFifo_q_1)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wsiM_reqFifo_both:
@@ -2728,11 +2672,7 @@ assign dummy3 = &wsiS_reqFifo__D_OUT;
 	     WILL_FIRE_RL_wsiM_reqFifo_both ||
 	     WILL_FIRE_RL_wsiM_reqFifo_incCtr && wsiM_reqFifo_c_r == 2'b01 ||
 	     WILL_FIRE_RL_wsiM_reqFifo_decCtr ;
-  always@(WILL_FIRE_RL_wsiM_reqFifo_both or
-	  MUX_wsiM_reqFifo_q_1__write_1__VAL_1 or
-	  MUX_wsiM_reqFifo_q_1__write_1__SEL_2 or
-	  MUX_wsiM_reqFifo_q_0__write_1__VAL_2 or
-	  WILL_FIRE_RL_wsiM_reqFifo_decCtr)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       WILL_FIRE_RL_wsiM_reqFifo_both:
@@ -2911,13 +2851,7 @@ assign b__h19084 = { {fabRespCredit_value[3],fabRespCredit_value[3],fabRespCredi
   assign x_length__h17087 =
 	     { 2'b00,
 	       IF_mesgLength_22_BIT_14_23_THEN_mesgLength_22__ETC___d753 } ;
-  always@(wci_reqF__D_OUT or
-	  smaCtrl or
-	  mesgCount or
-	  abortCount or
-	  thisMesg or
-	  lastMesg or
-	  rdat__h15540 or wsiS_extStatusW__wget or wsiM_extStatusW__wget)
+  always@(*)
   begin
     case (wci_reqF__D_OUT[39:32])
       8'h0: x_data__h15447 = smaCtrl;
@@ -2935,11 +2869,7 @@ assign b__h19084 = { {fabRespCredit_value[3],fabRespCredit_value[3],fabRespCredi
       default: x_data__h15447 = 32'b00000000000000000000000000000000;
     endcase
   end
-  always@(MUX_endOfMessage__write_1__SEL_1 or
-	  MUX_wmi_mFlagF_x_wire__wset_1__VAL_1 or
-	  MUX_wmi_mFlagF_x_wire__wset_1__SEL_2 or
-	  WILL_FIRE_RL_wmwt_requestPrecise or
-	  MUX_wmi_mFlagF_x_wire__wset_1__VAL_3)
+  always@(*)
   begin
     case (1'b1) // synopsys parallel_case
       MUX_endOfMessage__write_1__SEL_1:
@@ -3458,9 +3388,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 60'b000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awa;
-defparam ram1.DATA_WIDTH = `dwa;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`awa), .DATA_WIDTH(`dwa))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -3862,9 +3792,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 34'b0000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awb;
-defparam ram1.DATA_WIDTH = `dwb;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`awb), .DATA_WIDTH(`dwb))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -4267,9 +4197,9 @@ reg			full_n_r, empty_n_r;
  // manually assign
  assign junk_in = 61'b0000000000000000000000000000000000000000000000000000000000000;
 
-defparam ram1.ADDR_WIDTH = `awc;
-defparam ram1.DATA_WIDTH = `dwc;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`awc), .DATA_WIDTH(`dwc))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
