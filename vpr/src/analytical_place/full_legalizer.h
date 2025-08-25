@@ -106,21 +106,25 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
  * near-legal.
  *
  * Before packing, molecules are sorted so that long carry chain molecules are
- * priorizited. For molecules in the same priority group, higher external pins
- * are used as a tie-breaker. It then groups the molecules according to the tiles
+ * priorizited. For molecules in the same priority group, the number of external pins
+ * is used as a tie-breaker. It then groups the molecules according to the tiles
  * determined from their flat placement.
  *
  * The packing consists of three passes:
  * 1) Self clustering: For each tile, form as few clusters as possible from
- *    molecules targeting that tile. Try with SKIP_INTRA_LB_ROUTE strategy
- *    first; any failures are retried with FULL. Molecules that still cannot be
- *    clustered (incompatible with the tile or with the newly formed clusters)
- *    are passed to the neighbor pass.
+ *    molecules targeting that tile, and does not create more clusters than the
+ *    tile can accommodate. Try clustering with the faster SKIP_INTRA_LB_ROUTE
+ *    legality strategy (after each molecule is added) first; if the resulting
+ *    cluster turns out to be unroutable, packing it is retried with the FULL
+ *    legality checking strategy. Molecules that still cannot be clustered
+ *    (incompatible with the tile or with the newly formed clusters) are passed
+ *    to the neighbor pass.
  *
  * 2) Neighbor clustering: For each unclustered molecule, inspect clusters in
  *    the 8 neighboring tiles within the same layer. Tiles are processed in
- *    ascending order of average molecules-per-cluster. The unclustered molecule
- *    added to an existing cluster if compatible; no new clusters are created in this pass.
+ *    ascending order of average molecules-per-cluster. The unclustered molecule is
+ *    added to an existing cluster if compatible (and all 8 are checked); no new
+ *    clusters are created in this pass.
  *
  * 3) Orphan-window clustering: Remaining “orphan” molecules are clustered by
  *    repeated BFS expansions centered at seeds chosen by highest external input
@@ -133,6 +137,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
  *
  * After cluster creation, each cluster is placed by the initial placer at the
  * grid location nearest to the centroid of its atoms.
+ *
+ * TODO: Refer to the FPT 2025 Triple-AP paper if accepted.
  *
  */
 class FlatRecon : public FullLegalizer {

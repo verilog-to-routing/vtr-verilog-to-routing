@@ -16,7 +16,6 @@
 #include <queue>
 #include <unordered_set>
 #include <vector>
-#include <execution>
 
 #include "PreClusterTimingManager.h"
 #include "ShowSetup.h"
@@ -392,7 +391,10 @@ FlatRecon::cluster_molecules_in_tile(const t_physical_tile_loc& tile_loc,
         // Get the block type for compatibility check.
         t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
 
-        // Try all subtiles in a single loop
+        // Go over all subtiles at this tile, trying to insert each molecule that
+        // is supposed to be in that tile in the first existing cluster that can
+        // accommodate it; if none can, create a new cluster if there is a subtile
+        // that has no cluster yet.
         for (int sub_tile = 0; sub_tile < tile_type->capacity; ++sub_tile) {
             const t_pl_loc loc{tile_loc.x, tile_loc.y, sub_tile, tile_loc.layer_num};
             auto cluster_it = loc_to_cluster_id_placed.find(loc);
@@ -488,14 +490,7 @@ FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
         if (cluster_legalizer.is_mol_clustered(molecule_id))
             continue;
 
-        // Skip the io blocks in that pass. This aims to avoid unneccessary recreation of clusters neighboring io blocks.
-        // TODO: This might be handled more generally instead of checking block name.
-        t_logical_block_type_ptr block_type = infer_molecule_logical_block_type(molecule_id, prepacker_, primitive_candidate_block_types);
-        std::string block_name = block_type->name;
-        if (block_name == "io")
-            continue;
-
-        // Get 8-neighbouring tile locations of the current molecule in the same layer.
+        // Get 8-neighbouring tile locations of the current molecule in the same layer and same type.
         std::vector<t_physical_tile_loc> neighbor_tile_locs;
         neighbor_tile_locs.reserve(8);
         auto [layers, width, height] = device_grid_.dim_sizes();
@@ -503,9 +498,11 @@ FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
             for (int dy : {-1, 0, 1}) {
                 if (dx == 0 && dy == 0) continue;
                 int neighbor_x = loc.x + dx, neighbor_y = loc.y + dy;
-                if (0 <= neighbor_x && neighbor_x < (int)width  && 0 <= neighbor_y && neighbor_y < (int)height) {
-                    neighbor_tile_locs.push_back({neighbor_x, neighbor_y, loc.layer_num});
-                }
+                if (neighbor_x < 0 || neighbor_x >= (int)width || neighbor_y < 0 || neighbor_y >= (int)height)
+                    continue;
+                if (device_grid_.get_physical_type(loc) != device_grid_.get_physical_type({neighbor_x, neighbor_y, loc.layer_num}))
+                    continue;
+                neighbor_tile_locs.push_back({neighbor_x, neighbor_y, loc.layer_num});
             }
         }
 
@@ -534,6 +531,9 @@ FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
             });
 
         // Try to fit the unclustered molecule to sorted neighbor tile clusters.
+        // Note: This pass opens a cluster, try to add one molecule to it, then close it again. This might cost CPU
+        // time if many molecules are packed in the same cluster in this pass, vs. just opening it once and adding
+        // them all.
         bool fit_in_a_neighbor = false;
         for (const t_physical_tile_loc& neighbor_tile_loc: neighbor_tile_locs) {
             // Get the current neighbor tile clusters.
@@ -615,7 +615,7 @@ FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
     std::string timer_label = "Orphan Window Clustering with search radius " + std::to_string(search_radius);
     vtr::ScopedStartFinishTimer orphan_window_clustering(timer_label);
 
-    // Create unclustered blocks spatial data. It stores vector of molecules ids
+    // Create unclustered blocks spatial data. It stores a vector of molecules ids
     // for each tile location of [layer][x][y].
     auto [layer_num, width, height] = device_grid_.dim_sizes();
     vtr::NdMatrix<std::unordered_set<PackMoleculeId>, 3> unclustered_tile_molecules({layer_num, width, height});
@@ -643,6 +643,8 @@ FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
             continue;
 
         // Start the new cluster with seed molecule using full strategy.
+        // Note: This could waste time vs. using the fast strategy first and falling back
+        // to full, but currently orphan clustering doesn't take that long as few molecules are clustered.
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
         LegalizationClusterId cluster_id = create_new_cluster(seed_mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
         created_clusters.insert(cluster_id);
@@ -672,7 +674,7 @@ FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
             if (distance> search_radius)
                 continue;
 
-            // Try to add each molecule in that tile to the current cluster.
+            // Try to add each unclustered molecule in that tile to the current cluster.
             std::unordered_set<PackMoleculeId>& tile_molecules = unclustered_tile_molecules[current_tile_loc.layer_num][current_tile_loc.x][current_tile_loc.y];
             for (auto it = tile_molecules.begin(); it != tile_molecules.end(); ) {
                 if (!cluster_legalizer.is_molecule_compatible(*it, cluster_id)) {
@@ -725,7 +727,8 @@ FlatRecon::orphan_window_clustering(ClusterLegalizer& cluster_legalizer,
 void FlatRecon::report_clustering_summary(ClusterLegalizer& cluster_legalizer,
                                           std::unordered_set<PackMoleculeId>& neighbor_pass_molecules,
                                           std::unordered_set<LegalizationClusterId>& orphan_window_clusters) {
-    // Define stat collection variables.
+    // Define stat collection variables: key is a block_type string and value
+    // is the number of clusters of that type created.
     std::unordered_map<std::string, size_t> cluster_type_count_self_pass,
         cluster_type_count_orphan_window_pass;
     size_t num_of_mols_clustered_in_self_pass = 0,
@@ -833,7 +836,8 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
         // Count used instances per block type.
         std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
         for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
-            if (!cluster_id.is_valid()) continue;
+            if (!cluster_id.is_valid())
+                continue;
             t_logical_block_type_ptr cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
             num_used_type_instances[cluster_type]++;
         }
@@ -851,7 +855,8 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
         // Destroy the orphan window clusters to recreate with bigger search radius.
         VTR_LOG("Clusters did not fit on device with orphan window search radius of %d.\n", orphan_window_search_radius);
         for (LegalizationClusterId cluster_id: orphan_window_clusters) {
-            if (!cluster_id.is_valid()) continue;
+            if (!cluster_id.is_valid())
+                continue;
             cluster_legalizer.destroy_cluster(cluster_id);
         }
         orphan_window_clusters.clear();
@@ -899,9 +904,9 @@ void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     // Create the RNG container for the initial placer.
     vtr::RngContainer rng(vpr_setup_.PlacerOpts.seed);
 
-    // Cast the partial placement to flat placement here. So that it can be
-    // used to guide the initial placer and for logging results. This enables
-    // the flow to be used with direct output of GP as well.
+    // The partial placement has been set by the GP (if using internal VTR AP),
+    // or by reading in the flat placement file. Cast / copy it to the flat
+    // placement data structures so we can always use them.
     FlatPlacementInfo flat_placement_info(atom_netlist_);
     for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
         PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
@@ -917,8 +922,8 @@ void FlatRecon::place_clusters(const PartialPlacement& p_placement) {
     }
 
     // Run the initial placer on the clusters created.
-    // TODO: Currently, the way initial placer sort the blocks to place is aligned
-    //       how self clustering pass clusters created, so there is no need to explicitely
+    // TODO: Currently, the way initial placer sorts the blocks to place is aligned
+    //       how self clustering passes the clusters created, so there is no need to explicitly
     //       prioritize these clusters. However, if it changes in time, the atoms clustered
     //       in neighbor pass and atoms misplaced might not match exactly. It might be safer
     //       to write FlatRecon's own placer in that case.

@@ -1838,12 +1838,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     file_grp.add_argument(args.write_flat_place_file, "--write_flat_place")
         .help(
-            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists cluster and intra-cluster placement coordinates for each atom and can be used to reconstruct a clustering and placement solution.")
+            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_legalized_flat_place_file, "--write_legalized_flat_place")
         .help(
-            "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists cluster and intra-cluster placement coordinates for each atom and can be used to reconstruct a clustering and placement solution.")
+            "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
