@@ -108,8 +108,10 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                                     atom_loc_x, atom_loc_y, atom_loc_layer, atom_loc_sub_tile);
             } else {
                 if (current_loc_x != -1 && current_loc_y != -1) {
-                    atom_loc_x = current_loc_x;
-                    atom_loc_y = current_loc_y;
+                    atom_loc_x = std::clamp(current_loc_x, 0.0f,
+                                            static_cast<float>(g_vpr_ctx.device().grid.width() -1));
+                    atom_loc_y = std::clamp(current_loc_y, 0.0f,
+                                            static_cast<float>(g_vpr_ctx.device().grid.height() -1));
                     // If current_loc_layer or current_loc_sub_tile are unset (-1), default to layer 0 and sub_tile 0.
                     if (current_loc_layer == -1)
                         current_loc_layer = 0;
