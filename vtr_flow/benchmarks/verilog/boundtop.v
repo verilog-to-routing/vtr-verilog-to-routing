@@ -424,6 +424,9 @@ reg[31:0] temp_rgResultData;
                       begin
                          next_state = 0 ; 
                       end 
+                      temp_rgResultReady = rgResultReady;
+                      temp_rgResultData = rgResultData;
+                      temp_rgResultSource = rgResultSource;
                    end
           1 :
                    begin
@@ -482,10 +485,13 @@ reg[31:0] temp_rgResultData;
                          temp_rgResultReady = 1'b0 ; 
                          temp_rgResultSource = 2'b10 ; 
                    end
-	default:
-		begin
-			temp_rgResultReady = u01a || u01b || u01c || v01a || v01b || v01c || u10a || u10b || u10c || v10a || v10b || v10c;  
-		end
+	 default:
+	   begin
+              next_state = state;
+              temp_rgResultReady = u01a || u01b || u01c || v01a || v01b || v01c || u10a || u10b || u10c || v10a || v10b || v10c;
+              temp_rgResultData = rgResultData;
+              temp_rgResultSource = rgResultSource;
+           end
        endcase 
     end 
  endmodule
@@ -778,10 +784,8 @@ module boundcontroller (raygroupout, raygroupwe, raygroupid, enablenear, raygrou
 		end
 	end
 
-
-
 	always @*
-	begin
+	  begin       
 		case (state)
 		0 :
 		begin
