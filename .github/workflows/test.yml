@@ -93,6 +93,7 @@ jobs:
     - name: Install dependencies
       run: |
         ./install_apt_packages.sh
+        sudo apt-get update
         sudo apt-get install qtbase5-dev
 
     - uses: hendrikmuhs/ccache-action@v1.2
