@@ -1785,7 +1785,23 @@ new_ram(
     end 
 
     always @(*)
-    begin
+      begin
+         next_state = state;
+         temp_statepeek = statepeek;
+         temp_data = data;
+         temp_datavalid = datavalid;
+         temp_waddress = waddress;
+         // For the unregistered values, we have to pick default behavior;
+         // these values are used in enough other defined states to appear to
+         // be reasonable fallbacks, but putting this here does change design
+         // intent:
+	 tm3_sram_we = 8'b11111111 ; 
+	 tm3_sram_oe = 2'b11 ; 
+	 tm3_sram_adsp = 1'b1 ; 
+	 tm3_sram_data_xhdl0 = 0;
+	 tm3_sram_addr = 0;
+	 want_addr = 1'b1 ; 
+	 want_data = 1'b0 ; 
        case (state)
           0 :
                    begin
