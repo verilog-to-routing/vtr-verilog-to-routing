@@ -876,6 +876,12 @@ void FlatRecon::create_clusters(ClusterLegalizer& cluster_legalizer,
     std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock();
     check_and_output_clustering(cluster_legalizer, vpr_setup_.PackerOpts, is_clock, &arch_);
 
+    // Clear the data structures that uses LegalizationClusterIds
+    // since compress has invalidated them.
+    loc_to_cluster_id_placed.clear();
+    cluster_locs.clear();
+    tile_clusters_matrix.clear();
+
     // Reset the cluster legalizer. This is required to load the packing.
     cluster_legalizer.reset();
     // Regenerate the clustered netlist from the file generated previously.
