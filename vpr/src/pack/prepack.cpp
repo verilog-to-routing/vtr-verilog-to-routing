@@ -908,12 +908,12 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
 
 static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
     t_pack_pattern_connections *connection, *next;
-    if (pattern_block == nullptr || pattern_block->block_id == OPEN) {
+    if (pattern_block == nullptr || pattern_block->block_id == UNDEFINED) {
         /* already traversed, return */
         return;
     }
     pattern_block_list[pattern_block->block_id] = pattern_block;
-    pattern_block->block_id = OPEN;
+    pattern_block->block_id = UNDEFINED;
     connection = pattern_block->connections;
     while (connection) {
         free_pack_pattern_block(connection->from_block, pattern_block_list);

@@ -18,7 +18,7 @@ RouteTreeNode::RouteTreeNode(RRNodeId _inode, RRSwitchId _parent_switch, RouteTr
     const auto& rr_graph = device_ctx.rr_graph;
 
     re_expand = true;
-    net_pin_index = OPEN;
+    net_pin_index = UNDEFINED;
     C_downstream = rr_graph.node_C(_inode);
     R_upstream = rr_graph.node_R(_inode);
     Tdel = 0.5 * R_upstream * C_downstream;
@@ -505,7 +505,7 @@ RouteTree::update_from_heap(RTExploredNode* hptr, int target_net_pin_index, Spat
         update_route_tree_spatial_lookup_recur(*start_of_new_subtree_rt_node, *spatial_rt_lookup);
     }
 
-    if (_net_id.is_valid() && target_net_pin_index != OPEN) /* We don't have this lookup if the tree isn't associated with a net */
+    if (_net_id.is_valid() && target_net_pin_index != UNDEFINED) /* We don't have this lookup if the tree isn't associated with a net */
         _is_isink_reached.set(target_net_pin_index, true);
 
     return {*start_of_new_subtree_rt_node, *sink_rt_node};
@@ -626,7 +626,7 @@ void RouteTree::add_non_configurable_nodes(RouteTreeNode* rt_node,
         RouteTreeNode* new_node = new RouteTreeNode(to_rr_node, edge_switch, rt_node);
         add_node(rt_node, new_node);
 
-        new_node->net_pin_index = OPEN;
+        new_node->net_pin_index = UNDEFINED;
         if (rr_graph.node_type(to_rr_node) == e_rr_type::IPIN && !is_flat) {
             new_node->re_expand = false;
         } else {

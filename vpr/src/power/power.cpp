@@ -828,7 +828,7 @@ static void power_usage_routing(t_power_usage* power_usage,
 
             for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rt_node.inode); edge_idx++) {
                 const auto& next_node_id = size_t(rr_graph.edge_sink_node(rt_node.inode, edge_idx));
-                if (next_node_id != size_t(OPEN)) {
+                if (next_node_id != size_t(UNDEFINED)) {
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
 
                     switch (rr_graph.node_type(RRNodeId(next_node_id))) {
@@ -1201,7 +1201,7 @@ void power_routing_init(const t_det_routing_arch& routing_arch) {
     rr_node_power = new t_rr_node_power[rr_graph.num_nodes()];
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         rr_node_power[(size_t)rr_id] = t_rr_node_power();
-        rr_node_power[(size_t)rr_id].driver_switch_type = OPEN;
+        rr_node_power[(size_t)rr_id].driver_switch_type = UNDEFINED;
     }
 
     /* Initialize Mux Architectures */
@@ -1267,7 +1267,7 @@ void power_routing_init(const t_det_routing_arch& routing_arch) {
     for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
         for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rr_node_idx); edge_idx++) {
             if (size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))) {
-                if (rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == OPEN) {
+                if (rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == UNDEFINED) {
                     rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type = rr_graph.edge_switch(rr_node_idx, edge_idx);
                 } else {
                     VTR_ASSERT(rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == rr_graph.edge_switch(rr_node_idx, edge_idx));

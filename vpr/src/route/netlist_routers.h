@@ -86,7 +86,8 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
     route_budgets& budgeting_inf,
     const RoutingPredictor& routing_predictor,
     const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
-    bool is_flat) {
+    bool is_flat,
+    int route_verbosity) {
     if (router_opts.router_algorithm == e_router_algorithm::TIMING_DRIVEN) {
         return std::make_unique<SerialNetlistRouter<HeapType>>(
             net_list,
@@ -100,7 +101,8 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat);
+            is_flat,
+            route_verbosity);
     } else if (router_opts.router_algorithm == e_router_algorithm::NESTED) {
         return std::make_unique<NestedNetlistRouter<HeapType>>(
             net_list,
@@ -114,7 +116,8 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat);
+            is_flat,
+            route_verbosity);
     } else if (router_opts.router_algorithm == e_router_algorithm::PARALLEL) {
 #ifdef VPR_USE_TBB
         return std::make_unique<ParallelNetlistRouter<HeapType>>(
@@ -129,7 +132,8 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat);
+            is_flat,
+            route_verbosity);
 #else
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "VPR isn't compiled with TBB support required for parallel routing");
 #endif
@@ -147,7 +151,8 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router_with_heap(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat);
+            is_flat,
+            route_verbosity);
 #else
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "VPR isn't compiled with TBB support required for parallel routing");
 #endif
@@ -169,7 +174,8 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router(
     route_budgets& budgeting_inf,
     const RoutingPredictor& routing_predictor,
     const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
-    bool is_flat) {
+    bool is_flat,
+    int route_verbosity) {
     if (router_opts.router_heap == e_heap_type::BINARY_HEAP) {
         return make_netlist_router_with_heap<BinaryHeap>(
             net_list,
@@ -183,7 +189,8 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat);
+            is_flat,
+            route_verbosity);
     } else if (router_opts.router_heap == e_heap_type::FOUR_ARY_HEAP) {
         return make_netlist_router_with_heap<FourAryHeap>(
             net_list,
@@ -197,7 +204,8 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router(
             budgeting_inf,
             routing_predictor,
             choking_spots,
-            is_flat);
+            is_flat,
+            route_verbosity);
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap type %d", router_opts.router_heap);
     }

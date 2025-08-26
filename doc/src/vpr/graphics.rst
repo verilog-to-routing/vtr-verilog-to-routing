@@ -67,27 +67,36 @@ If the **Placement Macros** drop down is set, any placement macros (e.g. carry c
 
     Placement with macros (carry chains) highlighted
 
-Visualizing Netlist Connectivity
---------------------------------
-The **Toggle Nets** drop-down list under the **Net Settings** tab toggles the nets in the circuit to be visible/invisible. Options include **Cluster Nets** and **Primitive Nets**.
+Visualizing Nets
+----------------
+To visualize nets, first enable the **Display Nets** switch under the **Net** Tab.
+
+The user can choose between drawing nets as **Flylines** (direct connections between sources and sinks) or as **Routing** (the actual routed path of the net).
+Only the **Flylines** option is available during placement, as routing has not yet been performed.
+
+The Inter-Cluster Nets and Intra-Cluster Nets options allow the user to choose whether to visualize nets between clbs or within a clb, respectively. The Intra-Cluster Routed Nets option is currently only available when **flat routing is enabled**.
 
 .. figure:: ../Images/Net_Settings.png
     :align: center 
-    :height: 200
 
-    Toggle Nets drop-down under Net Settings tab
+    Net Tab
 
-When a placement is being displayed, routing information is not yet known so nets are simply drawn as a “star;” that is, a straight line is drawn from the net source to each of its sinks.
-Click on any clb in the display, and it will be highlighted in green, while its fanin and fanout are highlighted in blue and red, respectively.
-Once a circuit has been routed the true path of each net will be shown.
+If routing is shown, clicking on a pin or channel wire will highlight the whole net in magenta.
+Multiple nets can be highlighted by pressing ctrl + mouse click.
 
-.. figure:: https://www.verilogtorouting.org/img/des90_nets.gif
+.. figure:: ../Images/show_nets.gif
     :align: center
 
-    Logical net connectivity during placement
+    Visualizing Nets
 
-If the nets routing are shown, click on a clb or pad to highlight its fanins and fanouts, or click on a pin or channel wire to highlight a whole net in magenta.
-Multiple nets can be highlighted by pressing ctrl + mouse click.
+When the **Highlight Block Fan-in and Fan-out** option is enabled, clicking on an internal block will draw its fan-in, fan-out, and internal flylines in blue, red, and yellow, respectively. 
+
+.. figure:: ../Images/highlight_flylines.png
+    :align: center
+
+    Highlight Block Fan-in and Fan-out Flylines
+
+Clicking on a clb (not the internal physical blocks) will also highlight all the fan-in and fan-out routed nets in blue and red, respectively.
 
 Visualizing the Critical Path
 -----------------------------
@@ -113,7 +122,7 @@ The **Crit. Path** drop-down will toggle through the various visualizations:
 Visualizing Routing Architecture
 --------------------------------
 
-When a routing is on screen, the **Routing Options** tab provides various options to gain more visual information.
+During the route stage, the **Route** tab provides various options to visualize router resources and statistics.
 
 .. figure:: ../Images/Routing_Options.png
     :align: center 
@@ -121,25 +130,52 @@ When a routing is on screen, the **Routing Options** tab provides various option
 
     Routing Options
 
-Clicking on **Toggle RR** lets you to choose between various views of the routing resources available in the FPGA.
+To visualize routing architecture, first enable the **Display Routing Resources** switch under the Route tab. Then, click on the checkboxes below to show/hide the types of nodes and edges you want to visualize. 
 
-.. figure:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/raw/master/img/routing_arch.gif
+The intra-cluster options are currently only available when **flat routing is enabled**. 
+
+The **Highlight Fan-In Fan-Out Edges** option will highlight the fan-in and fan-out edges of the selected routing resource in blue and red, respectively. 
+
+Multiple routing resources can be highlighted by pressing ctrl + mouse click.
+
+.. figure:: ../Images/show_rr_graph.gif
     :align: center
 
-    Routing Architecture Views
+    Visualizing Routing Architecture
 
-The routing resource view can be very useful in ensuring that you have correctly described your FPGA in the architecture description file -- if you see switches where they shouldn’t be or pins on the wrong side of a clb, your architecture description needs to be revised.
+**Node Colors**:
 
-Wiring segments are drawn in black, input pins are drawn in sky blue, and output pins are drawn in pink.
-Sinks are drawn in dark slate blue, and sources in plum.
-Direct connections between output and input pins are shown in medium purple.
-Connections from wiring segments to input pins are shown in sky blue, connections from output pins to wiring segments are shown in pink, and connections between wiring segments are shown in green.
++------------+--------+
+| Node Type  | Color  |
++============+========+
+| Channel    | Black  |
++------------+--------+
+| Input Pin  | Purple |
++------------+--------+
+| Output Pin | Pink   |
++------------+--------+
+
+**Edge Colors**:
+
++-----------------------+---------------+
+| Edge Type             | Color         |
++=======================+===============+
+| Pin to Output Pin     | Light Pink    |
++-----------------------+---------------+
+| Pin to Input Pin      | Medium Purple |
++-----------------------+---------------+
+| Output Pin to Channel | Pink          |
++-----------------------+---------------+
+| Channel to Input Pin  | Purple        |
++-----------------------+---------------+
+| Channel to Channel    | Dark Green    |
++-----------------------+---------------+
+| Non-Configurable Edge | Dark Grey     |
++-----------------------+---------------+
+
 The points at which wiring segments connect to clb pins (connection box switches) are marked with an ``x``.
 
 Switch box connections will have buffers (triangles) or pass transistors (circles) drawn on top of them, depending on the type of switch each connection uses.
-Clicking on a clb or pad will overlay the routing of all nets connected to that block on top of the drawing of the FPGA routing resources, and will label each of the pins on that block with its pin number.
-Clicking on a routing resource will highlight it in magenta, and its fanouts will be highlighted in red and fanins in blue.
-Multiple routing resources can be highlighted by pressing ctrl + mouse click.
 
 Visualizing Routing Congestion
 ------------------------------
