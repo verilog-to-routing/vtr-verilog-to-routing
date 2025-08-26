@@ -437,13 +437,13 @@ def check_two_files(
         second_metrics = second_results.metrics(arch, circuit, script_params)
         first_metrics = first_results.metrics(arch, circuit, script_params)
 
-        if first_metrics == None:
+        if first_metrics is None:
             num_qor_failures += 1
             print("Required case {}/{} missing from {} results: {}".format(
                     arch, circuit, first_name, first_results_filepath
                 ))
             continue
-        
+
         first_fail = True
         for metric in pass_requirements.keys():
 

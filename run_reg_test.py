@@ -199,8 +199,9 @@ def vtr_command_main(arg_list, prog=None):
         print("All tests passed")
     elif tests_run and total_num_func_failures != 0 or total_num_qor_failures != 0:
         print("Error: {} tests failed".format(total_num_func_failures + total_num_qor_failures))
-    
-    # If the QoR parsing script throws an exception, it returns -1. This could potentially cancel a run failure and result in a false negative.
+
+    # If the QoR parsing script throws an exception, it returns -1.
+    # This could potentially cancel a run failure and result in a false negative.
     # Absolute value is taken to avoid that.
     sys.exit(abs(total_num_func_failures) + abs(total_num_qor_failures))
 
