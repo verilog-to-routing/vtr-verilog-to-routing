@@ -99,6 +99,8 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
             float current_loc_layer = flat_placement_info.blk_layer[atom_blk_id];
             int current_loc_sub_tile = flat_placement_info.blk_sub_tile[atom_blk_id];
             if (found_valid_atom) {
+                if (current_loc_x == -1 || current_loc_y == -1)
+                    continue;
                 if (current_loc_x != atom_loc_x || current_loc_y != atom_loc_y || current_loc_layer != atom_loc_layer || current_loc_sub_tile != atom_loc_sub_tile)
                     VPR_FATAL_ERROR(VPR_ERROR_AP,
                                     "Molecule of ID %zu contains atom %s (ID: %zu) with a location (%g, %g, layer: %g, subtile: %d) "
