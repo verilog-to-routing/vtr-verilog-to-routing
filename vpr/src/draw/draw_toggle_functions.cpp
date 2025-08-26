@@ -188,11 +188,9 @@ void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app) {
     // use the pointer to get the active value
     int new_value = gtk_spin_button_get_value_as_int(self);
 
-    // assign value to draw_state->show_routing_bb, bound check + set OPEN when it's -1 (draw nothing)
-    if (new_value < -1)
-        draw_state->show_routing_bb = -1;
-    else if (new_value == -1)
-        draw_state->show_routing_bb = OPEN;
+    // assign value to draw_state->show_routing_bb, bound check + set UNDEFINED when it's -1 (draw nothing)
+    if (new_value <= -1)
+        draw_state->show_routing_bb = UNDEFINED;
     else if (new_value >= (int)(route_ctx.route_bb.size()))
         draw_state->show_routing_bb = route_ctx.route_bb.size() - 1;
     else

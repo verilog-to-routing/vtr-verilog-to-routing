@@ -15,7 +15,7 @@ NoCPlacementCheckpoint::NoCPlacementCheckpoint(NocCostHandler& noc_cost_handler)
 
     // Initializes checkpoint locations to invalid
     for (const ClusterBlockId router_bid : router_bids) {
-        router_locations_[router_bid] = t_pl_loc(OPEN, OPEN, OPEN, OPEN);
+        router_locations_[router_bid] = t_pl_loc(UNDEFINED, UNDEFINED, UNDEFINED, UNDEFINED);
     }
 }
 

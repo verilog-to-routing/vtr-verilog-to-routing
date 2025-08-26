@@ -177,26 +177,26 @@ static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
     parse_num_conns(char_prop, wc);
 
     // get from type
-    char_prop = get_attribute(node, "from_type", loc_data, from_to_required).value();
-    if (!can_skip_from_or_to) {
+    char_prop = get_attribute(node, "from_type", loc_data, from_to_required).as_string();
+    if (*char_prop) { // if from_to_required is ReqOpt::REQUIRED, char_prop is definitely not null. Otherwise, it's optional and should be null checked.
         parse_comma_separated_wire_types(char_prop, wc.from_switchpoint_set);
     }
 
     // get to type
-    char_prop = get_attribute(node, "to_type", loc_data, from_to_required).value();
-    if (!can_skip_from_or_to) {
+    char_prop = get_attribute(node, "to_type", loc_data, from_to_required).as_string();
+    if (*char_prop) {
         parse_comma_separated_wire_types(char_prop, wc.to_switchpoint_set);
     }
 
     // get the source wire point
-    char_prop = get_attribute(node, "from_switchpoint", loc_data, from_to_required).value();
-    if (!can_skip_from_or_to) {
+    char_prop = get_attribute(node, "from_switchpoint", loc_data, from_to_required).as_string();
+    if (*char_prop) {
         parse_comma_separated_wire_points(char_prop, wc.from_switchpoint_set);
     }
 
     // get the destination wire point
-    char_prop = get_attribute(node, "to_switchpoint", loc_data, from_to_required).value();
-    if (!can_skip_from_or_to) {
+    char_prop = get_attribute(node, "to_switchpoint", loc_data, from_to_required).as_string();
+    if (*char_prop) {
         parse_comma_separated_wire_points(char_prop, wc.to_switchpoint_set);
     }
 

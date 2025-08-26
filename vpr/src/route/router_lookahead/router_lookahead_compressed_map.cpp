@@ -47,7 +47,7 @@ static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_ty
 
 static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& segment_inf_vec) {
     const auto& grid = g_vpr_ctx.device().grid;
-    compressed_loc_index_map.resize({grid.width(), grid.height()}, OPEN);
+    compressed_loc_index_map.resize({grid.width(), grid.height()}, UNDEFINED);
 
     int max_seg_lenght = std::numeric_limits<int>::min();
 
@@ -187,7 +187,7 @@ static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_i
                 }
                 util::Expansion_Cost_Entry& expansion_cost_entry = routing_cost_map[to_layer][ix][iy];
                 int compressed_idx = compressed_loc_index_map[ix][iy];
-                VTR_ASSERT(compressed_idx != OPEN);
+                VTR_ASSERT(compressed_idx != UNDEFINED);
 
                 f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer][compressed_idx] = expansion_cost_entry.get_representative_cost_entry(util::e_representative_entry_method::SMALLEST);
             }
@@ -297,7 +297,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
                                                                 int segment_index,
                                                                 int chan_index) {
     int missing_point_idx = compressed_loc_index_map[missing_dx][missing_dy];
-    VTR_ASSERT(missing_point_idx != OPEN);
+    VTR_ASSERT(missing_point_idx != UNDEFINED);
     VTR_ASSERT(std::isnan(f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_point_idx].delay));
     VTR_ASSERT(std::isnan(f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_point_idx].congestion));
 
@@ -310,8 +310,8 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
     float neighbour_delay_sum = 0;
     float neighbour_cong_sum = 0;
 
-    int neighbour_x = OPEN;
-    int neighbour_y = OPEN;
+    int neighbour_x = UNDEFINED;
+    int neighbour_y = UNDEFINED;
 
     if (missing_dx == 0 && missing_dy == 0) {
         return util::Cost_Entry(0., 0.);

@@ -483,7 +483,7 @@ static void process_nodes(const Netlist<>& net_list,
                               "%d (sink) node does not have net pin index. If you are using an old .route file without this information, please re-generate the routing.", inode);
                 }
             } else {
-                net_pin_index = OPEN; // net pin index is invalid for non-SINKs
+                net_pin_index = UNDEFINED; // net pin index is invalid for non-SINKs
             }
 
             /* Allocate and load correct values to trace.head */

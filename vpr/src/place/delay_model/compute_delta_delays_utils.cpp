@@ -529,9 +529,9 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
 
     vtr::Matrix<bool> found_matrix({matrix.dim_size(0), matrix.dim_size(1)}, false);
 
-    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, from_layer_num}));
+    auto best_driver_ptcs = get_best_classes(e_pin_type::DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, from_layer_num}));
     for (int driver_ptc : best_driver_ptcs) {
-        VTR_ASSERT(driver_ptc != OPEN);
+        VTR_ASSERT(driver_ptc != UNDEFINED);
         RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(from_layer_num, source_x, source_y, e_rr_type::SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
@@ -563,9 +563,9 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
                     }
                 } else {
                     bool found_a_sink = false;
-                    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, to_layer_num}));
+                    auto best_sink_ptcs = get_best_classes(e_pin_type::RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, to_layer_num}));
                     for (int sink_ptc : best_sink_ptcs) {
-                        VTR_ASSERT(sink_ptc != OPEN);
+                        VTR_ASSERT(sink_ptc != UNDEFINED);
                         RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(to_layer_num, sink_x, sink_y, e_rr_type::SINK, sink_ptc);
 
                         if (sink_rr_node == RRNodeId::INVALID())
@@ -648,17 +648,17 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
     bool successfully_routed = false;
 
     // Get the rr nodes to route between
-    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, source_layer}));
-    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, sink_layer}));
+    auto best_driver_ptcs = get_best_classes(e_pin_type::DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, source_layer}));
+    auto best_sink_ptcs = get_best_classes(e_pin_type::RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, sink_layer}));
 
     for (int driver_ptc : best_driver_ptcs) {
-        VTR_ASSERT(driver_ptc != OPEN);
+        VTR_ASSERT(driver_ptc != UNDEFINED);
         RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_layer, source_x, source_y, e_rr_type::SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
 
         for (int sink_ptc : best_sink_ptcs) {
-            VTR_ASSERT(sink_ptc != OPEN);
+            VTR_ASSERT(sink_ptc != UNDEFINED);
             RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_layer, sink_x, sink_y, e_rr_type::SINK, sink_ptc);
 
             if (sink_rr_node == RRNodeId::INVALID())

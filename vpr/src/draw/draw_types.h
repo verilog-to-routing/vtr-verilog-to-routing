@@ -210,7 +210,7 @@ struct t_draw_state {
     ///@brief Toggles whether placement macros are shown
     e_draw_placement_macros show_placement_macros = DRAW_NO_PLACEMENT_MACROS;
 
-    int show_routing_bb = OPEN;
+    int show_routing_bb = UNDEFINED;
 
     ///@brief toggles whether routing util is shown
     e_draw_routing_util show_routing_util = DRAW_NO_ROUTING_UTIL;
