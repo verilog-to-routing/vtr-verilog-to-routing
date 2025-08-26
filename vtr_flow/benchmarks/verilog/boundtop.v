@@ -828,6 +828,15 @@ module boundcontroller (raygroupout, raygroupwe, raygroupid, enablenear, raygrou
 	     temp_u3 = u3 ;
 	     temp_v3 = v3 ;
 	     temp_id3 = id3 ;             
+             // For the unregistered values, we have to pick default behavior;
+             // these values are used in enough other defined states to appear to
+             // be reasonable fallbacks, but putting this here does change design
+             // intent:
+	     raygroupid = 0;
+	     enablenear = 1'b0 ; 
+	     raygroupwe = 1'b0 ; 
+	     bcvalid = 1'b0 ; 
+	     lhreset = 1'b1 ; 
 		case (state)
 		0 :
 		begin
