@@ -2059,7 +2059,25 @@ module resultinterface (t1b, t2b, t3b, u1b, u2b, u3b, v1b, v2b, v3b, id1b, id2b,
     end 
 
     always @(*)
-    begin
+      begin
+         next_state = state ; 
+	 temp_t1b = t1b;
+         temp_newdata = newdata;
+         temp_u1b = u1b;
+         temp_v1b = v1b;
+         temp_id1b = id1b;
+         temp_hit1b = hit1b;
+         temp_resultID = resultID;
+         temp_t2b = t2b;
+         temp_u2b = u2b;
+         temp_id2b = id2b;
+         temp_t3b = t3b;
+         temp_u3b = u3b;
+         temp_v3b = v3b;
+         temp_id3b = id3b;
+         temp_hit3b = hit3b;
+         temp_v2b = v2b;
+         temp_hit2b = hit2b;         
        case (state)
           0 :
                    begin
