@@ -784,8 +784,50 @@ module boundcontroller (raygroupout, raygroupwe, raygroupid, enablenear, raygrou
 		end
 	end
 
+   // Refactoring this with better style like resulttransmit and listhandler blocks would be very
+   // time consuming, so instead apply an old trick where we initialize the value to previous state and
+   // then let the case statement simply superimpose updates on top of that.  
 	always @*
-	  begin       
+	  begin
+             next_state = state ; 
+	     temp_busy = busy;
+	     temp_statepeek = statepeek;
+	     temp_raygroupoutl = raygroupoutl ;
+	     temp_cts = cts ;
+	     temp_passCTSout = passCTSout ;
+	     temp_resetcount = resetcount ;
+	     temp_l0reset = l0reset ;
+	     temp_addr = addr ;
+	     temp_startAddr = startAddr ;
+	     temp_boundNodeIDout = boundNodeIDout ;
+	     temp_baseaddress = baseaddress ;
+	     temp_hitmask = hitmask ;
+	     temp_hit1 = hit1 ;
+	     temp_hit2 = hit2 ;
+	     temp_hit3 = hit3 ;
+	     temp_triIDvalid = triIDvalid ;
+	     temp_triID = triID ;
+	     temp_lack = lack ;
+	     temp_addrind = addrind ;
+	     temp_addrindvalid = addrindvalid ;
+	     temp_tladdr = tladdr ;
+	     temp_tladdrvalid = tladdrvalid ;
+	     temp_count = count ;
+	     temp_subcount = subcount ;
+	     temp_maskcount = maskcount ;
+	     temp_triDatalatch = triDatalatch ;
+	     temp_t1 = t1 ;
+	     temp_u1 = u1 ;
+	     temp_v1 = v1 ;
+	     temp_id1 = id1 ;
+	     temp_t2 = t2 ;
+	     temp_u2 = u2 ;
+	     temp_v2 = v2 ;
+	     temp_id2 = id2 ;
+	     temp_t3 = t3 ;
+	     temp_u3 = u3 ;
+	     temp_v3 = v3 ;
+	     temp_id3 = id3 ;             
 		case (state)
 		0 :
 		begin
