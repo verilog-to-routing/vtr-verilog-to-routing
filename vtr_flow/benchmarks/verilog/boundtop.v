@@ -1561,7 +1561,18 @@ reg     temp_datavalid;
 
     always @(*)
 
-    begin
+      begin
+         next_state = state;
+         temp_data = data;
+         temp_waddr = waddr;
+         temp_datavalid = datavalid;
+         // For the unregistered values, we have to pick default behavior;
+         // these values are used in enough other defined states to appear to
+         // be reasonable fallbacks, but putting this here does change design
+         // intent:
+	 we = 1'b0 ; 
+	 want_addr = 1'b1 ; 
+	 want_data = 1'b0 ; 
        case (state)
           0 :
                    begin
