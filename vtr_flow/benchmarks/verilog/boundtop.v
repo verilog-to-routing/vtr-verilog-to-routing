@@ -2662,14 +2662,14 @@ module listhandler (dataarrayin, commit, hitmask, ack, boundnodeID, level, empty
    always @(*) begin
       if (state == 2'b01) begin
          case(address[2:0])
-           2'b000: datain = dataarrayin[0+:13];
-           2'b001: datain = dataarrayin[13+:13];
-           2'b010: datain = dataarrayin[26+:13];
-           2'b011: datain = dataarrayin[39+:13];
-           2'b100: datain = dataarrayin[52+:13];
-           2'b101: datain = dataarrayin[65+:13];
-           2'b110: datain = dataarrayin[78+:13];
-           2'b111: datain = dataarrayin[91+:13];
+           3'b000: datain = dataarrayin[0+:13];
+           3'b001: datain = dataarrayin[13+:13];
+           3'b010: datain = dataarrayin[26+:13];
+           3'b011: datain = dataarrayin[39+:13];
+           3'b100: datain = dataarrayin[52+:13];
+           3'b101: datain = dataarrayin[65+:13];
+           3'b110: datain = dataarrayin[78+:13];
+           3'b111: datain = dataarrayin[91+:13];
          endcase
       end
       else begin
