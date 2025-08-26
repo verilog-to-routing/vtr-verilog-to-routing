@@ -422,14 +422,6 @@ def check_two_files(
     for (arch, circuit, script_params), _ in first_results.all_metrics().items():
         first_primary_keys.append((arch, circuit, script_params))
 
-    # Ensure that first result file  has all the second result file cases
-    for arch, circuit, script_params in second_primary_keys:
-        if first_results.metrics(arch, circuit, script_params) is None:
-            raise InspectError(
-                "Required case {}/{} missing from {} results: {}".format(
-                    arch, circuit, first_name, first_results_filepath
-                )
-            )
 
     # Warn about any elements in first result file that are not found in second result file
     for arch, circuit, script_params in first_primary_keys:
@@ -444,6 +436,14 @@ def check_two_files(
     for arch, circuit, script_params in second_primary_keys:
         second_metrics = second_results.metrics(arch, circuit, script_params)
         first_metrics = first_results.metrics(arch, circuit, script_params)
+
+        if first_metrics == None:
+            num_qor_failures += 1
+            print("Required case {}/{} missing from {} results: {}".format(
+                    arch, circuit, first_name, first_results_filepath
+                ))
+            continue
+        
         first_fail = True
         for metric in pass_requirements.keys():
 
