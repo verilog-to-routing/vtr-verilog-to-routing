@@ -35,4 +35,4 @@ pass_requirements_file=pass_requirements_ap_reconstruction.txt
 
 # Pass the script params while writing the vpr constraints.
 #       With AP
-script_params=-track_memory_usage --timing_analysis off --analytical_place --ap_detailed_placer none  --ap_full_legalizer flat-recon
+script_params=-track_memory_usage --timing_analysis off --analytical_place --ap_detailed_placer none  --ap_full_legalizer flat-recon -start odin
