@@ -1,4 +1,5 @@
 #include "physical_types.h"
+#include "arch_types.h"
 #include "vtr_math.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
@@ -164,7 +165,7 @@ int t_physical_tile_type::get_sub_tile_loc_from_pin(int pin_num) const {
         }
     }
 
-    return OPEN;
+    return ARCH_FPGA_UNDEFINED_VAL;
 }
 
 bool t_physical_tile_type::is_empty() const {
@@ -172,9 +173,9 @@ bool t_physical_tile_type::is_empty() const {
 }
 
 int t_physical_tile_type::find_pin(std::string_view port_name, int pin_index_in_port) const {
-    int ipin = OPEN;
+    int ipin = ARCH_FPGA_UNDEFINED_VAL;
     int port_base_ipin = 0;
-    int num_port_pins = OPEN;
+    int num_port_pins = ARCH_FPGA_UNDEFINED_VAL;
     int pin_offset = 0;
 
     bool port_found = false;
@@ -197,7 +198,7 @@ int t_physical_tile_type::find_pin(std::string_view port_name, int pin_index_in_
         pin_offset += sub_tile.num_phy_pins;
     }
 
-    if (num_port_pins != OPEN) {
+    if (num_port_pins != ARCH_FPGA_UNDEFINED_VAL) {
         VTR_ASSERT(pin_index_in_port < num_port_pins);
 
         ipin = port_base_ipin + pin_index_in_port + pin_offset;
@@ -207,14 +208,14 @@ int t_physical_tile_type::find_pin(std::string_view port_name, int pin_index_in_
 }
 
 int t_physical_tile_type::find_pin_class(std::string_view port_name, int pin_index_in_port, e_pin_type pin_type) const {
-    int iclass = OPEN;
+    int iclass = ARCH_FPGA_UNDEFINED_VAL;
 
     int ipin = find_pin(port_name, pin_index_in_port);
 
-    if (ipin != OPEN) {
+    if (ipin != ARCH_FPGA_UNDEFINED_VAL) {
         iclass = pin_class[ipin];
 
-        if (iclass != OPEN) {
+        if (iclass != ARCH_FPGA_UNDEFINED_VAL) {
             VTR_ASSERT(class_inf[iclass].type == pin_type);
         }
     }

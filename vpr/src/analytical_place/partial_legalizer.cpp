@@ -49,6 +49,9 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
+        case e_ap_partial_legalizer::Identity:
+            return std::make_unique<IdentityPartialLegalizer>(netlist,
+                                                              log_verbosity);
         case e_ap_partial_legalizer::FlowBased:
             return std::make_unique<FlowBasedLegalizer>(netlist,
                                                         density_manager,

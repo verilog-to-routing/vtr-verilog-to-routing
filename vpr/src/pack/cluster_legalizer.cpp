@@ -673,7 +673,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* p
     for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
         const auto depth = cur_pb->pb_graph_node->pb_type->depth;
         const auto pin_class = pb_graph_pin->parent_pin_class[depth];
-        VTR_ASSERT(pin_class != OPEN);
+        VTR_ASSERT(pin_class != UNDEFINED);
 
         const auto driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
 

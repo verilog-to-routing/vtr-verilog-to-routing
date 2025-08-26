@@ -1726,7 +1726,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
             if ((to_grid_coordinate.x() < grids.width() - 1)
                 && (to_grid_coordinate.y() < grids.height() - 1)) {
-                int ipin = OPEN;
+                int ipin = UNDEFINED;
                 if (clb_to_clb_directs[i].to_clb_pin_start_index
                     > clb_to_clb_directs[i].to_clb_pin_end_index) {
                     if (true == swap) {

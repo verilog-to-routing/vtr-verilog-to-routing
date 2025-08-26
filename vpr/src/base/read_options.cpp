@@ -177,7 +177,9 @@ struct ParseAPAnalyticalSolver {
 struct ParseAPPartialLegalizer {
     ConvertedValue<e_ap_partial_legalizer> from_str(const std::string& str) {
         ConvertedValue<e_ap_partial_legalizer> conv_value;
-        if (str == "bipartitioning")
+        if (str == "none")
+            conv_value.set_value(e_ap_partial_legalizer::Identity);
+        else if (str == "bipartitioning")
             conv_value.set_value(e_ap_partial_legalizer::BiPartitioning);
         else if (str == "flow-based")
             conv_value.set_value(e_ap_partial_legalizer::FlowBased);
@@ -192,6 +194,9 @@ struct ParseAPPartialLegalizer {
     ConvertedValue<std::string> to_str(e_ap_partial_legalizer val) {
         ConvertedValue<std::string> conv_value;
         switch (val) {
+            case e_ap_partial_legalizer::Identity:
+                conv_value.set_value("none");
+                break;
             case e_ap_partial_legalizer::BiPartitioning:
                 conv_value.set_value("bipartitioning");
                 break;
@@ -205,7 +210,7 @@ struct ParseAPPartialLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"bipartitioning", "flow-based"};
+        return {"none", "bipartitioning", "flow-based"};
     }
 };
 
@@ -1070,6 +1075,8 @@ struct ParseRouterLookahead {
             conv_value.set_value(e_router_lookahead::COMPRESSED_MAP);
         else if (str == "extended_map")
             conv_value.set_value(e_router_lookahead::EXTENDED_MAP);
+        else if (str == "simple")
+            conv_value.set_value(e_router_lookahead::SIMPLE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -1089,6 +1096,8 @@ struct ParseRouterLookahead {
             conv_value.set_value("map");
         } else if (val == e_router_lookahead::COMPRESSED_MAP) {
             conv_value.set_value("compressed_map");
+        } else if (val == e_router_lookahead::SIMPLE) {
+            conv_value.set_value("simple");
         } else {
             VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
             conv_value.set_value("extended_map");
@@ -1097,7 +1106,7 @@ struct ParseRouterLookahead {
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "compressed_map", "extended_map"};
+        return {"classic", "map", "compressed_map", "extended_map", "simple"};
     }
 };
 
@@ -1942,6 +1951,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     ap_grp.add_argument<e_ap_partial_legalizer, ParseAPPartialLegalizer>(args.ap_partial_legalizer, "--ap_partial_legalizer")
         .help(
             "Controls which Partial Legalizer the Global Placer will use in the AP Flow.\n"
+            " * none: Does not perform any partial legalization. This is used for testing and debugging the AP flow and is not intended to be used as part of a real AP flow.\n"
             " * bipartitioning: Creates minimum windows around over-dense regions of the device bi-partitions the atoms in these windows such that the region is no longer over-dense and the atoms are in tiles that they can be placed into.\n"
             " * flow-based: Flows atoms from regions that are overfilled to regions that are underfilled.")
         .default_value("bipartitioning")
@@ -2975,6 +2985,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " to reduce the run-time to build the router lookahead and also its memory footprint\n"
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"
+            " * simple: A purely distance-based lookahead loaded from an external file\n"
             "\n"
             " The extended map differs from the map lookahead in the lookahead computation.\n"
             " It is better suited for architectures that have specialized routing for specific\n"

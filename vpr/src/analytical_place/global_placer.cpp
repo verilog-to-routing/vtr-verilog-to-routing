@@ -411,7 +411,15 @@ PartialPlacement SimPLGlobalPlacer::place() {
 
         // Exit condition: If the upper-bound and lower-bound HPWLs are
         // sufficiently close together then stop.
-        double hpwl_relative_gap = (ub_hpwl - lb_hpwl) / ub_hpwl;
+        double hpwl_gap = ub_hpwl - lb_hpwl;
+        double hpwl_relative_gap;
+        if (ub_hpwl != 0.0)
+            hpwl_relative_gap = hpwl_gap / ub_hpwl;
+        else if (lb_hpwl != 0.0)
+            hpwl_relative_gap = hpwl_gap / lb_hpwl;
+        else
+            hpwl_relative_gap = 0.0;
+
         if (hpwl_relative_gap < target_hpwl_relative_gap_)
             break;
     }

@@ -21,8 +21,9 @@ class SerialNetlistRouter : public NetlistRouter {
         route_budgets& budgeting_inf,
         const RoutingPredictor& routing_predictor,
         const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
-        bool is_flat)
-        : _router(_make_router(router_lookahead, router_opts, is_flat))
+        bool is_flat,
+        int route_verbosity)
+        : _router(_make_router(router_lookahead, router_opts, is_flat, route_verbosity))
         , _net_list(net_list)
         , _router_opts(router_opts)
         , _connections_inf(connections_inf)
@@ -33,7 +34,8 @@ class SerialNetlistRouter : public NetlistRouter {
         , _budgeting_inf(budgeting_inf)
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
-        , _is_flat(is_flat) {}
+        , _is_flat(is_flat)
+        , _route_verbosity(route_verbosity) {}
     ~SerialNetlistRouter() {}
 
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
@@ -44,7 +46,8 @@ class SerialNetlistRouter : public NetlistRouter {
   private:
     std::unique_ptr<ConnectionRouterInterface> _make_router(const RouterLookahead* router_lookahead,
                                                             const t_router_opts& router_opts,
-                                                            bool is_flat) {
+                                                            bool is_flat,
+                                                            int route_verbosity) {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -58,7 +61,8 @@ class SerialNetlistRouter : public NetlistRouter {
                 device_ctx.rr_rc_data,
                 device_ctx.rr_graph.rr_switch(),
                 route_ctx.rr_node_route_inf,
-                is_flat);
+                is_flat,
+                route_verbosity);
         } else {
             // Parallel Connection Router
             return std::make_unique<ParallelConnectionRouter<HeapType>>(
@@ -70,6 +74,7 @@ class SerialNetlistRouter : public NetlistRouter {
                 device_ctx.rr_graph.rr_switch(),
                 route_ctx.rr_node_route_inf,
                 is_flat,
+                route_verbosity,
                 router_opts.multi_queue_num_threads,
                 router_opts.multi_queue_num_queues,
                 router_opts.multi_queue_direct_draining);
@@ -88,6 +93,7 @@ class SerialNetlistRouter : public NetlistRouter {
     const RoutingPredictor& _routing_predictor;
     const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& _choking_spots;
     bool _is_flat;
+    int _route_verbosity;
 };
 
 #include "SerialNetlistRouter.tpp"

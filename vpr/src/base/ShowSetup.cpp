@@ -3,6 +3,7 @@
 
 #include "ap_flow_enums.h"
 #include "globals.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -141,10 +142,10 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
 
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
                     auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
-                    if (pin_type == DRIVER) {
+                    if (pin_type == e_pin_type::DRIVER) {
                         L_num_p_inputs++;
                     } else {
-                        VTR_ASSERT(pin_type == RECEIVER);
+                        VTR_ASSERT(pin_type == e_pin_type::RECEIVER);
                         L_num_p_outputs++;
                     }
                 }
@@ -435,6 +436,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case e_router_lookahead::EXTENDED_MAP:
                 VTR_LOG("EXTENDED_MAP\n");
                 break;
+            case e_router_lookahead::SIMPLE:
+                VTR_LOG("SIMPLE\n");
+                break;
             case e_router_lookahead::NO_OP:
                 VTR_LOG("NO_OP\n");
                 break;
@@ -623,6 +627,9 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
 
     VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
     switch (APOpts.partial_legalizer_type) {
+        case e_ap_partial_legalizer::Identity:
+            VTR_LOG("none\n");
+            break;
         case e_ap_partial_legalizer::BiPartitioning:
             VTR_LOG("bipartitioning\n");
             break;
