@@ -208,8 +208,8 @@ class FlatRecon : public FullLegalizer {
     /**
      * @brief Helper method to perform self clustering pass.
      *
-     * Iterates over each tile and first tries to create least amount of
-     * cluster in that tile with SKIP_INTRA_LB_ROUTE strategy. If the resulting
+     * Iterates over each tile and first tries to create the fewest clusters
+     * in that tile with SKIP_INTRA_LB_ROUTE strategy. If the resulting
      * cluster is found to be unroutable when fully checked, retry adding the
      * molecules with the FULL strategy before going to next tile.
      *
