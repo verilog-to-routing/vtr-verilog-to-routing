@@ -2,7 +2,7 @@
 
 Graphics
 ========
-VPR includes easy-to-use graphics for visualizing both the targetted FPGA architecture, and the circuit VPR has implemented on the architecture.
+VPR includes easy-to-use graphics for visualizing both the targeted FPGA architecture, and the circuit VPR has implemented on the architecture.
 
 .. image:: https://www.verilogtorouting.org/img/des90_routing_util.gif
     :align: center
@@ -325,7 +325,7 @@ On the manual move window, the user can specify the Block ID/Block name of the b
 - The To location requested by the user should be within the grid's dimensions.
 - The block to be moved is found, valid and not fixed.
 - The blocks to be swapped are compatible.
-- The location choosen by the user is different from the block's current location.
+- The location chosen by the user is different from the block's current location.
   
 If the manual move is legal, the cost summary window will display the delta cost, delta timing, delta bounding box cost and the placer's annealing decision that would result from this move. 
 
