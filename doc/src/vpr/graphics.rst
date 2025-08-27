@@ -79,7 +79,7 @@ The Inter-Cluster Nets and Intra-Cluster Nets options allow the user to choose w
 
 .. figure:: ../Images/Net_Settings.png
     :align: center 
-    :width: 50%
+    :width: 25%
 
     Net Tab
 
@@ -129,7 +129,7 @@ During the route stage, the **Route** tab provides various options to visualize 
 
 .. figure:: ../Images/Routing_Options.png
     :align: center 
-    :width: 50%
+    :width: 25%
 
     Routing Options
 
@@ -310,7 +310,7 @@ The manual moves feature allows the user to specify the next move in placement. 
 
 .. figure:: ../Images/manual_move.png
     :align: center
-    :width: 50%
+    :width: 25%
 
     Misc. Tab
 
