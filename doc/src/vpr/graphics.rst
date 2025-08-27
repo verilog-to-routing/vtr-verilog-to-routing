@@ -111,7 +111,7 @@ Each stage between primitive pins is shown in a different colour.
     :align: center 
     :width: 100%
 
-    Critcal Path with all options enabled.
+    Critical Path with all options enabled.
 
 * During placement the critical path is shown only as flylines.
 * During routing the critical path can be shown as both flylines and routed net connections.
