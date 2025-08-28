@@ -24,15 +24,15 @@ A Placement Constraints File Example
 					<add_region x_low="7" y_low="3" x_high="7" y_high="6"/>
 			</partition>
 			<partition name="Part1">
-					<add_region x_low="3" y_low="3" x_high="7" y_high="7" subtile="0"/> <!-- One specific location is specified -->
+					<add_region x_low="3" y_low="7" x_high="3" y_high="7" subtile="0"/> <!-- One specific location is specified -->
 					<add_atom name_pattern="n4917"/>
 					<add_atom name_pattern="n6010"/>
 			</partition>
 
-            <partition name="Part2">
+			<partition name="Part2">
 					<add_region x_low="3" y_low="3" x_high="85" y_high="85"/> <!-- When the layer is not explicitly specified, layer 0 is assumed. -->
-                    <add_region x_low="8" y_low="5" x_high="142" y_high="29 layer_low="0" layer_high="1"/> <!-- In 3D architectures, the region can span across multiple layers. -->
-                    <add_region x_low="6" y_low="55" x_high="50" y_high="129 layer_low="2" layer_high="2"/> <!-- If the region only covers a non-zero layer, both layer_low and layer_high must be set the same value. -->
+					<add_region x_low="8" y_low="5" x_high="142" y_high="29" layer_low="0" layer_high="1"/> <!-- In 3D architectures, the region can span across multiple layers. -->
+					<add_region x_low="6" y_low="55" x_high="50" y_high="129" layer_low="2" layer_high="2"/> <!-- If the region only covers a non-zero layer, both layer_low and layer_high must be set the same value. -->
 					<add_atom name_pattern="n135"/>
 					<add_atom name_pattern="n7016"/>
 			</partition>
@@ -56,74 +56,66 @@ The top level tag is the ``<vpr_constraints>`` tag. This tag can contain one ``<
 Partitions, Atoms, and Regions
 ------------------------------
 
-Partition
-^^^^^^^^^
+.. arch:tag:: <partition name="string">
 
-A partition is made up of two components - a group of primitives (a.k.a. atoms) that must be constrained to the same area on the chip, and a set of one or more regions specifying where those primitives must be constrained. The information for each partition is contained within a ``<partition>`` tag, and the number of ``partition`` tags that the partition_list tag can contain is unbounded. 
+	A partition is made up of two components - a group of primitives (a.k.a. atoms) that must be constrained to the same area on the chip, and a set of one or more regions specifying where those primitives must be constrained. The information for each partition is contained within a ``<partition>`` tag, and the number of ``partition`` tags that the partition_list tag can contain is unbounded. 
 
-:req_param name:
-   A name for the partition.
+	:req_param name:
+		A name for the partition.
 
-:req_param add_atom:
-   A tag used for adding an atom primitive to the partition.
+	.. arch:tag:: <add_atom name_pattern="string">
+		An ``<add_atom>`` tag is used to add an atom that must be constrained to the partition. 
+		Each partition can contain any number of atoms from the circuit. 
+		The ``<add_atom>`` tag has the following attribute:
 
-:req_param add_region:
-   A tag used for specifying a region for the partition.
+		:req_param name_pattern:
+			The name of the atom which can be the exact name of an atom from the input atom netlist passed to VPR, or a regular expression pattern matching one or more atom names. 
+			VPR first searches the netlist for an exact match. 
+			If no exact match is found, it then assumes that the given name is a regex pattern and searches for atoms whose names match the pattern.
+			For example, to add all atoms ``alu[0]``, ``alu[1]``, and ``alu[2]`` to the partition ``Part0``, the user can use ``alu.*`` as the ``name_pattern`` in the ``<add_atom>`` tag.
+	
+	.. arch:tag:: <add_region x_low="int" y_low="int" x_high="int" y_high="int" subtile="int" layer_low="int" layer_high="int">
+		An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
+		on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
+		overlap with each other (in order to ease processing when loading in the file).
+		An ``<add_region>`` tag has the following attributes.
 
-Atom 
-^^^^
+			:req_param x_low:
+				The x value of the lower left point of the rectangle.
 
-An ``<add_atom>`` tag is used to add an atom that must be constrained to the partition. Each partition can contain any number of atoms from the circuit. The ``<add_atom>`` tag has the following attribute:
+			:req_param y_low:
+				The y value of the lower left point of the rectangle.
 
-:req_param name_pattern:
-   The name of the atom.
+			:req_param x_high:
+				The x value of the upper right point of the rectangle.
 
-The ``name_pattern`` can either be the exact name of an atom from the input atom netlist passed to VPR, or a regular expression pattern matching one or more atom names. VPR first searches the netlist for an exact match. If no exact match is found, it then assumes that the given name is a regex pattern and searches for atoms whose names match the pattern.
+			:req_param y_high:
+				The y value of the upper right point of the rectangle.
 
-For example, to add all atoms ``alu[0]``, ``alu[1]``, and ``alu[2]`` to the partition ``Part0``, the user can use ``alu.*`` as the ``name_pattern`` in the ``<add_atom>`` tag.
+			:opt_param subtile:
+				Each x, y location on the grid may contain multiple locations known as subtiles. This parameter is an optional value specifying the subtile location that the atom(s) of the partition shall be constrained to.
+				This attribute is commonly used when constraining an atom to a specific location on the chip (e.g. an exact I/O location). 
+				It is legal to use with larger regions, but uncommon.
+
+			:opt_param layer_low:
+				The lowest layer number that the region covers.
+				**Default:** ``0``
+
+			:opt_param layer_high:
+				The highest layer number that the region covers.
+				**Default:** ``0``
 
 
-Region
-^^^^^^
+		In 2D architectures, ``layer_low`` and ``layer_high`` can be safely ignored as their default value is 0.
+		In 3D architectures, a region can span across multiple layers or be assigned to a specific layer.
+		For assigning a region to a specific non-zero layer, the user should set both ``layer_low`` and ``layer_high`` to the
+		desired layer number. If a layer range is to be covered by the region, the user set ``layer_low`` and ``layer_high`` to
+		different values.
 
-An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
-on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
-overlap with each other (in order to ease processing when loading in the file).
-An ``<add_region>`` tag has the following attributes.
+		If a user would like to specify an area on the chip with an unusual shape (e.g. L-shaped or T-shaped),
+		they can simply add multiple ``<add_region>`` tags to cover the area specified.
 
-:req_param x_low:
-   The x value of the lower left point of the rectangle.
-
-:req_param y_low:
-   The y value of the lower left point of the rectangle.
-
-:req_param x_high:
-   The x value of the upper right point of the rectangle.
-
-:req_param y_high:
-   The y value of the upper right point of the rectangle.
-
-:opt_param subtile:
-   Each x, y location on the grid may contain multiple locations known as subtiles. This parameter is an optional value specifying the subtile location that the atom(s) of the partition shall be constrained to.
-
-:opt_param layer_low:
-    The lowest layer number that the region covers. The default value is 0.
-
-:opt_param layer_high:
-    The highest layer number that the region covers. The default value is 0.
-
-The optional ``subtile`` attribute is commonly used when constraining an atom to a specific location on the chip (e.g. an exact I/O location). It is legal to use with larger regions, but uncommon.
-
-In 2D architectures, ``layer_low`` and ``layer_high`` can be safely ignored as their default value is 0.
-In 3D architectures, a region can span across multiple layers or be assigned to a specific layer.
-For assigning a region to a specific non-zero layer, the user should set both ``layer_low`` and ``layer_high`` to the
-desired layer number. If a layer range is to be covered by the region, the user set ``layer_low`` and ``layer_high`` to
-different values.
-
-If a user would like to specify an area on the chip with an unusual shape (e.g. L-shaped or T-shaped),
-they can simply add multiple ``<add_region>`` tags to cover the area specified.
-
-It is strongly recommended that different partitions do not overlap. The packing algorithm compares the number clustered
-blocks and the number of physical blocks in a region to decide pack atoms inside a partition more aggressively when
-there are not enough resources in a partition. Overlapping partitions causes some physical blocks to be counted in more
-than one partition.
+		It is strongly recommended that different partitions do not overlap. The packing algorithm compares the number clustered
+		blocks and the number of physical blocks in a region to decide pack atoms inside a partition more aggressively when
+		there are not enough resources in a partition. Overlapping partitions causes some physical blocks to be counted in more
+		than one partition.

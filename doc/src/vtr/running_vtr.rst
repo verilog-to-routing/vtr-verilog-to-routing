@@ -67,7 +67,7 @@ Extracting Information & Statistics
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 VTR can also extract useful information and statistics from executions of the flow such as area, speed tool execution time etc.
 
-For single benchmarks :ref:`parse_vtr_flow` extrastics statistics from a single execution of the flow.
+For single benchmarks :ref:`parse_vtr_flow` extract statistics from a single execution of the flow.
 
 For a :ref:`Task <vtr_tasks>`, :ref:`parse_vtr_task` can be used to parse and assemble statistics for the entire task (i.e. multiple circuits and architectures).
 

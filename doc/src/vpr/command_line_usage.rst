@@ -873,8 +873,6 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     This place location file is in the same format as a :ref:`.place file <vpr_place_file>`, but does not require the first two lines which are normally at the top     of a placement file that specify the netlist file, netlist ID, and array size.
 
-    **Default:** ````.
-
 .. option:: --place_algorithm {bounding_box | criticality_timing | slack_timing}
 
     Controls the algorithm used by the placer.
@@ -1051,7 +1049,7 @@ The following options are only valid when the placement engine is in timing-driv
     Controls how critical a connection is considered as a function of its slack, at the start of the anneal.
 
     If this value is 0, all connections are considered equally critical.
-    If this value is large, connections with small slacks are considered much more critical than connections with small slacks.
+    If this value is large, connections with small slacks are considered much more critical than connections with large slacks.
     As the anneal progresses, the exponent used in the criticality computation gradually changes from its starting value of td_place_exp_first to its final value of :option:`--td_place_exp_last`.
 
     **Default:** ``1.0``
@@ -1068,7 +1066,7 @@ The following options are only valid when the placement engine is in timing-driv
 
     Controls how the timing-driven placer estimates delays.
 
-     * ``simple`` The placement delay estimator is built from the router lookahead. This takes less CPU time to build and it and still as accurate as the ``delta` model.
+     * ``simple`` The placement delay estimator is built from the router lookahead. This takes less CPU time to build and it is still as accurate as the ``delta`` model.
      * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position.
      * ``delta_override`` Like ``delta`` but also includes special overrides to ensure effects of direct connects between blocks are accounted for.
        This is potentially more accurate but is more complex and depending on the architecture (e.g. number of direct connects) may increase place run-time.
@@ -1104,7 +1102,7 @@ The following options are only valid when the placement engine is in timing-driv
 
     Specifies the scaling factor for cell setup times used by the placer.
     This effectively controls whether the placer should try to achieve extra margin on setup paths.
-    For example a value of 1.1 corresponds to requesting 10%% setup margin.
+    For example a value of 1.1 corresponds to requesting 10% setup margin.
 
     **Default:** ``1.0``
 
@@ -1138,7 +1136,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
 
     XML file containing the list of traffic flows within the NoC (communication between routers).
 
-    .. note:: noc_flows_file are required to specify if NoC optimization is turned on (--noc on).
+    .. note:: It is required to specify a ``noc_flows_file`` if NoC optimization is turned on (``--noc on``).
 
 .. option:: --noc_routing_algorithm {xy_routing | bfs_routing | west_first_routing | north_last_routing | negative_first_routing | odd_even_routing}
 
@@ -1862,14 +1860,14 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``off``
 
-.. option:: --congested_routing_iteration_threshold CONGESTED_ROUTING_ITERATION_THRESHOLD
+.. option:: --congested_routing_iteration_threshold <float>
 
     Controls when the router enters a high effort mode to resolve lingering routing congestion.
     Value is the fraction of max_router_iterations beyond which the routing is deemed congested.
 
     **Default:** ``1.0`` (never)
 
-.. option:: --route_bb_update {static, dynamic}
+.. option:: --route_bb_update {static | dynamic}
 
     Controls how the router's net bounding boxes are updated:
 
@@ -1878,14 +1876,14 @@ The following options are only valid when the router is in timing-driven mode (t
 
      **Default:** ``dynamic``
 
-.. option:: --router_high_fanout_threshold ROUTER_HIGH_FANOUT_THRESHOLD
+.. option:: --router_high_fanout_threshold <int>
 
     Specifies the net fanout beyond which a net is considered high fanout.
     Values less than zero disable special behaviour for high fanout nets.
 
     **Default:** ``64``
 
-.. option:: --router_lookahead {classic, map}
+.. option:: --router_lookahead {classic | map | compressed_map | extended_map | simple}
 
     Controls what lookahead the router uses to calculate cost of completing a connection.
 
@@ -1970,7 +1968,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``-2``
 
-.. option:: --router_debug_sink_rr ROUTER_DEBUG_SINK_RR
+.. option:: --router_debug_sink_rr <int>
 
     .. note:: This option is likely only of interest to developers debugging the routing algorithm
 
@@ -2280,7 +2278,7 @@ Analysis Options
 
             It is possible that by opening a switch between (1,2) to (1,1), CHANY:2113 actually only extends from (1,3) to (1,2).
 
-            1. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
+            2. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
                There is no logical contradiction, but for clarification, it is best to see an explanation of the VPR coordinate system.
                The path can also be visualized by VPR graphics, as an illustration of this point:
 
@@ -2292,17 +2290,17 @@ Analysis Options
 
             :numref:`fig_path_2` shows the routing resources used in Path #2 and their locations on the FPGA.
 
-            1. The signal emerges from near the top-right corner of the block to_FFC (OPIN:1479)  and joins the topmost horizontal segment of length 1 (CHANX:2073).
+            3. The signal emerges from near the top-right corner of the block to_FFC (OPIN:1479)  and joins the topmost horizontal segment of length 1 (CHANX:2073).
 
-            2. The signal proceeds to the left, then connects to the outermost, blue vertical segment of length 0 (CHANY:2139).
+            4. The signal proceeds to the left, then connects to the outermost, blue vertical segment of length 0 (CHANY:2139).
 
-            3. The signal continues downward and attaches to the horizontal segment of length 1 (CHANX:2040).
+            5. The signal continues downward and attaches to the horizontal segment of length 1 (CHANX:2040).
 
-            4. Of the aforementioned horizontal segment, after travelling one linear unit to the right, the signal jumps on a vertical segment of length 0 (CHANY:2166).
+            6. Of the aforementioned horizontal segment, after travelling one linear unit to the right, the signal jumps on a vertical segment of length 0 (CHANY:2166).
 
-            5. The signal travels upward and promptly connects to a horizontal segment of length 0 (CHANX:2076).
+            7. The signal travels upward and promptly connects to a horizontal segment of length 0 (CHANX:2076).
 
-            6. This segment connects to the green destination io (3,4).
+            8. This segment connects to the green destination io (3,4).
 
         * ``debug``: Like ``detailed``, but includes additional VPR internal debug information such as timing graph node IDs (``tnode``) and routing SOURCE/SINK nodes.
 

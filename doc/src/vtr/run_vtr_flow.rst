@@ -199,16 +199,16 @@ Detailed Command-line Options
 
 .. option:: -min_hard_mult_size <int>
 
-    Tells Parmys/ODIN II the minimum multiplier size that should be implemented
-    using hard multiplier (if available). Smaller multipliers will be
-    implemented using soft logic.
+    Tells Parmys/ODIN II the minimum multiplier size (in bits) that should be 
+    implemented using hard multiplier (if available). Smaller multipliers will 
+    be implemented using soft logic.
 
     **Default:** 3
 
 .. option:: -min_hard_adder_size <int>
 
-    Tells Parmys/ODIN II the minimum adder size that should be implemented
-    using hard adders (if available). Smaller adders will be
+    Tells Parmys/ODIN II the minimum adder size (in bits) that should be 
+    implemented using hard adders (if available). Smaller adders will be
     implemented using soft logic.
 
     **Default:** 1
@@ -232,18 +232,6 @@ Detailed Command-line Options
 .. option:: -use_odin_simulation 
     
     Tells ODIN II to run simulation.
-
-.. option:: -min_hard_mult_size <min_hard_mult_size>
-    
-    Tells Parmys/ODIN II the minimum multiplier size (in bits) to be implemented using hard multiplier.
-    
-    **Default:** 3
-
-.. option:: -min_hard_adder_size <MIN_HARD_ADDER_SIZE>
-    
-    Tells Parmys/ODIN II the minimum adder size (in bits) that should be implemented using hard adder.
-    
-    **Default:** 1
 
 .. option:: -top_module <TOP_MODULE>
     
