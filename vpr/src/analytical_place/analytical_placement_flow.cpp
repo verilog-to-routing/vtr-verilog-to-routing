@@ -18,6 +18,7 @@
 #include "gen_ap_netlist_from_atoms.h"
 #include "global_placer.h"
 #include "globals.h"
+#include "load_flat_place.h"
 #include "netlist_fwd.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
@@ -80,6 +81,7 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
  * to be generated on ap_netlist or have the same blocks.
  */
 static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, const Prepacker& prepacker, PartialPlacement& p_placement) {
+    size_t num_mols_assigned_to_center = 0;
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
         // Get the molecule that AP block represents
         PackMoleculeId mol_id = ap_netlist.block_molecule(ap_blk_id);
@@ -97,6 +99,8 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
             float current_loc_layer = flat_placement_info.blk_layer[atom_blk_id];
             int current_loc_sub_tile = flat_placement_info.blk_sub_tile[atom_blk_id];
             if (found_valid_atom) {
+                if (current_loc_x == -1 || current_loc_y == -1)
+                    continue;
                 if (current_loc_x != atom_loc_x || current_loc_y != atom_loc_y || current_loc_layer != atom_loc_layer || current_loc_sub_tile != atom_loc_sub_tile)
                     VPR_FATAL_ERROR(VPR_ERROR_AP,
                                     "Molecule of ID %zu contains atom %s (ID: %zu) with a location (%g, %g, layer: %g, subtile: %d) "
@@ -105,21 +109,53 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                                     current_loc_x, current_loc_y, current_loc_layer, current_loc_sub_tile,
                                     atom_loc_x, atom_loc_y, atom_loc_layer, atom_loc_sub_tile);
             } else {
-                atom_loc_x = current_loc_x;
-                atom_loc_y = current_loc_y;
-                atom_loc_layer = current_loc_layer;
-                atom_loc_sub_tile = current_loc_sub_tile;
-                found_valid_atom = true;
+                if (current_loc_x != -1 && current_loc_y != -1) {
+                    atom_loc_x = std::clamp(current_loc_x, 0.0f,
+                                            static_cast<float>(g_vpr_ctx.device().grid.width() -1));
+                    atom_loc_y = std::clamp(current_loc_y, 0.0f,
+                                            static_cast<float>(g_vpr_ctx.device().grid.height() -1));
+                    // If current_loc_layer or current_loc_sub_tile are unset (-1), default to layer 0 and sub_tile 0.
+                    if (current_loc_layer == -1)
+                        current_loc_layer = 0;
+                    if (current_loc_sub_tile == -1)
+                        current_loc_sub_tile = 0;
+                    atom_loc_layer = current_loc_layer;
+                    atom_loc_sub_tile = current_loc_sub_tile;
+                    found_valid_atom = true;
+                }
             }
         }
-        // Ensure that there is a valid atom in the molecule to pass its location.
-        VTR_ASSERT_MSG(found_valid_atom, "Each molecule must contain at least one valid atom");
-        // Pass the placement information
-        p_placement.block_x_locs[ap_blk_id] = atom_loc_x;
-        p_placement.block_y_locs[ap_blk_id] = atom_loc_y;
-        p_placement.block_layer_nums[ap_blk_id] = atom_loc_layer;
-        p_placement.block_sub_tiles[ap_blk_id] = atom_loc_sub_tile;
+        // If any atom in the molecule has a location assigned, use that location
+        // for the entire AP block. Otherwise, assign the AP block to the center
+        // of the device grid and update the flat placement info for all its atoms accordingly.
+        if (!found_valid_atom) {
+            num_mols_assigned_to_center++;
+            VTR_LOG_WARN("No atoms of molecule ID %zu provided in the flat placement. Assigning it to the device center.\n", mol_id);
+            p_placement.block_x_locs[ap_blk_id] = g_vpr_ctx.device().grid.width() / 2.0f;
+            p_placement.block_y_locs[ap_blk_id] = g_vpr_ctx.device().grid.height() / 2.0f;
+            p_placement.block_layer_nums[ap_blk_id] = 0;
+            p_placement.block_sub_tiles[ap_blk_id] = 0;
+            // Update flat placement for atoms of that molecule accordingly.
+            // Needed for flat placement reconstruction statistics reporting.
+            for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_x_pos[atom_blk_id] = g_vpr_ctx.device().grid.width() / 2.0f;
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_y_pos[atom_blk_id] = g_vpr_ctx.device().grid.height() / 2.0f;
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_layer[atom_blk_id] = 0;
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info().blk_sub_tile[atom_blk_id] = 0;
+            }
+            // TODO: If an atom's location is specified in the placement constraints,
+            //       verify it matches the assigned flat placement. If not, override the
+            //       flat placement with the constraint location and warn the user.
+        } else {
+            // Pass the placement information
+            p_placement.block_x_locs[ap_blk_id] = atom_loc_x;
+            p_placement.block_y_locs[ap_blk_id] = atom_loc_y;
+            p_placement.block_layer_nums[ap_blk_id] = atom_loc_layer;
+            p_placement.block_sub_tiles[ap_blk_id] = atom_loc_sub_tile;
+        }
     }
+    VTR_LOG("%zu of %zu molecules placed at device center (no atoms of these molecules found in flat placement).\n",
+        num_mols_assigned_to_center, ap_netlist.blocks().size());
 }
 
 /**
@@ -244,6 +280,15 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     print_resource_usage();
     // Print the device utilization
     print_device_utilization(target_device_utilization);
+
+    // Write out a flat placement file at the end of Full Legalization if the
+    // option is specified.
+    if (!vpr_setup.FileNameOpts.write_legalized_flat_place_file.empty()) {
+        write_flat_placement(vpr_setup.FileNameOpts.write_legalized_flat_place_file.c_str(),
+                             g_vpr_ctx.clustering().clb_nlist,
+                             g_vpr_ctx.placement().block_locs(),
+                             g_vpr_ctx.clustering().atoms_lookup);
+    }
 
     // Run the Detailed Placer.
     std::unique_ptr<DetailedPlacer> detailed_placer = make_detailed_placer(ap_opts.detailed_placer_type,

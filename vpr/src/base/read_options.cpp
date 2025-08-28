@@ -221,8 +221,8 @@ struct ParseAPFullLegalizer {
             conv_value.set_value(e_ap_full_legalizer::Naive);
         else if (str == "appack")
             conv_value.set_value(e_ap_full_legalizer::APPack);
-        else if (str == "basic-min-disturbance")
-            conv_value.set_value(e_ap_full_legalizer::Basic_Min_Disturbance);
+        else if (str == "flat-recon")
+            conv_value.set_value(e_ap_full_legalizer::FlatRecon);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_full_legalizer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -240,8 +240,8 @@ struct ParseAPFullLegalizer {
             case e_ap_full_legalizer::APPack:
                 conv_value.set_value("appack");
                 break;
-            case e_ap_full_legalizer::Basic_Min_Disturbance:
-                conv_value.set_value("basic-min-disturbance");
+            case e_ap_full_legalizer::FlatRecon:
+                conv_value.set_value("flat-recon");
             default:
                 VTR_ASSERT(false);
         }
@@ -249,7 +249,7 @@ struct ParseAPFullLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"naive", "appack", "basic-min-disturbance"};
+        return {"naive", "appack", "flat-recon"};
     }
 };
 
@@ -1847,7 +1847,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     file_grp.add_argument(args.write_flat_place_file, "--write_flat_place")
         .help(
-            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists cluster and intra-cluster placement coordinates for each atom and can be used to reconstruct a clustering and placement solution.")
+            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_legalized_flat_place_file, "--write_legalized_flat_place")
+        .help(
+            "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
@@ -1957,7 +1962,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls which Full Legalizer to use in the AP Flow.\n"
             " * naive: Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.\n"
             " * appack: Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.\n"
-            " * basic-min-disturbance: Use the Basic Min. Disturbance Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.")
+            " * flat-recon: Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.")
         .default_value("appack")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

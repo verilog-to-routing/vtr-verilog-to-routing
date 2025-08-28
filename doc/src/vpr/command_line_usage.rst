@@ -444,22 +444,22 @@ Use the options below to override this default naming behaviour.
     Reads a file containing the locations of each atom on the FPGA.
     This is used by the packer to better cluster atoms together.
 
-    The flat placement file (which often ends in ``.fplace``) is a text file
+    The flat placement file (which often ends in :ref:`.fplace <vpr_flat_place_file>`) is a text file
     where each line describes the location of an atom. Each line in the flat
     placement file should have the following syntax:
 
     .. code-block:: none
 
-        <atom_name : str> <x : float> <y : float> <layer : float> <atom_sub_tile : int> <atom_site_idx? : int>
+        <atom_name : str> <x : float> <y : float> <layer : float> <atom_sub_tile : int>
 
     For example:
 
     .. code-block:: none
 
-        n523  6 8 0 0 3
-        n522  6 8 0 0 5
-        n520  6 8 0 0 2
-        n518  6 8 0 0 16
+        n523  6 8 0 0
+        n522  6 8 0 0
+        n520  6 8 0 0
+        n518  6 8 0 0
 
     The position of the atom on the FPGA is given by 3 floating point values
     (``x``, ``y``, ``layer``). We allow for the positions of atom to be not
@@ -475,25 +475,29 @@ Use the options below to override this default naming behaviour.
     the sub-tile of an atom is unkown (allowing the packing algorithm to choose
     any sub-tile at the given (x, y, layer) location).
 
-    The ``site_idx`` is an optional index into a linearized list of primitive
-    locations within a cluster-level block which may be used as a hint to
-    reconstruct clusters.
-
     .. warning::
 
         This interface is currently experimental and under active development.
 
 .. option:: --write_flat_place <file>
 
-    Writes the post-placement locations of each atom into a flat placement file.
+    Writes the post-placement locations of each atom into a flat placement file
+    (see :ref:`flat placement file format <vpr_flat_place_file>`).
 
     For each atom in the netlist, the following information is stored into the
     flat placement file:
 
     * The x, y, and sub_tile location of the cluster that contains this atom.
-    * The flat site index of this atom in its cluster. The flat site index is a
-      linearized ID of primitive locations in a cluster. This may be used as a
-      hint to reconstruct clusters.
+
+.. option:: --write_legalized_flat_place <file>
+
+    Writes the post-legalization locations of each atom into a flat placement file
+    (see :ref:`flat placement file format <vpr_flat_place_file>`).
+
+    For each atom in the netlist, the following information is stored into the
+    flat placement file:
+
+    * The x, y, and sub_tile location of the cluster that contains this atom.
 
 .. _netlist_options:
 
@@ -1287,13 +1291,19 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``bipartitioning``
 
-.. option:: --ap_full_legalizer {naive | appack}
+.. option:: --ap_full_legalizer {naive | appack | flat-recon}
 
     Controls which Full Legalizer to use in the AP Flow.
 
     * ``naive`` Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.
 
     * ``appack`` Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.
+
+    * ``flat-recon`` Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement that is
+      as close to the incoming flat placement as possible. It can be used to read a flat placement from a :ref:`.fplace <vpr_flat_place_file>` file
+      or on the (in memory) output of VTR's integrated Global Placement algorithm. In both cases, it expects the given solution to be close to legal.
+      If used with a :ref:`.fplace <vpr_flat_place_file>` file, each atom in a molecule should have compatible location information. It is legal to
+      leave some molecules unconstrained; the reconstruction phase will choose where to place them but does not attempt to optimize these locations.
 
     **Default:** ``appack``
 

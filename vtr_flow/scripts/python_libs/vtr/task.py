@@ -327,6 +327,7 @@ def parse_circuit_constraint_list(circuit_constraint_list, circuits_list, arch_l
             "device",
             "constraints",
             "route_chan_width",
+            "read_flat_place",
         ]
     )
 
@@ -797,6 +798,10 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     constrained_route_w = config.circuit_constraints[circuit]["route_chan_width"]
     if constrained_route_w is not None:
         cmd += ["--route_chan_width", constrained_route_w]
+    # Check if the circuit has a flat placement to read.
+    flat_placement_file = config.circuit_constraints[circuit]["read_flat_place"]
+    if flat_placement_file is not None:
+        cmd += ["--read_flat_place", flat_placement_file]
 
 
 def resolve_vtr_source_file(config, filename, base_dir=""):
