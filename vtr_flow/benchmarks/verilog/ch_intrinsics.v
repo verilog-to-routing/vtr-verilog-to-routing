@@ -28,10 +28,9 @@ reg str_write_enable;
 reg [7:0] str_in;
 wire [7:0] str_out;
 
-
-defparam _str.ADDR_WIDTH = 5;
-defparam _str.DATA_WIDTH = 8;
-single_port_ram _str (
+single_port_ram 
+  # (.ADDR_WIDTH(5), .DATA_WIDTH(8))
+_str (
 	.clk( clk ),
 	.addr( str_address ),
 	.we( str_write_enable ),
@@ -43,28 +42,25 @@ single_port_ram _str (
 wire  tag;
 
 //must use all wires inside module.....
-assign tag = |memory_controller_address & |memory_controller_address & | memory_controller_in;
+assign tag = |memory_controller_address & | memory_controller_in;
 reg [`MEMORY_CONTROLLER_TAG_SIZE-1:0] prevTag;
 always @(posedge clk)
 	prevTag <= tag;
-always @( tag or memory_controller_address or memory_controller_write_enable or memory_controller_in)
+   
+always @(posedge clk)
 begin
-
-case(tag)
-
-	1'b0:
+   if (~tag)
 	begin
-		str_address = memory_controller_address[5-1+0:0];
-		str_write_enable = memory_controller_write_enable;
-		str_in[8-1:0] = memory_controller_in[8-1:0];
+		str_address <= memory_controller_address[4:0];
+		str_write_enable <= memory_controller_write_enable;
+		str_in[7:0] <= memory_controller_in[7:0];
 	end
-endcase
+end
 
-case(prevTag)
-
-	1'b0:
-		memory_controller_out = str_out;
-endcase
+always @(posedge clk)
+begin
+  if (~prevTag)
+    memory_controller_out <= str_out;
 end
 
 endmodule 
@@ -276,17 +272,16 @@ case(cur_state)
 	end
 endcase
 
-always @(cur_state)
+always @(posedge clk)
 begin
 
-	case(cur_state)
-	4'b1101:
+	if (cur_state == 4'b1101)
 	begin
-		memory_controller_address = s_07;
-		memory_controller_write_enable = 1'b1;
-		memory_controller_in = c;
+		memory_controller_address <= s_07;
+		memory_controller_write_enable <= 1'b1;
+		memory_controller_in <= c;
 	end
-	endcase
+
 end
 
 endmodule
