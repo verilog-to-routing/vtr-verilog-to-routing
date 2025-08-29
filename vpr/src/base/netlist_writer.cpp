@@ -1918,6 +1918,26 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     // the maximum setup and hold constraints of all paths. To
                     // account for the internal delays of the black-box, we add
                     // port delays equal to the max/min path delays to registers.
+                    //
+                    // NOTE: Here we are implicitly changing the underlying timing
+                    //       model from how VTR normally represents the internals of
+                    //       primitives. In order to properly model the internals of
+                    //       primitives in the same was as VTR, the timing model must
+                    //       include internal timing nodes which are explicitly defined
+                    //       in the model. VTR implicitly creates these nodes, but leaves
+                    //       them unnamed. This causes issues when trying to use SDF
+                    //       files to annotate those nodes since the names are not
+                    //       guaranteed. Here, we simplify the timing model to act
+                    //       as if it is a single register-file, where all inputs
+                    //       which have timing arcs through registers have setup/
+                    //       hold delays and all outputs which have timing arcs
+                    //       through registers have clock to Q delays. This is
+                    //       a pessimistic model which is more stable for modeling
+                    //       purposes.
+                    //       Ideally we should strive to use the same timing model
+                    //       as VTR externally; however, we would need to specify
+                    //       the names of the internal nodes in the architecture
+                    //       description somehow or come up with a common convention.
 
                     // Maintain a mapping from [clock port ID][clock pin ID] -> max setup/hold time of this ipin.
                     std::unordered_map<AtomPortId, std::unordered_map<AtomPinId, std::pair<double, double>>> ipin_su_hld_time;
@@ -2044,6 +2064,12 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     // the propagation delay. This tcq would need to be the min / max
                     // delay across all clocks with timing paths going through this
                     // output pin.
+                    //
+                    // NOTE: See the comment in the input ports processing. This
+                    //       code is implicitly changing the timing model from
+                    //       VTR's model which pretends that inputs and outputs
+                    //       act like registers, to a more explicit model where
+                    //       the entire primitive acts like a register.
 
                     // Maintain a mapping from [clock port ID][clock pin ID] -> min/max delay to this opin.
                     std::unordered_map<AtomPortId, std::unordered_map<AtomPinId, DelayTriple>> opin_total_cq_delays;
