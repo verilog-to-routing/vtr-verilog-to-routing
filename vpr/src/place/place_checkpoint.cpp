@@ -1,11 +1,13 @@
 
 #include "place_checkpoint.h"
 
+#include "net_cost_handler.h"
 #include "noc_place_utils.h"
 #include "placer_state.h"
 #include "grid_block.h"
 #include "PlacerCriticalities.h"
 #include "PlacerSetupSlacks.h"
+#include "vpr_types.h"
 
 float t_placement_checkpoint::get_cp_cpd() const { return cpd_; }
 
@@ -49,6 +51,9 @@ void restore_best_placement(PlacerState& placer_state,
                             std::shared_ptr<PlaceDelayModel>& place_delay_model,
                             std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator,
                             PlaceCritParams crit_params,
+                            NetCostHandler& net_cost_handler,
+                            const t_placer_opts& placer_opts,
+                            const t_noc_opts& noc_opts,
                             std::optional<NocCostHandler>& noc_cost_handler) {
     /* The (valid) checkpoint is restored if the following conditions are met:
      * 1) The checkpoint has a lower critical path delay.
@@ -72,6 +77,13 @@ void restore_best_placement(PlacerState& placer_state,
                                    timing_info.get(),
                                    &costs,
                                    placer_state);
+
+        // Recompute the wirelength cost terms from scratch.
+        costs.bb_cost =  net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL).first;
+
+        // Update the normalization factors and recompute the total cost.
+        costs.update_norm_factors();
+        costs.cost = costs.get_total_cost(placer_opts, noc_opts);
 
         /* If NoC is enabled, re-compute NoC costs and re-initialize NoC internal data structures.
          * If some routers have different locations than the last placement, NoC-related costs and
