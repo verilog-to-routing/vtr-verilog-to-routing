@@ -8,18 +8,18 @@ How to Cite
 
 Citations are important in academia, as they ensure contributors receive credit for their efforts.
 Therefore please use the following paper as a general citation whenever you use VTR:
-
-    K. E. Murray, O. Petelin, S. Zhong, J. M. Wang, M. ElDafrawy, J.-P. Legault, E. Sha, A. G. Graham, J. Wu, M. J. P. Walker, H. Zeng, P. Patros, J. Luu, K. B. Kent and V. Betz "VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling", ACM TRETS, 2020
+    
+    M. A. Elgammal, A. Mohaghegh, S. G. Shahrouz, F. Mahmoudi, F. Koşar, K. Talaei, J. Fife, D. Khadivi, K. E. Murray, A. Boutros, K.B. Kent, J. Goeders, V. Betz "VTR 9: Open-Source CAD for Fabric and Beyond FPGA Architecture Exploration" ACM TRETS, 2024
 
 Bibtex:
 
 .. code-block:: none
 
-    @article{vtr8,
-      title={VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling},
-      author={Murray, Kevin E. and Petelin, Oleg and Zhong, Sheng and Wang, Jai Min and ElDafrawy, Mohamed and Legault, Jean-Philippe and Sha, Eugene and Graham, Aaron G. and Wu, Jean and Walker, Matthew J. P. and Zeng, Hanqing and Patros, Panagiotis and Luu, Jason and Kent, Kenneth B. and Betz, Vaughn},
+    @article{vtr9,
+      title={VTR 9: Open-Source CAD for Fabric and Beyond FPGA Architecture Exploration},
+      author={Elgammal, Mohamed A. and Mohaghegh, Amin and Shahrouz, Soheil G. and Mahmoudi, Fatemehsadat and Kosar, Fahrican and Talaei, Kimia and Fife, Joshua and Khadivi, Daniel and Murray, Kevin and Boutros, Andrew and Kent, Kenneth B. and Goeders, Jeff and Betz, Vaughn},
       journal={ACM Trans. Reconfigurable Technol. Syst.},
-      year={2020}
+      year={2025}
     }
 
 We are always interested in how VTR is being used, so feel free email the `vtr-users <https://verilogtorouting.org/contact/>`_ list with how you are using VTR.

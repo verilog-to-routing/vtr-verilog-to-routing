@@ -304,7 +304,7 @@ Consider the following:
 
     .latch g h re clk 0
 
-The ``.names``' pin names are:
+The ``.names`` pin names are:
 
 - ``f.in[0]`` (driven by net ``a``)
 - ``f.in[1]`` (driven by net ``b``)
@@ -1074,7 +1074,7 @@ An example of what a generated routing resource graph file would look like is sh
             <y_list index="2" info="5"/>
         </channels>
         <switches>
-            <switch id="0" name="my_switch" buffered="1">
+            <switch id="0" name="my_switch" type="mux">
                 <timing R="100" Cin="1233-12" Cout="123e-12" Tdel="1e-9"/>
                 <sizing mux_trans_size="2.32" buf_size="23.54"/>
             </switch>
@@ -1086,13 +1086,13 @@ An example of what a generated routing resource graph file would look like is sh
         </segments>
         <block_types>
             <block_type id="0" name="io" width="1" height="1">
-                <pin_class type="input">
+                <pin_class type="INPUT">
                     <pin ptc="0">DATIN[0]</pin>
                     <pin ptc="1">DATIN[1]</pin>
                     <pin ptc="2">DATIN[2]</pin>
                     <pin ptc="3">DATIN[3]</pin>
                 </pin_class>
-                <pin_class type="output">
+                <pin_class type="OUTPUT">
                     <pin ptc="4">DATOUT[0]</pin>
                     <pin ptc="5">DATOUT[1]</pin>
                     <pin ptc="6">DATOUT[2]</pin>
@@ -1100,10 +1100,10 @@ An example of what a generated routing resource graph file would look like is sh
                 </pin_class>
             </block_type>
             <block_type id="1" name="buf" width="1" height="1">
-                <pin_class type="input">
+                <pin_class type="INPUT">
                     <pin ptc="0">IN</pin>
                 </pin_class>
-                <pin_class type="output">
+                <pin_class type="OUTPUT">
                     <pin ptc="1">OUT</pin>
                 </pin_class>
             </block_type>
@@ -1190,7 +1190,7 @@ Single Flow
 A given traffic flow information is contained within the ``single_flow`` tag. There can be 0 or more single flow tags.
 0 would indicate that an application does not have any traffic flows.
 
-.. rrgraph:tag:: <channel src="logical_router_name" dst="logical_router_name" bandwidth="float" latency_cons="float" priority="int"/>
+.. rrgraph:tag:: <single_flow src="logical_router_name" dst="logical_router_name" bandwidth="float" latency_cons="float" priority="int"/>
 
     :opt_param latency_cons:
         A floating point number which indicates the upper bound
@@ -1206,28 +1206,28 @@ A given traffic flow information is contained within the ``single_flow`` tag. Th
 
     :req_param src:
         A string which represents a logical router name in an application.
-        This logical router is the source endpoint for the traffic flow being described by the cor-
-        responding single flow tag. The logical router name must match the name of the router
+        This logical router is the source endpoint for the traffic flow being described by the corresponding 
+        single flow tag. The logical router name must match the name of the router
         as found in the clustered netlist; since this name assigned by the CAD tool, instead of
         having the designer go through the clustered netlist to retrieve the exact name we instead
         allow designers to use regex patters in the logical router name. For example, instead of
-        ”noc_router_adapter_block:noc_router_layer1_mvm2:slave_tready_reg0” user could pro-
-        vide ”.*noc_router_layer1_mvm2.*”. This allows users to provide the instance name for a given logical router
+        ``noc_router_adapter_block:noc_router_layer1_mvm2:slave_tready_reg0`` user could provide 
+        ``.*noc_router_layer1_mvm2.*``. This allows users to provide the instance name for a given logical router
         module in the design. This is a required attribute.
     
     :req_param dst:
         A string which represents a logical router name in an application.
-        This logical router is the deastination endpoint for the traffic flow being described by the cor-
-        responding single flow tag. The logical router name must match the name of the router
+        This logical router is the deastination endpoint for the traffic flow being described by the corresponding 
+        single flow tag. The logical router name must match the name of the router
         as found in the clustered netlist; since this name assigned by the CAD tool, instead of
         having the designer go through the clustered netlist to retrieve the exact name we instead
         allow designers to use regex patters in the logical router name. For example, instead of
-        ”noc_router_adapter_block:noc_router_layer1_mvm3:slave_tready_reg0” user could pro-
-        vide ”.*noc_router_layer1_mvm3.*”. This allows users to provide the instance name for a given logical router
+        ``noc_router_adapter_block:noc_router_layer1_mvm3:slave_tready_reg0`` user could provide 
+        ``.*noc_router_layer1_mvm3.*``. This allows users to provide the instance name for a given logical router
         module in the design. This is a required attribute.
 
     :req_param bandwidth:
-        A floating point number which indicates the data size in the
+        A floating point number which indicates the data bandwidth in the
         traffic flow communication. This is in units of bits-per-second (bps) and is a required
         attribute.
 
@@ -1253,9 +1253,9 @@ Block types usage summary (.txt .xml or .json)
 Block types usage summary is a file written in human or machine readable format.
 It describes types and the amount of cluster-level FPGA resources that are used
 by implemented design. This file is generated after the placement step with
-option: `--write_block_usage <filename>`. It can be saved as a human readable
+option: ``--write_block_usage <filename>``. It can be saved as a human readable
 text file or in XML or JSON file to provide machine readable output. Format is
-selected based on the extension of the `<filename>`.
+selected based on the extension of the ``<filename>``.
 
 The summary consists of 4 parameters:
 

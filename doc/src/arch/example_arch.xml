@@ -239,10 +239,12 @@
           <T_clock_to_Q max="7.732e-11" port="ff.Q" clock="clk"/>
         </pb_type>
         <interconnect>
-          <!-- Two ff, make ff available to only corresponding luts -->
+          <!-- Connect BLE input to LUT input and LUT output to FF in -->
           <direct name="direct1" input="ble.in" output="soft_logic.in"/>
           <direct name="direct2" input="soft_logic.out" output="ff.D"/>
+          <!-- Connect BLE clock to FF clock -->
           <direct name="direct4" input="ble.clk" output="ff.clk"/>
+          <!-- Connect the output of a MUX selecting between LUT output and FF output to the BLE output -->
           <mux name="mux1" input="ff.Q soft_logic.out" output="ble.out"/>
         </interconnect>
       </pb_type>
