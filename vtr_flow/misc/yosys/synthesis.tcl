@@ -34,10 +34,10 @@ if {$env(PARSER) == "slang" } {
 	source [file join [pwd] "slang_filelist.tcl"]
 	set readfile [file join [pwd] "filelist.txt"]
 	#Writing names of circuit files to file list
-	set slang_tops [::slang::build_filelist {XXX} $readfile]
+	build_filelist {XXX} $readfile
 	puts "Using Yosys read_slang command"
 	#Read vtr_primitives library and user design verilog in same command
-	read_slang -v $env(PRIMITIVES) {*}$slang_tops -C $readfile
+	read_slang -v $env(PRIMITIVES) -C $readfile
 } elseif {$env(PARSER) == "default" } {
 	puts "Using Yosys read_verilog command"
 	read_verilog -nomem2reg +/parmys/vtr_primitives.v
