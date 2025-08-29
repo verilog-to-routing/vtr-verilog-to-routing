@@ -42,53 +42,56 @@ constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
  */
 void draw_rr(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    if (draw_state->draw_rr_toggle == DRAW_NO_RR) {
-        g->set_line_width(3);
-        drawroute(HIGHLIGHTED, g);
-        g->set_line_width(0);
+    if (!draw_state->show_rr) {
         return;
     }
 
     g->set_line_dash(ezgl::line_dash::none);
 
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
-        if (!draw_state->draw_rr_node[inode].node_highlighted) {
-            /* If not highlighted node, assign color based on type. */
-            switch (rr_graph.node_type(inode)) {
-                case e_rr_type::CHANX:
-                case e_rr_type::CHANY:
-                    draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
-                    break;
-                case e_rr_type::OPIN:
-                    draw_state->draw_rr_node[inode].color = ezgl::PINK;
-                    break;
-                case e_rr_type::IPIN:
-                    draw_state->draw_rr_node[inode].color = ezgl::PURPLE;
-                    break;
-                case e_rr_type::SOURCE:
-                    draw_state->draw_rr_node[inode].color = ezgl::PLUM;
-                    break;
-                case e_rr_type::SINK:
-                    draw_state->draw_rr_node[inode].color = ezgl::DARK_SLATE_BLUE;
-                    break;
-                default:
-                    break;
-            }
+
+        e_rr_type node_type = rr_graph.node_type(inode);
+        bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
+        bool node_highlighted = draw_state->draw_rr_node[inode].node_highlighted;
+
+        // Node colors by types
+        // colors for Source, Sink, IPIN, OPIN, CHANX, CHANY, MUX, CHANZ
+        constexpr vtr::array<e_rr_type, ezgl::color, (size_t)e_rr_type::NUM_RR_TYPES> node_colors{DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, ezgl::PURPLE, ezgl::PINK, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR};
+
+        // Apply color to the node if it is not highlighted
+        if (!node_highlighted) {
+            draw_state->draw_rr_node[inode].color = node_colors.at(node_type);
         }
 
         draw_rr_edges(inode, g);
+
+        if (!node_highlighted) {
+            // Draw channel nodes if enabled
+            if ((node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) && !draw_state->draw_channel_nodes) {
+                continue;
+            }
+
+            // Draw inter-cluster pins if enabled
+            if (inter_cluster_node && !draw_state->draw_inter_cluster_pins && (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN)) {
+                continue;
+            }
+
+            // Draw intra-cluster nodes if enabled
+            if (!inter_cluster_node && !draw_state->draw_intra_cluster_nodes) {
+                continue;
+            }
+        }
+
         draw_rr_node(inode, draw_state->draw_rr_node[inode].color, g);
     }
-
-    drawroute(HIGHLIGHTED, g);
 }
 
 void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     int transparency_factor = get_rr_node_transparency(inode);
 
@@ -234,8 +237,8 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
  * connects to.  inode is assumed to be a CHANX, CHANY, or IPIN.           */
 void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     e_rr_type to_type;
     e_rr_type from_type = rr_graph.node_type(inode);
@@ -243,12 +246,6 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     // Currently don't visualize source or sinks.
     if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::SINK) {
         return;
-    }
-
-    if ((draw_state->draw_rr_toggle == DRAW_NODES_RR)
-        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && (from_type == e_rr_type::OPIN || from_type == e_rr_type::SOURCE || from_type == e_rr_type::IPIN))
-        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_CBOX_RR && (from_type == e_rr_type::SOURCE || from_type == e_rr_type::IPIN))) {
-        return; /* Nothing to draw. */
     }
 
     for (t_edge_size iedge = 0, l = rr_graph.num_edges(inode); iedge < l; iedge++) {
@@ -262,31 +259,65 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         }
 
         ezgl::color color = DEFAULT_RR_NODE_COLOR;
+        e_edge_type edge_type;
+        bool draw_edge = true;
+        bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
+        bool to_node_inter_cluster = is_inter_cluster_node(rr_graph, to_node);
 
         // Color map for edges based on {from_type, to_type}
-        static const std::map<std::pair<e_rr_type, e_rr_type>, ezgl::color> edge_color_map = {
+        const std::map<std::pair<e_rr_type, e_rr_type>, e_edge_type> edge_type_map = {
             // Pin to pin connections
-            {{e_rr_type::IPIN, e_rr_type::IPIN}, ezgl::MEDIUM_PURPLE},
-            {{e_rr_type::OPIN, e_rr_type::IPIN}, ezgl::MEDIUM_PURPLE},
-            {{e_rr_type::OPIN, e_rr_type::OPIN}, ezgl::LIGHT_PINK},
-            {{e_rr_type::IPIN, e_rr_type::OPIN}, ezgl::LIGHT_PINK},
+            {{e_rr_type::IPIN, e_rr_type::IPIN}, e_edge_type::PIN_TO_IPIN},
+            {{e_rr_type::OPIN, e_rr_type::IPIN}, e_edge_type::PIN_TO_IPIN},
+            {{e_rr_type::OPIN, e_rr_type::OPIN}, e_edge_type::PIN_TO_OPIN},
+            {{e_rr_type::IPIN, e_rr_type::OPIN}, e_edge_type::PIN_TO_OPIN},
 
             // Channel to pin connections
-            {{e_rr_type::OPIN, e_rr_type::CHANX}, ezgl::PINK},
-            {{e_rr_type::OPIN, e_rr_type::CHANY}, ezgl::PINK},
-            {{e_rr_type::CHANX, e_rr_type::IPIN}, ezgl::PURPLE},
-            {{e_rr_type::CHANY, e_rr_type::IPIN}, ezgl::PURPLE},
+            {{e_rr_type::OPIN, e_rr_type::CHANX}, e_edge_type::OPIN_TO_CHAN},
+            {{e_rr_type::OPIN, e_rr_type::CHANY}, e_edge_type::OPIN_TO_CHAN},
+            {{e_rr_type::CHANX, e_rr_type::IPIN}, e_edge_type::CHAN_TO_IPIN},
+            {{e_rr_type::CHANY, e_rr_type::IPIN}, e_edge_type::CHAN_TO_IPIN},
 
             // Channel to channel connections
-            {{e_rr_type::CHANX, e_rr_type::CHANX}, blk_DARKGREEN},
-            {{e_rr_type::CHANX, e_rr_type::CHANY}, blk_DARKGREEN},
-            {{e_rr_type::CHANY, e_rr_type::CHANY}, blk_DARKGREEN},
-            {{e_rr_type::CHANY, e_rr_type::CHANX}, blk_DARKGREEN},
+            {{e_rr_type::CHANX, e_rr_type::CHANX}, e_edge_type::CHAN_TO_CHAN},
+            {{e_rr_type::CHANX, e_rr_type::CHANY}, e_edge_type::CHAN_TO_CHAN},
+            {{e_rr_type::CHANY, e_rr_type::CHANY}, e_edge_type::CHAN_TO_CHAN},
+            {{e_rr_type::CHANY, e_rr_type::CHANX}, e_edge_type::CHAN_TO_CHAN},
         };
 
-        if (edge_color_map.find({from_type, to_type}) != edge_color_map.end()) {
-            color = edge_color_map.at({from_type, to_type});
+        if (edge_type_map.find({from_type, to_type}) == edge_type_map.end()) {
+            continue; // Unsupported edge type
         }
+        edge_type = edge_type_map.at({from_type, to_type});
+
+        // Determine whether to draw the edge based on user options
+
+        if ((edge_type == e_edge_type::PIN_TO_OPIN || edge_type == e_edge_type::PIN_TO_IPIN) && !draw_state->draw_intra_cluster_edges) {
+            draw_edge = false;
+        }
+
+        if ((edge_type == e_edge_type::OPIN_TO_CHAN || edge_type == e_edge_type::CHAN_TO_IPIN) && !draw_state->draw_connection_box_edges) {
+            draw_edge = false;
+        }
+
+        if (edge_type == e_edge_type::CHAN_TO_CHAN && !draw_state->draw_switch_box_edges) {
+            draw_edge = false;
+        }
+
+        // Special case for direct connections between output pins and input pins of clb.
+        if (edge_type == e_edge_type::PIN_TO_IPIN && inode_inter_cluster && to_node_inter_cluster) {
+            draw_edge = draw_state->draw_connection_box_edges;
+        }
+
+        // Select edge colors
+        const std::map<e_edge_type, ezgl::color> edge_color_map = {
+            {e_edge_type::PIN_TO_OPIN, ezgl::LIGHT_PINK},
+            {e_edge_type::PIN_TO_IPIN, ezgl::MEDIUM_PURPLE},
+            {e_edge_type::OPIN_TO_CHAN, ezgl::PINK},
+            {e_edge_type::CHAN_TO_IPIN, ezgl::PURPLE},
+            {e_edge_type::CHAN_TO_CHAN, blk_DARKGREEN}};
+
+        color = edge_color_map.at(edge_type);
 
         if (!edge_configurable) color = blk_DARKGREY;
 
@@ -301,22 +332,32 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
             color = ezgl::MAGENTA;
         }
 
-        // If the node is highlighted, use its color
-        if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA) || rgb_is_same(draw_state->draw_rr_node[to_node].color, ezgl::MAGENTA)) {
-            color = draw_state->draw_rr_node[to_node].color;
+        // If the node is clicked on, color the edges as blue for fanin and red for fanout
+        // Need to check both highlighting and hit nodes since when the user clicks off a node, the node is de-highlighted but still in the hit nodes.
+        if (draw_state->highlight_rr_edges) {
+            if (draw_state->draw_rr_node[inode].node_highlighted && draw_state->hit_nodes.find(inode) != draw_state->hit_nodes.end()) {
+                color = ezgl::RED;
+                draw_edge = true;
+            } else if (draw_state->draw_rr_node[to_node].node_highlighted && draw_state->hit_nodes.find(to_node) != draw_state->hit_nodes.end()) {
+                color = ezgl::BLUE;
+                draw_edge = true;
+            }
+        }
+
+        if (!draw_edge) {
+            continue;
         }
 
         draw_rr_edge(to_node, inode, color, g);
-
-    } /* End of for each edge loop */
+    }
 }
 
 void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     e_rr_type rr_type = rr_graph.node_type(inode);
-    bool is_inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
+    bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
     int node_layer = rr_graph.node_layer(inode);
 
     // For 3D architectures, draw only visible layers
@@ -330,7 +371,7 @@ void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
     }
 
     // Draw intra-cluster nodes
-    if (!is_inode_inter_cluster) {
+    if (!inode_inter_cluster) {
         draw_rr_intra_cluster_pin(inode, color, g);
         return;
     }
@@ -349,12 +390,7 @@ void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
 }
 
 void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
-    t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
-
-    if (!draw_state->is_flat) {
-        return;
-    }
 
     auto [blk_id, pin_id] = get_rr_node_cluster_blk_id_pb_graph_pin(inode);
 
@@ -376,8 +412,8 @@ void draw_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* 
 
     float xcen, ycen;
     char str[vtr::bufsize];
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     if (!is_inter_cluster_node(rr_graph, inode)) {
         return;
     }
@@ -411,8 +447,8 @@ void draw_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* 
 void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     if (!is_inter_cluster_node(rr_graph, inode)) {
         return;
     }
@@ -439,8 +475,8 @@ void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g) {
 void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = node.id();
     t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
                                                                             rr_graph.node_ylow(rr_node),
@@ -500,8 +536,8 @@ void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buf
 
 void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node,
                                                   std::set<RRNodeId>& expanded_nodes) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     expanded_nodes.insert(from_node);
 
     for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(from_node); ++iedge) {
@@ -530,8 +566,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
         int layer_num = rr_graph.node_layer(inode);
@@ -626,13 +662,6 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
  * clicked upon, we highlight it in Magenta, and its fanout in red.
  */
 bool highlight_rr_nodes(float x, float y) {
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    if (draw_state->draw_rr_toggle == DRAW_NO_RR && !draw_state->show_nets) {
-        application.update_message(draw_state->default_message);
-        application.refresh_drawing();
-        return false; //No rr shown
-    }
 
     // Check which rr_node (if any) was clicked on.
     RRNodeId hit_node = draw_check_rr_node_hit(x, y);
@@ -645,8 +674,8 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
 
     /* Draws routing costs */
 
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     g->set_line_width(0);
 
@@ -726,7 +755,7 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
  * inode gives the node number, and iside gives the side of the clb or pad  *
  * the physical pin is on.                                                  */
 void draw_get_rr_pin_coords(RRNodeId inode, float* xcen, float* ycen, const e_side& pin_side) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     draw_get_rr_pin_coords(device_ctx.rr_graph.rr_nodes()[size_t(inode)], xcen, ycen, pin_side);
 }
 
@@ -736,8 +765,8 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
     int i, j, k, ipin, pins_per_sub_tile;
     float offset, xc, yc, step;
     t_physical_tile_type_ptr type;
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     auto rr_node = node.id();
 
     i = rr_graph.node_xlow(rr_node);
@@ -791,8 +820,8 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
 
 int get_rr_node_transparency(RRNodeId rr_node) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     int layer_num = rr_graph.node_layer(rr_node);
 

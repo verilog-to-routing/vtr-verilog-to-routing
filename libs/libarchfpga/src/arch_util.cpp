@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "logic_types.h"
+#include "physical_types.h"
 #include "vtr_assert.h"
 #include "vtr_list.h"
 #include "vtr_memory.h"
@@ -669,12 +670,12 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
     mem_pb_type->modes[0].parent_pb_type = mem_pb_type;
     mem_pb_type->modes[0].index = 0;
     mem_pb_type->modes[0].mode_power = new t_mode_power();
-    num_pb = OPEN;
+    num_pb = ARCH_FPGA_UNDEFINED_VAL;
     for (i = 0; i < mem_pb_type->num_ports; i++) {
         if (mem_pb_type->ports[i].port_class != nullptr
             && strstr(mem_pb_type->ports[i].port_class, "data")
                    == mem_pb_type->ports[i].port_class) {
-            if (num_pb == OPEN) {
+            if (num_pb == ARCH_FPGA_UNDEFINED_VAL) {
                 num_pb = mem_pb_type->ports[i].num_pins;
             } else if (num_pb != mem_pb_type->ports[i].num_pins) {
                 archfpga_throw(get_arch_file_name(), 0,
@@ -1029,6 +1030,32 @@ bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& bl
     return false;
 }
 
+bool pb_type_contains_memory_pbs(const t_pb_type* pb_type) {
+    // TODO: This should be a graph traversal instead of a recursive function.
+
+    if (pb_type == nullptr)
+        return false;
+
+    // Check if this pb_type is a memory class. If so return true. This acts as
+    // a base case for the recursion.
+    if (pb_type->class_type == e_pb_type_class::MEMORY_CLASS)
+        return true;
+
+    // Go through all modes of this pb_type and check if any of those modes'
+    // children have memory pb_types, if so return true.
+    for (int mode_idx = 0; mode_idx < pb_type->num_modes; mode_idx++) {
+        const t_mode& mode = pb_type->modes[mode_idx];
+        for (int child_idx = 0; child_idx < mode.num_pb_type_children; child_idx++) {
+            if (pb_type_contains_memory_pbs(&mode.pb_type_children[child_idx]))
+                return true;
+        }
+    }
+
+    // If this pb_type is not a memory and its modes do not have memory pbs in
+    // them, then this pb_type is not a memory.
+    return false;
+}
+
 bool has_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type) {
     VTR_ASSERT(annot_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
                || annot_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
@@ -1180,7 +1207,7 @@ void setup_pin_classes(t_physical_tile_type* type) {
     int num_class;
 
     for (int i = 0; i < type->num_pins; i++) {
-        type->pin_class.push_back(OPEN);
+        type->pin_class.push_back(ARCH_FPGA_UNDEFINED_VAL);
         type->is_ignored_pin.push_back(true);
         type->is_pin_global.push_back(true);
     }
@@ -1203,10 +1230,10 @@ void setup_pin_classes(t_physical_tile_type* type) {
                     class_inf.equivalence = port.equivalent;
 
                     if (port.type == IN_PORT) {
-                        class_inf.type = RECEIVER;
+                        class_inf.type = e_pin_type::RECEIVER;
                     } else {
                         VTR_ASSERT(port.type == OUT_PORT);
-                        class_inf.type = DRIVER;
+                        class_inf.type = e_pin_type::DRIVER;
                     }
 
                     for (int k = 0; k < port.num_pins; ++k) {
@@ -1237,10 +1264,10 @@ void setup_pin_classes(t_physical_tile_type* type) {
                         class_inf.equivalence = port.equivalent;
 
                         if (port.type == IN_PORT) {
-                            class_inf.type = RECEIVER;
+                            class_inf.type = e_pin_type::RECEIVER;
                         } else {
                             VTR_ASSERT(port.type == OUT_PORT);
-                            class_inf.type = DRIVER;
+                            class_inf.type = e_pin_type::DRIVER;
                         }
 
                         type->pin_class[pin_count] = num_class;

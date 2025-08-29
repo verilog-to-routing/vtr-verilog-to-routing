@@ -20,7 +20,7 @@ void EdgeGroups::create_sets() {
     // https://en.wikipedia.org/wiki/Component_(graph_theory)#Algorithms
     std::vector<size_t> group_size;
     for (auto& node : graph_) {
-        if (node.second.set == OPEN) {
+        if (node.second.set == UNDEFINED) {
             node.second.set = group_size.size();
             group_size.push_back(add_connected_group(node.second));
         }
@@ -28,7 +28,7 @@ void EdgeGroups::create_sets() {
 
     // Sanity check the node sets.
     for (const auto& node : graph_) {
-        VTR_ASSERT(node.second.set != OPEN);
+        VTR_ASSERT(node.second.set != UNDEFINED);
         for (const auto& e : node.second.edges) {
             int set = graph_[e].set;
             VTR_ASSERT(set == node.second.set);
@@ -98,7 +98,7 @@ size_t EdgeGroups::add_connected_group(const node_data& node) {
         for (auto e : top->edges) {
             auto& next = graph_[e];
             if (next.set != node.set) {
-                VTR_ASSERT(next.set == OPEN);
+                VTR_ASSERT(next.set == UNDEFINED);
                 n++;
                 next.set = node.set;
                 stack.push(&next);

@@ -865,7 +865,8 @@ void vpr_place(const Netlist<>& net_list,
             vpr_setup.RouterOpts.write_router_lookahead,
             vpr_setup.RouterOpts.read_router_lookahead,
             vpr_setup.Segments,
-            is_flat);
+            is_flat,
+            vpr_setup.RouterOpts.route_verbosity);
     }
 
     // Read in the flat placement if a flat placement file is provided and it
@@ -1025,7 +1026,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
 
             //Update status
             VTR_LOG("Circuit successfully routed with a channel width factor of %d.\n", route_status.chan_width());
-            graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.\n", route_status.chan_width());
+            graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.", route_status.chan_width());
         } else {
             //Update status
             VTR_LOG("Circuit is unroutable with a channel width factor of %d.\n", route_status.chan_width());
@@ -1082,7 +1083,8 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
         vpr_setup.RouterOpts.write_router_lookahead,
         vpr_setup.RouterOpts.read_router_lookahead,
         vpr_setup.Segments,
-        is_flat);
+        is_flat,
+        vpr_setup.RouterOpts.route_verbosity);
 
     vtr::ScopedStartFinishTimer timer("Routing");
 

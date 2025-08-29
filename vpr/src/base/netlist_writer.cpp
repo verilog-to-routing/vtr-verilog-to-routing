@@ -2222,7 +2222,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
     std::vector<int> determine_lut_permutation(size_t num_inputs, const t_pb* atom_pb) {
         auto& atom_ctx = g_vpr_ctx.atom();
 
-        std::vector<int> permute(num_inputs, OPEN);
+        std::vector<int> permute(num_inputs, UNDEFINED);
 
 #ifdef DEBUG_LUT_MASK
         std::cout << "\tInit Permute: {";
@@ -2281,7 +2281,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::set<int> perm_indicies(permute.begin(), permute.end());
         size_t unused_index = 0;
         for (size_t i = 0; i < permute.size(); i++) {
-            if (permute[i] == OPEN) {
+            if (permute[i] == UNDEFINED) {
                 while (perm_indicies.count(unused_index)) {
                     unused_index++;
                 }

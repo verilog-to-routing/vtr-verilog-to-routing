@@ -2,6 +2,7 @@
  * Member functions for class RRGSB
  ***********************************************************************/
 /* Headers from vtrutil library */
+#include "vpr_types.h"
 #include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vpr_error.h"
@@ -877,7 +878,7 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
         }
 
         VTR_ASSERT(NUM_2D_SIDES != side);
-        VTR_ASSERT(OPEN != index);
+        VTR_ASSERT(UNDEFINED != index);
 
         if (e_rr_type::OPIN == rr_graph.node_type(src_node)) {
             from_grid_edge_map[side][index] = edge;
@@ -965,14 +966,14 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         }
         /* The driver routing channel node can be either an input or an output to the GSB.
          * Just try to find a qualified one. */
-        int index = OPEN;
+        int index = UNDEFINED;
         index = get_node_index(rr_graph, src_node, chan_side, IN_PORT);
-        if (OPEN == index) {
+        if (UNDEFINED == index) {
             index = get_node_index(rr_graph, src_node, chan_side, OUT_PORT);
         }
 
         /* Must have valid side and index */
-        if (OPEN == index) {
+        if (UNDEFINED == index) {
             VTR_LOG_DEBUG("GSB[%lu][%lu]:\n", get_x(), get_y());
             VTR_LOG_DEBUG("----------------------------------\n");
             VTR_LOG_DEBUG("SRC node:\n");
@@ -992,7 +993,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
             }
         }
 
-        VTR_ASSERT(OPEN != index);
+        VTR_ASSERT(UNDEFINED != index);
 
         VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(src_node))
                    || (e_rr_type::CHANY == rr_graph.node_type(src_node)));
@@ -1013,7 +1014,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                                 cb_opin_index);
         VTR_ASSERT((-1 != cb_opin_index) && (NUM_2D_SIDES != cb_opin_side));
         /* Must have valid side and index */
-        if (OPEN == cb_opin_index || NUM_2D_SIDES == cb_opin_side) {
+        if (UNDEFINED == cb_opin_index || NUM_2D_SIDES == cb_opin_side) {
             VTR_LOG_DEBUG("GSB[%lu][%lu]:\n", get_x(), get_y());
             VTR_LOG_DEBUG("----------------------------------\n");
             VTR_LOG_DEBUG("SRC node:\n");

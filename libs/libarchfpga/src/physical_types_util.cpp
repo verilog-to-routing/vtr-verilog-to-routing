@@ -1,4 +1,6 @@
 #include <numeric>
+#include "arch_types.h"
+#include "physical_types.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
 
@@ -182,8 +184,8 @@ static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr
     pin_inst_port.logical_block_index = logical_num;
     pin_inst_port.pb_type_idx = pb_type_idx;
     pin_inst_port.pin_physical_num = pin_physical_num;
-    pin_inst_port.port_index = OPEN;
-    pin_inst_port.pin_index_in_port = OPEN;
+    pin_inst_port.port_index = ARCH_FPGA_UNDEFINED_VAL;
+    pin_inst_port.pin_index_in_port = ARCH_FPGA_UNDEFINED_VAL;
 
     if (is_flat && logical_num != -1) {
         auto pb_pin = get_pb_pin_from_pin_physical_num(type, pin_physical_num);
@@ -200,8 +202,8 @@ static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr
             }
         }
     }
-    VTR_ASSERT(pin_inst_port.port_index != OPEN);
-    VTR_ASSERT(pin_inst_port.pin_index_in_port != OPEN);
+    VTR_ASSERT(pin_inst_port.port_index != ARCH_FPGA_UNDEFINED_VAL);
+    VTR_ASSERT(pin_inst_port.pin_index_in_port != ARCH_FPGA_UNDEFINED_VAL);
     return pin_inst_port;
 }
 
@@ -435,7 +437,7 @@ int get_sub_tile_physical_pin(int sub_tile_index,
 
 int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_tile,
                                               t_logical_block_type_ptr logical_block) {
-    int sub_tile_index = OPEN;
+    int sub_tile_index = ARCH_FPGA_UNDEFINED_VAL;
     for (const auto& sub_tile : physical_tile->sub_tiles) {
         auto eq_sites = sub_tile.equivalent_sites;
         auto it = std::find(eq_sites.begin(), eq_sites.end(), logical_block);
@@ -444,7 +446,7 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
         }
     }
 
-    if (sub_tile_index == OPEN) {
+    if (sub_tile_index == ARCH_FPGA_UNDEFINED_VAL) {
         archfpga_throw(__FILE__, __LINE__,
                        "Found no instances of logical block type '%s' within physical tile type '%s'. ",
                        logical_block->name.c_str(), physical_tile->name.c_str());
@@ -458,7 +460,7 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      int pin) {
     int sub_tile_index = get_logical_block_physical_sub_tile_index(physical_tile, logical_block);
 
-    if (sub_tile_index == OPEN) {
+    if (sub_tile_index == ARCH_FPGA_UNDEFINED_VAL) {
         archfpga_throw(__FILE__, __LINE__,
                        "Couldn't find the corresponding physical tile type pin of the logical block type pin %d.",
                        pin);
@@ -471,7 +473,7 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
 int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_tile,
                                               t_logical_block_type_ptr logical_block,
                                               int sub_tile_capacity) {
-    int sub_tile_index = OPEN;
+    int sub_tile_index = ARCH_FPGA_UNDEFINED_VAL;
     for (const auto& sub_tile : physical_tile->sub_tiles) {
         auto eq_sites = sub_tile.equivalent_sites;
         auto it = std::find(eq_sites.begin(), eq_sites.end(), logical_block);
@@ -482,7 +484,7 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
         }
     }
 
-    if (sub_tile_index == OPEN) {
+    if (sub_tile_index == ARCH_FPGA_UNDEFINED_VAL) {
         archfpga_throw(__FILE__, __LINE__,
                        "Found no instances of logical block type '%s' within physical tile type '%s'. ",
                        logical_block->name.c_str(), physical_tile->name.c_str());
@@ -528,7 +530,7 @@ int get_physical_pin_at_sub_tile_location(t_physical_tile_type_ptr physical_tile
     VTR_ASSERT(pin < physical_tile->num_pins);
     int sub_tile_index = get_logical_block_physical_sub_tile_index(physical_tile, logical_block, sub_tile_capacity);
 
-    if (sub_tile_index == OPEN) {
+    if (sub_tile_index == ARCH_FPGA_UNDEFINED_VAL) {
         archfpga_throw(__FILE__, __LINE__,
                        "Couldn't find the corresponding physical tile type pin of the logical block type pin %d.",
                        pin);
@@ -610,7 +612,7 @@ bool is_opin(int ipin, t_physical_tile_type_ptr type) {
 
     int iclass = type->pin_class[ipin];
 
-    if (type->class_inf[iclass].type == DRIVER)
+    if (type->class_inf[iclass].type == e_pin_type::DRIVER)
         return true;
     else
         return false;
@@ -895,7 +897,7 @@ int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {
 /** get information given pin physical number **/
 std::tuple<const t_sub_tile*, int> get_sub_tile_from_pin_physical_num(t_physical_tile_type_ptr physical_tile, int physical_num) {
     const t_sub_tile* target_sub_tile = nullptr;
-    int target_sub_tile_cap = OPEN;
+    int target_sub_tile_cap = ARCH_FPGA_UNDEFINED_VAL;
 
     bool pin_on_tile = is_pin_on_tile(physical_tile, physical_num);
 
@@ -926,7 +928,7 @@ t_logical_block_type_ptr get_logical_block_from_pin_physical_num(t_physical_tile
     t_logical_block_type_ptr logical_block = nullptr;
 
     std::tie(sub_tile, sub_tile_cap) = get_sub_tile_from_pin_physical_num(physical_tile, physical_num);
-    VTR_ASSERT(sub_tile_cap != OPEN);
+    VTR_ASSERT(sub_tile_cap != ARCH_FPGA_UNDEFINED_VAL);
 
     for (auto logical_block_pin_range_pair : sub_tile->intra_pin_range[sub_tile_cap]) {
         if (physical_num >= logical_block_pin_range_pair.second.low) {
@@ -1189,7 +1191,7 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                             t_logical_block_type_ptr logical_block,
                             int relative_cap,
                             const t_pb_graph_pin* pin) {
-    int pin_physical_num = OPEN;
+    int pin_physical_num = ARCH_FPGA_UNDEFINED_VAL;
     if (pin->is_root_block_pin()) {
         pin_physical_num = get_physical_pin_at_sub_tile_location(physical_tile,
                                                                  logical_block,
@@ -1264,12 +1266,12 @@ bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
         const t_sub_tile* from_sub_tile;
         int from_sub_tile_rel_cap;
         std::tie(from_sub_tile, from_sub_tile_rel_cap) = get_sub_tile_from_pin_physical_num(physical_type, pin_physical_num);
-        VTR_ASSERT(from_sub_tile != nullptr && from_sub_tile_rel_cap != OPEN);
+        VTR_ASSERT(from_sub_tile != nullptr && from_sub_tile_rel_cap != ARCH_FPGA_UNDEFINED_VAL);
 
         const t_sub_tile* to_sub_tile;
         int to_sub_tile_rel_cap;
         std::tie(to_sub_tile, to_sub_tile_rel_cap) = get_sub_tile_from_class_physical_num(physical_type, sink_physical_num);
-        VTR_ASSERT(to_sub_tile != nullptr && to_sub_tile_rel_cap != OPEN);
+        VTR_ASSERT(to_sub_tile != nullptr && to_sub_tile_rel_cap != ARCH_FPGA_UNDEFINED_VAL);
 
         return (from_sub_tile_rel_cap == to_sub_tile_rel_cap) && (from_sub_tile == to_sub_tile);
 

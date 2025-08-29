@@ -696,6 +696,42 @@ Placement File Format Example
     xor5        1       2       0       0      #6
     [1]         1       1       0       1      #7
 
+.. _vpr_flat_place_file:
+
+Flat Placement File Format (.fplace)
+------------------------------------
+The flat placement file is a text file where each line describes the location of
+an atom. Each line in the flat placement file should have the following syntax:
+
+.. code-block:: none
+
+        <atom_name : str> <x : float> <y : float> <layer : float> <atom_sub_tile : int>
+
+For example:
+
+    .. code-block:: none
+
+        n523  6 8 0 0
+        n522  6 8 0 0
+        n520  6 9 0 0
+        n518  6 9 0 0
+
+The position of the atom on the FPGA is given by 3 floating point values
+(``x``, ``y``, ``layer``). We allow x and y locations to be off-grid since
+this flat placement will be fed into the packer and placer, which will snap
+the positions to grid locations. For 2D FPGA architectures, the ``layer`` should be 0.
+
+The ``sub_tile`` is a clustered placement construct: which cluster-level
+location at a given (x, y, layer) should these atoms go at (relevant when
+multiple clusters can be stacked there). A sub-tile of -1 may be used when
+the sub-tile of an atom is unkown (allowing the packing algorithm to choose
+any sub-tile at the given (x, y, layer) location).
+
+When used with ``flat-recon`` full legalizer (see :option:`vpr --ap_full_legalizer`),
+each atom in a molecule should have compatible location information. It is legal to
+leave some molecules unconstrained; the reconstruction phase will choose where
+to place them but does not attempt to optimize these locations.
+
 .. _vpr_route_file:
 
 Routing File Format (.route)

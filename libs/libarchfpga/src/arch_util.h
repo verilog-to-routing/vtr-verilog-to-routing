@@ -96,6 +96,12 @@ bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::st
 //Returns true of a pb_type (or it's children) contain the specified blif model name
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
 
+/**
+ * @brief Recursive helper method to deduce if the given pb_type is or contains
+ *        pb_types which are of the memory class.
+ */
+bool pb_type_contains_memory_pbs(const t_pb_type* pb_type);
+
 bool has_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
 bool has_combinational_annotation(const t_pb_type* pb_type, std::string_view in_port, std::string_view out_port);
 

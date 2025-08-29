@@ -353,9 +353,9 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
     /* This is a special pre-route to a sink that does not correspond to any    *
      * netlist pin, but which can be reached from the global clock root drive   *
      * points. Therefore, we can set the net pin index of the sink node to      *
-     * OPEN (meaning illegal) as it is not meaningful for this sink.            */
+     * UNDEFINED (meaning illegal) as it is not meaningful for this sink.            */
     vtr::optional<const RouteTreeNode&> new_branch, new_sink;
-    std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest, OPEN, ((high_fanout) ? &spatial_rt_lookup : nullptr), is_flat);
+    std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest, UNDEFINED, ((high_fanout) ? &spatial_rt_lookup : nullptr), is_flat);
 
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(tree.root(), spatial_rt_lookup));
 
