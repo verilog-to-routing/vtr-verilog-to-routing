@@ -51,6 +51,7 @@ jobs:
         ./dev/upgrade_vtr_archs.sh
         make get_symbiflow_benchmarks
         make get_zeroasic_rr_graphs
+        make get_flat_placements
 
     # Build VTR using the default build options.
     - name: 'Build VTR'
