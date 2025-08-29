@@ -200,7 +200,7 @@ Detailed Command-line Options
 .. option:: -min_hard_mult_size <int>
 
     Tells Parmys/ODIN II the minimum multiplier size (in bits) that should be 
-    implemented using hard multiplier (if available). Smaller multipliers will 
+    implemented using a hard multiplier (if available). Smaller multipliers will 
     be implemented using soft logic.
 
     **Default:** 3

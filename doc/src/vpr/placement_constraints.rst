@@ -115,7 +115,7 @@ Partitions, Atoms, and Regions
 		If a user would like to specify an area on the chip with an unusual shape (e.g. L-shaped or T-shaped),
 		they can simply add multiple ``<add_region>`` tags to cover the area specified.
 
-		It is strongly recommended that different partitions do not overlap. The packing algorithm compares the number clustered
-		blocks and the number of physical blocks in a region to decide pack atoms inside a partition more aggressively when
-		there are not enough resources in a partition. Overlapping partitions causes some physical blocks to be counted in more
-		than one partition.
+		It is strongly recommended that different partitions do not overlap. The packing algorithm compares the number of clustered
+		blocks and the number of physical blocks in a region to decide if it should pack atoms inside a partition more aggressively when
+		there are not enough resources in a partition. Overlapping partitions cause some physical blocks to be counted in more
+		than one partition, which will degrade the packing algorithm's ability to create a clustering that can be placed given the floorplan constraints.

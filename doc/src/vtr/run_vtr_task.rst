@@ -6,7 +6,7 @@ This script is used to execute one or more *tasks* (i.e. collections of benchmar
 
 .. seealso:: See :ref:`vtr_tasks` for creation and configuration of tasks.
 
-Under the hood, this script runs the VTR flow for each benchmark circuit, architecture file, and CAD tool options 
+Under the hood, this script runs the VTR flow for each benchmark circuit, architecture file, and CAD tool option 
 combination.
 
 The script is located at::
