@@ -76,36 +76,36 @@ Partitions, Atoms, and Regions
 			For example, to add all atoms ``alu[0]``, ``alu[1]``, and ``alu[2]`` to the partition ``Part0``, the user can use ``alu.*`` as the ``name_pattern`` in the ``<add_atom>`` tag.
 	
 	.. arch:tag:: <add_region x_low="int" y_low="int" x_high="int" y_high="int" subtile="int" layer_low="int" layer_high="int">
-		
+
 		An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
 		on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
 		overlap with each other (in order to ease processing when loading in the file).
 		An ``<add_region>`` tag has the following attributes.
 
-			:req_param x_low:
-				The x value of the lower left point of the rectangle.
+		:req_param x_low:
+			The x value of the lower left point of the rectangle.
 
-			:req_param y_low:
-				The y value of the lower left point of the rectangle.
+		:req_param y_low:
+			The y value of the lower left point of the rectangle.
 
-			:req_param x_high:
-				The x value of the upper right point of the rectangle.
+		:req_param x_high:
+			The x value of the upper right point of the rectangle.
 
-			:req_param y_high:
-				The y value of the upper right point of the rectangle.
+		:req_param y_high:
+			The y value of the upper right point of the rectangle.
 
-			:opt_param subtile:
-				Each x, y location on the grid may contain multiple locations known as subtiles. This parameter is an optional value specifying the subtile location that the atom(s) of the partition shall be constrained to.
-				This attribute is commonly used when constraining an atom to a specific location on the chip (e.g. an exact I/O location). 
-				It is legal to use with larger regions, but uncommon.
+		:opt_param subtile:
+			Each x, y location on the grid may contain multiple locations known as subtiles. This parameter is an optional value specifying the subtile location that the atom(s) of the partition shall be constrained to.
+			This attribute is commonly used when constraining an atom to a specific location on the chip (e.g. an exact I/O location). 
+			It is legal to use with larger regions, but uncommon.
 
-			:opt_param layer_low:
-				The lowest layer number that the region covers.
-				**Default:** ``0``
+		:opt_param layer_low:
+			The lowest layer number that the region covers.
+			**Default:** ``0``
 
-			:opt_param layer_high:
-				The highest layer number that the region covers.
-				**Default:** ``0``
+		:opt_param layer_high:
+			The highest layer number that the region covers.
+			**Default:** ``0``
 
 
 		In 2D architectures, ``layer_low`` and ``layer_high`` can be safely ignored as their default value is 0.
