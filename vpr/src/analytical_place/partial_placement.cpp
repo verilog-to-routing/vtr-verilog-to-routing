@@ -102,6 +102,14 @@ bool PartialPlacement::verify_locs(const APNetlist& netlist,
             return false;
         if (netlist.block_mobility(blk_id) == APBlockMobility::FIXED) {
             const APFixedBlockLoc& fixed_loc = netlist.block_loc(blk_id);
+            if (g_vpr_ctx.atom().flat_placement_info().valid) {
+                // Flat placement files use the anchor positions of blocks, so to match the
+                // internal global placer of VTR we add 0.5 here to move the flat placement
+                // locations to the center of (at least 1x1) tiles.
+                // TODO: This should be handled more explicitly.
+                x_pos += 0.5f;
+                y_pos += 0.5f;
+            }
             if (fixed_loc.x != -1 && x_pos != fixed_loc.x)
                 return false;
             if (fixed_loc.y != -1 && y_pos != fixed_loc.y)

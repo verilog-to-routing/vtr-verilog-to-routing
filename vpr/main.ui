@@ -1275,7 +1275,7 @@
             </child>
             <child>
               <object class="GtkButton" id="ProceedButton">
-                <property name="label" translatable="yes">Next Stage</property>
+                <property name="label" translatable="yes">Next Step</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>

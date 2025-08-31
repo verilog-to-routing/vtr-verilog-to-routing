@@ -16,8 +16,7 @@ unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placeme
     if (flat_placement_info.blk_x_pos.size() != atom_netlist.blocks().size()
         || flat_placement_info.blk_y_pos.size() != atom_netlist.blocks().size()
         || flat_placement_info.blk_layer.size() != atom_netlist.blocks().size()
-        || flat_placement_info.blk_sub_tile.size() != atom_netlist.blocks().size()
-        || flat_placement_info.blk_site_idx.size() != atom_netlist.blocks().size()) {
+        || flat_placement_info.blk_sub_tile.size() != atom_netlist.blocks().size()) {
         VTR_LOG_ERROR(
             "The number of blocks in the flat placement does not match the "
             "number of blocks in the atom netlist.\n");
@@ -51,12 +50,10 @@ unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placeme
         float blk_y_pos = flat_placement_info.blk_y_pos[blk_id];
         float blk_layer = flat_placement_info.blk_layer[blk_id];
         int blk_sub_tile = flat_placement_info.blk_sub_tile[blk_id];
-        int blk_site_idx = flat_placement_info.blk_site_idx[blk_id];
         if ((blk_x_pos < 0.f && blk_x_pos != FlatPlacementInfo::UNDEFINED_POS)
             || (blk_y_pos < 0.f && blk_y_pos != FlatPlacementInfo::UNDEFINED_POS)
             || (blk_layer < 0.f && blk_layer != FlatPlacementInfo::UNDEFINED_POS)
-            || (blk_sub_tile < 0 && blk_sub_tile != FlatPlacementInfo::UNDEFINED_SUB_TILE)
-            || (blk_site_idx < 0 && blk_site_idx != FlatPlacementInfo::UNDEFINED_SITE_IDX)) {
+            || (blk_sub_tile < 0 && blk_sub_tile != FlatPlacementInfo::UNDEFINED_SUB_TILE)) {
             VTR_LOG_ERROR(
                 "Atom block %s is placed at an invalid position on the FPGA.\n",
                 atom_netlist.block_name(blk_id).c_str());
