@@ -64,6 +64,7 @@ Partitions, Atoms, and Regions
 		A name for the partition.
 
 	.. arch:tag:: <add_atom name_pattern="string">
+
 		An ``<add_atom>`` tag is used to add an atom that must be constrained to the partition. 
 		Each partition can contain any number of atoms from the circuit. 
 		The ``<add_atom>`` tag has the following attribute:
@@ -75,6 +76,7 @@ Partitions, Atoms, and Regions
 			For example, to add all atoms ``alu[0]``, ``alu[1]``, and ``alu[2]`` to the partition ``Part0``, the user can use ``alu.*`` as the ``name_pattern`` in the ``<add_atom>`` tag.
 	
 	.. arch:tag:: <add_region x_low="int" y_low="int" x_high="int" y_high="int" subtile="int" layer_low="int" layer_high="int">
+		
 		An ``<add_region>`` tag is used to add a region to the partition. A ``region`` is a rectangular area or cubic volume
 		on the chip. A partition can contain any number of independent regions - the regions within one partition **must not**
 		overlap with each other (in order to ease processing when loading in the file).
