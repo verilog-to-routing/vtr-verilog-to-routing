@@ -128,7 +128,8 @@ bool route(const Netlist<>& net_list,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
                                                                           segment_inf,
-                                                                          is_flat);
+                                                                          is_flat,
+                                                                          router_opts.route_verbosity);
 
     if (is_flat) {
         // If is_flat is true, the router lookahead maps related to intra-cluster resources should be initialized since
@@ -148,7 +149,8 @@ bool route(const Netlist<>& net_list,
                                                        router_opts.write_router_lookahead,
                                                        router_opts.read_router_lookahead,
                                                        segment_inf,
-                                                       is_flat);
+                                                       is_flat,
+                                                       router_opts.route_verbosity);
         if (!router_opts.write_intra_cluster_router_lookahead.empty()) {
             router_lookahead->write_intra_cluster(router_opts.write_intra_cluster_router_lookahead);
         }
@@ -227,7 +229,8 @@ bool route(const Netlist<>& net_list,
         budgeting_inf,
         routing_predictor,
         choking_spots,
-        is_flat);
+        is_flat,
+        router_opts.route_verbosity);
 
     RouterStats router_stats;
     float prev_iter_cumm_time = 0;
@@ -318,7 +321,9 @@ bool route(const Netlist<>& net_list,
         float iter_cumm_time = iteration_timer.elapsed_sec();
         float iter_elapsed_time = iter_cumm_time - prev_iter_cumm_time;
 
-        PartitionTreeDebug::log("Iteration " + std::to_string(itry) + " took " + std::to_string(iter_elapsed_time) + " s");
+        std::string iteration_msg = "Iteration " + std::to_string(itry) + " took " + std::to_string(iter_elapsed_time) + " s";
+
+        PartitionTreeDebug::log(iteration_msg);
 
         //Output progress
         print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, iter_results.stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
@@ -327,9 +332,9 @@ bool route(const Netlist<>& net_list,
 
         //Update graphics
         if (itry == 1) {
-            update_screen(first_iteration_priority, "Routing...", ROUTING, timing_info);
+            update_screen(first_iteration_priority, ("Initial Route: " + iteration_msg).c_str(), ROUTING, timing_info);
         } else {
-            update_screen(ScreenUpdatePriority::MINOR, "Routing...", ROUTING, timing_info);
+            update_screen(ScreenUpdatePriority::MINOR, ("Route: " + iteration_msg).c_str(), ROUTING, timing_info);
         }
 
         if (router_opts.save_routing_per_iteration) {

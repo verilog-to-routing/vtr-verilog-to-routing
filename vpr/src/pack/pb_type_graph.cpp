@@ -618,10 +618,10 @@ static int add_port_logical_classes(t_logical_block_type* logical_block,
             class_inf.equivalence = port->equivalent;
 
             if (port->type == IN_PORT) {
-                class_inf.type = RECEIVER;
+                class_inf.type = e_pin_type::RECEIVER;
             } else {
                 VTR_ASSERT(port->type == OUT_PORT);
-                class_inf.type = DRIVER;
+                class_inf.type = e_pin_type::DRIVER;
             }
 
             for (int pin_idx = 0; pin_idx < num_pins[port_idx]; pin_idx++) {
@@ -639,10 +639,10 @@ static int add_port_logical_classes(t_logical_block_type* logical_block,
                 class_inf.equivalence = port->equivalent;
 
                 if (port->type == IN_PORT) {
-                    class_inf.type = RECEIVER;
+                    class_inf.type = e_pin_type::RECEIVER;
                 } else {
                     VTR_ASSERT(port->type == OUT_PORT);
-                    class_inf.type = DRIVER;
+                    class_inf.type = e_pin_type::DRIVER;
                 }
 
                 auto pb_graph_pin = &(pb_graph_pins[port_idx][pin_idx]);
@@ -1323,8 +1323,8 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
         mode = pb_graph_children_nodes[0][0].pb_type->parent_mode;
     }
 
-    pb_msb = pb_lsb = OPEN;
-    pin_msb = pin_lsb = OPEN;
+    pb_msb = pb_lsb = UNDEFINED;
+    pin_msb = pin_lsb = UNDEFINED;
 
     // parse pb
     bool found = false;

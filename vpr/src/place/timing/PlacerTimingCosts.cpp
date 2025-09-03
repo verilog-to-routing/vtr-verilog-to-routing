@@ -12,7 +12,7 @@ PlacerTimingCosts::PlacerTimingCosts(const ClusteredNetlist& nlist) {
         // The placer always skips 'ignored' nets, so they don't affect timing
         // costs, so we also skip them here
         if (nlist.net_is_ignored(net)) {
-            net_start_indices_[net] = OPEN;
+            net_start_indices_[net] = UNDEFINED;
             continue;
         }
 

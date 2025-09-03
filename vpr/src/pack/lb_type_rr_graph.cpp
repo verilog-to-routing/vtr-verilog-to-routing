@@ -302,7 +302,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
         /* alloc and load input pins that connect to sinks */
         for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
             PortEquivalence port_equivalent = PortEquivalence::NONE;
-            int sink_index = OPEN;
+            int sink_index = UNDEFINED;
             for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
                 /* load intermediate indices */
                 pb_pin = &pb_graph_node->input_pins[iport][ipin];
@@ -322,7 +322,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
                 lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
                 lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 
-                if (port_equivalent == PortEquivalence::NONE || sink_index == OPEN) {
+                if (port_equivalent == PortEquivalence::NONE || sink_index == UNDEFINED) {
                     /* Create new sink for input to primitive */
                     t_lb_type_rr_node new_sink;
                     if (port_equivalent != PortEquivalence::NONE) {
@@ -394,7 +394,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
         /* alloc and load clock pins that connect to sinks */
         for (int iport = 0; iport < pb_graph_node->num_clock_ports; iport++) {
             PortEquivalence port_equivalent = PortEquivalence::NONE;
-            int sink_index = OPEN;
+            int sink_index = UNDEFINED;
             for (int ipin = 0; ipin < pb_graph_node->num_clock_pins[iport]; ipin++) {
                 /* load intermediate indices */
                 pb_pin = &pb_graph_node->clock_pins[iport][ipin];
@@ -412,7 +412,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
                 lb_type_rr_node_graph[pin_index].type = LB_INTERMEDIATE;
                 lb_type_rr_node_graph[pin_index].pb_graph_pin = pb_pin;
 
-                if (port_equivalent == PortEquivalence::NONE || sink_index == OPEN) {
+                if (port_equivalent == PortEquivalence::NONE || sink_index == UNDEFINED) {
                     /* Create new sink for clock to primitive */
                     t_lb_type_rr_node new_sink;
                     if (port_equivalent != PortEquivalence::NONE) {

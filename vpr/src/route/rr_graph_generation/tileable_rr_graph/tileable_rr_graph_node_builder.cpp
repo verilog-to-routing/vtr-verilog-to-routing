@@ -51,19 +51,19 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
             switch (node_type) {
                 case e_rr_type::OPIN:
                     // get the number of OPINs
-                    num_grid_rr_nodes += get_grid_num_pins(grids, layer, ix, iy, DRIVER, io_side);
+                    num_grid_rr_nodes += get_grid_num_pins(grids, layer, ix, iy, e_pin_type::DRIVER, io_side);
                     break;
                 case e_rr_type::IPIN:
                     // get the number of IPINs
-                    num_grid_rr_nodes += get_grid_num_pins(grids, layer, ix, iy, RECEIVER, io_side);
+                    num_grid_rr_nodes += get_grid_num_pins(grids, layer, ix, iy, e_pin_type::RECEIVER, io_side);
                     break;
                 case e_rr_type::SOURCE:
                     // SOURCE: number of classes whose type is DRIVER
-                    num_grid_rr_nodes += get_grid_num_classes(grids, layer, ix, iy, DRIVER);
+                    num_grid_rr_nodes += get_grid_num_classes(grids, layer, ix, iy, e_pin_type::DRIVER);
                     break;
                 case e_rr_type::SINK:
                     // SINK: number of classes whose type is RECEIVER
-                    num_grid_rr_nodes += get_grid_num_classes(grids, layer, ix, iy, RECEIVER);
+                    num_grid_rr_nodes += get_grid_num_classes(grids, layer, ix, iy, e_pin_type::RECEIVER);
                     break;
                 default:
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -463,7 +463,7 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                 SideManager side_manager(side);
                 // Find OPINs
                 // Configure pins by pins
-                std::vector<int> opin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), DRIVER, side_manager.get_side(),
+                std::vector<int> opin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), e_pin_type::DRIVER, side_manager.get_side(),
                                                                 width, height);
                 for (const int& pin_num : opin_list) {
                     // Create a new node and fill information
@@ -517,7 +517,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                 SideManager side_manager(side);
                 // Find IPINs
                 // Configure pins by pins
-                std::vector<int> ipin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), RECEIVER, side_manager.get_side(), width, height);
+                std::vector<int> ipin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), e_pin_type::RECEIVER, side_manager.get_side(), width, height);
                 for (const int& pin_num : ipin_list) {
                     // Create a new node and fill information
                     RRNodeId node = rr_graph_builder.create_node(layer, grid_coordinate.x() + width, grid_coordinate.y() + height, e_rr_type::IPIN, pin_num, side);
@@ -564,7 +564,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
     for (size_t iclass = 0; iclass < phy_tile_type->class_inf.size(); ++iclass) {
         // Set a SINK rr_node for the OPIN
-        if (DRIVER != phy_tile_type->class_inf[iclass].type) {
+        if (e_pin_type::DRIVER != phy_tile_type->class_inf[iclass].type) {
             continue;
         }
 
@@ -610,7 +610,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
     for (size_t iclass = 0; iclass < phy_tile_type->class_inf.size(); ++iclass) {
         // Set a SINK rr_node for the OPIN
-        if (RECEIVER != phy_tile_type->class_inf[iclass].type) {
+        if (e_pin_type::RECEIVER != phy_tile_type->class_inf[iclass].type) {
             continue;
         }
 
@@ -847,7 +847,11 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             size_t seg_id = chan_details.get_track_segment_id(itrack);
             e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? e_parallel_axis::X_AXIS : e_parallel_axis::Y_AXIS;
             size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
-            rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch);
+            if (Direction::DEC == chan_details.get_track_direction(itrack) && segment_infs[parallel_seg_id].arch_opin_switch_dec != -1) {
+                rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch_dec);
+            } else {
+                rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch);
+            }
 
             // Update chan_details with node_id
             chan_details.set_track_node_id(itrack, size_t(node));

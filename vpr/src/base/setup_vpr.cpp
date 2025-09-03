@@ -169,6 +169,7 @@ void SetupVPR(const t_options* options,
     fileNameOpts->write_constraints_file = options->write_constraints_file;
     fileNameOpts->read_flat_place_file = options->read_flat_place_file;
     fileNameOpts->write_flat_place_file = options->write_flat_place_file;
+    fileNameOpts->write_legalized_flat_place_file = options->write_legalized_flat_place_file;
     fileNameOpts->write_block_usage = options->write_block_usage;
 
     fileNameOpts->verify_file_digests = options->verify_file_digests;
@@ -597,6 +598,7 @@ static void setup_ap_opts(const t_options& options,
     apOpts.ap_high_fanout_threshold = options.ap_high_fanout_threshold.value();
     apOpts.ap_partial_legalizer_target_density = options.ap_partial_legalizer_target_density.value();
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
+    apOpts.appack_unrelated_clustering_args = options.appack_unrelated_clustering_args.value();
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
     apOpts.generate_mass_report = options.ap_generate_mass_report.value();

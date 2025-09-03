@@ -17,8 +17,10 @@
 
 #include "ezgl/graphics.hpp"
 
-/* Draws the routing resources that exist in the FPGA, if the user wants *
- * them drawn. */
+/** 
+ * @brief Draws the routing resources that exist in the FPGA, if the user wants
+ * them drawn. 
+ */
 void draw_rr(ezgl::renderer* g);
 
 /* Draws all the edges that the user wants shown between inode and what it
@@ -26,6 +28,15 @@ void draw_rr(ezgl::renderer* g);
 void draw_rr_edges(RRNodeId from_node, ezgl::renderer* g);
 
 void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g);
+
+/**
+ * @brief Draws a RR node.
+ *
+ * @param inode The RRNodeId of the node to draw.
+ * @param color The color to use for drawing the node.
+ * @param g The renderer to use for drawing.
+ */
+void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g);
 
 /**
  * @brief Draws the intra-cluster pin for a given RRNodeId when flat routing is enabled.

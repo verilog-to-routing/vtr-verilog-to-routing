@@ -1,5 +1,6 @@
 
 #include "read_fpga_interchange_arch.h"
+#include "arch_types.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
@@ -550,7 +551,7 @@ struct ArchReader {
             std::string wire_name = str(wire.getName());
 
             // pin name, bel name
-            int pin_id = OPEN;
+            int pin_id = ARCH_FPGA_UNDEFINED_VAL;
             bool pad_exists = false;
             bool all_inout_pins = true;
             std::string pad_bel_name;
@@ -577,7 +578,7 @@ struct ArchReader {
                     pin_id = pin;
             }
 
-            if (pin_id == OPEN) {
+            if (pin_id == ARCH_FPGA_UNDEFINED_VAL) {
                 // If no driver pin has been found, the assumption is that
                 // there must be a PAD with inout pin connected to other inout pins
                 for (auto pin : wire.getPins()) {
@@ -594,7 +595,7 @@ struct ArchReader {
                 }
             }
 
-            VTR_ASSERT(pin_id != OPEN);
+            VTR_ASSERT(pin_id != ARCH_FPGA_UNDEFINED_VAL);
 
             auto out_pin = site.getBelPins()[pin_id];
             auto out_pin_bel = get_bel_reader(site, str(out_pin.getBel()));
@@ -1674,10 +1675,10 @@ struct ArchReader {
      *         If a bel name index is specified, the bel pins are processed, otherwise the site ports
      *         are processed instead.
      */
-    void process_block_ports(t_pb_type* pb_type, Device::SiteType::Reader& site, size_t bel_name = OPEN) {
+    void process_block_ports(t_pb_type* pb_type, Device::SiteType::Reader& site, size_t bel_name = ARCH_FPGA_UNDEFINED_VAL) {
         // Prepare data based on pb_type level
         std::set<std::tuple<std::string, PORTS, int>> pins;
-        if (bel_name == (size_t)OPEN) {
+        if (bel_name == (size_t)ARCH_FPGA_UNDEFINED_VAL) {
             for (auto pin : site.getPins()) {
                 auto dir = pin.getDir() == INPUT ? IN_PORT : OUT_PORT;
                 pins.emplace(str(pin.getName()), dir, 1);

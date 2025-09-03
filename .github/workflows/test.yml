@@ -47,7 +47,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -87,8 +87,14 @@ jobs:
       uses: SimenB/github-actions-cpu-cores@v2
       id: cpu-cores
 
+    # NOTE: BlifExplorer requires Qt5 to build. We do not currently actually
+    #       run the executable as part of the CI, but we at least want to test
+    #       that it can be compiled.
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: |
+        ./install_apt_packages.sh
+        sudo apt-get update
+        sudo apt-get install qtbase5-dev
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -122,27 +128,42 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - { name: 'C/C++',       script: 'check-format.sh'    }
-        - { name: 'Python',      script: 'check-format-py.sh' }
-        - { name: 'Python Lint', script: 'pylint_check.py'    }
+        - { name: 'C/C++',       script: 'check-format.sh'   , with_python: 'no', pkgs: 'clang-format-18' }
+        - { name: 'Python',      script: 'check-format-py.sh', with_python: 'yes', pkgs: '' }
+        - { name: 'Python Lint', script: 'pylint_check.py'   , with_python: 'yes', pkgs: '' }
     name: 'F: ${{ matrix.name }}'
     steps:
 
+    - uses: actions/checkout@v4
+      # NOTE: We do not need sub-modules. We do not check sub-modules for formatting.
+
     # TODO: This should be on the same version of Python as would be found on
     #       Ubuntu 24.04 (3.12.3); however that version has some linting errors.
+    #         - The version of Pylint in requirements.txt is not compatible with
+    #           python version 3.12.3. Pylint needs to be updated to move to this version.
     - uses: actions/setup-python@v5
+      if: ${{ matrix.with_python == 'yes' }}
       with:
         python-version: 3.10.10
 
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
+    - name: Build Python Virtual Env
+      run: |
+        python -m venv .venv
+
+    - name: Install Python Requirements
+      if: ${{ matrix.with_python == 'yes' }}
+      run: |
+        source .venv/bin/activate
+        pip install -r requirements.txt
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      if: ${{ matrix.pkgs }}
+      run: sudo apt install -y ${{ matrix.pkgs }}
 
     - name: Test
-      run: ./dev/${{ matrix.script }}
+      run: |
+        source .venv/bin/activate
+        ./dev/${{ matrix.script }}
 
 
   VerifyTestSuites:
@@ -179,7 +200,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v4
@@ -222,7 +243,11 @@ jobs:
       id: cpu-cores
 
     - name: 'Install dependencies'
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
+
+    - name: 'Install Python Requirements'
+      run: |
+        pip install -r requirements.txt
 
     - name: 'ccache'
       uses: hendrikmuhs/ccache-action@v1.2
@@ -305,19 +330,23 @@ jobs:
         include: [
           {
             name: 'Basic',
-            suite: 'vtr_reg_basic'
+            suite: 'vtr_reg_basic',
+            extra_pkgs: ''
           },
           {
             name: 'Strong',
-            suite: 'vtr_reg_strong'
+            suite: 'vtr_reg_strong',
+            extra_pkgs: ''
           },
           {
             name: 'SystemVerilog',
-            suite: 'vtr_reg_system_verilog'
+            suite: 'vtr_reg_system_verilog',
+            extra_pkgs: ''
           },
           {
             name: 'Valgrind Memory',
-            suite: 'vtr_reg_valgrind_small'
+            suite: 'vtr_reg_valgrind_small',
+            extra_pkgs: 'valgrind'
           }
         ]
     name: 'R: ${{ matrix.name }}'
@@ -336,7 +365,17 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
+
+    - name: Install Extra Dependencies
+      if: ${{ matrix.extra_pkgs != '' }}
+      run: |
+        sudo apt update
+        sudo apt install -y ${{ matrix.extra_pkgs }}
+
+    - name: Install Python Requirements
+      run: |
+        pip install -r requirements.txt
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v4
@@ -383,15 +422,18 @@ jobs:
         include: [
           {
             name: 'Basic_odin',
-            suite: 'vtr_reg_basic_odin'
+            suite: 'vtr_reg_basic_odin',
+            extra_pkgs: ''
           },
           {
             name: 'Strong_odin',
-            suite: 'vtr_reg_strong_odin'
+            suite: 'vtr_reg_strong_odin',
+            extra_pkgs: ''
           },
           {
             name: 'Valgrind Memory Odin',
-            suite: 'vtr_reg_valgrind_small_odin'
+            suite: 'vtr_reg_valgrind_small_odin',
+            extra_pkgs: 'valgrind'
           }
         ]
     name: 'R: ${{ matrix.name }}'
@@ -410,7 +452,17 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
+
+    - name: Install Extra Dependencies
+      if: ${{ matrix.extra_pkgs != '' }}
+      run: |
+        sudo apt update
+        sudo apt install -y ${{ matrix.extra_pkgs }}
+
+    - name: Install Python Requirements
+      run: |
+        pip install -r requirements.txt
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v4
@@ -478,7 +530,11 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
+
+    - name: Install Python Requirements
+      run: |
+        pip install -r requirements.txt
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -521,7 +577,11 @@ jobs:
         id: cpu-cores
 
       - name: Install dependencies
-        run: ./.github/scripts/install_dependencies.sh
+        run: ./install_apt_packages.sh
+
+      - name: Install Python Requirements
+        run: |
+          pip install -r requirements.txt
 
       - name: Download Build Artifact
         uses: actions/download-artifact@v4
@@ -556,7 +616,11 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
+
+    - name: Install Python Requirements
+      run: |
+        pip install -r requirements.txt
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v4
@@ -592,7 +656,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
       uses: actions/download-artifact@v4
@@ -637,7 +701,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:
@@ -668,7 +732,7 @@ jobs:
       id: cpu-cores
 
     - name: Install Dependencies
-      run: ./.github/scripts/install_jammy_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:

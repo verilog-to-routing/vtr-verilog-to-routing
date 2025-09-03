@@ -2,6 +2,7 @@
 #include "override_delay_model.h"
 
 #include "compute_delta_delays_utils.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
@@ -65,14 +66,14 @@ void OverrideDelayModel::compute_override_delay_model_(RouterDelayProfiler& rout
             int from_pin = from_type->find_pin(from_port.port_name(), from_port.port_low_index() + iconn);
             int to_pin = to_type->find_pin(to_port.port_name(), to_port.port_low_index() + iconn);
 
-            VTR_ASSERT(from_pin != OPEN);
-            VTR_ASSERT(to_pin != OPEN);
+            VTR_ASSERT(from_pin != UNDEFINED);
+            VTR_ASSERT(to_pin != UNDEFINED);
 
-            int from_pin_class = from_type->find_pin_class(from_port.port_name(), from_port.port_low_index() + iconn, DRIVER);
-            VTR_ASSERT(from_pin_class != OPEN);
+            int from_pin_class = from_type->find_pin_class(from_port.port_name(), from_port.port_low_index() + iconn, e_pin_type::DRIVER);
+            VTR_ASSERT(from_pin_class != UNDEFINED);
 
-            int to_pin_class = to_type->find_pin_class(to_port.port_name(), to_port.port_low_index() + iconn, RECEIVER);
-            VTR_ASSERT(to_pin_class != OPEN);
+            int to_pin_class = to_type->find_pin_class(to_port.port_name(), to_port.port_low_index() + iconn, e_pin_type::RECEIVER);
+            VTR_ASSERT(to_pin_class != UNDEFINED);
 
             bool found_sample_points;
             RRNodeId src_rr, sink_rr;

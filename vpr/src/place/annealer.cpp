@@ -343,12 +343,6 @@ float PlacementAnnealer::estimate_starting_temperature_() {
     // Get the standard deviation.
     double std_dev = get_std_dev(num_accepted, sum_of_squares, av);
 
-    // Print warning if not all swaps are accepted.
-    if (num_accepted != move_lim) {
-        VTR_LOG_WARN("Starting t: %d of %d configurations accepted.\n",
-                     num_accepted, move_lim);
-    }
-
     // Improved initial placement uses a fast SA for NoC routers and centroid placement
     // for other blocks. The temperature is reduced to prevent SA from destroying the initial placement
     float init_temp = std_dev / 64;

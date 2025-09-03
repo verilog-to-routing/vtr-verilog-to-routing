@@ -89,7 +89,8 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
                                                        const std::string& write_lookahead,
                                                        const std::string& read_lookahead,
                                                        const std::vector<t_segment_inf>& segment_inf,
-                                                       bool is_flat);
+                                                       bool is_flat,
+                                                       int route_verbosity);
 
 /**
  * @brief Clear router lookahead cache (e.g. when changing or free rrgraph).
@@ -106,7 +107,8 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    const std::string& write_lookahead,
                                                    const std::string& read_lookahead,
                                                    const std::vector<t_segment_inf>& segment_inf,
-                                                   bool is_flat);
+                                                   bool is_flat,
+                                                   int route_verbosity);
 
 class ClassicLookahead : public RouterLookahead {
   public:

@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "pack_types.h"
+#include "vpr_types.h"
 #include "physical_types_util.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
@@ -40,8 +41,6 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 
 static bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::regex& blif_model_regex);
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
-static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
-static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 
 /******************** Subroutine definitions *********************************/
 
@@ -667,7 +666,7 @@ InstPort parse_inst_port(const std::string& str) {
 
     int num_pins = find_tile_port_by_name(blk_type, inst_port.port_name()).num_pins;
 
-    if (num_pins == OPEN) {
+    if (num_pins == UNDEFINED) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port %s on block type %s", inst_port.port_name().c_str(), inst_port.instance_name().c_str());
     }
 
@@ -1020,7 +1019,7 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
 }
 
 /* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
-static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
     t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
 
     t_pb_graph_node* pb_graph_head = type->pb_graph_head;
@@ -1048,7 +1047,7 @@ static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_
 }
 
 /* Free pb_graph_pin lookup array */
-static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
+void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
     if (pb_graph_pin_lookup_from_type == nullptr) {
         return;
     }
@@ -1702,7 +1701,7 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               const int j,
                               int class_physical_num) {
     auto class_type = get_class_type_from_class_physical_num(physical_tile, class_physical_num);
-    VTR_ASSERT(class_type == DRIVER || class_type == RECEIVER);
+    VTR_ASSERT(class_type == e_pin_type::DRIVER || class_type == e_pin_type::RECEIVER);
     e_rr_type node_type = (class_type == e_pin_type::DRIVER) ? e_rr_type::SOURCE : e_rr_type::SINK;
     return rr_spatial_lookup.find_node(layer, i, j, node_type, class_physical_num);
 }
@@ -1903,7 +1902,7 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
             if (it == cluster_pin_chains.end()) {
                 pin_num_vec.push_back(pin);
             } else {
-                VTR_ASSERT(cluster_pin_chain_idx[pin] != OPEN);
+                VTR_ASSERT(cluster_pin_chain_idx[pin] != UNDEFINED);
                 if (is_pin_on_tile(physical_type, pin) || is_primitive_pin(physical_type, pin) || cluster_chain_sinks[cluster_pin_chain_idx[pin]] == pin) {
                     pin_num_vec.push_back(pin);
                 }
