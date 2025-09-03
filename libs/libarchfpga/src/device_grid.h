@@ -32,10 +32,9 @@ class DeviceGrid {
     const std::string& name() const { return name_; }
 
     ///@brief Return the number of layers(number of dies)
-    inline int get_num_layers() const {
-        return (int)grid_.dim_size(0);
+    inline size_t get_num_layers() const {
+        return grid_.dim_size(0);
     }
-
     ///@brief Return the width of the grid at the specified layer
     size_t width() const { return grid_.dim_size(1); }
     ///@brief Return the height of the grid at the specified layer
