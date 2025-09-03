@@ -95,6 +95,59 @@ class DeviceGrid {
         return {{tile_xlow, tile_ylow}, {tile_xhigh, tile_yhigh}};
     }
 
+    // Forward const-iterator over (layer, x, y)
+    class loc_const_iterator {
+    public:
+        using value_type = t_physical_tile_loc;
+        using difference_type = std::ptrdiff_t;
+        using iterator_category = std::forward_iterator_tag;
+
+        loc_const_iterator(const DeviceGrid* g, size_t layer, size_t x, size_t y)
+            : g_(g) {
+            loc_.layer_num = static_cast<int>(layer);
+            loc_.x = static_cast<int>(x);
+            loc_.y = static_cast<int>(y);
+        }
+
+        value_type operator*() const { return loc_; }
+
+        // pre-increment
+        loc_const_iterator& operator++() {
+            // advance y, then x, then layer
+            ++loc_.y;
+            if (loc_.y >= static_cast<int>(g_->height())) {
+                loc_.y = 0;
+                ++loc_.x;
+                if (loc_.x >= static_cast<int>(g_->width())) {
+                    loc_.x = 0;
+                    ++loc_.layer_num;
+                }
+            }
+            return *this;
+        }
+
+        bool operator==(const loc_const_iterator& o) const {
+            return g_ == o.g_
+                && loc_.layer_num == o.loc_.layer_num
+                && loc_.x == o.loc_.x
+                && loc_.y == o.loc_.y;
+        }
+        bool operator!=(const loc_const_iterator& o) const { return !(*this == o); }
+
+    private:
+        const DeviceGrid* g_ = nullptr;
+        t_physical_tile_loc loc_{0, 0, 0};
+    };
+
+    /// Iterate every (layer, x, y) location
+    inline auto all_locations() const {
+        return vtr::make_range(
+            loc_const_iterator(this, /*layer*/0, /*x*/0, /*y*/0),
+            loc_const_iterator(this, /*layer*/get_num_layers(), /*x*/0, /*y*/0) // end sentinel
+        );
+    }
+
+
     ///@brief Return the metadata of the tile at the specified location
     inline const t_metadata_dict* get_metadata(const t_physical_tile_loc& tile_loc) const {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].meta;
