@@ -2,6 +2,8 @@
 
 #include <map>
 #include <vector>
+#include <string_view>
+
 #include "netlist.h"
 #include "rr_graph_type.h"
 
@@ -26,7 +28,7 @@ void routing_stats(const Netlist<>& net_list,
 /**
  * @brief Calculates the routing channel width at each grid location.
  *
- * Iterates through all RR nodes and counts how many wires pass through each (x, y) location
+ * Iterates through all RR nodes and counts how many wires pass through each (layer, x, y) location
  * for both horizontal (CHANX) and vertical (CHANY) channels.
  *
  * @return A pair of 3D matrices:
@@ -61,3 +63,22 @@ void print_resource_usage();
  * @param target_device_utilization The target device utilization set by the user
  */
 void print_device_utilization(const float target_device_utilization);
+
+/**
+ * @brief Writes channel occupancy data to a file.
+ *
+ * Each row contains:
+ *   - (x, y) coordinate
+ *   - Occupancy count
+ *   - Occupancy percentage (occupancy / capacity)
+ *   - Channel capacity
+ *
+ *   TODO: extend to 3D
+ *
+ * @param filename      Output file path.
+ * @param occupancy     Matrix of occupancy counts.
+ * @param capacity_list List of channel capacities (per y for chanx, per x for chany).
+ */
+void write_channel_occupancy_table(const std::string_view filename,
+                                   const vtr::Matrix<int>& occupancy,
+                                   const std::vector<int>& capacity_list);
