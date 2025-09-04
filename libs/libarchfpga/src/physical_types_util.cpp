@@ -78,7 +78,6 @@ static std::vector<int> get_pb_pin_src_pins(t_physical_tile_type_ptr physical_ty
                                             const t_pb_graph_pin* pin);
 
 /**
- *
  * @param physical_type physical tile which pin belongs to
  * @param sub_tile  sub_tile in which physical tile located
  * @param logical_block logical block mapped to the sub_tile
@@ -108,20 +107,12 @@ static t_pb_graph_pin* get_mutable_tile_pin_pb_pin(t_physical_tile_type* physica
                                                    int pin_physical_num);
 
 /**
- *
- * @param physical_tile
- * @param class_physical_num
  * @return A vector containing all of the parent pb_graph_nodes and the pb_graph_node of the class_physical_num itself
  */
 static std::vector<const t_pb_graph_node*> get_sink_hierarchical_parents(t_physical_tile_type_ptr physical_tile,
                                                                          int class_physical_num);
 
 /**
- *
- * @param physical_tile
- * @param pin_physcial_num
- * @param ref_sink_num
- * @param sink_grp
  * @return Return zero if the ref_sink_num is not reachable by pin_physical_num, otherwise return the number sinks in sink_grp
  * reachable by pin_physical_num
  */
@@ -618,21 +609,21 @@ bool is_opin(int ipin, t_physical_tile_type_ptr type) {
         return false;
 }
 
-bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from_layer, int to_layer, int num_of_avail_layer) {
-    if (type->is_empty()) { //if type is empty, there is no pins
+bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from_layer, int to_layer, unsigned num_of_avail_layer) {
+    // if type is empty, there is no pins
+    if (type->is_empty()) {
         return false;
     }
-    //ipin should be a valid pin in physical type
+
+    // ipin should be a valid pin in physical type
     VTR_ASSERT(ipin < type->num_pins);
-    int pin_layer = from_layer + type->pin_layer_offset[ipin];
-    //if pin_offset specifies a layer that doesn't exist in arch file, we do a wrap around
+    unsigned pin_layer = from_layer + type->pin_layer_offset[ipin];
+    // if pin_offset specifies a layer that doesn't exist in arch file, we do a wrap around
     pin_layer = (pin_layer < num_of_avail_layer) ? pin_layer : pin_layer % num_of_avail_layer;
-    if (from_layer == to_layer || pin_layer == to_layer) {
+    if (from_layer == to_layer || int(pin_layer) == to_layer) {
         return true;
-    } else {
-        return false;
     }
-    //not reachable
+
     return false;
 }
 
@@ -643,7 +634,7 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
     std::string pin_name = type->name;
 
     int sub_tile_index, inst_num, logical_num, pb_type_idx;
-    std::tie<int, int, int, int, int>(pin_index, sub_tile_index, inst_num, logical_num, pb_type_idx) = get_pin_index_for_inst(type, pin_physical_num, is_flat);
+    std::tie(pin_index, sub_tile_index, inst_num, logical_num, pb_type_idx) = get_pin_index_for_inst(type, pin_physical_num, is_flat);
     if (type->sub_tiles[sub_tile_index].capacity.total() > 1) {
         pin_name += "[" + std::to_string(inst_num) + "]";
     }

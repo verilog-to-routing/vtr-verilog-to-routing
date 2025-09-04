@@ -53,7 +53,8 @@ class DeviceGrid {
     void clear();
 
     /**
-     * @brief Return the number of instances of the specified tile type on the specified layer. If the layer_num is -1, return the total number of instances of the specified tile type on all layers.
+     * @brief Return the number of instances of the specified tile type on the specified layer.
+     * If the layer_num is -1, return the total number of instances of the specified tile type on all layers.
      * @note This function should be used if count_instances() is called in the constructor.
      */
     size_t num_instances(t_physical_tile_type_ptr type, int layer_num) const;
@@ -82,6 +83,16 @@ class DeviceGrid {
     inline bool is_root_location(const t_physical_tile_loc& tile_loc) const {
         return get_width_offset(tile_loc) == 0 && get_height_offset(tile_loc) == 0;
     }
+
+    ///@brief Given a location, return the root location (bottom-left corner) of the tile instance
+    inline t_physical_tile_loc get_root_location(const t_physical_tile_loc& tile_loc) const {
+        t_physical_tile_loc root_loc;
+        root_loc.layer_num = tile_loc.layer_num;
+        root_loc.x = tile_loc.x - get_width_offset(tile_loc);
+        root_loc.y = tile_loc.y - get_height_offset(tile_loc);
+        return root_loc;
+    }
+
 
     ///@brief Returns a rectangle which represents the bounding box of the tile at the given location.
     inline vtr::Rect<int> get_tile_bb(const t_physical_tile_loc& tile_loc) const {

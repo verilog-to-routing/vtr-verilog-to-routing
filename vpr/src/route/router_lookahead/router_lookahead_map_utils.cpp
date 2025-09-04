@@ -476,12 +476,12 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity) {
     t_chan_ipins_delays chan_ipins_delays;
 
     chan_ipins_delays.resize(device_ctx.grid.get_num_layers());
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (size_t layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         chan_ipins_delays[layer_num].resize(device_ctx.physical_tile_types.size());
     }
 
-    //We assume that the routing connectivity of each instance of a physical tile is the same,
-    //and so only measure one instance of each type
+    // We assume that the routing connectivity of each instance of a physical tile is the same,
+    // and so only measure one instance of each type
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         for (const t_physical_tile_type& tile_type : device_ctx.physical_tile_types) {
             if (device_ctx.grid.num_instances(&tile_type, layer_num) == 0) {
@@ -523,10 +523,8 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity) {
 
 t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                                          t_physical_tile_type_ptr physical_tile,
-                                                         int layer,
-                                                         int x,
-                                                         int y) {
-    auto tile_pins_vec = get_flat_tile_pins(physical_tile);
+                                                         const t_physical_tile_loc& tile_loc) {
+    std::vector<int> tile_pins_vec = get_flat_tile_pins(physical_tile);
     int max_ptc_num = get_tile_pin_max_ptc(physical_tile, true);
 
     t_ipin_primitive_sink_delays pin_delays;
@@ -535,9 +533,7 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
     for (int pin_physical_num : tile_pins_vec) {
         RRNodeId pin_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
                                                   physical_tile,
-                                                  layer,
-                                                  x,
-                                                  y,
+                                                  tile_loc,
                                                   pin_physical_num);
         VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
 
@@ -695,7 +691,7 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
 }
 
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
-                                        int from_layer_num,
+                                        unsigned from_layer_num,
                                         const e_rr_type& chan_type,
                                         const t_segment_inf& segment_inf,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
