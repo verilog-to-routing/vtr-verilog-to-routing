@@ -134,7 +134,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
         sorted_sample_loc[sample_loc.first] = std::set<int>(sample_loc.second.begin(), sample_loc.second.end());
     }
     //Profile each wire segment type
-    for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
+    for (size_t from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
         for (const auto& segment_inf : segment_inf_vec) {
             std::map<e_rr_type, std::vector<RRNodeId>> sample_nodes;
             std::vector<e_rr_type> chan_types;
@@ -204,11 +204,13 @@ static void fill_in_missing_compressed_lookahead_entries(const std::map<int, std
     }
 
     auto& device_ctx = g_vpr_ctx.device();
-    int grid_width = static_cast<int>(device_ctx.grid.width());
-    int grid_height = static_cast<int>(device_ctx.grid.height());
-    /* find missing cost entries and fill them in by copying a nearby cost entry */
-    for (int from_layer_num = 0; from_layer_num < device_ctx.grid.get_num_layers(); from_layer_num++) {
-        for (int to_layer_num = 0; to_layer_num < device_ctx.grid.get_num_layers(); ++to_layer_num) {
+    const int grid_width = static_cast<int>(device_ctx.grid.width());
+    const int grid_height = static_cast<int>(device_ctx.grid.height());
+    const int grid_layers = static_cast<int>(device_ctx.grid.get_num_layers());
+
+    // find missing cost entries and fill them in by copying a nearby cost entry
+    for (int from_layer_num = 0; from_layer_num < grid_layers; from_layer_num++) {
+        for (int to_layer_num = 0; to_layer_num < grid_layers; ++to_layer_num) {
             for (int ix = 0; ix < grid_width; ix++) {
                 for (int iy = 0; iy < grid_height; iy++) {
                     if (sample_locations.find(ix) == sample_locations.end() || sample_locations.at(ix).find(iy) == sample_locations[ix].end()) {

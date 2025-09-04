@@ -395,8 +395,8 @@ static bool verify_delta_delays(const vtr::NdMatrix<float, 4>& delta_delays) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
-    for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); ++from_layer_num) {
-        for (int to_layer_num = 0; to_layer_num < grid.get_num_layers(); ++to_layer_num) {
+    for (size_t from_layer_num = 0; from_layer_num < grid.get_num_layers(); ++from_layer_num) {
+        for (size_t to_layer_num = 0; to_layer_num < grid.get_num_layers(); ++to_layer_num) {
             for (size_t x = 0; x < grid.width(); ++x) {
                 for (size_t y = 0; y < grid.height(); ++y) {
                     float delta_delay = delta_delays[from_layer_num][to_layer_num][x][y];
@@ -838,7 +838,7 @@ bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     bool found = false;
     int found_layer_num = -1;
     //TODO: Function *FOR NOW* assumes that from/to blocks are at same die and have a same layer nums
-    for (int layer_num = 0; layer_num < grid.get_num_layers() && !found; ++layer_num) {
+    for (int layer_num = 0; layer_num < (int)grid.get_num_layers() && !found; ++layer_num) {
         for (int x = 0; x < (int)grid.width() && !found; ++x) {
             to_x = x + direct->x_offset;
             if (to_x < 0 || to_x >= (int)grid.width()) continue;

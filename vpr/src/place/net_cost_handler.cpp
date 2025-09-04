@@ -494,7 +494,7 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
     bb_coord_new.ymax = source_pin_loc.y;
     bb_coord_new.layer_max = source_pin_loc.layer_num;
 
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (size_t layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
     }
 
@@ -1096,9 +1096,11 @@ static void update_bb_pin_sink_count(const t_physical_tile_loc& pin_old_loc,
                                      vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
                                      bool is_output_pin) {
     VTR_ASSERT_SAFE(curr_layer_pin_sink_count[pin_old_loc.layer_num] > 0 || is_output_pin);
-    for (int layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
+
+    for (size_t layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
         bb_pin_sink_count_new[layer_num] = curr_layer_pin_sink_count[layer_num];
     }
+
     if (!is_output_pin) {
         bb_pin_sink_count_new[pin_old_loc.layer_num] -= 1;
         bb_pin_sink_count_new[pin_new_loc.layer_num] += 1;
@@ -1197,7 +1199,7 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     int ymax_edge = 1;
     int layer_max_edge = 1;
 
-    for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
+    for (size_t layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
     }
 
@@ -1549,7 +1551,7 @@ void NetCostHandler::update_move_nets() {
 
         set_ts_bb_coord_(net_id);
 
-        for (int layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
+        for (size_t layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
             num_sink_pin_layer_[size_t(net_id)][layer_num] = ts_layer_sink_pin_count_[size_t(net_id)][layer_num];
         }
 

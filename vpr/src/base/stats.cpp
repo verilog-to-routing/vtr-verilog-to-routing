@@ -85,21 +85,18 @@ void routing_stats(const Netlist<>& net_list,
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
     float area = 0;
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
-            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                auto type = device_ctx.grid.get_physical_type({i, j, layer_num});
-                int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
-                int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
-                if (width_offset == 0 && height_offset == 0 && !type->is_io() && !type->is_empty()) {
-                    if (type->area == UNDEFINED) {
-                        area += grid_logic_tile_area * type->width * type->height;
-                    } else {
-                        area += type->area;
-                    }
-                }
+
+    for (const t_physical_tile_loc tile_loc : device_ctx.grid.all_locations()) {
+        t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(tile_loc);
+        int width_offset = device_ctx.grid.get_width_offset(tile_loc);
+        int height_offset = device_ctx.grid.get_height_offset(tile_loc);
+        if (width_offset == 0 && height_offset == 0 && !type->is_io() && !type->is_empty()) {
+            if (type->area == UNDEFINED) {
+                area += grid_logic_tile_area * type->width * type->height;
+            } else {
+                area += type->area;
             }
-        }
+    }
     }
     /* Todo: need to add pitch of routing to blocks with height > 3 */
     VTR_LOG("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);
@@ -540,22 +537,19 @@ int count_netlist_clocks() {
 }
 
 float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts) {
-    //Record the resources of the grid
+    // Record the resources of the grid
     std::map<t_physical_tile_type_ptr, size_t> grid_resources;
-    for (int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
-        for (int x = 0; x < (int)grid.width(); ++x) {
-            for (int y = 0; y < (int)grid.height(); ++y) {
-                int width_offset = grid.get_width_offset({x, y, layer_num});
-                int height_offset = grid.get_height_offset({x, y, layer_num});
-                if (width_offset == 0 && height_offset == 0) {
-                    const auto& type = grid.get_physical_type({x, y, layer_num});
-                    ++grid_resources[type];
-                }
-            }
+
+    for (const t_physical_tile_loc tile_loc : grid.all_locations()) {
+        int width_offset = grid.get_width_offset(tile_loc);
+        int height_offset = grid.get_height_offset(tile_loc);
+        if (width_offset == 0 && height_offset == 0) {
+            const t_physical_tile_type_ptr type = grid.get_physical_type(tile_loc);
+            ++grid_resources[type];
         }
     }
 
-    //Determine the area of grid in tile units
+    // Determine the area of grid in tile units
     float grid_area = 0.;
     for (auto& kv : grid_resources) {
         t_physical_tile_type_ptr type = kv.first;
@@ -566,7 +560,7 @@ float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logi
         grid_area += type_area * count;
     }
 
-    //Determine the area of instances in tile units
+    // Determine the area of instances in tile units
     float instance_area = 0.;
     for (auto& kv : instance_counts) {
         if (is_empty_type(kv.first)) {
