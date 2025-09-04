@@ -2029,7 +2029,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     num_edges = 0;
     // Build opins
     int rr_edges_before_directs = 0;
-    for (int layer = 0; layer < grid.get_num_layers(); layer++) {
+    for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
         for (size_t i = 0; i < grid.width(); ++i) {
             for (size_t j = 0; j < grid.height(); ++j) {
                 for (e_side side : TOTAL_2D_SIDES) {
@@ -3345,7 +3345,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
 
     // Total the number of physical pins
     std::vector<int> num_phys_pins_per_layer;
-    for (int layer = 0; layer < grid.get_num_layers(); layer++) {
+    for (int layer = 0; layer < (int)grid.get_num_layers(); layer++) {
         int num_phys_pins = 0;
         for (int width = 0; width < tile_type->width; ++width) {
             for (int height = 0; height < tile_type->height; ++height) {
@@ -3364,7 +3364,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     // (potentially in other C blocks) connect to the remaining tracks first. Doesn't matter for large Fc,
     // but should make a fairly good low Fc block that leverages the fact that usually lots of pins are logically equivalent.
 
-    for (int layer_index = 0; layer_index < grid.get_num_layers(); layer_index++) {
+    for (int layer_index = 0; layer_index < (int)grid.get_num_layers(); layer_index++) {
         const e_side init_side = LEFT;
         const int init_width = 0;
         const int init_height = 0;

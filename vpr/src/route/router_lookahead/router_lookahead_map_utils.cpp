@@ -482,7 +482,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity) {
 
     // We assume that the routing connectivity of each instance of a physical tile is the same,
     // and so only measure one instance of each type
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
         for (const t_physical_tile_type& tile_type : device_ctx.physical_tile_types) {
             if (device_ctx.grid.num_instances(&tile_type, layer_num) == 0) {
                 continue;
@@ -756,7 +756,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                 continue;
             }
             // TODO: Temporary - After testing benchmarks this can be deleted
-            VTR_ASSERT(rr_graph.node_layer(start_node) == from_layer_num);
+            VTR_ASSERT(rr_graph.node_layer(start_node) == (int)from_layer_num);
 
             sample_nodes.emplace_back(start_node);
         }
@@ -767,13 +767,13 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     //This is to ensure we sample 'unusual' wire types which may not exist in all channels
     //(e.g. clock routing)
     if (sample_nodes.empty()) {
-        //Try an exhaustive search to find a suitable sample point
+        // Try an exhaustive search to find a suitable sample point
         for (RRNodeId rr_node : rr_graph.nodes()) {
-            auto rr_type = rr_graph.node_type(rr_node);
+            e_rr_type rr_type = rr_graph.node_type(rr_node);
             if (rr_type != chan_type) continue;
-            if (rr_graph.node_layer(rr_node) != from_layer_num) continue;
+            if (rr_graph.node_layer(rr_node) != (int)from_layer_num) continue;
 
-            auto cost_index = rr_graph.node_cost_index(rr_node);
+            RRIndexedDataId cost_index = rr_graph.node_cost_index(rr_node);
             VTR_ASSERT(cost_index != RRIndexedDataId(UNDEFINED));
 
             int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;

@@ -453,7 +453,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
         }
 
         // Iterate over the x,y, layer coordinates spanning the FPGA, filling in all the switch blocks that exist
-        for (int layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
+        for (size_t layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
             for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
                 for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++) {
                     if (sb_not_here(grid, inter_cluster_rr, x_coord, y_coord, layer_coord, sb)) {
@@ -571,7 +571,7 @@ static bool is_core_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cl
 static bool is_prog_routing_avail(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int layer) {
     bool is_prog_avail = true;
     //make sure layer number is legal
-    VTR_ASSERT(layer >= 0 && layer < grid.get_num_layers());
+    VTR_ASSERT(layer >= 0 && layer < (int)grid.get_num_layers());
     //check if the current layer has programmable routing resources before trying to build a custom switch blocks
     if (!inter_cluster_rr.at(layer)) {
         is_prog_avail = false;
@@ -1106,7 +1106,7 @@ static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coor
     bool result = true;
 
     /* the layer that channel is located at must be legal regardless of chan_type*/
-    if (layer_coord < 0 || layer_coord > grid.get_num_layers()) {
+    if (layer_coord < 0 || layer_coord > (int)grid.get_num_layers()) {
         return result;
     }
 

@@ -172,7 +172,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  int* index) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    for (int layer = 0; layer < grid.get_num_layers(); layer++) {
+    for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
         // Skip the current die if architecture file specifies that it doesn't require global resource routing
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
@@ -335,7 +335,7 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     // 4) direction = NONE
     const auto& device_ctx = g_vpr_ctx.device();
 
-    for (int layer = 0; layer < grid.get_num_layers(); layer++) {
+    for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
         // Skip the current die if architecture file specifies that it doesn't have global resource routing
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
