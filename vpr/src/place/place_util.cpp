@@ -142,7 +142,7 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
                 if (device_ctx.grid.is_root_location(tile_loc)) {
                     int itype = tile->index;
                     int isub_tile = sub_tile.index;
-                    t_pl_loc temp_loc {tile_loc, k + capacity.low};
+                    t_pl_loc temp_loc{tile_loc, k + capacity.low};
                     legal_pos[itype][isub_tile].push_back(temp_loc);
                 }
             }

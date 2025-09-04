@@ -704,12 +704,12 @@ static void check_grid(const DeviceGrid& grid) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has invalid width offset (%d).\n",
                             tile_loc.layer_num, tile_loc.x, tile_loc.y,
                             width_offset);
-            }
+        }
         if ((grid.get_height_offset(tile_loc) < 0) || (grid.get_height_offset(tile_loc) >= type->height)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has invalid height offset (%d).\n",
                             tile_loc.layer_num, tile_loc.x, tile_loc.y,
                             height_offset);
-            }
+        }
 
         // Verify that type and width/height offsets are correct (e.g. for dimension > 1 blocks)
         if (grid.get_width_offset(tile_loc) == 0 && grid.get_height_offset(tile_loc) == 0) {

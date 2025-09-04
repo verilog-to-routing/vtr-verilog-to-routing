@@ -93,7 +93,6 @@ class DeviceGrid {
         return root_loc;
     }
 
-
     ///@brief Returns a rectangle which represents the bounding box of the tile at the given location.
     inline vtr::Rect<int> get_tile_bb(const t_physical_tile_loc& tile_loc) const {
         t_physical_tile_type_ptr tile_type = get_physical_type(tile_loc);
@@ -108,7 +107,7 @@ class DeviceGrid {
 
     // Forward const-iterator over (layer, x, y)
     class loc_const_iterator {
-    public:
+      public:
         using value_type = t_physical_tile_loc;
         using difference_type = std::ptrdiff_t;
         using iterator_category = std::forward_iterator_tag;
@@ -139,13 +138,13 @@ class DeviceGrid {
 
         bool operator==(const loc_const_iterator& o) const {
             return g_ == o.g_
-                && loc_.layer_num == o.loc_.layer_num
-                && loc_.x == o.loc_.x
-                && loc_.y == o.loc_.y;
+                   && loc_.layer_num == o.loc_.layer_num
+                   && loc_.x == o.loc_.x
+                   && loc_.y == o.loc_.y;
         }
         bool operator!=(const loc_const_iterator& o) const { return !(*this == o); }
 
-    private:
+      private:
         const DeviceGrid* g_ = nullptr;
         t_physical_tile_loc loc_{0, 0, 0};
     };
@@ -153,11 +152,10 @@ class DeviceGrid {
     /// Iterate every (layer, x, y) location
     inline auto all_locations() const {
         return vtr::make_range(
-            loc_const_iterator(this, /*layer*/0, /*x*/0, /*y*/0),
-            loc_const_iterator(this, /*layer*/get_num_layers(), /*x*/0, /*y*/0) // end sentinel
+            loc_const_iterator(this, /*layer*/ 0, /*x*/ 0, /*y*/ 0),
+            loc_const_iterator(this, /*layer*/ get_num_layers(), /*x*/ 0, /*y*/ 0) // end sentinel
         );
     }
-
 
     ///@brief Return the metadata of the tile at the specified location
     inline const t_metadata_dict* get_metadata(const t_physical_tile_loc& tile_loc) const {

@@ -96,7 +96,7 @@ void routing_stats(const Netlist<>& net_list,
             } else {
                 area += type->area;
             }
-    }
+        }
     }
     /* Todo: need to add pitch of routing to blocks with height > 3 */
     VTR_LOG("\tTotal logic block area (Warning, need to add pitch of routing to blocks with height > 3): %g\n", area);

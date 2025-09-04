@@ -177,9 +177,9 @@ typedef std::pair<DelayTriple, std::string> sequential_port_delay_pair;
  * @brief Information needed to describe a delay on a port in an SDF file.
  */
 struct PortDelay {
-    std::string port_name;          ///<The name of the port to annotate with delay.
-    int ipin;                       ///<The pin in the port to annotate (if a multi-pin port).
-    DelayTriple port_delay_triple;  ///<The delay triple to annotate.
+    std::string port_name;         ///<The name of the port to annotate with delay.
+    int ipin;                      ///<The pin in the port to annotate (if a multi-pin port).
+    DelayTriple port_delay_triple; ///<The delay triple to annotate.
 };
 
 /*enum class PortType {
@@ -1981,7 +1981,6 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                                 ipin_port_delay_triple = new_port_delay_time;
                             }
-
                         }
                     }
 
@@ -2007,7 +2006,6 @@ class NetlistWriterVisitor : public NetlistVisitor {
                                                              atom_netlist.pin_port_bit(clk_pin_id),
                                                              DelayTriple(thld, thld, thld));
                             }
-
                         }
                     }
 
@@ -2116,7 +2114,6 @@ class NetlistWriterVisitor : public NetlistVisitor {
                                                         port->name,
                                                         ipin,
                                                         total_cq_delay_triple);
-
                         }
                     }
                 }

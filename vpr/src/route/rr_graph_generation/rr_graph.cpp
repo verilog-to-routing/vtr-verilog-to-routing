@@ -394,7 +394,6 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
                                          bool is_flat,
                                          bool load_rr_graph);
 
-
 /// @brief Connect the pins of the given t_pb to their drivers - It doesn't add the edges going in/out of pins on a chain
 static void add_pb_edges(RRGraphBuilder& rr_graph_builder,
                          t_rr_edge_info_set& rr_edges_to_create,
@@ -831,7 +830,7 @@ static void add_intra_cluster_edges_rr_graph(RRGraphBuilder& rr_graph_builder,
     int num_collapsed_nodes = 0;
     for (ClusterBlockId cluster_blk_id : cluster_net_list.blocks()) {
         t_pl_loc block_loc = block_locs[cluster_blk_id].loc;
-        t_physical_tile_loc loc(block_loc.x,  block_loc.y, block_loc.layer);
+        t_physical_tile_loc loc(block_loc.x, block_loc.y, block_loc.layer);
         int abs_cap = block_loc.sub_tile;
         build_cluster_internal_edges(rr_graph_builder,
                                      num_collapsed_nodes,

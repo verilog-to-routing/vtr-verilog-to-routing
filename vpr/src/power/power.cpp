@@ -606,7 +606,7 @@ static void power_usage_blocks(t_power_usage* power_usage) {
     t_logical_block_type_ptr logical_block;
 
     // Loop through all grid locations
-    for (const t_physical_tile_loc tile_loc :  device_ctx.grid.all_locations()) {
+    for (const t_physical_tile_loc tile_loc : device_ctx.grid.all_locations()) {
         t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type(tile_loc);
         int width_offset = device_ctx.grid.get_width_offset(tile_loc);
         int height_offset = device_ctx.grid.get_height_offset(tile_loc);
