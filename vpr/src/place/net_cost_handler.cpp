@@ -1424,7 +1424,7 @@ double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) co
     const vtr::NdMatrixProxy<int, 1> net_layer_pin_sink_count = num_sink_pin_layer_[size_t(net_id)];
 
     double ncost = 0.;
-    VTR_ASSERT_SAFE((int)bb.size() == g_vpr_ctx.device().grid.get_num_layers());
+    VTR_ASSERT_SAFE(bb.size() == g_vpr_ctx.device().grid.get_num_layers());
 
     for (size_t layer_num = 0; layer_num < bb.size(); layer_num++) {
         VTR_ASSERT_SAFE(net_layer_pin_sink_count[layer_num] != UNDEFINED);
