@@ -1255,8 +1255,8 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     coords.ymax = ymax;
     coords.layer_min = layer_min;
     coords.layer_max = layer_max;
-    VTR_ASSERT_DEBUG(layer_min >= 0 && layer_min < device_ctx.grid.get_num_layers());
-    VTR_ASSERT_DEBUG(layer_max >= 0 && layer_max < device_ctx.grid.get_num_layers());
+    VTR_ASSERT_DEBUG(layer_min >= 0 && layer_min < (int)device_ctx.grid.get_num_layers());
+    VTR_ASSERT_DEBUG(layer_max >= 0 && layer_max < (int)device_ctx.grid.get_num_layers());
 
     num_on_edges.xmin = xmin_edge;
     num_on_edges.xmax = xmax_edge;
