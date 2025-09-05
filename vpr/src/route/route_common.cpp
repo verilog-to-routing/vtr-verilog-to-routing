@@ -789,7 +789,7 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
 
         VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
-        VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
+        VTR_ASSERT(rr_graph.node_layer(sink_rr) <= (int)device_ctx.grid.get_num_layers() - 1);
 
         vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
                                                               rr_graph.node_ylow(sink_rr),
@@ -803,12 +803,11 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
     }
 
-    /* Want the channels on all 4 sides to be usable, even if bb_factor = 0. */
+    // Want the channels on all 4 sides to be usable, even if bb_factor = 0.
     xmin -= 1;
     ymin -= 1;
 
-    /* Expand the net bounding box by bb_factor, then clip to the physical *
-     * chip area.                                                          */
+    // Expand the net bounding box by bb_factor, then clip to the physical chip area.
 
     t_bb bb;
 

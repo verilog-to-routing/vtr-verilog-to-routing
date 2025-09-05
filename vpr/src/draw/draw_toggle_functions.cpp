@@ -301,9 +301,7 @@ void placement_macros_cbk(GtkComboBoxText* self, ezgl::application* app) {
     app->refresh_drawing();
 }
 
-
 void toggle_crit_path_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
-
 
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -312,7 +310,7 @@ void toggle_crit_path_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathFlylines")), state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathDelays")), state);
 
-    if(draw_state->setup_timing_info && draw_state->pic_on_screen == ROUTING) {
+    if (draw_state->setup_timing_info && draw_state->pic_on_screen == ROUTING) {
         gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathRouting")), state);
     }
 

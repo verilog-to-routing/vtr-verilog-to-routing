@@ -299,7 +299,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     /* If it's the type of picture displayed has changed, set up the proper  *
      * buttons.                                                              */
     if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
-        
+
         state_change = true;
 
         if (draw_state->pic_on_screen == NO_PICTURE) {
@@ -312,7 +312,6 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         draw_state->pic_on_screen = pic_on_screen_val;
     }
 
-    
     bool should_pause = int(priority) >= draw_state->gr_automode;
 
     //If there was a state change, we must call ezgl::application::run() to update the buttons.
@@ -1150,7 +1149,7 @@ static void run_graphics_commands(const std::string& commands) {
                            "Expect show critical path delay (bool), show critical path flylines (bool), and show critical path routing (bool) after 'set_cpd'");
             draw_state->show_crit_path = true;
             draw_state->show_crit_path_flylines = true;
-            draw_state->show_crit_path_delays= (bool)vtr::atoi(cmd[1]);
+            draw_state->show_crit_path_delays = (bool)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_crit_path);
         } else if (cmd[0] == "set_routing_util") {
             VTR_ASSERT_MSG(cmd.size() == 2,

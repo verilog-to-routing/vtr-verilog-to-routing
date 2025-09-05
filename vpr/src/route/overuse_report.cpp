@@ -43,17 +43,13 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId inode);
  *
  * @param os The output stream to write the information to.
  * @param physical_type The physical type of the block.
- * @param layer The layer number of the block.
- * @param root_x The x coordinate of the root of the block.
- * @param root_y The y coordinate of the root of the block.
+ * @param root_loc The coordinates of the root of the block.
  * @param pin_physical_num The physical number of the pin.
  * @param rr_node_to_net_map A map of RR nodes to the nets that pass through them.
  */
 static void print_block_pins_nets(std::ostream& os,
                                   t_physical_tile_type_ptr physical_type,
-                                  int layer,
-                                  int root_x,
-                                  int root_y,
+                                  const t_physical_tile_loc& root_loc,
                                   int pin_physical_num,
                                   const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
 /**
@@ -231,31 +227,27 @@ static void report_overused_ipin_opin(std::ostream& os,
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& place_ctx = g_vpr_ctx.placement();
 
-    auto grid_x = rr_graph.node_xlow(node_id);
-    auto grid_y = rr_graph.node_ylow(node_id);
-    auto grid_layer = rr_graph.node_layer(node_id);
+    t_physical_tile_loc grid_loc;
+    grid_loc.x = rr_graph.node_xlow(node_id);
+    grid_loc.y = rr_graph.node_ylow(node_id);
+    grid_loc.layer_num = rr_graph.node_layer(node_id);
+    const t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(grid_loc);
 
-    VTR_ASSERT_MSG(
-        grid_x == rr_graph.node_xhigh(node_id) && grid_y == rr_graph.node_yhigh(node_id),
-        "Non-track RR node should not span across multiple grid blocks.");
+    VTR_ASSERT_MSG(grid_loc.x == rr_graph.node_xhigh(node_id) && grid_loc.y == rr_graph.node_yhigh(node_id),
+                   "Non-track RR node should not span across multiple grid blocks.");
 
     os << "Pin physical number = " << rr_graph.node_pin_num(node_id) << '\n';
     if (is_inter_cluster_node(rr_graph, node_id)) {
         os << "On Tile Pin"
            << "\n";
     } else {
-        auto pb_type_name = get_pb_graph_node_from_pin_physical_num(device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer}),
-                                                                    rr_graph.node_ptc_num(node_id))
-                                ->pb_type->name;
-        auto pb_pin = get_pb_pin_from_pin_physical_num(device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer}),
-                                                       rr_graph.node_ptc_num(node_id));
+        const char* pb_type_name = get_pb_graph_node_from_pin_physical_num(physical_type, rr_graph.node_ptc_num(node_id)) ->pb_type->name;
+        const t_pb_graph_pin* pb_pin = get_pb_pin_from_pin_physical_num(physical_type, rr_graph.node_ptc_num(node_id));
         os << "Intra-Tile Pin - Port : " << pb_pin->port->name << " - PB Type : " << std::string(pb_type_name) << "\n";
     }
     print_block_pins_nets(os,
-                          device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer}),
-                          grid_layer,
-                          grid_x - device_ctx.grid.get_width_offset({grid_x, grid_y, grid_layer}),
-                          grid_y - device_ctx.grid.get_height_offset({grid_x, grid_y, grid_layer}),
+                          physical_type,
+                          device_ctx.grid.get_root_location(grid_loc),
                           rr_graph.node_ptc_num(node_id),
                           rr_node_to_net_map);
     os << "Side = " << rr_graph.node_side_string(node_id) << "\n\n";
@@ -264,19 +256,19 @@ static void report_overused_ipin_opin(std::ostream& os,
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const auto& grid_info = place_ctx.grid_blocks();
 
-    os << "Grid location: X = " << grid_x << ", Y = " << grid_y << '\n';
-    os << "Number of blocks currently occupying this grid location = " << grid_info.get_usage({grid_x, grid_y, grid_layer}) << '\n';
+    os << "Grid location: X = " << grid_loc.x << ", Y = " << grid_loc.y << '\n';
+    os << "Number of blocks currently occupying this grid location = " << grid_info.get_usage(grid_loc) << '\n';
 
     size_t iblock = 0;
-    for (int isubtile = 0; isubtile < (int)grid_info.num_blocks_at_location({grid_x, grid_y, grid_layer}); ++isubtile) {
+    for (int isubtile = 0; isubtile < (int)grid_info.num_blocks_at_location(grid_loc); ++isubtile) {
         //Check if there is a valid block at this subtile location
-        if (grid_info.is_sub_tile_empty({grid_x, grid_y, grid_layer}, isubtile)) {
+        if (grid_info.is_sub_tile_empty(grid_loc, isubtile)) {
             continue;
         }
 
         //Print out the block index, name and type
         // TODO: Needs to be updated when RR Graph Nodes know their layer_num
-        ClusterBlockId block_id = grid_info.block_at_location({grid_x, grid_y, isubtile, grid_layer});
+        ClusterBlockId block_id = grid_info.block_at_location({grid_loc, isubtile});
         os << "Block #" << iblock << ": ";
         os << "Block name = " << clb_nlist.block_pb(block_id)->name << ", ";
         os << "Block type = " << clb_nlist.block_type(block_id)->name << '\n';
@@ -459,9 +451,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
 
 static void print_block_pins_nets(std::ostream& os,
                                   t_physical_tile_type_ptr physical_type,
-                                  int layer,
-                                  int root_x,
-                                  int root_y,
+                                  const t_physical_tile_loc& root_loc,
                                   int pin_physical_num,
                                   const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
@@ -489,7 +479,7 @@ static void print_block_pins_nets(std::ostream& os,
 
     for (int pin = pin_num_range.low; pin <= pin_num_range.high; pin++) {
         e_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == e_pin_type::DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
-        RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, layer, root_x, root_y, pin);
+        RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, root_loc, pin);
         // When flat router is enabled, RR Node chains collapse into a single node. Thus, when
         // looking up the RR Node ID, it may return an invalid node ID. In this case, we skip
         // this pin.

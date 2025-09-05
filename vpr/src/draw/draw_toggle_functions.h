@@ -98,7 +98,6 @@ void toggle_router_util_cbk(GtkComboBoxText* self, ezgl::application* app);
  */
 void toggle_crit_path_cbk(GtkSwitch*, gboolean state, ezgl::application* app);
 
-
 /* Callback function for main.ui created toggle_router_expansion_costs in ui_setup.cpp.
  * Draws different router expansion costs based on user input. Changes value of draw_state->show_router_expansion_cost. */
 void toggle_expansion_cost_cbk(GtkComboBoxText* self, ezgl::application* app);

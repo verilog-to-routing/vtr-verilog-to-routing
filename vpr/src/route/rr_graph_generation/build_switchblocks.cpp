@@ -371,8 +371,8 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
         }
 
-        // Iterate over all coordinates spanning the FPGA, filling in all the switch blocks that exist
-        for (int layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
+        // Iterate over the x,y, layer coordinates spanning the FPGA, filling in all the switch blocks that exist
+        for (size_t layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
             for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
                 for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++) {
                     if (sb_not_here(grid, inter_cluster_rr, x_coord, y_coord, layer_coord, sb.location, sb.specified_loc)) {
@@ -870,7 +870,7 @@ static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coor
     bool result = true;
 
     /* the layer that channel is located at must be legal regardless of chan_type*/
-    if (layer_coord < 0 || layer_coord > grid.get_num_layers()) {
+    if (layer_coord < 0 || layer_coord > (int)grid.get_num_layers()) {
         return result;
     }
 

@@ -32,7 +32,6 @@
 #include "ezgl/color.hpp"
 #include "ezgl/application.hpp"
 
-
 /// @brief Whether to draw routed nets or flylines (direct lines between sources and sinks).
 enum e_draw_nets {
     DRAW_ROUTED_NETS,
