@@ -7,33 +7,28 @@
  * @brief Check whether specified coordinate is located at the device grid corner and a switch block exists there
  * @return true if the specified coordinate represents a corner location within the device grid and a switch block exists there, false otherwise.
  */
-static bool is_corner_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, const t_physical_tile_loc& loc);
+static bool is_corner_sb(const DeviceGrid& grid, const t_physical_tile_loc& loc);
 
 /**
  * @brief check whether specified coordinate is located at one of the perimeter device grid locations and a switch block exists there *
  * @return true if the specified coordinate represents a perimeter location within the device grid and a switch block exists there, false otherwise.
  */
-static bool is_perimeter_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, const t_physical_tile_loc& loc);
+static bool is_perimeter_sb(const DeviceGrid& grid, const t_physical_tile_loc& loc);
 
 /**
  * @brief check whether specified coordinate is located at core of the device grid (not perimeter) and a switch block exists there
  * @return true if the specified coordinate represents a core location within the device grid and a switch block exists there, false otherwise.
  */
-static bool is_core_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, const t_physical_tile_loc& loc);
-
+static bool is_core_sb(const DeviceGrid& grid, const t_physical_tile_loc& loc);
 
 /**
  * @brief check whether specified coordinate is located in the architecture-specified regions that the switchblock should be applied to
  * @return true if the specified coordinate falls into the architecture-specified location for this switchblock, false otherwise.
  */
-static bool match_sb_xy(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, const t_physical_tile_loc& loc, const t_specified_loc& sb);
+static bool match_sb_xy(const DeviceGrid& grid, const t_physical_tile_loc& loc, const t_specified_loc& sb);
 
 
-static bool is_corner_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, const t_physical_tile_loc& loc) {
-    if (!inter_cluster_rr[loc.layer_num]) {
-        return false;
-    }
-
+static bool is_corner_sb(const DeviceGrid& grid, const t_physical_tile_loc& loc) {
     bool is_corner = false;
     if ((loc.x == 0 && loc.y == 0) || (loc.x == 0 && loc.y == int(grid.height()) - 2) || //-2 for no perim channels
         (loc.x == int(grid.width()) - 2 && loc.y == 0) ||                                //-2 for no perim channels
@@ -43,11 +38,7 @@ static bool is_corner_sb(const DeviceGrid& grid, const std::vector<bool>& inter_
     return is_corner;
 }
 
-static bool is_perimeter_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, const t_physical_tile_loc& loc) {
-    if (!inter_cluster_rr[loc.layer_num]) {
-        return false;
-    }
-
+static bool is_perimeter_sb(const DeviceGrid& grid, const t_physical_tile_loc& loc) {
     bool is_perimeter = false;
     if (loc.x == 0 || loc.x == int(grid.width()) - 2 || loc.y == 0 || loc.y == int(grid.height()) - 2) {
         is_perimeter = true;
@@ -55,23 +46,14 @@ static bool is_perimeter_sb(const DeviceGrid& grid, const std::vector<bool>& int
     return is_perimeter;
 }
 
-static bool is_core_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, const t_physical_tile_loc& loc) {
-    if (!inter_cluster_rr[loc.layer_num]) {
-        return false;
-    }
-
-    bool is_core = !is_perimeter_sb(grid, inter_cluster_rr, loc);
+static bool is_core_sb(const DeviceGrid& grid, const t_physical_tile_loc& loc) {
+    bool is_core = !is_perimeter_sb(grid, loc);
     return is_core;
 }
 
 static bool match_sb_xy(const DeviceGrid& grid,
-                        const std::vector<bool>& inter_cluster_rr,
                         const t_physical_tile_loc& loc,
                         const t_specified_loc& specified_loc) {
-    if (!inter_cluster_rr[loc.layer_num]) {
-        return false;
-    }
-
     // if one of sb_x and sb_y is defined, we either know the exact location (x,y) or the exact x location (will apply it to all rows)
     // or the exact y location (will apply it to all columns)
     if (specified_loc.x != -1 || specified_loc.y != -1) {
@@ -141,39 +123,42 @@ bool sb_not_here(const DeviceGrid& grid,
                  const t_physical_tile_loc& loc,
                  e_sb_location sb_location,
                  const t_specified_loc& specified_loc/*=t_specified_loc()*/) {
-    bool sb_not_here = true;
+    if (!inter_cluster_rr[loc.layer_num]) {
+        return true;
+    }
 
+    bool sb_not_here = true;
     switch (sb_location) {
         case e_sb_location::E_EVERYWHERE:
             sb_not_here = false;
             break;
 
         case e_sb_location::E_PERIMETER:
-            if (is_perimeter_sb(grid, inter_cluster_rr, loc)) {
+            if (is_perimeter_sb(grid, loc)) {
                 sb_not_here = false;
             }
             break;
 
         case e_sb_location::E_CORNER:
-            if (is_corner_sb(grid, inter_cluster_rr, loc)) {
+            if (is_corner_sb(grid, loc)) {
                 sb_not_here = false;
             }
             break;
 
         case e_sb_location::E_CORE:
-            if (is_core_sb(grid, inter_cluster_rr, loc)) {
+            if (is_core_sb(grid, loc)) {
                 sb_not_here = false;
             }
             break;
 
         case e_sb_location::E_FRINGE:
-            if (is_perimeter_sb(grid, inter_cluster_rr, loc) && !is_corner_sb(grid, inter_cluster_rr, loc)) {
+            if (is_perimeter_sb(grid, loc) && !is_corner_sb(grid, loc)) {
                 sb_not_here = false;
             }
             break;
 
         case e_sb_location::E_XY_SPECIFIED:
-            if (match_sb_xy(grid, inter_cluster_rr, loc, specified_loc)) {
+            if (match_sb_xy(grid, loc, specified_loc)) {
                 sb_not_here = false;
             }
             break;
