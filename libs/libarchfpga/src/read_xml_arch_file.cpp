@@ -4164,7 +4164,11 @@ static void process_bend(pugi::xml_node Node, t_segment_inf& segment, const int 
         part_len.push_back(list.size() + 1 - sum_len);
 }
 
-static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb) {
+static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data,
+                                          const pugi::xml_node& SubElem,
+                                          const int grid_width,
+                                          const int grid_height,
+                                          t_switchblock_inf& sb) {
     auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
     auto endx_attr = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
 
@@ -4177,24 +4181,24 @@ static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, co
     auto incrx_attr = get_attribute(SubElem, "incrx", loc_data, ReqOpt::OPTIONAL);
     auto incry_attr = get_attribute(SubElem, "incry", loc_data, ReqOpt::OPTIONAL);
 
-    //parse the values from the architecture file and fill out SB region information
+    // parse the values from the architecture file and fill out SB region information
     vtr::FormulaParser p;
 
     vtr::t_formula_data vars;
     vars.set_var_value("W", grid_width);
     vars.set_var_value("H", grid_height);
 
-    sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
-    sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
+    sb.specified_loc.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
+    sb.specified_loc.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
 
-    sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
-    sb.reg_y.end = endy_attr.empty() ? (grid_height - 1) : p.parse_formula(endy_attr.value(), vars);
+    sb.specified_loc.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
+    sb.specified_loc.reg_y.end = endy_attr.empty() ? (grid_height - 1) : p.parse_formula(endy_attr.value(), vars);
 
-    sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
-    sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
+    sb.specified_loc.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
+    sb.specified_loc.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
 
-    sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
-    sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
+    sb.specified_loc.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
+    sb.specified_loc.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
 }
 
 /* Processes the switchblocklist section from the xml architecture file.
@@ -4255,7 +4259,7 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             }
         }
 
-        /* get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED*/
+        // Get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED
         if (sb.location == e_sb_location::E_XY_SPECIFIED) {
             if (arch->device_layout == "auto") {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
@@ -4270,21 +4274,21 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             int grid_width = arch->grid_layouts.at(layout_index).width;
             int grid_height = arch->grid_layouts.at(layout_index).height;
 
-            /* Absolute location that this SB must be applied to, -1 if not specified*/
-            sb.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(-1);
-            sb.y = get_attribute(SubElem, "y", loc_data, ReqOpt::OPTIONAL).as_int(-1);
+            // Absolute location that this SB must be applied to, -1 if not specified
+            sb.specified_loc.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
+            sb.specified_loc.y = get_attribute(SubElem, "y", loc_data, ReqOpt::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
 
-            //check if the absolute value is within the device grid width and height
-            if (sb.x >= grid_width || sb.y >= grid_height) {
+            // Check if the absolute value is within the device grid width and height
+            if (sb.specified_loc.x >= grid_width || sb.specified_loc.y >= grid_height) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                               vtr::string_fmt("Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height).c_str());
+                               vtr::string_fmt("Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n",
+                                   sb.specified_loc.x, sb.specified_loc.y, grid_width, grid_height).c_str());
             }
 
-            /* if the the switchblock exact location is not specified and a region is specified within the architecture file,
-             * we have to parse the region specification and apply the SB pattern to all the locations fall into the specified 
-             * region based on device width and height.
-             */
-            if (sb.x == -1 && sb.y == -1) {
+            // if the switchblock exact location is not specified and a region is specified within the architecture file,
+            // we have to parse the region specification and apply the SB pattern to all the locations fall into the specified
+            // region based on device width and height.
+            if (sb.specified_loc.x == ARCH_FPGA_UNDEFINED_VAL && sb.specified_loc.y == ARCH_FPGA_UNDEFINED_VAL) {
                 calculate_custom_SB_locations(loc_data, SubElem, grid_width, grid_height, sb);
             }
         }
