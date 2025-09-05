@@ -120,7 +120,7 @@ typedef std::unordered_map<SwitchblockLookupKey, std::vector<t_switchblock_edge>
  *   @param switchblocks switch block information extracted from the architecture file
  *   @param nodes_per_chan number of track in each channel (x,y)
  *   @param directionality specifies the switch block edges direction (unidirectional or bidirectional)
- *   @param rand_state initialize the random number generator (RNG)
+ *   @param rng the random number generator (RNG)
  *
  *   @return creates a map between switch blocks (key) and their corresponding edges (value).
  */
@@ -130,7 +130,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                                                              const std::vector<bool>& inter_cluster_rr,
                                                              const std::vector<t_switchblock_inf>& switchblocks,
                                                              const t_chan_width& nodes_per_chan,
-                                                             enum e_directionality directionality,
+                                                             e_directionality directionality,
                                                              vtr::RngContainer& rng);
 
 /**

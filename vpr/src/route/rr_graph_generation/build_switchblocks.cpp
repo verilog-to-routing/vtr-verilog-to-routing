@@ -206,8 +206,8 @@ static t_wire_type_sizes count_wire_type_sizes(const t_chan_seg_details* channel
 static void compute_wire_connections(int x_coord,
                                      int y_coord,
                                      int layer_coord,
-                                     enum e_side from_side,
-                                     enum e_side to_side,
+                                     e_side from_side,
+                                     e_side to_side,
                                      const t_chan_details& chan_details_x,
                                      const t_chan_details& chan_details_y,
                                      const t_switchblock_inf& sb,
@@ -256,8 +256,8 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, const s
  *  @param wire_switchpoints_vec valid switch points at the given channel segment
  *  @param wire_type_sizes valid wire types
  *  @param is_dest whether wires are source or destination within a switch block connection
- *  @param order switchpoint order (fixed, shuffled) specified in the architecture file
- *  @param rand_state used to randomly shuffle switchpoint if required (shuffled order)
+ *  @param switchpoint_order switchpoint order (fixed, shuffled) specified in the architecture file
+ *  @param rng used to randomly shuffle switchpoint if required (shuffled order)
  *  @param output_wires collected wire indices that matches the specified types and switchpoints
  */
 static void get_switchpoint_wires(const DeviceGrid& grid,
@@ -295,8 +295,8 @@ static void get_switchpoint_wires(const DeviceGrid& grid,
 static const t_chan_details& index_into_correct_chan(int tile_x,
                                                      int tile_y,
                                                      int tile_layer,
-                                                     enum e_side src_side,
-                                                     enum e_side dest_side,
+                                                     e_side src_side,
+                                                     e_side dest_side,
                                                      const t_chan_details& chan_details_x,
                                                      const t_chan_details& chan_details_y,
                                                      int& chan_x,
@@ -770,8 +770,8 @@ static void get_switchpoint_wires(const DeviceGrid& grid,
 static void compute_wire_connections(int x_coord,
                                      int y_coord,
                                      int layer_coord,
-                                     enum e_side from_side,
-                                     enum e_side to_side,
+                                     e_side from_side,
+                                     e_side to_side,
                                      const t_chan_details& chan_details_x,
                                      const t_chan_details& chan_details_y,
                                      const t_switchblock_inf& sb,
@@ -1034,8 +1034,8 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, const s
 static const t_chan_details& index_into_correct_chan(int tile_x,
                                                      int tile_y,
                                                      int tile_layer,
-                                                     enum e_side src_side,
-                                                     enum e_side dest_side,
+                                                     e_side src_side,
+                                                     e_side dest_side,
                                                      const t_chan_details& chan_details_x,
                                                      const t_chan_details& chan_details_y,
                                                      int& chan_x,
@@ -1249,14 +1249,14 @@ static int get_switchpoint_of_wire(const DeviceGrid& grid,
     return switchpoint;
 }
 
-/* adjusts the destination wire calculated from a permutation formula to account for negative indicies,
+/* adjusts the destination wire calculated from a permutation formula to account for negative indices,
  * source wire set offset, and modulo by destination wire set size
  * */
 static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int connection_ind) {
     int result = dest_wire;
 
     if (dest_wire < 0) {
-        //Adjust for negative indicies
+        //Adjust for negative indices
         int mult = (-1 * dest_wire) / dest_W + 1;
         result = dest_wire + mult * dest_W;
     }
@@ -1266,7 +1266,7 @@ static int adjust_formula_result(int dest_wire, int src_W, int dest_W, int conne
     // The permutation formula produce a 1-to-1 mapping from src track to dest track (i.e. each source
     // track is mapped to precisely one destination track). This is problematic if we are processing
     // a wireconn which goes through the source set multiple times (e.g. dest set larger than src set while
-    // processing a WireConnType::TO), since the permutation formula will only generate src_W track indicies
+    // processing a WireConnType::TO), since the permutation formula will only generate src_W track indices
     // (leaving some of the destination tracks unconnected). To ensure we get different destination tracks on
     // subsequent passes through the same source set, we offset the raw track by a multiple of src_W. Note the
     // use of integer division; src_mult will equal 0 on the first pass, 1 on the second etc.
