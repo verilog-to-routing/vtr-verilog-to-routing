@@ -10,17 +10,13 @@
  *
  *   @param grid device grid
  *   @param inter_cluster_rr used to check whether inter-cluster programmable routing resources exist in the current layer
- *   @param x x-coordinate of the location
- *   @param y y-coordinate of the location
- *   @param layer layer-coordinate of the location
+ *   @param loc Coordinates of the given location to be evaluated.
  *   @param sb switchblock information specified in the architecture file
  *
  * @return true if a switch block exists at the specified location, false otherwise.
  */
 bool sb_not_here(const DeviceGrid& grid,
                  const std::vector<bool>& inter_cluster_rr,
-                 int x,
-                 int y,
-                 int layer,
+                 const t_physical_tile_loc& loc,
                  e_sb_location sb_location,
                  const t_specified_loc& specified_loc = t_specified_loc());

@@ -34,6 +34,10 @@ class SwitchblockLookupKey {
         this->set_coords(set_x, set_y, set_layer, set_from, set_to);
     }
 
+    SwitchblockLookupKey(const t_physical_tile_loc& set_loc, e_side set_from, e_side set_to) {
+        this->set_coords(set_loc.x, set_loc.y, set_loc.layer_num, set_from, set_to);
+    }
+
     /// @brief Constructor for initializing member variables with default layer number (0), used for single die FPGA
     SwitchblockLookupKey(int set_x, int set_y, e_side set_from, e_side set_to) {
         this->set_coords(set_x, set_y, 0, set_from, set_to);

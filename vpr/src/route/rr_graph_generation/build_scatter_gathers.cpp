@@ -1,8 +1,9 @@
 
 #include "build_scatter_gathers.h"
 
-#include "globals.h"
+#include "switchblock_scatter_gather_common_utils.h"
 #include "scatter_gather_types.h"
+#include "globals.h"
 #include "vtr_assert.h"
 
 void alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns) {
