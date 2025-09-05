@@ -403,7 +403,7 @@ static bool verify_delta_delays(const vtr::NdMatrix<float, 4>& delta_delays) {
 
                     if (delta_delay < 0.) {
                         VPR_ERROR(VPR_ERROR_PLACE,
-                                  "Found invalid negative delay %g for delta [%d,%d,%d,%d]",
+                                  "Found invalid negative delay %g for delta [%u,%u,%u,%u]",
                                   delta_delay, from_layer_num, to_layer_num, x, y);
                     }
                 }

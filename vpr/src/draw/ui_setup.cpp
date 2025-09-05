@@ -246,7 +246,7 @@ void search_setup(ezgl::application* app) {
     gtk_entry_completion_set_match_func(wildcardComp, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
 }
 
-/*
+/**
  * @brief connects critical path button to its cbk fn
  *
  * @param app ezgl application
@@ -255,7 +255,7 @@ void crit_path_button_setup(ezgl::application* app) {
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-    //Toggle Critical Path
+    // Toggle Critical Path
     GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleCritPath"));
     g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_crit_path_cbk), app);
 
@@ -265,7 +265,7 @@ void crit_path_button_setup(ezgl::application* app) {
     setup_checkbox_button("ToggleCritPathDelays", app, &draw_state->show_crit_path_delays);
 }
 
-/*
+/**
  * @brief Hides or displays critical path routing / routing delay UI elements
  *
  * @param app ezgl app

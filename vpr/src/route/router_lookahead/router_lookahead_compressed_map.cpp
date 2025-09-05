@@ -203,7 +203,7 @@ static void fill_in_missing_compressed_lookahead_entries(const std::map<int, std
         chan_index = 1;
     }
 
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const int grid_width = static_cast<int>(device_ctx.grid.width());
     const int grid_height = static_cast<int>(device_ctx.grid.height());
     const int grid_layers = static_cast<int>(device_ctx.grid.get_num_layers());

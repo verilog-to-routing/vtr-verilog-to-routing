@@ -137,10 +137,10 @@ class DeviceGrid {
         }
 
         bool operator==(const loc_const_iterator& o) const {
-            return g_ == o.g_
+            return loc_.x == o.loc_.x
+                   && loc_.y == o.loc_.y
                    && loc_.layer_num == o.loc_.layer_num
-                   && loc_.x == o.loc_.x
-                   && loc_.y == o.loc_.y;
+                   && g_ == o.g_;
         }
         bool operator!=(const loc_const_iterator& o) const { return !(*this == o); }
 

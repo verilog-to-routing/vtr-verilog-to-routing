@@ -1847,13 +1847,12 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const t_physical_
         if (grid_block.is_sub_tile_empty(tile_loc, abs_cap)) {
             continue;
         }
-        auto cluster_blk_id = grid_block.block_at_location({tile_loc, abs_cap});
+        ClusterBlockId cluster_blk_id = grid_block.block_at_location({tile_loc, abs_cap});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
 
-        auto primitive_classes = get_cluster_internal_class_pairs(atom_lookup,
-                                                                  cluster_blk_id);
+        std::vector<int> primitive_classes = get_cluster_internal_class_pairs(atom_lookup, cluster_blk_id);
         // Initialize SINK/SOURCE nodes and connect them to their respective pins
-        for (auto class_num : primitive_classes) {
+        for (int class_num : primitive_classes) {
             class_num_vec.push_back(class_num);
         }
     }
@@ -1878,13 +1877,13 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
         if (grid_block.is_sub_tile_empty(tile_loc, abs_cap)) {
             continue;
         }
-        auto cluster_blk_id = grid_block.block_at_location({tile_loc, abs_cap});
+        ClusterBlockId cluster_blk_id = grid_block.block_at_location({tile_loc, abs_cap});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
 
         cluster_internal_pins = get_cluster_internal_pins(cluster_blk_id);
-        const auto& cluster_pin_chains = pin_chains_num[cluster_blk_id];
-        const auto& cluster_chain_sinks = pin_chains[cluster_blk_id].chain_sink;
-        const auto& cluster_pin_chain_idx = pin_chains[cluster_blk_id].pin_chain_idx;
+        const std::unordered_set<int>& cluster_pin_chains = pin_chains_num[cluster_blk_id];
+        const std::vector<int>& cluster_chain_sinks = pin_chains[cluster_blk_id].chain_sink;
+        const std::vector<int>& cluster_pin_chain_idx = pin_chains[cluster_blk_id].pin_chain_idx;
         // remove common elements between cluster_pin_chains.
         for (int pin : cluster_internal_pins) {
             auto it = cluster_pin_chains.find(pin);

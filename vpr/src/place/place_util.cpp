@@ -125,16 +125,16 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
     int num_tile_types = device_ctx.physical_tile_types.size();
     legal_pos.resize(num_tile_types);
 
-    for (const auto& type : device_ctx.physical_tile_types) {
+    for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
         legal_pos[type.index].resize(type.sub_tiles.size());
     }
 
     // load the legal placement positions
     for (const t_physical_tile_loc tile_loc : device_ctx.grid.all_locations()) {
-        auto tile = device_ctx.grid.get_physical_type(tile_loc);
+        t_physical_tile_type_ptr tile = device_ctx.grid.get_physical_type(tile_loc);
 
-        for (const auto& sub_tile : tile->sub_tiles) {
-            auto capacity = sub_tile.capacity;
+        for (const t_sub_tile& sub_tile : tile->sub_tiles) {
+            const t_capacity_range& capacity = sub_tile.capacity;
 
             for (int k = 0; k < capacity.total(); k++) {
                 // If this is the anchor position of a block, add it to the legal_pos.

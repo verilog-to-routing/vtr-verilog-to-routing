@@ -35,7 +35,7 @@ static std::vector<t_logical_block_type_ptr> grid_overused_resources(const Devic
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts, float maximum_utilization);
 static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height, bool warn_out_of_range = true, const std::vector<t_logical_block_type_ptr>& limiting_resources = std::vector<t_logical_block_type_ptr>());
 
-///@brief Check grid is valid
+///@brief Check if grid is valid
 static void check_grid(const DeviceGrid& grid);
 
 static void set_grid_block_type(int priority,
@@ -118,7 +118,7 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
             return build_device_grid(*layout, layout->width, layout->height);
         }
     } else {
-        //Use the specified device
+        // Use the specified device
         auto cmp = [&](const t_grid_def& grid_def) {
             return grid_def.name == layout_name;
         };
