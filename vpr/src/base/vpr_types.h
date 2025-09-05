@@ -342,7 +342,7 @@ class t_pb {
 ///@brief Representation of intra-logic block routing
 struct t_pb_route {
     AtomNetId atom_net_id;                        ///<which net in the atom netlist uses this pin
-    int driver_pb_pin_id = UNDEFINED;                  ///<The pb_pin id of the pb_pin that drives this pin
+    int driver_pb_pin_id = UNDEFINED;             ///<The pb_pin id of the pb_pin that drives this pin
     std::vector<int> sink_pb_pin_ids;             ///<The pb_pin id's of the pb_pins driven by this node
     const t_pb_graph_pin* pb_graph_pin = nullptr; ///<The graph pin associated with this node
 };

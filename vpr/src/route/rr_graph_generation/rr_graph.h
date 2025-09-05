@@ -36,9 +36,7 @@ void create_rr_graph(e_graph_type graph_type,
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          const t_det_routing_arch& det_routing_arch,
                          t_physical_tile_type_ptr physical_tile,
-                         int layer,
-                         int x,
-                         int y,
+                         const t_physical_tile_loc& tile_loc,
                          const int delayless_switch);
 
 void free_rr_graph();

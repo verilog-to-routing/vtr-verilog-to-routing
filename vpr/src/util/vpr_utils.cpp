@@ -1630,7 +1630,7 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id) {
-    auto node_type = rr_graph_view.node_type(node_id);
+    e_rr_type node_type = rr_graph_view.node_type(node_id);
     if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::CHANZ || node_type == e_rr_type::MUX) {
         return true;
     } else {
@@ -1669,11 +1669,9 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
 
 RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             t_physical_tile_type_ptr physical_tile,
-                            const int layer,
-                            const int root_i,
-                            const int root_j,
+                            const t_physical_tile_loc& root_loc,
                             int pin_physical_num) {
-    auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
+    e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
     e_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
     std::vector<int> x_offset;
     std::vector<int> y_offset;
@@ -1682,9 +1680,9 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     VTR_ASSERT(!x_offset.empty());
     RRNodeId node_id = RRNodeId::INVALID();
     for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
-        node_id = rr_spatial_lookup.find_node(layer,
-                                              root_i + x_offset[coord_idx],
-                                              root_j + y_offset[coord_idx],
+        node_id = rr_spatial_lookup.find_node(root_loc.layer_num,
+                                              root_loc.x + x_offset[coord_idx],
+                                              root_loc.y + y_offset[coord_idx],
                                               node_type,
                                               pin_physical_num,
                                               pin_sides[coord_idx]);
@@ -1696,14 +1694,12 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               t_physical_tile_type_ptr physical_tile,
-                              const int layer,
-                              const int i,
-                              const int j,
+                              const t_physical_tile_loc& root_loc,
                               int class_physical_num) {
-    auto class_type = get_class_type_from_class_physical_num(physical_tile, class_physical_num);
+    e_pin_type class_type = get_class_type_from_class_physical_num(physical_tile, class_physical_num);
     VTR_ASSERT(class_type == e_pin_type::DRIVER || class_type == e_pin_type::RECEIVER);
     e_rr_type node_type = (class_type == e_pin_type::DRIVER) ? e_rr_type::SOURCE : e_rr_type::SINK;
-    return rr_spatial_lookup.find_node(layer, i, j, node_type, class_physical_num);
+    return rr_spatial_lookup.find_node(root_loc.layer_num, root_loc.x, root_loc.y, node_type, class_physical_num);
 }
 
 RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id) {
@@ -1712,30 +1708,27 @@ RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
-    /*
-     * To get the RRNodeId for an atom pin, we need to:
-     * 1. Find the atom block that the pin belongs to
-     * 2. Find the cluster block that the atom block is a part of
-     * 3. Find the physical tile that the cluster block is located on
-     * 4. Find the physical pin number of the atom pin (corresponds to ptc number of the RR node)
-     * 5. Call get_pin_rr_node_id to get the RRNodeId for the pin
-     */
+    // To get the RRNodeId for an atom pin, we need to:
+    // 1. Find the atom block that the pin belongs to
+    // 2. Find the cluster block that the atom block is a part of
+    // 3. Find the physical tile that the cluster block is located on
+    // 4. Find the physical pin number of the atom pin (corresponds to ptc number of the RR node)
+    // 5. Call get_pin_rr_node_id to get the RRNodeId for the pin
 
     AtomBlockId atom_blk_id = atom_nlist.pin_block(atom_pin_id);
     ClusterBlockId clb_blk_id = atom_lookup.atom_clb(atom_blk_id);
 
     t_pl_loc clb_blk_loc = place_ctx.block_locs()[clb_blk_id].loc;
+    t_physical_tile_loc tile_loc(clb_blk_loc.x, clb_blk_loc.y, clb_blk_loc.layer);
 
-    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({clb_blk_loc.x, clb_blk_loc.y, clb_blk_loc.layer});
+    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type(tile_loc);
 
     const t_pb_graph_pin* atom_pb_pin = atom_lookup.atom_pin_pb_graph_pin(atom_pin_id);
     int pin_physical_num = physical_tile->pb_pin_to_pin_num.at(atom_pb_pin);
 
     RRNodeId rr_node_id = get_pin_rr_node_id(device_ctx.rr_graph.node_lookup(),
                                              physical_tile,
-                                             clb_blk_loc.layer,
-                                             clb_blk_loc.x,
-                                             clb_blk_loc.y,
+                                             tile_loc,
                                              pin_physical_num);
 
     return rr_node_id;
@@ -1839,9 +1832,7 @@ bool directconnect_exists(RRNodeId src_rr_node, RRNodeId sink_rr_node) {
     return false;
 }
 
-std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
-                                                               int i,
-                                                               int j,
+std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const t_physical_tile_loc& tile_loc,
                                                                t_physical_tile_type_ptr physical_type) {
     std::vector<int> class_num_vec;
 
@@ -1851,18 +1842,17 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
 
     class_num_vec.reserve(physical_type->primitive_class_inf.size());
 
-    //iterate over different sub tiles inside a tile
+    // iterate over different sub tiles inside a tile
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
-        if (grid_block.is_sub_tile_empty({i, j, layer}, abs_cap)) {
+        if (grid_block.is_sub_tile_empty(tile_loc, abs_cap)) {
             continue;
         }
-        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
+        ClusterBlockId cluster_blk_id = grid_block.block_at_location({tile_loc, abs_cap});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
 
-        auto primitive_classes = get_cluster_internal_class_pairs(atom_lookup,
-                                                                  cluster_blk_id);
-        /* Initialize SINK/SOURCE nodes and connect them to their respective pins */
-        for (auto class_num : primitive_classes) {
+        std::vector<int> primitive_classes = get_cluster_internal_class_pairs(atom_lookup, cluster_blk_id);
+        // Initialize SINK/SOURCE nodes and connect them to their respective pins
+        for (int class_num : primitive_classes) {
             class_num_vec.push_back(class_num);
         }
     }
@@ -1871,9 +1861,7 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
     return class_num_vec;
 }
 
-std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
-                                                            const int i,
-                                                            const int j,
+std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_tile_loc& tile_loc,
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type) {
@@ -1886,18 +1874,18 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
     for (int abs_cap = 0; abs_cap < physical_type->capacity; abs_cap++) {
         std::vector<int> cluster_internal_pins;
 
-        if (grid_block.is_sub_tile_empty({i, j, layer}, abs_cap)) {
+        if (grid_block.is_sub_tile_empty(tile_loc, abs_cap)) {
             continue;
         }
-        auto cluster_blk_id = grid_block.block_at_location({i, j, abs_cap, layer});
+        ClusterBlockId cluster_blk_id = grid_block.block_at_location({tile_loc, abs_cap});
         VTR_ASSERT(cluster_blk_id != ClusterBlockId::INVALID());
 
         cluster_internal_pins = get_cluster_internal_pins(cluster_blk_id);
-        const auto& cluster_pin_chains = pin_chains_num[cluster_blk_id];
-        const auto& cluster_chain_sinks = pin_chains[cluster_blk_id].chain_sink;
-        const auto& cluster_pin_chain_idx = pin_chains[cluster_blk_id].pin_chain_idx;
+        const std::unordered_set<int>& cluster_pin_chains = pin_chains_num[cluster_blk_id];
+        const std::vector<int>& cluster_chain_sinks = pin_chains[cluster_blk_id].chain_sink;
+        const std::vector<int>& cluster_pin_chain_idx = pin_chains[cluster_blk_id].pin_chain_idx;
         // remove common elements between cluster_pin_chains.
-        for (auto pin : cluster_internal_pins) {
+        for (int pin : cluster_internal_pins) {
             auto it = cluster_pin_chains.find(pin);
             if (it == cluster_pin_chains.end()) {
                 pin_num_vec.push_back(pin);

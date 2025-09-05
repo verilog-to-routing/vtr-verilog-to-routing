@@ -316,9 +316,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity);
 
 t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                                          t_physical_tile_type_ptr physical_tile,
-                                                         int layer,
-                                                         int x,
-                                                         int y);
+                                                         const t_physical_tile_loc& tile_loc);
 
 /* returns index of a node from which to start routing */
 RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset);
@@ -334,7 +332,7 @@ RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int t
 std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
 
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
-                                        int from_layer_num,
+                                        unsigned from_layer_num,
                                         const e_rr_type& chan_type,
                                         const t_segment_inf& segment_inf,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
