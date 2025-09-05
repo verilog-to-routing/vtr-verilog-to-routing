@@ -6,7 +6,8 @@
 #include "globals.h"
 #include "vtr_assert.h"
 
-void alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns) {
+void alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
+                                               const std::vector<bool>& inter_cluster_rr) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
 
@@ -15,7 +16,11 @@ void alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gathe
         VTR_ASSERT(sg_pattern.sg_locations.size() == 1);
         VTR_ASSERT(sg_pattern.sg_locations[0].type == e_sb_location::E_EVERYWHERE);
 
-
+        for (const t_physical_tile_loc loc : grid.all_locations()) {
+            if (sb_not_here(grid, inter_cluster_rr, loc, sg_pattern.sg_locations[0].type)) {
+                continue;
+            }
+        }
 
 
     }

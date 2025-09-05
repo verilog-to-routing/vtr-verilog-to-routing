@@ -35,7 +35,7 @@ using vtr::t_formula_data;
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 //Process the desired order of a wireconn
-static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order);
+static void parse_switchpoint_order(const char* order, e_switch_point_order& switchpoint_order);
 
 /**
  * @brief Parses an inline `<wireconn>` node using its attributes.
@@ -282,13 +282,13 @@ static t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, cons
     return wire_switchpoints;
 }
 
-static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order) {
+static void parse_switchpoint_order(const char* order, e_switch_point_order& switchpoint_order) {
     if (order == std::string("")) {
-        switchpoint_order = SwitchPointOrder::SHUFFLED; //Default
+        switchpoint_order = e_switch_point_order::SHUFFLED; //Default
     } else if (order == std::string("fixed")) {
-        switchpoint_order = SwitchPointOrder::FIXED;
+        switchpoint_order = e_switch_point_order::FIXED;
     } else if (order == std::string("shuffled")) {
-        switchpoint_order = SwitchPointOrder::SHUFFLED;
+        switchpoint_order = e_switch_point_order::SHUFFLED;
     } else {
         archfpga_throw(__FILE__, __LINE__, "Unrecognized switchpoint order '%s'", order);
     }

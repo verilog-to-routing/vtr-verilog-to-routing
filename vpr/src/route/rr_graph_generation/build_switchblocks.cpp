@@ -268,7 +268,7 @@ static void get_switchpoint_wires(const DeviceGrid& grid,
                                   const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
                                   const t_wire_type_sizes& wire_type_sizes,
                                   bool is_dest,
-                                  SwitchPointOrder switchpoint_order,
+                                  e_switch_point_order switchpoint_order,
                                   vtr::RngContainer& rng,
                                   std::vector<t_wire_switchpoint>* output_wires,
                                   std::vector<t_wire_switchpoint>* scratch_wires);
@@ -440,7 +440,7 @@ static void get_switchpoint_wires(const DeviceGrid& grid,
                                   const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
                                   const t_wire_type_sizes& wire_type_sizes,
                                   bool is_dest,
-                                  SwitchPointOrder switchpoint_order,
+                                  e_switch_point_order switchpoint_order,
                                   vtr::RngContainer& rng,
                                   std::vector<t_wire_switchpoint>* output_wires,
                                   std::vector<t_wire_switchpoint>* scratch_wires) {
@@ -512,11 +512,11 @@ static void get_switchpoint_wires(const DeviceGrid& grid,
                                                collected_wire_switchpoints.begin(), collected_wire_switchpoints.end());
     }
 
-    if (switchpoint_order == SwitchPointOrder::SHUFFLED) {
+    if (switchpoint_order == e_switch_point_order::SHUFFLED) {
         // We new re-order the switchpoints to try to make adjacent switchpoints have different values
         vtr::shuffle(all_collected_wire_switchpoints.begin(), all_collected_wire_switchpoints.end(), rng);
     } else {
-        VTR_ASSERT(switchpoint_order == SwitchPointOrder::FIXED);
+        VTR_ASSERT(switchpoint_order == e_switch_point_order::FIXED);
         // Already ordered so same switchpoints are adjacent by above collection loop
     }
 }
