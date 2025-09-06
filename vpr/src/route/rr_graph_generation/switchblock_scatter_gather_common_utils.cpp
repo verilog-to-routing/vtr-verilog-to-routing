@@ -1,7 +1,11 @@
 
 #include "switchblock_scatter_gather_common_utils.h"
 
+#include "globals.h"
 #include "vpr_error.h"
+#include "rr_node_types.h"
+#include "rr_types.h"
+
 
 /**
  * @brief Check whether specified coordinate is located at the device grid corner and a switch block exists there
@@ -169,4 +173,82 @@ bool sb_not_here(const DeviceGrid& grid,
     }
 
     return sb_not_here;
+}
+
+const t_chan_details& index_into_correct_chan(const t_physical_tile_loc& sb_loc,
+                                              e_side src_side,
+                                              const t_chan_details& chan_details_x,
+                                              const t_chan_details& chan_details_y,
+                                              t_physical_tile_loc& chan_loc,
+                                              e_rr_type& chan_type) {
+    chan_type = e_rr_type::CHANX;
+    // here we use the VPR convention that a tile 'owns' the channels directly to the right and above it
+    switch (src_side) {
+        case TOP:
+            // this is y-channel belonging to tile above in the same layer
+            chan_loc.x = sb_loc.x;
+            chan_loc.y = sb_loc.y + 1;
+            chan_loc.layer_num = sb_loc.layer_num;
+            chan_type = e_rr_type::CHANY;
+            return chan_details_y;
+            break;
+        case RIGHT:
+            // this is x-channel belonging to tile to the right in the same layer
+            chan_loc.x = sb_loc.x + 1;
+            chan_loc.y = sb_loc.y;
+            chan_loc.layer_num = sb_loc.layer_num;
+            chan_type = e_rr_type::CHANX;
+            return chan_details_x;
+            break;
+        case BOTTOM:
+            // this is y-channel on the right of the tile in the same layer
+            chan_loc.x = sb_loc.x;
+            chan_loc.y = sb_loc.y;
+            chan_loc.layer_num = sb_loc.layer_num;
+            chan_type = e_rr_type::CHANY;
+            return chan_details_y;
+            break;
+        case LEFT:
+            // this is x-channel on top of the tile in the same layer
+            chan_loc.x = sb_loc.x;
+            chan_loc.y = sb_loc.y;
+            chan_loc.layer_num = sb_loc.layer_num;
+            chan_type = e_rr_type::CHANX;
+            return chan_details_x;
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "index_into_correct_chan: unknown side specified: %d\n", src_side);
+            break;
+    }
+    VTR_ASSERT(false);
+    return chan_details_x; // Unreachable
+}
+
+bool chan_coords_out_of_bounds(const t_physical_tile_loc& loc, e_rr_type chan_type) {
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+
+    const int grid_width = grid.width();
+    const int grid_height = grid.height();
+    const int grid_layers = grid.get_num_layers();
+
+    // the layer that channel is located at must be legal regardless of chan_type
+    if (loc.layer_num < 0 || loc.layer_num > grid_layers) {
+        return true;
+    }
+
+    if (e_rr_type::CHANX == chan_type) {
+        // there is no x-channel at x=0
+        if (loc.x <= 0 || loc.x >= grid_width - 1 || loc.y < 0 || loc.y >= grid_height - 1) {
+            return true;
+        }
+    } else if (e_rr_type::CHANY == chan_type) {
+        // there is no y-channel at y=0
+        if (loc.x < 0 || loc.x >= grid_width - 1 || loc.y <= 0 || loc.y >= grid_height - 1) {
+            return true;
+        }
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "chan_coords_out_of_bounds(): illegal channel type %d\n", chan_type);
+    }
+
+    return false;
 }
