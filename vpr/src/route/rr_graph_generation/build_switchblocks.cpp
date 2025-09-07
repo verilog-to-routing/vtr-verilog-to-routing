@@ -145,27 +145,6 @@
 using vtr::FormulaParser;
 using vtr::t_formula_data;
 
-/** Contains info about a wire segment type */
-struct t_wire_info {
-    int length;    ///< the length of this type of wire segment in tiles
-    int num_wires; ///< total number of wires in a channel segment (basically W)
-    int start;     ///< the wire index at which this type starts in the channel segment (0..W-1)
-
-    void set(int len, int wires, int st) {
-        length = len;
-        num_wires = wires;
-        start = st;
-    }
-
-    t_wire_info() {
-        this->set(0, 0, 0);
-    }
-
-    t_wire_info(int len, int wires, int st) {
-        this->set(len, wires, st);
-    }
-};
-
 struct t_wire_switchpoint {
     int wire;        ///< Wire index within the channel
     int switchpoint; ///< Switchpoint of the wire
@@ -179,26 +158,8 @@ struct t_wireconn_scratchpad {
     std::vector<t_wire_switchpoint> scratch_wires;
 };
 
-/************ Typedefs ************/
-/* Used to get info about a given wire type based on the name */
-typedef vtr::flat_map<vtr::string_view, t_wire_info> t_wire_type_sizes;
 
 /************ Function Declarations ************/
-/**
- * @brief Counts and summarizes wire types in a routing channel.
- *
- * Iterates through the given array of segment details for a routing channel,
- * grouping segments by wire type (as identified by `type_name()`).
- * For each unique wire type, it records:
- *   - the wire segment length,
- *   - the number of wires of that type,
- *   - the start index of the first wire of that type in the array.
- *
- * @param channel Pointer to an array of `t_chan_seg_details` representing the wires in a channel.
- * @param nodes_per_chan The total number of wire segments (i.e., size of the `channel` array).
- * @return A map (`t_wire_type_sizes`) from wire type name to `WireInfo` containing size and indexing info for each type.
- */
-static t_wire_type_sizes count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan);
 
 /* Compute the wire(s) that the wire at (x, y, from_side, to_side, from_wire) should connect to.
  * sb_conns is updated with the result */
@@ -341,17 +302,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
 
     t_sb_connection_map* sb_conns = new t_sb_connection_map;
 
-    /* We assume that x & y channels have the same ratios of wire types. i.e., looking at a single
-     * channel is representative of all channels in the FPGA -- as of 3/9/2013 this is true in VPR */
-
-    /* Count the number of wires in each wire type in the specified channel. Note that this is representative of
-     * the wire count for every channel in direction due to the assumption stated above. 
-     * This will not hold if we
-     *     1) support different horizontal and vertical segment distributions
-     *     2) support non-uniform channel distributions.
-     */
-    t_wire_type_sizes wire_type_sizes_y = count_wire_type_sizes(chan_details_y[0][0].data(), nodes_per_chan.y_max);
-    t_wire_type_sizes wire_type_sizes_x = count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan.x_max);
+    const auto [wire_type_sizes_x, wire_type_sizes_y] = count_wire_type_sizes(chan_details_x, chan_details_y, nodes_per_chan);
 
     /******** slow switch block computation method; computes switchblocks at each coordinate ********/
     // Iterate over all the switchblocks specified in the architecture
@@ -395,37 +346,6 @@ void free_switchblock_permutations(t_sb_connection_map* sb_conns) {
      * this significantly reduces memory usage during the routing stage when running multiple
      * large benchmark circuits in parallel. */
     vtr::malloc_trim(0);
-}
-
-static t_wire_type_sizes count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan) {
-    int num_wires = 0;
-    t_wire_info wire_info;
-
-    vtr::string_view wire_type = channel[0].type_name();
-    int length = channel[0].length();
-    int start = 0;
-
-    t_wire_type_sizes wire_type_sizes;
-
-    for (int iwire = 0; iwire < nodes_per_chan; iwire++) {
-        vtr::string_view new_type = channel[iwire].type_name();
-        int new_length = channel[iwire].length();
-        int new_start = iwire;
-        if (new_type != wire_type) {
-            wire_info.set(length, num_wires, start);
-            wire_type_sizes[wire_type] = wire_info;
-            wire_type = new_type;
-            length = new_length;
-            start = new_start;
-            num_wires = 0;
-        }
-        num_wires++;
-    }
-
-    wire_info.set(length, num_wires, start);
-    wire_type_sizes[wire_type] = wire_info;
-
-    return wire_type_sizes;
 }
 
 static void get_switchpoint_wires(const DeviceGrid& grid,

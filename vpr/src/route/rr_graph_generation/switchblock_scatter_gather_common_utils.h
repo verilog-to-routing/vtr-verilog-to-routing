@@ -3,8 +3,33 @@
 
 #include "device_grid.h"
 #include "rr_types.h"
+#include "rr_graph_type.h"
 
 #include <vector>
+
+/** Contains info about a wire segment type */
+struct t_wire_info {
+    int length;    ///< the length of this type of wire segment in tiles
+    int num_wires; ///< total number of wires in a channel segment (basically W)
+    int start;     ///< the wire index at which this type starts in the channel segment (0..W-1)
+
+    void set(int len, int wires, int st) {
+        length = len;
+        num_wires = wires;
+        start = st;
+    }
+
+    t_wire_info() {
+        this->set(0, 0, 0);
+    }
+
+    t_wire_info(int len, int wires, int st) {
+        this->set(len, wires, st);
+    }
+};
+
+/// Used to get info about a given wire type based on the name
+typedef vtr::flat_map<vtr::string_view, t_wire_info> t_wire_type_sizes;
 
 /**
  * @brief check whether a switch block exists in a specified coordinate within the device grid
@@ -30,3 +55,7 @@ const t_chan_details& index_into_correct_chan(const t_physical_tile_loc& sb_loc,
                                               e_rr_type& chan_type);
 
 bool chan_coords_out_of_bounds(const t_physical_tile_loc& loc, e_rr_type chan_type);
+
+std::pair<t_wire_type_sizes, t_wire_type_sizes> count_wire_type_sizes(const t_chan_details& chan_details_x,
+                                                                      const t_chan_details& chan_details_y,
+                                                                      const t_chan_width& nodes_per_chan);

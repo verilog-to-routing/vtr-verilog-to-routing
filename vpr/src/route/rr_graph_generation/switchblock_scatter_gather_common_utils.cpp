@@ -6,6 +6,21 @@
 #include "rr_node_types.h"
 #include "rr_types.h"
 
+/**
+ * @brief Counts and summarizes wire types in a routing channel.
+ *
+ * Iterates through the given array of segment details for a routing channel,
+ * grouping segments by wire type (as identified by `type_name()`).
+ * For each unique wire type, it records:
+ *   - the wire segment length,
+ *   - the number of wires of that type,
+ *   - the start index of the first wire of that type in the array.
+ *
+ * @param channel Pointer to an array of `t_chan_seg_details` representing the wires in a channel.
+ * @param nodes_per_chan The total number of wire segments (i.e., size of the `channel` array).
+ * @return A map (`t_wire_type_sizes`) from wire type name to `WireInfo` containing size and indexing info for each type.
+ */
+static t_wire_type_sizes count_chan_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan);
 
 /**
  * @brief Check whether specified coordinate is located at the device grid corner and a switch block exists there
@@ -121,6 +136,36 @@ static bool match_sb_xy(const DeviceGrid& grid,
     return false;
 }
 
+static t_wire_type_sizes count_chan_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan) {
+    int num_wires = 0;
+    t_wire_info wire_info;
+
+    vtr::string_view wire_type = channel[0].type_name();
+    int length = channel[0].length();
+    int start = 0;
+
+    t_wire_type_sizes wire_type_sizes;
+
+    for (int iwire = 0; iwire < nodes_per_chan; iwire++) {
+        vtr::string_view new_type = channel[iwire].type_name();
+        int new_length = channel[iwire].length();
+        int new_start = iwire;
+        if (new_type != wire_type) {
+            wire_info.set(length, num_wires, start);
+            wire_type_sizes[wire_type] = wire_info;
+            wire_type = new_type;
+            length = new_length;
+            start = new_start;
+            num_wires = 0;
+        }
+        num_wires++;
+    }
+
+    wire_info.set(length, num_wires, start);
+    wire_type_sizes[wire_type] = wire_info;
+
+    return wire_type_sizes;
+}
 
 bool sb_not_here(const DeviceGrid& grid,
                  const std::vector<bool>& inter_cluster_rr,
@@ -251,4 +296,23 @@ bool chan_coords_out_of_bounds(const t_physical_tile_loc& loc, e_rr_type chan_ty
     }
 
     return false;
+}
+
+std::pair<t_wire_type_sizes, t_wire_type_sizes> count_wire_type_sizes(const t_chan_details& chan_details_x,
+                                                                      const t_chan_details& chan_details_y,
+                                                                      const t_chan_width& nodes_per_chan) {
+
+    // We assume that x & y channels have the same ratios of wire types. i.e., looking at a single
+    // channel is representative of all channels in the FPGA.
+
+    // Count the number of wires in each wire type in the specified channel. Note that this is representative of
+    // the wire count for every channel in direction due to the assumption stated above.
+    // This will not hold if we
+    // 1) support different horizontal and vertical segment distributions
+    // 2) support non-uniform channel distributions.
+
+    t_wire_type_sizes wire_type_sizes_x = count_chan_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan.x_max);
+    t_wire_type_sizes wire_type_sizes_y = count_chan_wire_type_sizes(chan_details_y[0][0].data(), nodes_per_chan.y_max);
+
+    return {wire_type_sizes_x, wire_type_sizes_y};
 }
