@@ -7,6 +7,23 @@
 #include "rr_types.h"
 
 /**
+ * Returns wire segment length based on either:
+ * 1) the wire length specified in the segment details variable for this wire (if this wire segment doesn't span entire FPGA)
+ * 2) the seg_start and seg_end coordinates in the segment details for this wire (if this wire segment spans entire FPGA, as might happen for very long wires)
+ *
+ * Computing the wire segment length in this way help to classify short vs long wire segments according to switchpoint.
+ */
+static int get_wire_segment_length(e_rr_type chan_type,
+                                   const t_chan_seg_details& wire_details);
+
+/**
+ * @brief Returns the subsegment number of the specified wire at seg_coord
+ */
+static int get_wire_subsegment_num(e_rr_type chan_type,
+                                   const t_chan_seg_details& wire_details,
+                                   int seg_coord);
+
+/**
  * @brief Counts and summarizes wire types in a routing channel.
  *
  * Iterates through the given array of segment details for a routing channel,
@@ -167,6 +184,64 @@ static t_wire_type_sizes count_chan_wire_type_sizes(const t_chan_seg_details* ch
     return wire_type_sizes;
 }
 
+static int get_wire_subsegment_num(e_rr_type chan_type,
+                                   const t_chan_seg_details& wire_details,
+                                   int seg_coord) {
+    // We get wire subsegment number by comparing the wire's seg_coord to the seg_start of the wire.
+    // The offset between seg_start (or seg_end) and seg_coord is the subsegment number
+    // Cases:
+    // seg starts at bottom but does not extend all the way to the top -- look at seg_end
+    // seg starts > bottom and does not extend all the way to top -- look at seg_start
+    // seg starts > bottom but terminates all the way at the top -- look at seg_start
+    // seg starts at bottom and extends all the way to the top -- look at seg end
+
+    int seg_start = wire_details.seg_start();
+    int seg_end = wire_details.seg_end();
+    Direction direction = wire_details.direction();
+    int wire_length = get_wire_segment_length(chan_type, wire_details);
+
+    // Determine the minimum and maximum values that the 'seg' coordinate of a wire can take
+    int min_seg = 1;
+
+    int subsegment_num;
+    if (seg_start != min_seg) {
+        subsegment_num = seg_coord - seg_start;
+    } else {
+        subsegment_num = (wire_length - 1) - (seg_end - seg_coord);
+    }
+
+    // If this wire is going in the decreasing direction, reverse the subsegment num.
+    VTR_ASSERT(seg_end >= seg_start);
+    if (direction == Direction::DEC) {
+        subsegment_num = wire_length - 1 - subsegment_num;
+    }
+
+    return subsegment_num;
+}
+
+static int get_wire_segment_length(e_rr_type chan_type,
+                                   const t_chan_seg_details& wire_details) {
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+
+    int min_seg = 1;
+    int max_seg = grid.width() - 2; //-2 for no perim channels
+    if (chan_type == e_rr_type::CHANY) {
+        max_seg = grid.height() - 2; //-2 for no perim channels
+    }
+
+    int seg_start = wire_details.seg_start();
+    int seg_end = wire_details.seg_end();
+
+    int wire_length;
+    if (seg_start == min_seg && seg_end == max_seg) {
+        wire_length = seg_end - seg_start + 1;
+    } else {
+        wire_length = wire_details.length();
+    }
+
+    return wire_length;
+}
+
 bool sb_not_here(const DeviceGrid& grid,
                  const std::vector<bool>& inter_cluster_rr,
                  const t_physical_tile_loc& loc,
@@ -315,4 +390,58 @@ std::pair<t_wire_type_sizes, t_wire_type_sizes> count_wire_type_sizes(const t_ch
     t_wire_type_sizes wire_type_sizes_y = count_chan_wire_type_sizes(chan_details_y[0][0].data(), nodes_per_chan.y_max);
 
     return {wire_type_sizes_x, wire_type_sizes_y};
+}
+
+int get_switchpoint_of_wire(e_rr_type chan_type,
+                            const t_chan_seg_details& wire_details,
+                            int seg_coord,
+                            e_side sb_side) {
+    // this function calculates the switchpoint of a given wire by first calculating
+    // the subsegment number of the specified wire. For instance, for a wire with L=4:
+    //
+    // switchpoint:	0-------1-------2-------3-------0
+    // subsegment_num:	    0       1       2       3
+    //
+    // So knowing the wire's subsegment_num and which switchblock side it connects to is
+    // enough to calculate the switchpoint
+
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+
+    // Get the minimum and maximum segment coordinate which a wire in this channel type can take */
+    int min_seg = 1;
+    int max_seg = grid.width() - 2; // -2 for no perim channels
+    if (chan_type == e_rr_type::CHANY) {
+        max_seg = grid.height() - 2; // -2 for no perim channels
+    }
+
+    // Check whether the current seg_coord/sb_side coordinate specifies a perimeter switch block side at which all wire segments terminate/start.
+    // in this case only segments with switchpoints = 0 can exist
+    bool perimeter_connection = false;
+    if ((seg_coord == min_seg && (sb_side == RIGHT || sb_side == TOP)) || (seg_coord == max_seg && (sb_side == LEFT || sb_side == BOTTOM))) {
+        perimeter_connection = true;
+    }
+
+    int switchpoint;
+    if (perimeter_connection) {
+        switchpoint = 0;
+    } else {
+        int wire_length = get_wire_segment_length(chan_type, wire_details);
+        int subsegment_num = get_wire_subsegment_num(chan_type, wire_details, seg_coord);
+
+        Direction direction = wire_details.direction();
+        if (LEFT == sb_side || BOTTOM == sb_side) {
+            switchpoint = (subsegment_num + 1) % wire_length;
+            if (direction == Direction::DEC) {
+                switchpoint = subsegment_num;
+            }
+        } else {
+            VTR_ASSERT(RIGHT == sb_side || TOP == sb_side);
+            switchpoint = subsegment_num;
+            if (direction == Direction::DEC) {
+                switchpoint = (subsegment_num + 1) % wire_length;
+            }
+        }
+    }
+
+    return switchpoint;
 }

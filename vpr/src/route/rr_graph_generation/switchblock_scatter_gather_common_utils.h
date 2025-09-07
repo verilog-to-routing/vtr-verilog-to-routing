@@ -28,6 +28,11 @@ struct t_wire_info {
     }
 };
 
+struct t_wire_switchpoint {
+    int wire;        ///< Wire index within the channel
+    int switchpoint; ///< Switchpoint of the wire
+};
+
 /// Used to get info about a given wire type based on the name
 typedef vtr::flat_map<vtr::string_view, t_wire_info> t_wire_type_sizes;
 
@@ -59,3 +64,12 @@ bool chan_coords_out_of_bounds(const t_physical_tile_loc& loc, e_rr_type chan_ty
 std::pair<t_wire_type_sizes, t_wire_type_sizes> count_wire_type_sizes(const t_chan_details& chan_details_x,
                                                                       const t_chan_details& chan_details_y,
                                                                       const t_chan_width& nodes_per_chan);
+
+/**
+ * Returns the switchpoint of the wire specified by wire_details at a segment coordinate
+ * of seg_coord, and connection to the sb_side of the switchblock
+ */
+int get_switchpoint_of_wire(e_rr_type chan_type,
+                            const t_chan_seg_details& wire_details,
+                            int seg_coord,
+                            e_side sb_side);
