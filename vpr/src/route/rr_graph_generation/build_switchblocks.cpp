@@ -354,7 +354,6 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
      */
     t_wire_type_sizes wire_type_sizes_y = count_wire_type_sizes(chan_details_y[0][0].data(), nodes_per_chan.y_max);
     t_wire_type_sizes wire_type_sizes_x = count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan.x_max);
-    t_wire_type_sizes wire_type_sizes = count_wire_type_sizes(chan_details_x[0][0].data(), nodes_per_chan.max);
 
     /******** slow switch block computation method; computes switchblocks at each coordinate ********/
     // Iterate over all the switchblocks specified in the architecture
@@ -618,7 +617,7 @@ static void compute_wireconn_connections(const DeviceGrid& grid,
     // Choose the to_side to be the same as from_side if the connection is travelling across dice in multi-die FPGAs
     e_side to_side = (sb_conn.to_side != ABOVE && sb_conn.to_side != UNDER) ? sb_conn.to_side : sb_conn.from_side;
 
-    /* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
+    // vectors that will contain indices of the wires belonging to the source/dest wire types/points
     get_switchpoint_wires(grid, from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, from_side,
                           wireconn.from_switchpoint_set, wire_type_sizes_from, /*is_dest=*/false, wireconn.from_switchpoint_order, rng,
                           &scratchpad->potential_src_wires,
