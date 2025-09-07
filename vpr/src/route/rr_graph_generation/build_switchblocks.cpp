@@ -406,7 +406,7 @@ static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
     }
 
     if (switchpoint_order == e_switch_point_order::SHUFFLED) {
-        // We new re-order the switchpoints to try to make adjacent switchpoints have different values
+        // We now re-order the switchpoints to try to make adjacent switchpoints have different values
         vtr::shuffle(all_collected_wire_switchpoints.begin(), all_collected_wire_switchpoints.end(), rng);
     } else {
         VTR_ASSERT(switchpoint_order == e_switch_point_order::FIXED);
