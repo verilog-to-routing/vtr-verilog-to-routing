@@ -145,10 +145,8 @@
 using vtr::FormulaParser;
 using vtr::t_formula_data;
 
-/************ Classes ************/
 /** Contains info about a wire segment type */
-class WireInfo {
-  public:
+struct t_wire_info {
     int length;    ///< the length of this type of wire segment in tiles
     int num_wires; ///< total number of wires in a channel segment (basically W)
     int start;     ///< the wire index at which this type starts in the channel segment (0..W-1)
@@ -159,11 +157,11 @@ class WireInfo {
         start = st;
     }
 
-    WireInfo() {
+    t_wire_info() {
         this->set(0, 0, 0);
     }
 
-    WireInfo(int len, int wires, int st) {
+    t_wire_info(int len, int wires, int st) {
         this->set(len, wires, st);
     }
 };
@@ -183,7 +181,7 @@ struct t_wireconn_scratchpad {
 
 /************ Typedefs ************/
 /* Used to get info about a given wire type based on the name */
-typedef vtr::flat_map<vtr::string_view, WireInfo> t_wire_type_sizes;
+typedef vtr::flat_map<vtr::string_view, t_wire_info> t_wire_type_sizes;
 
 /************ Function Declarations ************/
 /**
@@ -401,7 +399,7 @@ void free_switchblock_permutations(t_sb_connection_map* sb_conns) {
 
 static t_wire_type_sizes count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan) {
     int num_wires = 0;
-    WireInfo wire_info;
+    t_wire_info wire_info;
 
     vtr::string_view wire_type = channel[0].type_name();
     int length = channel[0].length();
