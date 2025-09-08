@@ -36,6 +36,7 @@
  *
  */
 
+#include <cassert>
 #include <cstring>
 #include <map>
 #include <set>
@@ -70,6 +71,8 @@
 
 #include "read_xml_arch_file_noc_tag.h"
 #include "read_xml_arch_file_sg.h"
+
+#include "interposer_types.h"
 
 using namespace std::string_literals;
 using pugiutil::ReqOpt;
@@ -2579,7 +2582,7 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
     num_of_avail_layer = get_number_of_layers(layout_type_tag, loc_data);
     bool has_layer = layout_type_tag.child("layer");
 
-    //Determine the grid specification type
+    // Determine the grid specification type
     if (layout_type_tag.name() == std::string("auto_layout")) {
         expect_only_attributes(layout_type_tag, {"aspect_ratio"}, loc_data);
 
@@ -2597,7 +2600,7 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
         std::string name = get_attribute(layout_type_tag, "name", loc_data).value();
 
         if (name == "auto") {
-            //We name <auto_layout> as 'auto', so don't allow a user to specify it
+            // We name <auto_layout> as 'auto', so don't allow a user to specify it
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
                            vtr::string_fmt("The name '%s' is reserved for auto-sized layouts; please choose another name", name.c_str()).c_str());
         }
@@ -2612,27 +2615,23 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
 
     grid_def.layers.resize(num_of_avail_layer);
     arch->layer_global_routing.resize(num_of_avail_layer);
-    //No layer tag is specified (only one die is specified in the arch file)
-    //Need to process layout_type_tag children to get block types locations in the grid
+    // No layer tag is specified (only one die is specified in the arch file)
+    // Need to process layout_type_tag children to get block types locations in the grid
     if (has_layer) {
+        // TODO ASSERT INTERPOSER
         std::set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
-        //One or more than one layer tag is specified
-        auto layer_tag_specified = layout_type_tag.children("layer");
-        for (auto layer_child : layer_tag_specified) {
-            int die_number;
-            bool has_global_routing;
-            //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
-            //Need to process each <layer> tag children to get block types locations for each grid
-            die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
-            has_global_routing = get_attribute(layer_child, "has_prog_routing", loc_data, ReqOpt::OPTIONAL).as_bool(true);
+        for (auto layer_child : layout_type_tag.children("layer")) {
+            // More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
+            // Need to process each <layer> tag children to get block types locations for each grid
+            int die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
+            bool has_global_routing = get_attribute(layer_child, "has_prog_routing", loc_data, ReqOpt::OPTIONAL).as_bool(true);
             arch->layer_global_routing.at(die_number) = has_global_routing;
             VTR_ASSERT(die_number >= 0 && die_number < num_of_avail_layer);
-            auto insert_res = seen_die_numbers.insert(die_number);
-            VTR_ASSERT_MSG(insert_res.second, "Two different layers with a same die number may have been specified in the Architecture file");
+            VTR_ASSERT_MSG(seen_die_numbers.contains(die_number), "Two different layers with a same die number may have been specified in the Architecture file");
             process_block_type_locs(grid_def, die_number, strings, layer_child, loc_data);
         }
     } else {
-        //if only one die is available, then global routing resources must exist in that die
+        // If only one die is available, then global routing resources must exist in that die
         int die_number = 0;
         arch->layer_global_routing.at(die_number) = true;
         process_block_type_locs(grid_def, die_number, strings, layout_type_tag, loc_data);
@@ -2646,9 +2645,9 @@ static void process_block_type_locs(t_grid_def& grid_def,
                                     pugi::xml_node layout_block_type_tag,
                                     const pugiutil::loc_data& loc_data) {
     //Process all the block location specifications
-    for (auto loc_spec_tag : layout_block_type_tag.children()) {
-        auto loc_type = loc_spec_tag.name();
-        auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
+    for (pugi::xml_node loc_spec_tag : layout_block_type_tag.children()) {
+        const char* loc_type = loc_spec_tag.name();
+        const char* type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
         int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
         t_metadata_dict meta = process_meta_data(strings, loc_spec_tag, loc_data);
 
@@ -2869,6 +2868,47 @@ static void process_block_type_locs(t_grid_def& grid_def,
             region.meta = region.owned_meta.get();
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(region));
+        } else if (loc_type == std::string("interposer_cut")) {
+            t_interposer_cut_inf interposer;
+            pugiutil::expect_only_attributes(loc_spec_tag, {"dim", "loc"}, loc_data);
+
+            std::string interposer_dim = pugiutil::get_attribute(loc_spec_tag, "dim", loc_data).as_string();
+            if (interposer_dim.size() != 1) {
+                // TODO: throw properly
+                assert(false);
+            }
+            if (!CHAR_INTERPOSER_DIM_MAP.contains(interposer_dim[0])) {
+                // TODO: throw properly
+                assert(false);
+            }
+            interposer.dim = CHAR_INTERPOSER_DIM_MAP.at(interposer_dim[0]);
+
+            interposer.loc = pugiutil::get_attribute(loc_spec_tag, "loc", loc_data).as_int();
+            if (interposer.loc < 0) {
+                // TODO: throw properly, should also check if it's inside device bounds
+                assert(false);
+            }
+
+            pugiutil::expect_only_children(loc_spec_tag, {"interdie_wire"}, loc_data);
+
+            for (pugi::xml_node interdie_wire_tag : loc_spec_tag.children()) {
+                pugiutil::expect_only_attributes(interdie_wire_tag, {"sg", "sg_offset"}, loc_data);
+
+                t_interdie_wire_inf interdie_wire;
+
+                interdie_wire.sg_name = pugiutil::get_attribute(interdie_wire_tag, "sg_name", loc_data).as_string();
+                interdie_wire.sg_offset = pugiutil::get_attribute(interdie_wire_tag, "sg_offset", loc_data).as_string();
+                interdie_wire.offset_start = pugiutil::get_attribute(interdie_wire_tag, "offset_start", loc_data).as_int();
+                interdie_wire.offset_end = pugiutil::get_attribute(interdie_wire_tag, "offset_end", loc_data).as_int();
+                interdie_wire.offset_repeat = pugiutil::get_attribute(interdie_wire_tag, "offset_repeat", loc_data).as_int();
+                interdie_wire.offset_incr = pugiutil::get_attribute(interdie_wire_tag, "offset_incr", loc_data).as_int();
+                interdie_wire.offset_num = pugiutil::get_attribute(interdie_wire_tag, "offset_num", loc_data).as_int();
+
+                interposer.interdie_wires.push_back(interdie_wire);
+            }
+
+            //TODO: save interposer somewhere (need to add *arch to this function's args)
+
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
                            vtr::string_fmt("Unrecognized grid location specification type '%s'\n", loc_type).c_str());
