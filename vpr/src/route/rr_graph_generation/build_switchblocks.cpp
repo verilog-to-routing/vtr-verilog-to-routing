@@ -144,12 +144,9 @@
 #include "rr_types.h"
 #include "switchblock_scatter_gather_common_utils.h"
 
-using vtr::FormulaParser;
-using vtr::t_formula_data;
-
 struct t_wireconn_scratchpad {
-    FormulaParser formula_parser;
-    t_formula_data formula_data;
+    vtr::FormulaParser formula_parser;
+    vtr::t_formula_data formula_data;
     std::vector<t_wire_switchpoint> potential_src_wires;
     std::vector<t_wire_switchpoint> potential_dest_wires;
     std::vector<t_wire_switchpoint> scratch_wires;
@@ -194,8 +191,6 @@ static void compute_wireconn_connections(e_directionality directionality,
                                          t_sb_connection_map* sb_conns,
                                          vtr::RngContainer& rng,
                                          t_wireconn_scratchpad* scratchpad);
-
-static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, const std::string& num_conns_formula, int from_wire_count, int to_wire_count);
 
 /**
  *
@@ -575,7 +570,11 @@ static void compute_wireconn_connections(e_directionality directionality,
     //      * interleave (to ensure good diversity)
 
     // Determine how many connections to make
-    int num_conns = evaluate_num_conns_formula(scratchpad, wireconn.num_conns_formula, potential_src_wires.size(), potential_dest_wires.size());
+    int num_conns = evaluate_num_conns_formula(scratchpad->formula_parser,
+                                               scratchpad->formula_data,
+                                               wireconn.num_conns_formula,
+                                               potential_src_wires.size(),
+                                               potential_dest_wires.size());
     VTR_ASSERT_MSG(num_conns >= 0, "Number of switchblock connections to create must be non-negative");
 
     VTR_LOGV(verbose, "  num_conns: %zu\n", num_conns);
@@ -613,7 +612,7 @@ static void compute_wireconn_connections(e_directionality directionality,
         const std::vector<std::string>& permutations_ref = iter->second;
         for (const std::string& perm : permutations_ref) {
             /* Convert the symbolic permutation formula to a number */
-            t_formula_data& formula_data = scratchpad->formula_data;
+            vtr::t_formula_data& formula_data = scratchpad->formula_data;
             formula_data.clear();
             formula_data.set_var_value("W", dest_W);
             formula_data.set_var_value("t", src_wire_ind);
@@ -663,16 +662,6 @@ static void compute_wireconn_connections(e_directionality directionality,
             }
         }
     }
-}
-
-static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, const std::string& num_conns_formula, int from_wire_count, int to_wire_count) {
-    t_formula_data& vars = scratchpad->formula_data;
-    vars.clear();
-
-    vars.set_var_value("from", from_wire_count);
-    vars.set_var_value("to", to_wire_count);
-
-    return scratchpad->formula_parser.parse_formula(num_conns_formula, vars);
 }
 
 static const t_chan_details& index_into_correct_chan(const t_physical_tile_loc& sb_loc,

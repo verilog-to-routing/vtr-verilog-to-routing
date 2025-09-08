@@ -5,6 +5,7 @@
 #include "vpr_error.h"
 #include "rr_node_types.h"
 #include "rr_types.h"
+#include "vtr_expr_eval.h"
 
 /**
  * Returns wire segment length based on either:
@@ -444,4 +445,17 @@ int get_switchpoint_of_wire(e_rr_type chan_type,
     }
 
     return switchpoint;
+}
+
+int evaluate_num_conns_formula(vtr::FormulaParser& formula_parser,
+                               vtr::t_formula_data& formula_data,
+                               const std::string& num_conns_formula,
+                               int from_wire_count,
+                               int to_wire_count) {
+    formula_data.clear();
+
+    formula_data.set_var_value("from", from_wire_count);
+    formula_data.set_var_value("to", to_wire_count);
+
+    return formula_parser.parse_formula(num_conns_formula, formula_data);
 }

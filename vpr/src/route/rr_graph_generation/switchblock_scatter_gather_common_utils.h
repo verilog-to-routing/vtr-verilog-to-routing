@@ -4,8 +4,10 @@
 #include "device_grid.h"
 #include "rr_types.h"
 #include "rr_graph_type.h"
+#include "vtr_expr_eval.h"
 
 #include <vector>
+
 
 /** Contains info about a wire segment type */
 struct t_wire_info {
@@ -73,3 +75,9 @@ int get_switchpoint_of_wire(e_rr_type chan_type,
                             const t_chan_seg_details& wire_details,
                             int seg_coord,
                             e_side sb_side);
+
+int evaluate_num_conns_formula(vtr::FormulaParser& formula_parser,
+                               vtr::t_formula_data& formula_data,
+                               const std::string& num_conns_formula,
+                               int from_wire_count,
+                               int to_wire_count);
