@@ -36,6 +36,7 @@
 #include <limits>
 #include <unordered_set>
 
+#include "interposer_types.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_bimap.h"
 #include "vtr_string_interning.h"
@@ -361,13 +362,14 @@ struct t_grid_loc_def {
                                      // that come from a common definition.
 };
 
-enum GridDefType {
+enum class GridDefType {
     AUTO,
     FIXED
 };
 
 struct t_layer_def {
-    std::vector<t_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
+    std::vector<t_grid_loc_def> loc_defs;              ///< List of block location definitions for this layer specification
+    std::vector<t_interposer_cut_inf> interposer_cuts; ///< List of interposer cuts in this layer
 };
 
 struct t_grid_def {
