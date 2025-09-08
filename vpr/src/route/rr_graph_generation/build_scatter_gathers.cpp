@@ -9,11 +9,27 @@
 
 #include <vector>
 
+struct t_chan_loc {
+    t_physical_tile_loc location;
+    e_rr_type chan_type;
+    e_side side;
+};
+
+struct t_sg_candidate {
+    t_chan_loc chan_loc;
+    t_wire_switchpoint wire_switchpoint;
+};
+
+struct t_bottleneck_link {
+    std::vector<t_sg_candidate> gather_fanin_connections;
+    std::vector<t_sg_candidate> scatter_fanout_connections;
+};
+
 static void index_to_correct_channels(const t_wireconn_inf& pattern,
                                       const t_physical_tile_loc& loc,
                                       const t_chan_details& chan_details_x,
                                       const t_chan_details& chan_details_y,
-                                      std::vector<std::tuple<t_physical_tile_loc, e_rr_type, e_side>>& correct_channels) {
+                                      std::vector<t_chan_loc>& correct_channels) {
     correct_channels.clear();
 
     for (e_side side : pattern.sides) {
@@ -29,8 +45,8 @@ static void index_to_correct_channels(const t_wireconn_inf& pattern,
 }
 
 static
-std::vector<std::tuple<t_physical_tile_loc, e_rr_type, e_side, t_wire_switchpoint>>
-            find_candidate_wires(const std::vector<std::tuple<t_physical_tile_loc, e_rr_type, e_side>>& channels,
+std::vector<t_sg_candidate>
+            find_candidate_wires(const std::vector<t_chan_loc>& channels,
                                  const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
                                  const t_chan_details& chan_details_x,
                                  const t_chan_details& chan_details_y,
@@ -39,7 +55,7 @@ std::vector<std::tuple<t_physical_tile_loc, e_rr_type, e_side, t_wire_switchpoin
                                  bool is_dest) {
 
     // TODO: reuse
-    std::vector<std::tuple<t_physical_tile_loc, e_rr_type, e_side, t_wire_switchpoint>> collected_wire_switchpoints;
+    std::vector<t_sg_candidate> candidates;
 
     for (const auto [chan_loc, chan_type, chan_side] : channels) {
         int seg_coord = (chan_type == e_rr_type::CHANY) ? chan_loc.y : chan_loc.x;
@@ -48,7 +64,6 @@ std::vector<std::tuple<t_physical_tile_loc, e_rr_type, e_side, t_wire_switchpoin
         const t_chan_seg_details* chan_details = (chan_type == e_rr_type::CHANX) ? chan_details_x[chan_loc.x][chan_loc.y].data() : chan_details_y[chan_loc.x][chan_loc.y].data();
 
         for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec) {
-            collected_wire_switchpoints.clear();
             auto wire_type = vtr::string_view(wire_switchpoints.segment_name);
 
             if (wire_type_sizes.find(wire_type) == wire_type_sizes.end()) {
@@ -91,14 +106,14 @@ std::vector<std::tuple<t_physical_tile_loc, e_rr_type, e_side, t_wire_switchpoin
                     // Check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so
                     if (wire_switchpoint != valid_switchpoint) continue;
 
-                    collected_wire_switchpoints.push_back({chan_loc, chan_type, chan_side, {iwire, wire_switchpoint}});
+                    candidates.push_back({chan_loc, chan_type, chan_side, {iwire, wire_switchpoint}});
                 }
             }
 
         }
     }
 
-    return collected_wire_switchpoints;
+    return candidates;
 }
 
 void alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
@@ -108,8 +123,11 @@ void alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gathe
                                                const t_chan_width& nodes_per_chan) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
-    std::vector<std::tuple<t_physical_tile_loc, e_rr_type, e_side>> gather_channels;
-    std::vector<std::tuple<t_physical_tile_loc, e_rr_type, e_side>> scatter_channels;
+    std::vector<t_chan_loc> gather_channels;
+    std::vector<t_chan_loc> scatter_channels;
+
+    vtr::FormulaParser formula_parser;
+    vtr::t_formula_data formula_data;
 
     const auto [wire_type_sizes_x, wire_type_sizes_y] = count_wire_type_sizes(chan_details_x, chan_details_y, nodes_per_chan);
 
@@ -123,10 +141,10 @@ void alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gathe
                     continue;
                 }
 
-                auto it = std::find_if(sg_pattern.sg_links.begin(), sg_pattern.sg_links.end(),
-                       [&](const t_sg_link& link) {
-                           return link.name == sg_loc_info.sg_link_name;
-                       });
+                auto it = std::ranges::find_if(sg_pattern.sg_links,
+                                               [&](const t_sg_link& link) {
+                                                   return link.name == sg_loc_info.sg_link_name;
+                                               });
 
                 VTR_ASSERT_SAFE(it != sg_pattern.sg_links.end());
                 const t_sg_link& sg_link = *it;
@@ -154,7 +172,20 @@ void alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gathe
                                                                              sg_pattern.scatter_pattern.to_switchpoint_set,
                                                                              chan_details_x, chan_details_y,
                                                                              wire_type_sizes_x, wire_type_sizes_y,
-                                                                             /*is_dest=*/false);
+                                                                             /*is_dest=*/true);
+
+                int bottleneck_fanin = evaluate_num_conns_formula(formula_parser,
+                                                                  formula_data,
+                                                                  sg_pattern.gather_pattern.num_conns_formula,
+                                                                  gather_wire_candidates.size(),
+                                                                  scatter_wire_candidates.size());
+
+                int bottleneck_fanout = evaluate_num_conns_formula(formula_parser,
+                                                                   formula_data,
+                                                                   sg_pattern.scatter_pattern.num_conns_formula,
+                                                                   gather_wire_candidates.size(),
+                                                                   scatter_wire_candidates.size());
+
             }
         }
 
