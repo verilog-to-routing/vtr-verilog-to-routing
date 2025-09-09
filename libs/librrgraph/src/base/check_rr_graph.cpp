@@ -473,6 +473,8 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     e_pin_type class_type = e_pin_type::OPEN;
     int class_num_pins = -1;
+    std::vector<e_side> rr_graph_sides;
+    std::vector<e_side> arch_side_vec;
     switch (rr_type) {
         case e_rr_type::SOURCE:
         case e_rr_type::SINK:
@@ -511,17 +513,17 @@ void check_rr_node(const RRGraphView& rr_graph,
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
-            std::vector<e_side> rr_graph_sides = rr_graph.node_sides(rr_node);
-            std::vector<e_side> arch_side_vec;
+            rr_graph_sides = rr_graph.node_sides(rr_node);
             std::tie(std::ignore, std::ignore, arch_side_vec) = get_pin_coordinates(type, ptc_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
-            if (rr_graph_sides.size() != arch_side_vec.size()) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a different number of sides in the RR graph and the architecture.\n", inode, rr_type);
-            }
-            for (int i = 0; i < rr_graph_sides.size(); i++) {
-                if (std::find(arch_side_vec.begin(), arch_side_vec.end(), rr_graph_sides[i]) == arch_side_vec.end()) {
+            // Number of sides in arch_side_vec may be higher than rr_graph sides since there may be duplicates (a pin may have different x/y offset on the same side)
+            // Because of that, we itearte over arch_side_vec and check if the side is in rr_graph_sides     
+            for (size_t i = 0; i < arch_side_vec.size(); i++) {
+                if (std::find(rr_graph_sides.begin(), rr_graph_sides.end(), arch_side_vec[i]) == rr_graph_sides.end()) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: inode %d (type %d) has a different side '%s' in the RR graph and the architecture.\n", inode, rr_type, TOTAL_2D_SIDE_STRINGS[rr_graph_sides[i]]);
+                                "in check_rr_node: inode %d (type %d) has a different side '%s' in the RR graph and the architecture.\n", 
+                                inode, 
+                                rr_type, 
+                                TOTAL_2D_SIDE_STRINGS[rr_graph_sides[i]]);
                 }
             }
             break;
