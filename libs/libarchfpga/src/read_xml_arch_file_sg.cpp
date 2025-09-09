@@ -31,7 +31,7 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
         sg_link.y_offset = pugiutil::get_attribute(node, "y_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
         sg_link.z_offset = pugiutil::get_attribute(node, "z_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
 
-        if (vtr::exactly_k_conditions(1, sg_link.x_offset != 0, sg_link.y_offset != 0, sg_link.z_offset != 0)) {
+        if (!vtr::exactly_k_conditions(1, sg_link.x_offset != 0, sg_link.y_offset != 0, sg_link.z_offset != 0)) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "One and only one of the offset fields in the <sg_link> should be non-zero.");
         }
 
