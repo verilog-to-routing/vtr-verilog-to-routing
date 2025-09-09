@@ -516,7 +516,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             rr_graph_sides = rr_graph.node_sides(rr_node);
             std::tie(std::ignore, std::ignore, arch_side_vec) = get_pin_coordinates(type, ptc_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
             // Number of sides in arch_side_vec may be higher than rr_graph sides since there may be duplicates (a pin may have different x/y offset on the same side)
-            // Because of that, we itearte over arch_side_vec and check if the side is in rr_graph_sides     
+            // Because of that, we iterate over arch_side_vec and check if the side is in rr_graph_sides     
             for (size_t i = 0; i < arch_side_vec.size(); i++) {
                 if (std::find(rr_graph_sides.begin(), rr_graph_sides.end(), arch_side_vec[i]) == rr_graph_sides.end()) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
