@@ -631,6 +631,17 @@ const std::string& t_rr_graph_storage::node_direction_string(RRNodeId id) const 
     return CONST_DIRECTION_STRING[int_direction];
 }
 
+
+const std::vector<e_side> t_rr_graph_storage::node_sides(RRNodeId id) const {
+    std::vector<e_side> sides;
+    for (const e_side& side : TOTAL_2D_SIDES) {
+        if (is_node_on_specific_side(id, side)) {
+            sides.push_back(side);
+        }
+    }
+    return sides;
+}
+
 const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
     for (const e_side& side : TOTAL_2D_SIDES) {
         if (is_node_on_specific_side(id, side)) {
