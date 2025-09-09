@@ -79,5 +79,5 @@ int get_switchpoint_of_wire(e_rr_type chan_type,
 int evaluate_num_conns_formula(vtr::FormulaParser& formula_parser,
                                vtr::t_formula_data& formula_data,
                                const std::string& num_conns_formula,
-                               int from_wire_count,
-                               int to_wire_count);
+                               size_t from_wire_count,
+                               size_t to_wire_count);

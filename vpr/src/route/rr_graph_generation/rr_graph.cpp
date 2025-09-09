@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 #include "alloc_and_load_rr_indexed_data.h"
+#include "build_scatter_gathers.h"
 #include "get_parallel_segs.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
@@ -607,6 +608,7 @@ static void build_rr_graph(e_graph_type graph_type,
                            const e_base_cost_type base_cost_type,
                            const e_clock_modeling clock_modeling,
                            const std::vector<t_direct_inf>& directs,
+                           const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings,
@@ -711,6 +713,7 @@ void create_rr_graph(e_graph_type graph_type,
                                router_opts.base_cost_type,
                                router_opts.clock_modeling,
                                directs,
+                               device_ctx.arch->scatter_gather_patterns,
                                &det_routing_arch.wire_to_rr_ipin_switch,
                                is_flat,
                                Warnings,
@@ -950,6 +953,7 @@ static void build_rr_graph(e_graph_type graph_type,
                            const e_base_cost_type base_cost_type,
                            const e_clock_modeling clock_modeling,
                            const std::vector<t_direct_inf>& directs,
+                           const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
                            int* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings,
@@ -1191,6 +1195,13 @@ static void build_rr_graph(e_graph_type graph_type,
                                                                   grid, inter_cluster_prog_rr,
                                                                   switchblocks, nodes_per_chan, directionality,
                                                                   switchpoint_rng);
+
+            alloc_and_load_scatter_gather_connections(scatter_gather_patterns,
+                                                      inter_cluster_prog_rr,
+                                                      chan_details_x, chan_details_y,
+                                                      nodes_per_chan);
+
+
         } else {
             if (directionality == BI_DIRECTIONAL) {
                 switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, sb_type, Fs);
