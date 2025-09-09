@@ -54,6 +54,19 @@ bool sb_not_here(const DeviceGrid& grid,
                  e_sb_location sb_location,
                  const t_specified_loc& specified_loc = t_specified_loc());
 
+/**
+ * @brief finds the correct channel (x or y), and the coordinates to index into it based on the
+ * specified tile coordinates (x,y,layer) and the switch block side.
+ *
+ *  @param sb_loc Coordinates of the switch blocks
+ *  @param src_side The side of switch block where the routing channels segment is located at.
+ *  @param chan_details_x x-channel segment details (length, start and end points, ...)
+ *  @param chan_details_y x-channel segment details (length, start and end points, ...)
+ *  @param chan_loc Coordinate of the indexed routing channel segment. To be filled by this function.
+ *  @param chan_type The type of the indexed routing channel segment. To be filled by this function.
+ *
+ * @return returns the type of channel that we are indexing into (ie, CHANX or CHANY) and channel coordinates and type
+ */
 const t_chan_details& index_into_correct_chan(const t_physical_tile_loc& sb_loc,
                                               e_side src_side,
                                               const t_chan_details& chan_details_x,
@@ -61,6 +74,13 @@ const t_chan_details& index_into_correct_chan(const t_physical_tile_loc& sb_loc,
                                               t_physical_tile_loc& chan_loc,
                                               e_rr_type& chan_type);
 
+/**
+ * @brief Check whether a specific switch block location is valid within the device grid
+ * @param loc Coordinates of the location to be evaluated.
+ * @param chan_type Routing channel type (CHANX or CHANY), required since device perimeter does not have certain channels
+ *
+ * @return True if the given location is outside the device grid, false otherwise.
+ */
 bool chan_coords_out_of_bounds(const t_physical_tile_loc& loc, e_rr_type chan_type);
 
 std::pair<t_wire_type_sizes, t_wire_type_sizes> count_wire_type_sizes(const t_chan_details& chan_details_x,
