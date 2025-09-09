@@ -21,7 +21,6 @@ struct t_interdie_wire_inf {
     std::string sg_offset;
     int offset_start;
     int offset_end;
-    int offset_repeat;
     int offset_incr;
     int offset_num;
 };

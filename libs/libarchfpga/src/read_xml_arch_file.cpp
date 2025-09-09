@@ -39,10 +39,10 @@
 #include <cassert>
 #include <cstring>
 #include <map>
-#include <set>
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <unordered_set>
 
 #include "logic_types.h"
 #include "physical_types.h"
@@ -2619,15 +2619,19 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
     // Need to process layout_type_tag children to get block types locations in the grid
     if (has_layer) {
         // TODO ASSERT INTERPOSER
-        std::set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
+        std::unordered_set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
         for (auto layer_child : layout_type_tag.children("layer")) {
+
             // More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
             // Need to process each <layer> tag children to get block types locations for each grid
             int die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
             bool has_global_routing = get_attribute(layer_child, "has_prog_routing", loc_data, ReqOpt::OPTIONAL).as_bool(true);
             arch->layer_global_routing.at(die_number) = has_global_routing;
             VTR_ASSERT(die_number >= 0 && die_number < num_of_avail_layer);
-            VTR_ASSERT_MSG(seen_die_numbers.contains(die_number), "Two different layers with a same die number may have been specified in the Architecture file");
+
+            // If the die number is not actually inserted in the seen_die_numbers set, it means that it's a duplicate
+            auto [_, did_insert_in_set] = seen_die_numbers.insert(die_number);
+            VTR_ASSERT_MSG(did_insert_in_set, "Two different layers with a same die number may have been specified in the Architecture file");
             process_block_type_locs(grid_def, die_number, strings, layer_child, loc_data);
         }
     } else {
@@ -2873,20 +2877,16 @@ static void process_block_type_locs(t_grid_def& grid_def,
             pugiutil::expect_only_attributes(loc_spec_tag, {"dim", "loc"}, loc_data);
 
             std::string interposer_dim = pugiutil::get_attribute(loc_spec_tag, "dim", loc_data).as_string();
-            if (interposer_dim.size() != 1) {
-                // TODO: throw properly
-                assert(false);
+            if (interposer_dim.size() != 1 || !CHAR_INTERPOSER_DIM_MAP.contains(interposer_dim[0])) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposer tag dimension must be a single character of either X, x, Y or y.");
             }
-            if (!CHAR_INTERPOSER_DIM_MAP.contains(interposer_dim[0])) {
-                // TODO: throw properly
-                assert(false);
-            }
+
             interposer.dim = CHAR_INTERPOSER_DIM_MAP.at(interposer_dim[0]);
 
             interposer.loc = pugiutil::get_attribute(loc_spec_tag, "loc", loc_data).as_int();
             if (interposer.loc < 0) {
-                // TODO: throw properly, should also check if it's inside device bounds
-                assert(false);
+                // TODO: should also check if it's inside device bounds
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposer location must be positive.");
             }
 
             pugiutil::expect_only_children(loc_spec_tag, {"interdie_wire"}, loc_data);
@@ -2900,7 +2900,6 @@ static void process_block_type_locs(t_grid_def& grid_def,
                 interdie_wire.sg_offset = pugiutil::get_attribute(interdie_wire_tag, "sg_offset", loc_data).as_string();
                 interdie_wire.offset_start = pugiutil::get_attribute(interdie_wire_tag, "offset_start", loc_data).as_int();
                 interdie_wire.offset_end = pugiutil::get_attribute(interdie_wire_tag, "offset_end", loc_data).as_int();
-                interdie_wire.offset_repeat = pugiutil::get_attribute(interdie_wire_tag, "offset_repeat", loc_data).as_int();
                 interdie_wire.offset_incr = pugiutil::get_attribute(interdie_wire_tag, "offset_incr", loc_data).as_int();
                 interdie_wire.offset_num = pugiutil::get_attribute(interdie_wire_tag, "offset_num", loc_data).as_int();
 
