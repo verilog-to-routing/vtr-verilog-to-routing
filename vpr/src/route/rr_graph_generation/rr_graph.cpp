@@ -193,6 +193,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_track_to_pin_lookup& track_to_pin_lookup_x,
                                                                   const t_track_to_pin_lookup& track_to_pin_lookup_y,
                                                                   const t_pin_to_track_lookup& opin_to_track_map,
+                                                                  const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
                                                                   const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                                                                   t_sb_connection_map* sb_conn_map,
                                                                   const DeviceGrid& grid,
@@ -489,9 +490,9 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
  *  @param chan_details_x channel-x details (length, start and end points, ...)
  */
 static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
-                                              const int layer,
                                               const int x_coord,
                                               const int y_coord,
+                                              const std::vector<t_bottleneck_link>& interdie_3d_links,
                                               const int const_index_offset,
                                               const t_chan_width& nodes_per_chan,
                                               const t_chan_details& chan_details_x);
@@ -1323,6 +1324,7 @@ static void build_rr_graph(e_graph_type graph_type,
         chan_details_x, chan_details_y,
         track_to_pin_lookup_x, track_to_pin_lookup_y,
         opin_to_track_map,
+        interdie_3d_links,
         switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
         Fc_out, Fc_xofs, Fc_yofs,
         nodes_per_chan,
@@ -1953,6 +1955,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_track_to_pin_lookup& track_to_pin_lookup_x,
                                                                   const t_track_to_pin_lookup& track_to_pin_lookup_y,
                                                                   const t_pin_to_track_lookup& opin_to_track_map,
+                                                                  const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
                                                                   const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                                                                   t_sb_connection_map* sb_conn_map,
                                                                   const DeviceGrid& grid,
@@ -2085,19 +2088,20 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
     for (size_t i = 0; i < grid.width() - 1; ++i) {
         for (size_t j = 0; j < grid.height() - 1; ++j) {
+
+            // In multi-die FPGAs with track-to-track connections between layers, we need to load CHANZ nodes
+            // These extra nodes can be driven from many tracks in the source layer and can drive multiple tracks in the destination layer,
+            // since these die-crossing connections have more delays.
+            if (grid.get_num_layers() > 1) {
+                build_inter_die_custom_sb_rr_chan(rr_graph_builder, i, j, interdie_3d_links[i][j],
+                                                  CHANX_COST_INDEX_START, chan_width, chan_details_x);
+            }
+
             for (int layer = 0; layer < (int)grid.get_num_layers(); ++layer) {
                 const auto& device_ctx = g_vpr_ctx.device();
                 // Skip the current die if architecture file specifies that it doesn't require inter-cluster programmable resource routing
                 if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
                     continue;
-                }
-
-                // In multi-die FPGAs with track-to-track connections between layers, we need to load CHANZ nodes
-                // These extra nodes can be driven from many tracks in the source layer and can drive multiple tracks in the destination layer,
-                // since these die-crossing connections have more delays.
-                if (grid.get_num_layers() > 1) {
-                    build_inter_die_custom_sb_rr_chan(rr_graph_builder, layer, i, j, CHANX_COST_INDEX_START, chan_width,
-                                                      chan_details_x);
                 }
 
                 if (i > 0) {
@@ -3117,14 +3121,15 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
 }
 
 static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
-                                              const int layer,
                                               const int x_coord,
                                               const int y_coord,
+                                              const std::vector<t_bottleneck_link>& interdie_3d_links,
                                               const int const_index_offset,
                                               const t_chan_width& nodes_per_chan,
                                               const t_chan_details& chan_details_x) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const t_chan_seg_details* seg_details = chan_details_x[x_coord][y_coord].data();
+    const size_t num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     // 3D connections within the switch blocks use some CHANZ nodes to allow a single 3D connection to be driven
     // by multiple tracks in the source layer, and drives multiple tracks in the destination layer.
@@ -3142,14 +3147,19 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
     // Go through allocated nodes until no nodes are found within the RRGraph builder
     for (int track_num = 0; /*no condition*/; track_num++) {
         // Try to find a node with the current track_num
-        RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, e_rr_type::CHANZ, track_num);
+
+        RRNodeId node = rr_graph_builder.node_lookup().find_node(0, x_coord, y_coord, e_rr_type::CHANZ, track_num);
+        for (size_t layer = 1; layer < num_layers; layer++) {
+            VTR_ASSERT(node == rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, e_rr_type::CHANZ, track_num));
+        }
 
         // If the track can't be found, it means we have already processed all tracks
         if (!node.is_valid()) {
+            VTR_ASSERT(interdie_3d_links.size() == (size_t)track_num);
             break;
         }
 
-        rr_graph_builder.set_node_layer(node, layer);
+        rr_graph_builder.set_node_layer(node, 0);
         rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
         // TODO: the index doesn't make any sense. We need to an RRIndexedDataId for CHANZ nodes
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset + seg_details[start_track - 1].index()));
@@ -3160,7 +3170,13 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
 
         rr_graph_builder.set_node_type(node, e_rr_type::CHANZ);
         rr_graph_builder.set_node_track_num(node, track_num);
-        rr_graph_builder.set_node_direction(node, Direction::NONE);
+        if (interdie_3d_links[track_num].scatter_loc.layer_num > interdie_3d_links[track_num].gather_loc.layer_num) {
+            rr_graph_builder.set_node_direction(node, Direction::INC);
+        } else {
+            VTR_ASSERT_SAFE(interdie_3d_links[track_num].scatter_loc.layer_num < interdie_3d_links[track_num].gather_loc.layer_num);
+            rr_graph_builder.set_node_direction(node, Direction::DEC);
+        }
+
     }
 }
 
