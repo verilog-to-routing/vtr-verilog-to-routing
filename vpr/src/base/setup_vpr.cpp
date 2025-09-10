@@ -729,6 +729,7 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->placer_debug_net = Options.placer_debug_net;
 
     PlacerOpts->place_auto_init_t_scale = Options.place_auto_init_t_scale.value();
+    PlacerOpts->anneal_init_t_estimator = Options.place_init_t_estimator.value();
 }
 
 static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts) {

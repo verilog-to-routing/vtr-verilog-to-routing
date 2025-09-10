@@ -136,6 +136,14 @@ class t_annealing_state {
 };
 
 /**
+ * @brief Struct to hold the results of a swap.
+ */
+struct t_swap_result {
+    e_move_result move_result;  ///< The result of the move (e.g. Accept, Reject, etc.)
+    double delta_c;             ///< The change in cost that resulted from the swap.
+};
+
+/**
  * @class PlacementAnnealer
  * @brief Simulated annealing optimizer for minimizing placement cost via block swaps.
  *
@@ -248,9 +256,10 @@ class PlacementAnnealer {
      * cost formulation. Currently, there are three ways to assess move cost,
      * which are stored in the enum type `t_place_algorithm`.
      *
-     * @return Whether the block swap is accepted, rejected or aborted.
+     * @return The result of the swap. Such as whether the block swap is accepted,
+     *         rejected or aborted.
      */
-    e_move_result try_swap_(MoveGenerator& move_generator,
+    t_swap_result try_swap_(MoveGenerator& move_generator,
                             const t_place_algorithm& place_algorithm,
                             bool manual_move_enabled);
 
@@ -267,6 +276,14 @@ class PlacementAnnealer {
 
     /// @brief Find the starting temperature for the annealing loop.
     float estimate_starting_temperature_();
+
+    /// @brief Estimate the equilibrium temperature for the current placement.
+    ///        Used for estimating the starting temperature.
+    float estimate_equilibrium_temp_();
+
+    /// @brief Estimate the starting temperature using the cost variance that
+    ///        results from a set of trial swaps.
+    float estimate_starting_temp_using_cost_variance_();
 
   private:
     const t_placer_opts& placer_opts_;
