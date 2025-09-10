@@ -1361,8 +1361,6 @@ struct t_router_opts {
     bool flat_routing;
     bool has_choke_point;
 
-    int custom_3d_sb_fanin_fanout = 1;
-
     bool with_timing_analysis;
 
     /// Whether to verify the switch IDs in the route file with the RR Graph.
