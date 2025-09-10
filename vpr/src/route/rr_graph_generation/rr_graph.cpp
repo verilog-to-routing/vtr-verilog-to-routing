@@ -1222,16 +1222,18 @@ static void build_rr_graph(e_graph_type graph_type,
     }
     // END SB LOOKUP
 
+    vtr::NdMatrix<std::vector<t_bottleneck_link>, 2> interdie_3d_links;
     const std::vector<t_bottleneck_link> bottleneck_links = alloc_and_load_scatter_gather_connections(scatter_gather_patterns,
                                                                                                       inter_cluster_prog_rr,
                                                                                                       chan_details_x, chan_details_y,
-                                                                                                      nodes_per_chan);
+                                                                                                      nodes_per_chan,
+                                                                                                      interdie_3d_links);
 
     // Check whether RR graph need to allocate new nodes for 3D connections.
     // To avoid wasting memory, the data structures are only allocated if we have more than one die in device grid.
     if (grid.get_num_layers() > 1) {
         // Allocate new nodes in each switchblocks
-        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, bottleneck_links, &num_rr_nodes);
+        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, interdie_3d_links, &num_rr_nodes);
         device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
     }
 
@@ -2090,12 +2092,10 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                     continue;
                 }
 
-                // In multi-die FPGAs with track-to-track connections between layers, we need to load newly added length-0 CHANX nodes
+                // In multi-die FPGAs with track-to-track connections between layers, we need to load CHANZ nodes
                 // These extra nodes can be driven from many tracks in the source layer and can drive multiple tracks in the destination layer,
                 // since these die-crossing connections have more delays.
-                if (grid.get_num_layers() > 1 && sb_conn_map != nullptr) {
-                    //custom switch block defined in the architecture
-                    VTR_ASSERT(sblock_pattern.empty() && switch_block_conn.empty());
+                if (grid.get_num_layers() > 1) {
                     build_inter_die_custom_sb_rr_chan(rr_graph_builder, layer, i, j, CHANX_COST_INDEX_START, chan_width,
                                                       chan_details_x);
                 }

@@ -29,4 +29,5 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const std::vector<bool>& inter_cluster_rr,
                                                                          const t_chan_details& chan_details_x,
                                                                          const t_chan_details& chan_details_y,
-                                                                         const t_chan_width& nodes_per_chan);
+                                                                         const t_chan_width& nodes_per_chan,
+                                                                         vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links);

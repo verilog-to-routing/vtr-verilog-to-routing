@@ -324,7 +324,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 }
 
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const std::vector<t_bottleneck_link>& bottleneck_links,
+                                              const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
                                               int* index) {
     // In case of multi-die FPGAs, we add extra nodes of type CHANZ to
     // support inter-die communication coming from switch blocks (connection between two tracks in different layers)
@@ -332,36 +332,27 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     // 1) type = CHANZ
     // 2) xhigh == xlow, yhigh == ylow
     // 3) ptc = [0:number_of_connection-1]
-    // 4) direction = NONE
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
-    vtr::NdMatrix<int, 2> chanz_nodes_per_loc{{grid.width(), grid.height()}, 0};
-
-    for (const t_bottleneck_link& bottleneck_link : bottleneck_links) {
-        const t_physical_tile_loc& src_loc = bottleneck_link.gather_loc;
-        const t_physical_tile_loc& dst_loc = bottleneck_link.scatter_loc;
-
-        if (src_loc.x == dst_loc.x && src_loc.y == dst_loc.y) {
-            VTR_ASSERT_SAFE(src_loc.layer_num != dst_loc.layer_num);
-            chanz_nodes_per_loc[src_loc.x][src_loc.y]++;
-        }
-    }
-
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
-            const int num_chanz_nodes = chanz_nodes_per_loc[x][y];
+            const int num_chanz_nodes = interdie_3d_links[x][y].size();
 
             // reserve extra nodes for inter-die track-to-track connection
             for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
                 rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANZ, num_chanz_nodes);
+            }
 
-                for (int track_num = 0; track_num < num_chanz_nodes; track_num++) {
+            for (int track_num = 0; track_num < num_chanz_nodes; track_num++) {
+                for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
                     RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANZ, track_num);
                     if (!inode) {
                         inode = RRNodeId(*index);
-                        ++(*index);
                         rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANZ, track_num);
+                        if (layer == 0) {
+                            ++(*index);
+                        }
                     }
                 }
             }

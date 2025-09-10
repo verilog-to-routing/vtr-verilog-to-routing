@@ -39,7 +39,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
  * @param index Pointer to the global RR node index counter; incremented as new RR nodes are assigned.
  */
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const std::vector<t_bottleneck_link>& bottleneck_links,
+                                              const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
                                               int* index);
 
 /**

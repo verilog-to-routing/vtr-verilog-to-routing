@@ -104,7 +104,8 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const std::vector<bool>& inter_cluster_rr,
                                                                          const t_chan_details& chan_details_x,
                                                                          const t_chan_details& chan_details_y,
-                                                                         const t_chan_width& nodes_per_chan) {
+                                                                         const t_chan_width& nodes_per_chan,
+                                                                         vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
     std::vector<t_chan_loc> gather_channels;
@@ -114,6 +115,11 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
     vtr::t_formula_data formula_data;
 
     std::vector<t_bottleneck_link> bottleneck_links;
+
+    interdie_3d_links.clear();
+    if (grid.get_num_layers() > 1) {
+        interdie_3d_links.resize({grid.width(), grid.height()});
+    }
 
     const auto [wire_type_sizes_x, wire_type_sizes_y] = count_wire_type_sizes(chan_details_x, chan_details_y, nodes_per_chan);
 
@@ -178,6 +184,13 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     continue;
                 }
 
+                const bool is_3d_link = (gather_loc.layer_num != scatter_loc.layer_num);
+                if (is_3d_link) {
+                    interdie_3d_links[gather_loc.x][gather_loc.y].reserve(interdie_3d_links[gather_loc.x][gather_loc.y].size() + sg_loc_info.num);
+                } else {
+                    bottleneck_links.reserve(bottleneck_links.size() + sg_loc_info.num);
+                }
+
                 for (int i_bottleneck = 0, i_s = 0, i_g = 0; i_bottleneck < sg_loc_info.num; i_bottleneck++) {
 
                     t_bottleneck_link bottleneck_link;
@@ -196,7 +209,12 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                         i_s = (i_s + 1) % bottleneck_fanout;
                     }
 
-                    bottleneck_links.push_back(std::move(bottleneck_link));
+                    if (is_3d_link) {
+                        interdie_3d_links[gather_loc.x][gather_loc.y].push_back(std::move(bottleneck_link));
+                    } else {
+                        bottleneck_links.push_back(std::move(bottleneck_link));
+                    }
+
                 }
 
             }
