@@ -353,7 +353,7 @@ bool chan_coords_out_of_bounds(const t_physical_tile_loc& loc, e_rr_type chan_ty
     const int grid_layers = grid.get_num_layers();
 
     // the layer that channel is located at must be legal regardless of chan_type
-    if (loc.layer_num < 0 || loc.layer_num > grid_layers) {
+    if (loc.layer_num < 0 || loc.layer_num >= grid_layers) {
         return true;
     }
 

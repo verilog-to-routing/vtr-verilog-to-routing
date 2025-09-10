@@ -1195,13 +1195,6 @@ static void build_rr_graph(e_graph_type graph_type,
                                                                   grid, inter_cluster_prog_rr,
                                                                   switchblocks, nodes_per_chan, directionality,
                                                                   switchpoint_rng);
-
-            alloc_and_load_scatter_gather_connections(scatter_gather_patterns,
-                                                      inter_cluster_prog_rr,
-                                                      chan_details_x, chan_details_y,
-                                                      nodes_per_chan);
-
-
         } else {
             if (directionality == BI_DIRECTIONAL) {
                 switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, sb_type, Fs);
@@ -1227,17 +1220,18 @@ static void build_rr_graph(e_graph_type graph_type,
             }
         }
     }
-
     // END SB LOOKUP
 
-    // Check whether RR graph need to allocate new nodes for 3D custom switch blocks.
-    // To avoid wasting memory, the data structures are only allocated if a custom switch block
-    // is described in the architecture file, and we have more than one die in device grid.
-    if (grid.get_num_layers() > 1 && sb_type == CUSTOM) {
-        // Keep how many nodes each switchblock requires for each x,y location
-        vtr::NdMatrix<int, 2> extra_nodes_per_switchblock = get_number_track_to_track_inter_die_conn(sb_conn_map, custom_3d_sb_fanin_fanout, device_ctx.rr_graph_builder);
+    const std::vector<t_bottleneck_link> bottleneck_links = alloc_and_load_scatter_gather_connections(scatter_gather_patterns,
+                                                                                                      inter_cluster_prog_rr,
+                                                                                                      chan_details_x, chan_details_y,
+                                                                                                      nodes_per_chan);
+
+    // Check whether RR graph need to allocate new nodes for 3D connections.
+    // To avoid wasting memory, the data structures are only allocated if we have more than one die in device grid.
+    if (grid.get_num_layers() > 1) {
         // Allocate new nodes in each switchblocks
-        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, grid, extra_nodes_per_switchblock, &num_rr_nodes);
+        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, bottleneck_links, &num_rr_nodes);
         device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
     }
 

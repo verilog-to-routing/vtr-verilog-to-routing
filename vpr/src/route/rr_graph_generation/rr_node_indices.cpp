@@ -1,6 +1,7 @@
 
 #include "rr_node_indices.h"
 
+#include "build_scatter_gathers.h"
 #include "describe_rr_node.h"
 #include "globals.h"
 #include "physical_types.h"
@@ -323,8 +324,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 }
 
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const DeviceGrid& grid,
-                                              const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
+                                              const std::vector<t_bottleneck_link>& bottleneck_links,
                                               int* index) {
     // In case of multi-die FPGAs, we add extra nodes of type CHANZ to
     // support inter-die communication coming from switch blocks (connection between two tracks in different layers)
@@ -333,32 +333,35 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     // 2) xhigh == xlow, yhigh == ylow
     // 3) ptc = [0:number_of_connection-1]
     // 4) direction = NONE
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
 
-    for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
-        // Skip the current die if architecture file specifies that it doesn't have global resource routing
-        if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
-            continue;
+    vtr::NdMatrix<int, 2> chanz_nodes_per_loc{{grid.width(), grid.height()}, 0};
+
+    for (const t_bottleneck_link& bottleneck_link : bottleneck_links) {
+        const t_physical_tile_loc& src_loc = bottleneck_link.gather_loc;
+        const t_physical_tile_loc& dst_loc = bottleneck_link.scatter_loc;
+
+        if (src_loc.x == dst_loc.x && src_loc.y == dst_loc.y) {
+            VTR_ASSERT_SAFE(src_loc.layer_num != dst_loc.layer_num);
+            chanz_nodes_per_loc[src_loc.x][src_loc.y]++;
         }
+    }
 
-        for (size_t y = 0; y < grid.height() - 1; ++y) {
-            for (size_t x = 1; x < grid.width() - 1; ++x) {
-                // how many track-to-track connection go from current layer to other layers
-                int conn_count = extra_nodes_per_switchblock[x][y];
+    for (size_t x = 0; x < grid.width(); x++) {
+        for (size_t y = 0; y < grid.height(); y++) {
+            const int num_chanz_nodes = chanz_nodes_per_loc[x][y];
 
-                // skip if no connection is required
-                if (conn_count == 0) {
-                    continue;
-                }
+            // reserve extra nodes for inter-die track-to-track connection
+            for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANZ, num_chanz_nodes);
 
-                // reserve extra nodes for inter-die track-to-track connection
-                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANZ, conn_count);
-                for (int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++) {
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANZ, rr_node_offset);
+                for (int track_num = 0; track_num < num_chanz_nodes; track_num++) {
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANZ, track_num);
                     if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANZ, rr_node_offset);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANZ, track_num);
                     }
                 }
             }

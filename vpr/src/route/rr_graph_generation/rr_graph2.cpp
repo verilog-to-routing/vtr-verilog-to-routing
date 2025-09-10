@@ -132,42 +132,6 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  t_rr_edge_info_set& rr_edges_to_create,
                                  t_rr_edge_info_set& des_3d_rr_edges_to_create);
 
-/**
- * @brief checks if a specific switch block edge is crossing any layer to create 3D custom switch blocks
- *
- *  @param src_side switch block edge source side
- *  @param dest_side switch block edge destination side
- *
- * @return true if the connection going to another layer, false otherwise.
- */
-static bool is_sb_conn_layer_crossing(e_side src_side, e_side dest_side);
-
-/**
- * @brief finds corresponding RR nodes for a 3D SB edge and fill 3D custom switch block information (offset to correct extra CHANX nodes, source tracks, ..)
- *
- *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
- *  @param x x-coordinate of both src and dest wires
- *  @param y y-coordinate of both src and dest wires
- *  @param from_wire from wire index within channel width
- *  @param from_wire_layer from wire layer-coordinate
- *  @param from_wire_type from wire type (CHANX/CHANY)
- *  @param to_wire to wire index within channel width
- *  @param to_wire_layer to wire layer-coordinate
- *  @param to_wire_type to wire type (CHANX/CHANY)
- *  @param curr_switchblocks_offset number of extra nodes that has already been added to the current switch block
- *
- * @ returns whether both source track RR node and destination RR node exist
- */
-static bool check_3d_SB_RRnodes(RRGraphBuilder& rr_graph_builder,
-                                int x,
-                                int y,
-                                int from_wire,
-                                int from_wire_layer,
-                                e_rr_type from_wire_type,
-                                int to_wire,
-                                int to_wire_layer,
-                                e_rr_type to_wire_type);
-
 static int vpr_to_phy_track(const int itrack,
                             const int chan_num,
                             const int seg_num,
@@ -1036,84 +1000,6 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
     }
 }
 
-static bool is_sb_conn_layer_crossing(e_side src_side, e_side dest_side) {
-    if (src_side < NUM_2D_SIDES && dest_side < NUM_2D_SIDES) {
-        return false;
-    }
-
-    if (src_side == dest_side) {
-        return false;
-    }
-
-    return true;
-}
-
-static bool check_3d_SB_RRnodes(RRGraphBuilder& rr_graph_builder,
-                                int x,
-                                int y,
-                                int from_wire,
-                                int from_wire_layer,
-                                e_rr_type from_wire_type,
-                                int to_wire,
-                                int to_wire_layer,
-                                e_rr_type to_wire_type) {
-    RRNodeId from_inode = rr_graph_builder.node_lookup().find_node(from_wire_layer, x, y, from_wire_type, from_wire);
-    RRNodeId to_inode = rr_graph_builder.node_lookup().find_node(to_wire_layer, x, y, to_wire_type, to_wire);
-
-    if (from_inode && to_inode) {
-        return true;
-    }
-
-    return false;
-}
-
-vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_map* sb_conn_map,
-                                                               const int custom_3d_sb_fanin_fanout,
-                                                               RRGraphBuilder& rr_graph_builder) {
-    const auto& grid_ctx = g_vpr_ctx.device().grid;
-    vtr::NdMatrix<int, 2> extra_nodes_per_switchblocks{{grid_ctx.width(), grid_ctx.height()}, 0};
-
-    for (size_t y = 0; y < grid_ctx.height(); y++) {
-        for (size_t x = 0; x < grid_ctx.width(); x++) {
-            for (int layer = 0; layer < (int)grid_ctx.get_num_layers(); layer++) {
-
-                int num_of_3d_conn = 0;
-                for (e_side from_side : TOTAL_3D_SIDES) {
-                    for (e_side to_side : TOTAL_3D_SIDES) {
-                        if (!is_sb_conn_layer_crossing(from_side, to_side)) { // this connection is not crossing any layer
-                            continue;
-                        }
-
-                        SwitchblockLookupKey sb_coord(x, y, layer, from_side, to_side);
-                        if (sb_conn_map->count(sb_coord) > 0) {
-                            std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
-                            for (const t_switchblock_edge& iconn : conn_vector) {
-                                // check if both from_node and to_node exists in the rr-graph
-                                // CHANY -> CHANX connection
-                                if (check_3d_SB_RRnodes(rr_graph_builder, x, y, iconn.from_wire,
-                                                        iconn.from_wire_layer, e_rr_type::CHANY,
-                                                        iconn.to_wire, iconn.to_wire_layer,
-                                                        e_rr_type::CHANX)) {
-                                    num_of_3d_conn++;
-                                }
-                                // CHANX -> CHANY connection
-                                if (check_3d_SB_RRnodes(rr_graph_builder, x, y, iconn.from_wire,
-                                                        iconn.from_wire_layer, e_rr_type::CHANX,
-                                                        iconn.to_wire, iconn.to_wire_layer,
-                                                        e_rr_type::CHANY)) {
-                                    num_of_3d_conn++;
-                                }
-                            }
-                        }
-                    }
-                }
-                extra_nodes_per_switchblocks[x][y] += ((num_of_3d_conn + custom_3d_sb_fanin_fanout - 1) / custom_3d_sb_fanin_fanout);
-            }
-        }
-    }
-    return extra_nodes_per_switchblocks;
-}
-
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       int layer,
                       int seg,
@@ -1124,11 +1010,11 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       t_rr_edge_info_set& rr_edges_to_create,
                       const t_track_to_pin_lookup& track_to_pin_lookup,
                       const t_chan_seg_details* seg_details,
-                      enum e_rr_type chan_type,
+                      e_rr_type chan_type,
                       int chan_length,
                       int wire_to_ipin_switch,
                       int wire_to_pin_between_dice_switch,
-                      enum e_directionality directionality) {
+                      e_directionality directionality) {
     /*
      * Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent
      * blocks along the wire's length

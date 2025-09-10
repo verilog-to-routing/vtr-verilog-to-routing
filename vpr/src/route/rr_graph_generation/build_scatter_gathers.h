@@ -19,6 +19,8 @@ struct t_sg_candidate {
 };
 
 struct t_bottleneck_link {
+    t_physical_tile_loc gather_loc;
+    t_physical_tile_loc scatter_loc;
     std::vector<t_sg_candidate> gather_fanin_connections;
     std::vector<t_sg_candidate> scatter_fanout_connections;
 };

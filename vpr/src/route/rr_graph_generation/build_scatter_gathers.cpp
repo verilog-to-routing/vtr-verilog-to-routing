@@ -140,7 +140,6 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 scatter_loc.y = gather_loc.y + sg_link.y_offset;
                 scatter_loc.layer_num = gather_loc.layer_num + sg_link.z_offset;
 
-
                 index_to_correct_channels(sg_pattern.gather_pattern, gather_loc, chan_details_x, chan_details_y, gather_channels);
                 index_to_correct_channels(sg_pattern.scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
 
@@ -172,18 +171,18 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                    gather_wire_candidates.size(),
                                                                    scatter_wire_candidates.size());
 
+                bottleneck_fanin = std::min<int>(bottleneck_fanin, gather_wire_candidates.size());
+                bottleneck_fanout = std::min<int>(bottleneck_fanout, scatter_wire_candidates.size());
 
-                if (bottleneck_fanin > gather_wire_candidates.size()) {
-                    bottleneck_fanin = gather_wire_candidates.size();
+                if (bottleneck_fanin == 0 || bottleneck_fanout == 0) {
+                    continue;
                 }
-                if (bottleneck_fanout > scatter_wire_candidates.size()) {
-                    bottleneck_fanout = scatter_wire_candidates.size();
-                }
-
 
                 for (int i_bottleneck = 0, i_s = 0, i_g = 0; i_bottleneck < sg_loc_info.num; i_bottleneck++) {
 
                     t_bottleneck_link bottleneck_link;
+                    bottleneck_link.gather_loc = gather_loc;
+                    bottleneck_link.scatter_loc = scatter_loc;
                     bottleneck_link.gather_fanin_connections.reserve(bottleneck_fanin);
                     bottleneck_link.scatter_fanout_connections.reserve(bottleneck_fanout);
 
