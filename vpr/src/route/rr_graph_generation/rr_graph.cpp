@@ -3102,6 +3102,8 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
 static void add_interdie_3d_edges(RRGraphBuilder& rr_graph_builder,
                                   int x_coord,
                                   int y_coord,
+                                  const t_chan_details& chan_details_x,
+                                  const t_chan_details& chan_details_y,
                                   const std::vector<t_bottleneck_link>& interdie_3d_links,
                                   t_rr_edge_info_set& interdie_3d_rr_edges_to_create) {
 
@@ -3118,10 +3120,19 @@ static void add_interdie_3d_edges(RRGraphBuilder& rr_graph_builder,
         for (const t_sg_candidate& gather_wire : link.gather_fanin_connections) {
             const t_physical_tile_loc& chan_loc = gather_wire.chan_loc.location;
             e_rr_type chan_type = gather_wire.chan_loc.chan_type;
-
             RRNodeId gather_node = node_lookup.find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, chan_type, gather_wire.wire_switchpoint.wire);
 
+            interdie_3d_rr_edges_to_create.emplace_back(gather_node, chanz_node, 1, false);
+        }
 
+        for (const t_sg_candidate& scatter_wire : link.scatter_fanout_connections) {
+            const t_physical_tile_loc& chan_loc = scatter_wire.chan_loc.location;
+            e_rr_type chan_type = scatter_wire.chan_loc.chan_type;
+            const t_chan_details& chan_details = (chan_type == e_rr_type::CHANX) ? chan_details_x : chan_details_y;
+            RRNodeId scatter_node = node_lookup.find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, chan_type, scatter_wire.wire_switchpoint.wire);
+
+            int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
+            interdie_3d_rr_edges_to_create.emplace_back(chanz_node, scatter_node, switch_index, false);
         }
     }
 }
