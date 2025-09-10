@@ -220,6 +220,9 @@ class t_rr_graph_storage {
             id, side);
     }
 
+    /** @brief Get the sides where the node locates on. */
+    const std::vector<e_side> node_sides(RRNodeId id) const;
+
     /* FIXME: This function should be DEPRECATED!
      * Developers can easily use the following codes with more flexibility
      *
