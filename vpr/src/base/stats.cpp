@@ -34,23 +34,6 @@ static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::Matrix<int>& chany_occ);
 
 /**
- * @brief Writes channel occupancy data to a file.
- *
- * Each row contains:
- *   - (x, y) coordinate
- *   - Occupancy count
- *   - Occupancy percentage (occupancy / capacity)
- *   - Channel capacity
- *
- * @param filename      Output file path.
- * @param occupancy     Matrix of occupancy counts.
- * @param capacity_list List of channel capacities (per y for chanx, per x for chany).
- */
-static void write_channel_occupancy_table(const std::string_view filename,
-                                          const vtr::Matrix<int>& occupancy,
-                                          const std::vector<int>& capacity_list);
-
-/**
  * @brief Figures out maximum, minimum and average number of bends
  *        and net length in the routing.
  */
@@ -172,7 +155,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int num_clb_opins_reserved = 0;
     int num_absorbed_nets = 0;
 
-    for (auto net_id : net_list.nets()) {
+    for (ParentNetId net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             int bends, length, segments;
             bool is_absorbed;
@@ -280,9 +263,9 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
     VTR_LOG("\n");
 }
 
-static void write_channel_occupancy_table(const std::string_view filename,
-                                          const vtr::Matrix<int>& occupancy,
-                                          const std::vector<int>& capacity_list) {
+void write_channel_occupancy_table(const std::string_view filename,
+                                   const vtr::Matrix<int>& occupancy,
+                                   const std::vector<int>& capacity_list) {
     constexpr int w_coord = 6;
     constexpr int w_value = 12;
     constexpr int w_percent = 12;
