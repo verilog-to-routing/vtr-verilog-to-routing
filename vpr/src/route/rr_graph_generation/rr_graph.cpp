@@ -492,13 +492,13 @@ static void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
                                        const t_chan_width& nodes_per_chan,
                                        const t_chan_details& chan_details_x);
 
-static void add_interdie_3d_edges(RRGraphBuilder& rr_graph_builder,
-                                  int x_coord,
-                                  int y_coord,
-                                  const t_chan_details& chan_details_x,
-                                  const t_chan_details& chan_details_y,
-                                  const std::vector<t_bottleneck_link>& interdie_3d_links,
-                                  t_rr_edge_info_set& interdie_3d_rr_edges_to_create);
+static void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
+                                   int x_coord,
+                                   int y_coord,
+                                   const t_chan_details& chan_details_x,
+                                   const t_chan_details& chan_details_y,
+                                   const std::vector<t_bottleneck_link>& interdie_3d_links,
+                                   t_rr_edge_info_set& interdie_3d_rr_edges_to_create);
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 
@@ -2109,7 +2109,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                   wire_to_pin_between_dice_switch,
                                   directionality);
 
-                    //Create the actual CHAN->CHAN edges
+                    // Create the actual CHAN->CHAN edges
                     uniquify_edges(rr_edges_to_create);
                     alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
                     num_edges += rr_edges_to_create.size();
@@ -2138,9 +2138,9 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
 
             if (grid.get_num_layers() > 1) {
-                add_interdie_3d_edges(rr_graph_builder, i, j,
-                                      chan_details_x, chan_details_y,
-                                      interdie_3d_links[i][j], interdie_3d_rr_edges_to_create);
+                add_inter_die_3d_edges(rr_graph_builder, i, j,
+                                       chan_details_x, chan_details_y,
+                                       interdie_3d_links[i][j], interdie_3d_rr_edges_to_create);
                 uniquify_edges(interdie_3d_rr_edges_to_create);
                 alloc_and_load_edges(rr_graph_builder, interdie_3d_rr_edges_to_create);
                 num_edges += interdie_3d_rr_edges_to_create.size();
@@ -3111,13 +3111,13 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-static void add_interdie_3d_edges(RRGraphBuilder& rr_graph_builder,
-                                  int x_coord,
-                                  int y_coord,
-                                  const t_chan_details& chan_details_x,
-                                  const t_chan_details& chan_details_y,
-                                  const std::vector<t_bottleneck_link>& interdie_3d_links,
-                                  t_rr_edge_info_set& interdie_3d_rr_edges_to_create) {
+static void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
+                                   int x_coord,
+                                   int y_coord,
+                                   const t_chan_details& chan_details_x,
+                                   const t_chan_details& chan_details_y,
+                                   const std::vector<t_bottleneck_link>& interdie_3d_links,
+                                   t_rr_edge_info_set& interdie_3d_rr_edges_to_create) {
 
     const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
     const int num_tracks = interdie_3d_links.size();
