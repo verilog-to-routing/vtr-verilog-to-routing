@@ -35,8 +35,6 @@
  *			the two files are swapped on command line.
  *
  */
-
-#include <cassert>
 #include <cstring>
 #include <map>
 #include <string>
@@ -2619,7 +2617,6 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
     // No layer tag is specified (only one die is specified in the arch file)
     // Need to process layout_type_tag children to get block types locations in the grid
     if (has_layer) {
-        // TODO ASSERT INTERPOSER
         std::unordered_set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
         for (pugi::xml_node layer_child : layout_type_tag.children("layer")) {
 
@@ -2666,7 +2663,7 @@ static void process_block_type_locs(t_grid_def& grid_def,
             if ((interposer_cut.dim == e_interposer_cut_dim::X && interposer_cut.loc >= grid_def.height) || (interposer_cut.dim == e_interposer_cut_dim::Y && interposer_cut.loc >= grid_def.width)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposer cut dimensions are outside of device bounds");
             }
-            
+
             grid_def.layers.at(die_number).interposer_cuts.push_back(interposer_cut);
             continue;
         }
