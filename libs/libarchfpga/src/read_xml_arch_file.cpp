@@ -49,6 +49,7 @@
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
+#include "read_xml_arch_file_interposer.h"
 #include "read_xml_arch_file_vib.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -2620,7 +2621,7 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
     if (has_layer) {
         // TODO ASSERT INTERPOSER
         std::unordered_set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
-        for (auto layer_child : layout_type_tag.children("layer")) {
+        for (pugi::xml_node layer_child : layout_type_tag.children("layer")) {
 
             // More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
             // Need to process each <layer> tag children to get block types locations for each grid
@@ -2651,6 +2652,26 @@ static void process_block_type_locs(t_grid_def& grid_def,
     //Process all the block location specifications
     for (pugi::xml_node loc_spec_tag : layout_block_type_tag.children()) {
         const char* loc_type = loc_spec_tag.name();
+
+        // There are multiple attributes that are shared by every other tag that interposer
+        // tags do not have. For this reason we check if loc_spec_tag is an interposer tag
+        // and switch code paths if it is.
+        if (loc_type == std::string("interposer_cut")) {
+            if (grid_def.grid_type == GridDefType::AUTO) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposers are not currently supported for auto sized devices.");
+            }
+
+            t_interposer_cut_inf interposer_cut = parse_interposer_cut_tag(loc_spec_tag, loc_data);
+            
+            if ((interposer_cut.dim == e_interposer_cut_dim::X && interposer_cut.loc >= grid_def.height) || (interposer_cut.dim == e_interposer_cut_dim::Y && interposer_cut.loc >= grid_def.width)) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposer cut dimensions are outside of device bounds");
+            }
+            
+            grid_def.layers.at(die_number).interposer_cuts.push_back(interposer_cut);
+            continue;
+        }
+
+        // Continue parsing for non-interposer tags
         const char* type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
         int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
         t_metadata_dict meta = process_meta_data(strings, loc_spec_tag, loc_data);
@@ -2872,42 +2893,6 @@ static void process_block_type_locs(t_grid_def& grid_def,
             region.meta = region.owned_meta.get();
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(region));
-        } else if (loc_type == std::string("interposer_cut")) {
-            t_interposer_cut_inf interposer;
-            pugiutil::expect_only_attributes(loc_spec_tag, {"dim", "loc"}, loc_data);
-
-            std::string interposer_dim = pugiutil::get_attribute(loc_spec_tag, "dim", loc_data).as_string();
-            if (interposer_dim.size() != 1 || !CHAR_INTERPOSER_DIM_MAP.contains(interposer_dim[0])) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposer tag dimension must be a single character of either X, x, Y or y.");
-            }
-
-            interposer.dim = CHAR_INTERPOSER_DIM_MAP.at(interposer_dim[0]);
-
-            interposer.loc = pugiutil::get_attribute(loc_spec_tag, "loc", loc_data).as_int();
-            if (interposer.loc < 0) {
-                // TODO: should also check if it's inside device bounds
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposer location must be positive.");
-            }
-
-            pugiutil::expect_only_children(loc_spec_tag, {"interdie_wire"}, loc_data);
-
-            for (pugi::xml_node interdie_wire_tag : loc_spec_tag.children()) {
-                pugiutil::expect_only_attributes(interdie_wire_tag, {"sg", "sg_offset"}, loc_data);
-
-                t_interdie_wire_inf interdie_wire;
-
-                interdie_wire.sg_name = pugiutil::get_attribute(interdie_wire_tag, "sg_name", loc_data).as_string();
-                interdie_wire.sg_offset = pugiutil::get_attribute(interdie_wire_tag, "sg_offset", loc_data).as_string();
-                interdie_wire.offset_start = pugiutil::get_attribute(interdie_wire_tag, "offset_start", loc_data).as_int();
-                interdie_wire.offset_end = pugiutil::get_attribute(interdie_wire_tag, "offset_end", loc_data).as_int();
-                interdie_wire.offset_incr = pugiutil::get_attribute(interdie_wire_tag, "offset_incr", loc_data).as_int();
-                interdie_wire.offset_num = pugiutil::get_attribute(interdie_wire_tag, "offset_num", loc_data).as_int();
-
-                interposer.interdie_wires.push_back(interdie_wire);
-            }
-
-            //TODO: save interposer somewhere (need to add *arch to this function's args)
-
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
                            vtr::string_fmt("Unrecognized grid location specification type '%s'\n", loc_type).c_str());
