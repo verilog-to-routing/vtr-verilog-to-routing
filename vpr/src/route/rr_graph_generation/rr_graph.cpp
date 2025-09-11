@@ -492,6 +492,14 @@ static void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
                                        const t_chan_width& nodes_per_chan,
                                        const t_chan_details& chan_details_x);
 
+static void add_interdie_3d_edges(RRGraphBuilder& rr_graph_builder,
+                                  int x_coord,
+                                  int y_coord,
+                                  const t_chan_details& chan_details_x,
+                                  const t_chan_details& chan_details_y,
+                                  const std::vector<t_bottleneck_link>& interdie_3d_links,
+                                  t_rr_edge_info_set& interdie_3d_rr_edges_to_create);
+
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 
 void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder,
@@ -1218,6 +1226,7 @@ static void build_rr_graph(e_graph_type graph_type,
     vtr::NdMatrix<std::vector<t_bottleneck_link>, 2> interdie_3d_links;
     const std::vector<t_bottleneck_link> bottleneck_links = alloc_and_load_scatter_gather_connections(scatter_gather_patterns,
                                                                                                       inter_cluster_prog_rr,
+                                                                                                      segment_inf,
                                                                                                       chan_details_x, chan_details_y,
                                                                                                       nodes_per_chan,
                                                                                                       interdie_3d_links);
@@ -2129,6 +2138,9 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
 
             if (grid.get_num_layers() > 1) {
+                add_interdie_3d_edges(rr_graph_builder, i, j,
+                                      chan_details_x, chan_details_y,
+                                      interdie_3d_links[i][j], interdie_3d_rr_edges_to_create);
                 uniquify_edges(interdie_3d_rr_edges_to_create);
                 alloc_and_load_edges(rr_graph_builder, interdie_3d_rr_edges_to_create);
                 num_edges += interdie_3d_rr_edges_to_create.size();
@@ -3122,7 +3134,7 @@ static void add_interdie_3d_edges(RRGraphBuilder& rr_graph_builder,
             e_rr_type chan_type = gather_wire.chan_loc.chan_type;
             RRNodeId gather_node = node_lookup.find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, chan_type, gather_wire.wire_switchpoint.wire);
 
-            interdie_3d_rr_edges_to_create.emplace_back(gather_node, chanz_node, 1, false);
+            interdie_3d_rr_edges_to_create.emplace_back(gather_node, chanz_node, link.arch_wire_switch, false);
         }
 
         for (const t_sg_candidate& scatter_wire : link.scatter_fanout_connections) {

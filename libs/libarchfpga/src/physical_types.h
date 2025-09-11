@@ -32,7 +32,6 @@
 #include <unordered_map>
 #include <string>
 #include <map>
-#include <unordered_map>
 #include <limits>
 #include <unordered_set>
 
@@ -1746,14 +1745,14 @@ struct t_segment_inf {
      * specified in the architecture file. If -1, this value was not set in the
      * architecture file and arch_wire_switch should be used for "DEC_DIR" wire segments.
      */
-    short arch_wire_switch_dec = -1;
+    short arch_wire_switch_dec = ARCH_FPGA_UNDEFINED_VAL;
 
     /**
      * @brief Same as arch_opin_switch but used only for decremental tracks if
      * it is specified in the architecture file. If -1, this value was not set in
      * the architecture file and arch_opin_switch should be used for "DEC_DIR" wire segments.
      */
-    short arch_opin_switch_dec = -1;
+    short arch_opin_switch_dec = ARCH_FPGA_UNDEFINED_VAL;
 
     /**
      * @brief Index of the switch type that connects output pins (OPINs) to this
@@ -1761,7 +1760,7 @@ struct t_segment_inf {
      * the switches from the architecture file, not the expanded list of switches
      * that is built at the end of build_rr_graph.
      */
-    short arch_inter_die_switch = -1;
+    short arch_inter_die_switch = ARCH_FPGA_UNDEFINED_VAL;
 
     /**
      * @brief The fraction of logic blocks along its length to which this segment can connect.
@@ -1783,7 +1782,7 @@ struct t_segment_inf {
     ///  The capacitance of a routing track, per unit logic block length.
     float Cmetal;
 
-    enum e_directionality directionality;
+    e_directionality directionality;
 
     /**
      * @brief Defines what axis the segment is parallel to. See e_parallel_axis

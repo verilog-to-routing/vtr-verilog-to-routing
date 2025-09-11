@@ -21,12 +21,14 @@ struct t_sg_candidate {
 struct t_bottleneck_link {
     t_physical_tile_loc gather_loc;
     t_physical_tile_loc scatter_loc;
+    int arch_wire_switch;
     std::vector<t_sg_candidate> gather_fanin_connections;
     std::vector<t_sg_candidate> scatter_fanout_connections;
 };
 
 std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
                                                                          const std::vector<bool>& inter_cluster_rr,
+                                                                         const std::vector<t_segment_inf>& segment_inf,
                                                                          const t_chan_details& chan_details_x,
                                                                          const t_chan_details& chan_details_y,
                                                                          const t_chan_width& nodes_per_chan,

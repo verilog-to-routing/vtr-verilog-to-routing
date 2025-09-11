@@ -243,7 +243,7 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const int max_len,
                                                       const std::vector<t_segment_inf>& segment_inf,
                                                       const bool use_full_seg_groups,
-                                                      const enum e_directionality directionality) {
+                                                      const e_directionality directionality) {
     /* Allocates and loads the seg_details data structure.  Max_len gives the   *
      * maximum length of a segment (dimension of array).  The code below tries  *
      * to:                                                                      *

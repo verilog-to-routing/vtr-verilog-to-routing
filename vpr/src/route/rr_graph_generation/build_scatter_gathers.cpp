@@ -102,6 +102,7 @@ std::vector<t_sg_candidate>
 
 std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
                                                                          const std::vector<bool>& inter_cluster_rr,
+                                                                         const std::vector<t_segment_inf>& segment_inf,
                                                                          const t_chan_details& chan_details_x,
                                                                          const t_chan_details& chan_details_y,
                                                                          const t_chan_width& nodes_per_chan,
@@ -133,13 +134,22 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     continue;
                 }
 
-                auto it = std::ranges::find_if(sg_pattern.sg_links,
-                                               [&](const t_sg_link& link) noexcept {
-                                                   return link.name == sg_loc_info.sg_link_name;
-                                               });
+                auto sg_link_it = std::ranges::find_if(sg_pattern.sg_links,
+                                                       [&](const t_sg_link& link) noexcept {
+                                                           return link.name == sg_loc_info.sg_link_name;
+                                                       });
 
-                VTR_ASSERT_SAFE(it != sg_pattern.sg_links.end());
-                const t_sg_link& sg_link = *it;
+                VTR_ASSERT(sg_link_it != sg_pattern.sg_links.end());
+                const t_sg_link& sg_link = *sg_link_it;
+
+
+                auto seg_it = std::ranges::find_if(segment_inf,
+                    [&](const t_segment_inf& seg) noexcept {
+                        return seg.name == sg_link.seg_type;
+                    });
+
+                VTR_ASSERT(seg_it != segment_inf.end());
+                const t_segment_inf& wire_segment = *seg_it;
 
                 t_physical_tile_loc scatter_loc;
                 scatter_loc.x = gather_loc.x + sg_link.x_offset;
@@ -184,7 +194,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     continue;
                 }
 
-                const bool is_3d_link = (gather_loc.layer_num != scatter_loc.layer_num);
+                const bool is_3d_link = (sg_link.z_offset != 0);
                 if (is_3d_link) {
                     interdie_3d_links[gather_loc.x][gather_loc.y].reserve(interdie_3d_links[gather_loc.x][gather_loc.y].size() + sg_loc_info.num);
                 } else {
@@ -210,8 +220,18 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     }
 
                     if (is_3d_link) {
+                        if (sg_link.z_offset < 0 && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL) {
+                            bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch_dec;
+                        } else {
+                            bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch;
+                        }
                         interdie_3d_links[gather_loc.x][gather_loc.y].push_back(std::move(bottleneck_link));
                     } else {
+                        if ((sg_link.x_offset < 0 || sg_link.y_offset < 0) && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL) {
+                            bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch_dec;
+                        } else {
+                            bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch;
+                        }
                         bottleneck_links.push_back(std::move(bottleneck_link));
                     }
 

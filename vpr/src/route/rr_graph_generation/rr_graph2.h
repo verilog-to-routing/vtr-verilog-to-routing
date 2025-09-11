@@ -15,7 +15,7 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const int max_len,
                                                       const std::vector<t_segment_inf>& segment_inf,
                                                       const bool use_full_seg_groups,
-                                                      const enum e_directionality directionality);
+                                                      const e_directionality directionality);
 
 void alloc_and_load_chan_details(const DeviceGrid& grid,
                                  const t_chan_width& nodes_per_chan,
