@@ -345,15 +345,18 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
             }
 
             for (int track_num = 0; track_num < num_chanz_nodes; track_num++) {
+                bool incremnet_index = false;
                 for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
                     RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANZ, track_num);
                     if (!inode) {
                         inode = RRNodeId(*index);
                         rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANZ, track_num);
-                        if (layer == 0) {
-                            ++(*index);
-                        }
+                        incremnet_index = true;
                     }
+                }
+
+                if (incremnet_index) {
+                    ++(*index);
                 }
             }
         }
