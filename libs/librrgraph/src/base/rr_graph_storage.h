@@ -242,7 +242,7 @@ class t_rr_graph_storage {
     }
 
     /** @brief Find the layer number that RRNodeId is located at.
-     * it is zero if the FPGA only has one die.
+     * It is zero if the FPGA only has one die.
      * The layer number start from the base die (base die: 0, the die above it: 1, etc.)
      */
     short node_layer(RRNodeId id) const{
@@ -903,7 +903,7 @@ class t_rr_graph_storage {
      * Layer number that each RR node is located at
      * Layer number refers to the die that the node belongs to. The layer number of base die is zero and die above it one, etc.
      * This data is also considered as a hot data since it is used in inner loop of router, but since it didn't fit nicely into t_rr_node_data due to alignment issues, we had to store it
-     *in a separate vector.
+     * in a separate vector.
      */
     vtr::vector<RRNodeId, short> node_layer_;
 
