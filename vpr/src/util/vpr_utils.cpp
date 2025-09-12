@@ -1983,12 +1983,11 @@ float get_min_cross_layer_delay() {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     float min_delay = std::numeric_limits<float>::max();
 
-    // TODO: rewrite this function by using CHANZ nodes
-
     for (const RRNodeId driver_node : rr_graph.nodes()) {
         for (size_t edge_id = 0; edge_id < rr_graph.num_edges(driver_node); edge_id++) {
             const RRNodeId sink_node = rr_graph.edge_sink_node(driver_node, edge_id);
-            if (rr_graph.node_layer_low(driver_node) != rr_graph.node_layer_low(sink_node)) {
+
+            if (rr_graph.node_type(sink_node) == e_rr_type::CHANZ) {
                 int i_switch = rr_graph.edge_switch(driver_node, edge_id);
                 float edge_delay = rr_graph.rr_switch_inf(RRSwitchId(i_switch)).Tdel;
                 min_delay = std::min(min_delay, edge_delay);
