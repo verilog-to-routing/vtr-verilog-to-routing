@@ -333,6 +333,9 @@ struct t_draw_state {
     void reset_block_color(ClusterBlockId blk);
     void reset_block_colors();
 
+    ///@brief Refresh graphics resources' size after update to cluster blocks size
+    void refresh_graphic_resources_after_cluster_change();
+
     std::vector<std::pair<t_pl_loc, ezgl::color>> colored_locations;
 
     /// @brief Stores UI checkbox struct for passing into the callback functions
