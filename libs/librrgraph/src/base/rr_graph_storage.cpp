@@ -637,12 +637,16 @@ const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
             return TOTAL_2D_SIDE_STRINGS[side];
         }
     }
-    /* Not found, return an invalid string*/
+    // Not found, return an invalid string
     return TOTAL_2D_SIDE_STRINGS[NUM_2D_SIDES];
 }
 
-void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer) {
-    node_layer_[id] = layer;
+void t_rr_graph_storage::set_node_layer_low(RRNodeId id, short layer) {
+    node_layer_low_[id] = layer;
+}
+
+void t_rr_graph_storage::set_node_layer_high(RRNodeId id, short layer) {
+    node_layer_high_[id] = layer;
 }
 
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {
@@ -860,7 +864,8 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(node_ptc_),
         vtr::make_const_array_view_id(node_first_edge_),
         vtr::make_const_array_view_id(node_fan_in_),
-        vtr::make_const_array_view_id(node_layer_),
+        vtr::make_const_array_view_id(node_layer_low_),
+        vtr::make_const_array_view_id(node_layer_high_),
         node_name_,
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),

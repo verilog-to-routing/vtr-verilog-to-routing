@@ -422,8 +422,10 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
-    int from_layer_num = rr_graph.node_layer(from_node);
-    int to_layer_num = rr_graph.node_layer(to_node);
+    // TODO: handle CHANZ nodes that span multiple layers
+    int from_layer_num = rr_graph.node_layer_low(from_node);
+    // to_node is a SINK, so its layer_low == layer_high
+    int to_layer_num = rr_graph.node_layer_low(to_node);
     auto [delta_x, delta_y] = util::get_xy_deltas(from_node, to_node);
     delta_x = abs(delta_x);
     delta_y = abs(delta_y);
@@ -444,7 +446,7 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
 
         auto from_tile_index = std::distance(&device_ctx.physical_tile_types[0], from_tile_type);
 
-        auto from_ptc = rr_graph.node_ptc_num(from_node);
+        int from_ptc = rr_graph.node_ptc_num(from_node);
 
         std::tie(expected_delay_cost, expected_cong_cost) = util::get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
                                                                                          delta_x,
@@ -469,7 +471,7 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
     } else if (from_type == e_rr_type::CHANX || from_type == e_rr_type::CHANY) {
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
-        auto from_cost_index = rr_graph.node_cost_index(from_node);
+        RRIndexedDataId from_cost_index = rr_graph.node_cost_index(from_node);
         int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
 
         VTR_ASSERT(from_seg_index >= 0);

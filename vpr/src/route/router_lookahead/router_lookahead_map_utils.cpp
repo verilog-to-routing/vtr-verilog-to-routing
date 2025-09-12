@@ -756,7 +756,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                 continue;
             }
             // TODO: Temporary - After testing benchmarks this can be deleted
-            VTR_ASSERT(rr_graph.node_layer(start_node) == (int)from_layer_num);
+            VTR_ASSERT(rr_graph.node_layer_low(start_node) == (int)from_layer_num);
 
             sample_nodes.emplace_back(start_node);
         }
@@ -771,7 +771,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
         for (RRNodeId rr_node : rr_graph.nodes()) {
             e_rr_type rr_type = rr_graph.node_type(rr_node);
             if (rr_type != chan_type) continue;
-            if (rr_graph.node_layer(rr_node) != (int)from_layer_num) continue;
+            if (rr_graph.node_layer_low(rr_node) != (int)from_layer_num) continue;
 
             RRIndexedDataId cost_index = rr_graph.node_cost_index(rr_node);
             VTR_ASSERT(cost_index != RRIndexedDataId(UNDEFINED));
@@ -966,7 +966,7 @@ static void dijkstra_flood_to_wires(int itile,
     root.node = node;
 
     int ptc = rr_graph.node_ptc_num(node);
-    int root_layer_num = rr_graph.node_layer(node);
+    int root_layer_num = rr_graph.node_layer_low(node);
 
     /*
      * Perform Dijkstra from the SOURCE/OPIN of interest, stopping at the first
@@ -994,7 +994,7 @@ static void dijkstra_flood_to_wires(int itile,
         pq.pop();
 
         e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
-        int curr_layer_num = rr_graph.node_layer(curr.node);
+        int curr_layer_num = rr_graph.node_layer_low(curr.node);
         if (curr_rr_type == e_rr_type::CHANX || curr_rr_type == e_rr_type::CHANY || curr_rr_type == e_rr_type::SINK) {
             //We stop expansion at any CHANX/CHANY/SINK
             int seg_index;
@@ -1075,7 +1075,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
     root.node = node;
     root.level = 0;
 
-    int root_layer = rr_graph.node_layer(node);
+    int root_layer = rr_graph.node_layer_low(node);
 
     /*
      * Perform Djikstra from the CHAN of interest, stopping at the the first
@@ -1105,7 +1105,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
         if (curr_rr_type == e_rr_type::IPIN) {
             int node_x = rr_graph.node_xlow(curr.node);
             int node_y = rr_graph.node_ylow(curr.node);
-            int node_layer = rr_graph.node_layer(curr.node);
+            int node_layer = rr_graph.node_layer_low(curr.node);
 
             auto tile_type = device_ctx.grid.get_physical_type({node_x, node_y, node_layer});
             int itile = tile_type->index;
@@ -1126,8 +1126,8 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
                 continue;
             }
 
-            //We allow expansion through SOURCE/OPIN/IPIN types
-            auto cost_index = rr_graph.node_cost_index(curr.node);
+            // We allow expansion through SOURCE/OPIN/IPIN types
+            RRIndexedDataId cost_index = rr_graph.node_cost_index(curr.node);
             float new_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
@@ -1136,7 +1136,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
 
-                if (rr_graph.node_layer(next_node) != root_layer) {
+                if (rr_graph.node_layer_low(next_node) != root_layer) {
                     //Don't change the layer
                     continue;
                 }
@@ -1345,7 +1345,7 @@ static void run_dijkstra(RRNodeId start_node,
             VTR_ASSERT_SAFE(rr_graph.node_ylow(curr_node) == rr_graph.node_yhigh(curr_node));
             int ipin_x = rr_graph.node_xlow(curr_node);
             int ipin_y = rr_graph.node_ylow(curr_node);
-            int ipin_layer = rr_graph.node_layer(curr_node);
+            int ipin_layer = rr_graph.node_layer_low(curr_node);
 
             if (ipin_x >= start_x && ipin_y >= start_y) {
                 auto [delta_x, delta_y] = util::get_xy_deltas(start_node, curr_node);

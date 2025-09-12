@@ -255,8 +255,8 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
                        " (to node location %d,%d,%d x %d,%d,%d outside of expanded"
                        " net bounding box %d,%d,%d x %d,%d,%d)\n",
                        from_node, size_t(from_edge), size_t(to_node),
-                       this->rr_graph_->node_xlow(to_node), this->rr_graph_->node_ylow(to_node), this->rr_graph_->node_layer(to_node),
-                       this->rr_graph_->node_xhigh(to_node), this->rr_graph_->node_yhigh(to_node), this->rr_graph_->node_layer(to_node),
+                       this->rr_graph_->node_xlow(to_node), this->rr_graph_->node_ylow(to_node), this->rr_graph_->node_layer_low(to_node),
+                       this->rr_graph_->node_xhigh(to_node), this->rr_graph_->node_yhigh(to_node), this->rr_graph_->node_layer_low(to_node),
                        bounding_box.xmin, bounding_box.ymin, bounding_box.layer_min,
                        bounding_box.xmax, bounding_box.ymax, bounding_box.layer_max);
         return; /* Node is outside (expanded) bounding box. */
@@ -273,7 +273,7 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
             // IPIN's of the target block should be contained within it's bounding box
             int to_xlow = this->rr_graph_->node_xlow(to_node);
             int to_ylow = this->rr_graph_->node_ylow(to_node);
-            int to_layer = this->rr_graph_->node_layer(to_node);
+            int to_layer = this->rr_graph_->node_layer_low(to_node);
             int to_xhigh = this->rr_graph_->node_xhigh(to_node);
             int to_yhigh = this->rr_graph_->node_yhigh(to_node);
             if (to_xlow < target_bb.xmin

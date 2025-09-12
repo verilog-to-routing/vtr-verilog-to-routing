@@ -39,6 +39,6 @@ void check_rr_node(const RRGraphView& rr_graph,
                    const DeviceGrid& grid,
                    const VibDeviceGrid& vib_grid,
                    const t_chan_width& chan_width,
-                   const enum e_route_type route_type,
+                   const e_route_type route_type,
                    const int inode,
                    bool is_flat);

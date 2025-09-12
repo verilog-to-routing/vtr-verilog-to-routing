@@ -62,15 +62,15 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat) {
     std::string rr_node_arch_name;
     if (rr_graph.node_type(inode) == e_rr_type::OPIN || rr_graph.node_type(inode) == e_rr_type::IPIN) {
         //Pin names
-        auto type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
-                                                       rr_graph.node_ylow(rr_node),
-                                                       rr_graph.node_layer(rr_node)});
+        t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                                     rr_graph.node_ylow(rr_node),
+                                                                          rr_graph.node_layer_low(rr_node)});
         rr_node_arch_name += block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node), is_flat);
     } else if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK) {
         //Set of pins associated with SOURCE/SINK
-        auto type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
-                                                       rr_graph.node_ylow(rr_node),
-                                                       rr_graph.node_layer(rr_node)});
+        t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                                     rr_graph.node_ylow(rr_node),
+                                                                          rr_graph.node_layer_low(rr_node)});
         auto pin_names = block_type_class_index_to_pin_names(type, rr_graph.node_class_num(rr_node), is_flat);
         if (pin_names.size() > 1) {
             rr_node_arch_name += rr_graph.node_type_string(inode);
@@ -84,7 +84,7 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat) {
     } else {
         VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::CHANX || rr_graph.node_type(inode) == e_rr_type::CHANY);
         //Wire segment name
-        auto cost_index = rr_graph.node_cost_index(inode);
+        RRIndexedDataId cost_index = rr_graph.node_cost_index(inode);
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
         rr_node_arch_name += rr_graph.rr_segments(RRSegmentId(seg_index)).name;
@@ -1633,32 +1633,32 @@ bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
     e_rr_type node_type = rr_graph_view.node_type(node_id);
     if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::CHANZ || node_type == e_rr_type::MUX) {
         return true;
+    }
+
+    int x_low = rr_graph_view.node_xlow(node_id);
+    int y_low = rr_graph_view.node_ylow(node_id);
+    int layer = rr_graph_view.node_layer_low(node_id);
+    int node_ptc = rr_graph_view.node_ptc_num(node_id);
+    const t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid.get_physical_type({x_low, y_low, layer});
+    if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
+        return is_pin_on_tile(physical_tile, node_ptc);
     } else {
-        int x_low = rr_graph_view.node_xlow(node_id);
-        int y_low = rr_graph_view.node_ylow(node_id);
-        int layer = rr_graph_view.node_layer(node_id);
-        int node_ptc = rr_graph_view.node_ptc_num(node_id);
-        const t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid.get_physical_type({x_low, y_low, layer});
-        if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
-            return is_pin_on_tile(physical_tile, node_ptc);
-        } else {
-            VTR_ASSERT_DEBUG(node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
-            return is_class_on_tile(physical_tile, node_ptc);
-        }
+        VTR_ASSERT_DEBUG(node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
+        return is_class_on_tile(physical_tile, node_ptc);
     }
 }
 
 int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
                         RRNodeId node_id,
                         bool is_flat) {
-    auto node_type = rr_graph_view.node_type(node_id);
+    e_rr_type node_type = rr_graph_view.node_type(node_id);
 
     VTR_ASSERT(node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN || node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    auto physical_type = device_ctx.grid.get_physical_type({rr_graph_view.node_xlow(node_id),
-                                                            rr_graph_view.node_ylow(node_id),
-                                                            rr_graph_view.node_layer(node_id)});
+    t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph_view.node_xlow(node_id),
+                                                                          rr_graph_view.node_ylow(node_id),
+                                                                               rr_graph_view.node_layer_low(node_id)});
 
     if (node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE) {
         return get_tile_class_max_ptc(physical_type, is_flat);
@@ -1743,7 +1743,7 @@ std::pair<ClusterBlockId, t_pb_graph_pin*> get_rr_node_cluster_blk_id_pb_graph_p
     int pin_physical_num = device_ctx.rr_graph.node_ptc_num(rr_node_id);
     int x = device_ctx.rr_graph.node_xlow(rr_node_id);
     int y = device_ctx.rr_graph.node_ylow(rr_node_id);
-    int layer = device_ctx.rr_graph.node_layer(rr_node_id);
+    int layer = device_ctx.rr_graph.node_layer_low(rr_node_id);
 
     t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({x, y, layer});
 
@@ -1774,19 +1774,19 @@ AtomPinId get_rr_node_atom_pin_id(RRNodeId rr_node_id) {
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto firse_rr_type = rr_graph.node_type(node_first);
-    auto second_rr_type = rr_graph.node_type(node_second);
+    e_rr_type first_rr_type = rr_graph.node_type(node_first);
+    e_rr_type second_rr_type = rr_graph.node_type(node_second);
 
     // If one of the given node's type is CHANX/Y nodes are definitely not in the same physical tile
-    if (firse_rr_type == e_rr_type::CHANX || firse_rr_type == e_rr_type::CHANY || second_rr_type == e_rr_type::CHANX || second_rr_type == e_rr_type::CHANY) {
+    if (first_rr_type == e_rr_type::CHANX || first_rr_type == e_rr_type::CHANY || second_rr_type == e_rr_type::CHANX || second_rr_type == e_rr_type::CHANY) {
         return false;
     } else {
-        VTR_ASSERT(firse_rr_type == e_rr_type::IPIN || firse_rr_type == e_rr_type::OPIN || firse_rr_type == e_rr_type::SINK || firse_rr_type == e_rr_type::SOURCE);
+        VTR_ASSERT(first_rr_type == e_rr_type::IPIN || first_rr_type == e_rr_type::OPIN || first_rr_type == e_rr_type::SINK || first_rr_type == e_rr_type::SOURCE);
         VTR_ASSERT(second_rr_type == e_rr_type::IPIN || second_rr_type == e_rr_type::OPIN || second_rr_type == e_rr_type::SINK || second_rr_type == e_rr_type::SOURCE);
-        int first_layer = rr_graph.node_layer(node_first);
+        int first_layer = rr_graph.node_layer_low(node_first);
         int first_x = rr_graph.node_xlow(node_first);
         int first_y = rr_graph.node_ylow(node_first);
-        int sec_layer = rr_graph.node_layer(node_second);
+        int sec_layer = rr_graph.node_layer_low(node_second);
         int sec_x = rr_graph.node_xlow(node_second);
         int sec_y = rr_graph.node_ylow(node_second);
 
@@ -1983,10 +1983,12 @@ float get_min_cross_layer_delay() {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     float min_delay = std::numeric_limits<float>::max();
 
-    for (const auto& driver_node : rr_graph.nodes()) {
+    // TODO: rewrite this function by using CHANZ nodes
+
+    for (const RRNodeId driver_node : rr_graph.nodes()) {
         for (size_t edge_id = 0; edge_id < rr_graph.num_edges(driver_node); edge_id++) {
-            const auto& sink_node = rr_graph.edge_sink_node(driver_node, edge_id);
-            if (rr_graph.node_layer(driver_node) != rr_graph.node_layer(sink_node)) {
+            const RRNodeId sink_node = rr_graph.edge_sink_node(driver_node, edge_id);
+            if (rr_graph.node_layer_low(driver_node) != rr_graph.node_layer_low(sink_node)) {
                 int i_switch = rr_graph.edge_switch(driver_node, edge_id);
                 float edge_delay = rr_graph.rr_switch_inf(RRSwitchId(i_switch)).Tdel;
                 min_delay = std::min(min_delay, edge_delay);

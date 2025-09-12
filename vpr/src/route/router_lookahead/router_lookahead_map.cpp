@@ -206,17 +206,17 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
 
     t_physical_tile_type_ptr from_physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(current_node),
                                                                                      rr_graph.node_ylow(current_node),
-                                                                                     rr_graph.node_layer(current_node)});
+                                                                                     rr_graph.node_layer_low(current_node)});
     int from_node_ptc_num = rr_graph.node_ptc_num(current_node);
     t_physical_tile_type_ptr to_physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(target_node),
                                                                                    rr_graph.node_ylow(target_node),
-                                                                                   rr_graph.node_layer(target_node)});
+                                                                                   rr_graph.node_layer_low(target_node)});
     float delay_offset_cost = 0.;
     float cong_offset_cost = 0.;
     int to_node_ptc_num = rr_graph.node_ptc_num(target_node);
-    int to_layer_num = rr_graph.node_layer(target_node);
+    int to_layer_num = rr_graph.node_layer_low(target_node);
     // We have not checked the multi-layer FPGA for flat routing
-    VTR_ASSERT(rr_graph.node_layer(current_node) == rr_graph.node_layer(target_node));
+    VTR_ASSERT(rr_graph.node_layer_low(current_node) == rr_graph.node_layer_low(target_node));
     if (from_rr_type == e_rr_type::CHANX || from_rr_type == e_rr_type::CHANY) {
         std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
@@ -258,8 +258,8 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
                 auto [delta_x, delta_y] = util::get_xy_deltas(current_node, target_node);
                 delta_x = abs(delta_x);
                 delta_y = abs(delta_y);
-                delay_cost = params.criticality * chann_distance_based_min_cost[rr_graph.node_layer(current_node)][to_layer_num][delta_x][delta_y].delay;
-                cong_cost = (1. - params.criticality) * chann_distance_based_min_cost[rr_graph.node_layer(current_node)][to_layer_num][delta_x][delta_y].congestion;
+                delay_cost = params.criticality * chann_distance_based_min_cost[rr_graph.node_layer_low(current_node)][to_layer_num][delta_x][delta_y].delay;
+                cong_cost = (1. - params.criticality) * chann_distance_based_min_cost[rr_graph.node_layer_low(current_node)][to_layer_num][delta_x][delta_y].congestion;
 
                 delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).delay;
                 cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).congestion;
@@ -289,8 +289,8 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
             auto [delta_x, delta_y] = util::get_xy_deltas(current_node, target_node);
             delta_x = abs(delta_x);
             delta_y = abs(delta_y);
-            delay_cost = params.criticality * chann_distance_based_min_cost[rr_graph.node_layer(current_node)][to_layer_num][delta_x][delta_y].delay;
-            cong_cost = (1. - params.criticality) * chann_distance_based_min_cost[rr_graph.node_layer(current_node)][to_layer_num][delta_x][delta_y].congestion;
+            delay_cost = params.criticality * chann_distance_based_min_cost[rr_graph.node_layer_low(current_node)][to_layer_num][delta_x][delta_y].delay;
+            cong_cost = (1. - params.criticality) * chann_distance_based_min_cost[rr_graph.node_layer_low(current_node)][to_layer_num][delta_x][delta_y].congestion;
 
             delay_offset_cost = params.criticality * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).delay;
             cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).congestion;
@@ -309,8 +309,9 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    int from_layer_num = rr_graph.node_layer(from_node);
-    int to_layer_num = rr_graph.node_layer(to_node);
+    // TODO: handle CHANZ nodes that span multiple layers
+    int from_layer_num = rr_graph.node_layer_low(from_node);
+    int to_layer_num = rr_graph.node_layer_low(to_node);
     auto [delta_x, delta_y] = util::get_xy_deltas(from_node, to_node);
     delta_x = abs(delta_x);
     delta_y = abs(delta_y);

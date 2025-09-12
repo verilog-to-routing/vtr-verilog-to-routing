@@ -197,28 +197,18 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
      * if someday we have architectures with widely varying connectivity between different layers in a stack.
      */
 
-    /*
-     * To calculate the accumulative number of inter-die connections we first need to get the number of
+    /* To calculate the accumulative number of inter-die connections we first need to get the number of
      * inter-die connection per location. To be able to work for the cases that RR Graph is read instead
      * of being made from the architecture file, we calculate this number by iterating over the RR graph. Once
-     * tile_num_inter_die_conn is populated, we can start populating acc_tile_num_inter_die_conn_. First,
-     * we populate the first row and column. Then, we iterate over the rest of blocks and get the number of
-     * inter-die connections by adding up the number of inter-die block at that location + the accumulation
-     * for the  block below and  left to it. Then, since the accumulated number of inter-die connection to
-     * the block on the lower left connection of the block is added twice, that part needs to be removed.
+     * tile_num_inter_die_conn is populated, we can start populating acc_tile_num_inter_die_conn_.
      */
-    for (const RRNodeId src_rr_node : rr_graph.nodes()) {
-        for (const t_edge_size rr_edge_idx : rr_graph.edges(src_rr_node)) {
-            const RRNodeId sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
-            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
-                // We assume that the nodes driving the inter-layer connection or being driven by it
-                // are not stretched across multiple tiles
-                int src_x = rr_graph.node_xhigh(src_rr_node);
-                int src_y = rr_graph.node_yhigh(src_rr_node);
-                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
 
-                tile_num_inter_die_conn[src_x][src_y]++;
-            }
+    for (const RRNodeId node : rr_graph.nodes()) {
+        if (rr_graph.node_type(node) == e_rr_type::CHANZ) {
+            int x = rr_graph.node_xlow(node);
+            int y = rr_graph.node_ylow(node);
+            VTR_ASSERT_SAFE(x == rr_graph.node_xhigh(node) && y == rr_graph.node_yhigh(node));
+            tile_num_inter_die_conn[x][y]++;
         }
     }
 

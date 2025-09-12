@@ -2309,7 +2309,8 @@ static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(root_loc.x <= std::numeric_limits<short>::max() && root_loc.y <= std::numeric_limits<short>::max());
         rr_graph_builder.set_node_coordinates(class_inode, (short)root_loc.x, (short)root_loc.y, (short)(root_loc.x + physical_type->width - 1), (short)(root_loc.y + physical_type->height - 1));
         VTR_ASSERT(root_loc.layer_num <= std::numeric_limits<short>::max());
-        rr_graph_builder.set_node_layer(class_inode, root_loc.layer_num);
+        rr_graph_builder.set_node_layer_low(class_inode, root_loc.layer_num);
+        rr_graph_builder.set_node_layer_high(class_inode, root_loc.layer_num);
         float R = 0.;
         float C = 0.;
         rr_graph_builder.set_node_rc_index(class_inode, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
@@ -2366,7 +2367,8 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                       root_loc.y + y_offset,
                                                       root_loc.x + x_offset,
                                                       root_loc.y + y_offset);
-                rr_graph_builder.set_node_layer(node_id, root_loc.layer_num);
+                rr_graph_builder.set_node_layer_low(node_id, root_loc.layer_num);
+                rr_graph_builder.set_node_layer_high(node_id, root_loc.layer_num);
                 rr_graph_builder.add_node_side(node_id, pin_side);
             }
         }
@@ -3098,7 +3100,8 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
             rr_graph_builder.set_node_coordinates(node, x_coord, start, x_coord, end);
         }
 
-        rr_graph_builder.set_node_layer(node, layer);
+        rr_graph_builder.set_node_layer_low(node, layer);
+        rr_graph_builder.set_node_layer_high(node, layer);
 
         int length = end - start + 1;
         float R = length * seg_details[track].Rmetal();
@@ -3188,7 +3191,10 @@ static void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
             break;
         }
 
-        rr_graph_builder.set_node_layer(node, 0);
+        // TODO: layer numbers should be extracted from link info
+        rr_graph_builder.set_node_layer_low(node, 0);
+        rr_graph_builder.set_node_layer_high(node, 1);
+
         rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
         // TODO: the index doesn't make any sense. We need to an RRIndexedDataId for CHANZ nodes
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset + seg_details[start_track - 1].index()));

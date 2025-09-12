@@ -154,7 +154,7 @@ class RRGraphBuilder {
      *   - valid geometry information: xlow/ylow/xhigh/yhigh
      *   - a valid node type
      *   - a valid node ptc number
-     *   - a valid side (applicable to OPIN and IPIN nodes only
+     *   - a valid side (applicable to OPIN and IPIN nodes only)
      */
     void add_node_to_all_locs(RRNodeId node);
 
@@ -239,10 +239,13 @@ class RRGraphBuilder {
     }
 
     /** @brief set the layer number at which RRNodeId is located at */
-    inline void set_node_layer(RRNodeId id, int layer){
-        node_storage_.set_node_layer(id, layer);
+    inline void set_node_layer_low(RRNodeId id, int layer){
+        node_storage_.set_node_layer_low(id, layer);
     }
 
+    inline void set_node_layer_high(RRNodeId id, int layer){
+        node_storage_.set_node_layer_high(id, layer);
+    }
 
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
     inline void set_node_pin_num(RRNodeId id, int new_pin_num) {

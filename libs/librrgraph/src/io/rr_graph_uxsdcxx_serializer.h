@@ -699,7 +699,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
         // We set the layer num 0 - If it is specified in the XML, it will be overwritten
-        rr_graph_builder_->set_node_layer(node_id, 0);
+        rr_graph_builder_->set_node_layer_low(node_id, 0);
+        rr_graph_builder_->set_node_layer_high(node_id, 0);
        
         return inode;
     }
@@ -717,8 +718,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         temp_string_ = rr_graph_builder_->node_ptc_nums_to_string(node.id());
         return temp_string_.c_str();
     }
-    inline int get_node_loc_layer(const t_rr_node& node) final {
-        return rr_graph_->node_layer(node.id());
+    inline int get_node_loc_layer_low(const t_rr_node& node) final {
+        return rr_graph_->node_layer_low(node.id());
+    }
+    inline int get_node_loc_layer_high(const t_rr_node& node) final {
+        return rr_graph_->node_layer_high(node.id());
     }
     inline int get_node_loc_xhigh(const t_rr_node& node) final {
         return rr_graph_->node_xhigh(node.id());
@@ -733,13 +737,20 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return rr_graph_->node_ylow(node.id());
     }
 
-    inline void set_node_loc_layer(int layer_num, int& inode) final {
+    inline void set_node_loc_layer_low(int layer_num, int& inode) final {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
+        VTR_ASSERT(layer_num >= 0);
+        rr_graph_builder_->set_node_layer_low(node_id, layer_num);
+    }
+
+    inline void set_node_loc_layer_high(int layer_num, int& inode) final {
+        auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
 
         VTR_ASSERT(layer_num >= 0);
-        rr_graph_builder_->set_node_layer(node_id, layer_num);
+        rr_graph_builder_->set_node_layer_high(node_id, layer_num);
     }
 
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {
@@ -1171,15 +1182,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                  * use the pair data structure to keep the maximum*/
                 if (rr_graph.node_type(node.id()) == e_rr_type::CHANX || rr_graph.node_type(node.id()) == e_rr_type::CHANY) {
                     if(rr_graph.node_type(RRNodeId(sink_node)) == e_rr_type::IPIN){
-                        if (rr_graph.node_layer(RRNodeId(sink_node)) == rr_graph.node_layer(RRNodeId(source_node))) {
+                        if (rr_graph.node_layer_low(RRNodeId(sink_node)) == rr_graph.node_layer_low(RRNodeId(source_node))) {
                             count_for_wire_to_ipin_switches[switch_id]++;
                             if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
                                 most_frequent_switch.first = switch_id;
                                 most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
                             }
-                        }
-                        else{
-                            VTR_ASSERT(rr_graph.node_layer(RRNodeId(sink_node)) != rr_graph.node_layer(RRNodeId(source_node)));
+                        } else{
+                            VTR_ASSERT(rr_graph.node_layer_low(RRNodeId(sink_node)) != rr_graph.node_layer_low(RRNodeId(source_node)));
                             count_for_wire_to_ipin_switches_between_dice[switch_id]++;
                             if(count_for_wire_to_ipin_switches_between_dice[switch_id] > most_frequent_switch_between_dice.second){
                                 most_frequent_switch_between_dice.first = switch_id;

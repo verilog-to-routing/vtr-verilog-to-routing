@@ -63,12 +63,12 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/);
 
 void routing_stats(const Netlist<>& net_list,
                    bool full_stats,
-                   enum e_route_type route_type,
+                   e_route_type route_type,
                    std::vector<t_segment_inf>& segment_inf,
                    float R_minW_nmos,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
-                   enum e_directionality directionality,
+                   e_directionality directionality,
                    int wire_to_ipin_switch,
                    bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -130,12 +130,12 @@ std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width(
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    auto chanx_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+    auto chanx_width = vtr::NdMatrix<int, 3>({{device_ctx.grid.get_num_layers(),
                                                device_ctx.grid.width(),
                                                device_ctx.grid.height()}},
                                              0);
 
-    auto chany_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+    auto chany_width = vtr::NdMatrix<int, 3>({{device_ctx.grid.get_num_layers(),
                                                device_ctx.grid.width(),
                                                device_ctx.grid.height()}},
                                              0);
@@ -145,13 +145,13 @@ std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width(
 
         if (rr_type == e_rr_type::CHANX) {
             int y = rr_graph.node_ylow(node_id);
-            int layer = rr_graph.node_layer(node_id);
+            int layer = rr_graph.node_layer_low(node_id);
             for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
                 chanx_width[layer][x][y] += rr_graph.node_capacity(node_id);
             }
         } else if (rr_type == e_rr_type::CHANY) {
             int x = rr_graph.node_xlow(node_id);
-            int layer = rr_graph.node_layer(node_id);
+            int layer = rr_graph.node_layer_low(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
                 chany_width[layer][x][y] += rr_graph.node_capacity(node_id);
             }
