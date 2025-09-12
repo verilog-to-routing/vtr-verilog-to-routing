@@ -141,6 +141,7 @@ static void set_lookahead_map_costs(unsigned from_layer_num,
 
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type);
+
 /* returns a cost entry in the f_wire_cost_map that is near the specified coordinates (and preferably towards (0,0)) */
 static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, int to_layer_num, int segment_index, int chan_index);
 
@@ -565,8 +566,8 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 // and store it in the lookahead cost map
                 set_lookahead_map_costs(from_layer_num, segment_inf.seg_index, chan_type, routing_cost_map);
 
-                /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
-                 * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
+                // Fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
+                // a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed)
                 fill_in_missing_lookahead_entries(segment_inf.seg_index, chan_type);
             }
         }
@@ -577,7 +578,14 @@ static void set_lookahead_map_costs(unsigned from_layer_num,
                                     int segment_index,
                                     e_rr_type chan_type,
                                     util::t_routing_cost_map& routing_cost_map) {
-    int chan_index = (chan_type == e_rr_type::CHANX) ? 0 : 1;
+    int chan_index;
+    switch (chan_type) {
+        case e_rr_type::CHANX: chan_index = 0; break;
+        case e_rr_type::CHANY: chan_index = 1; break;
+        case e_rr_type::CHANZ: chan_index = 2; break;
+        default:
+            VTR_ASSERT(false);
+    }
 
     // set the lookahead cost map entries with a representative cost entry from routing_cost_map
     for (unsigned to_layer = 0; to_layer < routing_cost_map.dim_size(0); to_layer++) {
@@ -591,11 +599,17 @@ static void set_lookahead_map_costs(unsigned from_layer_num,
     }
 }
 
-/* fills in missing lookahead map entries by copying the cost of the closest valid entry */
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type) {
-    int chan_index = (chan_type == e_rr_type::CHANX) ? 0 : 1;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    auto& device_ctx = g_vpr_ctx.device();
+    int chan_index;
+    switch (chan_type) {
+        case e_rr_type::CHANX: chan_index = 0; break;
+        case e_rr_type::CHANY: chan_index = 1; break;
+        case e_rr_type::CHANZ: chan_index = 2; break;
+        default:
+            VTR_ASSERT(false);
+    }
 
     const int num_layers = device_ctx.grid.get_num_layers();
     const int grid_width = device_ctx.grid.width();
