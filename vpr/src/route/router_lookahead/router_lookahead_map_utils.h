@@ -319,7 +319,8 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
                                                          const t_physical_tile_loc& tile_loc);
 
 /* returns index of a node from which to start routing */
-RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset);
+RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset);
+RRNodeId get_chanz_start_node(int start_x, int start_y, int seg_index, int track_offset, Direction dir);
 
 /**
  * @brief Computes the absolute delta_x and delta_y offset
@@ -333,7 +334,7 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
 
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         unsigned from_layer_num,
-                                        const e_rr_type& chan_type,
+                                        const e_rr_type chan_type,
                                         const t_segment_inf& segment_inf,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                                         bool sample_all_locs,

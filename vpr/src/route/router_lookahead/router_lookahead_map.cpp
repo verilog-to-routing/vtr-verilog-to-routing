@@ -188,7 +188,7 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
         } else if (from_rr_type == e_rr_type::IPIN) { // Change if you're allowing route-throughs
             return (device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
         } else { // Change this if you want to investigate route-throughs
-            return (0.);
+            return 0.f;
         }
     }
 }
@@ -309,7 +309,6 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    // TODO: handle CHANZ nodes that span multiple layers
     int from_layer_num = rr_graph.node_layer_low(from_node);
     int to_layer_num = rr_graph.node_layer_low(to_node);
     auto [delta_x, delta_y] = util::get_xy_deltas(from_node, to_node);
@@ -362,15 +361,28 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                                 .c_str())
                                 .c_str());
 
-    } else if (from_type == e_rr_type::CHANX || from_type == e_rr_type::CHANY) {
-        //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
+    } else if (from_type == e_rr_type::CHANX || from_type == e_rr_type::CHANY || from_type == e_rr_type::CHANZ) {
+        // When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
-        auto from_cost_index = rr_graph.node_cost_index(from_node);
+        // For CHANZ nodes, if the direction is
+        // 1) incremental --> `chanz_node` now drives other nodes on node_layer_high(chanz_node).
+        // 2) decremental --> `chanz_node` now drives other nodes on node_layer_low(chanz_node).
+        // 3) decremental --> `chanz_node` now drives other nodes on both layers, so we choose the target layer
+        if (from_type == e_rr_type::CHANZ) {
+            Direction chanz_node_dir = rr_graph.node_direction(from_node);
+            if (chanz_node_dir == Direction::INC) {
+                from_layer_num = rr_graph.node_layer_high(from_node);
+            } else if (chanz_node_dir == Direction::BIDIR) {
+                from_layer_num = to_layer_num;
+            }
+        }
+
+        RRIndexedDataId from_cost_index = rr_graph.node_cost_index(from_node);
         int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
 
         VTR_ASSERT(from_seg_index >= 0);
 
-        /* now get the expected cost from our lookahead map */
+        // Now get the expected cost from our lookahead map
         util::Cost_Entry cost_entry = get_wire_cost_entry(from_type,
                                                           from_seg_index,
                                                           from_layer_num,
@@ -392,9 +404,9 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                 .c_str());
         expected_delay_cost = cost_entry.delay * params.criticality;
         expected_cong_cost = cost_entry.congestion * (1 - params.criticality);
-    } else if (from_type == e_rr_type::IPIN) { /* Change if you're allowing route-throughs */
+    } else if (from_type == e_rr_type::IPIN) { // Change if you're allowing route-throughs
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
-    } else { /* Change this if you want to investigate route-throughs */
+    } else { // Change this if you want to investigate route-throughs
         return std::make_pair(0., 0.);
     }
 
@@ -404,8 +416,8 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
 
-    //First compute the delay map when starting from the various wire types
-    //(CHANX/CHANY)in the routing architecture
+    // First compute the delay map when starting from the various wire types
+    // (CHANX/CHANY/CHANZ) in the routing architecture
     compute_router_wire_lookahead(segment_inf, route_verbosity_);
 
     //Next, compute which wire types are accessible (and the cost to reach them)
@@ -505,29 +517,37 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
+    const size_t num_layers = grid.get_num_layers();
+    const size_t chan_type_dim_size = (num_layers == 1) ? 2 : 3;
+
     //Re-allocate
-    f_wire_cost_map = t_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
-                                       static_cast<unsigned long>(grid.get_num_layers()),
-                                       2,
+    f_wire_cost_map = t_wire_cost_map({num_layers,
+                                       num_layers,
+                                       chan_type_dim_size,
                                        segment_inf_vec.size(),
                                        device_ctx.grid.width(),
                                        device_ctx.grid.height()});
 
     int longest_seg_length = 0;
-    for (const auto& seg_inf : segment_inf_vec) {
+    for (const t_segment_inf& seg_inf : segment_inf_vec) {
         longest_seg_length = std::max(longest_seg_length, seg_inf.length);
     }
 
     // Profile each wire segment type
-    for (size_t from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
+    for (size_t from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         for (const t_segment_inf& segment_inf : segment_inf_vec) {
             std::vector<e_rr_type> chan_types;
-            if (segment_inf.parallel_axis == e_parallel_axis::X_AXIS)
+            if (segment_inf.parallel_axis == e_parallel_axis::X_AXIS) {
                 chan_types.push_back(e_rr_type::CHANX);
-            else if (segment_inf.parallel_axis == e_parallel_axis::Y_AXIS)
+            } else if (segment_inf.parallel_axis == e_parallel_axis::Y_AXIS) {
                 chan_types.push_back(e_rr_type::CHANY);
-            else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
+            } else if (segment_inf.parallel_axis == e_parallel_axis::Z_AXIS) {
+                chan_types.push_back(e_rr_type::CHANZ);
+            } else {
+                VTR_ASSERT(segment_inf.parallel_axis == e_parallel_axis::BOTH_AXIS);
+                // Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
                 chan_types.insert(chan_types.end(), {e_rr_type::CHANX, e_rr_type::CHANY});
+            }
 
             for (e_rr_type chan_type : chan_types) {
                 util::t_routing_cost_map routing_cost_map = util::get_routing_cost_map(longest_seg_length,

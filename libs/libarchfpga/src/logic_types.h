@@ -31,7 +31,8 @@ enum class e_parallel_axis {
     /** Y_AXIS: Data that describes an y-directed wire segment (CHANY) */
     Y_AXIS,
     /** BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
-    BOTH_AXIS
+    BOTH_AXIS,
+    Z_AXIS
 };
 
 /*
