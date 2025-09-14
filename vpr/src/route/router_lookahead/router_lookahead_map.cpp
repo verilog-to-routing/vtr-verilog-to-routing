@@ -496,16 +496,20 @@ float MapLookahead::get_opin_distance_min_delay(int physical_tile_idx, int from_
 /******** Function Definitions ********/
 
 static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
-    VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
+    VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::CHANZ);
     VTR_ASSERT_SAFE(from_layer_num < static_cast<int>(f_wire_cost_map.dim_size(0)));
     VTR_ASSERT_SAFE(to_layer_num < static_cast<int>(f_wire_cost_map.dim_size(1)));
     VTR_ASSERT_SAFE(seg_index < static_cast<int>(f_wire_cost_map.dim_size(3)));
     VTR_ASSERT_SAFE(delta_x < static_cast<int>(f_wire_cost_map.dim_size(4)));
     VTR_ASSERT_SAFE(delta_y < static_cast<int>(f_wire_cost_map.dim_size(5)));
 
-    int chan_index = 0;
-    if (rr_type == e_rr_type::CHANY) {
-        chan_index = 1;
+    int chan_index;
+    switch (rr_type) {
+        case e_rr_type::CHANX: chan_index = 0; break;
+        case e_rr_type::CHANY: chan_index = 1; break;
+        case e_rr_type::CHANZ: chan_index = 2; break;
+        default:
+            VTR_ASSERT(false);
     }
 
     return f_wire_cost_map[from_layer_num][to_layer_num][chan_index][seg_index][delta_x][delta_y];

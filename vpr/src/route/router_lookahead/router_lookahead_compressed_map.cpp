@@ -121,7 +121,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
     f_compressed_wire_cost_map = t_compressed_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
                                                              2,
                                                              segment_inf_vec.size(),
-                                                             static_cast<unsigned long>(grid.get_num_layers()),
+                                                             grid.get_num_layers(),
                                                              static_cast<unsigned long>(num_sampling_points)});
 
     int longest_seg_length = 0;

@@ -347,6 +347,7 @@ static void process_clock_routing(pugi::xml_node parent,
 
 static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                                                    const std::vector<t_arch_switch_inf>& switches,
+                                                   int num_layers,
                                                    const bool timing_enabled,
                                                    const bool switchblocklist_required,
                                                    const pugiutil::loc_data& loc_data);
@@ -463,7 +464,7 @@ void xml_read_arch(const char* ArchFile,
 
         /* Process segments. This depends on switches */
         Next = get_single_child(architecture, "segmentlist", loc_data);
-        arch->Segments = process_segments(Next, arch->switches, timing_enabled, switchblocklist_required, loc_data);
+        arch->Segments = process_segments(Next, arch->switches, num_of_avail_layers, timing_enabled, switchblocklist_required, loc_data);
 
         Next = get_single_child(architecture, "switchblocklist", loc_data, SWITCHBLOCKLIST_REQD);
         if (Next) {
@@ -3805,6 +3806,7 @@ static void process_complex_blocks(pugi::xml_node Node,
 
 static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                                                    const std::vector<t_arch_switch_inf>& switches,
+                                                   int num_layers,
                                                    const bool timing_enabled,
                                                    const bool switchblocklist_required,
                                                    const pugiutil::loc_data& loc_data) {
@@ -3815,20 +3817,20 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
     pugi::xml_node SubElem;
     pugi::xml_node Node;
 
-    /* Count the number of segs and check they are in fact
-     * of segment elements. */
+    // Count the number of segs and check they are in fact of segment elements.
     int NumSegs = count_children(Parent, "segment", loc_data);
 
-    /* Alloc segment list */
+    // Alloc segment list
     if (NumSegs > 0) {
         Segs.resize(NumSegs);
     }
 
-    /* Load the segments. */
+    // Load the segments.
     Node = get_first_child(Parent, "segment", loc_data);
 
-    bool x_axis_seg_found = false; /*Flags to see if we have any x-directed segment type specified*/
-    bool y_axis_seg_found = false; /*Flags to see if we have any y-directed segment type specified*/
+    bool x_axis_seg_found = false; // Flags to see if we have any x-directed segment type specified
+    bool y_axis_seg_found = false; // Flags to see if we have any y-directed segment type specified
+    bool z_axis_seg_found = false; // Flags to see if we have any z-directed segment type specified
 
     for (int i = 0; i < NumSegs; ++i) {
         /* Get segment name */
@@ -3885,16 +3887,19 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             } else if (strcmp(tmp, "y") == 0) {
                 Segs[i].parallel_axis = e_parallel_axis::Y_AXIS;
                 y_axis_seg_found = true;
+            } else if (strcmp(tmp, "z") == 0) {
+                Segs[i].parallel_axis = e_parallel_axis::Y_AXIS;
+                z_axis_seg_found = true;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                               vtr::string_fmt("Unsopported parralel axis type: %s\n", tmp).c_str());
+                               vtr::string_fmt("Unsupported parallel axis type: %s\n", tmp).c_str());
             }
         } else {
             x_axis_seg_found = true;
             y_axis_seg_found = true;
         }
 
-        /*Get segment resource type*/
+        // Get segment resource type
         tmp = get_attribute(Node, "res_type", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
         if (tmp) {
@@ -3903,7 +3908,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                 Segs[i].res_type = static_cast<SegResType>(std::distance(RES_TYPE_STRING.begin(), it));
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                               vtr::string_fmt("Unsopported segment res_type: %s\n", tmp).c_str());
+                               vtr::string_fmt("Unsupported segment res_type: %s\n", tmp).c_str());
             }
         }
 
@@ -3912,16 +3917,16 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
          * (*Segs)[i].Cmetal_per_m = get_attribute(Node, "Cmetal_per_m", false,
          * 0.);*/
 
-        //Set of expected subtags (exact subtags are dependent on parameters)
+        // Set of expected subtags (exact subtags are dependent on parameters)
         std::vector<std::string> expected_subtags;
 
         if (!Segs[i].longline) {
-            //Long line doesn't accpet <sb> or <cb> since it assumes full population
+            // Long line doesn't accept <sb> or <cb> since it assumes full population
             expected_subtags.emplace_back("sb");
             expected_subtags.emplace_back("cb");
         }
 
-        /* Get the type */
+        // Get the type
         tmp = get_attribute(Node, "type", loc_data).value();
         if (0 == strcmp(tmp, "bidir")) {
             Segs[i].directionality = BI_DIRECTIONAL;
@@ -4089,7 +4094,12 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
 
     if (!x_axis_seg_found || !y_axis_seg_found) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                       vtr::string_fmt("Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.").c_str());
+                       vtr::string_fmt("At least one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.").c_str());
+    }
+
+    if (num_layers > 1 && !z_axis_seg_found) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       vtr::string_fmt("At least one segment along Z axis needs to get specified if for 3D architectures.").c_str());
     }
 
     return Segs;
@@ -4311,14 +4321,13 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
 
 static void process_cb_sb(pugi::xml_node Node, std::vector<bool>& list, const pugiutil::loc_data& loc_data) {
     const char* tmp = nullptr;
-    int i;
     int len = list.size();
 
     // Check the type. We only support 'pattern' for now.
     // Should add frac back eventually.
     tmp = get_attribute(Node, "type", loc_data).value();
     if (0 == strcmp(tmp, "pattern")) {
-        i = 0;
+        int i = 0;
 
         // Get the content string
         tmp = Node.child_value();

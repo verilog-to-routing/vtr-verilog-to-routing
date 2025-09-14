@@ -141,7 +141,7 @@ PQ_Entry::PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay,
     this->congestion_upstream = parent_congestion_upstream;
     this->R_upstream = parent_R_upstream;
     if (!starting_node) {
-        auto cost_index = rr_graph.node_cost_index(RRNodeId(set_rr_node));
+        RRIndexedDataId cost_index = rr_graph.node_cost_index(RRNodeId(set_rr_node));
         //this->delay += rr_graph.node_C(RRNodeId(set_rr_node)) * (g_rr_switch_inf[switch_ind].R + 0.5*rr_graph.node_R(RRNodeId(set_rr_node))) +
         //              g_rr_switch_inf[switch_ind].Tdel;
 
@@ -920,9 +920,10 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unable to open file '%s' for writing\n", file_name.c_str());
     }
 
+    const int chan_type_dim_size = (num_layers == 1) ? 2 : 3;
     VTR_ASSERT(dim_sizes[0] == num_layers);
     VTR_ASSERT(dim_sizes[1] == num_layers);
-    VTR_ASSERT(dim_sizes[2] == 2);
+    VTR_ASSERT(dim_sizes[2] == chan_type_dim_size);
     VTR_ASSERT(dim_sizes.size() == 5 || (dim_sizes.size() == 6 && dim_sizes[4] == grid_width && dim_sizes[5] == grid_height));
 
     ofs << "from_layer,"
@@ -934,9 +935,14 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
            "cong_cost,"
            "delay_cost\n";
 
+    std::vector<e_rr_type> chan_types{e_rr_type::CHANX, e_rr_type::CHANY};
+    if (num_layers  > 1) {
+        chan_types.push_back(e_rr_type::CHANZ);
+    }
+
     for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
-            for (e_rr_type chan_type : {e_rr_type::CHANX, e_rr_type::CHANY}) {
+            for (e_rr_type chan_type : chan_types) {
                 for (int seg_index = 0; seg_index < dim_sizes[3]; seg_index++) {
                     for (int dx = 0; dx < grid_width; dx++) {
                         for (int dy = 0; dy < grid_height; dy++) {
