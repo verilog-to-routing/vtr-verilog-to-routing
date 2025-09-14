@@ -1,5 +1,4 @@
-#ifndef EDGE_GROUPS_H
-#define EDGE_GROUPS_H
+#pragma once
 
 #include <unordered_set>
 #include <unordered_map>
@@ -44,7 +43,7 @@ class EdgeGroups {
   private:
     struct node_data {
         std::unordered_set<RRNodeId> edges; // Set of indices into graph_
-        int set = OPEN;                     // Index into rr_non_config_node_sets_
+        int set = UNDEFINED;                // Index into rr_non_config_node_sets_
     };
 
     // Perform a DFS traversal marking everything reachable with the same set id
@@ -57,5 +56,3 @@ class EdgeGroups {
     // Order is arbitrary.
     std::vector<std::vector<RRNodeId>> rr_non_config_node_sets_;
 };
-
-#endif

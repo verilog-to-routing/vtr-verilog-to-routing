@@ -1,6 +1,4 @@
-#ifndef NOC_TRAFFIC_FLOWS_H
-#define NOC_TRAFFIC_FLOWS_H
-
+#pragma once
 /**
  * @file 
  * @brief This file defines the NocTrafficFlows class, which contains all
@@ -29,17 +27,13 @@
  * around to different tiles on the FPGA device.
  * 
  */
-#include <iostream>
+
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 #include "clustered_netlist_fwd.h"
 #include "noc_data_types.h"
 #include "vtr_vector.h"
-#include "echo_files.h"
-#include "vtr_util.h"
-#include "vtr_assert.h"
 
 /**
  * @brief Describes a traffic flow within the NoC, which is the communication
@@ -314,5 +308,3 @@ class NocTrafficFlows {
      */
     static constexpr double DEFAULT_MAX_TRAFFIC_FLOW_LATENCY = 1.;
 };
-
-#endif

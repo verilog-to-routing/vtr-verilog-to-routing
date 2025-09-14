@@ -1,3 +1,4 @@
+#pragma once
 /*
  * Data types describing the physical components on the FPGA architecture.
  *
@@ -24,8 +25,7 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
-#pragma once
-
+#include <cstdint>
 #include <functional>
 #include <utility>
 #include <vector>
@@ -34,20 +34,22 @@
 #include <map>
 #include <unordered_map>
 #include <limits>
-#include <numeric>
-#include <set>
 #include <unordered_set>
 
 #include "vtr_ndmatrix.h"
-#include "vtr_hash.h"
 #include "vtr_bimap.h"
 #include "vtr_string_interning.h"
 
 #include "logic_types.h"
 #include "clock_types.h"
+#include "switchblock_types.h"
+#include "arch_types.h"
+
+#include "vib_inf.h"
+
+#include "scatter_gather_types.h"
 
 //Forward declarations
-struct t_clock_arch;
 struct t_clock_network;
 struct t_power_arch;
 struct t_interconnect_pins;
@@ -101,6 +103,13 @@ class t_metadata_value {
 
     // Return string value.
     vtr::interned_string as_string() const { return value_; }
+
+    t_metadata_value& operator=(const t_metadata_value& o) noexcept {
+        if (this != &o) {
+            value_ = o.value_;
+        }
+        return *this;
+    }
 
   private:
     vtr::interned_string value_;
@@ -156,7 +165,7 @@ struct t_metadata_dict : vtr::flat_map<
 
 /* Pins describe I/O into clustered logic block.
  * A pin may be unconnected, driving a net or in the fanout, respectively. */
-enum e_pin_type {
+enum class e_pin_type : int8_t {
     OPEN = -1,
     DRIVER = 0,
     RECEIVER = 1
@@ -166,26 +175,11 @@ enum e_pin_type {
 enum e_interconnect {
     COMPLETE_INTERC = 1,
     DIRECT_INTERC = 2,
-    MUX_INTERC = 3
+    MUX_INTERC = 3,
+    NUM_INTERC_TYPES = 4
 };
-
-/* Orientations. */
-enum e_side : unsigned char {
-    TOP = 0,
-    RIGHT = 1,
-    BOTTOM = 2,
-    LEFT = 3,
-    NUM_2D_SIDES = 4,
-    ABOVE = 5,
-    UNDER = 7,
-    NUM_3D_SIDES = 6,
-};
-
-constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
-constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
-
-constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         //Set of all side orientations including different layers
-constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; //String versions of side orientations including different layers
+/* String version of interconnect types. Use for debugging messages */
+constexpr std::array<const char*, NUM_INTERC_TYPES> INTERCONNECT_TYPE_STRING = {{"unknown", "complete", "direct", "mux"}};
 
 /* pin location distributions */
 enum class e_pin_location_distr {
@@ -250,26 +244,6 @@ enum e_power_estimation_method_ {
 };
 typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
-
-/* Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere) */
-enum class e_sb_location {
-    E_PERIMETER = 0,
-    E_CORNER,
-    E_FRINGE, /* perimeter minus corners */
-    E_CORE,
-    E_EVERYWHERE,
-    E_XY_SPECIFIED
-};
-
-/**
- * @brief Describes regions that a specific switch block specifications should be applied to
- */
-struct t_sb_loc_spec {
-    int start = -1;
-    int repeat = -1;
-    int incr = -1;
-    int end = -1;
-};
 
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
@@ -411,12 +385,6 @@ struct t_grid_def {
 
 /************************* POWER ***********************************/
 
-/* Global clock architecture */
-struct t_clock_arch {
-    int num_global_clocks;
-    t_clock_network* clock_inf; /* Details about each clock */
-};
-
 /* Architecture information for a single clock */
 struct t_clock_network {
     bool autosize_buffer; /* autosize clock buffers */
@@ -426,6 +394,15 @@ struct t_clock_network {
     float prob;   /* Static probability of net assigned to this clock */
     float dens;   /* Switching density of net assigned to this clock */
     float period; /* Period of clock */
+
+    t_clock_network() {
+        autosize_buffer = false;
+        buffer_size = 0.0f;
+        C_wire = 0.0f;
+        prob = 0.0f;
+        dens = 0.0f;
+        period = 0.0f;
+    }
 };
 
 /* Power-related architecture information */
@@ -438,12 +415,26 @@ struct t_power_arch {
     float mux_transistor_size;
     float FF_size;
     float LUT_transistor_size;
+
+    t_power_arch() {
+        C_wire_local = 0.0f;
+        logical_effort_factor = 0.0f;
+        local_interc_factor = 0.0f;
+        transistors_per_SRAM_bit = 0.0f;
+        mux_transistor_size = 0.0f;
+        FF_size = 0.0f;
+        LUT_transistor_size = 0.0f;
+    }
 };
 
 /* Power usage for an entity */
 struct t_power_usage {
     float dynamic;
     float leakage;
+    t_power_usage() {
+        dynamic = 0.0f;
+        leakage = 0.0f;
+    }
 };
 
 /*************************************************************************************************/
@@ -538,6 +529,18 @@ struct t_port_power {
     t_port* scaled_by_port;
     int scaled_by_port_pin_idx;
     bool reverse_scaled; /* Scale by (1-prob) */
+
+    t_port_power() {
+        wire_type = (e_power_wire_type)0;
+        wire = {0.0f}; // Default to C = 0.0f
+        buffer_type = (e_power_buffer_type)0;
+        buffer_size = 0.0f;
+        pin_toggle_initialized = false;
+        energy_per_toggle = 0.0f;
+        scaled_by_port = nullptr;
+        scaled_by_port_pin_idx = 0;
+        reverse_scaled = false;
+    }
 };
 
 /**
@@ -582,9 +585,6 @@ enum class e_sb_type {
     FULL        //Full SB at this location (i.e. turns + straight)
 
 };
-
-constexpr int NO_SWITCH = -1;
-constexpr int DEFAULT_SWITCH = -2;
 
 /* Describes the type for a physical tile
  * name: unique identifier for type
@@ -685,6 +685,7 @@ struct t_physical_tile_type {
 
     std::unordered_map<int, std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>> on_tile_pin_num_to_pb_pin; // [root_pin_physical_num][logical_block] -> t_pb_graph_pin*
     std::unordered_map<int, t_pb_graph_pin*> pin_num_to_pb_pin;                                                       // [intra_tile_pin_physical_num] -> t_pb_graph_pin
+    std::unordered_map<const t_pb_graph_pin*, int> pb_pin_to_pin_num;                                                 // [t_pb_graph_pin*] -> intra_tile_pin_physical_num
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -874,9 +875,9 @@ struct t_physical_pin {
  *                  above the base die, the layer_num is 1 and so on.
  */
 struct t_physical_tile_loc {
-    int x = OPEN;
-    int y = OPEN;
-    int layer_num = OPEN;
+    int x = ARCH_FPGA_UNDEFINED_VAL;
+    int y = ARCH_FPGA_UNDEFINED_VAL;
+    int layer_num = ARCH_FPGA_UNDEFINED_VAL;
 
     t_physical_tile_loc() = default;
 
@@ -885,11 +886,44 @@ struct t_physical_tile_loc {
         , y(y_val)
         , layer_num(layer_num_val) {}
 
-    // Returns true if this type location layer_num/x/y is not equal to OPEN
+    // Returns true if this type location layer_num/x/y is not equal to ARCH_FPGA_UNDEFINED_VAL
     operator bool() const {
-        return !(x == OPEN || y == OPEN || layer_num == OPEN);
+        return !(x == ARCH_FPGA_UNDEFINED_VAL || y == ARCH_FPGA_UNDEFINED_VAL || layer_num == ARCH_FPGA_UNDEFINED_VAL);
+    }
+
+    /**
+     * @brief Comparison operator for t_physical_tile_loc
+     *
+     * Tiles are ordered first by layer number, then by x, and finally by y.
+     */
+    friend bool operator<(const t_physical_tile_loc& lhs, const t_physical_tile_loc& rhs) {
+        if (lhs.layer_num != rhs.layer_num)
+            return lhs.layer_num < rhs.layer_num;
+        if (lhs.x != rhs.x)
+            return lhs.x < rhs.x;
+        return lhs.y < rhs.y;
+    }
+
+    friend bool operator==(const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
+        return a.x == b.x && a.y == b.y && a.layer_num == b.layer_num;
+    }
+
+    friend bool operator!=(const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
+        return !(a == b);
     }
 };
+
+namespace std {
+template<>
+struct hash<t_physical_tile_loc> {
+    std::size_t operator()(const t_physical_tile_loc& v) const noexcept {
+        std::size_t seed = std::hash<int>{}(v.x);
+        vtr::hash_combine(seed, v.y);
+        vtr::hash_combine(seed, v.layer_num);
+        return seed;
+    }
+};
+} // namespace std
 
 /** Describes I/O and clock ports of a physical tile type
  *
@@ -978,6 +1012,9 @@ struct t_logical_block_type {
     // Is this t_logical_block_type empty?
     bool is_empty() const;
 
+    // Returns true if this logical block type is an IO block
+    bool is_io() const;
+
   public:
     /**
      * @brief Returns the logical block port given the port name and the corresponding logical block type
@@ -1064,8 +1101,7 @@ struct t_pb_type {
     t_mode* parent_mode = nullptr;
     int depth = 0; /* depth of pb_type */
 
-    t_pin_to_pin_annotation* annotations = nullptr; /* [0..num_annotations-1] */
-    int num_annotations = 0;
+    std::vector<t_pin_to_pin_annotation> annotations;
 
     int index_in_logical_block = 0; /* assign a unique id to each pb_type in a logical block */
 
@@ -1136,6 +1172,43 @@ struct t_mode {
     t_metadata_dict meta;
 };
 
+/** Info placed between pins in the architecture file (e.g. delay annotations),
+ *
+ * This is later for additional information.
+ *
+ * Data Members:
+ *      annotation_entries: pairs of annotation subtypes and the annotation values
+ *      type: type of annotation
+ *      format: formatting of data
+ *      input_pins: input pins as string affected by annotation
+ *      output_pins: output pins as string affected by annotation
+ *      clock_pin: clock as string affected by annotation
+ */
+struct t_pin_to_pin_annotation {
+
+    std::vector<std::pair<int, std::string>> annotation_entries;
+
+    enum e_pin_to_pin_annotation_type type;
+    enum e_pin_to_pin_annotation_format format;
+
+    char* input_pins;
+    char* output_pins;
+    char* clock;
+
+    int line_num; /* used to report what line number this annotation is found in architecture file */
+
+    t_pin_to_pin_annotation() noexcept {
+        annotation_entries = std::vector<std::pair<int, std::string>>();
+        input_pins = nullptr;
+        output_pins = nullptr;
+        clock = nullptr;
+
+        line_num = 0;
+        type = (e_pin_to_pin_annotation_type)0;
+        format = (e_pin_to_pin_annotation_format)0;
+    }
+};
+
 /** Describes an interconnect edge inside a cluster
  *
  *  This forms part of the t_pb_type hierarchical description of a clustered logic block.
@@ -1147,31 +1220,42 @@ struct t_mode {
  *      input_string: input string verbatim to parse later
  *      output_string: input string output to parse later
  *      annotations: Annotations for delay, power, etc
- *      num_annotations: Total number of annotations
  *      infer_annotations: This interconnect is autogenerated, if true, infer pack_patterns
  *                         such as carry-chains and forced packs based on interconnect linked to it
  *      parent_mode_index: Mode of parent as int
  */
 struct t_interconnect {
     enum e_interconnect type;
-    char* name = nullptr;
+    char* name;
 
-    char* input_string = nullptr;
-    char* output_string = nullptr;
+    char* input_string;
+    char* output_string;
 
-    t_pin_to_pin_annotation* annotations = nullptr; /* [0..num_annotations-1] */
-    int num_annotations = 0;
-    bool infer_annotations = false;
+    std::vector<t_pin_to_pin_annotation> annotations;
+    bool infer_annotations;
 
-    int line_num = 0; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
+    int line_num; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
 
-    int parent_mode_index = 0;
+    int parent_mode_index;
 
     /* Power related members */
-    t_mode* parent_mode = nullptr;
+    t_mode* parent_mode;
 
-    t_interconnect_power* interconnect_power = nullptr;
+    t_interconnect_power* interconnect_power;
     t_metadata_dict meta;
+
+    t_interconnect() {
+        type = (e_interconnect)0;
+        name = nullptr;
+        input_string = nullptr;
+        output_string = nullptr;
+        infer_annotations = false;
+        line_num = 0;
+        parent_mode_index = 0;
+        parent_mode = nullptr;
+        interconnect_power = nullptr;
+        meta = t_metadata_dict();
+    }
 };
 
 /** Describes I/O and clock ports
@@ -1209,6 +1293,22 @@ struct t_port {
     int absolute_first_pin_index;
 
     t_port_power* port_power;
+
+    t_port() {
+        name = nullptr;
+        model_port = nullptr;
+        type = (PORTS)0;
+        is_clock = false;
+        is_non_clock_global = false;
+        num_pins = 0;
+        equivalent = (PortEquivalence)0;
+        parent_pb_type = nullptr;
+        port_class = nullptr;
+        index = 0;
+        port_index_by_type = 0;
+        absolute_first_pin_index = 0;
+        port_power = nullptr;
+    }
 };
 
 struct t_pb_type_power {
@@ -1235,6 +1335,15 @@ struct t_interconnect_power {
     int num_output_ports;
     int num_pins_per_port;
     float transistor_cnt;
+
+    t_interconnect_power() {
+        power_usage = t_power_usage();
+        port_info_initialized = false;
+        num_input_ports = 0;
+        num_output_ports = 0;
+        num_pins_per_port = 0;
+        transistor_cnt = 0.0f;
+    }
 };
 
 struct t_interconnect_pins {
@@ -1246,34 +1355,6 @@ struct t_interconnect_pins {
 
 struct t_mode_power {
     t_power_usage power_usage; /* Power usage of this mode */
-};
-
-/** Info placed between pins in the architecture file (e.g. delay annotations),
- *
- * This is later for additional information.
- *
- * Data Members:
- *      value: value/property pair
- *      prop: value/property pair
- *      type: type of annotation
- *      format: formatting of data
- *      input_pins: input pins as string affected by annotation
- *      output_pins: output pins as string affected by annotation
- *      clock_pin: clock as string affected by annotation
- */
-struct t_pin_to_pin_annotation {
-    char** value; /* [0..num_value_prop_pairs - 1] */
-    int* prop;    /* [0..num_value_prop_pairs - 1] */
-    int num_value_prop_pairs;
-
-    enum e_pin_to_pin_annotation_type type;
-    enum e_pin_to_pin_annotation_format format;
-
-    char* input_pins;
-    char* output_pins;
-    char* clock;
-
-    int line_num; /* used to report what line number this annotation is found in architecture file */
 };
 
 /*************************************************************************************************
@@ -1323,7 +1404,7 @@ class t_pb_graph_node {
      * There is a root-level pb_graph_node assigned to each logical type. Each logical type can contain multiple primitives.
      * If this pb_graph_node is associated with a primitive, a unique number is assigned to it within the logical block level.
      */
-    int primitive_num = OPEN;
+    int primitive_num = ARCH_FPGA_UNDEFINED_VAL;
 
     /* Contains a collection of mode indices that cannot be used as they produce conflicts during VPR packing stage
      *
@@ -1532,7 +1613,7 @@ class t_pb_graph_edge {
     int* pack_pattern_indices;
     bool infer_pattern;
 
-    int switch_type_idx = OPEN; /* architecture switch id of the edge - used when flat_routing is enabled */
+    int switch_type_idx = ARCH_FPGA_UNDEFINED_VAL; /* architecture switch id of the edge - used when flat_routing is enabled */
 
     // class member functions
   public:
@@ -1589,20 +1670,6 @@ struct t_chan_width_dist {
     t_chan chan_y_dist;
 };
 
-enum e_directionality {
-    UNI_DIRECTIONAL,
-    BI_DIRECTIONAL
-};
-
-/* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
- * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
- * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
-enum e_parallel_axis {
-    X_AXIS,
-    Y_AXIS,
-    BOTH_AXIS
-};
-
 /**
  * @brief An attribute of a segment that defines the general category of the wire segment type.
  *
@@ -1651,51 +1718,45 @@ enum e_Fc_type {
  * used if the route_type is DETAILED.  [0 .. det_routing_arch.num_segment]
  */
 struct t_segment_inf {
-    /**
-     *  @brief The name of the segment type
-     */
+    /// The name of the segment type
     std::string name;
 
-    /**
-     *  @brief ratio of tracks which are of this segment type.
-     */
+    /// brief ratio of tracks which are of this segment type.
     int frequency;
 
-    /**
-     *  @brief Length (in clbs) of the segment.
-     */
+    /// Length (in clbs) of the segment.
     int length;
 
     /**
-     *  @brief Index of the switch type that connects other wires to this segment.
+     * @brief Index of the switch type that connects other wires to this segment.
      * Note that this index is in relation to the switches from the architecture file,
      * not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_wire_switch;
 
     /**
-     *  @brief Index of the switch type that connects output pins to this segment.
+     * @brief Index of the switch type that connects output pins to this segment.
      * Note that this index is in relation to the switches from the architecture file,
      * not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_opin_switch;
 
     /**
-     *  @brief Same as arch_wire_switch but used only for decremental tracks if it is
+     * @brief Same as arch_wire_switch but used only for decremental tracks if it is
      * specified in the architecture file. If -1, this value was not set in the
      * architecture file and arch_wire_switch should be used for "DEC_DIR" wire segments.
      */
     short arch_wire_switch_dec = -1;
 
     /**
-     *  @brief Same as arch_opin_switch but used only for decremental tracks if
+     * @brief Same as arch_opin_switch but used only for decremental tracks if
      * it is specified in the architecture file. If -1, this value was not set in
      * the architecture file and arch_opin_switch should be used for "DEC_DIR" wire segments.
      */
     short arch_opin_switch_dec = -1;
 
     /**
-     *  @brief Index of the switch type that connects output pins (OPINs) to this
+     * @brief Index of the switch type that connects output pins (OPINs) to this
      * segment from another die (layer). Note that this index is in relation to
      * the switches from the architecture file, not the expanded list of switches
      * that is built at the end of build_rr_graph.
@@ -1703,44 +1764,56 @@ struct t_segment_inf {
     short arch_inter_die_switch = -1;
 
     /**
-     *  @brief The fraction of logic blocks along its length to which this segment can connect.
+     * @brief The fraction of logic blocks along its length to which this segment can connect.
      * (i.e. internal population).
      */
     float frac_cb;
 
     /**
-     *  @brief The fraction of the length + 1 switch blocks along the segment to which the segment can connect.
+     * @brief The fraction of the length + 1 switch blocks along the segment to which the segment can connect.
      * Segments that aren't long lines must connect to at least two switch boxes.
      */
     float frac_sb;
 
     bool longline;
 
-    /**
-     *  @brief The resistance of a routing track, per unit logic block length. */
+    /// The resistance of a routing track, per unit logic block length.
     float Rmetal;
 
-    /**
-     *  @brief The capacitance of a routing track, per unit logic block length. */
+    ///  The capacitance of a routing track, per unit logic block length.
     float Cmetal;
 
     enum e_directionality directionality;
 
     /**
-     *  @brief Defines what axis the segment is parallel to. See e_parallel_axis
+     * @brief Defines what axis the segment is parallel to. See e_parallel_axis
      * comments for more details on the values.
      */
-    enum e_parallel_axis parallel_axis;
+    e_parallel_axis parallel_axis;
 
-    /**
-     *  @brief A vector of booleans indicating whether the segment can connect to a logic block.
-     */
+    /// A vector of booleans indicating whether the segment can connect to a logic block.
     std::vector<bool> cb;
 
-    /**
-     *  @brief A vector of booleans indicating whether the segment can connect to a switch block.
-     */
+    /// A vector of booleans indicating whether the segment can connect to a switch block.
     std::vector<bool> sb;
+
+    /**
+     *  @brief This segment is bend or not
+     */
+    bool is_bend;
+
+    /**
+     *  @brief The bend type of the segment, "-"-0, "U"-1, "D"-2
+     *  For example: bend pattern <- - U ->; corresponding bend: [0,0,1,0]
+     */
+    std::vector<int> bend;
+
+    /**
+     *  @brief Divide the segment into several parts based on bend position.
+     *  For example: length-5 bend segment: <- - U ->;
+     *  Corresponding part_len: [3,2]
+     */
+    std::vector<int> part_len;
 
     /**
      *  @brief The index of the segment as stored in the appropriate Segs list.
@@ -2005,101 +2078,6 @@ struct t_direct_inf {
     int line;
 };
 
-enum class SwitchPointOrder {
-    FIXED,   //Switchpoints are ordered as specified in architecture
-    SHUFFLED //Switchpoints are shuffled (more diversity)
-};
-
-//A collection of switchpoints associated with a segment
-struct t_wire_switchpoints {
-    std::string segment_name;      //The type of segment
-    std::vector<int> switchpoints; //The indices of wire points along the segment
-};
-
-/* Used to list information about a set of track segments that should connect through a switchblock */
-struct t_wireconn_inf {
-    std::vector<t_wire_switchpoints> from_switchpoint_set;             //The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
-    std::vector<t_wire_switchpoints> to_switchpoint_set;               //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
-    SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
-    SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   //The desired to_switchpoint_set ordering
-    int switch_override_indx = DEFAULT_SWITCH;                         // index in switch array of the switch used to override wire_switch of the 'to' set.
-                                                                       // DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
-
-    std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
-                                    *
-                                    * '<int>': A specific number of connections
-                                    * 'from':  The number of generated connections between the 'from' and 'to' sets equals the
-                                    *          size of the 'from' set. This ensures every element in the from set is connected
-                                    *          to an element of the 'to' set.
-                                    *          Note: this it may result in 'to' elements being driven by multiple 'from'
-                                    *          elements (if 'from' is larger than 'to'), or in some elements of 'to' having
-                                    *          no driving connections (if 'to' is larger than 'from').
-                                    * 'to':    The number of generated connections is set equal to the size of the 'to' set.
-                                    *          This ensures that each element of the 'to' set has precisely one incoming connection.
-                                    *          Note: this may result in 'from' elements driving multiple 'to' elements (if 'to' is
-                                    *          larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
-                                    *          larger than 'to')
-                                    */
-};
-
-/* represents a connection between two sides of a switchblock */
-class SB_Side_Connection {
-  public:
-    /* specify the two SB sides that form a connection */
-    enum e_side from_side = TOP;
-    enum e_side to_side = TOP;
-
-    void set_sides(enum e_side from, enum e_side to) {
-        from_side = from;
-        to_side = to;
-    }
-
-    SB_Side_Connection() = default;
-
-    SB_Side_Connection(enum e_side from, enum e_side to)
-        : from_side(from)
-        , to_side(to) {
-    }
-
-    /* overload < operator which will be used by std::map */
-    bool operator<(const SB_Side_Connection& obj) const {
-        bool result;
-
-        if (from_side < obj.from_side) {
-            result = true;
-        } else {
-            if (from_side == obj.from_side) {
-                result = (to_side < obj.to_side) ? true : false;
-            } else {
-                result = false;
-            }
-        }
-
-        return result;
-    }
-};
-
-/* Use a map to index into the string permutation functions used to connect from one side to another */
-typedef std::map<SB_Side_Connection, std::vector<std::string>> t_permutation_map;
-
-/* Lists all information about a particular switch block specified in the architecture file */
-struct t_switchblock_inf {
-    std::string name;                /* the name of this switchblock */
-    e_sb_location location;          /* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
-    e_directionality directionality; /* the directionality of this switchblock (unidir/bidir) */
-
-    int x = -1; /* The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified */
-    int y = -1; /* The exact y-axis location that this SB is used, meaningful when type is set to E_XY_specified */
-
-    /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
-    t_sb_loc_spec reg_x;
-    t_sb_loc_spec reg_y;
-
-    t_permutation_map permutation_map; /* map holding the permutation functions attributed to this switchblock */
-
-    std::vector<t_wireconn_inf> wireconns; /* list of wire types/groups this SB will connect */
-};
-
 /* Clock related data types used for building a dedicated clock network */
 struct t_clock_arch_spec {
     std::vector<t_clock_network_arch> clock_networks_arch;
@@ -2183,18 +2161,55 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-/*   Detailed routing architecture */
+// Detailed routing architecture
 struct t_arch {
-    /** Stores unique strings used as key and values in <metadata> tags,
-     * i.e. implements a flyweight pattern to save memory.*/
+    /// Stores unique strings used as key and values in <metadata> tags,
+    /// i.e. implements a flyweight pattern to save memory.
     mutable vtr::string_internment strings;
     std::vector<vtr::interned_string> interned_strings;
 
     /// Secure hash digest of the architecture file to uniquely identify this architecture
     char* architecture_id;
 
+    // Options for tileable routing architectures
+    // These are used for an alternative, tilable, rr-graph generator that can produce
+    // OpenFPGA-compatible FPGAs that can be implemented to silicon via the OpenFPGA flow
+
+    /// Whether the routing architecture is tileable
+    bool tileable;
+
+    /// Allow connection blocks to appear around the perimeter programmable block
+    bool perimeter_cb;
+
+    /// Remove all the routing wires in empty regions
+    bool shrink_boundary;
+
+    /// Allow routing channels to pass through multi-width and
+    /// multi-height programable blocks
+    bool through_channel;
+
+    /// Allow each output pin of a programmable block to drive the
+    /// routing tracks on all the sides of its adjacent switch block
+    bool opin2all_sides;
+
+    /// Whether the routing architecture has concat wire
+    /// For further detail, please refer to documentation
+    bool concat_wire;
+
+    /// Whether the routing architecture has concat pass wire
+    /// For further detail, please refer to documentation
+    bool concat_pass_wire;
+
+    /// Connectivity parameter for pass tracks in each switch block
+    int sub_fs;
+
+    /// Connecting type for pass tracks in each switch block
+    enum e_switch_block_type sb_sub_type;
+
+    // End of tileable architecture options
+
     t_chan_width_dist Chans;
-    enum e_switch_block_type SBType;
+    enum e_switch_block_type sb_type;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;
@@ -2211,7 +2226,8 @@ struct t_arch {
     LogicalModels models;
 
     t_power_arch* power = nullptr;
-    t_clock_arch* clocks = nullptr;
+
+    std::shared_ptr<std::vector<t_clock_network>> clocks;
 
     //determine which layers in multi-die FPGAs require to build global routing resources
     std::vector<bool> layer_global_routing;
@@ -2243,21 +2259,30 @@ struct t_arch {
     std::vector<t_lut_cell> lut_cells;
     std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
-    //The name of the switch used for the input connection block (i.e. to
-    //connect routing tracks to block pins). tracks can be connected to
+    // The name of the switch used for the input connection block (i.e. to
+    // connect routing tracks to block pins). tracks can be connected to
     // ipins through the same die or from other dice, each of these
-    //types of connections requires a different switch, all names should correspond to a switch in Switches.
+    // types of connections requires a different switch, all names should correspond to a switch in Switches.
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
 
-    //the layout that is chosen to be used with command line options
-    //It is used to generate custom SB for a specific locations within the device
-    //If the layout is not specified in the command line options, this variable will be set to "auto"
+    // the layout that is chosen to be used with command line options
+    // It is used to generate custom SB for a specific locations within the device
+    // If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout;
 
     t_clock_arch_spec clock_arch; // Clock related data types
 
     /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
+
+    /// VIB grid layouts
+    std::vector<t_vib_grid_def> vib_grid_layouts;
+
+    // added for vib
+    std::vector<VibInf> vib_infs;
+
+    /// Stores information for scatter-gather patterns that can be used to define some of the rr-graph connectivity
+    std::vector<t_scatter_gather_pattern> scatter_gather_patterns;
 };

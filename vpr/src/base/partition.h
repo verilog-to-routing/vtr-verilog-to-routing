@@ -1,5 +1,4 @@
-#ifndef PARTITION_H
-#define PARTITION_H
+#pragma once
 
 #include <string>
 
@@ -16,11 +15,8 @@
  * with L, T or other shapes can be created with a union of multiple rectangles.
  */
 
-/// @brief Type tag for PartitionId
-struct partition_id_tag;
-
 /// @brief A unique identifier for a partition
-typedef vtr::StrongId<partition_id_tag> PartitionId;
+typedef vtr::StrongId<struct partition_id_tag> PartitionId;
 
 class Partition {
   public:
@@ -59,5 +55,3 @@ class Partition {
 
 ///@brief used to print data from a Partition
 void print_partition(FILE* fp, const Partition& part);
-
-#endif /* PARTITION_H */

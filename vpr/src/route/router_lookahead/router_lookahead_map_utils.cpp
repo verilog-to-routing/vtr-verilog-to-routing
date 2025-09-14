@@ -14,7 +14,9 @@
 #include "globals.h"
 #include "physical_types_util.h"
 #include "vpr_context.h"
+#include "vpr_error.h"
 #include "vpr_utils.h"
+#include "vpr_types.h"
 #include "vtr_math.h"
 #include "vtr_time.h"
 #include "route_common.h"
@@ -32,7 +34,6 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_
 static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& chan_ipins_delays);
 
 /**
- * @param itile
  * @return Return the maximum ptc number of the SOURCE/OPINs of a tile type
  */
 static int get_tile_src_opin_max_ptc(int itile);
@@ -109,8 +110,8 @@ static std::pair<int, int> get_adjusted_rr_src_sink_position(RRNodeId rr);
 //          x_max: 5 (x + X_OFFSET)
 //          y_min: 3 (y - Y_OFFSET)
 //          y_max: 7 (y + Y_OFFSET)
-#define X_OFFSET 2
-#define Y_OFFSET 2
+static constexpr int X_OFFSET = 2;
+static constexpr int Y_OFFSET = 2;
 
 // Maximum dijkstra expansions when exploring the CHAN --> IPIN connections
 // This sets a limit on the dijkstra expansions to reach an IPIN connection. Given that we
@@ -120,7 +121,7 @@ static std::pair<int, int> get_adjusted_rr_src_sink_position(RRNodeId rr);
 // E.g.: if the constant value is set to 2, the following expansions are perfomed:
 //          - CHANX --> CHANX --> exploration interrupted: Maximum expansion level reached
 //          - CHANX --> IPIN --> exploration interrupted: IPIN found, no need to expand further
-#define MAX_EXPANSION_LEVEL 1
+static constexpr int MAX_EXPANSION_LEVEL = 1;
 
 // The special segment type index used to identify a direct connection between an OPIN to IPIN that
 // does not go through the CHANX/CHANY nodes.
@@ -264,8 +265,9 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
      * with the largest number of entries */
 
     // This is code that needs to be revisited. For the time being, if the median entry
-    // method calculation is used an assertion is thrown.
-    VTR_ASSERT_MSG(false, "Get median entry calculation method is not implemented!");
+    // method calculation is used an error is thrown.
+    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                    "Get median entry calculation method is not implemented!");
 
     int num_bins = 10;
 
@@ -362,7 +364,8 @@ template void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                                              std::vector<PQ_Entry_Base_Cost>,
                                                              std::greater<PQ_Entry_Base_Cost>>* pq);
 
-t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
+t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
+                                                    int route_verbosity) {
     vtr::ScopedStartFinishTimer timer("Computing src/opin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
@@ -371,7 +374,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
 
     t_src_opin_delays src_opin_delays;
     src_opin_delays.resize(num_layers);
-    std::vector<int> tile_max_ptc(device_ctx.physical_tile_types.size(), OPEN);
+    std::vector<int> tile_max_ptc(device_ctx.physical_tile_types.size(), UNDEFINED);
 
     // Get the maximum OPIN ptc for each tile type to reserve src_opin_delays
     for (int itile = 0; itile < (int)device_ctx.physical_tile_types.size(); itile++) {
@@ -397,7 +400,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                 continue;
             }
             for (e_rr_type rr_type : {e_rr_type::SOURCE, e_rr_type::OPIN}) {
-                t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
+                t_physical_tile_loc sample_loc(UNDEFINED, UNDEFINED, UNDEFINED);
 
                 size_t num_sampled_locs = 0;
                 bool ptcs_with_no_delays = true;
@@ -408,20 +411,19 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                                                   &device_ctx.physical_tile_types[itile],
                                                   sample_loc);
 
-                    if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
+                    if (sample_loc.x == UNDEFINED && sample_loc.y == UNDEFINED && sample_loc.layer_num == UNDEFINED) {
                         //No untried instances of the current tile type left
-                        VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
-                                     (num_sampled_locs == 0) ? "" : "more ",
-                                     rr_node_typename[rr_type],
-                                     device_ctx.physical_tile_types[itile].name.c_str());
+                        VTR_LOGV_WARN(route_verbosity > 1,
+                                      "Found no %ssample locations for %s in %s\n",
+                                      (num_sampled_locs == 0) ? "" : "more ",
+                                      rr_node_typename[rr_type],
+                                      device_ctx.physical_tile_types[itile].name.c_str());
                         break;
                     }
 
-                    //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x(), sample_loc.y());
                     const std::vector<RRNodeId>& rr_nodes_at_loc = device_ctx.rr_graph.node_lookup().find_grid_nodes_at_all_sides(sample_loc.layer_num, sample_loc.x, sample_loc.y, rr_type);
                     for (RRNodeId node_id : rr_nodes_at_loc) {
                         int ptc = rr_graph.node_ptc_num(node_id);
-                        // For the time being, we decide to not let the lookahead explore the node inside the clusters
                         if (!is_inter_cluster_node(rr_graph, node_id)) {
                             continue;
                         }
@@ -466,7 +468,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
     return src_opin_delays;
 }
 
-t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
+t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity) {
     vtr::ScopedStartFinishTimer timer("Computing chan/ipin lookahead");
     auto& device_ctx = g_vpr_ctx.device();
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
@@ -474,25 +476,26 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     t_chan_ipins_delays chan_ipins_delays;
 
     chan_ipins_delays.resize(device_ctx.grid.get_num_layers());
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (size_t layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         chan_ipins_delays[layer_num].resize(device_ctx.physical_tile_types.size());
     }
 
-    //We assume that the routing connectivity of each instance of a physical tile is the same,
-    //and so only measure one instance of each type
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        for (auto tile_type : device_ctx.physical_tile_types) {
+    // We assume that the routing connectivity of each instance of a physical tile is the same,
+    // and so only measure one instance of each type
+    for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
+        for (const t_physical_tile_type& tile_type : device_ctx.physical_tile_types) {
             if (device_ctx.grid.num_instances(&tile_type, layer_num) == 0) {
                 continue;
             }
-            t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
+            t_physical_tile_loc sample_loc(UNDEFINED, UNDEFINED, UNDEFINED);
 
             sample_loc = pick_sample_tile(layer_num, &tile_type, sample_loc);
 
-            if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
+            if (sample_loc.x == UNDEFINED && sample_loc.y == UNDEFINED && sample_loc.layer_num == UNDEFINED) {
                 //No untried instances of the current tile type left
-                VTR_LOG_WARN("Found no sample locations for %s\n",
-                             tile_type.name.c_str());
+                VTR_LOGV_WARN(route_verbosity > 1,
+                              "Found no sample locations for %s\n",
+                              tile_type.name.c_str());
                 continue;
             }
 
@@ -520,10 +523,8 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
 
 t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                                          t_physical_tile_type_ptr physical_tile,
-                                                         int layer,
-                                                         int x,
-                                                         int y) {
-    auto tile_pins_vec = get_flat_tile_pins(physical_tile);
+                                                         const t_physical_tile_loc& tile_loc) {
+    std::vector<int> tile_pins_vec = get_flat_tile_pins(physical_tile);
     int max_ptc_num = get_tile_pin_max_ptc(physical_tile, true);
 
     t_ipin_primitive_sink_delays pin_delays;
@@ -532,9 +533,7 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
     for (int pin_physical_num : tile_pins_vec) {
         RRNodeId pin_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
                                                   physical_tile,
-                                                  layer,
-                                                  x,
-                                                  y,
+                                                  tile_loc,
                                                   pin_physical_num);
         VTR_ASSERT(pin_node_id != RRNodeId::INVALID());
 
@@ -546,7 +545,7 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
 
 /* returns index of a node from which to start routing */
 RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& node_lookup = rr_graph.node_lookup();
 
@@ -587,7 +586,7 @@ RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int t
 }
 
 std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     e_rr_type from_type = rr_graph.node_type(from_node);
@@ -595,7 +594,7 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
 
     int delta_x, delta_y;
 
-    if (!is_chan(from_type) && !is_chan(to_type)) {
+    if (!is_chanxy(from_type) && !is_chanxy(to_type)) {
         //Alternate formulation for non-channel types
         auto [from_x, from_y] = get_adjusted_rr_position(from_node);
         auto [to_x, to_y] = get_adjusted_rr_position(to_node);
@@ -660,9 +659,20 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
         /* account for wire direction. lookahead map was computed by looking up and to the right starting at INC wires. for targets
          * that are opposite of the wire direction, let's add 1 to delta_seg */
         Direction from_dir = rr_graph.node_direction(from_node);
-        if (is_chan(from_type)
+        if (is_chanxy(from_type)
             && ((to_seg < from_seg_low && from_dir == Direction::INC) || (to_seg > from_seg_high && from_dir == Direction::DEC))) {
-            delta_seg++;
+            // If the routing channel starts from the perimeter of the grid,
+            // and it is heading towards the outside of the grid, we should
+            // not increment the delta_seg by 1.
+            int max_seg_index = -1;
+            if (from_type == e_rr_type::CHANX) {
+                max_seg_index = static_cast<int>(device_ctx.grid.width()) - 1;
+            } else {
+                max_seg_index = static_cast<int>(device_ctx.grid.height()) - 1;
+            }
+            if (!((from_seg_low == 0 && from_dir == Direction::DEC) || (from_seg_low == max_seg_index && from_dir == Direction::INC))) {
+                delta_seg++;
+            }
         }
 
         if (from_type == e_rr_type::CHANY) {
@@ -681,11 +691,12 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
 }
 
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
-                                        int from_layer_num,
+                                        unsigned from_layer_num,
                                         const e_rr_type& chan_type,
                                         const t_segment_inf& segment_inf,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
-                                        bool sample_all_locs) {
+                                        bool sample_all_locs,
+                                        int route_verbosity) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
@@ -721,9 +732,9 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     //First try to pick good representative sample locations for each type
     std::vector<RRNodeId> sample_nodes;
     std::vector<e_rr_type> chan_types;
-    if (segment_inf.parallel_axis == X_AXIS)
+    if (segment_inf.parallel_axis == e_parallel_axis::X_AXIS)
         chan_types.push_back(e_rr_type::CHANX);
-    else if (segment_inf.parallel_axis == Y_AXIS)
+    else if (segment_inf.parallel_axis == e_parallel_axis::Y_AXIS)
         chan_types.push_back(e_rr_type::CHANY);
     else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
         chan_types.insert(chan_types.end(), {e_rr_type::CHANX, e_rr_type::CHANY});
@@ -745,7 +756,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                 continue;
             }
             // TODO: Temporary - After testing benchmarks this can be deleted
-            VTR_ASSERT(rr_graph.node_layer(start_node) == from_layer_num);
+            VTR_ASSERT(rr_graph.node_layer(start_node) == (int)from_layer_num);
 
             sample_nodes.emplace_back(start_node);
         }
@@ -756,14 +767,14 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     //This is to ensure we sample 'unusual' wire types which may not exist in all channels
     //(e.g. clock routing)
     if (sample_nodes.empty()) {
-        //Try an exhaustive search to find a suitable sample point
+        // Try an exhaustive search to find a suitable sample point
         for (RRNodeId rr_node : rr_graph.nodes()) {
-            auto rr_type = rr_graph.node_type(rr_node);
+            e_rr_type rr_type = rr_graph.node_type(rr_node);
             if (rr_type != chan_type) continue;
-            if (rr_graph.node_layer(rr_node) != from_layer_num) continue;
+            if (rr_graph.node_layer(rr_node) != (int)from_layer_num) continue;
 
-            auto cost_index = rr_graph.node_cost_index(rr_node);
-            VTR_ASSERT(cost_index != RRIndexedDataId(OPEN));
+            RRIndexedDataId cost_index = rr_graph.node_cost_index(rr_node);
+            VTR_ASSERT(cost_index != RRIndexedDataId(UNDEFINED));
 
             int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
@@ -780,13 +791,14 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     //Finally, now that we have a list of sample locations, run a Dijkstra flood from
     //each sample location to profile the routing network from this type
 
-    t_routing_cost_map routing_cost_map({static_cast<unsigned long>(device_ctx.grid.get_num_layers()), device_ctx.grid.width(), device_ctx.grid.height()});
+    t_routing_cost_map routing_cost_map({(size_t)device_ctx.grid.get_num_layers(), device_ctx.grid.width(), device_ctx.grid.height()});
 
     if (sample_nodes.empty()) {
-        VTR_LOG_WARN("Unable to find any sample location for segment %s type '%s' (length %d)\n",
-                     rr_node_typename[chan_type],
-                     segment_inf.name.c_str(),
-                     segment_inf.length);
+        VTR_LOGV_WARN(route_verbosity > 1,
+                      "Unable to find any sample location for segment %s type '%s' (length %d)\n",
+                      rr_node_typename[chan_type],
+                      segment_inf.name.c_str(),
+                      segment_inf.length);
     } else {
         //reset cost for this segment
         routing_cost_map.fill(Expansion_Cost_Entry());
@@ -928,13 +940,12 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
         }
     }
 }
-
 } // namespace util
 
 static void dijkstra_flood_to_wires(int itile,
                                     RRNodeId node,
                                     util::t_src_opin_delays& src_opin_delays) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     struct t_pq_entry {
@@ -1012,7 +1023,7 @@ static void dijkstra_flood_to_wires(int itile,
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].congestion = curr.congestion;
             }
 
-        } else if (curr_rr_type == e_rr_type::SOURCE || curr_rr_type == e_rr_type::OPIN || curr_rr_type == e_rr_type::IPIN) {
+        } else if (curr_rr_type == e_rr_type::SOURCE || curr_rr_type == e_rr_type::OPIN || curr_rr_type == e_rr_type::IPIN || curr_rr_type == e_rr_type::MUX) {
             //We allow expansion through SOURCE/OPIN/IPIN types
             auto cost_index = rr_graph.node_cost_index(curr.node);
             float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
@@ -1023,7 +1034,6 @@ static void dijkstra_flood_to_wires(int itile,
 
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
-
                 if (!is_inter_cluster_node(rr_graph, next_node)) {
                     // Don't go inside the clusters
                     continue;
@@ -1167,7 +1177,7 @@ static int get_tile_src_opin_max_ptc(int itile) {
 
 static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_ptr tile_type, t_physical_tile_loc prev) {
     //Very simple for now, just pick the fist matching tile found
-    t_physical_tile_loc loc(OPEN, OPEN, OPEN);
+    t_physical_tile_loc loc(UNDEFINED, UNDEFINED, UNDEFINED);
 
     //VTR_LOG("Prev: %d,%d\n", prev.x, prev.y);
 
@@ -1196,7 +1206,7 @@ static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_
             }
         }
 
-        if (loc.x != OPEN && loc.y != OPEN && loc.layer_num != OPEN) {
+        if (loc.x != UNDEFINED && loc.y != UNDEFINED && loc.layer_num != UNDEFINED) {
             break;
         } else {
             y_init = 0; //Prepare to search next column
@@ -1378,8 +1388,8 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
 
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
-        // For the time being, we decide to not let the lookahead explore the node inside the clusters
-
+        // Don't expand the nodes inside the clusters since the intra-cluster lookahead
+        // is computed separately.
         if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
         }
@@ -1414,13 +1424,15 @@ static std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
 
     e_rr_type rr_type = rr_graph.node_type(rr);
 
-    if (is_chan(rr_type)) {
+    if (is_chanxy(rr_type)) {
         return get_adjusted_rr_wire_position(rr);
     } else if (is_pin(rr_type)) {
         return get_adjusted_rr_pin_position(rr);
-    } else {
-        VTR_ASSERT_SAFE(is_src_sink(rr_type));
+    } else if (is_src_sink(rr_type)) {
         return get_adjusted_rr_src_sink_position(rr);
+    } else {
+        VTR_ASSERT_SAFE(is_chanz(rr_type));
+        return {rr_graph.node_xlow(rr), rr_graph.node_ylow(rr)};
     }
 }
 
@@ -1494,7 +1506,7 @@ static std::pair<int, int> get_adjusted_rr_wire_position(const RRNodeId rr) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    VTR_ASSERT_SAFE(is_chan(rr_graph.node_type(rr)));
+    VTR_ASSERT_SAFE(is_chanxy(rr_graph.node_type(rr)));
 
     Direction rr_dir = rr_graph.node_direction(rr);
 

@@ -1,5 +1,4 @@
-#ifndef _SERIAL_CONNECTION_ROUTER_H
-#define _SERIAL_CONNECTION_ROUTER_H
+#pragma once
 
 #include "connection_router.h"
 
@@ -19,8 +18,9 @@ class SerialConnectionRouter : public ConnectionRouter<HeapImplementation> {
         const std::vector<t_rr_rc_data>& rr_rc_data,
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
-        bool is_flat)
-        : ConnectionRouter<HeapImplementation>(grid, router_lookahead, rr_nodes, rr_graph, rr_rc_data, rr_switch_inf, rr_node_route_inf, is_flat) {
+        bool is_flat,
+        int route_verbosity)
+        : ConnectionRouter<HeapImplementation>(grid, router_lookahead, rr_nodes, rr_graph, rr_rc_data, rr_switch_inf, rr_node_route_inf, is_flat, route_verbosity) {
     }
 
     ~SerialConnectionRouter() {
@@ -248,6 +248,5 @@ std::unique_ptr<ConnectionRouterInterface> make_serial_connection_router(
     const std::vector<t_rr_rc_data>& rr_rc_data,
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
-    bool is_flat);
-
-#endif /* _SERIAL_CONNECTION_ROUTER_H */
+    bool is_flat,
+    int route_verbosity);

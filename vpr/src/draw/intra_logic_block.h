@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file intra_logic_block.h
  * 
@@ -14,8 +15,6 @@
  * Author: Matthew J.P. Walker
  * Date: May,June 2014
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 
@@ -118,6 +117,12 @@ int highlight_sub_block(const ezgl::point2d& point_in_clb, const ClusterBlockId 
  * returns the struct with information about the sub-block selection
  */
 t_selected_sub_block_info& get_selected_sub_block_info();
+
+/**
+ * Draw the atom-level net flylines for the selected pb 
+ * (inputs: blue, outputs: red, internal: orange)
+ */
+void draw_selected_pb_flylines(ezgl::renderer* g);
 
 /*
  * Draws lines from the proper logical sources, to the proper logical sinks.

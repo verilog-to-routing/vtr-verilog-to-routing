@@ -1,16 +1,14 @@
-#ifndef CLOCK_NETWORK_BUILDERS_H
-#define CLOCK_NETWORK_BUILDERS_H
+#pragma once
 
 #include <string>
 #include <vector>
 
-#include "clock_fwd.h"
+#include "device_grid.h"
+#include "rr_graph_builder.h"
+#include "rr_graph_clock.h"
+#include "rr_graph_type.h"
 
 #include "vpr_types.h"
-
-#include "rr_graph_builder.h"
-#include "rr_graph2.h"
-#include "rr_graph_clock.h"
 
 class t_rr_graph_storage;
 class ClockRRGraphBuilder;
@@ -28,56 +26,56 @@ struct MetalLayer {
 
 struct Wire {
     MetalLayer layer;
-    int start = OPEN;
-    int length = OPEN;
-    int position = OPEN;
+    int start = UNDEFINED;
+    int length = UNDEFINED;
+    int position = UNDEFINED;
 };
 
 struct WireRepeat {
-    int x = OPEN;
-    int y = OPEN;
+    int x = UNDEFINED;
+    int y = UNDEFINED;
 };
 
 struct RibDrive {
     std::string name;
-    int offset = OPEN;
-    int switch_idx = OPEN;
+    int offset = UNDEFINED;
+    int switch_idx = UNDEFINED;
 };
 
 struct RibTaps {
     std::string name;
-    int offset = OPEN;
-    int increment = OPEN;
+    int offset = UNDEFINED;
+    int increment = UNDEFINED;
 };
 
 struct SpineDrive {
     std::string name;
-    int offset = OPEN;
-    int switch_idx = OPEN;
+    int offset = UNDEFINED;
+    int switch_idx = UNDEFINED;
 };
 
 struct SpineTaps {
     std::string name;
-    int offset = OPEN;
-    int increment = OPEN;
+    int offset = UNDEFINED;
+    int increment = UNDEFINED;
 };
 
 struct HtreeDrive {
     std::string name;
-    Coordinates offset;
-    int switch_idx = OPEN;
+    t_physical_tile_loc offset;
+    int switch_idx = UNDEFINED;
 };
 
 struct HtreeTaps {
     std::string name;
-    Coordinates offset;
-    Coordinates increment;
+    t_physical_tile_loc offset;
+    t_physical_tile_loc increment;
 };
 
 class ClockNetwork {
   protected:
     std::string clock_name_;
-    int num_inst_ = OPEN;
+    int num_inst_ = UNDEFINED;
 
   public:
     /*
@@ -131,9 +129,9 @@ class ClockRib : public ClockNetwork {
     RibTaps tap;
 
     // segment indices
-    int right_seg_idx = OPEN;
-    int left_seg_idx = OPEN;
-    int drive_seg_idx = OPEN;
+    int right_seg_idx = UNDEFINED;
+    int left_seg_idx = UNDEFINED;
+    int drive_seg_idx = UNDEFINED;
 
   public:
     /** Constructor**/
@@ -208,9 +206,9 @@ class ClockSpine : public ClockNetwork {
      * right nodes for the network. We now use segment indices realtive to the **parallel** vector of segments to setup the cost index, so these
      * will be remapped later in the map_relative_seg_indices.  */
 
-    int right_seg_idx = OPEN;
-    int left_seg_idx = OPEN;
-    int drive_seg_idx = OPEN;
+    int right_seg_idx = UNDEFINED;
+    int left_seg_idx = UNDEFINED;
+    int drive_seg_idx = UNDEFINED;
 
   public:
     /*
@@ -281,5 +279,3 @@ class ClockHTree : private ClockNetwork {
                                                              int num_segments_x) override;
     size_t estimate_additional_nodes(const DeviceGrid& grid) override;
 };
-
-#endif

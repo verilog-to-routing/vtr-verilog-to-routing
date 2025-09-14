@@ -1,6 +1,7 @@
 
 #include "check_route.h"
 
+#include "describe_rr_node.h"
 #include "physical_types_util.h"
 #include "route_common.h"
 #include "vpr_utils.h"
@@ -32,8 +33,22 @@ static void check_sink(const Netlist<>& net_list,
                        bool* pin_done);
 
 static void check_switch(const RouteTreeNode& rt_node, size_t num_switch);
+
+/**
+ * @brief Checks if two RR nodes are physically adjacent and legally connected.
+ *
+ * Verifies whether `to_node` is reachable from `from_node` based on spatial proximity and RR node types.
+ *
+ * Special cases:
+ * - Direct OPIN to IPIN connections are allowed even if not physically adjacent (e.g., carry chains).
+ * - In flat routing, intra-cluster OPIN/IPIN connections are allowed.
+ *
+ * @param from_node The source RR node.
+ * @param to_node   The destination RR node.
+ * @param is_flat   Whether routing is flat (affects intra-cluster pin checks).
+ * @return true if nodes are legally adjacent, false otherwise.
+ */
 static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat);
-static int chanx_chany_adjacent(RRNodeId chanx_node, RRNodeId chany_node);
 
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
                                          enum e_route_type route_type,
@@ -139,7 +154,7 @@ void check_route(const Netlist<>& net_list,
 
         /* Check the rest of the net */
         size_t num_sinks = 0;
-        for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+        for (const RouteTreeNode& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
             int net_pin_index = rt_node.net_pin_index;
             check_node_and_range(inode, route_type, is_flat);
@@ -203,7 +218,7 @@ static void check_sink(const Netlist<>& net_list,
 
     VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::SINK);
 
-    if (net_pin_index == OPEN) { /* If there is no legal net pin index associated with this sink node */
+    if (net_pin_index == UNDEFINED) { /* If there is no legal net pin index associated with this sink node */
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_sink: node %d does not connect to any terminal of net %s #%lu.\n"
                         "This error is usually caused by incorrectly specified logical equivalence in your architecture file.\n"
@@ -273,17 +288,10 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
      * Special case: direct OPIN to IPIN connections need not be adjacent.  These
      * represent specially-crafted connections such as carry-chains or more advanced
      * blocks where adjacency is overridden by the architect */
-
-    int from_layer, from_xlow, from_ylow, to_layer, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
-    int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh;
-    bool reached;
-    e_rr_type from_type, to_type;
-    t_physical_tile_type_ptr from_grid_type, to_grid_type;
-
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    reached = false;
+    bool reached = false;
 
     for (t_edge_size iconn = 0; iconn < rr_graph.num_edges(RRNodeId(from_node)); iconn++) {
         if (size_t(rr_graph.edge_sink_node(from_node, iconn)) == size_t(to_node)) {
@@ -292,31 +300,32 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
         }
     }
 
-    if (!reached)
-        return (false);
+    if (!reached) {
+        return false;
+    }
 
     /* Now we know the rr graph says these two nodes are adjacent.  Double  *
      * check that this makes sense, to verify the rr graph.                 */
     VTR_ASSERT(reached);
 
-    num_adj = 0;
+    int num_adj = 0;
 
     auto from_rr = RRNodeId(from_node);
     auto to_rr = RRNodeId(to_node);
-    from_type = rr_graph.node_type(from_rr);
-    from_layer = rr_graph.node_layer(from_rr);
-    from_xlow = rr_graph.node_xlow(from_rr);
-    from_ylow = rr_graph.node_ylow(from_rr);
-    from_xhigh = rr_graph.node_xhigh(from_rr);
-    from_yhigh = rr_graph.node_yhigh(from_rr);
-    from_ptc = rr_graph.node_ptc_num(from_rr);
-    to_type = rr_graph.node_type(to_rr);
-    to_layer = rr_graph.node_layer(to_rr);
-    to_xlow = rr_graph.node_xlow(to_rr);
-    to_ylow = rr_graph.node_ylow(to_rr);
-    to_xhigh = rr_graph.node_xhigh(to_rr);
-    to_yhigh = rr_graph.node_yhigh(to_rr);
-    to_ptc = rr_graph.node_ptc_num(to_rr);
+    e_rr_type from_type = rr_graph.node_type(from_rr);
+    int from_layer = rr_graph.node_layer(from_rr);
+    int from_xlow = rr_graph.node_xlow(from_rr);
+    int from_ylow = rr_graph.node_ylow(from_rr);
+    int from_xhigh = rr_graph.node_xhigh(from_rr);
+    int from_yhigh = rr_graph.node_yhigh(from_rr);
+    int from_ptc = rr_graph.node_ptc_num(from_rr);
+    e_rr_type to_type = rr_graph.node_type(to_rr);
+    int to_layer = rr_graph.node_layer(to_rr);
+    int to_xlow = rr_graph.node_xlow(to_rr);
+    int to_ylow = rr_graph.node_ylow(to_rr);
+    int to_xhigh = rr_graph.node_xhigh(to_rr);
+    int to_yhigh = rr_graph.node_yhigh(to_rr);
+    int to_ptc = rr_graph.node_ptc_num(to_rr);
 
     // If to_node is a SINK, it could be anywhere within its containing device grid tile, and it is reasonable for
     // any input pins or within-cluster pins to reach it. Hence, treat its size as that of its containing tile.
@@ -329,6 +338,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
         to_yhigh = tile_bb.ymax();
     }
 
+    t_physical_tile_type_ptr from_grid_type, to_grid_type;
+
     // Layer numbers are should not be more than one layer apart for connected nodes
     VTR_ASSERT(abs(from_layer - to_layer) <= 1);
     switch (from_type) {
@@ -336,15 +347,12 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             VTR_ASSERT(to_type == e_rr_type::OPIN);
 
             //The OPIN should be contained within the bounding box of it's connected source
-            if (from_xlow <= to_xlow
-                && from_ylow <= to_ylow
-                && from_xhigh >= to_xhigh
-                && from_yhigh >= to_yhigh) {
+            if (from_xlow <= to_xlow && from_ylow <= to_ylow && from_xhigh >= to_xhigh && from_yhigh >= to_yhigh) {
                 from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
                 to_grid_type = device_ctx.grid.get_physical_type({to_xlow, to_ylow, to_layer});
                 VTR_ASSERT(from_grid_type == to_grid_type);
 
-                iclass = get_class_num_from_pin_physical_num(to_grid_type, to_ptc);
+                int iclass = get_class_num_from_pin_physical_num(to_grid_type, to_ptc);
                 if (iclass == from_ptc)
                     num_adj++;
             }
@@ -356,7 +364,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
         case e_rr_type::OPIN:
             from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
-            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::MUX) {
                 num_adj += 1; //adjacent
             } else if (is_flat) {
                 VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN); // If pin is located inside a cluster
@@ -385,7 +393,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                     from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
                     to_grid_type = device_ctx.grid.get_physical_type({to_xlow, to_ylow, to_layer});
                     VTR_ASSERT(from_grid_type == to_grid_type);
-                    iclass = get_class_num_from_pin_physical_num(from_grid_type, from_ptc);
+                    int iclass = get_class_num_from_pin_physical_num(from_grid_type, from_ptc);
                     if (iclass == to_ptc)
                         num_adj++;
                 }
@@ -406,31 +414,11 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
         case e_rr_type::CHANX:
             if (to_type == e_rr_type::IPIN) {
-                num_adj += 1; //adjacent
-            } else if (to_type == e_rr_type::CHANX) {
-                from_xhigh = rr_graph.node_xhigh(from_node);
-                to_xhigh = rr_graph.node_xhigh(to_node);
-                if (from_ylow == to_ylow) {
-                    /* UDSD Modification by WMF Begin */
-                    /*For Fs > 3, can connect to overlapping wire segment */
-                    if (to_xhigh == from_xlow - 1 || from_xhigh == to_xlow - 1) {
-                        num_adj++;
-                    }
-                    /* Overlapping */
-                    else {
-                        int i;
-
-                        for (i = from_xlow; i <= from_xhigh; i++) {
-                            if (i >= to_xlow && i <= to_xhigh) {
-                                num_adj++;
-                                break;
-                            }
-                        }
-                    }
-                    /* UDSD Modification by WMF End */
-                }
-            } else if (to_type == e_rr_type::CHANY) {
-                num_adj += chanx_chany_adjacent(from_node, to_node);
+                num_adj += 1; // adjacent
+            } else if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ) {
+                num_adj += rr_graph.chan_nodes_are_adjacent(from_node, to_node);
+            } else if (to_type == e_rr_type::MUX) {
+                num_adj += 1; // adjacent
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
@@ -439,37 +427,42 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
         case e_rr_type::CHANY:
             if (to_type == e_rr_type::IPIN) {
-                num_adj += 1; //adjacent
-            } else if (to_type == e_rr_type::CHANY) {
-                from_yhigh = rr_graph.node_yhigh(from_node);
-                to_yhigh = rr_graph.node_yhigh(to_node);
-                if (from_xlow == to_xlow) {
-                    /* UDSD Modification by WMF Begin */
-                    if (to_yhigh == from_ylow - 1 || from_yhigh == to_ylow - 1) {
-                        num_adj++;
-                    }
-                    /* Overlapping */
-                    else {
-                        int j;
-
-                        for (j = from_ylow; j <= from_yhigh; j++) {
-                            if (j >= to_ylow && j <= to_yhigh) {
-                                num_adj++;
-                                break;
-                            }
-                        }
-                    }
-                    /* UDSD Modification by WMF End */
-                }
-            } else if (to_type == e_rr_type::CHANX) {
-                num_adj += chanx_chany_adjacent(to_node, from_node);
+                num_adj += 1; // adjacent
+            } else if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ) {
+                num_adj += rr_graph.chan_nodes_are_adjacent(from_node, to_node);
+            } else if (to_type == e_rr_type::MUX) {
+                num_adj += 1; // adjacent
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
             }
             break;
 
+        case e_rr_type::CHANZ:
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ) {
+                num_adj += rr_graph.chan_nodes_are_adjacent(from_node, to_node);
+            } else {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
+            }
+            break;
+
+        case e_rr_type::MUX:
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::MUX) {
+                num_adj += 1; //adjacent
+            } else if (is_flat) {
+                VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN); // If pin is located inside a cluster
+                return true;
+            } else {
+                VTR_ASSERT(to_type == e_rr_type::IPIN);
+                num_adj += 1;
+            }
+
+            break;
+
         default:
+            VPR_ERROR(VPR_ERROR_ROUTE,
+                      "in check_adjacent: Unknown RR type.\n");
             break;
     }
 
@@ -480,21 +473,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
     VPR_ERROR(VPR_ERROR_ROUTE,
               "in check_adjacent: num_adj = %d. Expected 0 or 1.\n", num_adj);
-    return false; //Should not reach here once thrown
-}
-
-static int chanx_chany_adjacent(RRNodeId chanx_node, RRNodeId chany_node) {
-    /* Returns 1 if the specified CHANX and CHANY nodes are adjacent, 0         *
-     * otherwise.                                                               */
-
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    if (rr_graph.nodes_are_adjacent(chanx_node, chany_node)) {
-        return (1);
-    } else {
-        return (0);
-    }
+    return false; // Should not reach here once thrown
 }
 
 void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
@@ -606,6 +585,7 @@ static void check_node_and_range(RRNodeId inode,
     check_rr_node(device_ctx.rr_graph,
                   device_ctx.rr_indexed_data,
                   device_ctx.grid,
+                  device_ctx.vib_grid,
                   device_ctx.chan_width,
                   route_type,
                   size_t(inode),

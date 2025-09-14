@@ -1,5 +1,4 @@
-#ifndef VPR_ATOM_LOOKUP_FWD_H
-#define VPR_ATOM_LOOKUP_FWD_H
+#pragma once
 
 class AtomLookup;
 
@@ -7,5 +6,3 @@ enum class BlockTnode {
     INTERNAL, ///<tnodes corresponding to internal paths withing atom blocks
     EXTERNAL  ///<tnodes corresponding to external interface of atom blocks
 };
-
-#endif

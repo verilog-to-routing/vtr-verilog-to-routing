@@ -50,9 +50,9 @@ static void count_clb_inputs_and_outputs_from_pb_route(const t_pb* pb,
         AtomNetId atom_net_id = pb->pb_route[pb_graph_pin_id].atom_net_id;
         if (atom_net_id) {
             nets_absorbed[atom_net_id] = false;
-            if (pin_type == RECEIVER) {
+            if (pin_type == e_pin_type::RECEIVER) {
                 num_clb_inputs_used[logical_block->index]++;
-            } else if (pin_type == DRIVER) {
+            } else if (pin_type == e_pin_type::DRIVER) {
                 num_clb_outputs_used[logical_block->index]++;
             }
         }
@@ -115,9 +115,9 @@ static void count_stats_from_netlist(std::unordered_map<AtomNetId, bool>& nets_a
                     VTR_ASSERT(net_id);
                     nets_absorbed[net_id] = false;
 
-                    if (pin_type == RECEIVER) {
+                    if (pin_type == e_pin_type::RECEIVER) {
                         num_clb_inputs_used[logical_block->index]++;
-                    } else if (pin_type == DRIVER) {
+                    } else if (pin_type == e_pin_type::DRIVER) {
                         num_clb_outputs_used[logical_block->index]++;
                     }
                 }
@@ -226,7 +226,7 @@ static std::string clustering_xml_interconnect_text(t_logical_block_type_ptr typ
 
     int prev_node = pb_route[inode].driver_pb_pin_id;
     int prev_edge;
-    if (prev_node == OPEN) {
+    if (prev_node == UNDEFINED) {
         /* No previous driver implies that this is either a top-level input pin or a primitive output pin */
         const t_pb_graph_pin* cur_pin = pb_graph_pin_lookup_from_index_by_type.pb_gpin(type->index, inode);
         VTR_ASSERT(cur_pin->parent_node->pb_type->is_root() || (cur_pin->is_primitive_pin() && cur_pin->port->type == OUT_PORT));

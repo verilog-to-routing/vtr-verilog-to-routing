@@ -166,6 +166,9 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
 
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id);
 
+/**
+ * @brief Retrieves the atom pin associated with a specific CLB and pb_graph_pin. Warning: Not all pb_graph_pins are associated with an atom pin! Only pb_graph_pins on primatives are associated with an AtomPinId. Returns AtomPinId::INVALID() if no atom pin is found.
+ */
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
 //Returns the logical block type which is most common in the device grid
@@ -187,7 +190,9 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
 ///        pb_graph_node.
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
+void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
@@ -243,16 +248,43 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
 
 RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             t_physical_tile_type_ptr physical_tile,
-                            const int layer,
-                            const int root_i,
-                            const int root_j,
+                            const t_physical_tile_loc& root_loc,
                             int pin_physical_num);
+
+/**
+ * @brief Returns the RR node ID for the given atom pin ID.
+ * **Warning**: This function should be called only if flat-router is enabled,
+ * since, otherwise, the routing resources inside clusters are not added to the RR graph.
+ * @param atom_pin_id The atom pin ID.
+ */
+RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id);
+
+/**
+ * @brief Returns the cluster block ID and pb_graph_pin for the given RR node ID.
+ * @note  Use structured bindings for clarity:
+ * ```cpp
+ * auto [blk_id, pb_graph_pin] = get_rr_node_cluster_blk_id_pb_graph_pin ( ... );
+ * ```
+ * **Warning**: This function should be called only if flat-router is enabled,
+ * since, otherwise, the routing resources inside clusters are not added to the RR graph.
+ * @param rr_node_id The RR node ID.
+ * @return A pair containing the ClusterBlockId and the corresponding t_pb_graph_pin pointer.
+ */
+std::pair<ClusterBlockId, t_pb_graph_pin*> get_rr_node_cluster_blk_id_pb_graph_pin(RRNodeId rr_node_id);
+
+/**
+ * @brief Returns the atom pin ID for the given RR node ID.
+ * **Warning**: This function should be called only if flat-router is enabled,
+ * since, otherwise, the routing resources inside clusters are not added to the RR graph.
+ * Not all RRNodes have an AtomPinId associated with them.
+ * See also: find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin).
+ * @param rr_node_id The RR node ID.
+ */
+AtomPinId get_rr_node_atom_pin_id(RRNodeId rr_node_id);
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               t_physical_tile_type_ptr physical_tile,
-                              const int layer,
-                              const int i,
-                              const int j,
+                              const t_physical_tile_loc& root_loc,
                               int class_physical_num);
 
 /// @brief Check whether the given nodes are in the same cluster
@@ -277,17 +309,13 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second);
 
 bool directconnect_exists(RRNodeId src_rr_node, RRNodeId sink_rr_node);
 
-std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
-                                                               int i,
-                                                               int j,
+std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const t_physical_tile_loc& tile_loc,
                                                                t_physical_tile_type_ptr physical_type);
 
 /**
- * @brief Returns the list of pins inside the tile located at (layer, i, j), except for the ones which are on a chain
+ * @brief Returns the list of pins inside the tile located at tile_loc, except for the ones which are on a chain
  */
-std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
-                                                            const int i,
-                                                            const int j,
+std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_tile_loc& tile_loc,
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type);
@@ -306,7 +334,7 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
  * The 'net_is_global_' flag is used to identify global nets, which can be either clock signals or specified as global by user constraints.
  * The 'net_is_ignored_' flag ensures that the router will ignore routing for the net.
  *
- * @param route_constraints User-defined route constraints to guide the application of constraints.
+ * @param constraint User-defined route constraints to guide the application of constraints.
  */
 void apply_route_constraints(const UserRouteConstraints& constraint);
 

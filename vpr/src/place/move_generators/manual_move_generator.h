@@ -1,11 +1,10 @@
+#pragma once
 /*
  * @file 	manual_move_generator.h
  * @author	Paula Perdomo
  * @date 	2021-07-19
  * @brief 	Contains the ManualMoveGenerator class.
  */
-
-#pragma once
 
 #include "move_generator.h"
 

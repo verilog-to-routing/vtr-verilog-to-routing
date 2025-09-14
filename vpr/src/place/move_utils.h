@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "vpr_types.h"
@@ -328,6 +327,7 @@ int find_empty_compatible_subtile(t_logical_block_type_ptr type,
  * is_median: true if this is called from find_to_loc_median
  * to_layer_num: the layer number of the new location (set by the caller)
  * search_for_empty: indicates that the returned location must be empty
+ * is_range_fixed: indicates that the search range is fixed and should not be adjusted
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              int delta_cx,
@@ -338,7 +338,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              int to_layer_num,
                                              bool search_for_empty,
                                              const BlkLocRegistry& blk_loc_registry,
-                                             vtr::RngContainer& rng);
+                                             vtr::RngContainer& rng,
+                                             const bool is_range_fixed);
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)

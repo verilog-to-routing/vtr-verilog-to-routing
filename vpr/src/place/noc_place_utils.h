@@ -1,5 +1,4 @@
-#ifndef NOC_PLACE_UTILS_H
-#define NOC_PLACE_UTILS_H
+#pragma once
 
 #include <string_view>
 #include "move_utils.h"
@@ -32,7 +31,7 @@ class NocCostHandler {
     NocCostHandler(const NocCostHandler&) = delete;
     NocCostHandler& operator=(const NocCostHandler&) = delete;
     NocCostHandler(NocCostHandler&&) = default;
-    NocCostHandler& operator=(NocCostHandler&&) = default;
+    NocCostHandler& operator=(NocCostHandler&&) = delete;
 
     /**
      * @brief Check if the internal reference to block_locs is pointing to the same
@@ -703,6 +702,4 @@ bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLi
  */
 #ifdef ENABLE_NOC_SAT_ROUTING
 void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int seed);
-#endif
-
 #endif

@@ -3,6 +3,7 @@
 
 #include "ap_flow_enums.h"
 #include "globals.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -37,30 +38,30 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
     VTR_LOG("\n");
 
-    VTR_LOG("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Analytical Placer: %s\n", (vpr_setup.APOpts.doAP ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Analysis: %s\n", (vpr_setup.AnalysisOpts.doAnalysis ? "ENABLED" : "DISABLED"));
+    VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
+    VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.doPlacement]);
+    VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
+    VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
+    VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
     VTR_LOG("\n");
 
     VTR_LOG("VPR was run with the following options:\n\n");
 
     ShowNetlistOpts(vpr_setup.NetlistOpts);
 
-    if (vpr_setup.PackerOpts.doPacking) {
+    if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
         ShowPackerOpts(vpr_setup.PackerOpts);
     }
-    if (vpr_setup.PlacerOpts.doPlacement) {
+    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::SKIP) {
         ShowPlacerOpts(vpr_setup.PlacerOpts);
     }
-    if (vpr_setup.APOpts.doAP) {
+    if (vpr_setup.APOpts.doAP != e_stage_action::SKIP) {
         ShowAnalyticalPlacerOpts(vpr_setup.APOpts);
     }
-    if (vpr_setup.RouterOpts.doRouting) {
+    if (vpr_setup.RouterOpts.doRouting != e_stage_action::SKIP) {
         ShowRouterOpts(vpr_setup.RouterOpts);
     }
-    if (vpr_setup.AnalysisOpts.doAnalysis) {
+    if (vpr_setup.AnalysisOpts.doAnalysis != e_stage_action::SKIP) {
         ShowAnalysisOpts(vpr_setup.AnalysisOpts);
     }
     if (vpr_setup.NocOpts.noc) {
@@ -141,10 +142,10 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
 
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
                     auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
-                    if (pin_type == DRIVER) {
+                    if (pin_type == e_pin_type::DRIVER) {
                         L_num_p_inputs++;
                     } else {
-                        VTR_ASSERT(pin_type == RECEIVER);
+                        VTR_ASSERT(pin_type == e_pin_type::RECEIVER);
                         L_num_p_outputs++;
                     }
                 }
@@ -224,10 +225,10 @@ static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
 static void ShowRouterOpts(const t_router_opts& RouterOpts) {
     VTR_LOG("RouterOpts.route_type: ");
     switch (RouterOpts.route_type) {
-        case GLOBAL:
+        case e_route_type::GLOBAL:
             VTR_LOG("GLOBAL\n");
             break;
-        case DETAILED:
+        case e_route_type::DETAILED:
             VTR_LOG("DETAILED\n");
             break;
         default:
@@ -248,7 +249,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("off\n");
     }
 
-    VTR_ASSERT(GLOBAL == RouterOpts.route_type || DETAILED == RouterOpts.route_type);
+    VTR_ASSERT(e_route_type::GLOBAL == RouterOpts.route_type || e_route_type::DETAILED == RouterOpts.route_type);
 
     VTR_LOG("RouterOpts.router_algorithm: ");
     switch (RouterOpts.router_algorithm) {
@@ -266,9 +267,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             break;
         default:
             switch (RouterOpts.route_type) {
-                case DETAILED:
+                case e_route_type::DETAILED:
                     VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "<Unknown>\n");
-                case GLOBAL:
+                case e_route_type::GLOBAL:
                     VTR_LOG_ERROR("Unknown router algorithm\n");
                     break;
                 default:
@@ -282,7 +283,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("DELAY_NORMALIZED\n");
             break;
         case DELAY_NORMALIZED_LENGTH:
-            if (GLOBAL == RouterOpts.route_type) {
+            if (e_route_type::GLOBAL == RouterOpts.route_type) {
                 VTR_LOG_ERROR("Unknown router base cost type\n");
                 break;
             }
@@ -290,7 +291,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("DELAY_NORMALIZED_LENGTH\n");
             break;
         case DELAY_NORMALIZED_LENGTH_BOUNDED:
-            if (GLOBAL == RouterOpts.route_type) {
+            if (e_route_type::GLOBAL == RouterOpts.route_type) {
                 VTR_LOG_ERROR("Unknown router base cost type\n");
                 break;
             }
@@ -298,7 +299,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("DELAY_NORMALIZED_LENGTH_BOUNDED\n");
             break;
         case DELAY_NORMALIZED_FREQUENCY:
-            if (GLOBAL == RouterOpts.route_type) {
+            if (e_route_type::GLOBAL == RouterOpts.route_type) {
                 VTR_LOG_ERROR("Unknown router base cost type\n");
                 break;
             }
@@ -306,7 +307,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("DELAY_NORMALIZED_FREQUENCY\n");
             break;
         case DELAY_NORMALIZED_LENGTH_FREQUENCY:
-            if (GLOBAL == RouterOpts.route_type) {
+            if (e_route_type::GLOBAL == RouterOpts.route_type) {
                 VTR_LOG_ERROR("Unknown router base cost type\n");
                 break;
             }
@@ -317,7 +318,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("DEMAND_ONLY\n");
             break;
         case DEMAND_ONLY_NORMALIZED_LENGTH:
-            if (GLOBAL == RouterOpts.route_type) {
+            if (e_route_type::GLOBAL == RouterOpts.route_type) {
                 VTR_LOG_ERROR("Unknown router base cost type\n");
                 break;
             }
@@ -326,9 +327,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             break;
         default:
             switch (RouterOpts.route_type) {
-                case DETAILED:
+                case e_route_type::DETAILED:
                     VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown base_cost_type\n");
-                case GLOBAL:
+                case e_route_type::GLOBAL:
                     VTR_LOG_ERROR("Unknown router base cost type\n");
                     break;
                 default:
@@ -343,7 +344,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("%d\n", RouterOpts.fixed_channel_width);
     }
 
-    if (DETAILED == RouterOpts.route_type) {
+    if (e_route_type::DETAILED == RouterOpts.route_type) {
         VTR_LOG("RouterOpts.check_route: ");
         switch (RouterOpts.check_route) {
             case e_check_route_option::OFF:
@@ -369,6 +370,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
     VTR_LOG("RouterOpts.max_pres_fac: %f\n", RouterOpts.max_pres_fac);
     VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
     VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
+    VTR_LOG("RouterOpts.initial_acc_cost_chan_congestion_threshold: %f\n", RouterOpts.initial_acc_cost_chan_congestion_threshold);
+    VTR_LOG("RouterOpts.initial_acc_cost_chan_congestion_weight: %f\n", RouterOpts.initial_acc_cost_chan_congestion_weight);
     VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
     VTR_LOG("RouterOpts.verify_binary_search: %s\n", RouterOpts.verify_binary_search ? "true" : "false");
     VTR_LOG("RouterOpts.min_channel_width_hint: %d\n", RouterOpts.min_channel_width_hint);
@@ -381,7 +384,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
         VTR_LOG("RouterOpts.enable_parallel_connection_router: %s\n", RouterOpts.enable_parallel_connection_router ? "true" : "false");
         VTR_LOG("RouterOpts.post_target_prune_fac: %f\n", RouterOpts.post_target_prune_fac);
-        VTR_LOG("RouterOpts.post_target_prune_offset: %f\n", RouterOpts.post_target_prune_offset);
+        VTR_LOG("RouterOpts.post_target_prune_offset: %g\n", RouterOpts.post_target_prune_offset);
         VTR_LOG("RouterOpts.multi_queue_num_threads: %d\n", RouterOpts.multi_queue_num_threads);
         VTR_LOG("RouterOpts.multi_queue_num_queues: %d\n", RouterOpts.multi_queue_num_queues);
         VTR_LOG("RouterOpts.multi_queue_direct_draining: %s\n", RouterOpts.multi_queue_direct_draining ? "true" : "false");
@@ -389,7 +392,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
         VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
 
-        if (GLOBAL == RouterOpts.route_type)
+        if (e_route_type::GLOBAL == RouterOpts.route_type)
             VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %f\n", RouterOpts.incr_reroute_delay_ripup);
         else {
             std::string incr_delay_ripup_opts[3] = {"ON", "OFF", "AUTO"};
@@ -433,6 +436,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case e_router_lookahead::EXTENDED_MAP:
                 VTR_LOG("EXTENDED_MAP\n");
                 break;
+            case e_router_lookahead::SIMPLE:
+                VTR_LOG("SIMPLE\n");
+                break;
             case e_router_lookahead::NO_OP:
                 VTR_LOG("NO_OP\n");
                 break;
@@ -468,7 +474,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         }
     }
 
-    if (DETAILED == RouterOpts.route_type) {
+    if (e_route_type::DETAILED == RouterOpts.route_type) {
         if (RouterOpts.routing_failure_predictor == SAFE)
             VTR_LOG("RouterOpts.routing_failure_predictor = SAFE\n");
         else if (RouterOpts.routing_failure_predictor == AGGRESSIVE)
@@ -606,6 +612,9 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
     VTR_LOG("AnalyticalPlacerOpts.analytical_solver_type: ");
     switch (APOpts.analytical_solver_type) {
+        case e_ap_analytical_solver::Identity:
+            VTR_LOG("identity\n");
+            break;
         case e_ap_analytical_solver::QP_Hybrid:
             VTR_LOG("qp-hybrid\n");
             break;
@@ -618,6 +627,9 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
 
     VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
     switch (APOpts.partial_legalizer_type) {
+        case e_ap_partial_legalizer::Identity:
+            VTR_LOG("none\n");
+            break;
         case e_ap_partial_legalizer::BiPartitioning:
             VTR_LOG("bipartitioning\n");
             break;
@@ -636,8 +648,8 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
         case e_ap_full_legalizer::APPack:
             VTR_LOG("appack\n");
             break;
-        case e_ap_full_legalizer::Basic_Min_Disturbance:
-            VTR_LOG("basic-min-disturbance\n");
+        case e_ap_full_legalizer::FlatRecon:
+            VTR_LOG("flat-recon\n");
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown full_legalizer_type\n");
@@ -656,6 +668,7 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
     }
 
     VTR_LOG("AnalyticalPlacerOpts.ap_timing_tradeoff: %f\n", APOpts.ap_timing_tradeoff);
+    VTR_LOG("AnalyticalPlacerOpts.ap_high_fanout_threshold: %d\n", APOpts.ap_high_fanout_threshold);
     VTR_LOG("AnalyticalPlacerOpts.log_verbosity: %d\n", APOpts.log_verbosity);
 }
 

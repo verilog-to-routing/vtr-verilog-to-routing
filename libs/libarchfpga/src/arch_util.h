@@ -1,7 +1,5 @@
-#ifndef ARCH_UTIL_H
-#define ARCH_UTIL_H
+#pragma once
 
-#include <regex>
 #include <unordered_set>
 #include "physical_types.h"
 
@@ -98,8 +96,14 @@ bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::st
 //Returns true of a pb_type (or it's children) contain the specified blif model name
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
 
-const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
-const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string_view in_port, std::string_view out_port);
+/**
+ * @brief Recursive helper method to deduce if the given pb_type is or contains
+ *        pb_types which are of the memory class.
+ */
+bool pb_type_contains_memory_pbs(const t_pb_type* pb_type);
+
+bool has_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
+bool has_combinational_annotation(const t_pb_type* pb_type, std::string_view in_port, std::string_view out_port);
 
 /**
  * @brief Updates the physical and logical types based on the equivalence between one and the other.
@@ -114,4 +118,3 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
                                  std::vector<t_logical_block_type>& LogicalBlockTypes);
 
 void setup_pin_classes(t_physical_tile_type* type);
-#endif

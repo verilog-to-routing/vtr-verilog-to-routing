@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file placer.h
  * @brief Declares the Placer class, which encapsulates the functionality, data structures,
@@ -15,8 +16,6 @@
  * - Includes debugging and validation utilities to verify the correctness of placement.
  */
 
-#pragma once
-
 #include <functional>
 #include <memory>
 #include <optional>
@@ -31,6 +30,7 @@
 #include "PlacerSetupSlacks.h"
 #include "PlacerCriticalities.h"
 #include "NetPinTimingInvalidator.h"
+#include "vtr_random.h"
 
 class BlkLocRegistry;
 class FlatPlacementInfo;
@@ -49,6 +49,7 @@ class Placer {
            const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
            const FlatPlacementInfo& flat_placement_info,
            std::shared_ptr<PlaceDelayModel> place_delay_model,
+           float anneal_auto_init_t_scale,
            bool cube_bb,
            bool is_flat,
            bool quiet);
@@ -67,10 +68,10 @@ class Placer {
     void place();
 
     /**
-     * @brief Copies the placement location variables into the given global placement context.
-     * @param place_ctx The placement context to which location information will be copied.
+     * @brief Copies the placement location variables into the global placement context.
+     * This method also updates the global routing context with the estimated routing channel utilization.
      */
-    void copy_locs_to_global_state(PlacementContext& place_ctx);
+    void update_global_state();
 
   private:
     /// Holds placement algorithm parameters

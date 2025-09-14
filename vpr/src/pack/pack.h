@@ -1,6 +1,7 @@
-#ifndef PACK_H
-#define PACK_H
+#pragma once
 
+#include <map>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -13,6 +14,8 @@ struct t_ap_opts;
 struct t_arch;
 struct t_lb_type_rr_node;
 struct t_packer_opts;
+struct t_logical_block_type;
+using t_logical_block_type_ptr = const t_logical_block_type*;
 
 /**
  * @brief Try to pack the atom netlist into legal clusters on the given
@@ -45,6 +48,27 @@ bool try_pack(const t_packer_opts& packer_opts,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info);
 
-std::unordered_set<AtomNetId> alloc_and_load_is_clock();
+/**
+ * @brief Try to fit the block type instances on the given architecture. Will
+ *        return true if successful, false otherwise.
+ *
+ *  @param arch
+ *              The architecture to try to fit the given instances.
+ *  @param num_type_instances
+ *              The mapping from each logical block type to the number of instances
+ *              of the corresponding logical block type.
+ *  @param type_util
+ *              The utilization of each logical block type on the architecture to
+ *              be filled.
+ *  @param target_device_utilization
+ *              The target device utilization.
+ *  @param device_layout_name
+ *              The device layout name for that architecture.
+ */
+bool try_size_device_grid(const t_arch& arch,
+                          const std::map<t_logical_block_type_ptr, size_t>& num_type_instances,
+                          std::map<t_logical_block_type_ptr, float>& type_util,
+                          float target_device_utilization,
+                          const std::string& device_layout_name);
 
-#endif
+std::unordered_set<AtomNetId> alloc_and_load_is_clock();

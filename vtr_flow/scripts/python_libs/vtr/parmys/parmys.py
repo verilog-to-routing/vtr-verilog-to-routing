@@ -22,7 +22,7 @@ FILE_TYPES = {
     ".ys": "RTLIL",
 }
 
-YOSYS_PARSERS = ["default", "surelog", "system-verilog"]
+YOSYS_PARSERS = ["default", "slang"]
 
 
 def create_circuits_list(main_circuit, include_files):
@@ -151,7 +151,7 @@ def run(
             Circuit file to optimize
 
         include_files :
-            list of header files
+            List of include files to a benchmark circuit. Passed in by run_vtr_flow with -include
 
         output_netlist :
             File name to output the resulting circuit to
@@ -191,8 +191,10 @@ def run(
     if yosys_exec is None:
         yosys_exec = str(vtr.paths.yosys_exe_path)
 
+    yosys_helper_base_script = None
     if yosys_script is None:
         yosys_base_script = str(vtr.paths.yosys_script_path)
+        yosys_helper_base_script = str(vtr.paths.yosys_helper_script_path)
     else:
         yosys_base_script = str(Path(yosys_script).resolve())
 
@@ -200,6 +202,12 @@ def run(
     yosys_script = "synthesis.tcl"
     yosys_script_full_path = str(temp_dir / yosys_script)
     shutil.copyfile(yosys_base_script, yosys_script_full_path)
+
+    if yosys_helper_base_script is not None:
+        # Copy the yosys-slang helper script file
+        yosys_helper_script = "slang_filelist.tcl"
+        yosys_helper_script_full_path = str(temp_dir / yosys_helper_script)
+        shutil.copyfile(yosys_helper_base_script, yosys_helper_script_full_path)
 
     # Copy the VTR memory blocks file
 
@@ -233,20 +241,22 @@ def run(
         odin_config_full_path,
     )
 
-    # Set the synlig exe script path in the environment variable
-    # (handle if it is not set or system-verilog OFF)
+    # Set the slang exe script path in the environment variable
+    # (handle if it is not set or yosys-slang OFF)
     try:
-        os.environ["synlig_exe_path"] = str(vtr.paths.synlig_exe_path)
+        os.environ["yosys_slang_path"] = str(vtr.paths.yosys_slang_path)
     except KeyError:
-        os.environ["synlig_exe_path"] = "/dummy/path"
+        os.environ["yosys_slang_path"] = "/dummy/path"
 
     # set the parser
     if parmys_args["parser"] in YOSYS_PARSERS:
         os.environ["PARSER"] = parmys_args["parser"]
+        os.environ["PRIMITIVES"] = str(vtr.paths.vtr_primitives_path)
         del parmys_args["parser"]
     else:
         raise vtr.VtrError(
-            "Invalid parser is specified for Yosys, available parsers are [{}]".format(
+            parmys_args["parser"]
+            + "Invalid parser is specified for Yosys. Parsers are [{}]".format(
                 " ".join(str(x) for x in YOSYS_PARSERS)
             )
         )

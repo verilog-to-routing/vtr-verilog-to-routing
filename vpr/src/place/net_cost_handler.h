@@ -1,10 +1,9 @@
+#pragma once
 /**
  * @file net_cost_handler.h
  * @brief This file contains the declaration of NetCostHandler class used to update placement cost when a new move is proposed/committed.
  * For more details on the overall algorithm, refer to the comment at the top of the net_cost_handler.cpp
  */
-
-#pragma once
 
 #include "place_delay_model.h"
 #include "move_transactions.h"
@@ -15,6 +14,13 @@
 
 class PlacerState;
 class PlacerCriticalities;
+
+/**
+ * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter
+ * bounding box wirelength's underestimate of wiring for nets with fanout greater than 2.
+ * @return Multiplicative wirelength correction factor
+ */
+double wirelength_crossing_count(size_t fanout);
 
 /**
  * @brief The method used to calculate placement cost
@@ -125,6 +131,18 @@ class NetCostHandler {
      * @brief Get the total wirelength estimate of all nets.
      */
     double get_total_wirelength_estimate() const;
+
+    /**
+     * @brief Estimates routing channel utilization.
+     *
+     * For each net, distributes estimated wirelength across its bounding box
+     * and accumulates demand for different routing channels. Normalizes by channel widths
+     * (e.g. a value of 0.5 means 50% of the wiring in a channel is expected to be used).
+     *
+     * @return Pair of matrices with relative CHANX and CHANY utilization.
+     *         The dimension order for each matrix is [layer][x][y].
+     */
+    std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> estimate_routing_chan_util() const;
 
   private:
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.

@@ -1,3 +1,4 @@
+#pragma once
 /****************************************************************************************
  * Y.G.THIEN
  * 29 AUG 2012
@@ -116,9 +117,6 @@
  *
  ****************************************************************************************/
 
-#ifndef PLACE_MACRO_H
-#define PLACE_MACRO_H
-
 #include <vector>
 
 #include "clustered_netlist_fwd.h"
@@ -202,7 +200,7 @@ class PlaceMacros {
     /**
      * @brief This array allow us to quickly find pins that could be in a direct connection.
      * @details Values stored is the index of the possible direct connection as specified in the arch file,
-     * OPEN (-1) is stored for pins that could not be part of a direct chain connection.
+     * UNDEFINED (-1) is stored for pins that could not be part of a direct chain connection.
      * [0...device_ctx.num_block_types-1][0...num_pins-1]
      */
     std::vector<std::vector<int>> idirect_from_blk_pin_;
@@ -263,5 +261,3 @@ class PlaceMacros {
     void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs,
                                               const std::vector<t_physical_tile_type>& physical_tile_types);
 };
-
-#endif

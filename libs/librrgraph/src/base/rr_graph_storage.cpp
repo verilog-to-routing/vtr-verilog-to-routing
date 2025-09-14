@@ -1,8 +1,9 @@
 #include <climits>
 #include "arch_types.h"
 #include "rr_graph_storage.h"
-#include "vtr_expr_eval.h"
+#include "physical_types.h"
 #include "vtr_error.h"
+#include "librrgraph_types.h"
 
 #include <algorithm>
 
@@ -46,7 +47,7 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
         edge_remapped_.reserve(new_capacity);
     }
 
-    for (const auto& new_edge : *rr_edges_to_create) {
+    for (const t_rr_edge_info& new_edge : *rr_edges_to_create) {
         emplace_back_edge(
             new_edge.from_node,
             new_edge.to_node,
@@ -389,7 +390,10 @@ void t_rr_graph_storage::assign_first_edges() {
 
 bool t_rr_graph_storage::verify_first_edges() const {
     size_t num_edges = edge_src_node_.size();
-    VTR_ASSERT(node_first_edge_[RRNodeId(node_storage_.size())] == RREdgeId(num_edges));
+    VTR_ASSERT_MSG(node_first_edge_[RRNodeId(node_storage_.size())] == RREdgeId(num_edges), 
+                vtr::string_fmt("node first edge is '%lu' while expected edge id is '%lu'\n", 
+                size_t(node_first_edge_[RRNodeId(node_storage_.size())]), 
+                num_edges).c_str());
 
     // Each edge should belong with the edge range defined by
     // [node_first_edge_[src_node], node_first_edge_[src_node+1]).
@@ -464,7 +468,7 @@ size_t t_rr_graph_storage::count_rr_switches(
 
             if (arch_switch_inf[iswitch].fixed_Tdel()) {
                 //If delay is independent of fanin drop the unique fanin info
-                fanin = ARCH_FPGA_UNDEFINED_VAL;
+                fanin = LIBRRGRAPH_UNDEFINED_VAL;
             }
 
             if (arch_switch_fanins[iswitch].count(fanin) == 0) {        //New fanin for this switch
@@ -482,7 +486,7 @@ size_t t_rr_graph_storage::count_rr_switches(
     for(size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
         if(arch_switch_fanins[iswitch].empty()){
             if(arch_switch_inf[iswitch].fixed_Tdel()){
-                arch_switch_fanins[iswitch][ARCH_FPGA_UNDEFINED_VAL] = num_rr_switches++;
+                arch_switch_fanins[iswitch][LIBRRGRAPH_UNDEFINED_VAL] = num_rr_switches++;
             }
         }
     }
@@ -504,8 +508,8 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
         int switch_index = edge_switch_[edge];
         int fanin = node_fan_in_[to_node];
 
-        if (switch_fanin[switch_index].count(ARCH_FPGA_UNDEFINED_VAL) == 1) {
-            fanin = ARCH_FPGA_UNDEFINED_VAL;
+        if (switch_fanin[switch_index].count(LIBRRGRAPH_UNDEFINED_VAL) == 1) {
+            fanin = LIBRRGRAPH_UNDEFINED_VAL;
         }
 
         auto itr = switch_fanin[switch_index].find(fanin);
@@ -572,8 +576,13 @@ t_edge_size t_rr_graph_storage::num_non_configurable_edges(RRNodeId node, const 
     return num_edges(node) - num_configurable_edges(node, rr_switches);
 }
 
+bool t_rr_graph_storage::edge_is_configurable(RREdgeId edge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+  short iswitch = edge_switch(edge);
+  return rr_switches[RRSwitchId(iswitch)].configurable();
+}
+
 bool t_rr_graph_storage::edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
-  auto iswitch = edge_switch(id, iedge);
+  short iswitch = edge_switch(id, iedge);
   return rr_switches[RRSwitchId(iswitch)].configurable();
 }
 
@@ -622,6 +631,17 @@ const std::string& t_rr_graph_storage::node_direction_string(RRNodeId id) const 
     return CONST_DIRECTION_STRING[int_direction];
 }
 
+
+const std::vector<e_side> t_rr_graph_storage::node_sides(RRNodeId id) const {
+    std::vector<e_side> sides;
+    for (const e_side& side : TOTAL_2D_SIDES) {
+        if (is_node_on_specific_side(id, side)) {
+            sides.push_back(side);
+        }
+    }
+    return sides;
+}
+
 const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
     for (const e_side& side : TOTAL_2D_SIDES) {
         if (is_node_on_specific_side(id, side)) {
@@ -636,11 +656,6 @@ void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer) {
     node_layer_[id] = layer;
 }
 
-void t_rr_graph_storage::set_node_ptc_twist_incr(RRNodeId id, short twist_incr){
-    VTR_ASSERT(!node_ptc_twist_incr_.empty());
-    node_ptc_twist_incr_[id] = twist_incr;
-}
-
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {
     node_ptc_[id].ptc_.pin_num = new_ptc_num; //TODO: eventually remove
 }
@@ -652,8 +667,8 @@ void t_rr_graph_storage::set_node_pin_num(RRNodeId id, int new_pin_num) {
 }
 
 void t_rr_graph_storage::set_node_track_num(RRNodeId id, int new_track_num) {
-    if (node_type(id) != e_rr_type::CHANX && node_type(id) != e_rr_type::CHANY) {
-        VTR_LOG_ERROR("Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
+    if (node_type(id) != e_rr_type::CHANX && node_type(id) != e_rr_type::CHANY && node_type(id) != e_rr_type::CHANZ)  {
+        VTR_LOG_ERROR("Attempted to set RR node 'track_num' for non-CHANX/CHANY/CHANZ type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.track_num = new_track_num;
 }
@@ -665,14 +680,20 @@ void t_rr_graph_storage::set_node_class_num(RRNodeId id, int new_class_num) {
     node_ptc_[id].ptc_.class_num = new_class_num;
 }
 
+void t_rr_graph_storage::set_node_mux_num(RRNodeId id, int new_mux_num) {
+    if (node_type(id) != e_rr_type::MUX) {
+        VTR_LOG_ERROR("Attempted to set RR node 'mux_num' for non-MUX type '%s'\n", node_type_string(id));
+    }
+    node_ptc_[id].ptc_.mux_num = new_mux_num;
+}
+
 int t_rr_graph_storage::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
 
-static int get_node_pin_num(
-    vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
-    vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
-    RRNodeId id) {
+static int get_node_pin_num(vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+                            vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
+                            RRNodeId id) {
     e_rr_type node_type = node_storage[id].type_;
     if (node_type != e_rr_type::IPIN && node_type != e_rr_type::OPIN) {
         VTR_LOG_ERROR("Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", rr_node_typename[node_type]);
@@ -680,26 +701,35 @@ static int get_node_pin_num(
     return node_ptc[id].ptc_.pin_num;
 }
 
-static int get_node_track_num(
-    vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
-    vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
-    RRNodeId id) {
+static int get_node_track_num(vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+                              vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
+                              RRNodeId id) {
     e_rr_type node_type = node_storage[id].type_;
-    if (node_type != e_rr_type::CHANX && node_type != e_rr_type::CHANY) {
-        VTR_LOG_ERROR("Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", rr_node_typename[node_type]);
+    if (node_type != e_rr_type::CHANX && node_type != e_rr_type::CHANY && node_type != e_rr_type::CHANZ) {
+        VTR_LOG_ERROR("Attempted to access RR node 'track_num' for non-CHANX/CHANY/CHANZ type '%s'", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.track_num;
 }
 
-static int get_node_class_num(
-    vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
-    vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
-    RRNodeId id) {
+static int get_node_class_num(vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+                              vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
+                              RRNodeId id) {
     e_rr_type node_type = node_storage[id].type_;
     if (node_type != e_rr_type::SOURCE && node_type != e_rr_type::SINK) {
         VTR_LOG_ERROR("Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.class_num;
+}
+
+static int get_node_mux_num(
+    vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+    vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
+    RRNodeId id) {
+    e_rr_type node_type = node_storage[id].type_;
+    if (node_type != e_rr_type::MUX) {
+        VTR_LOG_ERROR("Attempted to access RR node 'mux_num' for non-MUX type '%s'\n", rr_node_typename[node_type]);
+    }
+    return node_ptc[id].ptc_.mux_num;
 }
 
 int t_rr_graph_storage::node_pin_num(RRNodeId id) const {
@@ -720,6 +750,12 @@ int t_rr_graph_storage::node_class_num(RRNodeId id) const {
         vtr::make_const_array_view_id(node_ptc_),
         id);
 }
+int t_rr_graph_storage::node_mux_num(RRNodeId id) const {
+    return get_node_mux_num(
+        vtr::make_const_array_view_id(node_storage_),
+        vtr::make_const_array_view_id(node_ptc_),
+        id);
+}
 
 void t_rr_graph_storage::set_node_type(RRNodeId id, e_rr_type new_type) {
     node_storage_[id].type_ = new_type;
@@ -729,7 +765,7 @@ void t_rr_graph_storage::set_node_name(RRNodeId id, const std::string& new_name)
     node_name_.insert(std::make_pair(id, new_name));
 }
 void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
-    auto& node = node_storage_[id];
+    t_rr_node_data& node = node_storage_[id];
     if (x1 < x2) {
         node.xlow_ = x1;
         node.xhigh_ = x2;
@@ -747,10 +783,18 @@ void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, s
     }
 }
 
+void t_rr_graph_storage::set_node_bend_start(RRNodeId id, size_t bend_start) {
+    node_bend_start_[id] = bend_start;
+}
+
+void t_rr_graph_storage::set_node_bend_end(RRNodeId id, size_t bend_end) {
+    node_bend_end_[id] = bend_end;
+}
+
 void t_rr_graph_storage::set_node_cost_index(RRNodeId id, RRIndexedDataId new_cost_index) {
-    auto& node = node_storage_[id];
+    t_rr_node_data& node = node_storage_[id];
     if ((size_t)new_cost_index >= std::numeric_limits<decltype(node.cost_index_)>::max()) {
-        VTR_LOG_ERROR("Attempted to set cost_index_ %zu above cost_index storage max value.",
+        VTR_LOG_ERROR("Attempted to set cost_index_ %zu above cost_index storage max value.\n",
                       new_cost_index);
     }
     node.cost_index_ = (size_t)new_cost_index;
@@ -766,7 +810,7 @@ void t_rr_graph_storage::set_node_capacity(RRNodeId id, short new_capacity) {
 }
 
 void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction) {
-    if (node_type(id) != e_rr_type::CHANX && node_type(id) != e_rr_type::CHANY) {
+    if (node_type(id) != e_rr_type::CHANX && node_type(id) != e_rr_type::CHANY && node_type(id) != e_rr_type::CHANZ) {
         VTR_LOG_ERROR("Attempted to set RR node 'direction' for non-channel type '%s'", node_type_string(id));
     }
     node_storage_[id].dir_side_.direction = new_direction;
@@ -774,7 +818,7 @@ void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction
 
 void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != e_rr_type::IPIN && node_type(id) != e_rr_type::OPIN) {
-        VTR_LOG_ERROR("Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
+        VTR_LOG_ERROR("Attempted to set RR node 'side' for non-pin type '%s'", node_type_string(id));
     }
     std::bitset<NUM_2D_SIDES> side_bits = node_storage_[id].dir_side_.sides;
     side_bits[size_t(new_side)] = true;
@@ -801,14 +845,21 @@ void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clo
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
+
 int t_rr_graph_view::node_pin_num(RRNodeId id) const {
     return get_node_pin_num(node_storage_, node_ptc_, id);
 }
+
 int t_rr_graph_view::node_track_num(RRNodeId id) const {
     return get_node_track_num(node_storage_, node_ptc_, id);
 }
+
 int t_rr_graph_view::node_class_num(RRNodeId id) const {
     return get_node_class_num(node_storage_, node_ptc_, id);
+}
+
+int t_rr_graph_view::node_mux_num(RRNodeId id) const {
+    return get_node_mux_num(node_storage_, node_ptc_, id);
 }
 
 
@@ -822,11 +873,12 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(node_fan_in_),
         vtr::make_const_array_view_id(node_layer_),
         node_name_,
-        vtr::make_const_array_view_id(node_ptc_twist_incr_),
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
         vtr::make_const_array_view_id(edge_switch_),
-        virtual_clock_network_root_idx_);
+        virtual_clock_network_root_idx_,
+        vtr::make_const_array_view_id(node_bend_start_),
+        vtr::make_const_array_view_id(node_bend_end_));
 }
 
 // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
@@ -851,7 +903,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
 
         // Reorder nodes
         for (size_t i = 0; i < node_storage_.size(); i++) {
-            auto n = RRNodeId(i);
+            RRNodeId n = RRNodeId(i);
             VTR_ASSERT(n == inverse_order[order[n]]);
             node_storage_[order[n]] = old_node_storage[n];
         }
@@ -867,8 +919,8 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         // Reorder edges by source node
         for (size_t i = 0; i < node_storage_.size(); i++) {
             node_first_edge_[RRNodeId(i)] = cur_edge;
-            auto n = inverse_order[RRNodeId(i)];
-            for (auto e = old_node_first_edge[n];
+            RRNodeId n = inverse_order[RRNodeId(i)];
+            for (RREdgeId e = old_node_first_edge[n];
                  e < old_node_first_edge[RRNodeId(size_t(n) + 1)];
                  e = RREdgeId(size_t(e) + 1)) {
                 edge_src_node_[cur_edge] = order[old_edge_src_node[e]]; // == n?

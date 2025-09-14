@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file draw_searchbar.h
  * 
  * draw_searchbar contains functions that draw/highlight search results,
  * and manages the selection/highlighting of currently selected options.
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 
@@ -27,9 +26,26 @@ ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode);
 /* Highlights a block and its fanout/fanin. */
 void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId blk_id);
 
-/* If an rr_node has been clicked on, it will be highlighted in MAGENTA.
- * If so, and toggle nets is selected, highlight the whole net in that colour.*/
-void highlight_nets(char* message, RRNodeId hit_node, bool is_flat);
+/**
+ * @brief Highlights the net associated with the specified RRNodeId in Magenta. De-highlights all other nets. Also appends relevant net information to the provided message char pointer.
+ *
+ * @param message   A message which we want to update by appending additional net information.
+ * @param hit_node  The RRNodeId of the routing resource node whose net should be highlighted.
+ */
+void highlight_nets(char* message, RRNodeId hit_node);
+
+/**
+ * @brief Returns the name of the net associated with a ParentNetId.
+ */
+std::string draw_get_net_name(ParentNetId parent_id);
+
+/**
+ * @brief Determines if a given RRNode is part of the specified net and highlights the net if so. Additionally, appends relevant net information to the provided message char pointer.
+ * @param message Pointer to a character array where additional net information will be appended.
+ * @param parent_net_id The ParentNetId representing the net to check. This may refer to either atom or cluster nets.
+ * @param hit_node The RRNodeId of the node that was selected.
+ */
+void check_node_highlight_net(char* message, ParentNetId parent_net_id, RRNodeId hit_node);
 
 /* If an rr_node has been clicked on, it will be either highlighted in MAGENTA,
  * or de-highlighted in WHITE. If highlighted, and toggle_rr is selected, highlight

@@ -1,9 +1,7 @@
-#ifndef VTR_STRING_VIEW_H_
-#define VTR_STRING_VIEW_H_
+#pragma once
 
 #include <cstring>
 #include <ostream>
-#include <string>
 #include <stdexcept>
 
 #include "vtr_hash.h"
@@ -32,6 +30,10 @@ class string_view {
     explicit constexpr string_view(const char* str, size_t size)
         : data_(str)
         , size_(size) {}
+
+    explicit string_view(const std::string& other)
+        : data_(other.c_str())
+        , size_(other.size()) {}
 
     constexpr string_view(const string_view& other) noexcept = default;
     ///@brief copy constructor
@@ -188,5 +190,3 @@ struct hash<vtr::string_view> {
     }
 };
 } // namespace std
-
-#endif /* VTR_STRING_VIEW_H_ */

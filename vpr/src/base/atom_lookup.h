@@ -1,5 +1,5 @@
-#ifndef ATOM_LOOKUP_H
-#define ATOM_LOOKUP_H
+#pragma once
+
 #include "atom_lookup_fwd.h"
 
 #include "vtr_vector_map.h"
@@ -149,5 +149,3 @@ class AtomLookup {
     vtr::linear_map<AtomPinId, tatum::NodeId> atom_pin_tnode_internal_;
     vtr::linear_map<tatum::NodeId, AtomPinId> tnode_atom_pin_;
 };
-
-#endif

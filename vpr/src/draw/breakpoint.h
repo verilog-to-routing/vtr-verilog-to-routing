@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file breakpoint.h
  * 
@@ -15,8 +16,6 @@
  * (e.g Breakpoint(BT_MOVE_NUM, 4) or Breakpoint(BT_EXPRESSION, "move_num += 3")) The == operator has also been provided which returns true when two 
  * breakpoints have the same type, and the same value corresponding to the type.
  */
-
-#pragma once
 
 #include <string>
 #include "breakpoint_state_globals.h"

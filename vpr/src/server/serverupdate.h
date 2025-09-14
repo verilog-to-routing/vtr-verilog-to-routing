@@ -1,5 +1,4 @@
-#ifndef SERVERUPDATE_H
-#define SERVERUPDATE_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -19,5 +18,3 @@ gboolean update(gpointer);
 } // namespace server
 
 #endif /* NO_SERVER */
-
-#endif /* SERVERUPDATE_H */

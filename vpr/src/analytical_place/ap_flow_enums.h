@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
  * @date    February 2025
  * @brief   Enumerations used by the Analytical Placement Flow.
  */
-
-#pragma once
 
 /**
  * @brief The type of an Analytical Solver.
@@ -15,6 +14,7 @@
  * Analytical Solvers.
  */
 enum class e_ap_analytical_solver {
+    Identity,  ///< The identity analytical solver, which does not perform any optimizations on the placement. Used as a placeholder when solving should not be used.
     QP_Hybrid, ///< Analytical Solver which uses the hybrid net model to optimize the quadratic HPWL objective.
     LP_B2B     ///< Analytical Solver which uses the B2B net model to optimize the linear HPWL objective.
 };
@@ -27,8 +27,9 @@ enum class e_ap_analytical_solver {
  * Partial Legalizers.
  */
 enum class e_ap_partial_legalizer {
+    Identity,       ///< Partial Legalizer which does not perform any legalization on the placement. Used as a placeholder when partial legalization should not be used.
     BiPartitioning, ///< Partial Legalizer which forms minimum windows around dense regions and uses bipartitioning to spread blocks over windows.
-    FlowBased       ///> Partial Legalizer which flows blocks from overfilled bins to underfilled bins.
+    FlowBased       ///< Partial Legalizer which flows blocks from overfilled bins to underfilled bins.
 };
 
 /**
@@ -38,9 +39,9 @@ enum class e_ap_partial_legalizer {
  * enum can select between these different Full Legalizers.
  */
 enum class e_ap_full_legalizer {
-    Naive,                ///< The Naive Full Legalizer, which clusters atoms placed in the same tile and tries to place them in that tile according to the flat placement.
-    APPack,               ///< The APPack Full Legalizer, which uses the flat placement to improve the Packer and Placer.
-    Basic_Min_Disturbance ///< The Basic Min. Disturbance Full Legalizer, which tries to reconstruct a clustered placement that is as close to the incoming flat placement as it can.
+    Naive,    ///< The Naive Full Legalizer, which clusters atoms placed in the same tile and tries to place them in that tile according to the flat placement.
+    APPack,   ///< The APPack Full Legalizer, which uses the flat placement to improve the Packer and Placer.
+    FlatRecon ///< The Flat Placement Reconstruction Full Legalizer, which tries to reconstruct a clustered placement (or the in-memory global placement) that is as close to the incoming flat placement as it can.
 };
 
 /**

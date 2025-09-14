@@ -10,12 +10,19 @@
 #include "place_and_route.h"
 #include "route_common.h"
 #include "route_debug.h"
+#include "stats.h"
 
 #include "VprTimingGraphResolver.h"
 #include "route_tree.h"
 #include "rr_graph.h"
 #include "tatum/TimingReporter.hpp"
 #include "stats.h"
+#include "timing_util.h"
+
+#ifdef VPR_USE_TBB
+#include <tbb/combinable.h>
+#include <tbb/parallel_for_each.h>
+#endif // VPR_USE_TBB
 
 #ifndef NO_GRAPHICS
 #include "draw.h"
@@ -32,7 +39,7 @@ bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay
 
     load_net_delay_from_routing(net_list, net_delay_check);
 
-    for (auto net_id : net_list.nets()) {
+    for (ParentNetId net_id : net_list.nets()) {
         for (size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
             if (net_delay_check[net_id][ipin] == 0.) { /* Should be only GLOBAL nets */
                 if (fabs(net_delay[net_id][ipin]) > ERROR_TOL) {
@@ -78,7 +85,8 @@ bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay
 //
 // Typically, only a small minority of nets (typically > 10%) have their BBs updated
 // each routing iteration.
-void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets, std::vector<ParentNetId> out_bb_updated_nets) {
+void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets,
+                                   std::vector<ParentNetId> out_bb_updated_nets) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -264,7 +272,15 @@ void print_overused_nodes_status(const t_router_opts& router_opts, const Overuse
     VTR_LOG("\n");
 }
 
-void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats, const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info, std::shared_ptr<const SetupHoldTimingInfo> timing_info, float est_success_iteration) {
+void print_route_status(int itry,
+                        double elapsed_sec,
+                        float pres_fac,
+                        int num_bb_updated,
+                        const RouterStats& router_stats,
+                        const OveruseInfo& overuse_info,
+                        const WirelengthInfo& wirelength_info,
+                        std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                        float est_success_iteration) {
     //Iteration
     VTR_LOG("%4d", itry);
 
@@ -444,7 +460,12 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                 std::for_each(sink_grp.begin(), sink_grp.end(), [&rr_graph](int& sink_rr_num) {
                     sink_rr_num = rr_graph.node_ptc_num(RRNodeId(sink_rr_num));
                 });
-                auto physical_type = device_ctx.grid.get_physical_type({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
+
+                t_physical_tile_loc grid_loc;
+                grid_loc.x = blk_loc.loc.x;
+                grid_loc.y = blk_loc.loc.y;
+                grid_loc.layer_num = blk_loc.loc.layer;
+                t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(grid_loc);
                 // Get the choke points of the sink corresponds to pin_count given the sink group
                 auto sink_choking_spots = get_sink_choking_points(physical_type,
                                                                   rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])),
@@ -455,9 +476,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                     int num_reachable_sinks = choking_spot.second;
                     auto pin_rr_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
                                                              physical_type,
-                                                             blk_loc.loc.layer,
-                                                             blk_loc.loc.x,
-                                                             blk_loc.loc.y,
+                                                             grid_loc,
                                                              pin_physical_num);
                     if (pin_rr_node_id != RRNodeId::INVALID()) {
                         choking_spots[net_id][pin_count].insert(std::make_pair(pin_rr_node_id, num_reachable_sinks));
@@ -483,7 +502,7 @@ void try_graph(int width_fac,
 
     e_graph_type graph_type;
     e_graph_type graph_directionality;
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
@@ -667,3 +686,29 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
     }
 }
 #endif
+
+bool is_net_routed(ParentNetId net_id) {
+    const auto& route_ctx = g_vpr_ctx.routing();
+    //Note: we can't use route_ctx.net_status.is_routed(atom_net_id), because net_status is filled only when route stage took place
+    return route_ctx.route_trees[net_id].has_value();
+}
+
+bool is_net_fully_absorbed(ParentNetId net_id) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+
+    bool is_absorbed = true;
+
+    for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+        RRNodeId inode = rt_node.inode;
+
+        e_rr_type rr_type = rr_graph.node_type(inode);
+
+        if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
+            is_absorbed = false;
+            break;
+        }
+    }
+
+    return is_absorbed;
+}

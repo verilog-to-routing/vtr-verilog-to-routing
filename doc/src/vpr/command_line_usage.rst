@@ -256,6 +256,16 @@ General Options
 
     **Default:** ``on``
 
+.. option:: --verify_route_file_switch_id {on | off}
+
+    Verify that the switch IDs in the routing file are consistent with those in the RR Graph.
+    Set this to false when switch IDs in the routing file may differ from the RR Graph.
+    For example, when analyzing different timing corners using the same netlist, placement, and routing files,
+    the RR switch IDs in the RR Graph may differ due to changes in delays.
+    In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.
+
+    **Default:** ``on``
+
 .. option:: --target_utilization <float>
 
     Sets the target device utilization.
@@ -416,9 +426,14 @@ Use the options below to override this default naming behaviour.
 .. option:: --write_placement_delay_lookup <file>
 
     Writes the placement delay lookup to the specified file. Expects a file extension of either ``.capnp`` or ``.bin``.
+
+.. option:: --read_initial_place_file <file>
+
+    Reads in the initial cluster-level placement (in :ref:`.place file format <vpr_place_file>`) from the specified file and uses it as the starting point for annealing improvement, instead of generating an initial placement internally.
+
 .. option:: --write_initial_place_file <file>
 
-    Writes out the the placement chosen by the initial placement algorithm to the specified file.
+    Writes out the clustered netlist placement chosen by the initial placement algorithm to the specified file, in :ref:`.place file format <vpr_place_file>`.
 
 .. option:: --outfile_prefix <string>
 
@@ -429,22 +444,22 @@ Use the options below to override this default naming behaviour.
     Reads a file containing the locations of each atom on the FPGA.
     This is used by the packer to better cluster atoms together.
 
-    The flat placement file (which often ends in ``.fplace``) is a text file
+    The flat placement file (which often ends in :ref:`.fplace <vpr_flat_place_file>`) is a text file
     where each line describes the location of an atom. Each line in the flat
     placement file should have the following syntax:
 
     .. code-block:: none
 
-        <atom_name : str> <x : float> <y : float> <layer : float> <atom_sub_tile : int> <atom_site_idx? : int>
+        <atom_name : str> <x : float> <y : float> <layer : float> <atom_sub_tile : int>
 
     For example:
 
     .. code-block:: none
 
-        n523  6 8 0 0 3
-        n522  6 8 0 0 5
-        n520  6 8 0 0 2
-        n518  6 8 0 0 16
+        n523  6 8 0 0
+        n522  6 8 0 0
+        n520  6 8 0 0
+        n518  6 8 0 0
 
     The position of the atom on the FPGA is given by 3 floating point values
     (``x``, ``y``, ``layer``). We allow for the positions of atom to be not
@@ -460,25 +475,29 @@ Use the options below to override this default naming behaviour.
     the sub-tile of an atom is unkown (allowing the packing algorithm to choose
     any sub-tile at the given (x, y, layer) location).
 
-    The ``site_idx`` is an optional index into a linearized list of primitive
-    locations within a cluster-level block which may be used as a hint to
-    reconstruct clusters.
-
     .. warning::
 
         This interface is currently experimental and under active development.
 
 .. option:: --write_flat_place <file>
 
-    Writes the post-placement locations of each atom into a flat placement file.
+    Writes the post-placement locations of each atom into a flat placement file
+    (see :ref:`flat placement file format <vpr_flat_place_file>`).
 
     For each atom in the netlist, the following information is stored into the
     flat placement file:
 
     * The x, y, and sub_tile location of the cluster that contains this atom.
-    * The flat site index of this atom in its cluster. The flat site index is a
-      linearized ID of primitive locations in a cluster. This may be used as a
-      hint to reconstruct clusters.
+
+.. option:: --write_legalized_flat_place <file>
+
+    Writes the post-legalization locations of each atom into a flat placement file
+    (see :ref:`flat placement file format <vpr_flat_place_file>`).
+
+    For each atom in the netlist, the following information is stored into the
+    flat placement file:
+
+    * The x, y, and sub_tile location of the cluster that contains this atom.
 
 .. _netlist_options:
 
@@ -805,6 +824,22 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``circuit``
 
+.. option:: --anneal_auto_init_t_scale <float>
+
+    A scale on the starting temperature of the anneal for the automatic annealing
+    schedule.
+
+    When in the automatic annealing schedule, the annealer will select a good
+    initial temperature based on the quality of the initial placement. This option
+    allows you to scale that initial temperature up or down by multiplying the
+    initial temperature by the given scale. Increasing this number
+    will increase the initial temperature which will have the annealer potentially
+    explore more of the space at the expense of run time. Depending on the quality
+    of the initial placement, this may improve or hurt the quality of the final
+    placement.
+
+    **Default:** ``1.0``
+
 .. option:: --init_t <float>
 
     The starting temperature of the anneal for the manual annealing schedule.
@@ -838,11 +873,9 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     Controls how the placer handles blocks (of any type) during placement.
 
-    * ``<file.place>``: A path to a file listing the desired location of blocks in the netlist.
+    * ``<file.place>``: A path to a file listing the desired location of clustered blocks in the netlist.
 
-    This place location file is in the same format as a :ref:`normal placement file <vpr_place_file>`, but does not require the first two lines which are normally at the top     of a placement file that specify the netlist file, netlist ID, and array size.
-
-    **Default:** ````.
+    This place location file is in the same format as a :ref:`.place file <vpr_place_file>`, but does not require the first two lines which are normally at the top     of a placement file that specify the netlist file, netlist ID, and array size.
 
 .. option:: --place_algorithm {bounding_box | criticality_timing | slack_timing}
 
@@ -1020,7 +1053,7 @@ The following options are only valid when the placement engine is in timing-driv
     Controls how critical a connection is considered as a function of its slack, at the start of the anneal.
 
     If this value is 0, all connections are considered equally critical.
-    If this value is large, connections with small slacks are considered much more critical than connections with small slacks.
+    If this value is large, connections with small slacks are considered much more critical than connections with large slacks.
     As the anneal progresses, the exponent used in the criticality computation gradually changes from its starting value of td_place_exp_first to its final value of :option:`--td_place_exp_last`.
 
     **Default:** ``1.0``
@@ -1037,7 +1070,7 @@ The following options are only valid when the placement engine is in timing-driv
 
     Controls how the timing-driven placer estimates delays.
 
-     * ``simple`` The placement delay estimator is built from the router lookahead. This takes less CPU time to build and it and still as accurate as the ``delta` model.
+     * ``simple`` The placement delay estimator is built from the router lookahead. This takes less CPU time to build and it is still as accurate as the ``delta`` model.
      * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position.
      * ``delta_override`` Like ``delta`` but also includes special overrides to ensure effects of direct connects between blocks are accounted for.
        This is potentially more accurate but is more complex and depending on the architecture (e.g. number of direct connects) may increase place run-time.
@@ -1073,7 +1106,7 @@ The following options are only valid when the placement engine is in timing-driv
 
     Specifies the scaling factor for cell setup times used by the placer.
     This effectively controls whether the placer should try to achieve extra margin on setup paths.
-    For example a value of 1.1 corresponds to requesting 10%% setup margin.
+    For example a value of 1.1 corresponds to requesting 10% setup margin.
 
     **Default:** ``1.0``
 
@@ -1107,7 +1140,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
 
     XML file containing the list of traffic flows within the NoC (communication between routers).
 
-    .. note:: noc_flows_file are required to specify if NoC optimization is turned on (--noc on).
+    .. note:: It is required to specify a ``noc_flows_file`` if NoC optimization is turned on (``--noc on``).
 
 .. option:: --noc_routing_algorithm {xy_routing | bfs_routing | west_first_routing | north_last_routing | negative_first_routing | odd_even_routing}
 
@@ -1209,13 +1242,18 @@ Analytical Placement is generally split into three stages:
 
     Analytical Placement is experimental and under active development.
 
-.. option:: --ap_analytical_solver {qp-hybrid | lp-b2b}
+.. option:: --ap_analytical_solver {identity | qp-hybrid | lp-b2b}
 
     Controls which Analytical Solver the Global Placer will use in the AP Flow.
     The Analytical Solver solves for a placement which optimizes some objective
     function, ignorant of the FPGA legality constraints. This provides a "lower-
     bound" solution. The Global Placer will legalize this solution and feed it
     back to the analytical solver to make its solution more legal.
+
+    * ``identity`` Does not formulate any equations and just passes the last
+      legalized solution through. In the first iteration, it initializes all blocks
+      to the center of the device. This solver is only used for testing and
+      debugging and should not be part of any real AP flow.
 
     * ``qp-hybrid`` Solves for a placement that minimizes the quadratic HPWL of
       the flat placement using a hybrid clique/star net model (as described in
@@ -1230,12 +1268,16 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``lp-b2b``
 
-.. option:: --ap_partial_legalizer {bipartitioning | flow-based}
+.. option:: --ap_partial_legalizer {none | bipartitioning | flow-based}
 
     Controls which Partial Legalizer the Global Placer will use in the AP Flow.
     The Partial Legalizer legalizes a placement generated by an Analytical Solver.
     It is used within the Global Placer to guide the solver to a more legal
     solution.
+
+    * ``none`` Does not partially legalize the global placement solution and just
+      passes the last solved solution through. This partial legalizer is only
+      used for testing and debugging and should not be part of any real AP flow.
 
     * ``bipartitioning`` Creates minimum windows around over-dense regions of
       the device bi-partitions the atoms in these windows such that the region
@@ -1247,13 +1289,19 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``bipartitioning``
 
-.. option:: --ap_full_legalizer {naive | appack}
+.. option:: --ap_full_legalizer {naive | appack | flat-recon}
 
     Controls which Full Legalizer to use in the AP Flow.
 
     * ``naive`` Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.
 
     * ``appack`` Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.
+
+    * ``flat-recon`` Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement that is
+      as close to the incoming flat placement as possible. It can be used to read a flat placement from a :ref:`.fplace <vpr_flat_place_file>` file
+      or on the (in memory) output of VTR's integrated Global Placement algorithm. In both cases, it expects the given solution to be close to legal.
+      If used with a :ref:`.fplace <vpr_flat_place_file>` file, each atom in a molecule should have compatible location information. It is legal to
+      leave some molecules unconstrained; the reconstruction phase will choose where to place them but does not attempt to optimize these locations.
 
     **Default:** ``appack``
 
@@ -1275,6 +1323,40 @@ Analytical Placement is generally split into three stages:
     while a value of 1.0 makes the AP flow focus completely on timing optimization.
 
     **Default:** ``0.5``
+
+.. option:: --ap_partial_legalizer_target_density { auto | <regex>:<float>,<float> }
+
+   Sets the target density of different physical tiles on the FPGA device
+   for the partial legalizer in the AP flow. The partial legalizer will
+   try to fill tiles up to (but not beyond) this target density. This
+   is used as a guide, the legalizer may not follow this if it must fill
+   the tile more.
+
+   The partial legalizer uses an abstraction called "mass" to describe the resources
+   used by a set of primitives in the netlist and the capacity of resources in a
+   given tile. For primitives like LUTs, FFs, and DSPs this mass can be thought of
+   as the number of pins used (but not exactly). For memories, this mass can be
+   thought of as the number of bits stored. This target density parameter lowers
+   the mass capacity of tiles.
+
+   When this option is set ot auto, VPR will select good values for the
+   target density of tiles.
+
+   reasonable values are between 0.0 and 1.0, with negative values not being allowed.
+
+   This option is similar to appack_max_dist_th, where a regex string
+   is used to set the target density of different physical tiles.
+
+   For example:
+
+     .. code-block:: none
+
+        --ap_partial_legalizer_target_density .*:0.9 "clb|memory:0.8"
+
+   Would set the target density of all physical tiles to be 0.9, except for the clb and
+   memory tiles, which will be set to a target density of 0.8.
+
+    **Default:** ``auto``
 
 .. option:: --appack_max_dist_th { auto | <regex>:<float>,<float> }
 
@@ -1319,6 +1401,49 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``auto``
 
+.. option:: --appack_unrelated_clustering_args { auto | <regex>:<float>,<float> }
+
+   Sets parameters used for unrelated clustering (the max search distance and max attempts)
+   used by APPack.
+   APPack uses the primitive-level placement produced by the
+   global placer to cluster primitives together. APPack uses this information
+   to help increase the density of clusters (if needed) by searching for
+   unrelated molecules to pack together. It does this by searching out from
+   the centroid of the cluster being created until it finds a valid molecule.
+   If a valid molecule is found, but it fails, the packer may do another attempt
+   (up to a maximum number of attempts).
+   This argument allows the user to select the maximum distance the code will
+   search and how many attempts it will try to search for each cluster.
+
+   When this option is set to auto, VPR will select good values for these
+   parameters based on the primitives contained within each logical block type.
+
+   This option is similar to the appack_max_dist_th argument, where the
+   parameters are passed by the user in the form <regex>:<float>,<float> where
+   regex is used to match the name of the logical block type to set, the
+   first float is the max unrelated tile distance, and the second float
+   is the max unrelated clustering attempts.
+
+   For example:
+
+     .. code-block:: none
+
+        --appack_max_dist_th "clb|LAB:10,5"
+
+   This will set all of the logical block types to their "auto" parameters, except
+   for logical blocks with the name clb/LAB which will have a max search distance of
+   10 tiles and a maximum of 5 unrelated clustering attempts.
+
+    **Default:** ``auto``
+
+.. option:: --ap_high_fanout_threshold <int>
+
+    Defines the threshold for high fanout nets within AP flow.
+
+    Ignores the nets that have higher fanouts than the threshold for the analytical solver.
+
+    **Default:** ``256``
+
 .. option:: --ap_verbosity <int>
 
     Controls the verbosity of the AP flow output.
@@ -1335,6 +1460,15 @@ Analytical Placement is generally split into three stages:
     * ``20 <= verbosity`` Print very detailed messages on intra-stage algorithms.
 
     **Default:** ``1``
+
+.. option:: --ap_generate_mass_report {on | off}
+
+    Controls whether to generate a report on how the partial legalizer
+    within the AP flow calculates the mass of primitives and the
+    capacity of tiles on the device. This report is useful when
+    debugging the partial legalizer.
+
+    **Default:** ``off``
 
 
 .. _router_options:
@@ -1736,14 +1870,14 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``off``
 
-.. option:: --congested_routing_iteration_threshold CONGESTED_ROUTING_ITERATION_THRESHOLD
+.. option:: --congested_routing_iteration_threshold <float>
 
     Controls when the router enters a high effort mode to resolve lingering routing congestion.
     Value is the fraction of max_router_iterations beyond which the routing is deemed congested.
 
     **Default:** ``1.0`` (never)
 
-.. option:: --route_bb_update {static, dynamic}
+.. option:: --route_bb_update {static | dynamic}
 
     Controls how the router's net bounding boxes are updated:
 
@@ -1752,21 +1886,49 @@ The following options are only valid when the router is in timing-driven mode (t
 
      **Default:** ``dynamic``
 
-.. option:: --router_high_fanout_threshold ROUTER_HIGH_FANOUT_THRESHOLD
+.. option:: --router_high_fanout_threshold <int>
 
     Specifies the net fanout beyond which a net is considered high fanout.
     Values less than zero disable special behaviour for high fanout nets.
 
     **Default:** ``64``
 
-.. option:: --router_lookahead {classic, map}
+.. option:: --router_lookahead {classic | map | compressed_map | extended_map | simple}
 
     Controls what lookahead the router uses to calculate cost of completing a connection.
 
      * ``classic``: The classic VPR lookahead
      * ``map``: A more advanced lookahead which accounts for diverse wire types and their connectivity
+     * ``compressed_map``: The algorithm is similar to map lookahead with the exception of sparse sampling of the chip to reduce the run-time to build the router lookahead and also its memory footprint.
+     * ``extended_map``: A more advanced and extended lookahead which accounts for a more exhaustive node sampling method.
+     * ``simple``: A purely distance-based lookahead loaded from an external file using :option:`--read_router_lookahead`. This lookahead returns a cost estimate for channel nodes by querying a lookup table, while for any other node type it returns zero.
 
      **Default:** ``map``
+
+.. option:: --generate_router_lookahead_report {on | off}
+
+   If turned on, generates a detailed report on the router lookahead: report_router_lookahead.rpt
+
+   This report contains information on how accurate the router lookahead is and
+   if and when it overestimates the cost from a node to a target node. It does
+   this by doing a set of trial routes and comparing the estimated cost from the
+   router lookahead to the actual cost of the route path.
+
+   **Default:** ``off``
+
+.. option:: --router_initial_acc_cost_chan_congestion_threshold <float>
+
+    Utilization threshold above which initial accumulated routing cost (acc_cost) is increased to penalize congested channels.
+    Used to bias routing away from highly utilized regions during early routing iterations.
+
+    **Default:** ``0.5``
+
+.. option:: --router_initial_acc_cost_chan_congestion_weight <float>
+    Weight applied to the excess channel utilization (above threshold) when computing the initial accumulated cost (acc_cost)of routing resources.
+
+    Higher values make the router more sensitive to early congestion.
+
+    **Default:** ``0.5``
 
 .. option:: --router_max_convergence_count <float>
 
@@ -1816,7 +1978,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``-2``
 
-.. option:: --router_debug_sink_rr ROUTER_DEBUG_SINK_RR
+.. option:: --router_debug_sink_rr <int>
 
     .. note:: This option is likely only of interest to developers debugging the routing algorithm
 
@@ -2126,7 +2288,7 @@ Analysis Options
 
             It is possible that by opening a switch between (1,2) to (1,1), CHANY:2113 actually only extends from (1,3) to (1,2).
 
-            1. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
+            2. The preceding channel's ending coordinates have no relation to the following channel's starting coordinates.
                There is no logical contradiction, but for clarification, it is best to see an explanation of the VPR coordinate system.
                The path can also be visualized by VPR graphics, as an illustration of this point:
 
@@ -2138,17 +2300,17 @@ Analysis Options
 
             :numref:`fig_path_2` shows the routing resources used in Path #2 and their locations on the FPGA.
 
-            1. The signal emerges from near the top-right corner of the block to_FFC (OPIN:1479)  and joins the topmost horizontal segment of length 1 (CHANX:2073).
+            3. The signal emerges from near the top-right corner of the block to_FFC (OPIN:1479)  and joins the topmost horizontal segment of length 1 (CHANX:2073).
 
-            2. The signal proceeds to the left, then connects to the outermost, blue vertical segment of length 0 (CHANY:2139).
+            4. The signal proceeds to the left, then connects to the outermost, blue vertical segment of length 0 (CHANY:2139).
 
-            3. The signal continues downward and attaches to the horizontal segment of length 1 (CHANX:2040).
+            5. The signal continues downward and attaches to the horizontal segment of length 1 (CHANX:2040).
 
-            4. Of the aforementioned horizontal segment, after travelling one linear unit to the right, the signal jumps on a vertical segment of length 0 (CHANY:2166).
+            6. Of the aforementioned horizontal segment, after travelling one linear unit to the right, the signal jumps on a vertical segment of length 0 (CHANY:2166).
 
-            5. The signal travels upward and promptly connects to a horizontal segment of length 0 (CHANX:2076).
+            7. The signal travels upward and promptly connects to a horizontal segment of length 0 (CHANX:2076).
 
-            6. This segment connects to the green destination io (3,4).
+            8. This segment connects to the green destination io (3,4).
 
         * ``debug``: Like ``detailed``, but includes additional VPR internal debug information such as timing graph node IDs (``tnode``) and routing SOURCE/SINK nodes.
 
@@ -2221,6 +2383,16 @@ The following options are used to enable server mode in VPR.
     **Default:** ``60555``
 
 .. seealso:: :ref:`interactive_path_analysis_client`
+
+
+Show Architecture Resources
+^^^^^^^^^^^^^^^^^^^^^^^^
+.. option:: --show_arch_resources
+
+    Print the architecture resource report for each device layout and exit normally.
+
+    **Default:** ``off``
+
 
 Command-line Auto Completion
 ----------------------------

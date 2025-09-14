@@ -1,10 +1,9 @@
+#pragma once
 /**
  * @file hsl.h
  * 
  * This file manages conversions between color (red, green, and blue) and hsl (hue, saturation, and luminesence)
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

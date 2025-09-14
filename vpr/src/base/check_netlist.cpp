@@ -62,7 +62,9 @@ void check_netlist(int verbosity) {
         }
     }
     free_hash_table(net_hash_table);
-    VTR_LOG_WARN("Netlist contains %d global net to non-global architecture pin connections\n", global_to_non_global_connection_count);
+    if (global_to_non_global_connection_count > 0) {
+        VTR_LOG("Netlist contains %d global net to non-global architecture pin connections\n", global_to_non_global_connection_count);
+    }
 
     auto& device_ctx = g_vpr_ctx.device();
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
@@ -128,7 +130,6 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
 static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
-    const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
     int error = 0;
     t_logical_block_type_ptr type = clb_nlist.block_type(iblk);
@@ -137,7 +138,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
         for (auto pin_id : clb_nlist.block_pins(iblk)) {
             auto pin_type = clb_nlist.pin_type(pin_id);
 
-            if (pin_type == PinType::SINK && !clb_nlist.block_contains_primary_output(iblk, models)) {
+            if (pin_type == PinType::SINK && !clb_nlist.block_contains_primary_output(iblk)) {
                 //Input only and not a Primary-Output block
                 VTR_LOG_WARN(
                     "Logic block #%d (%s) has only 1 input pin '%s'"
@@ -145,7 +146,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
                     iblk, clb_nlist.block_name(iblk).c_str(),
                     clb_nlist.pin_name(pin_id).c_str());
             }
-            if (pin_type == PinType::DRIVER && !clb_nlist.block_contains_primary_input(iblk, models)) {
+            if (pin_type == PinType::DRIVER && !clb_nlist.block_contains_primary_input(iblk)) {
                 //Output only and not a Primary-Input block
                 VTR_LOG_WARN(
                     "Logic block #%d (%s) has only 1 output pin '%s'."
@@ -185,11 +186,11 @@ static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup
 
         VTR_ASSERT(pb_route.count(i));
 
-        if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != OPEN) {
+        if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != UNDEFINED) {
             const t_pb_graph_pin* pb_gpin = pb_graph_pin_lookup.pb_gpin(type->index, i);
             if ((pb_gpin->port->type == IN_PORT && pb_gpin->is_root_block_pin())
                 || (pb_gpin->port->type == OUT_PORT && pb_gpin->parent_node->is_primitive())) {
-                if (pb_route[i].driver_pb_pin_id != OPEN) {
+                if (pb_route[i].driver_pb_pin_id != UNDEFINED) {
                     VTR_LOG_ERROR(
                         "Internal connectivity error in logic block #%d with output %s."
                         " Internal node %d driven when it shouldn't be driven \n",
@@ -197,7 +198,7 @@ static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup
                     error++;
                 }
             } else {
-                if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == OPEN) {
+                if (!pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id == UNDEFINED) {
                     VTR_LOG_ERROR(
                         "Internal connectivity error in logic block #%d with output %s."
                         " Internal node %d dangling\n",

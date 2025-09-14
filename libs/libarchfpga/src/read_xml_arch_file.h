@@ -1,7 +1,7 @@
-#ifndef READ_XML_ARCH_FILE_H
-#define READ_XML_ARCH_FILE_H
+#pragma once
 
-#include "arch_types.h"
+#include <vector>
+#include "physical_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -12,14 +12,12 @@ extern "C" {
 #define EMPTY_TYPE_INDEX 0
 
 /* function declarations */
-void XmlReadArch(const char* ArchFile,
-                 const bool timing_enabled,
-                 t_arch* arch,
-                 std::vector<t_physical_tile_type>& PhysicalTileTypes,
-                 std::vector<t_logical_block_type>& LogicalBlockTypes);
+void xml_read_arch(const char* ArchFile,
+                   const bool timing_enabled,
+                   t_arch* arch,
+                   std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                   std::vector<t_logical_block_type>& LogicalBlockTypes);
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif

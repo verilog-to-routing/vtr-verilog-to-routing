@@ -1,10 +1,8 @@
-#ifndef _HEAP_TYPE_H
-#define _HEAP_TYPE_H
+#pragma once
 
 #include <cstdint>
 #include "device_grid.h"
 #include "rr_graph_fwd.h"
-#include "route_path_manager.h"
 
 using HeapNodePriority = float;
 using HeapNodeId = RRNodeId;
@@ -117,5 +115,3 @@ enum class e_heap_type {
  * @brief Heap factory.
  */
 std::unique_ptr<HeapInterface> make_heap(e_heap_type);
-
-#endif /* _HEAP_TYPE_H */

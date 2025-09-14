@@ -18,7 +18,8 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
           g_vpr_ctx.device().rr_rc_data,
           g_vpr_ctx.device().rr_graph.rr_switch(),
           g_vpr_ctx.mutable_routing().rr_node_route_inf,
-          is_flat)
+          is_flat,
+          /*route_verbosity=*/1)
     , is_flat_(is_flat) {
     const auto& grid = g_vpr_ctx.device().grid;
     int num_layers = grid.get_num_layers();
@@ -54,19 +55,9 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
      * case the rr_graph is disconnected and you can give up.                   */
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    //vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling Delay from %s at %d,%d (%s) to %s at %d,%d (%s)",
-    //rr_graph.node_type_string(RRNodeId(source_node)),
-    //rr_graph.node_xlow(RRNodeId(source_node)),
-    //rr_graph.node_ylow(RRNodeId(source_node)),
-    //rr_node_arch_name(source_node).c_str(),
-    //rr_graph.node_type_string(RRNodeId(sink_node)),
-    //rr_graph.node_xlow(RRNodeId(sink_node)),
-    //rr_graph.node_ylow(RRNodeId(sink_node)),
-    //rr_node_arch_name(sink_node).c_str()));
 
     RouteTree tree((RRNodeId(source_node)));
     enable_router_debug(router_opts, ParentNetId(), sink_node, 0, &router_);
@@ -102,6 +93,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
+
     std::tie(found_path, std::ignore, cheapest) = router_.timing_driven_route_connection_from_route_tree(
         tree.root(),
         sink_node,
@@ -116,7 +108,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         VTR_ASSERT(cheapest.index == sink_node);
 
         vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, is_flat_);
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, UNDEFINED, nullptr, is_flat_);
 
         //find delay
         *net_delay = rt_node_of_sink->Tdel;
@@ -172,7 +164,8 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     auto router_lookahead = make_router_lookahead(det_routing_arch, e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
                                                   /*segment_inf=*/{},
-                                                  is_flat);
+                                                  is_flat,
+                                                  /*route_verbosity=*/1);
 
     SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
@@ -182,9 +175,10 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
         route_ctx.rr_node_route_inf,
-        is_flat);
+        is_flat,
+        /*route_verbosity=*/1);
     RouterStats router_stats;
-    ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
+    ConnectionParameters conn_params(ParentNetId::INVALID(), UNDEFINED, false, std::unordered_map<RRNodeId, int>());
     vtr::vector<RRNodeId, RTExploredNode> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
                                                                                                                         cost_params,
                                                                                                                         bounding_box,
@@ -204,7 +198,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
             //Build the routing tree to get the delay
             tree = RouteTree(RRNodeId(src_rr_node));
             vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-            std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&shortest_paths[sink_rr_node], OPEN, nullptr, router_opts.flat_routing);
+            std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&shortest_paths[sink_rr_node], UNDEFINED, nullptr, router_opts.flat_routing);
 
             VTR_ASSERT(rt_node_of_sink->inode == RRNodeId(sink_rr_node));
 
@@ -245,7 +239,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
 void alloc_routing_structs(const t_chan_width& chan_width,
                            const t_router_opts& router_opts,
                            t_det_routing_arch& det_routing_arch,
-                           std::vector<t_segment_inf>& segment_inf,
+                           const std::vector<t_segment_inf>& segment_inf,
                            const std::vector<t_direct_inf>& directs,
                            bool is_flat) {
     int warnings;
@@ -253,10 +247,14 @@ void alloc_routing_structs(const t_chan_width& chan_width,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
     } else {
         graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        /* Branch on tileable routing */
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
+        }
     }
 
     create_rr_graph(graph_type,
@@ -270,7 +268,7 @@ void alloc_routing_structs(const t_chan_width& chan_width,
                     &warnings,
                     is_flat);
 
-    alloc_and_load_rr_node_route_structs();
+    alloc_and_load_rr_node_route_structs(router_opts);
 }
 
 void free_routing_structs() {

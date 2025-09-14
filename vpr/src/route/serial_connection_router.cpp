@@ -241,7 +241,7 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
                                                                   const t_bb& bounding_box,
                                                                   RRNodeId target_node,
                                                                   const t_bb& target_bb) {
-    VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
+    VTR_ASSERT(bounding_box.layer_max < (int)g_vpr_ctx.device().grid.get_num_layers());
 
     const RRNodeId& from_node = current.index;
 
@@ -465,7 +465,8 @@ std::unique_ptr<ConnectionRouterInterface> make_serial_connection_router(e_heap_
                                                                          const std::vector<t_rr_rc_data>& rr_rc_data,
                                                                          const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
                                                                          vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
-                                                                         bool is_flat) {
+                                                                         bool is_flat,
+                                                                         int route_verbosity) {
     switch (heap_type) {
         case e_heap_type::BINARY_HEAP:
             return std::make_unique<SerialConnectionRouter<BinaryHeap>>(
@@ -476,7 +477,8 @@ std::unique_ptr<ConnectionRouterInterface> make_serial_connection_router(e_heap_
                 rr_rc_data,
                 rr_switch_inf,
                 rr_node_route_inf,
-                is_flat);
+                is_flat,
+                route_verbosity);
         case e_heap_type::FOUR_ARY_HEAP:
             return std::make_unique<SerialConnectionRouter<FourAryHeap>>(
                 grid,
@@ -486,7 +488,8 @@ std::unique_ptr<ConnectionRouterInterface> make_serial_connection_router(e_heap_
                 rr_rc_data,
                 rr_switch_inf,
                 rr_node_route_inf,
-                is_flat);
+                is_flat,
+                route_verbosity);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap_type %d",
                             heap_type);

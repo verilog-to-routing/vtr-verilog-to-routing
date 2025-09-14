@@ -1,5 +1,4 @@
 #pragma once
-
 /** 
  * @file
  * @brief This RRSpatialLookup class encapsulates 
@@ -14,6 +13,7 @@
  *   - Update the look-up with new nodes
  *   - Find the id of a node with given information, e.g., x, y, type etc.
  */
+
 #include "vtr_geometry.h"
 #include "vtr_vector.h"
 #include "physical_types.h"
@@ -132,7 +132,7 @@ class RRSpatialLookup {
     /**
      * @brief Returns all matching nodes on all the sides at a specific grid tile (layer,x,y) location.
      *
-     * As this is applicable to grid pins, the type of nodes are limited to SOURCE/SINK/IPIN/OPIN
+     * As this is applicable to grid pins, the type of nodes are limited to SOURCE/SINK/IPIN/OPIN/MUX
      */
     std::vector<RRNodeId> find_grid_nodes_at_all_sides(int layer,
                                                        int x,

@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_color.h
  * 
@@ -5,7 +6,6 @@
  * as well as a global vector of colors shuffled to prevent similar
  * colors from being close together
  */
-#pragma once
 
 #ifndef NO_GRAPHICS
 

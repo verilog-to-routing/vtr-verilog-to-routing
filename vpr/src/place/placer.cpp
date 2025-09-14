@@ -5,6 +5,7 @@
 #include <optional>
 #include <utility>
 
+#include "echo_files.h"
 #include "flat_placement_types.h"
 #include "blk_loc_registry.h"
 #include "place_macro.h"
@@ -34,6 +35,7 @@ Placer::Placer(const Netlist<>& net_list,
                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
+               float anneal_auto_init_t_scale,
                bool cube_bb,
                bool is_flat,
                bool quiet)
@@ -116,17 +118,16 @@ Placer::Placer(const Netlist<>& net_list,
 
     // Gets initial cost and loads bounding boxes.
     costs_.bb_cost = net_cost_handler_.comp_bb_cost(e_cost_methods::NORMAL).first;
-    costs_.bb_cost_norm = 1 / costs_.bb_cost;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         alloc_and_init_timing_objects_(net_list, analysis_opts);
     } else {
         VTR_ASSERT(placer_opts.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
-        // Timing cost and normalization factors are not used
-        constexpr double INVALID_COST = std::numeric_limits<double>::quiet_NaN();
-        costs_.timing_cost = INVALID_COST;
-        costs_.timing_cost_norm = INVALID_COST;
+        // Timing cost is not used
+        costs_.timing_cost = std::numeric_limits<double>::quiet_NaN();
     }
+
+    costs_.update_norm_factors();
 
     if (noc_opts.noc) {
         VTR_ASSERT(noc_cost_handler_.has_value());
@@ -151,6 +152,7 @@ Placer::Placer(const Netlist<>& net_list,
     annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, place_macros, costs_, net_cost_handler_, noc_cost_handler_,
                                                     noc_opts_, rng_, std::move(move_generator), std::move(move_generator2), place_delay_model_.get(),
                                                     placer_criticalities_.get(), placer_setup_slacks_.get(), timing_info_.get(), pin_timing_invalidator_.get(),
+                                                    anneal_auto_init_t_scale,
                                                     move_lim);
 }
 
@@ -212,8 +214,6 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
         write_setup_timing_graph_dot(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH) + std::string(".dot"),
                                      *timing_info_, debug_tnode);
     }
-
-    costs_.timing_cost_norm = 1 / costs_.timing_cost;
 }
 
 void Placer::check_place_() {
@@ -310,7 +310,7 @@ void Placer::place() {
 
             // Outer loop of the simulated annealing ends
         } while (annealer_->outer_loop_update_state());
-    } //skip_anneal ends
+    } // skip_anneal ends
 
     // Start Quench
     annealer_->start_quench();
@@ -375,12 +375,14 @@ void Placer::place() {
     log_printer_.print_post_placement_stats();
 }
 
-void Placer::copy_locs_to_global_state(PlacementContext& place_ctx) {
+void Placer::update_global_state() {
+    auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
+
     // the placement location variables should be unlocked before being accessed
-    place_ctx.unlock_loc_vars();
+    mutable_palce_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
-    auto& global_blk_loc_registry = place_ctx.mutable_blk_loc_registry();
+    auto& global_blk_loc_registry = mutable_palce_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
 
 #ifndef NO_GRAPHICS

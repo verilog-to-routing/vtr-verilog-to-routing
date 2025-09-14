@@ -1,9 +1,8 @@
-#ifndef RR_GRAPH_STORAGE
-#define RR_GRAPH_STORAGE
+#pragma once
 
-#include <exception>
 #include <bitset>
 
+#include "librrgraph_types.h"
 #include "vtr_vector.h"
 #include "physical_types.h"
 #include "rr_graph_storage_utils.h"
@@ -15,7 +14,6 @@
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
-#include <iostream>
 #include <optional>
 #include <cstdint>
 
@@ -55,24 +53,24 @@
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
 struct alignas(16) t_rr_node_data {
-    int16_t cost_index_ = -1;
-    int16_t rc_index_ = -1;
+    int16_t cost_index_ = LIBRRGRAPH_UNDEFINED_VAL;
+    int16_t rc_index_ = LIBRRGRAPH_UNDEFINED_VAL;
 
-    int16_t xlow_ = -1;
-    int16_t ylow_ = -1;
-    int16_t xhigh_ = -1;
-    int16_t yhigh_ = -1;
+    int16_t xlow_ = LIBRRGRAPH_UNDEFINED_VAL;
+    int16_t ylow_ = LIBRRGRAPH_UNDEFINED_VAL;
+    int16_t xhigh_ = LIBRRGRAPH_UNDEFINED_VAL;
+    int16_t yhigh_ = LIBRRGRAPH_UNDEFINED_VAL;
 
     e_rr_type type_ = e_rr_type::NUM_RR_TYPES;
 
     /* The character is a hex number which is a 4-bit truth table for node sides
-     * The 4-bits in serial represent 4 sides on which a node could appear 
-     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0) 
+     * The 4-bits in serial represent 4 sides on which a node could appear
+     * It follows a fixed sequence, which is (LEFT, BOTTOM, RIGHT, TOP) whose indices are (3, 2, 1, 0)
      *   - When a node appears on a given side, it is set to "1"
      *   - When a node does not appear on a given side, it is set to "0"
      * For example,
-     *   - '1' means '0001' in hex number, which means the node appears on TOP 
-     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides, 
+     *   - '1' means '0001' in hex number, which means the node appears on TOP
+     *   - 'A' means '1100' in hex number, which means the node appears on LEFT and BOTTOM sides,
      */
     union {
         Direction direction;       //Valid only for CHANX/CHANY
@@ -99,6 +97,7 @@ struct t_rr_node_ptc_data {
         int pin_num;
         int track_num;
         int class_num;
+        int mux_num;
     } ptc_;
 };
 
@@ -186,6 +185,18 @@ class t_rr_graph_storage {
         return node_storage_[id].yhigh_;
     }
 
+    void set_tileable(bool is_tileable) {
+        is_tileable_ = is_tileable;
+    }
+
+    short node_bend_start(RRNodeId id) const {
+        return node_bend_start_[id];
+    }
+    
+    short node_bend_end(RRNodeId id) const {
+        return node_bend_end_[id];
+    }
+
     short node_capacity(RRNodeId id) const {
         return node_storage_[id].capacity_;
     }
@@ -209,6 +220,9 @@ class t_rr_graph_storage {
             id, side);
     }
 
+    /** @brief Get the sides where the node locates on. */
+    const std::vector<e_side> node_sides(RRNodeId id) const;
+
     /* FIXME: This function should be DEPRECATED!
      * Developers can easily use the following codes with more flexibility
      *
@@ -223,6 +237,7 @@ class t_rr_graph_storage {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_mux_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
 
     /** @brief Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
     t_edge_size fan_in(RRNodeId id) const {
@@ -252,18 +267,6 @@ class t_rr_graph_storage {
             return &it->second;  // Return the value if key is found
         }
         return std::nullopt;  // Return an empty optional if key is not found
-    }
-
-    /** @brief Find the twist number that RR node uses to change ptc number across the same track.
-     * By default this number is zero, meaning that ptc number across the same track should be the same.
-     * This number is only meaningful for CHANX/CHANY nodes, not the other nodes.
-     */
-    short node_ptc_twist(RRNodeId id) const{
-        //check whether node_ptc_twist_incr has been allocated
-        if(node_ptc_twist_incr_.empty()){
-            return 0;
-        }
-        return node_ptc_twist_incr_[id];
     }
 
     /**
@@ -338,24 +341,26 @@ class t_rr_graph_storage {
      * - num_non_configurable_edges(RRNodeId)
      * - edge_id(RRNodeId, t_edge_size)
      * - edge_sink_node(RRNodeId, t_edge_size)
+     * - edge_source_node(RRNodeId, t_edge_size)
      * - edge_switch(RRNodeId, t_edge_size)
      *
      * Only call these methods after partition_edges has been invoked.
      */
-    edge_idx_range edges(const RRNodeId& id) const {
+    edge_idx_range edges(const RRNodeId id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
-    edge_idx_range configurable_edges(const RRNodeId& id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+    edge_idx_range configurable_edges(const RRNodeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id, rr_switches)));
     }
-    edge_idx_range non_configurable_edges(const RRNodeId& id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+    edge_idx_range non_configurable_edges(const RRNodeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
         return vtr::make_range(edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id, rr_switches)), edge_idx_iterator(num_edges(id)));
     }
 
-    t_edge_size num_edges(const RRNodeId& id) const {
+    t_edge_size num_edges(const RRNodeId id) const {
         return size_t(last_edge(id)) - size_t(first_edge(id));
     }
+    bool edge_is_configurable(RREdgeId edge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     bool edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     t_edge_size num_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     t_edge_size num_non_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
@@ -367,7 +372,7 @@ class t_rr_graph_storage {
      *
      * If first_edge == last_edge, then a RRNodeId has no edges.
      */
-     RREdgeId first_edge(const RRNodeId& id) const {
+     RREdgeId first_edge(const RRNodeId id) const {
         return node_first_edge_[id];
     }
 
@@ -376,7 +381,7 @@ class t_rr_graph_storage {
      * we always allocate that dummy node. We also assume that the edges have
      * been sorted by rr_node, which is true after partition_edges().
      */
-    RREdgeId last_edge(const RRNodeId& id) const {
+    RREdgeId last_edge(const RRNodeId id) const {
         return (&node_first_edge_[id])[1];
     }
 
@@ -414,19 +419,32 @@ class t_rr_graph_storage {
         return RREdgeId::INVALID();
     }
 
-    /** @brief Get the source node for the specified edge. */
-    RRNodeId edge_src_node(const RREdgeId& edge) const {
+    /** 
+     * @brief Get the source node for the specified edge. 
+     */
+    RRNodeId edge_src_node(const RREdgeId edge) const {
         VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_src_node_[edge];
     }
 
-    /** @brief Get the destination node for the specified edge. */
-    RRNodeId edge_sink_node(const RREdgeId& edge) const {
+    /** 
+     * @brief Get the destination node for the specified edge. 
+     */
+    RRNodeId edge_sink_node(const RREdgeId edge) const {
         VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_dest_node_[edge];
     }
 
-    /** @brief Call the `apply` function with the edge id, source, and sink nodes of every edge. */
+    /** 
+     * @brief Get the source node for the specified edge. 
+     */
+    RRNodeId edge_source_node(const RREdgeId edge) const {
+        return edge_src_node_[edge];
+    }
+
+    /** 
+     * @brief Call the `apply` function with the edge id, source, and sink nodes of every edge. 
+     */
     void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
         for (size_t i = 0; i < edge_dest_node_.size(); i++) {
             RREdgeId edge(i);
@@ -434,30 +452,42 @@ class t_rr_graph_storage {
         }
     }
 
-    /** @brief Get the destination node for the iedge'th edge from specified RRNodeId.
+    /** 
+     * @brief Get the destination node for the iedge'th edge from specified RRNodeId.
      *
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
      */
-    RRNodeId edge_sink_node(const RRNodeId& id, t_edge_size iedge) const {
+    RRNodeId edge_sink_node(const RRNodeId id, t_edge_size iedge) const {
         return edge_sink_node(edge_id(id, iedge));
     }
 
-    /** @brief Get the switch used for the specified edge. */
-    short edge_switch(const RREdgeId& edge) const {
+    /** 
+     * @brief Get the source node for the iedge'th edge from specified RRNodeId.
+     */
+    RRNodeId edge_source_node(const RRNodeId id, t_edge_size iedge) const {
+        return edge_source_node(edge_id(id, iedge));
+    }
+
+    /** 
+     * @brief Get the switch used for the specified edge. 
+     */
+    short edge_switch(const RREdgeId edge) const {
         return edge_switch_[edge];
     }
 
-    /** @brief Get the switch used for the iedge'th edge from specified RRNodeId.
+    /** 
+     * @brief Get the switch used for the iedge'th edge from specified RRNodeId.
      *
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
      */
-    short edge_switch(const RRNodeId& id, t_edge_size iedge) const {
+    short edge_switch(const RRNodeId id, t_edge_size iedge) const {
         return edge_switch(edge_id(id, iedge));
     }
 
-    /** @brief
+    /** 
+     * @brief
      * Node proxy methods
      *
      * The following methods implement an interface that appears to be
@@ -477,7 +507,6 @@ class t_rr_graph_storage {
      * methods that use RRNodeId and RREdgeId should be used.
      *
      */
-
     node_idx_iterator begin() const;
 
     node_idx_iterator end() const;
@@ -504,10 +533,23 @@ class t_rr_graph_storage {
      */
     void make_room_for_node(RRNodeId elem_position) {
         make_room_in_vector(&node_storage_, size_t(elem_position));
+
+        // Reserve the capacity based on node_storage_. The capacity is determined in 
+        // make_room_in_vector(), which uses a power-of-two growth pattern to avoid 
+        // growing the vector one element at a time.
         node_ptc_.reserve(node_storage_.capacity());
         node_ptc_.resize(node_storage_.size());
+
+        node_layer_.reserve(node_storage_.capacity());
         node_layer_.resize(node_storage_.size());
-        node_ptc_twist_incr_.resize(node_storage_.size());
+
+        if (is_tileable_) {
+            node_bend_start_.reserve(node_storage_.capacity());
+            node_bend_start_.resize(node_storage_.size());
+
+            node_bend_end_.reserve(node_storage_.capacity());
+            node_bend_end_.resize(node_storage_.size());
+        }
     }
 
     /** @brief  Reserve storage for RR nodes. */
@@ -517,6 +559,10 @@ class t_rr_graph_storage {
         node_storage_.reserve(size);
         node_ptc_.reserve(size);
         node_layer_.reserve(size);
+        if (is_tileable_) {
+            node_bend_start_.reserve(size);
+            node_bend_end_.reserve(size);
+        }
     }
 
     /** @brief  Resize node storage to accomidate size RR nodes. */
@@ -526,11 +572,10 @@ class t_rr_graph_storage {
         node_storage_.resize(size);
         node_ptc_.resize(size);
         node_layer_.resize(size);
-    }
-
-    /** @brief We only allocate the ptc twist increment array while building tileable rr-graphs */
-    void resize_ptc_twist_incr(size_t size){
-        node_ptc_twist_incr_.resize(size);
+        if (is_tileable_) {
+            node_bend_start_.resize(size);
+            node_bend_end_.resize(size);
+        }
     }
 
     /** @brief Number of RR nodes that can be accessed. */
@@ -552,9 +597,10 @@ class t_rr_graph_storage {
         node_first_edge_.clear();
         node_fan_in_.clear();
         node_layer_.clear();
+        node_bend_start_.clear();
+        node_bend_end_.clear();
         node_name_.clear();
         virtual_clock_network_root_idx_.clear();
-        node_ptc_twist_incr_.clear();
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
@@ -562,6 +608,7 @@ class t_rr_graph_storage {
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
+        is_tileable_ = false;
     }
 
     /** @brief
@@ -588,7 +635,9 @@ class t_rr_graph_storage {
         node_first_edge_.shrink_to_fit();
         node_fan_in_.shrink_to_fit();
         node_layer_.shrink_to_fit();
-        node_ptc_twist_incr_.shrink_to_fit();
+        node_bend_start_.shrink_to_fit();
+        node_bend_end_.shrink_to_fit();
+
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
@@ -602,6 +651,10 @@ class t_rr_graph_storage {
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
         node_layer_.emplace_back();
+        if (is_tileable_) {
+            node_bend_start_.emplace_back();
+            node_bend_end_.emplace_back();
+        }
     }
 
     /** @brief Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
@@ -618,13 +671,15 @@ class t_rr_graph_storage {
     void set_node_pin_num(RRNodeId id, int);   //Same as set_ptc_num() by checks type() is consistent
     void set_node_track_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
+    void set_node_mux_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
     void set_node_type(RRNodeId id, e_rr_type new_type);
     void set_node_name(RRNodeId id, const std::string& new_name);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
     void set_node_layer(RRNodeId id, short layer);
-    void set_node_ptc_twist_incr(RRNodeId id, short twist);
     void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
+    void set_node_bend_start(RRNodeId id, size_t bend_start);
+    void set_node_bend_end(RRNodeId id, size_t bend_end);
     void set_node_rc_index(RRNodeId, NodeRCIndex new_rc_index);
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, Direction new_direction);
@@ -778,8 +833,8 @@ class t_rr_graph_storage {
      */
     static inline bool is_node_on_specific_side(
         vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
-        const RRNodeId& id,
-        const e_side& side) {
+        const RRNodeId id,
+        const e_side side) {
         auto& node_data = node_storage[id];
         if (node_data.type_ != e_rr_type::IPIN && node_data.type_ != e_rr_type::OPIN) {
             VTR_LOG_ERROR("Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
@@ -875,15 +930,6 @@ class t_rr_graph_storage {
      */
     std::unordered_map<std::string, RRNodeId> virtual_clock_network_root_idx_;
 
-    /** @brief
-     *Twist Increment number is defined for CHANX/CHANY nodes; it is useful for layout of tileable FPGAs used by openFPGA.
-     *It gives us a new track index in each tile a longer wire crosses, which enables us to make long wires with a repeated single-tile pattern that "twists" the wires as they cross the tile.
-     *For example, an L4 wire would change tracks 4 times with metal shorts [e.g. 0, 2, 4, 6] and track 6 would drive a switch -- together this implements an L4 wire with only one layout tile.
-     * Twist increment number is only meaningful for CHANX and CHANY nodes; it is 0 for other node types.
-     * We also don't bother allocating this storage if the FPGA is not specified to be tileable; instead in that case the twist for all nodes will always be returned as 0.
-     */
-    vtr::vector<RRNodeId, short> node_ptc_twist_incr_;
-
     /** @brief Edge storage */
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
@@ -906,6 +952,17 @@ class t_rr_graph_storage {
      * corresponds to the architecture ID or the RR Graph switch ID for an edge.
     */
     vtr::vector<RREdgeId, bool> edge_remapped_;
+
+    /** @brief
+     * The following data structures are only used for tileable routing resource graph.
+     * The tileable flag is set to true by tileable routing resource graph builder.
+     * Bend start and end are used to store the bend information for each node.
+     * Bend start and end are only used for CHANX and CHANY nodes.
+     * Bend start and end are only used for tileable routing resource graph.
+     */
+    bool is_tileable_ = false;
+    vtr::vector<RRNodeId, int16_t> node_bend_start_;
+    vtr::vector<RRNodeId, int16_t> node_bend_end_;
 
     /***************
      * State flags *
@@ -957,22 +1014,24 @@ class t_rr_graph_view {
         const vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in,
         const vtr::array_view_id<RRNodeId, const short> node_layer,
         const std::unordered_map<RRNodeId, std::string>& node_name,
-        const vtr::array_view_id<RRNodeId, const short> node_ptc_twist_incr,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch,
-        const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx)
+        const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx,
+        const vtr::array_view_id<RRNodeId, const int16_t> node_bend_start,
+        const vtr::array_view_id<RRNodeId, const int16_t> node_bend_end)
         : node_storage_(node_storage)
         , node_ptc_(node_ptc)
         , node_first_edge_(node_first_edge)
         , node_fan_in_(node_fan_in)
         , node_layer_(node_layer)
         , node_name_(node_name)
-        , node_ptc_twist_incr_(node_ptc_twist_incr)
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
         , edge_switch_(edge_switch)
-        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx) {}
+        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx)
+        , node_bend_start_(node_bend_start)
+        , node_bend_end_(node_bend_end) {}
 
     /****************
      * Node methods *
@@ -1020,6 +1079,7 @@ class t_rr_graph_view {
     int node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
     int node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     int node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    int node_mux_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
 
     /**
     * @brief Retrieve the fan-in for a given RRNodeId.
@@ -1056,20 +1116,6 @@ class t_rr_graph_view {
             return &it->second;  // Return the value if key is found
         }
         return std::nullopt;  // Return an empty optional if key is not found
-    }
-
-    /**
-     * @brief Retrieve the twist number (if available) that the given RRNodeId used for its PTC number.
-     *
-     * @param id The RRNodeId for which to retrieve the twist number.
-     * @return The twist number used for the PTC number, or a default value if not available.
-     */
-    short node_ptc_twist_incr(RRNodeId id) const{
-        //check if ptc twist increment allocated
-        if(node_ptc_twist_incr_.empty()){
-            return 0; //if it is not allocated we just assume that is zero
-        }
-        return node_ptc_twist_incr_[id];
     }
 
     /**
@@ -1186,12 +1232,12 @@ class t_rr_graph_view {
     vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in_;
     vtr::array_view_id<RRNodeId, const short> node_layer_;
     const std::unordered_map<RRNodeId, std::string>& node_name_;
-    vtr::array_view_id<RRNodeId, const short> node_ptc_twist_incr_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
     const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx_;
 
-};
+    vtr::array_view_id<RRNodeId, const int16_t> node_bend_start_;
+    vtr::array_view_id<RRNodeId, const int16_t> node_bend_end_;
 
-#endif /* _RR_GRAPH_STORAGE_ */
+};

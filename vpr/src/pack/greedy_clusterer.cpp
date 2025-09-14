@@ -42,7 +42,7 @@
 #include <string>
 #include <vector>
 #include "appack_context.h"
-#include "SetupGrid.h"
+#include "setup_grid.h"
 #include "atom_netlist.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
@@ -144,8 +144,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                      pre_cluster_timing_manager_);
 
     // Pick the first seed molecule.
-    PackMoleculeId seed_mol_id = seed_selector.get_next_seed(prepacker,
-                                                             cluster_legalizer);
+    PackMoleculeId seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
 
     /****************************************************************
      * Clustering
@@ -213,8 +212,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                           cluster_legalizer);
 
         // Pick new seed.
-        seed_mol_id = seed_selector.get_next_seed(prepacker,
-                                                  cluster_legalizer);
+        seed_mol_id = seed_selector.get_next_seed(cluster_legalizer);
     }
 
     // If this architecture has LE physical block, report its usage.
@@ -526,7 +524,7 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
 
 void GreedyClusterer::report_le_physical_block_usage(const ClusterLegalizer& cluster_legalizer) {
     // find the cluster type that has lut primitives
-    auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types_, arch_.models);
+    auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types_);
     // find a LE pb_type within the found logic_block_type
     auto le_pb_type = identify_le_block_type(logic_block_type);
 

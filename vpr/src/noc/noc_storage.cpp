@@ -1,6 +1,7 @@
 
 #include "noc_storage.h"
 #include "vtr_assert.h"
+#include "vtr_log.h"
 #include "vpr_error.h"
 
 #include <algorithm>

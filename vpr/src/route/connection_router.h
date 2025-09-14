@@ -1,5 +1,4 @@
-#ifndef _CONNECTION_ROUTER_H
-#define _CONNECTION_ROUTER_H
+#pragma once
 
 /**
  * @file
@@ -23,6 +22,7 @@
 
 #include "connection_router_interface.h"
 #include "globals.h"
+#include "route_path_manager.h"
 #include "rr_graph_storage.h"
 #include "router_lookahead.h"
 #include "route_tree.h"
@@ -45,7 +45,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const std::vector<t_rr_rc_data>& rr_rc_data,
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
-        bool is_flat)
+        bool is_flat,
+        int route_verbosity)
         : grid_(grid)
         , router_lookahead_(router_lookahead)
         , rr_nodes_(rr_nodes.view())
@@ -56,6 +57,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf)
         , is_flat_(is_flat)
+        , route_verbosity_(route_verbosity)
         , router_stats_(nullptr)
         , router_debug_(false)
         , path_search_cumulative_time(0) {
@@ -332,6 +334,9 @@ class ConnectionRouter : public ConnectionRouterInterface {
     /** Is flat router enabled or not? */
     bool is_flat_;
 
+    /** The verbosity of log messages in the router. */
+    int route_verbosity_;
+
     /** Router statistics (e.g., heap push/pop counts) */
     RouterStats* router_stats_;
 
@@ -356,5 +361,3 @@ class ConnectionRouter : public ConnectionRouterInterface {
 };
 
 #include "connection_router.tpp"
-
-#endif /* _CONNECTION_ROUTER_H */

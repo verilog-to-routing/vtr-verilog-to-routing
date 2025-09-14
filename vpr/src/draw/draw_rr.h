@@ -1,10 +1,9 @@
+#pragma once
 /**
  * @file draw_rr.h
  * 
  * draw_rr.cpp contains all functions that relate to drawing routing resources.
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 
@@ -18,8 +17,10 @@
 
 #include "ezgl/graphics.hpp"
 
-/* Draws the routing resources that exist in the FPGA, if the user wants *
- * them drawn. */
+/** 
+ * @brief Draws the routing resources that exist in the FPGA, if the user wants
+ * them drawn. 
+ */
 void draw_rr(ezgl::renderer* g);
 
 /* Draws all the edges that the user wants shown between inode and what it
@@ -28,18 +29,34 @@ void draw_rr_edges(RRNodeId from_node, ezgl::renderer* g);
 
 void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g);
 
+/**
+ * @brief Draws a RR node.
+ *
+ * @param inode The RRNodeId of the node to draw.
+ * @param color The color to use for drawing the node.
+ * @param g The renderer to use for drawing.
+ */
+void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g);
+
+/**
+ * @brief Draws the intra-cluster pin for a given RRNodeId when flat routing is enabled.
+ */
+void draw_rr_intra_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g);
+
 /* Draws an IPIN or OPIN rr_node.  Note that the pin can appear on more
  * than one side of a clb.  Also note that this routine can change the
  * current color to BLACK. */
-void draw_rr_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g);
+void draw_cluster_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g);
 
 void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g);
+
 void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen);
 
 /* Draws a buffer (triangle) or pass transistor (circle) on the edge
  * connecting from to to, depending on the status of buffered.  The drawing
  * is closest to the from_node, since it reflects the switch type of from.  */
 void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool switch_configurable, ezgl::renderer* g);
+
 void draw_expand_non_configurable_rr_nodes_recurr(RRNodeId from_node,
                                                   std::set<RRNodeId>& expanded_nodes);
 

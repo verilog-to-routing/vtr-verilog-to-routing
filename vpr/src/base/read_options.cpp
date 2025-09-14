@@ -137,7 +137,9 @@ struct ParseCircuitFormat {
 struct ParseAPAnalyticalSolver {
     ConvertedValue<e_ap_analytical_solver> from_str(const std::string& str) {
         ConvertedValue<e_ap_analytical_solver> conv_value;
-        if (str == "qp-hybrid")
+        if (str == "identity")
+            conv_value.set_value(e_ap_analytical_solver::Identity);
+        else if (str == "qp-hybrid")
             conv_value.set_value(e_ap_analytical_solver::QP_Hybrid);
         else if (str == "lp-b2b")
             conv_value.set_value(e_ap_analytical_solver::LP_B2B);
@@ -152,6 +154,9 @@ struct ParseAPAnalyticalSolver {
     ConvertedValue<std::string> to_str(e_ap_analytical_solver val) {
         ConvertedValue<std::string> conv_value;
         switch (val) {
+            case e_ap_analytical_solver::Identity:
+                conv_value.set_value("identity");
+                break;
             case e_ap_analytical_solver::QP_Hybrid:
                 conv_value.set_value("qp-hybrid");
                 break;
@@ -165,14 +170,16 @@ struct ParseAPAnalyticalSolver {
     }
 
     std::vector<std::string> default_choices() {
-        return {"qp-hybrid", "lp-b2b"};
+        return {"identity", "qp-hybrid", "lp-b2b"};
     }
 };
 
 struct ParseAPPartialLegalizer {
     ConvertedValue<e_ap_partial_legalizer> from_str(const std::string& str) {
         ConvertedValue<e_ap_partial_legalizer> conv_value;
-        if (str == "bipartitioning")
+        if (str == "none")
+            conv_value.set_value(e_ap_partial_legalizer::Identity);
+        else if (str == "bipartitioning")
             conv_value.set_value(e_ap_partial_legalizer::BiPartitioning);
         else if (str == "flow-based")
             conv_value.set_value(e_ap_partial_legalizer::FlowBased);
@@ -187,6 +194,9 @@ struct ParseAPPartialLegalizer {
     ConvertedValue<std::string> to_str(e_ap_partial_legalizer val) {
         ConvertedValue<std::string> conv_value;
         switch (val) {
+            case e_ap_partial_legalizer::Identity:
+                conv_value.set_value("none");
+                break;
             case e_ap_partial_legalizer::BiPartitioning:
                 conv_value.set_value("bipartitioning");
                 break;
@@ -200,7 +210,7 @@ struct ParseAPPartialLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"bipartitioning", "flow-based"};
+        return {"none", "bipartitioning", "flow-based"};
     }
 };
 
@@ -211,8 +221,8 @@ struct ParseAPFullLegalizer {
             conv_value.set_value(e_ap_full_legalizer::Naive);
         else if (str == "appack")
             conv_value.set_value(e_ap_full_legalizer::APPack);
-        else if (str == "basic-min-disturbance")
-            conv_value.set_value(e_ap_full_legalizer::Basic_Min_Disturbance);
+        else if (str == "flat-recon")
+            conv_value.set_value(e_ap_full_legalizer::FlatRecon);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_full_legalizer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -230,8 +240,8 @@ struct ParseAPFullLegalizer {
             case e_ap_full_legalizer::APPack:
                 conv_value.set_value("appack");
                 break;
-            case e_ap_full_legalizer::Basic_Min_Disturbance:
-                conv_value.set_value("basic-min-disturbance");
+            case e_ap_full_legalizer::FlatRecon:
+                conv_value.set_value("flat-recon");
             default:
                 VTR_ASSERT(false);
         }
@@ -239,7 +249,7 @@ struct ParseAPFullLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"naive", "appack", "basic-min-disturbance"};
+        return {"naive", "appack", "flat-recon"};
     }
 };
 
@@ -432,9 +442,9 @@ struct ParseRouteType {
     ConvertedValue<e_route_type> from_str(const std::string& str) {
         ConvertedValue<e_route_type> conv_value;
         if (str == "global")
-            conv_value.set_value(GLOBAL);
+            conv_value.set_value(e_route_type::GLOBAL);
         else if (str == "detailed")
-            conv_value.set_value(DETAILED);
+            conv_value.set_value(e_route_type::DETAILED);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -445,10 +455,10 @@ struct ParseRouteType {
 
     ConvertedValue<std::string> to_str(e_route_type val) {
         ConvertedValue<std::string> conv_value;
-        if (val == GLOBAL)
+        if (val == e_route_type::GLOBAL)
             conv_value.set_value("global");
         else {
-            VTR_ASSERT(val == DETAILED);
+            VTR_ASSERT(val == e_route_type::DETAILED);
             conv_value.set_value("detailed");
         }
         return conv_value;
@@ -1065,6 +1075,8 @@ struct ParseRouterLookahead {
             conv_value.set_value(e_router_lookahead::COMPRESSED_MAP);
         else if (str == "extended_map")
             conv_value.set_value(e_router_lookahead::EXTENDED_MAP);
+        else if (str == "simple")
+            conv_value.set_value(e_router_lookahead::SIMPLE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -1084,6 +1096,8 @@ struct ParseRouterLookahead {
             conv_value.set_value("map");
         } else if (val == e_router_lookahead::COMPRESSED_MAP) {
             conv_value.set_value("compressed_map");
+        } else if (val == e_router_lookahead::SIMPLE) {
+            conv_value.set_value("simple");
         } else {
             VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
             conv_value.set_value("extended_map");
@@ -1092,7 +1106,7 @@ struct ParseRouterLookahead {
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "compressed_map", "extended_map"};
+        return {"classic", "map", "compressed_map", "extended_map", "simple"};
     }
 };
 
@@ -1584,6 +1598,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Show version information then exit")
         .action(argparse::Action::VERSION);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.show_arch_resources, "--show_arch_resources")
+        .help("Show architecture resources then exit")
+        .action(argparse::Action::STORE_TRUE)
+        .default_value("off");
+
     gen_grp.add_argument<std::string>(args.device_layout, "--device")
         .help(
             "Controls which device layout/floorplan is used from the architecture file."
@@ -1629,6 +1648,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Verify that files loaded by VPR (e.g. architecture, netlist,"
             " previous packing/placement/routing) are consistent")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    gen_grp.add_argument<bool, ParseOnOff>(args.verify_route_file_switch_id, "--verify_route_file_switch_id")
+        .help(
+            "Verify that the switch IDs in the routing file are consistent with those in the RR Graph. "
+            "Set this to false when switch IDs in the routing file may differ from the RR Graph. "
+            "For example, when analyzing different timing corners using the same netlist, placement, and routing files, "
+            "the RR switch IDs in the RR Graph may differ due to changes in delays. "
+            "In such cases, set this option to false so that the switch IDs from the RR Graph are used, and those in the routing file are ignored.\n")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1818,7 +1847,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     file_grp.add_argument(args.write_flat_place_file, "--write_flat_place")
         .help(
-            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists cluster and intra-cluster placement coordinates for each atom and can be used to reconstruct a clustering and placement solution.")
+            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_legalized_flat_place_file, "--write_legalized_flat_place")
+        .help(
+            "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
@@ -1908,7 +1942,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     ap_grp.add_argument<e_ap_analytical_solver, ParseAPAnalyticalSolver>(args.ap_analytical_solver, "--ap_analytical_solver")
         .help(
             "Controls which Analytical Solver the Global Placer will use in the AP Flow.\n"
-            " * qp-hybrid: olves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
+            " * identity: Does not formulate any equations and just passes the last legalized solution through. This solver is only used for testing and debugging.\n"
+            " * qp-hybrid: Solves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
             " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
         .default_value("lp-b2b")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -1916,6 +1951,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     ap_grp.add_argument<e_ap_partial_legalizer, ParseAPPartialLegalizer>(args.ap_partial_legalizer, "--ap_partial_legalizer")
         .help(
             "Controls which Partial Legalizer the Global Placer will use in the AP Flow.\n"
+            " * none: Does not perform any partial legalization. This is used for testing and debugging the AP flow and is not intended to be used as part of a real AP flow.\n"
             " * bipartitioning: Creates minimum windows around over-dense regions of the device bi-partitions the atoms in these windows such that the region is no longer over-dense and the atoms are in tiles that they can be placed into.\n"
             " * flow-based: Flows atoms from regions that are overfilled to regions that are underfilled.")
         .default_value("bipartitioning")
@@ -1926,7 +1962,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls which Full Legalizer to use in the AP Flow.\n"
             " * naive: Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.\n"
             " * appack: Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.\n"
-            " * basic-min-disturbance: Use the Basic Min. Disturbance Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.")
+            " * flat-recon: Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.")
         .default_value("appack")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1943,6 +1979,31 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls the trade-off between wirelength (HPWL) and delay minimization in the AP flow.\n"
             "A value of 0.0 makes the AP flow focus completely on wirelength minimization, while a value of 1.0 makes the AP flow focus completely on timing optimization.")
         .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<int>(args.ap_high_fanout_threshold, "--ap_high_fanout_threshold")
+        .help(
+            "Defines the threshold for high fanout nets within AP flow.\n"
+            "Ignores the nets that have higher fanouts than the threshold for the analytical solver.")
+        .default_value("256")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument(args.ap_partial_legalizer_target_density, "--ap_partial_legalizer_target_density")
+        .help(
+            "Sets the target density of different physical tiles on the FPGA device "
+            "for the partial legalizer in the AP flow. The partial legalizer will "
+            "try to fill tiles up to (but not beyond) this target density. This "
+            "is used as a guide, the legalizer may not follow this if it must fill "
+            "the tile more."
+            "\n"
+            "When this option is set ot auto, VPR will select good values for the "
+            "target density of tiles."
+            "\n"
+            "This option is similar to appack_max_dist_th, where a regex string "
+            "is used to set the target density of different physical tiles. See "
+            "the documentation for more information.")
+        .nargs('+')
+        .default_value({"auto"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     ap_grp.add_argument(args.appack_max_dist_th, "--appack_max_dist_th")
@@ -1970,12 +2031,47 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value({"auto"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument(args.appack_unrelated_clustering_args, "--appack_unrelated_clustering_args")
+        .help(
+            "Sets parameters used for unrelated clustering (the max search distance and max attempts) "
+            "used by APPack. "
+            "APPack uses the primitive-level placement produced by the "
+            "global placer to cluster primitives together. APPack uses this information "
+            "to help increase the density of clusters (if needed) by searching for "
+            "unrelated molecules to pack together. It does this by searching out from "
+            "the centroid of the cluster being created until it finds a valid molecule. "
+            "If a valid molecule is found, but it fails, the packer may do another attempt "
+            "(up to a maximum number of attempts). "
+            "This argument allows the user to select the maximum distance the code will "
+            "search and how many attempts it will try to search for each cluster."
+            "\n"
+            "When this option is set to auto, VPR will select good values for these "
+            "parameters based on the primitives contained within each logical block type."
+            "\n"
+            "This option is similar to the appack_max_dist_th argument, where the "
+            "parameters are passed by the user in the form <regex>:<float>,<float> where "
+            "regex is used to match the name of the logical block type to set, the "
+            "first float is the max unrelated tile distance, and the second float "
+            "is the max unrelated clustering attempts.")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
         .help(
             "Controls how verbose the AP flow's log messages will be. Higher "
             "values produce more output (useful for debugging the AP "
             "algorithms).")
         .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<bool, ParseOnOff>(args.ap_generate_mass_report, "--ap_generate_mass_report")
+        .help(
+            "Controls whether to generate a report on how the partial legalizer "
+            "within the AP flow calculates the mass of primitives and the "
+            "capacity of tiles on the device. This report is useful when "
+            "debugging the partial legalizer.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& pack_grp = parser.add_argument_group("packing options");
@@ -2159,6 +2255,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "  * device_circuit: proportional to device and circuit size\n"
             "                    (grid_size ^ 2/3 * num_blocks ^ 2/3)\n")
         .default_value("circuit")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_auto_init_t_scale, "--anneal_auto_init_t_scale")
+        .help(
+            "A scale on the starting temperature of the anneal for the automatic annealing "
+            "schedule.\n"
+            "\n"
+            "When in the automatic annealing schedule, the annealer will select a good "
+            "initial temperature based on the quality of the initial placement. This option "
+            "allows you to scale that initial temperature up or down by multiplying the "
+            "initial temperature by the given scale. Increasing this number "
+            "will increase the initial temperature which will have the annealer potentially "
+            "explore more of the space at the expense of run time. Depending on the quality "
+            "of the initial placement, this may improve or hurt the quality of the final "
+            "placement.")
+        .default_value("1.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceInitT, "--init_t")
@@ -2873,12 +2985,37 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " to reduce the run-time to build the router lookahead and also its memory footprint\n"
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"
+            " * simple: A purely distance-based lookahead loaded from an external file\n"
             "\n"
             " The extended map differs from the map lookahead in the lookahead computation.\n"
             " It is better suited for architectures that have specialized routing for specific\n"
             " kinds of connections, but note that the time and memory necessary to compute the\n"
             " extended lookahead map are greater than the basic lookahead map.\n")
         .default_value("map")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.generate_router_lookahead_report, "--generate_router_lookahead_report")
+        .help("If turned on, generates a detailed report on the router lookahead: report_router_lookahead.rpt\n"
+              "\n"
+              "This report contains information on how accurate the router lookahead is and "
+              "if and when it overestimates the cost from a node to a target node. It does "
+              "this by doing a set of trial routes and comparing the estimated cost from the "
+              "router lookahead to the actual cost of the route path.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_threshold, "--router_initial_acc_cost_chan_congestion_threshold")
+        .help("Utilization threshold above which initial accumulated routing cost (acc_cost) "
+              "is increased to penalize congested channels. Used to bias routing away from "
+              "highly utilized regions during early routing iterations.")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_weight, "--router_initial_acc_cost_chan_congestion_weight")
+        .help("Weight applied to the excess channel utilization (above threshold) "
+              "when computing the initial accumulated cost (acc_cost)of routing resources. "
+              "Higher values make the router more sensitive to early congestion.")
+        .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
@@ -3079,6 +3216,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     analysis_grp.add_argument(args.write_timing_summary, "--write_timing_summary")
         .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<bool, ParseOnOff>(args.skip_sync_clustering_and_routing_results, "--skip_sync_clustering_and_routing_results")
+        .help(
+            "Select to skip the synchronization on clustering results based on routing optimization results."
+            "Note that when this sync-up is disabled, clustering results may be wrong (leading to incorrect bitstreams)!")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument<bool, ParseOnOff>(args.generate_net_timing_report, "--generate_net_timing_report")
@@ -3415,14 +3559,14 @@ void set_conditional_defaults(t_options& args) {
      */
     //Base cost type
     if (args.base_cost_type.provenance() != Provenance::SPECIFIED) {
-        if (args.RouteType == DETAILED) {
+        if (args.RouteType == e_route_type::DETAILED) {
             if (args.timing_analysis) {
                 args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
             } else {
                 args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
             }
         } else {
-            VTR_ASSERT(args.RouteType == GLOBAL);
+            VTR_ASSERT(args.RouteType == e_route_type::GLOBAL);
             //Global RR graphs don't have valid timing, so use demand base cost
             args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
         }
@@ -3430,10 +3574,10 @@ void set_conditional_defaults(t_options& args) {
 
     //Bend cost
     if (args.bend_cost.provenance() != Provenance::SPECIFIED) {
-        if (args.RouteType == GLOBAL) {
+        if (args.RouteType == e_route_type::GLOBAL) {
             args.bend_cost.set(1., Provenance::INFERRED);
         } else {
-            VTR_ASSERT(args.RouteType == DETAILED);
+            VTR_ASSERT(args.RouteType == e_route_type::DETAILED);
             args.bend_cost.set(0., Provenance::INFERRED);
         }
     }

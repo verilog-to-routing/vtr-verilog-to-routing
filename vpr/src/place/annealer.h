@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "vpr_types.h"
@@ -6,6 +5,7 @@
 #include "move_generator.h" // movestats
 #include "net_cost_handler.h"
 #include "manual_move_generator.h"
+#include "vtr_random.h"
 
 #include <optional>
 #include <tuple>
@@ -185,6 +185,7 @@ class PlacementAnnealer {
                       PlacerSetupSlacks* setup_slacks,
                       SetupTimingInfo* timing_info,
                       NetPinTimingInvalidator* pin_timing_invalidator,
+                      float auto_init_t_scale,
                       int move_lim);
 
     /**

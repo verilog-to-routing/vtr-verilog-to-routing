@@ -11,7 +11,7 @@
 #include "physical_types.h"
 #include "place_and_route.h"
 
-static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf) {
+static int get_longest_segment_length(const std::vector<t_segment_inf>& segment_inf) {
     int length = 0;
 
     for (const t_segment_inf& seg_info : segment_inf) {
@@ -28,7 +28,7 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
                                                const t_router_opts& router_opts,
                                                const Netlist<>& net_list,
                                                t_det_routing_arch& det_routing_arch,
-                                               std::vector<t_segment_inf>& segment_inf,
+                                               const std::vector<t_segment_inf>& segment_inf,
                                                const t_chan_width_dist& chan_width_dist,
                                                const std::vector<t_direct_inf>& directs,
                                                bool is_flat) {
@@ -43,7 +43,8 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
                                                                           segment_inf,
-                                                                          is_flat);
+                                                                          is_flat,
+                                                                          router_opts.route_verbosity);
 
     RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);
 

@@ -1,9 +1,4 @@
-#ifndef VTR_LOG_H
-#define VTR_LOG_H
-#include <tuple>
-#include <unordered_set>
-#include <string>
-
+#pragma once
 /**
  * @file
  * @brief This header defines useful logging macros for VTR projects.
@@ -56,6 +51,9 @@
  * To avoid run-time overhead, these are only enabled if VTR_ENABLE_DEBUG_LOGGING 
  * is defined (disabled by default).
  */
+
+#include <unordered_set>
+#include <string>
 
 // Unconditional logging macros
 #define VTR_LOG(...) VTR_LOGV(true, __VA_ARGS__)
@@ -165,5 +163,3 @@ void set_noisy_warn_log_file(std::string log_file_name);
  * noisy_warn_log_file, otherwise it is printed on stdout (or the regular log file)
  */
 void print_or_suppress_warning(const char* pszFileName, unsigned int lineNum, const char* pszFuncName, const char* pszMessage, ...);
-
-#endif

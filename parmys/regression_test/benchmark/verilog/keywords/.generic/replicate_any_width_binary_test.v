@@ -7,7 +7,7 @@
 
 module simple_op(a,b,out);
     input 	`RANGE a;
-    input   `RANGE b;
+    input       `RANGE b;
     output 	`RANGE out;
 
 `operator ar`RANGE(out,a,b);

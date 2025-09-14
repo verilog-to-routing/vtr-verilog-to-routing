@@ -1,0 +1,55 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# NOTE: To run this task, the Z1000 RR graph is needed. This file needs to be
+#       decompressed in order to run. In the root VTR directory, run:
+#               make get_zeroasic_rr_graphs
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif/4
+
+# Path to directory of architectures to use
+archs_dir=arch/zeroasic/z1000
+
+# Add architectures to list to sweep
+arch_list_add=z1000.xml
+additional_files_list_add=--read_rr_graph,z1000_rr_graph.xml
+
+# Add circuits to list to sweep
+# These are the MCNC circuits which could theoretically fit on the Z1000 architecture.
+#       The Z1000 architecture has 2048 4-LUTs, 2048 registers, and 1024 GPIOs
+#       It can support up to 4 clock domains.
+# NOTE: Some of these circuit have been disabled due to the packer not packing
+#       densely enough.
+circuit_list_add=alu4.blif
+# circuit_list_add=apex2.blif
+circuit_list_add=apex4.blif
+circuit_list_add=bigkey.blif
+circuit_list_add=des.blif
+circuit_list_add=diffeq.blif
+circuit_list_add=dsip.blif
+circuit_list_add=ex5p.blif
+circuit_list_add=misex3.blif
+# circuit_list_add=s298.blif
+circuit_list_add=seq.blif
+circuit_list_add=tseng.blif
+
+# Constrain the clocks
+circuit_constraint_list_add=(bigkey.blif, constraints=../../../../constraints/bigkey_clk_constraints.xml)
+circuit_constraint_list_add=(diffeq.blif, constraints=../../../../constraints/diffeq_clk_constraints.xml)
+circuit_constraint_list_add=(dsip.blif,   constraints=../../../../constraints/dsip_clk_constraints.xml)
+# circuit_constraint_list_add=(s298.blif,   constraints=../../../../constraints/s298_clk_constraints.xml)
+circuit_constraint_list_add=(tseng.blif,  constraints=../../../../constraints/tseng_clk_constraints.xml)
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_fixed_chan_width.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+# Pass the script params while writing the vpr constraints.
+script_params=-starting_stage vpr -track_memory_usage --route_chan_width 100 --device z1000 --clock_modeling route --constant_net_method route --const_gen_inference none --sweep_dangling_primary_ios off --sweep_dangling_primary_ios off --sweep_dangling_nets off -allow_dangling_combinational_nodes on --sweep_constant_primary_outputs off --sweep_dangling_blocks off

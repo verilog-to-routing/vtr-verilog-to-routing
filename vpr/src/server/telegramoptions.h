@@ -1,5 +1,4 @@
-#ifndef TELEGRAMOPTIONS_H
-#define TELEGRAMOPTIONS_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -126,5 +125,3 @@ class TelegramOptions {
 } // namespace server
 
 #endif /* NO_SERVER */
-
-#endif /* TELEGRAMOPTIONS_H */

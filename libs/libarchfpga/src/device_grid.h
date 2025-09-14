@@ -1,5 +1,4 @@
-#ifndef DEVICE_GRID
-#define DEVICE_GRID
+#pragma once
 
 #include <string>
 #include <vector>
@@ -33,10 +32,9 @@ class DeviceGrid {
     const std::string& name() const { return name_; }
 
     ///@brief Return the number of layers(number of dies)
-    inline int get_num_layers() const {
-        return (int)grid_.dim_size(0);
+    inline size_t get_num_layers() const {
+        return grid_.dim_size(0);
     }
-
     ///@brief Return the width of the grid at the specified layer
     size_t width() const { return grid_.dim_size(1); }
     ///@brief Return the height of the grid at the specified layer
@@ -55,7 +53,8 @@ class DeviceGrid {
     void clear();
 
     /**
-     * @brief Return the number of instances of the specified tile type on the specified layer. If the layer_num is -1, return the total number of instances of the specified tile type on all layers.
+     * @brief Return the number of instances of the specified tile type on the specified layer.
+     * If the layer_num is -1, return the total number of instances of the specified tile type on all layers.
      * @note This function should be used if count_instances() is called in the constructor.
      */
     size_t num_instances(t_physical_tile_type_ptr type, int layer_num) const;
@@ -85,6 +84,15 @@ class DeviceGrid {
         return get_width_offset(tile_loc) == 0 && get_height_offset(tile_loc) == 0;
     }
 
+    ///@brief Given a location, return the root location (bottom-left corner) of the tile instance
+    inline t_physical_tile_loc get_root_location(const t_physical_tile_loc& tile_loc) const {
+        t_physical_tile_loc root_loc;
+        root_loc.layer_num = tile_loc.layer_num;
+        root_loc.x = tile_loc.x - get_width_offset(tile_loc);
+        root_loc.y = tile_loc.y - get_height_offset(tile_loc);
+        return root_loc;
+    }
+
     ///@brief Returns a rectangle which represents the bounding box of the tile at the given location.
     inline vtr::Rect<int> get_tile_bb(const t_physical_tile_loc& tile_loc) const {
         t_physical_tile_type_ptr tile_type = get_physical_type(tile_loc);
@@ -95,6 +103,58 @@ class DeviceGrid {
         int tile_yhigh = tile_ylow + tile_type->height - 1;
 
         return {{tile_xlow, tile_ylow}, {tile_xhigh, tile_yhigh}};
+    }
+
+    // Forward const-iterator over (layer, x, y)
+    class loc_const_iterator {
+      public:
+        using value_type = t_physical_tile_loc;
+        using difference_type = std::ptrdiff_t;
+        using iterator_category = std::forward_iterator_tag;
+
+        loc_const_iterator(const DeviceGrid* g, size_t layer, size_t x, size_t y)
+            : g_(g) {
+            loc_.layer_num = static_cast<int>(layer);
+            loc_.x = static_cast<int>(x);
+            loc_.y = static_cast<int>(y);
+        }
+
+        value_type operator*() const { return loc_; }
+
+        // pre-increment
+        loc_const_iterator& operator++() {
+            // advance y, then x, then layer
+            ++loc_.y;
+            if (loc_.y >= static_cast<int>(g_->height())) {
+                loc_.y = 0;
+                ++loc_.x;
+                if (loc_.x >= static_cast<int>(g_->width())) {
+                    loc_.x = 0;
+                    ++loc_.layer_num;
+                }
+            }
+            return *this;
+        }
+
+        bool operator==(const loc_const_iterator& o) const {
+            return loc_.x == o.loc_.x
+                   && loc_.y == o.loc_.y
+                   && loc_.layer_num == o.loc_.layer_num
+                   && g_ == o.g_;
+        }
+        bool operator!=(const loc_const_iterator& o) const { return !(*this == o); }
+
+      private:
+        const DeviceGrid* g_ = nullptr;
+        t_physical_tile_loc loc_{0, 0, 0};
+    };
+
+    /// Iterate every (layer, x, y) location
+    inline auto all_locations() const {
+        return vtr::make_range(
+            loc_const_iterator(this, /*layer*/ 0, /*x*/ 0, /*y*/ 0),
+            loc_const_iterator(this, /*layer*/ get_num_layers(), /*x*/ 0, /*y*/ 0) // end sentinel
+        );
     }
 
     ///@brief Return the metadata of the tile at the specified location
@@ -149,5 +209,3 @@ class DeviceGrid {
 
     std::vector<t_logical_block_type_ptr> limiting_resources_;
 };
-
-#endif

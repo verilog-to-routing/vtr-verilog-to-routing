@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_global.h
  * This file contains declaration of accessor functions that can be used to
@@ -9,8 +10,6 @@
  * Author: Long Yu (Mike) Wang
  * Date: August 21, 2013
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

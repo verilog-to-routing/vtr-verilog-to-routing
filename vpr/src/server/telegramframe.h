@@ -1,5 +1,4 @@
-#ifndef TELEGRAMFRAME_H
-#define TELEGRAMFRAME_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -31,5 +30,3 @@ using TelegramFramePtr = std::shared_ptr<TelegramFrame>;
 } // namespace comm
 
 #endif /* NO_SERVER */
-
-#endif /* TELEGRAMFRAME_H */

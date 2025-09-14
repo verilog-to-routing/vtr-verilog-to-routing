@@ -1,3 +1,4 @@
+#pragma once
 /*
  * Data types describing the logic (technology-mapped) models that the architecture can implement.
  * Logic models include LUT (.names), flipflop (.latch), inpad, outpad, memory slice, etc.
@@ -10,9 +11,6 @@
  * Date: April, 2025
  */
 
-#ifndef LOGIC_TYPES_H
-#define LOGIC_TYPES_H
-
 #include "vtr_assert.h"
 #include "vtr_list.h"
 #include "vtr_memory.h"
@@ -23,6 +21,18 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+
+/**
+ * @brief The type of the parallel axis.
+ */
+enum class e_parallel_axis {
+    /** X_AXIS: Data that describes an x-directed wire segment (CHANX) */
+    X_AXIS,
+    /** Y_AXIS: Data that describes an y-directed wire segment (CHANY) */
+    Y_AXIS,
+    /** BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
+    BOTH_AXIS
+};
 
 /*
  * Logic model data types
@@ -64,10 +74,8 @@ struct t_model {
     bool never_prune = false;               ///< Don't remove from the netlist even if a block of this type has no output ports used and, therefore, unconnected to the rest of the netlist
 };
 
-// Tag for the logical model ID
-struct logical_model_id_tag;
 // A unique ID that represents a logical model in the architecture.
-typedef vtr::StrongId<logical_model_id_tag, size_t> LogicalModelId;
+typedef vtr::StrongId<struct logical_model_id_tag, size_t> LogicalModelId;
 
 /**
  * @brief A storage class containing all of the logical models in an FPGA
@@ -96,6 +104,13 @@ class LogicalModels {
     static constexpr const char* MODEL_LATCH = ".latch";
     static constexpr const char* MODEL_INPUT = ".input";
     static constexpr const char* MODEL_OUTPUT = ".output";
+
+    // The IDs of each of the library models. These are known ahead of time,
+    // and making these constexpr can save having to look them up in this class.
+    static constexpr LogicalModelId MODEL_INPUT_ID = LogicalModelId(0);
+    static constexpr LogicalModelId MODEL_OUTPUT_ID = LogicalModelId(1);
+    static constexpr LogicalModelId MODEL_LATCH_ID = LogicalModelId(2);
+    static constexpr LogicalModelId MODEL_NAMES_ID = LogicalModelId(3);
 
     // Iterator for the logical model IDs array.
     typedef typename vtr::vector_map<LogicalModelId, LogicalModelId>::const_iterator model_iterator;
@@ -268,5 +283,3 @@ class LogicalModels {
     /// @brief A lookup between the name of a logical model and its ID.
     std::unordered_map<std::string, LogicalModelId> model_name_to_logical_model_id_;
 };
-
-#endif

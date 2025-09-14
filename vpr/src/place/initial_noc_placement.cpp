@@ -8,6 +8,7 @@
 #include "noc_place_checkpoint.h"
 #include "place_constraints.h"
 
+#include "vtr_random.h"
 #include "vtr_time.h"
 
 /**

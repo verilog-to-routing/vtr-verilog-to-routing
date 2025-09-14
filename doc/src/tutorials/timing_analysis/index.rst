@@ -6,6 +6,8 @@ Post-Implementation Timing Analysis
 This tutorial describes how to perform static timing analysis (STA) on a circuit which has
 been implemented by :ref:`VPR` using OpenSTA, an external timing analysis tool.
 
+A video of this tutorial can be found here: https://youtu.be/yihFJc7WOfE
+
 External timing analysis can be useful since VPR's timing analyzer (Tatum) does
 not support all timing constraints and does not provide a TCL interface to allow
 you to directly interrogate the timing graph. VPR also has limited support for

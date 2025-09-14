@@ -10,10 +10,56 @@
 #include <cstddef>
 #include <limits>
 #include "ap_netlist.h"
+#include "net_cost_handler.h"
 
 double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
     double hpwl = 0.0;
     for (APNetId net_id : netlist.nets()) {
+        if (netlist.net_is_ignored(net_id))
+            continue;
+        double min_x = std::numeric_limits<double>::max();
+        double max_x = std::numeric_limits<double>::lowest();
+        double min_y = std::numeric_limits<double>::max();
+        double max_y = std::numeric_limits<double>::lowest();
+        for (APPinId pin_id : netlist.net_pins(net_id)) {
+            APBlockId blk_id = netlist.pin_block(pin_id);
+            min_x = std::min(min_x, block_x_locs[blk_id]);
+            max_x = std::max(max_x, block_x_locs[blk_id]);
+            min_y = std::min(min_y, block_y_locs[blk_id]);
+            max_y = std::max(max_y, block_y_locs[blk_id]);
+        }
+        // TODO: In the placer, the x and y dimensions are multiplied by cost
+        //       factors based on the channel width. Should somehow bring these
+        //       in here.
+        //       Vaughn thinks these may make sense in the objective HPWL, but
+        //       not the in the estimated post-placement wirelength.
+        VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y);
+        hpwl += max_x - min_x + max_y - min_y;
+    }
+    return hpwl;
+}
+
+double PartialPlacement::estimate_post_placement_wirelength(const APNetlist& netlist) const {
+    // Go through each net and calculate the half-perimeter wirelength. Since
+    // we want to estimate the post-placement wirelength, we do not want the
+    // flat placement positions of the blocks. Instead we compute the HPWL over
+    // the tiles that the flat placement is placing the blocks over.
+    double total_hpwl = 0;
+    for (APNetId net_id : netlist.nets()) {
+        // To align with other wirelength estimators in VTR (for example in the
+        // placer), we do not include global nets (clocks, etc.) in the wirelength
+        // calculation.
+        if (netlist.net_is_global(net_id))
+            continue;
+
+        // Similar to the placer, weight the wirelength of this net as a function
+        // of its fanout. Since these fanouts are at the AP netlist (unclustered)
+        // level, the correction factor may lead to a somewhat higher HPWL prediction
+        // than after clustering.
+        // TODO: Investigate the clustered vs unclustered factors further.
+        // TODO: Should update the costs to 3D.
+        double crossing = wirelength_crossing_count(netlist.net_pins(net_id).size());
+
         double min_x = std::numeric_limits<double>::max();
         double max_x = std::numeric_limits<double>::lowest();
         double min_y = std::numeric_limits<double>::max();
@@ -26,9 +72,16 @@ double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
             max_y = std::max(max_y, block_y_locs[blk_id]);
         }
         VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y);
-        hpwl += max_x - min_x + max_y - min_y;
+
+        // Floor the positions to get the x and y coordinates of the tiles each
+        // block belongs to.
+        double tile_dx = std::floor(max_x) - std::floor(min_x);
+        double tile_dy = std::floor(max_y) - std::floor(min_y);
+
+        total_hpwl += (tile_dx + tile_dy) * crossing;
     }
-    return hpwl;
+
+    return total_hpwl;
 }
 
 bool PartialPlacement::verify_locs(const APNetlist& netlist,
@@ -49,6 +102,14 @@ bool PartialPlacement::verify_locs(const APNetlist& netlist,
             return false;
         if (netlist.block_mobility(blk_id) == APBlockMobility::FIXED) {
             const APFixedBlockLoc& fixed_loc = netlist.block_loc(blk_id);
+            if (g_vpr_ctx.atom().flat_placement_info().valid) {
+                // Flat placement files use the anchor positions of blocks, so to match the
+                // internal global placer of VTR we add 0.5 here to move the flat placement
+                // locations to the center of (at least 1x1) tiles.
+                // TODO: This should be handled more explicitly.
+                x_pos += 0.5f;
+                y_pos += 0.5f;
+            }
             if (fixed_loc.x != -1 && x_pos != fixed_loc.x)
                 return false;
             if (fixed_loc.y != -1 && y_pos != fixed_loc.y)

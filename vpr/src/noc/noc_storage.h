@@ -1,6 +1,4 @@
-#ifndef NOC_STORAGE_H
-#define NOC_STORAGE_H
-
+#pragma once
 /**
  * @file
  * @brief This file defines the NocStorage class.
@@ -36,9 +34,9 @@
  */
 
 #include <vector>
-#include <string>
 #include <unordered_map>
 #include "noc_data_types.h"
+#include "vpr_types.h"
 #include "vtr_vector.h"
 #include "noc_router.h"
 #include "noc_link.h"
@@ -572,5 +570,3 @@ const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_li
 
     return returnable_noc_link_const_refs_;
 }
-
-#endif

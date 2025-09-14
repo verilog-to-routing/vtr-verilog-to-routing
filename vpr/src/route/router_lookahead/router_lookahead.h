@@ -1,5 +1,5 @@
-#ifndef VPR_ROUTER_LOOKAHEAD_H
-#define VPR_ROUTER_LOOKAHEAD_H
+#pragma once
+
 #include <memory>
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -82,12 +82,6 @@ class RouterLookahead {
 /**
  * @brief Force creation of lookahead object.
  * @attention This may involve recomputing the lookahead, so only use if lookahead cache cannot be used.
- * @param det_routing_arch
- * @param router_lookahead_type
- * @param write_lookahead
- * @param read_lookahead
- * @param segment_inf
- * @param is_flat
  * @return Return a unique pointer that points to the router lookahead object
  */
 std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch& det_routing_arch,
@@ -95,7 +89,8 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
                                                        const std::string& write_lookahead,
                                                        const std::string& read_lookahead,
                                                        const std::vector<t_segment_inf>& segment_inf,
-                                                       bool is_flat);
+                                                       bool is_flat,
+                                                       int route_verbosity);
 
 /**
  * @brief Clear router lookahead cache (e.g. when changing or free rrgraph).
@@ -105,12 +100,6 @@ void invalidate_router_lookahead_cache();
 /**
  * @brief Returns lookahead for given rr graph.
  * @attention Object is cached in RouterContext, but access to cached object should performed via this function.
- * @param det_routing_arch
- * @param router_lookahead_type
- * @param write_lookahead
- * @param read_lookahead
- * @param segment_inf
- * @param is_flat
  * @return
  */
 const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det_routing_arch,
@@ -118,7 +107,8 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    const std::string& write_lookahead,
                                                    const std::string& read_lookahead,
                                                    const std::vector<t_segment_inf>& segment_inf,
-                                                   bool is_flat);
+                                                   bool is_flat,
+                                                   int route_verbosity);
 
 class ClassicLookahead : public RouterLookahead {
   public:
@@ -188,5 +178,3 @@ class NoOpLookahead : public RouterLookahead {
         return -1.;
     }
 };
-
-#endif

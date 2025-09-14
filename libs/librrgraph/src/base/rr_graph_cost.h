@@ -1,5 +1,4 @@
-#ifndef RR_GRAPH_COST_H
-#define RR_GRAPH_COST_H
+#pragma once
 
 enum e_base_cost_type {
     DELAY_NORMALIZED,
@@ -15,9 +14,8 @@ enum e_base_cost_type {
 enum e_cost_indices {
     SOURCE_COST_INDEX = 0,
     SINK_COST_INDEX,
+    MUX_COST_INDEX,
     OPIN_COST_INDEX,
     IPIN_COST_INDEX,
     CHANX_COST_INDEX_START
 };
-
-#endif

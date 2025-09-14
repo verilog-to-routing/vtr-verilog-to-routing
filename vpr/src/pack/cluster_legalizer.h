@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -9,8 +10,6 @@
  * designed to be self-contained to the point that it is able to be called
  * externally to the Packer in VPR.
  */
-
-#pragma once
 
 #include <vector>
 #include "atom_netlist_fwd.h"
@@ -35,8 +34,7 @@ struct t_lb_router_data;
 // A special ID to identify the legalization clusters. This is separate from the
 // ClusterBlockId since this legalizer is not necessarily tied to the Clustered
 // netlist, but is used as a sub-routine to it.
-struct legalization_cluster_id_tag;
-typedef vtr::StrongId<legalization_cluster_id_tag, size_t> LegalizationClusterId;
+typedef vtr::StrongId<struct legalization_cluster_id_tag, size_t> LegalizationClusterId;
 
 /**
  * @brief Holds information to be shared between molecules that represent the

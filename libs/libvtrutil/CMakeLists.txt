@@ -50,35 +50,49 @@ if (VTR_ENABLE_DEBUG_LOGGING)
     set(VTR_BUILD_INFO "${VTR_BUILD_INFO} debug_logging")
 endif()
 
-# We always update the vtr_version.cpp file every time the project is built, 
-# to ensure the git revision and dirty status are up to date.
-#
-# We need to do this in two stages:
-#
-# 1) We a custom target 'version' (which is always out of date) so it will always be run.
-#    It touches the unprocessed version input file so it too will always be out of date.
-#
-# 2) The custom command depends on the touched version input file and generates the processed 
-#    version file, with updated values. The custom command uses the configure_version.cmake 
-#    script to generate the up-to-date vtr_version.cpp
-add_custom_target(version ALL
-    COMMAND ${CMAKE_COMMAND} -E touch ${VTR_VERSION_FILE_IN})
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
+include(GetGitRevisionDescription)
 
-add_custom_command(OUTPUT ${VTR_VERSION_FILE_OUT}
-    COMMAND ${CMAKE_COMMAND} 
-                    -D IN_FILE=${VTR_VERSION_FILE_IN}
-                    -D OUT_FILE=${VTR_VERSION_FILE_OUT}
-                    -D VTR_VERSION_MAJOR=${VTR_VERSION_MAJOR}
-                    -D VTR_VERSION_MINOR=${VTR_VERSION_MINOR}
-                    -D VTR_VERSION_PATCH=${VTR_VERSION_PATCH}
-                    -D VTR_VERSION_PRERELEASE=${VTR_VERSION_PRERELEASE}
-                    -D VTR_COMPILER_INFO=${VTR_COMPILER_INFO}
-                    -D VTR_BUILD_INFO=${VTR_BUILD_INFO}
-                    -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/configure_version.cmake
-    MAIN_DEPENDENCY ${VTR_VERSION_FILE_IN}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-	VERBATIM)
+# Get the VCS revision.
+git_describe_working_tree(VTR_VCS_REVISION --always --long)
+string(FIND ${VTR_VCS_REVISION} "NOTFOUND" GIT_DESCRIBE_VTR_REVISION_NOTFOUND)
+if (NOT ${GIT_DESCRIBE_VTR_REVISION_NOTFOUND} EQUAL -1)
+    # Git describe failed, usually this means we
+    # aren't in a git repo -- so don't set a VCS
+    # revision
+    set(VTR_VCS_REVISION "unknown")
+endif()
 
+# Get the short VCS revision
+git_describe_working_tree(VTR_VCS_REVISION_SHORT --always --long --exclude '*')
+string(FIND "${VTR_VCS_REVISION_SHORT}" "NOTFOUND" GIT_DESCRIBE_VTR_REVISION_SHORT_NOTFOUND)
+if (NOT ${GIT_DESCRIBE_VTR_REVISION_SHORT_NOTFOUND} EQUAL -1)
+    # Git describe failed, usually this means we
+    # aren't in a git repo -- so don't set a VCS
+    # revision
+    set(VTR_VCS_REVISION_SHORT "unknown")
+endif()
+
+# Set the version according to semver.org
+set(VTR_VERSION "${VTR_VERSION_MAJOR}.${VTR_VERSION_MINOR}.${VTR_VERSION_PATCH}")
+if(VTR_VERSION_PRERELEASE)
+    set(VTR_VERSION "${VTR_VERSION}-${VTR_VERSION_PRERELEASE}")
+endif()
+set(VTR_VERSION_SHORT ${VTR_VERSION})
+if(VTR_VCS_REVISION)
+    set(VTR_VERSION "${VTR_VERSION}+${VTR_VCS_REVISION_SHORT}")
+endif()
+
+# Other build meta-data
+string(TIMESTAMP VTR_BUILD_TIMESTAMP)
+set(VTR_BUILD_TIMESTAMP "${VTR_BUILD_TIMESTAMP}")
+set(VTR_BUILD_INFO "${VTR_BUILD_INFO}")
+
+message(STATUS "VTR Version: ${VTR_VERSION}")
+message(STATUS "VTR Revision: ${VTR_VCS_REVISION}")
+message(STATUS "VTR Short Revision: ${VTR_VCS_REVISION_SHORT}")
+
+configure_file(${VTR_VERSION_FILE_IN} ${VTR_VERSION_FILE_OUT})
 
 #
 # Source files and library
@@ -96,9 +110,6 @@ add_library(libvtrutil STATIC
              ${LIB_SOURCES})
 target_include_directories(libvtrutil PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libvtrutil PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
-
-#Ensure version is always up to date by requiring version to be run first
-add_dependencies(libvtrutil version)
 
 #Specify link-time dependencies
 target_link_libraries(libvtrutil

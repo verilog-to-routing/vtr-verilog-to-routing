@@ -1,5 +1,4 @@
-#ifndef READ_OPTIONS_H
-#define READ_OPTIONS_H
+#pragma once
 
 #include "arch_types.h"
 #include "read_circuit.h"
@@ -38,6 +37,7 @@ struct t_options {
     argparse::ArgValue<std::string> write_constraints_file;
     argparse::ArgValue<std::string> read_flat_place_file;
     argparse::ArgValue<std::string> write_flat_place_file;
+    argparse::ArgValue<std::string> write_legalized_flat_place_file;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
     argparse::ArgValue<std::string> read_placement_delay_lookup;
@@ -68,11 +68,13 @@ struct t_options {
     /* General options */
     argparse::ArgValue<bool> show_help;
     argparse::ArgValue<bool> show_version;
+    argparse::ArgValue<bool> show_arch_resources;
     argparse::ArgValue<size_t> num_workers;
     argparse::ArgValue<bool> timing_analysis;
     argparse::ArgValue<e_timing_update_type> timing_update_type;
     argparse::ArgValue<bool> CreateEchoFile;
     argparse::ArgValue<bool> verify_file_digests;
+    argparse::ArgValue<bool> verify_route_file_switch_id;
     argparse::ArgValue<std::string> device_layout;
     argparse::ArgValue<float> target_device_utilization;
     argparse::ArgValue<e_constant_net_method> constant_net_method;
@@ -103,9 +105,13 @@ struct t_options {
     argparse::ArgValue<e_ap_partial_legalizer> ap_partial_legalizer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
+    argparse::ArgValue<std::vector<std::string>> ap_partial_legalizer_target_density;
     argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
+    argparse::ArgValue<std::vector<std::string>> appack_unrelated_clustering_args;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
+    argparse::ArgValue<int> ap_high_fanout_threshold;
+    argparse::ArgValue<bool> ap_generate_mass_report;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
@@ -126,6 +132,7 @@ struct t_options {
     argparse::ArgValue<int> Seed;
     argparse::ArgValue<bool> ShowPlaceTiming;
     argparse::ArgValue<float> PlaceInnerNum;
+    argparse::ArgValue<float> place_auto_init_t_scale;
     argparse::ArgValue<float> PlaceInitT;
     argparse::ArgValue<float> PlaceExitT;
     argparse::ArgValue<float> PlaceAlphaT;
@@ -252,6 +259,9 @@ struct t_options {
     argparse::ArgValue<int> router_debug_sink_rr;
     argparse::ArgValue<int> router_debug_iteration;
     argparse::ArgValue<e_router_lookahead> router_lookahead_type;
+    argparse::ArgValue<bool> generate_router_lookahead_report;
+    argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_threshold;
+    argparse::ArgValue<double> router_initial_acc_cost_chan_congestion_weight;
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
     argparse::ArgValue<bool> router_update_lower_bound_delays;
@@ -272,6 +282,7 @@ struct t_options {
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
     argparse::ArgValue<bool> post_synth_netlist_module_parameters;
     argparse::ArgValue<std::string> write_timing_summary;
+    argparse::ArgValue<bool> skip_sync_clustering_and_routing_results;
     argparse::ArgValue<bool> generate_net_timing_report;
 };
 
@@ -279,5 +290,3 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 t_options read_options(int argc, const char** argv);
 void set_conditional_defaults(t_options& args);
 bool verify_args(const t_options& args);
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef VPR_SRC_PLACE_GRID_TILE_LOOKUP_H_
-#define VPR_SRC_PLACE_GRID_TILE_LOOKUP_H_
+#pragma once
 
 #include <vector>
 #include "physical_types.h"
@@ -89,5 +88,3 @@ class GridTileLookup {
      */
     std::vector<int> max_placement_locations;
 };
-
-#endif /* VPR_SRC_PLACE_GRID_TILE_LOOKUP_H_ */

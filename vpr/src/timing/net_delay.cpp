@@ -1,9 +1,5 @@
 #include <cstdio>
 
-#include "vtr_memory.h"
-#include "vtr_log.h"
-
-#include "vpr_types.h"
 #include "vpr_error.h"
 
 #include "globals.h"
@@ -95,7 +91,7 @@ static void load_one_net_delay(const Netlist<>& net_list,
 static void load_one_net_delay_recurr(const RouteTreeNode& rt_node, ParentNetId net_id) {
     /* This routine recursively traverses the route tree, and copies the Tdel of the sink_type nodes *
      * into the map.                                                                                 */
-    if (rt_node.net_pin_index != OPEN) {                        // value of OPEN indicates a non-SINK
+    if (rt_node.net_pin_index != UNDEFINED) {                   // value of UNDEFINED indicates a non-SINK
         ipin_to_Tdel_map[rt_node.net_pin_index] = rt_node.Tdel; // add to the map, process current sink-type node
     }
 

@@ -85,19 +85,16 @@ void routing_stats(const Netlist<>& net_list,
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
     float area = 0;
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
-            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                auto type = device_ctx.grid.get_physical_type({i, j, layer_num});
-                int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
-                int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
-                if (width_offset == 0 && height_offset == 0 && !type->is_io() && !type->is_empty()) {
-                    if (type->area == UNDEFINED) {
-                        area += grid_logic_tile_area * type->width * type->height;
-                    } else {
-                        area += type->area;
-                    }
-                }
+
+    for (const t_physical_tile_loc tile_loc : device_ctx.grid.all_locations()) {
+        t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(tile_loc);
+        int width_offset = device_ctx.grid.get_width_offset(tile_loc);
+        int height_offset = device_ctx.grid.get_height_offset(tile_loc);
+        if (width_offset == 0 && height_offset == 0 && !type->is_io() && !type->is_empty()) {
+            if (type->area == UNDEFINED) {
+                area += grid_logic_tile_area * type->width * type->height;
+            } else {
+                area += type->area;
             }
         }
     }
@@ -118,7 +115,7 @@ void routing_stats(const Netlist<>& net_list,
     }
     VTR_LOG("\tTotal used logic block area: %g\n", used_area);
 
-    if (route_type == DETAILED) {
+    if (route_type == e_route_type::DETAILED) {
         count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch,
                                   segment_inf, R_minW_nmos, R_minW_pmos, is_flat);
         get_segment_usage_stats(segment_inf);
@@ -127,6 +124,41 @@ void routing_stats(const Netlist<>& net_list,
     if (full_stats) {
         print_wirelen_prob_dist(is_flat);
     }
+}
+
+std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width() {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    auto chanx_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width(),
+                                               device_ctx.grid.height()}},
+                                             0);
+
+    auto chany_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width(),
+                                               device_ctx.grid.height()}},
+                                             0);
+
+    for (RRNodeId node_id : rr_graph.nodes()) {
+        e_rr_type rr_type = rr_graph.node_type(node_id);
+
+        if (rr_type == e_rr_type::CHANX) {
+            int y = rr_graph.node_ylow(node_id);
+            int layer = rr_graph.node_layer(node_id);
+            for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
+                chanx_width[layer][x][y] += rr_graph.node_capacity(node_id);
+            }
+        } else if (rr_type == e_rr_type::CHANY) {
+            int x = rr_graph.node_xlow(node_id);
+            int layer = rr_graph.node_layer(node_id);
+            for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
+                chany_width[layer][x][y] += rr_graph.node_capacity(node_id);
+            }
+        }
+    }
+
+    return {chanx_width, chany_width};
 }
 
 void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
@@ -472,7 +504,7 @@ void print_lambda() {
         VTR_ASSERT(type != nullptr);
         if (!type->is_io()) {
             for (int ipin = 0; ipin < type->num_pins; ipin++) {
-                if (get_pin_type_from_pin_physical_num(type, ipin) == RECEIVER) {
+                if (get_pin_type_from_pin_physical_num(type, ipin) == e_pin_type::RECEIVER) {
                     ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
                     if (net_id != ClusterNetId::INVALID())                 /* Pin is connected? */
                         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) /* Not a global clock */
@@ -505,22 +537,19 @@ int count_netlist_clocks() {
 }
 
 float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts) {
-    //Record the resources of the grid
+    // Record the resources of the grid
     std::map<t_physical_tile_type_ptr, size_t> grid_resources;
-    for (int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
-        for (int x = 0; x < (int)grid.width(); ++x) {
-            for (int y = 0; y < (int)grid.height(); ++y) {
-                int width_offset = grid.get_width_offset({x, y, layer_num});
-                int height_offset = grid.get_height_offset({x, y, layer_num});
-                if (width_offset == 0 && height_offset == 0) {
-                    const auto& type = grid.get_physical_type({x, y, layer_num});
-                    ++grid_resources[type];
-                }
-            }
+
+    for (const t_physical_tile_loc tile_loc : grid.all_locations()) {
+        int width_offset = grid.get_width_offset(tile_loc);
+        int height_offset = grid.get_height_offset(tile_loc);
+        if (width_offset == 0 && height_offset == 0) {
+            const t_physical_tile_type_ptr type = grid.get_physical_type(tile_loc);
+            ++grid_resources[type];
         }
     }
 
-    //Determine the area of grid in tile units
+    // Determine the area of grid in tile units
     float grid_area = 0.;
     for (auto& kv : grid_resources) {
         t_physical_tile_type_ptr type = kv.first;
@@ -531,7 +560,7 @@ float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logi
         grid_area += type_area * count;
     }
 
-    //Determine the area of instances in tile units
+    // Determine the area of instances in tile units
     float instance_area = 0.;
     for (auto& kv : instance_counts) {
         if (is_empty_type(kv.first)) {

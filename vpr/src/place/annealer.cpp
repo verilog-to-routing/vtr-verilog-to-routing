@@ -206,6 +206,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      PlacerSetupSlacks* setup_slacks,
                                      SetupTimingInfo* timing_info,
                                      NetPinTimingInvalidator* pin_timing_invalidator,
+                                     float auto_init_t_scale,
                                      int move_lim)
     : placer_opts_(placer_opts)
     , placer_state_(placer_state)
@@ -285,7 +286,8 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     move_type_stats_.rejected_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
 
     // Update the starting temperature for placement annealing to a more appropriate value
-    annealing_state_.t = estimate_starting_temperature_();
+    VTR_ASSERT_SAFE_MSG(auto_init_t_scale >= 0, "Initial temperature scale cannot be negative.");
+    annealing_state_.t = estimate_starting_temperature_() * auto_init_t_scale;
 }
 
 float PlacementAnnealer::estimate_starting_temperature_() {
@@ -335,12 +337,6 @@ float PlacementAnnealer::estimate_starting_temperature_() {
 
     // Get the standard deviation.
     double std_dev = get_std_dev(num_accepted, sum_of_squares, av);
-
-    // Print warning if not all swaps are accepted.
-    if (num_accepted != move_lim) {
-        VTR_LOG_WARN("Starting t: %d of %d configurations accepted.\n",
-                     num_accepted, move_lim);
-    }
 
     // Improved initial placement uses a fast SA for NoC routers and centroid placement
     // for other blocks. The temperature is reduced to prevent SA from destroying the initial placement

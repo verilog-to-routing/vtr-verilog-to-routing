@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -5,8 +6,6 @@
  * @brief   Definition of the Prefix Sum class which enables O(1) time-complexity
  *          sums over regions of an unchanging grid of values.
  */
-
-#pragma once
 
 #include <functional>
 #include <vector>
@@ -122,6 +121,11 @@ class PrefixSum1D {
         // Note: These are all offset by 1 since the first value is zero. This
         //       saves us from having to do bound checking.
         return prefix_sum_[upper_x + 1] - prefix_sum_[lower_x];
+    }
+
+    /// @brief Checks if the prefix sum is initialized or it is empty.
+    bool empty() const {
+        return prefix_sum_.empty();
     }
 
   private:
@@ -267,6 +271,11 @@ class PrefixSum2D {
                - prefix_sum_[lower_x][upper_y + 1]
                - prefix_sum_[upper_x + 1][lower_y]
                + prefix_sum_[lower_x][lower_y];
+    }
+
+    /// @brief Checks if the prefix sum is initialized or it is empty.
+    bool empty() const {
+        return prefix_sum_.empty();
     }
 
   private:

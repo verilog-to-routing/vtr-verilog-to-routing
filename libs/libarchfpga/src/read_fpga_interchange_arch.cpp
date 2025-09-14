@@ -1,9 +1,15 @@
 
-
 #include "read_fpga_interchange_arch.h"
-#include "logic_types.h"
+#include "arch_types.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
+
+#include <numeric>
+#include "LogicalNetlist.capnp.h"
+#include "logic_types.h"
+#include "DeviceResources.capnp.h"
+#include "LogicalNetlist.capnp.h"
+#include "capnp/serialize.h"
 
 #include <algorithm>
 #include <kj/std/iostream.h>
@@ -11,21 +17,29 @@
 #include <map>
 #include <regex>
 #include <set>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string>
-#include <string.h>
+#include <cstring>
 #include <zlib.h>
 #include <sstream>
 
 #include "vtr_assert.h"
 #include "vtr_digest.h"
-#include "vtr_memory.h"
 #include "vtr_util.h"
 
 #include "arch_check.h"
 #include "arch_error.h"
 #include "arch_util.h"
 
+#else // VTR_ENABLE_CAPNPROTO
+
+#include <vector>
+#include "physical_types.h"
+#include "vtr_error.h"
+
+#endif // VTR_ENABLE_CAPNPROTO
+
+#ifdef VTR_ENABLE_CAPNPROTO
 /*
  * FPGA Interchange Device frontend
  *
@@ -219,7 +233,7 @@ static t_port get_generic_port(t_arch* arch,
     port.is_non_clock_global = false;
     port.model_port = nullptr;
     port.port_class = vtr::strdup(nullptr);
-    port.port_power = (t_port_power*)vtr::calloc(1, sizeof(t_port_power));
+    port.port_power = new t_port_power();
 
     if (!model.empty())
         port.model_port = get_model_port(arch, model, name);
@@ -243,16 +257,12 @@ static bool block_port_exists(t_pb_type* pb_type, std::string port_name) {
 static t_pin_to_pin_annotation get_pack_pattern(std::string pp_name, std::string input, std::string output) {
     t_pin_to_pin_annotation pp;
 
-    pp.prop = (int*)vtr::calloc(1, sizeof(int));
-    pp.value = (char**)vtr::calloc(1, sizeof(char*));
-
     pp.type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
     pp.format = E_ANNOT_PIN_TO_PIN_CONSTANT;
-    pp.prop[0] = (int)E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
-    pp.value[0] = vtr::strdup(pp_name.c_str());
+    pp.annotation_entries.push_back({E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME, pp_name});
     pp.input_pins = vtr::strdup(input.c_str());
     pp.output_pins = vtr::strdup(output.c_str());
-    pp.num_value_prop_pairs = 1;
+
     pp.clock = nullptr;
 
     return pp;
@@ -541,7 +551,7 @@ struct ArchReader {
             std::string wire_name = str(wire.getName());
 
             // pin name, bel name
-            int pin_id = OPEN;
+            int pin_id = ARCH_FPGA_UNDEFINED_VAL;
             bool pad_exists = false;
             bool all_inout_pins = true;
             std::string pad_bel_name;
@@ -568,7 +578,7 @@ struct ArchReader {
                     pin_id = pin;
             }
 
-            if (pin_id == OPEN) {
+            if (pin_id == ARCH_FPGA_UNDEFINED_VAL) {
                 // If no driver pin has been found, the assumption is that
                 // there must be a PAD with inout pin connected to other inout pins
                 for (auto pin : wire.getPins()) {
@@ -585,7 +595,7 @@ struct ArchReader {
                 }
             }
 
-            VTR_ASSERT(pin_id != OPEN);
+            VTR_ASSERT(pin_id != ARCH_FPGA_UNDEFINED_VAL);
 
             auto out_pin = site.getBelPins()[pin_id];
             auto out_pin_bel = get_bel_reader(site, str(out_pin.getBel()));
@@ -1290,10 +1300,10 @@ struct ArchReader {
         lut->parent_mode = mode;
 
         lut->blif_model = vtr::strdup(LogicalModels::MODEL_NAMES);
-        lut->model_id = get_model(arch_, LogicalModels::MODEL_NAMES);
+        lut->model_id = LogicalModels::MODEL_NAMES_ID;
 
         lut->num_ports = 2;
-        lut->ports = (t_port*)vtr::calloc(lut->num_ports, sizeof(t_port));
+        lut->ports = new t_port[lut->num_ports]();
         lut->ports[0] = get_generic_port(arch_, lut, IN_PORT, "in", LogicalModels::MODEL_NAMES, width);
         lut->ports[1] = get_generic_port(arch_, lut, OUT_PORT, "out", LogicalModels::MODEL_NAMES);
 
@@ -1377,7 +1387,7 @@ struct ArchReader {
             port->name = is_input ? vtr::strdup(ipin.c_str()) : vtr::strdup(opin.c_str());
             port->model_port = nullptr;
             port->port_class = vtr::strdup(nullptr);
-            port->port_power = (t_port_power*)vtr::calloc(1, sizeof(t_port_power));
+            port->port_power = new t_port_power();
         }
 
         // OPAD mode
@@ -1395,9 +1405,9 @@ struct ArchReader {
 
         num_ports = 1;
         opad->num_ports = num_ports;
-        opad->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+        opad->ports = new t_port[num_ports]();
         opad->blif_model = vtr::strdup(LogicalModels::MODEL_OUTPUT);
-        opad->model_id = get_model(arch_, LogicalModels::MODEL_OUTPUT);
+        opad->model_id = LogicalModels::MODEL_OUTPUT_ID;
 
         opad->ports[0] = get_generic_port(arch_, opad, IN_PORT, "outpad", LogicalModels::MODEL_OUTPUT);
         omode->pb_type_children[0] = *opad;
@@ -1417,9 +1427,9 @@ struct ArchReader {
 
         num_ports = 1;
         ipad->num_ports = num_ports;
-        ipad->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+        ipad->ports = new t_port[num_ports]();
         ipad->blif_model = vtr::strdup(LogicalModels::MODEL_INPUT);
-        ipad->model_id = get_model(arch_, LogicalModels::MODEL_INPUT);
+        ipad->model_id = LogicalModels::MODEL_INPUT_ID;
 
         ipad->ports[0] = get_generic_port(arch_, ipad, OUT_PORT, "inpad", LogicalModels::MODEL_INPUT);
         imode->pb_type_children[0] = *ipad;
@@ -1544,7 +1554,7 @@ struct ArchReader {
 
             int num_ports = ic_count;
             leaf->num_ports = num_ports;
-            leaf->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+            leaf->ports = new t_port[num_ports]();
             leaf->blif_model = vtr::strdup((std::string(".subckt ") + name).c_str());
             leaf->model_id = get_model(arch_, name);
 
@@ -1665,10 +1675,10 @@ struct ArchReader {
      *         If a bel name index is specified, the bel pins are processed, otherwise the site ports
      *         are processed instead.
      */
-    void process_block_ports(t_pb_type* pb_type, Device::SiteType::Reader& site, size_t bel_name = OPEN) {
+    void process_block_ports(t_pb_type* pb_type, Device::SiteType::Reader& site, size_t bel_name = ARCH_FPGA_UNDEFINED_VAL) {
         // Prepare data based on pb_type level
         std::set<std::tuple<std::string, PORTS, int>> pins;
-        if (bel_name == (size_t)OPEN) {
+        if (bel_name == (size_t)ARCH_FPGA_UNDEFINED_VAL) {
             for (auto pin : site.getPins()) {
                 auto dir = pin.getDir() == INPUT ? IN_PORT : OUT_PORT;
                 pins.emplace(str(pin.getName()), dir, 1);
@@ -1819,8 +1829,7 @@ struct ArchReader {
                     t_interconnect* pp_ic = pair.first;
 
                     auto num_pp = pair.second.size();
-                    pp_ic->num_annotations = num_pp;
-                    pp_ic->annotations = new t_pin_to_pin_annotation[num_pp];
+                    pp_ic->annotations.resize(num_pp);
 
                     int idx = 0;
                     for (auto pp_name : pair.second)
@@ -1837,14 +1846,14 @@ struct ArchReader {
         auto site_pins = site.getBelPins();
 
         std::string endpoint = direction == BACKWARD ? ic->input_string : ic->output_string;
-        auto ic_endpoints = vtr::split(endpoint, " ");
+        std::vector<std::string> ic_endpoints = vtr::StringToken(endpoint).split(" ");
 
         std::unordered_map<t_interconnect*, std::set<std::string>> pps_map;
 
         bool is_backward = direction == BACKWARD;
 
-        for (auto ep : ic_endpoints) {
-            auto parts = vtr::split(ep, ".");
+        for (const std::string& ep : ic_endpoints) {
+            auto parts = vtr::StringToken(ep).split(".");
             auto bel = parts[0];
             auto pin = parts[1];
 
@@ -1867,7 +1876,7 @@ struct ArchReader {
             if (bel_reader.getCategory() == ROUTING) {
                 for (auto bel_pin : bel_reader.getPins()) {
                     auto pin_reader = site_pins[bel_pin];
-                    auto pin_name = str(pin_reader.getName());
+                    std::string pin_name = str(pin_reader.getName());
 
                     if (pin_reader.getDir() != (is_backward ? INPUT : OUTPUT))
                         continue;
@@ -1881,7 +1890,7 @@ struct ArchReader {
                         std::string ic_to_find = bel + "." + pin_name;
 
                         bool found = false;
-                        for (auto out : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " "))
+                        for (const std::string& out : vtr::StringToken(is_backward ? other_ic->output_string : other_ic->input_string).split(" "))
                             found |= out == ic_to_find;
 
                         if (found) {
@@ -1903,7 +1912,7 @@ struct ArchReader {
                         t_interconnect* other_ic = &mode->interconnect[iic];
 
                         bool found = false;
-                        for (auto other_ep : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " ")) {
+                        for (const std::string& other_ep : vtr::StringToken(is_backward ? other_ic->output_string : other_ic->input_string).split(" ")) {
                             found |= other_ep == ep;
                         }
 
@@ -2082,7 +2091,7 @@ struct ArchReader {
         pb_type->modes = new t_mode[pb_type->num_modes];
 
         pb_type->num_ports = 2;
-        pb_type->ports = (t_port*)vtr::calloc(pb_type->num_ports, sizeof(t_port));
+        pb_type->ports = new t_port[pb_type->num_ports]();
 
         pb_type->num_output_pins = 2;
         pb_type->num_input_pins = 0;
@@ -2118,7 +2127,7 @@ struct ArchReader {
 
             int num_ports = 1;
             leaf_pb_type->num_ports = num_ports;
-            leaf_pb_type->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+            leaf_pb_type->ports = new t_port[num_ports]();
             leaf_pb_type->blif_model = vtr::strdup(const_cell.first.c_str());
             leaf_pb_type->model_id = get_model(arch_, const_cell.first);
 
@@ -2319,7 +2328,7 @@ struct ArchReader {
         arch_->Chans.chan_y_dist.xpeak = 0;
         arch_->Chans.chan_y_dist.dc = 0;
         arch_->ipin_cblock_switch_name.push_back(std::string("generic"));
-        arch_->SBType = WILTON;
+        arch_->sb_type = WILTON;
         arch_->Fs = 3;
         default_fc_.specified = true;
         default_fc_.in_value_type = e_fc_value_type::FRACTIONAL;
@@ -2457,7 +2466,7 @@ struct ArchReader {
             arch_->Segments[index].frequency = 1;
             arch_->Segments[index].Rmetal = 1e-12;
             arch_->Segments[index].Cmetal = 1e-12;
-            arch_->Segments[index].parallel_axis = BOTH_AXIS;
+            arch_->Segments[index].parallel_axis = e_parallel_axis::BOTH_AXIS;
 
             // TODO: Only bi-directional segments are created, but it the interchange format
             //       has directionality information on PIPs, which may be used to infer the

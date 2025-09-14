@@ -1,3 +1,4 @@
+#pragma once
 /************************************************************************
  * This file introduces a class to model a Routing Resource Graph (RRGraph or RRG) 
  * which is widely used by placers, routers, analyzers etc.
@@ -186,8 +187,6 @@
  *       }  
  *
  ***********************************************************************/
-#ifndef RR_GRAPH_OBJ_H
-#define RR_GRAPH_OBJ_H
 
 /*
  * Notes in include header files in a head file 
@@ -196,14 +195,13 @@
  */
 /* Header files should be included in a sequence */
 /* Standard header files required go first */
-#include <limits>
 #include <vector>
 
 /* EXTERNAL library header files go second*/
+#include "physical_types.h"
 #include "vtr_vector.h"
 #include "vtr_range.h"
 #include "vtr_geometry.h"
-#include "arch_types.h"
 
 /* VPR header files go third */
 #include "rr_node_types.h"
@@ -416,7 +414,7 @@ class RRGraph {
      * see node coordinate for details 
      * only matters the routing track nodes (CHANX and CHANY) 
      */
-    Direction node_direction(const RRNodeId& node) const;
+    Direction node_direction(RRNodeId node) const;
 
     /* Get the side where the node physically locates on a logic block. 
      * Mainly applicable to IPIN and OPIN nodes, which locates on the perimeter of logic block 
@@ -833,5 +831,3 @@ class RRGraph {
     typedef std::vector<std::vector<std::vector<std::vector<std::vector<RRNodeId>>>>> NodeLookup;
     mutable NodeLookup node_lookup_;
 };
-
-#endif

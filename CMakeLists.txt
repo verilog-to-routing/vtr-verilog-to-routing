@@ -26,7 +26,6 @@ set_property(CACHE VTR_IPO_BUILD PROPERTY STRINGS auto on off)
 set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticeable run-time overhead, 4: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 
-option(VTR_ENABLE_STRICT_COMPILE "Specifies whether compiler warnings should be treated as errors (e.g. -Werror)" OFF)
 option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
@@ -57,7 +56,7 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
 option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
-option(SYNLIG_SYSTEMVERILOG "Enable building and installing Synlig SystemVerilog and UHDM plugins" OFF)
+option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" ON)
 
 set(VTR_VERSION_MAJOR 9)
 set(VTR_VERSION_MINOR 0)
@@ -228,18 +227,17 @@ foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     endif()
 endforeach()
 
-#Suppress IPO link warnings
-set(IPO_LINK_WARN_SUPRESS_FLAGS " ")
-set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK
-    "-Wno-null-dereference"
-    )
-foreach(flag ${IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK})
-    CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
-    if(CXX_COMPILER_SUPPORTS_${flag})
-        #Flag supported, so enable it
-        set(IPO_LINK_WARN_SUPRESS_FLAGS "${IPO_LINK_WARN_SUPRESS_FLAGS} ${flag}")
-    endif()
-endforeach()
+# Suppress IPO link warnings.
+# When IPO is turned on, it sometimes leads to false positives for warnings
+# since it checks for warnings after some of the source files have been compiled.
+# We globally suppress these warnings here. Any CMake executable which is added
+# after this line will have these warnings suppressed at link time.
+if (CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+    message(STATUS "IPO: Suppressing known VTR warnings.")
+    add_link_options(-Wno-alloc-size-larger-than  # libarchfpga allocates C-style arrays using integers.
+                     -Wno-stringop-overflow       # EXTERNAL/capnproto has some string overflow warnings.
+                     )
+endif()
 
 #
 # Sanitizer flags
@@ -363,6 +361,22 @@ add_custom_target(get_symbiflow_benchmarks
     COMMENT "Downloading (~100MB) and extracting SymbiFlow architectures (~2.7GB) into VTR source tree.")
 
 #
+# Zero ASIC RR Graph Files
+#
+add_custom_target(get_zeroasic_rr_graphs
+    COMMAND ./vtr_flow/scripts/get_zeroasic_rr_graphs.py --vtr_flow_dir ./vtr_flow
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Downloading (~2MB) and extracting Zero ASIC RR graphs (~0.1GB) into VTR source tree.")
+
+#
+# Flat Placement Files
+#
+add_custom_target(get_flat_placements
+    COMMAND ./vtr_flow/scripts/get_flat_placement_files.py --vtr_flow_dir ./vtr_flow
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Downloading (~5MB) and extracting Flat Placement Files (~0.1GB) into VTR source tree.")
+
+#
 # Unit Testing
 #
 enable_testing()
@@ -407,24 +421,6 @@ if(${WITH_ABC})
     add_subdirectory(abc)
 endif()
 
-if(${WITH_PARMYS}) # define cmake params to compile Yosys
-    add_definitions("-D_YOSYS_")
-
-    set(MAKE_PROGRAM "$(MAKE)")
-    if(${CMAKE_GENERATOR} STREQUAL "Ninja")
-        set(MAKE_PROGRAM "make")
-    endif()
-
-    # Commented out since a make file should not call another make command with
-    # threads. It should pass this information from the parent automatically.
-    # if(NOT DEFINED "${CMAKE_BUILD_PARALLEL_LEVEL}")
-    #     set(CUSTOM_BUILD_PARALLEL_LEVEL 16)
-    # else()
-    #     set(CUSTOM_BUILD_PARALLEL_LEVEL "${CMAKE_BUILD_PARALLEL_LEVEL}")
-    # endif()
-    add_subdirectory(yosys)
-endif()
-
 add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
 
 if(${WITH_PARMYS})
@@ -449,11 +445,12 @@ if(${WITH_ODIN})
     endif()
 endif()
 
-# handle cmake params to compile Yosys SystemVerilog/UHDM plugins
-if(${SYNLIG_SYSTEMVERILOG})
-    # avoid compiling plugins in case the Parmys frontend is not active
+# handle cmake params to compile yosys-slang plugin for Yosys
+if(${SLANG_SYSTEMVERILOG})
+    # avoid compiling yosys-slang plugin in case the Parmys frontend is not active
     if(NOT ${WITH_PARMYS})
-        message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Parmys frontend. Please set WITH_PARMYS.")
+        message(WARNING "Parmys is not enabled, disabling Yosys-Slang as well.")
+        set(SLANG_SYSTEMVERILOG OFF)
     endif()
 endif()
 

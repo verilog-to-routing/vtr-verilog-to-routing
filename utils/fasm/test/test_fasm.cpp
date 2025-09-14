@@ -315,12 +315,12 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
               &options, &vpr_setup, &arch);
 
-    vpr_setup.PackerOpts.doPacking             = STAGE_LOAD;
-    vpr_setup.PlacerOpts.doPlacement           = STAGE_LOAD;
-    vpr_setup.APOpts.doAP                      = STAGE_SKIP;
-    vpr_setup.RouterOpts.doRouting             = STAGE_LOAD;
+    vpr_setup.PackerOpts.doPacking             = e_stage_action::LOAD;
+    vpr_setup.PlacerOpts.doPlacement           = e_stage_action::LOAD;
+    vpr_setup.APOpts.doAP                      = e_stage_action::SKIP;
+    vpr_setup.RouterOpts.doRouting             = e_stage_action::LOAD;
     vpr_setup.RouterOpts.read_rr_edge_metadata = true;
-    vpr_setup.AnalysisOpts.doAnalysis          = STAGE_SKIP;
+    vpr_setup.AnalysisOpts.doAnalysis          = e_stage_action::SKIP;
 
     bool flow_succeeded = vpr_flow(vpr_setup, arch);
     REQUIRE(flow_succeeded == true);
@@ -429,7 +429,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
 
         // A feature representing block pin used by the router
         if(line.find("PIN_") != std::string::npos) {
-            auto parts = vtr::split(line, "_");
+            auto parts = vtr::StringToken(line).split("_");
             REQUIRE(parts.size() == 6);
 
             auto x = vtr::atoi(parts[1]);
@@ -558,7 +558,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             CHECK(FLE_occurrences <= 1);
 
         } else {
-            auto parts = vtr::split(line, "_");
+            auto parts = vtr::StringToken(line).split("_");
             REQUIRE(parts.size() == 3);
             auto src_inode = vtr::atoi(parts[0]);
             auto sink_inode = vtr::atoi(parts[1]);

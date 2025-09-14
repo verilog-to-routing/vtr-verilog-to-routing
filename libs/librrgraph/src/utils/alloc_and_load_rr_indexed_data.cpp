@@ -1,24 +1,20 @@
+#include "alloc_and_load_rr_indexed_data.h"
+
+#include <algorithm>
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
 #include <fstream>
 #include <iomanip>
+#include <numeric>
 #include <sstream>
-#include <queue> /* Needed for ortho_Cost_index calculation*/
 
-#include "alloc_and_load_rr_indexed_data.h"
-
+#include "librrgraph_types.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_math.h"
 
 #include "vpr_error.h"
-
 #include "rr_graph_utils.h"
-#include "read_xml_arch_file.h"
-
 #include "rr_graph_cost.h"
-#include "rr_graph_type.h"
-
 #include "histogram.h"
 
 /******************* Subroutines local to this module ************************/
@@ -62,8 +58,6 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     enum e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name) {
-    int length, i, index;
-
     (void)segment_inf;
     int total_num_segment = segment_inf_x.size() + segment_inf_y.size();
     /*CHAX & CHANY segment lsit sizes may differ. but if we're using uniform channels, they
@@ -76,11 +70,10 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
      * * all other fields are invalid.  For SOURCES, SINKs and OPINs, all fields   *
      * * other than base_cost are invalid. Mark invalid fields as OPEN for safety. */
 
-    constexpr float nan = std::numeric_limits<float>::quiet_NaN();
-    for (i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
-        rr_indexed_data[RRIndexedDataId(i)].ortho_cost_index = OPEN;
-        rr_indexed_data[RRIndexedDataId(i)].seg_index = OPEN;
-        rr_indexed_data[RRIndexedDataId(i)].inv_length = nan;
+    for (int i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
+        rr_indexed_data[RRIndexedDataId(i)].ortho_cost_index = LIBRRGRAPH_UNDEFINED_VAL;
+        rr_indexed_data[RRIndexedDataId(i)].seg_index = LIBRRGRAPH_UNDEFINED_VAL;
+        rr_indexed_data[RRIndexedDataId(i)].inv_length = std::numeric_limits<float>::quiet_NaN();;
         rr_indexed_data[RRIndexedDataId(i)].T_linear = 0.;
         rr_indexed_data[RRIndexedDataId(i)].T_quadratic = 0.;
         rr_indexed_data[RRIndexedDataId(i)].C_load = 0.;
@@ -89,9 +82,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     //TODO: SM: IPIN t_linear assumes wire_to_ipin_switch which corresponds to within die switch connection
     rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
 
-    std::vector<int> ortho_costs;
-
-    ortho_costs = find_ortho_cost_index(rr_graph, segment_inf_x, segment_inf_y, X_AXIS);
+    std::vector<int> ortho_costs = find_ortho_cost_index(rr_graph, segment_inf_x, segment_inf_y, e_parallel_axis::X_AXIS);
 
     /* AA: The code below should replace find_ortho_cost_index call once we deprecate the CLASSIC lookahead as it is the only lookahead
      * that actively uses the orthogonal cost indices. To avoid complicated dependencies with the rr_graph reader, regardless of the lookahead,
@@ -108,10 +99,11 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     /* X-directed segments*/
 
     for (size_t iseg = 0; iseg < segment_inf_x.size(); ++iseg) {
-        index = iseg + CHANX_COST_INDEX_START;
+        int index = iseg + CHANX_COST_INDEX_START;
 
         rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = ortho_costs[iseg];
 
+        int length;
         if (segment_inf_x[iseg].longline)
             length = grid.width();
         else
@@ -126,9 +118,10 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     /* Y-directed segments*/
 
     for (size_t iseg = segment_inf_x.size(); iseg < ortho_costs.size(); ++iseg) {
-        index = iseg + CHANX_COST_INDEX_START;
+        int index = iseg + CHANX_COST_INDEX_START;
         rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = ortho_costs[iseg];
 
+        int length;
         if (segment_inf_x[iseg - segment_inf_x.size()].longline)
             length = grid.width();
         else
@@ -155,20 +148,17 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
 
 /*  AA: We use a normalized product of frequency and length to find the segment that is most likely
  * to connect to in the perpendicular axis. Note that the size of segment_inf_x & segment_inf_y is not 
- * the same necessarly. The result vector will contain the indices in segment_inf_perp 
+ * the same necessarily. The result vector will contain the indices in segment_inf_perp
  * of the most likely perp segments for each segment at index i in segment_inf_parallel.   
  * 
  * Note: We use the seg_index field of t_segment_inf to store the segment index  
- * in the **unified** t_segment_inf vector. We will temporarly use this field in 
+ * in the **unified** t_segment_inf vector. We will temporarily use this field in
  * a copy passed to the function to store the index w.r.t the parallel axis segment list.*/
 
 std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
-                                       const std::vector<t_segment_inf> segment_inf_x,
-                                       const std::vector<t_segment_inf> segment_inf_y,
+                                       const std::vector<t_segment_inf>& segment_inf_x,
+                                       const std::vector<t_segment_inf>& segment_inf_y,
                                        e_parallel_axis parallel_axis) {
-    auto segment_inf_parallel = parallel_axis == X_AXIS ? segment_inf_x : segment_inf_y;
-    auto segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
-
     size_t num_segments = segment_inf_x.size() + segment_inf_y.size();
     std::vector<std::vector<size_t>> dest_nodes_count;
 
@@ -186,8 +176,8 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
 
     std::vector<int> ortho_cost_indices(dest_nodes_count.size(), 0);
 
-    //Go through all rr_Nodes. Look at the ones with CHAN type. Count all outgoing edges to CHAN typed nodes from each CHAN type node.
-    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+    // Go through all rr_Nodes. Look at the ones with CHAN type. Count all outgoing edges to CHAN typed nodes from each CHAN type node.
+    for (const RRNodeId rr_node : rr_graph.nodes()) {
         for (size_t iedge = 0; iedge < rr_graph.num_edges(rr_node); ++iedge) {
             RRNodeId to_node = rr_graph.edge_sink_node(rr_node, iedge);
             e_rr_type from_node_type = rr_graph.node_type(rr_node);
@@ -196,7 +186,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
             size_t from_node_cost_index = (size_t)rr_graph.node_cost_index(rr_node);
             size_t to_node_cost_index = (size_t)rr_graph.node_cost_index(to_node);
 
-            //if the type  is smaller than start index, means destination is not a CHAN type node.
+            // if the type  is smaller than start index, means destination is not a CHAN type node.
 
             if ((from_node_type == e_rr_type::CHANX && to_node_type == e_rr_type::CHANY) || (from_node_type == e_rr_type::CHANY && to_node_type == e_rr_type::CHANX)) {
                 if (to_node_type == e_rr_type::CHANY) {
@@ -229,7 +219,8 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
     /*Update seg_index */
 
 #ifdef FREQ_LENGTH_ORTHO_COSTS
-
+    const std::vector<t_segment_inf>& segment_inf_parallel = parallel_axis == X_AXIS ? segment_inf_x : segment_inf_y;
+    const std::vector<t_segment_inf>& segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
     for (int i = 0; i < (int)segment_inf_perp.size(); ++i)
         segment_inf_perp[i].seg_index = i;
 
@@ -271,7 +262,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
         /* The compartor behaves as operator< mostly, so the first element in the 
          * sorted vector will have the lowest cost difference from segment. */
         ortho_costs_indices[seg_index] = segment_inf_perp[0].seg_index + start_channel_cost;
-        ortho_costs_indices[seg_index] = parallel_axis == X_AXIS ? ortho_costs_indices[seg_index] + num_segments : ortho_costs_indices[seg_index];
+        ortho_costs_indices[seg_index] = parallel_axis == e_parallel_axis::X_AXIS ? ortho_costs_indices[seg_index] + num_segments : ortho_costs_indices[seg_index];
     }
 
     /*Pertubate indices to make sure all perp seg types have a corresponding perp segment.*/
@@ -292,7 +283,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
     perp_segments.resize(segment_inf_perp.size(), 0);
 
     for (int i = 0; i < num_segments; ++i) {
-        int index = parallel_axis == X_AXIS ? ortho_costs_indices[i] - num_segments - start_channel_cost : ortho_costs_indices[i] - start_channel_cost;
+        int index = parallel_axis == e_parallel_axis::X_AXIS ? ortho_costs_indices[i] - num_segments - start_channel_cost : ortho_costs_indices[i] - start_channel_cost;
         indices_map.insert(std::make_pair(index, i));
         perp_segments[index]++;
     }
@@ -318,7 +309,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
         auto itr_to_change = indices_map.find(g_index_pair.first);
         VTR_ASSERT(itr_to_change != indices_map.end());
         int index = l_index_pair.first + start_channel_cost;
-        index = parallel_axis == X_AXIS ? index + num_segments : index;
+        index = parallel_axis == e_parallel_axis::X_AXIS ? index + num_segments : index;
         ortho_costs_indices[itr_to_change->second] = index;
         indices_map.erase(itr_to_change);
 
@@ -328,6 +319,9 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
 #    endif
 
     return ortho_costs_indices;
+
+#else
+    (void)parallel_axis;
 #endif
 }
 
@@ -350,6 +344,7 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 
     rr_indexed_data[RRIndexedDataId(SOURCE_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost = 0.;
+    rr_indexed_data[RRIndexedDataId(MUX_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(OPIN_COST_INDEX)].base_cost = delay_normalization_fac;
     // The IPIN_COST_INDEX base cost is changed from 0.95 to 0.875 so it is perfectly representable in binary format (this change is made for SPEC benchmark).
     // This number is perfectly representable in a binary mantissa (without round-off) so we can get the same routing result on different platforms.
@@ -429,14 +424,14 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 static std::vector<size_t> count_rr_segment_types(const RRGraphView& rr_graph, const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data) {
     std::vector<size_t> rr_segment_type_counts;
 
-    for (const RRNodeId& id : rr_graph.nodes()) {
+    for (const RRNodeId id : rr_graph.nodes()) {
         if (rr_graph.node_type(id) != e_rr_type::CHANX && rr_graph.node_type(id) != e_rr_type::CHANY) continue;
 
-        auto cost_index = rr_graph.node_cost_index(id);
+        RRIndexedDataId cost_index = rr_graph.node_cost_index(id);
 
         int seg_index = rr_indexed_data[cost_index].seg_index;
 
-        VTR_ASSERT(seg_index != OPEN);
+        VTR_ASSERT(seg_index != LIBRRGRAPH_UNDEFINED_VAL);
 
         if (seg_index >= int(rr_segment_type_counts.size())) {
             rr_segment_type_counts.resize(seg_index + 1, 0);
@@ -500,7 +495,7 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
  */
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
                                           vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data) {
-    auto fan_in_list = get_fan_in_list(rr_graph);
+    vtr::vector<RRNodeId, std::vector<RREdgeId>> fan_in_list = get_fan_in_list(rr_graph);
 
     vtr::vector<RRIndexedDataId, int> num_nodes_of_index(rr_indexed_data.size(), 0);
     vtr::vector<RRIndexedDataId, std::vector<float>> C_total(rr_indexed_data.size());
@@ -516,7 +511,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_R_total(rr_indexed_data.size());
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_T_total(rr_indexed_data.size());
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_Cinternal_total(rr_indexed_data.size());
-    vtr::vector<RRIndexedDataId, short> switches_buffered(rr_indexed_data.size(), ARCH_FPGA_UNDEFINED_VAL);
+    vtr::vector<RRIndexedDataId, short> switches_buffered(rr_indexed_data.size(), LIBRRGRAPH_UNDEFINED_VAL);
 
     /*
      * Walk through the RR graph and collect all R and C values of all the nodes,
@@ -525,7 +520,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
      * The median of R and C values for each cost index is assigned to the indexed
      * data.
      */
-    for (const RRNodeId& rr_id : rr_graph.nodes()) {
+    for (const RRNodeId rr_id : rr_graph.nodes()) {
         e_rr_type rr_type = rr_graph.node_type(rr_id);
 
         if (rr_type != e_rr_type::CHANX && rr_type != e_rr_type::CHANY) {
@@ -542,7 +537,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         double avg_switch_Cinternal = 0;
         int num_switches = 0;
         int num_shorts = 0;
-        short buffered = ARCH_FPGA_UNDEFINED_VAL;
+        short buffered = LIBRRGRAPH_UNDEFINED_VAL;
         calculate_average_switch(rr_graph, (size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, num_shorts, buffered, fan_in_list);
 
         if (num_switches == 0) {
@@ -561,13 +556,13 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         switch_R_total[cost_index].push_back(avg_switch_R);
         switch_T_total[cost_index].push_back(avg_switch_T);
         switch_Cinternal_total[cost_index].push_back(avg_switch_Cinternal);
-        if (buffered == ARCH_FPGA_UNDEFINED_VAL) {
+        if (buffered == LIBRRGRAPH_UNDEFINED_VAL) {
             /* this segment does not have any outgoing edges to other general routing wires */
             continue;
         }
 
         /* need to make sure all wire switches of a given wire segment type have the same 'buffered' value */
-        if (switches_buffered[cost_index] == ARCH_FPGA_UNDEFINED_VAL) {
+        if (switches_buffered[cost_index] == LIBRRGRAPH_UNDEFINED_VAL) {
             switches_buffered[cost_index] = buffered;
         } else {
             if (switches_buffered[cost_index] != buffered) {
@@ -582,13 +577,14 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         }
     }
 
+    unsigned num_occurences_of_no_instances_with_cost_index = 0;
     for (size_t cost_index = CHANX_COST_INDEX_START;
          cost_index < rr_indexed_data.size(); cost_index++) {
         if (num_nodes_of_index[RRIndexedDataId(cost_index)] == 0) { /* Segments don't exist. */
-            VTR_LOG_WARN("Found no instances of RR node with cost index %d\n", cost_index);
             rr_indexed_data[RRIndexedDataId(cost_index)].T_linear = 0.0;
             rr_indexed_data[RRIndexedDataId(cost_index)].T_quadratic = 0.0;
             rr_indexed_data[RRIndexedDataId(cost_index)].C_load = 0.0;
+            num_occurences_of_no_instances_with_cost_index++;
         } else {
             auto C_total_histogram = build_histogram(C_total[RRIndexedDataId(cost_index)], 10);
             auto R_total_histogram = build_histogram(R_total[RRIndexedDataId(cost_index)], 10);
@@ -597,8 +593,10 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
             auto switch_Cinternal_total_histogram = build_histogram(switch_Cinternal_total[RRIndexedDataId(cost_index)], 10);
 
             // Sort Rnode and Cnode
-            float Cnode = vtr::median(C_total[RRIndexedDataId(cost_index)]);
-            float Rnode = vtr::median(R_total[RRIndexedDataId(cost_index)]);
+            std::sort(C_total[RRIndexedDataId(cost_index)].begin(), C_total[RRIndexedDataId(cost_index)].end());
+            std::sort(R_total[RRIndexedDataId(cost_index)].begin(), R_total[RRIndexedDataId(cost_index)].end());
+            float Cnode = vtr::median_presorted<float>(C_total[RRIndexedDataId(cost_index)]);
+            float Rnode = vtr::median_presorted<float>(R_total[RRIndexedDataId(cost_index)]);
             float Rsw = get_histogram_mode(switch_R_total_histogram);
             float Tsw = get_histogram_mode(switch_T_total_histogram);
             float Cinternalsw = get_histogram_mode(switch_Cinternal_total_histogram);
@@ -627,6 +625,10 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
             }
         }
     }
+    if (num_occurences_of_no_instances_with_cost_index > 0) {
+        VTR_LOG_WARN("Found %u cost indices where no instances of RR nodes could be found\n",
+                     num_occurences_of_no_instances_with_cost_index);
+    }
 }
 
 /*
@@ -644,7 +646,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
     avg_switch_Cinternal = 0;
     num_switches = 0;
     num_shorts = 0;
-    buffered = ARCH_FPGA_UNDEFINED_VAL;
+    buffered = LIBRRGRAPH_UNDEFINED_VAL;
     for (const auto& edge : fan_in_list[node]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
         if (rr_graph.node_type(node) == e_rr_type::CHANX || rr_graph.node_type(node) == e_rr_type::CHANY) {
@@ -659,7 +661,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
             avg_switch_T += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Tdel;
             avg_switch_Cinternal += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cinternal;
 
-            if (buffered == ARCH_FPGA_UNDEFINED_VAL) {
+            if (buffered == LIBRRGRAPH_UNDEFINED_VAL) {
                 if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered()) {
                     buffered = 1;
                 } else {
@@ -745,6 +747,8 @@ static void print_rr_index_info(const vtr::vector<RRIndexedDataId, t_rr_indexed_
             string_stream << cost_index << " SOURCE";
         } else if (cost_index == SINK_COST_INDEX) {
             string_stream << cost_index << " SINK";
+        } else if (cost_index == MUX_COST_INDEX) {
+            string_stream << cost_index << " MUX";
         } else if (cost_index == OPIN_COST_INDEX) {
             string_stream << cost_index << " OPIN";
         } else if (cost_index == IPIN_COST_INDEX) {

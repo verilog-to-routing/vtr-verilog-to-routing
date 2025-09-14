@@ -11,6 +11,7 @@
 #include <ctime>
 #include <map>
 
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
@@ -165,13 +166,13 @@ ClusteredNetlist read_netlist(const char* net_file,
 
         //Collect top level I/Os
         auto top_inputs = pugiutil::get_single_child(top, "inputs", loc_data);
-        circuit_inputs = vtr::split(top_inputs.text().get());
+        circuit_inputs = vtr::StringToken(top_inputs.text().get()).split(" \t\n");
 
         auto top_outputs = pugiutil::get_single_child(top, "outputs", loc_data);
-        circuit_outputs = vtr::split(top_outputs.text().get());
+        circuit_outputs = vtr::StringToken(top_outputs.text().get()).split(" \t\n");
 
         auto top_clocks = pugiutil::get_single_child(top, "clocks", loc_data);
-        circuit_clocks = vtr::split(top_clocks.text().get());
+        circuit_clocks = vtr::StringToken(top_clocks.text().get()).split(" \t\n");
 
         /* Parse all CLB blocks and all nets*/
 
@@ -250,23 +251,6 @@ ClusteredNetlist read_netlist(const char* net_file,
 
     VTR_LOG("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
 
-    size_t num_pb_route_used = 0;
-    size_t num_pb_route_alloc = 0;
-    size_t num_pb_pins = 0;
-    for (auto clb : clb_nlist.blocks()) {
-        t_pb* pb = clb_nlist.block_pb(clb);
-
-        for (int ipin = 0; ipin < pb->pb_graph_node->total_pb_pins; ++ipin) {
-            if (pb->pb_route.count(ipin)) {
-                ++num_pb_route_alloc;
-                if (pb->pb_route[ipin].atom_net_id) {
-                    ++num_pb_route_used;
-                }
-            }
-            ++num_pb_pins;
-        }
-    }
-
     return clb_nlist;
 }
 
@@ -282,7 +266,6 @@ static void processComplexBlock(pugi::xml_node clb_block,
                                 int* num_primitives,
                                 const pugiutil::loc_data& loc_data,
                                 ClusteredNetlist* clb_nlist) {
-    int num_tokens = 0;
     const t_pb_type* pb_type = nullptr;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -291,11 +274,11 @@ static void processComplexBlock(pugi::xml_node clb_block,
     //Parse cb attributes
     auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
     auto block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
-    t_token* tokens = GetTokensFromString(block_inst.value(), &num_tokens);
-    if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
-        || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
-        || tokens[2].type != TOKEN_INT
-        || tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    const Tokens tokens(block_inst.value());
+    if (tokens.size() != 4 || tokens[0].type != e_token_type::STRING
+        || tokens[1].type != e_token_type::OPEN_SQUARE_BRACKET
+        || tokens[2].type != e_token_type::INT
+        || tokens[3].type != e_token_type::CLOSE_SQUARE_BRACKET) {
         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
                   "Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
                   block_inst.value(), clb_block.name());
@@ -342,8 +325,6 @@ static void processComplexBlock(pugi::xml_node clb_block,
     load_internal_to_block_net_nums(clb_nlist->block_type(index), clb_nlist->block_pb(index)->pb_route);
 
     //clb_nlist->block_pb(index)->pb_route.shrink_to_fit();
-
-    freeTokens(tokens, num_tokens);
 }
 
 /**
@@ -400,9 +381,6 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
     int i, j, pb_index;
     bool found;
     const t_pb_type* pb_type;
-
-    t_token* tokens;
-    int num_tokens;
 
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
@@ -496,20 +474,20 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
             VTR_ASSERT(strcmp(child.name(), "block") == 0);
 
             auto instance_type = pugiutil::get_attribute(child, "instance", loc_data);
-            tokens = GetTokensFromString(instance_type.value(), &num_tokens);
-            if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
-                || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
-                || tokens[2].type != TOKEN_INT
-                || tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
+            const Tokens tokens(instance_type.value());
+            if (tokens.size() != 4 || tokens[0].type != e_token_type::STRING
+                || tokens[1].type != e_token_type::OPEN_SQUARE_BRACKET
+                || tokens[2].type != e_token_type::INT
+                || tokens[3].type != e_token_type::CLOSE_SQUARE_BRACKET) {
                 vpr_throw(VPR_ERROR_NET_F, loc_data.filename_c_str(), loc_data.line(child),
                           "Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
                           instance_type.value(), child.name());
             }
 
             found = false;
-            pb_index = OPEN;
+            pb_index = UNDEFINED;
             for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
-                if (strcmp(pb_type->modes[pb->mode].pb_type_children[i].name, tokens[0].data) == 0) {
+                if (pb_type->modes[pb->mode].pb_type_children[i].name == tokens[0].data) {
                     pb_index = vtr::atoi(tokens[2].data);
                     if (pb_index < 0) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
@@ -588,7 +566,6 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
                     processPb(child, index, &pb->child_pbs[i][pb_index], pb_route, num_primitives, loc_data, clb_nlist);
                 }
             }
-            freeTokens(tokens, num_tokens);
         }
     }
 }
@@ -603,7 +580,7 @@ static int add_net_to_hash(t_hash** nhash, const char* net_name, int* ncount) {
     t_hash* hash_value;
 
     if (strcmp(net_name, "open") == 0) {
-        return OPEN;
+        return UNDEFINED;
     }
 
     hash_value = insert_in_hash_table(nhash, net_name, *ncount);
@@ -658,7 +635,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
         }
 
         //Extract all the pins for this port
-        pins = vtr::split(Cur.text().get());
+        pins = vtr::StringToken(Cur.text().get()).split(" \t\n");
         num_tokens = pins.size();
 
         //Check that the number of pins from the netlist file matches the pb port's number of pins
@@ -863,7 +840,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                       pb->pb_graph_node->pb_type->name, pb->pb_graph_node->placement_index);
         }
 
-        auto pin_mapping = vtr::split(pin_rot_map.text().get());
+        auto pin_mapping = vtr::StringToken(pin_rot_map.text().get()).split(" \t\n");
 
         if (size_t(pb_gport->num_pins) != pin_mapping.size()) {
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(pin_rot_map),
@@ -1010,7 +987,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 
             if (clb_net_id != ClusterNetId::INVALID()) {
                 //Verify old and new CLB netlists have the same # of pins per net
-                if (RECEIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin)) {
+                if (e_pin_type::RECEIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin)) {
                     count[clb_net_id]++;
 
                     if (count[clb_net_id] > (int)clb_nlist.net_sinks(clb_net_id).size()) {
@@ -1037,7 +1014,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
                     /* Error check performed later to ensure no mixing of ignored and non ignored signals */
 
                 } else {
-                    VTR_ASSERT(DRIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin));
+                    VTR_ASSERT(e_pin_type::DRIVER == get_pin_type_from_pin_physical_num(tile_type, physical_pin));
                     VTR_ASSERT(j == clb_nlist.pin_logical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
                     VTR_ASSERT(j == clb_nlist.net_pin_logical_index(clb_net_id, 0));
                 }
@@ -1150,7 +1127,7 @@ static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type,
     for (int i = 0; i < num_pins; i++) {
         if (!pb_route.count(i)) continue;
 
-        if (pb_route[i].driver_pb_pin_id != OPEN && !pb_route[i].atom_net_id) {
+        if (pb_route[i].driver_pb_pin_id != UNDEFINED && !pb_route[i].atom_net_id) {
             load_atom_index_for_pb_pin(pb_route, i);
         }
     }
@@ -1159,7 +1136,7 @@ static void load_internal_to_block_net_nums(const t_logical_block_type_ptr type,
 static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin) {
     int driver = pb_route[ipin].driver_pb_pin_id;
 
-    VTR_ASSERT(driver != OPEN);
+    VTR_ASSERT(driver != UNDEFINED);
     VTR_ASSERT(!pb_route[ipin].atom_net_id);
 
     if (!pb_route[driver].atom_net_id) {

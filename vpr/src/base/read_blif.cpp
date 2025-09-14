@@ -19,6 +19,8 @@
 #include <ctime>
 #include <sstream>
 #include <cctype> //std::isdigit
+#include <regex>  //std::regex
+#include <optional>
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"
@@ -45,10 +47,6 @@ struct BlifAllocCallback : public blifparse::Callback {
         , blif_format_(blif_format) {
         VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
                    || blif_format_ == e_circuit_format::EBLIF);
-        inpad_model_ = models.get_model_by_name(LogicalModels::MODEL_INPUT);
-        outpad_model_ = models.get_model_by_name(LogicalModels::MODEL_OUTPUT);
-
-        main_netlist_.set_block_types(inpad_model_, outpad_model_);
     }
 
     static constexpr const char* OUTPAD_NAME_PREFIX = "out:";
@@ -68,14 +66,13 @@ struct BlifAllocCallback : public blifparse::Callback {
         //Create a new model, and set it's name
 
         blif_models_.emplace_back(model_name, netlist_id_);
-        blif_models_.back().set_block_types(inpad_model_, outpad_model_);
         blif_models_black_box_.emplace_back(false);
         ended_ = false;
         set_curr_block(AtomBlockId::INVALID()); //This statement doesn't define a block, so mark invalid
     }
 
     void inputs(std::vector<std::string> input_names) override {
-        LogicalModelId blk_model_id = models_.get_model_by_name(LogicalModels::MODEL_INPUT);
+        LogicalModelId blk_model_id = LogicalModels::MODEL_INPUT_ID;
         const t_model& blk_model = models_.get_model(blk_model_id);
 
         VTR_ASSERT_MSG(!blk_model.inputs, "Inpad model has an input port");
@@ -94,7 +91,7 @@ struct BlifAllocCallback : public blifparse::Callback {
     }
 
     void outputs(std::vector<std::string> output_names) override {
-        LogicalModelId blk_model_id = models_.get_model_by_name(LogicalModels::MODEL_OUTPUT);
+        LogicalModelId blk_model_id = LogicalModels::MODEL_OUTPUT_ID;
         const t_model& blk_model = models_.get_model(blk_model_id);
 
         VTR_ASSERT_MSG(!blk_model.outputs, "Outpad model has an output port");
@@ -115,7 +112,7 @@ struct BlifAllocCallback : public blifparse::Callback {
     }
 
     void names(std::vector<std::string> nets, std::vector<std::vector<blifparse::LogicValue>> so_cover) override {
-        LogicalModelId blk_model_id = models_.get_model_by_name(LogicalModels::MODEL_NAMES);
+        LogicalModelId blk_model_id = LogicalModels::MODEL_NAMES_ID;
         const t_model& blk_model = models_.get_model(blk_model_id);
 
         VTR_ASSERT_MSG(nets.size() > 0, "BLIF .names has no connections");
@@ -199,7 +196,7 @@ struct BlifAllocCallback : public blifparse::Callback {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Latch must have a clock\n");
         }
 
-        LogicalModelId blk_model_id = models_.get_model_by_name(LogicalModels::MODEL_LATCH);
+        LogicalModelId blk_model_id = LogicalModels::MODEL_LATCH_ID;
         const t_model& blk_model = models_.get_model(blk_model_id);
 
         VTR_ASSERT_MSG(blk_model.inputs, "Has one input port");
@@ -314,6 +311,12 @@ struct BlifAllocCallback : public blifparse::Callback {
     }
 
     void blackbox() override {
+        LogicalModelId arch_model_id = models_.get_model_by_name(curr_model().netlist_name());
+        if (!arch_model_id.is_valid()) {
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Blackbox BLIF model '%s' has no equivalent architecture model.",
+                      curr_model().netlist_name().c_str());
+        }
+
         //We treat black-boxes as netlists during parsing so they should contain
         //only inpads/outpads
         for (const auto& blk_id : curr_model().blocks()) {
@@ -411,13 +414,14 @@ struct BlifAllocCallback : public blifparse::Callback {
         //Look through all the models loaded, to find the one which is non-blackbox (i.e. has real blocks
         //and is not a blackbox).  To check for errors we look at all models, even if we've already
         //found a non-blackbox model.
-        int top_model_idx = -1; //Not valid
 
-        for (int i = 0; i < static_cast<int>(blif_models_.size()); ++i) {
+        std::optional<size_t> top_model_idx; //Not valid yet
+
+        for (size_t i = 0; i < blif_models_.size(); ++i) {
             if (!blif_models_black_box_[i]) {
                 //A non-blackbox model
-                if (top_model_idx == -1) {
-                    //This is the top model
+                if (!top_model_idx.has_value()) {
+                    // Top model is first non-blackbox model found
                     top_model_idx = i;
                 } else {
                     //We already have a top model
@@ -431,14 +435,13 @@ struct BlifAllocCallback : public blifparse::Callback {
             }
         }
 
-        if (top_model_idx == -1) {
+        if (!top_model_idx.has_value()) {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
                       "No non-blackbox models found. The main model must not be a blackbox.");
         }
 
         //Return the main model
-        VTR_ASSERT(top_model_idx >= 0);
-        return static_cast<size_t>(top_model_idx);
+        return top_model_idx.value();
     }
 
   private:
@@ -544,7 +547,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
         //Verify each port on the model
         //
-        // We parse each .model as it's own netlist so the IOs
+        // We parse each .model as its own netlist so the IOs
         // get converted to blocks
         for (auto blk_id : blif_model.blocks()) {
             //Check that the port directions match
@@ -617,8 +620,6 @@ struct BlifAllocCallback : public blifparse::Callback {
     AtomNetlist& main_netlist_;    ///<User object we fill
     const std::string netlist_id_; ///<Unique identifier based on the contents of the blif file
     const LogicalModels& models_;
-    LogicalModelId inpad_model_;
-    LogicalModelId outpad_model_;
 
     size_t unique_subckt_name_counter_ = 0;
 
@@ -650,66 +651,63 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
 }
 
 bool is_string_param(const std::string& param) {
-    /* Empty param is considered a string */
+    // Empty param is considered a string
     if (param.empty()) {
         return true;
     }
 
-    /* There have to be at least 2 characters (the quotes) */
+    // There have to be at least 2 characters (the quotes)
     if (param.length() < 2) {
         return false;
     }
 
-    /* The first and the last characters must be quotes */
+    // The first and the last characters must be quotes
     size_t len = param.length();
     if (param[0] != '"' || param[len - 1] != '"') {
         return false;
     }
 
-    /* There mustn't be any other quotes except for escaped ones */
+    // There mustn't be any other quotes except for escaped ones
     for (size_t i = 1; i < (len - 1); ++i) {
         if (param[i] == '"' && param[i - 1] != '\\') {
             return false;
         }
     }
 
-    /* This is a string param */
+    // This is a string param
     return true;
 }
 
 bool is_binary_param(const std::string& param) {
-    /* Must be non-empty */
+    // Must be non-empty
     if (param.empty()) {
         return false;
     }
 
-    /* The string must contain only '0' and '1' */
+    // The string must contain only '0' and '1'
     for (size_t i = 0; i < param.length(); ++i) {
         if (param[i] != '0' && param[i] != '1') {
             return false;
         }
     }
 
-    /* This is a binary word param */
+    // This is a binary word param
     return true;
 }
 
 bool is_real_param(const std::string& param) {
-    const std::string chars = "012345678.";
-
     /* Must be non-empty */
     if (param.empty()) {
         return false;
     }
 
-    /* The string mustn't contain any other chars that the expected ones */
-    for (size_t i = 0; i < param.length(); ++i) {
-        if (chars.find(param[i]) == std::string::npos) {
-            return false;
-        }
+    // The string must match the regular expression
+    const std::regex real_number_expr("[+-]?([0-9]*\\.[0-9]+)|([0-9]+\\.[0-9]*)");
+    if (!std::regex_match(param, real_number_expr)) {
+        return false;
     }
 
-    /* This is a real number param */
+    // This is a real number param
     return true;
 }
 

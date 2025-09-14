@@ -1,5 +1,4 @@
-#ifndef VPR_CONSTRAINTS_H
-#define VPR_CONSTRAINTS_H
+#pragma once
 
 #include "user_place_constraints.h"
 #include "user_route_constraints.h"
@@ -49,5 +48,3 @@ class VprConstraints {
     UserRouteConstraints route_constraints_;
     UserPlaceConstraints placement_constraints_;
 };
-
-#endif /* VPR_CONSTRAINTS_H */

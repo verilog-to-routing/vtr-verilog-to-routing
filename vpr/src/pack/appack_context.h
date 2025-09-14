@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Siner
@@ -6,9 +7,8 @@
  *          information used to configure APPack in the packer.
  */
 
-#pragma once
-
 #include "appack_max_dist_th_manager.h"
+#include "appack_unrelated_clustering_manager.h"
 #include "device_grid.h"
 #include "flat_placement_types.h"
 #include "physical_types.h"
@@ -57,9 +57,9 @@ struct t_appack_options {
     // Distance threshold which decides when to use quadratic decay or inverted
     // sqrt decay. If the distance is less than this threshold, quadratic decay
     // is used. Inverted sqrt is used otherwise.
-    static constexpr float dist_th = 1.75f;
+    static constexpr float dist_th = 2.0f;
     // Attenuation value at the threshold.
-    static constexpr float attenuation_th = 0.35f;
+    static constexpr float attenuation_th = 0.25f;
 
     // Using the distance threshold and the attenuation value at that point, we
     // can compute the other two terms. This is to keep the attenuation function
@@ -68,33 +68,6 @@ struct t_appack_options {
     static constexpr float sqrt_offset = dist_th - ((1.0f / attenuation_th) * (1.0f / attenuation_th));
     // Squared scaling factor for the quadratic decay term.
     static constexpr float quad_fac_sqr = (1.0f - attenuation_th) / (dist_th * dist_th);
-
-    // =========== Unrelated clustering ==================================== //
-    // After searching for candidates by connectivity and timing, the user may
-    // turn on unrelated clustering, which will allow molecules which are
-    // unrelated to the cluster being created to be attempted to be packed in.
-    // APPack uses flat placement information to decide which unrelated
-    // molecules to try.
-
-    // APPack will search for unrelated molecules in the tile which contains
-    // the flat location of the cluster. It will then look farther out, tile
-    // by tile. This parameter is the maximum distance from the cluster's tile
-    // that APPack will search. Setting this to 0 would only allow APPack to
-    // search within the cluster's tile. Setting this to a higher number would
-    // allow APPack to search farther away; but may bring in molecules which
-    // do not "want" to be in the cluster.
-    static constexpr float max_unrelated_tile_distance = 5.0f;
-
-    // Unrelated clustering occurs after all other candidate selection methods
-    // have failed. This parameter sets how many time we will attempt unrelated
-    // clustering between failures of unrelated clustering. If this is set to
-    // 1, and unrelated clustering failed for a cluster, it will not be attempted
-    // again for that cluster (note: if it succeeds, the number of attempts get
-    // reset).
-    // NOTE: A similar option exists in the candidate selector class. This was
-    //       duplicated since it is very likely that APPack would need a
-    //       different value for this option than the non-APPack flow.
-    static constexpr int max_unrelated_clustering_attempts = 10;
 
     // TODO: Investigate adding flat placement info to seed selection.
 };
@@ -117,11 +90,15 @@ struct APPackContext : public Context {
         , flat_placement_info(fplace_info) {
 
         // If the flat placement info has been provided, calculate max distance
-        // thresholds for all logical block types.
+        // thresholds for all logical block types and the unrelated clustering
+        // arguments.
         if (fplace_info.valid) {
             max_distance_threshold_manager.init(ap_opts.appack_max_dist_th,
                                                 logical_block_types,
                                                 device_grid);
+
+            unrelated_clustering_manager.init(ap_opts.appack_unrelated_clustering_args,
+                                              logical_block_types);
         }
     }
 
@@ -138,4 +115,9 @@ struct APPackContext : public Context {
     // When selecting candidates, what distance from the cluster will we
     // consider? Any candidate beyond this distance will not be proposed.
     APPackMaxDistThManager max_distance_threshold_manager;
+
+    // When performing unrelated clustering, the following manager class decides
+    // how far we should search for unrelated candidates and how many attempts
+    // we should perform.
+    APPackUnrelatedClusteringManager unrelated_clustering_manager;
 };

@@ -1,6 +1,4 @@
-#ifndef RR_GRAPH_VIEW_H
-#define RR_GRAPH_VIEW_H
-
+#pragma once
 /**
  * @file
  * @brief The RRGraphView encapsulates a read-only routing resource graph as most 
@@ -47,6 +45,11 @@
  * - Timing analyzer
  * - GUI
  *
+ * Note that each client of rr_graph may get a frame view of the object
+ * The RRGraphView is the complete frame view of the routing resource graph
+ * - This helps to reduce the memory footprint for each client
+ * - This avoids massive changes for each client on using the APIs
+ *   as each frame view provides adhoc APIs for each client
  * \internal
  * TODO: More compact frame views will be created, such as:
  * - A mini frame view: Contains only nodes and edges, representing the 
@@ -55,9 +58,13 @@
  *   attributes, particularly geometry information (type, x, y, etc.).
  * \endinternal
  */
-#include "rr_graph_builder.h"
+
+#include "metadata_storage.h"
 #include "rr_node.h"
 #include "physical_types.h"
+#include "rr_spatial_lookup.h"
+#include "vtr_geometry.h"
+#include "rr_graph_utils.h"
 
 class RRGraphView {
     /* -- Constructors -- */
@@ -70,19 +77,21 @@ class RRGraphView {
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                 const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
-                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
+                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
+                const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges,
+                const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums);
 
     /* Disable copy constructors and copy assignment operator
-     * This is to avoid accidental copy because it could be an expensive operation considering that the 
+     * This is to avoid accidental copy because it could be an expensive operation considering that the
      * memory footprint of the data structure could ~ Gb
-     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught 
+     * Using the following syntax, we prohibit accidental 'pass-by-value' which can be immediately caught
      * by compiler
      */
     RRGraphView(const RRGraphView&) = delete;
     void operator=(const RRGraphView&) = delete;
 
     /* -- Accessors -- */
-    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin' 
+    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin'
      * kind of accessors
      */
   public:
@@ -221,11 +230,23 @@ class RRGraphView {
     inline short node_layer(RRNodeId node) const {
         return node_storage_.node_layer(node);
     }
+    
+    /** 
+     * @brief Return the bend start of a specified node.
+     * @param node The node id
+     * @return The bend start
+     */
+    inline short node_bend_start(RRNodeId node) const {
+        return node_storage_.node_bend_start(node);
+    }
 
-    /** @brief Return the ptc number twist of a specified node.
-    */
-    inline short node_ptc_twist(RRNodeId node) const {
-        return node_storage_.node_ptc_twist(node);
+    /** 
+     * @brief Return the bend end of a specified node.
+     * @param node The node id
+     * @return The bend end
+     */
+    inline short node_bend_end(RRNodeId node) const {
+        return node_storage_.node_bend_end(node);
     }
 
     /** @brief Return the first outgoing edge of a specified node.
@@ -241,13 +262,24 @@ class RRGraphView {
     }
 
     /** @brief Return the length (number of grid tile units spanned by the wire, including the endpoints) of a specified node.
-     * @note node_length() only applies to CHANX or CHANY and is always a positive number
+     * @note node_length() only applies to CHANX or CHANY or CHANZ and is always a positive number
      */
     inline int node_length(RRNodeId node) const {
-        VTR_ASSERT(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY);
+        VTR_ASSERT(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY || node_type(node) == e_rr_type::CHANZ);
+
+        // Inter-layer wires travel only one layer
+        // For now, we decided to set the length of an inter-layer wire to 1
+        // TODO: The user should be able to set a parameter to say how long inter-layer wires are
+        // TODO: inter-layer wires are modeled with two CHANZ nodes on two different layer
+        //       In the future, we should remove one of them and give a direction to CHANZ nodes
+        if (node_type(node) == e_rr_type::CHANZ) {
+            return 1;
+        }
+
         if (node_direction(node) == Direction::NONE) {
             return 0; //length zero wire
         }
+
         int length = 1 + node_xhigh(node) - node_xlow(node) + node_yhigh(node) - node_ylow(node);
         VTR_ASSERT_SAFE(length > 0);
         return length;
@@ -261,18 +293,37 @@ class RRGraphView {
                  && (node_xhigh(node) == -1) && (node_yhigh(node) == -1));
     }
 
-    /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). 
-     * @note This function performs error checking by determining whether two nodes are physically adjacent based on their geometry. It does not verify the routing edges to confirm if a connection is feasible within the current routing graph.
+    /**
+     * @brief Check if two CHANX, CHANY, or CHANZ nodes are spatially adjacent.
+     * @param node1 First routing resource node
+     * @param node2 Second routing resource node
+     * @return true if the nodes are adjacent, false otherwise
      */
-    inline bool nodes_are_adjacent(RRNodeId chanx_node, RRNodeId chany_node) const {
-        VTR_ASSERT(node_type(chanx_node) == e_rr_type::CHANX && node_type(chany_node) == e_rr_type::CHANY);
-        if (node_ylow(chany_node) > node_ylow(chanx_node) + 1 || // verifies that chany_node is not more than one unit above chanx_node
-            node_yhigh(chany_node) < node_ylow(chanx_node))      // verifies that chany_node is not more than one unit beneath chanx_node
-            return false;
-        if (node_xlow(chanx_node) > node_xlow(chany_node) + 1 || // verifies that chany_node is not more than one unit to the left of chanx_node
-            node_xhigh(chanx_node) < node_xlow(chany_node))      // verifies that chany_node is not more than one unit to the right of chanx_node
-            return false;
-        return true;
+    inline bool chan_nodes_are_adjacent(RRNodeId node1, RRNodeId node2) const {
+        e_rr_type type1 = node_type(node1);
+        e_rr_type type2 = node_type(node2);
+        VTR_ASSERT(type1 == e_rr_type::CHANX || type1 == e_rr_type::CHANY || type1 == e_rr_type::CHANZ);
+        VTR_ASSERT(type2 == e_rr_type::CHANX || type2 == e_rr_type::CHANY || type2 == e_rr_type::CHANZ);
+
+        if ((type1 == e_rr_type::CHANX && type2 == e_rr_type::CHANY)
+            || (type1 == e_rr_type::CHANY && type2 == e_rr_type::CHANX)) {
+            return chanx_chany_nodes_are_adjacent(*this, node1, node2);
+        }
+
+        // CHANX/CHANY to CHANZ (in any order)
+        if ((type1 == e_rr_type::CHANZ || type2 == e_rr_type::CHANZ) &&
+            (type1 == e_rr_type::CHANX || type1 == e_rr_type::CHANY ||
+             type2 == e_rr_type::CHANX || type2 == e_rr_type::CHANY)) {
+            return chanxy_chanz_adjacent(*this, node1, node2);
+        }
+
+        // Same-type channel nodes (CHANX–CHANX, CHANY–CHANY, CHANZ–CHANZ)
+        if (type1 == type2) {
+            return chan_same_type_are_adjacent(*this, node1, node2);
+        }
+
+        VTR_ASSERT_MSG(false, "Invalid CHAN node combination passed to chan_nodes_are_adjacent()");
+        return false;
     }
 
     /**
@@ -283,7 +334,6 @@ class RRGraphView {
      * @note To return true, the RRNode must be completely contained within the specified bounding box,
      * with the edges of the bounding box being inclusive.
      */
-
     inline bool node_is_inside_bounding_box(RRNodeId node, vtr::Rect<int> bounding_box) const {
         return (node_xhigh(node) <= bounding_box.xmax()
                 && node_xlow(node) >= bounding_box.xmin()
@@ -338,7 +388,7 @@ class RRGraphView {
             start_x = " (" + std::to_string(node_xhigh(node)) + ",";
             start_y = std::to_string(node_yhigh(node)) + ",";
             start_layer_str = std::to_string(node_layer_num) + ")";
-        } else if (node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY) { //for channels, we would like to describe the component with segment specific information
+        } else if (node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY || node_type(node) == e_rr_type::CHANZ) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
             coordinate_string += rr_segments(RRSegmentId(seg_index)).name;       //Write the segment name
@@ -380,6 +430,11 @@ class RRGraphView {
      */
     inline bool is_node_on_specific_side(RRNodeId node, e_side side) const {
         return node_storage_.is_node_on_specific_side(node, side);
+    }
+
+    /** @brief Get the sides where the node locates on. */
+    inline const std::vector<e_side> node_sides(RRNodeId node) const {
+        return node_storage_.node_sides(node);
     }
 
     /** @brief Return a string representing the side of a routing resource node. 
@@ -434,6 +489,24 @@ class RRGraphView {
         return node_storage_.edge_sink_node(id, iedge);
     }
 
+    /**
+     * @brief Return the destination node for the specified edge.
+     * @param edge The edge id
+     * @return The destination node id
+     */
+    inline RRNodeId edge_sink_node(RREdgeId edge) const {
+        return node_storage_.edge_sink_node(edge);
+    }
+
+    /** 
+     * @brief Get the source node for the iedge'th edge from specified RRNodeId.
+     * @note This method should generally not be used, and instead first_edge and
+     * last_edge should be used.
+     */
+    inline RRNodeId edge_source_node(RRNodeId id, t_edge_size iedge) const {
+        return node_storage_.edge_source_node(id, iedge);
+    }
+
     /** @brief Check if the edge is a configurable edge 
      * @note A configurable edge represents a programmable switch between routing resources, which could be 
      *  - a multiplexer
@@ -442,6 +515,15 @@ class RRGraphView {
     */
     inline bool edge_is_configurable(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_is_configurable(id, iedge, rr_switch_inf_);
+    }
+
+    /**
+     * @brief Check if the edge is a configurable edge
+     * @param edge The edge id
+     * @return True if the edge is configurable, false otherwise
+     */
+    inline bool edge_is_configurable(RREdgeId edge) const {
+        return node_storage_.edge_is_configurable(edge, rr_switch_inf_);
     }
 
     /** @brief Return the number of configurable edges. 
@@ -456,10 +538,21 @@ class RRGraphView {
         return node_storage_.num_non_configurable_edges(node, rr_switch_inf_);
     }
 
-    /** @brief Return ID range for configurable edges.  
-     */
+    /** 
+     * @brief A configurable edge represents a programmable switch between routing resources, which could be
+     *  - a multiplexer
+     *  - a tri-state buffer
+     *  - a pass gate
+     * This API gets ID range for configurable edges. This function is inlined for runtime optimization. */
     inline edge_idx_range configurable_edges(RRNodeId node) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)));
+    }
+
+    /**
+     * @brief Return ID range for configurable outgoing edges.
+     */
+    inline edge_idx_range node_configurable_out_edges(RRNodeId node) const {
+        return configurable_edges(node);
     }
 
     /** @brief Return ID range for non-configurable edges. 
@@ -469,6 +562,13 @@ class RRGraphView {
      */
     inline edge_idx_range non_configurable_edges(RRNodeId node) const {
         return vtr::make_range(edge_idx_iterator(node_storage_.num_edges(node) - num_non_configurable_edges(node)), edge_idx_iterator(num_edges(node)));
+    }
+
+    /**
+     * @brief Return ID range for non-configurable outgoing edges.
+     */
+    inline edge_idx_range node_non_configurable_out_edges(RRNodeId node) const {
+        return non_configurable_edges(node);
     }
 
     /**
@@ -485,6 +585,16 @@ class RRGraphView {
     inline edge_idx_range edges(const RRNodeId& id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
+
+    /**
+     * @brief Return ID range for outgoing edges.
+     */
+    inline edge_idx_range node_out_edges(const RRNodeId& id) const {
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
+    }
+
+    /** @brief find the edges between two nodes */
+    std::vector<RREdgeId> find_edges(RRNodeId src_node, RRNodeId des_node) const;
 
     /** @brief Return the number of edges.
      */
@@ -534,6 +644,27 @@ class RRGraphView {
     RRIndexedDataId node_cost_index(RRNodeId node) const {
         return node_storage_.node_cost_index(node);
     }
+
+    /** @brief Get the segment id which a routing resource node represents. Only applicable to nodes whose type is CHANX or CHANY */
+    RRSegmentId node_segment(RRNodeId node) const;
+
+    /** 
+     * @brief Return incoming edges for a given routing resource node 
+     *        Requires build_in_edges() to be called first
+     */
+    std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
+
+    /** 
+     * @brief Return configurable incoming edges for a given routing resource node
+     *        Requires build_in_edges() to be called first
+     */
+    std::vector<RREdgeId> node_configurable_in_edges(RRNodeId node) const;
+
+    /** 
+     * @brief Return non-configurable incoming edges for a given routing resource node
+     *        Requires build_in_edges() to be called first
+     */
+    std::vector<RREdgeId> node_non_configurable_in_edges(RRNodeId node) const;
 
     /** @brief Return detailed routing segment information of a specified segment
      * @note The routing segments here may not be exactly same as those defined in architecture file. They have been
@@ -609,6 +740,26 @@ class RRGraphView {
         return node_storage_.validate_node(node_id, rr_switch_inf_);
     }
 
+    /** @brief Check if the node id is a valid one in storage */
+    inline bool valid_node(RRNodeId node_id) const {
+        return size_t(node_id) < node_storage_.size();
+    }
+
+    /** @brief Check if the switch is a valid one in storage */
+    inline bool valid_switch(RRSwitchId switch_id) const {
+        return (size_t(switch_id) < rr_switch_inf_.size());
+    }
+
+    /** @brief Validate if all the fan-in edge lists are valid. This
+     *         function should be called only if build_in_edges() is called before.
+    */
+    bool validate_in_edges() const;
+    
+    /** @brief Count the number of incoming edges for all the nodes. This
+     *         function should be called only if build_in_edges() is called before.
+    */
+    size_t in_edges_count() const;
+
     /* -- Internal data storage -- */
     /* Note: only read-only object or data structures are allowed!!! */
   private:
@@ -629,6 +780,7 @@ class RRGraphView {
      * The main (perhaps only) current use of this metadata is the fasm tool of symbiflow,
      * which needs extra metadata on which programming bits control which switch in order to produce a bitstream.*/
     const MetadataStorage<int>& rr_node_metadata_;
+
     /**
      * @brief  Attributes for each rr_edge
      *
@@ -650,6 +802,12 @@ class RRGraphView {
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
     /// switch info for rr nodes
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
-};
 
-#endif
+    /// A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
+    /// By default, it is empty. Call build_in_edges() to construct it.
+    const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges_;
+
+    /// A list of extra ptc numbers for each routing resource node. This is only used for tileable architecture.
+    /// See details in RRGraphBuilder class
+    const vtr::vector<RRNodeId, std::vector<short>>& node_tileable_track_nums_;
+};
