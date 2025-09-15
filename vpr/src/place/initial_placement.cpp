@@ -372,11 +372,11 @@ static bool is_loc_legal(const t_pl_loc& loc,
     return legal;
 }
 
-bool find_subtile_in_location(t_pl_loc& centroid,
-                              t_logical_block_type_ptr block_type,
-                              const BlkLocRegistry& blk_loc_registry,
-                              const PartitionRegion& pr,
-                              vtr::RngContainer& rng) {
+static bool find_subtile_in_location(t_pl_loc& centroid,
+                                     t_logical_block_type_ptr block_type,
+                                     const BlkLocRegistry& blk_loc_registry,
+                                     const PartitionRegion& pr,
+                                     vtr::RngContainer& rng) {
     //check if the location is on chip and legal, if yes try to update subtile
     if (is_loc_on_chip({centroid.x, centroid.y, centroid.layer}) && is_loc_legal(centroid, pr, block_type)) {
         //find the compatible subtiles
