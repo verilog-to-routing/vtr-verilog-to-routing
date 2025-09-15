@@ -3888,7 +3888,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                 Segs[i].parallel_axis = e_parallel_axis::Y_AXIS;
                 y_axis_seg_found = true;
             } else if (strcmp(tmp, "z") == 0) {
-                Segs[i].parallel_axis = e_parallel_axis::Y_AXIS;
+                Segs[i].parallel_axis = e_parallel_axis::Z_AXIS;
                 z_axis_seg_found = true;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),

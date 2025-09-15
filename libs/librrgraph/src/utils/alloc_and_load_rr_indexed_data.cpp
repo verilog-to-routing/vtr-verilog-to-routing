@@ -19,7 +19,12 @@
 
 /******************* Subroutines local to this module ************************/
 
-static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph, vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, enum e_base_cost_type base_cost_type, const bool echo_enabled, const char* echo_file_name);
+static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
+                                            vtr::vector<RRIndexedDataId,
+                                            t_rr_indexed_data>& rr_indexed_data,
+                                            e_base_cost_type base_cost_type,
+                                            const bool echo_enabled,
+                                            const char* echo_file_name);
 
 static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, const bool echo_enabled, const char* echo_file_name);
 
@@ -48,7 +53,8 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
 
 static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, size_t num_segment);
 
-static std::vector<size_t> count_rr_segment_types(const RRGraphView& rr_graph, const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
+static std::vector<size_t> count_rr_segment_types(const RRGraphView& rr_graph,
+                                                  const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
 
 static void print_rr_index_info(const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                                 const char* fname,
@@ -158,9 +164,9 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
 
     load_rr_indexed_data_base_costs(rr_graph, rr_indexed_data, base_cost_type, echo_enabled, echo_file_name);
 
-    if (echo_enabled) {
+    if (true) {
         print_rr_index_info(rr_indexed_data,
-                            echo_file_name,
+                            "indexed_data.txt",
                             segment_inf,
                             segment_inf_x.size(),
                             segment_inf_x.size() + segment_inf_y.size());
@@ -341,7 +347,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
 
 static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
                                             vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                                            enum e_base_cost_type base_cost_type,
+                                            e_base_cost_type base_cost_type,
                                             const bool echo_enabled,
                                             const char* echo_file_name) {
     // Loads the base_cost member of rr_indexed_data according to the specified base_cost_type.
@@ -370,7 +376,7 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 
     /* Load base costs for CHANX and CHANY segments */
     float max_length = 0;
-    float min_length = 1;
+    const float min_length = 1;
     if (base_cost_type == DELAY_NORMALIZED_LENGTH_BOUNDED) {
         for (size_t index = CHANX_COST_INDEX_START; index < rr_indexed_data.size(); index++) {
             float length = (1 / rr_indexed_data[RRIndexedDataId(index)].inv_length);
@@ -430,11 +436,15 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
     }
 }
 
-static std::vector<size_t> count_rr_segment_types(const RRGraphView& rr_graph, const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data) {
+static std::vector<size_t> count_rr_segment_types(const RRGraphView& rr_graph,
+                                                  const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data) {
     std::vector<size_t> rr_segment_type_counts;
 
     for (const RRNodeId id : rr_graph.nodes()) {
-        if (rr_graph.node_type(id) != e_rr_type::CHANX && rr_graph.node_type(id) != e_rr_type::CHANY) continue;
+        e_rr_type node_type = rr_graph.node_type(id);
+        if (!is_chanxy(node_type) && !is_chanz(node_type)) {
+            continue;
+        }
 
         RRIndexedDataId cost_index = rr_graph.node_cost_index(id);
 

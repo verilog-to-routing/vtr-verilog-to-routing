@@ -187,6 +187,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const RRGraphView& rr_graph,
                                                                   const int num_seg_types,
                                                                   const int num_seg_types_x,
+                                                                  const int num_seg_types_y,
                                                                   const t_unified_to_parallel_seg_index& seg_index_map,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
@@ -1321,7 +1322,7 @@ static void build_rr_graph(e_graph_type graph_type,
     auto update_chan_width = alloc_and_load_rr_graph(
         device_ctx.rr_graph_builder,
         device_ctx.rr_graph_builder.rr_nodes(), device_ctx.rr_graph, segment_inf.size(),
-        segment_inf_x.size(),
+        segment_inf_x.size(), segment_inf_y.size(),
         segment_index_map,
         chan_details_x, chan_details_y,
         track_to_pin_lookup_x, track_to_pin_lookup_y,
@@ -1951,6 +1952,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const RRGraphView& rr_graph,
                                                                   const int num_seg_types,
                                                                   const int num_seg_types_x,
+                                                                  const int num_seg_types_y,
                                                                   const t_unified_to_parallel_seg_index& seg_index_map,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
@@ -2089,7 +2091,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             // since these die-crossing connections have more delays.
             if (grid.get_num_layers() > 1) {
                 build_inter_die_3d_rr_chan(rr_graph_builder, i, j, interdie_3d_links[i][j],
-                    CHANX_COST_INDEX_START, chan_width, chan_details_x);
+                    CHANX_COST_INDEX_START + num_seg_types_x + num_seg_types_y, chan_width, chan_details_x);
             }
 
             for (int layer = 0; layer < (int)grid.get_num_layers(); ++layer) {
@@ -3176,8 +3178,6 @@ static void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
     // 3) xhigh=xlow, yhigh=ylow
     // 4) directionality: NONE (neither incremental nor decremental in 2D space)
 
-    const int start_track = nodes_per_chan.max;
-
     // Go through allocated nodes until no nodes are found within the RRGraph builder
     for (int track_num = 0; /*no condition*/; track_num++) {
         // Try to find a node with the current track_num
@@ -3199,7 +3199,7 @@ static void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
 
         rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
         // TODO: the index doesn't make any sense. We need to an RRIndexedDataId for CHANZ nodes
-        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset + seg_details[start_track - 1].index()));
+        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset));
         rr_graph_builder.set_node_capacity(node, 1); // GLOBAL routing handled elsewhere
         float R = 0;
         float C = 0;

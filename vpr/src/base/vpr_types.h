@@ -1299,8 +1299,8 @@ struct t_router_opts {
     enum e_route_type route_type;
     int fixed_channel_width;
     int min_channel_width_hint; ///<Hint to binary search of what the minimum channel width is
-    enum e_router_algorithm router_algorithm;
-    enum e_base_cost_type base_cost_type;
+    e_router_algorithm router_algorithm;
+    e_base_cost_type base_cost_type;
     float astar_fac;
     float astar_offset;
     float router_profiler_astar_fac;
