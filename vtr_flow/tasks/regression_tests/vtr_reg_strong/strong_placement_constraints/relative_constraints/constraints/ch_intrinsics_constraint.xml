@@ -1,0 +1,37 @@
+<vpr_constraints tool_name="vpr">
+    <macro_list>
+        <macro name="macro_1">
+            <reference_group>
+                <add_atom name_pattern="a" />
+                <add_atom name_pattern="b" />
+            </reference_group>
+            <relative_group>
+                <add_atom name_pattern="c" />
+                <add_atom name_pattern="d" />
+            </relative_group>
+            <relative_location x_offset="1" y_offset="2" layer_offset="0" sub_tile_offset="0" />
+        </macro>
+        <macro name="macro_2">
+            <reference_group>
+                <add_atom name_pattern="e" />
+                <add_atom name_pattern="f" />
+            </reference_group>
+            <relative_group>
+                <add_atom name_pattern="g" />
+                <add_atom name_pattern="h" />
+            </relative_group>
+            <relative_location x_offset="1" y_offset="-1" layer_offset="0" sub_tile_offset="0" />
+        </macro>
+        <macro name="macro_3">
+            <reference_group>
+                <add_atom name_pattern="i" />
+                <add_atom name_pattern="j" />
+            </reference_group>
+            <relative_group>
+                <add_atom name_pattern="k" />
+                <add_atom name_pattern="l" />
+            </relative_group>
+            <relative_location x_offset="1" y_offset="*" layer_offset="*" sub_tile_offset="*" />
+        </macro>
+    </macro_list>
+</vpr_constraints>
