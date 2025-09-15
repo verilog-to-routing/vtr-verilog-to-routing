@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include "physical_types.h"
 
 /**
  * @brief Enum for direction of an interposer cut. X means horizontal cut and Y means vertical cut.
@@ -34,9 +35,14 @@ inline const std::unordered_map<char, e_interposer_cut_dim> CHAR_INTERPOSER_DIM_
 struct t_interdie_wire_inf {
     std::string sg_name;  ///< Name of the scatter-gather pattern to be used for the interdie connection
     std::string sg_link;  ///< Name of the scatter-gather link to be used for the interdie connection
-    int offset_start;     ///< Starting point of scatter-gather instantiations
-    int offset_end;       ///< Ending point of scatter-gather instantiations
-    int offset_increment; ///< Increment/distance between scatter-gather instantiations
+    /**
+     * @brief 
+     * Contains starting and ending point (both inclusive) of scatter-gather instantiations and the increment/distance between the instantiations.
+     * offset_definition.repeat_expr is not relevant for interdie wires and is not set to anything or used.
+     * 
+     * Locations defined by this offset definition define the starting point or the gathering point of the SG pattern. The end or scatter point of the SG pattern is defined by the sg_link.
+     */
+    t_grid_loc_spec offset_definition;
     int num;              ///< Number of scatter-gather instantiations per switchblock location
 };
 

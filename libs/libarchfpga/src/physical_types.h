@@ -36,7 +36,6 @@
 #include <limits>
 #include <unordered_set>
 
-#include "interposer_types.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_bimap.h"
 #include "vtr_string_interning.h"
@@ -81,6 +80,7 @@ class t_pb_graph_edge;
 struct t_cluster_placement_primitive;
 struct t_arch;
 enum class e_sb_type;
+struct t_interposer_cut_inf;
 
 /****************************************************************************/
 /* FPGA metadata types                                                      */
@@ -255,12 +255,6 @@ typedef enum e_power_estimation_method_ t_power_estimation_method;
  *  from expr_eval.h.
  */
 struct t_grid_loc_spec {
-    t_grid_loc_spec(std::string start, std::string end, std::string repeat, std::string incr)
-        : start_expr(std::move(start))
-        , end_expr(std::move(end))
-        , repeat_expr(std::move(repeat))
-        , incr_expr(std::move(incr)) {}
-
     std::string start_expr; //Starting position (inclusive)
     std::string end_expr;   //Ending position (inclusive)
 
