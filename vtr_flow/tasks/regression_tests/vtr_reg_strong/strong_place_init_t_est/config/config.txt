@@ -9,9 +9,6 @@ arch_list_add=k6_frac_N10_40nm.xml
 
 # Add circuits to list to sweep
 circuit_list_add=alu4.pre-vpr.blif
-circuit_list_add=apex4.pre-vpr.blif
-circuit_list_add=ex5p.pre-vpr.blif
-circuit_list_add=misex3.pre-vpr.blif
 
 # Parse info and how to parse
 parse_file=vpr_fixed_chan_width.txt
@@ -24,5 +21,5 @@ pass_requirements_file=pass_requirements_fixed_chan_width.txt
 
 script_params_common=-starting_stage vpr --pack --place
 script_params_list_add=--anneal_auto_init_t_estimator cost_variance
-script_params_list_add=--anneal_auto_init_t_estimator equilibrium_est
+script_params_list_add=--anneal_auto_init_t_estimator equilibrium
 

@@ -696,8 +696,8 @@ struct ParsePlaceInitTEstimator {
         ConvertedValue<e_anneal_init_t_estimator> conv_value;
         if (str == "cost_variance")
             conv_value.set_value(e_anneal_init_t_estimator::COST_VARIANCE);
-        else if (str == "equilibrium_est")
-            conv_value.set_value(e_anneal_init_t_estimator::EQUILIBRIUM_EST);
+        else if (str == "equilibrium")
+            conv_value.set_value(e_anneal_init_t_estimator::EQUILIBRIUM);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_anneal_init_t_estimator (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -712,8 +712,8 @@ struct ParsePlaceInitTEstimator {
             case e_anneal_init_t_estimator::COST_VARIANCE:
                 conv_value.set_value("cost_variance");
                 break;
-            case e_anneal_init_t_estimator::EQUILIBRIUM_EST:
-                conv_value.set_value("equilibrium_est");
+            case e_anneal_init_t_estimator::EQUILIBRIUM:
+                conv_value.set_value("equilibrium");
                 break;
             default: {
                 std::stringstream msg;
@@ -725,7 +725,7 @@ struct ParsePlaceInitTEstimator {
     }
 
     std::vector<std::string> default_choices() {
-        return {"cost_variance", "equilibrium_est"};
+        return {"cost_variance", "equilibrium"};
     }
 };
 
@@ -2320,7 +2320,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "The options for estimators are:\n"
             "\tcost_variance: Estimates the initial temperature using the variance "
             "of cost after a set of trial swaps.\n"
-            "\tequilibrium_est: Estimates the initial temperature by trying to "
+            "\tequilibrium: Estimates the initial temperature by trying to "
             "predict the equilibrium temperature for the initial placement "
             "(i.e. the temperature that would result in no change in cost).")
         .default_value("cost_variance")

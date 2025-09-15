@@ -302,7 +302,7 @@ float PlacementAnnealer::estimate_starting_temperature_() {
     switch (placer_opts_.anneal_init_t_estimator) {
         case e_anneal_init_t_estimator::COST_VARIANCE:
             return estimate_starting_temp_using_cost_variance_();
-        case e_anneal_init_t_estimator::EQUILIBRIUM_EST:
+        case e_anneal_init_t_estimator::EQUILIBRIUM:
             return estimate_equilibrium_temp_();
         default:
             VPR_FATAL_ERROR(VPR_ERROR_PLACE,
@@ -328,18 +328,9 @@ float PlacementAnnealer::estimate_equilibrium_temp_() {
     accepted_swaps.reserve(move_lim);
     rejected_swaps.reserve(move_lim);
     for (int i = 0; i < move_lim; i++) {
-        bool manual_move_enabled = false;
-#ifndef NO_GRAPHICS
-        // Checks manual move flag for manual move feature
-        t_draw_state* draw_state = get_draw_state_vars();
-        if (draw_state->show_graphics) {
-            manual_move_enabled = manual_move_is_selected();
-        }
-#endif /*NO_GRAPHICS*/
-
         t_swap_result swap_result = try_swap_(*move_generator_1_,
                                               placer_opts_.place_algorithm,
-                                              manual_move_enabled);
+                                              false /*manual_move_enabled*/);
 
         if (swap_result.move_result == e_move_result::ACCEPTED) {
             accepted_swaps.push_back(swap_result.delta_c);
@@ -361,6 +352,14 @@ float PlacementAnnealer::estimate_equilibrium_temp_() {
         total_accepted_cost += accepted_cost;
     }
 
+    // Find the magnitude of the largest reject swap cost. This is useful for
+    // picking a worst-case initial temperature.
+    double max_rejected_swap_cost = 0.0;
+    for (double rejected_cost : rejected_swaps) {
+        max_rejected_swap_cost = std::max(max_rejected_swap_cost,
+                                          std::abs(rejected_cost));
+    }
+
     // Perform a binary search to try and find the equilibrium temperature for
     // this placement. This is the temperature that we expect would lead to no
     // overall change in temperature. We do this by computing the expected
@@ -372,23 +371,33 @@ float PlacementAnnealer::estimate_equilibrium_temp_() {
     //      Initialize the lower bound temperature to 0. The temperature cannot
     //      be less than 0.
     double lower_bound_temp = 0.0;
-    //      Initialize the upper bound temperature to 1e10. It is possible for
+    //      Initialize the upper bound temperature. It is possible for
     //      the equilibrium temperature to be infinite if the initial placement
     //      is so bad that no swaps are accepted. In that case this value will
     //      be returned instead of infinity.
-    //      TODO: Find what a reasonable value for this should be.
-    double upper_bound_temp = 1e10;
+    //      At this temperature, the probability of accepting this worst rejected
+    //      swap would be 71.655% (e^(-1/3)).
+    //      TODO: Investigate if this is a good initial temperature for these
+    //            cases.
+    double upper_bound_temp = 3.0 * max_rejected_swap_cost;
     //      The max search iterations should never be hit, but it is here as an
     //      exit condition to prevent infinite loops.
     constexpr unsigned max_search_iters = 100;
     for (unsigned binary_search_iter = 0; binary_search_iter < max_search_iters; binary_search_iter++) {
         // Exit condition for binary search. Could be hit if the lower and upper
         // bounds are arbitrarily close.
-        if (lower_bound_temp > upper_bound_temp)
+        if (lower_bound_temp >= upper_bound_temp)
             break;
 
         // Try the temperature in the middle of the lower and upper bounds.
         double trial_temp = (lower_bound_temp + upper_bound_temp) / 2.0;
+
+        // Return the trial temperature if it is within 6 decimal-points of precision.
+        // NOTE: This is arbitrary.
+        // TODO: We could stop this early and then use Newton's Method to quickly
+        //       touch it up to a more accurate value.
+        if (std::abs(upper_bound_temp - lower_bound_temp) / trial_temp < 1e-6)
+            return trial_temp;
 
         // Calculate the expected change in cost at this temperature (which we
         // call the residual here).
@@ -397,17 +406,10 @@ float PlacementAnnealer::estimate_equilibrium_temp_() {
             // Expected change in cost after a rejected swap is the change in
             // cost multiplied by the probability that this swap is accepted at
             // this temperature.
-            double accpetance_prob = std::exp((-1.0 * rejected_cost) / trial_temp);
-            expected_total_post_rejected_cost += rejected_cost * accpetance_prob;
+            double acceptance_prob = std::exp((-1.0 * rejected_cost) / trial_temp);
+            expected_total_post_rejected_cost += rejected_cost * acceptance_prob;
         }
         double residual = expected_total_post_rejected_cost + total_accepted_cost;
-
-        // Return the trial temperature if it is within 6 decimal-points of precision.
-        // NOTE: This is arbitrary.
-        // TODO: We could stop this early and then use Newton's Method to quickly
-        //       touch it up to a more accurate value.
-        if (std::abs(upper_bound_temp - lower_bound_temp) / trial_temp < 1e-6)
-            return trial_temp;
 
         if (residual < 0) {
             // Since the function is monotonically increasing, if the residual
