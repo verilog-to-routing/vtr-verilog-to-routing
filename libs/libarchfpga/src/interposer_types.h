@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
-#include "physical_types.h"
+#include "grid_types.h"
 
 /**
  * @brief Enum for direction of an interposer cut. X means horizontal cut and Y means vertical cut.
