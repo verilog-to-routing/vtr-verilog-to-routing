@@ -103,8 +103,8 @@ struct t_grid_loc_def {
     t_grid_loc_def(std::string block_type_val, int priority_val)
         : block_type(std::move(block_type_val))
         , priority(priority_val)
-        , x("0", "W-1", "max(w+1,W)", "w") //Fill in x direction, no repeat, incr by block width
-        , y("0", "H-1", "max(h+1,H)", "h") //Fill in y direction, no repeat, incr by block height
+        , x{"0", "W-1", "max(w+1,W)", "w"} //Fill in x direction, no repeat, incr by block width
+        , y{"0", "H-1", "max(h+1,H)", "h"} //Fill in y direction, no repeat, incr by block height
     {}
 
     std::string block_type; //The block type name
