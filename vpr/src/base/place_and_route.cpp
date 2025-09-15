@@ -20,9 +20,6 @@
 #include "route.h"
 #include "route_export.h"
 #include "draw.h"
-#ifndef NO_GRAPHICS
-#include "draw_global.h"
-#endif
 #include "rr_graph.h"
 #include "read_xml_arch_file.h"
 #include "route_common.h"
@@ -607,11 +604,4 @@ void post_place_sync() {
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
         blk_loc_registry.place_sync_external_block_connections(block_id);
     }
-
-#ifndef NO_GRAPHICS
-    // update graphic resources incase of clustering changes
-    if (get_draw_state_vars()) {
-        get_draw_state_vars()->refresh_graphic_resources_after_cluster_change();
-    }
-#endif
 }

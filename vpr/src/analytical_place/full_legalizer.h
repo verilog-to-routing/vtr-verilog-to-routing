@@ -59,6 +59,9 @@ class FullLegalizer {
      *                      device grid and fixed blocks are observed.
      */
     virtual void legalize(const PartialPlacement& p_placement) = 0;
+    
+    /// @brief Update drawing data structure for current placement
+    void update_drawing_data_structures();
 
   protected:
     /// @brief The AP Netlist to fully legalize the flat placement of.
