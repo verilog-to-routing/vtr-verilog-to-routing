@@ -69,7 +69,7 @@ void routing_stats(const Netlist<>& net_list,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
                    e_directionality directionality,
-                   int wire_to_ipin_switch,
+                   RRSwitchId wire_to_ipin_switch,
                    bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;

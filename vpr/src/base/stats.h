@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <rr_graph_fwd.h>
 #include <vector>
 #include "netlist.h"
 #include "rr_graph_type.h"
@@ -20,7 +21,7 @@ void routing_stats(const Netlist<>& net_list,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
                    e_directionality directionality,
-                   int wire_to_ipin_switch,
+                   RRSwitchId wire_to_ipin_switch,
                    bool is_flat);
 
 /**

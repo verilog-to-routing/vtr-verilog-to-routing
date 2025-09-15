@@ -1480,7 +1480,7 @@ struct t_det_routing_arch {
 
     /// keeps track of the type of RR graph switch
     /// that connects wires to ipins in the RR graph
-    int wire_to_rr_ipin_switch;
+    RRSwitchId wire_to_rr_ipin_switch;
 
     /// keeps track of the type of RR graph switch that connects wires
     /// from another die to ipins in different die in the RR graph

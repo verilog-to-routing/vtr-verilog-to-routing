@@ -43,7 +43,7 @@ enum class e_graph_type {
  *
  * Each entry maps a unified segment index to a pair containing:
  *   - The index in the corresponding axis-specific segment vector
- *   - The axis of the segment (X or Y)
+ *   - The axis of the segment (X/Y/Z)
  *
  * @see get_parallel_segs for more details.
  */

@@ -257,14 +257,6 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             //wire_switch == arch_opin_switch
             fprintf(Echo, "\t\t\t\ttype unidir mux_name for within die connections: %s\n",
                     arch->switches[seg.arch_wire_switch].name.c_str());
-            //if there is more than one layer available, print the segment switch name that is used for connection between two dice
-            for (const auto& layout : arch->grid_layouts) {
-                int num_layers = (int)layout.layers.size();
-                if (num_layers > 1) {
-                    fprintf(Echo, "\t\t\t\ttype unidir mux_name for between two dice connections: %s\n",
-                            arch->switches[seg.arch_inter_die_switch].name.c_str());
-                }
-            }
         } else { //Should be bidir
             fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",
                     arch->switches[seg.arch_wire_switch].name.c_str(),

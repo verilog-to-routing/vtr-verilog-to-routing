@@ -274,7 +274,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     RrGraphSerializer(
         const e_graph_type graph_type,
         const enum e_base_cost_type base_cost_type,
-        int* wire_to_rr_ipin_switch,
+        RRSwitchId* wire_to_rr_ipin_switch,
         int* wire_to_rr_ipin_switch_between_dice,
         bool do_check_rr_graph,
         const char* read_rr_graph_name,
@@ -326,7 +326,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , is_flat_(is_flat) {
         // Initialize internal data
         init_side_map();
-        init_segment_inf_x_y();
+        init_segment_inf_xyz();
         curr_tmp_block_type_id = -1;
         curr_tmp_height_offset = -1;
         curr_tmp_width_offset = -1;
@@ -391,9 +391,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     /**
      * @brief This function separates the segments in segment_inf_ based on whether their parallel axis 
-     *        is X or Y, and it stores them in segment_inf_x_ and segment_inf_y_.
+     *        is X or Y or Z, and it stores them in segment_inf_x_ and segment_inf_y_ and segment_inf_z_.
      */
-    void init_segment_inf_x_y(){
+    void init_segment_inf_xyz(){
 
         /* Create a temp copy to convert from vtr::vector to std::vector
          * This is required because the ``alloc_and_load_rr_indexed_data()`` function supports only std::vector data
@@ -410,7 +410,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         t_unified_to_parallel_seg_index seg_index_map;
         segment_inf_x_ = get_parallel_segs(rr_segs, seg_index_map, e_parallel_axis::X_AXIS);
         segment_inf_y_ = get_parallel_segs(rr_segs, seg_index_map, e_parallel_axis::Y_AXIS);
-
+        segment_inf_z_ = get_parallel_segs(rr_segs, seg_index_map, e_parallel_axis::Z_AXIS);
     }
 
     /**
@@ -423,12 +423,15 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     int find_segment_index_along_axis(int segment_id, e_parallel_axis axis) const {
         const std::vector<t_segment_inf>* segment_inf_vec_ptr;
 
-        if (axis == e_parallel_axis::X_AXIS)
+        if (axis == e_parallel_axis::X_AXIS) {
             segment_inf_vec_ptr = &segment_inf_x_;
-        else
+        } else if (axis == e_parallel_axis::Y_AXIS) {
             segment_inf_vec_ptr = &segment_inf_y_;
+        } else {
+            segment_inf_vec_ptr = &segment_inf_z_;
+        }
 
-        for(std::vector<t_segment_inf>::size_type i=0; i < (*segment_inf_vec_ptr).size(); i++){
+        for(std::vector<t_segment_inf>::size_type i=0; i < segment_inf_vec_ptr->size(); i++){
             if((*segment_inf_vec_ptr)[i].seg_index == segment_id)
                 return static_cast<int>(i);
         }
@@ -844,9 +847,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_x_.size() + seg_ind_y));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         } else if (rr_graph.node_type(node.id()) == e_rr_type::CHANZ) {
-            // TODO: Don't use CHANX info
-            int seg_ind_z = find_segment_index_along_axis(segment_id, e_parallel_axis::X_AXIS);
-            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + seg_ind_z));
+            int seg_ind_z = find_segment_index_along_axis(segment_id, e_parallel_axis::Z_AXIS);
+            rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_x_.size() + segment_inf_y_.size() + seg_ind_z));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
         }
         return inode;
@@ -1038,7 +1040,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline void* init_rr_graph_rr_nodes(void*& /*ctx*/) final {
         rr_nodes_->clear();
-        seg_index_.resize(CHANX_COST_INDEX_START + segment_inf_x_.size() + segment_inf_y_.size(), -1);
+        seg_index_.resize(CHANX_COST_INDEX_START + segment_inf_x_.size() + segment_inf_y_.size() + segment_inf_z_.size(), -1);
         return nullptr;
     }
     inline void finish_rr_graph_rr_nodes(void*& /*ctx*/) final {
@@ -1202,7 +1204,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
 
         VTR_ASSERT(wire_to_rr_ipin_switch_ != nullptr);
-        *wire_to_rr_ipin_switch_ = most_frequent_switch.first;
+        *wire_to_rr_ipin_switch_ = (RRSwitchId)most_frequent_switch.first;
 
         VTR_ASSERT(wire_to_rr_ipin_switch_between_dice_ != nullptr);
         *wire_to_rr_ipin_switch_between_dice_ = most_frequent_switch_between_dice.first;
@@ -1835,6 +1837,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             temp_rr_segs,
             segment_inf_x_,
             segment_inf_y_,
+            segment_inf_z_,
             *rr_indexed_data_,
             *wire_to_rr_ipin_switch_,
             base_cost_type_,
@@ -2186,7 +2189,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     std::array<uxsd::enum_loc_side, 16> side_map_;
 
     // Output for loads, and constant data for writes.
-    int* wire_to_rr_ipin_switch_;
+    RRSwitchId* wire_to_rr_ipin_switch_;
     int* wire_to_rr_ipin_switch_between_dice_;
     t_chan_width* chan_width_;
     t_rr_graph_storage* rr_nodes_;
@@ -2214,6 +2217,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf_;
     std::vector<t_segment_inf> segment_inf_x_; // [num_segs_along_x_axis-1:0] - vector of segment information for segments along the x-axis.
     std::vector<t_segment_inf> segment_inf_y_; // [num_segs_along_y_axis-1:0] - vector of segment information for segments along the y-axis.
+    std::vector<t_segment_inf> segment_inf_z_; // [num_segs_along_z_axis-1:0] - vector of segment information for segments along the z-axis.
     const std::vector<t_physical_tile_type>& physical_tile_types_;
     const DeviceGrid& grid_;
     MetadataStorage<int>* rr_node_metadata_;

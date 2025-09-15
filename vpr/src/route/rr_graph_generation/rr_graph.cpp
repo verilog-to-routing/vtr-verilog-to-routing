@@ -612,7 +612,7 @@ static void build_rr_graph(e_graph_type graph_type,
                            const e_clock_modeling clock_modeling,
                            const std::vector<t_direct_inf>& directs,
                            const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
-                           int* wire_to_rr_ipin_switch,
+                           RRSwitchId* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings,
                            const int route_verbosity);
@@ -955,7 +955,7 @@ static void build_rr_graph(e_graph_type graph_type,
                            const e_clock_modeling clock_modeling,
                            const std::vector<t_direct_inf>& directs,
                            const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
-                           int* wire_to_rr_ipin_switch,
+                           RRSwitchId* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings,
                            const int route_verbosity) {
@@ -995,6 +995,7 @@ static void build_rr_graph(e_graph_type graph_type,
     t_unified_to_parallel_seg_index segment_index_map;
     std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, e_parallel_axis::X_AXIS);
     std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, e_parallel_axis::Y_AXIS);
+    std::vector<t_segment_inf> segment_inf_z = get_parallel_segs(segment_inf, segment_index_map, e_parallel_axis::Z_AXIS);
 
     std::vector<t_seg_details> seg_details_x;
     std::vector<t_seg_details> seg_details_y;
@@ -1383,10 +1384,10 @@ static void build_rr_graph(e_graph_type graph_type,
     // edge subsets. Must be done after RR switches have been allocated
     device_ctx.rr_graph_builder.partition_edges();
 
-    //Save the channel widths for the newly constructed graph
+    // Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
 
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, *wire_to_rr_ipin_switch, base_cost_type);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, *wire_to_rr_ipin_switch, base_cost_type);
 
     const VibDeviceGrid vib_grid;
     check_rr_graph(device_ctx.rr_graph,
@@ -1519,14 +1520,14 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  delayless_switch);
 
     std::vector<std::map<int, int>> switch_fanin_remap;
-    int dummy_int;
+    RRSwitchId dummy_sw_id;
     alloc_and_load_rr_switch_inf(rr_graph_builder,
                                  switch_fanin_remap,
                                  sw_map,
                                  det_routing_arch.R_minW_nmos,
                                  det_routing_arch.R_minW_pmos,
                                  det_routing_arch.wire_to_arch_ipin_switch,
-                                 &dummy_int);
+                                 &dummy_sw_id);
     rr_graph_builder.partition_edges();
 }
 
@@ -1553,7 +1554,7 @@ void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                   const float R_minW_nmos,
                                   const float R_minW_pmos,
                                   const int wire_to_arch_ipin_switch,
-                                  int* wire_to_rr_ipin_switch) {
+                                  RRSwitchId* wire_to_rr_ipin_switch) {
     // we will potentially be creating a couple of versions of each arch switch where
     // each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
     // with this expanded list of switches.
@@ -1587,7 +1588,7 @@ void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
     // return a representative switch
     if (arch_switch_fanins[wire_to_arch_ipin_switch].count(UNDEFINED)) {
         // only have one ipin cblock switch. OK.
-        (*wire_to_rr_ipin_switch) = arch_switch_fanins[wire_to_arch_ipin_switch][UNDEFINED];
+        (*wire_to_rr_ipin_switch) = (RRSwitchId)arch_switch_fanins[wire_to_arch_ipin_switch][UNDEFINED];
     } else if (arch_switch_fanins[wire_to_arch_ipin_switch].size() != 0) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                         "Not currently allowing an ipin cblock switch to have multiple fan-ins");
@@ -1597,7 +1598,7 @@ void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
         //
         //Instead of throwing an error we issue a warning. This means that check_rr_graph() etc. will run to give more information
         //and allow graphics to be brought up for users to debug their architectures.
-        (*wire_to_rr_ipin_switch) = UNDEFINED;
+        (*wire_to_rr_ipin_switch) = RRSwitchId::INVALID();
         VTR_LOG_WARN("No switch found for the ipin cblock in RR graph. Check if there is an error in arch file, or if no connection blocks are being built in RR graph\n");
     }
 }
@@ -1738,18 +1739,19 @@ static void remap_rr_node_switch_indices(RRGraphBuilder& rr_graph_builder,
 void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         const std::vector<t_segment_inf>& segment_inf_x,
                         const std::vector<t_segment_inf>& segment_inf_y,
-                        int wire_to_rr_ipin_switch,
-                        enum e_base_cost_type base_cost_type) {
-    auto& device_ctx = g_vpr_ctx.device();
+                        const std::vector<t_segment_inf>& segment_inf_z,
+                        RRSwitchId wire_to_rr_ipin_switch,
+                        e_base_cost_type base_cost_type) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
-    auto& rr_indexed_data = mutable_device_ctx.rr_indexed_data;
+    vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data = mutable_device_ctx.rr_indexed_data;
     bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
-    add_rr_graph_C_from_switches(rr_graph.rr_switch_inf(RRSwitchId(wire_to_rr_ipin_switch)).Cin);
-    alloc_and_load_rr_indexed_data(rr_graph, grid, segment_inf, segment_inf_x,
-                                   segment_inf_y, rr_indexed_data, wire_to_rr_ipin_switch, base_cost_type, echo_enabled, echo_file_name);
+    add_rr_graph_C_from_switches(rr_graph.rr_switch_inf(wire_to_rr_ipin_switch).Cin);
+    alloc_and_load_rr_indexed_data(rr_graph, grid, segment_inf, segment_inf_x, segment_inf_y, segment_inf_z,
+                                   rr_indexed_data, wire_to_rr_ipin_switch, base_cost_type, echo_enabled, echo_file_name);
     //load_rr_index_segments(segment_inf.size());
 }
 

@@ -10,9 +10,10 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     const std::vector<t_segment_inf>& segment_inf,
                                     const std::vector<t_segment_inf>& segment_inf_x,
                                     const std::vector<t_segment_inf>& segment_inf_y,
+                                    const std::vector<t_segment_inf>& segment_inf_z,
                                     vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                                    int wire_to_ipin_switch,
-                                    enum e_base_cost_type base_cost_type,
+                                    RRSwitchId wire_to_ipin_switch,
+                                    e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name);
 

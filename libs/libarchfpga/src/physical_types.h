@@ -1840,7 +1840,6 @@ inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
            && a.length == b.length
            && a.arch_wire_switch == b.arch_wire_switch
            && a.arch_opin_switch == b.arch_opin_switch
-           && a.arch_inter_die_switch == b.arch_inter_die_switch
            && a.frac_cb == b.frac_cb
            && a.frac_sb == b.frac_sb
            && a.longline == b.longline
