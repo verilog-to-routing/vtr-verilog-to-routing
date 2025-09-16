@@ -1685,28 +1685,6 @@ enum class SegResType {
 /// String versions of segment resource types
 constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING{"GCLK", "GENERAL"};
 
-/// Defines the type of switch block used in FPGA routing.
-enum e_switch_block_type {
-    /// If the type is SUBSET, I use a Xilinx-like switch block where track i in one channel always
-    /// connects to track i in other channels.
-    SUBSET,
-
-    /// If type is WILTON, I use a switch block where track i
-    /// does not always connect to track i in other channels.
-    /// See Steve Wilton, PhD Thesis, University of Toronto, 1996.
-    WILTON,
-
-    /// The UNIVERSAL switch block is from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.
-    UNIVERSAL,
-
-    /// The FULL switch block type allows for complete connectivity between tracks.
-    FULL,
-
-    /// A CUSTOM switch block has also been added which allows a user to describe custom permutation functions and connection patterns.
-    /// See comment at top of SRC/route/build_switchblocks.c
-    CUSTOM
-};
-
 enum e_Fc_type {
     ABSOLUTE,
     FRACTIONAL

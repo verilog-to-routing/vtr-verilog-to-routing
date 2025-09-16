@@ -771,14 +771,12 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
 }
 
 bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_details* seg_details) {
-    int length, ofs, start_seg;
+    int length = seg_details[track].length();
 
-    length = seg_details[track].length();
+    // Make sure they gave us correct start
+    int start_seg = get_seg_start(seg_details, track, chan, seg);
 
-    /* Make sure they gave us correct start */
-    start_seg = get_seg_start(seg_details, track, chan, seg);
-
-    ofs = seg - start_seg;
+    int ofs = seg - start_seg;
 
     VTR_ASSERT(ofs >= 0);
     VTR_ASSERT(ofs < length);

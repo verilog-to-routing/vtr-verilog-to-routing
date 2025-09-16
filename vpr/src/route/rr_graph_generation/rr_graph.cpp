@@ -917,7 +917,7 @@ std::set<int> get_layers_of_physical_types(const t_physical_tile_type_ptr type) 
 }
 
 std::set<int> get_layers_pin_is_connected_to(const t_physical_tile_type_ptr type, int from_layer, int pin_index) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     std::set<int> layer_pin_index_is_connected_to;
     for (int layer = 0; layer < (int)device_ctx.grid.get_num_layers(); layer++) {
         if (is_pin_conencted_to_layer(type, pin_index, from_layer, layer, device_ctx.grid.get_num_layers())) {
@@ -1191,9 +1191,9 @@ static void build_rr_graph(e_graph_type graph_type,
     const std::vector<bool>& inter_cluster_prog_rr = device_ctx.inter_cluster_prog_routing_resources;
 
     if (is_global_graph) {
-        switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, SUBSET, 3);
+        switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, e_switch_block_type::SUBSET, /*Fs=*/3);
     } else {
-        if (sb_type == CUSTOM) {
+        if (sb_type == e_switch_block_type::CUSTOM) {
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
                                                                   grid, inter_cluster_prog_rr,
                                                                   switchblocks, nodes_per_chan, directionality,
@@ -4029,10 +4029,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                   const int num_seg_types,
                                   int& rr_edge_count) {
-    /*
-     * This routine adds the edges from opins to channels at the specified
-     * grid location (i,j) and grid tile side
-     */
+    // This routine adds the edges from opins to channels at the specified grid location (i,j) and grid tile side
     *Fc_clipped = false;
 
     t_physical_tile_type_ptr type = grid.get_physical_type({i, j, layer});
