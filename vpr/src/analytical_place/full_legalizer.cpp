@@ -492,7 +492,7 @@ FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
         if (cluster_legalizer.is_mol_clustered(molecule_id))
             continue;
 
-        // Get 8-neighbouring tile locations of the current molecule in the same layer and same type.
+        // Get 8-neighbouring tile locations of the current molecule in the same layer.
         std::vector<t_physical_tile_loc> neighbor_tile_locs;
         neighbor_tile_locs.reserve(8);
         auto [layers, width, height] = device_grid_.dim_sizes();
@@ -501,8 +501,6 @@ FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                 if (dx == 0 && dy == 0) continue;
                 int neighbor_x = loc.x + dx, neighbor_y = loc.y + dy;
                 if (neighbor_x < 0 || neighbor_x >= (int)width || neighbor_y < 0 || neighbor_y >= (int)height)
-                    continue;
-                if (device_grid_.get_physical_type(loc) != device_grid_.get_physical_type({neighbor_x, neighbor_y, loc.layer_num}))
                     continue;
                 neighbor_tile_locs.push_back({neighbor_x, neighbor_y, loc.layer_num});
             }
