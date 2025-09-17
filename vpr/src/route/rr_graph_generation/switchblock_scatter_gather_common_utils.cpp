@@ -7,6 +7,10 @@
 #include "rr_types.h"
 #include "vtr_expr_eval.h"
 
+//
+// Static Function Declarations
+//
+
 /**
  * Returns wire segment length based on either:
  * 1) the wire length specified in the segment details variable for this wire (if this wire segment doesn't span entire FPGA)
@@ -87,6 +91,10 @@ static bool is_core_sb(const DeviceGrid& grid, const t_physical_tile_loc& loc) {
     bool is_core = !is_perimeter_sb(grid, loc);
     return is_core;
 }
+
+//
+// Static Function Definitions
+//
 
 static bool match_sb_xy(const DeviceGrid& grid,
                         const t_physical_tile_loc& loc,
@@ -242,6 +250,10 @@ static int get_wire_segment_length(e_rr_type chan_type,
 
     return wire_length;
 }
+
+//
+// Non-static Function Definitions
+//
 
 bool sb_not_here(const DeviceGrid& grid,
                  const std::vector<bool>& inter_cluster_rr,

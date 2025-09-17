@@ -241,17 +241,12 @@ class t_rr_graph_storage {
         return node_fan_in_[id];
     }
 
-    /** @brief Find the layer number that RRNodeId is located at.
-     * It is zero if the FPGA only has one die.
-     * The layer number start from the base die (base die: 0, the die above it: 1, etc.)
-     */
-    // short node_layer(RRNodeId id) const{
-    //     return node_layer_[id];
-    // }
+    /// @brief Returns the lowest layer where the given node is located at.
     short node_layer_low(RRNodeId id) const {
         return node_layer_low_[id];
     }
 
+    /// @brief Returns the highest layer where the given node is located at.
     short node_layer_high(RRNodeId id) const {
         return node_layer_high_[id];
     }
@@ -915,13 +910,14 @@ class t_rr_graph_storage {
     /** @brief Fan in counts for each RR node. */
     vtr::vector<RRNodeId, t_edge_size> node_fan_in_;
 
-    /** @brief
-     * Layer number that each RR node is located at
-     * Layer number refers to the die that the node belongs to. The layer number of base die is zero and die above it one, etc.
-     * This data is also considered as a hot data since it is used in inner loop of router, but since it didn't fit nicely into t_rr_node_data due to alignment issues, we had to store it
-     * in a separate vector.
-     */
+    // Layer number refers to the die that the node belongs to.
+    // The layer number of base die is zero and die above it one, etc.
+    // This data is also considered as a hot data since it is used in inner loop of router,
+    // but since it didn't fit nicely into t_rr_node_data due to alignment issues, we had to store it in a separate vector.
+
+    /// @brief The lowest layer number where a given node is located at.
     vtr::vector<RRNodeId, char> node_layer_low_;
+    /// @brief The highest layer number where a given node is located at.
     vtr::vector<RRNodeId, char> node_layer_high_;
 
     /**
@@ -1107,20 +1103,12 @@ class t_rr_graph_view {
         return node_fan_in_[id];
     }
 
-    /**
-     * @brief Retrieve the layer (die) number where the given RRNodeId is located.
-     *
-     * @param id The RRNodeId for which to retrieve the layer number.
-     * @return The layer number (die) where the RRNodeId is located.
-     */
-    // short node_layer(RRNodeId id) const {
-    //     return node_layer_[id];
-    // }
-
+    /// @brief Retrieve the lowest layer (die) number where the given RRNodeId is located.
     short node_layer_low(RRNodeId id) const {
         return node_layer_low_[id];
     }
 
+    /// @brief Retrieve the highest layer (die) number where the given RRNodeId is located.
     short node_layer_high(RRNodeId id) const {
         return node_layer_high_[id];
     }

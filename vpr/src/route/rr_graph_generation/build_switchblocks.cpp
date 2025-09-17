@@ -152,7 +152,6 @@ struct t_wireconn_scratchpad {
     std::vector<t_wire_switchpoint> scratch_wires;
 };
 
-
 /************ Function Declarations ************/
 
 /* Compute the wire(s) that the wire at (x, y, from_side, to_side, from_wire) should connect to.

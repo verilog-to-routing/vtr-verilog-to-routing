@@ -238,11 +238,12 @@ class RRGraphBuilder {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
 
-    /** @brief set the layer number at which RRNodeId is located at */
+    /// @brief Set the low layer coordinate where the given node is located at.
     inline void set_node_layer_low(RRNodeId id, int layer){
         node_storage_.set_node_layer_low(id, layer);
     }
 
+    /// @brief Set the high layer coordinate where the given node is located at.
     inline void set_node_layer_high(RRNodeId id, int layer){
         node_storage_.set_node_layer_high(id, layer);
     }
