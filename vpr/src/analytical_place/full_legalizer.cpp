@@ -59,6 +59,9 @@
 
 #include "setup_grid.h"
 #include "stats.h"
+#ifndef NO_GRAPHICS
+#include "draw_global.h"
+#endif
 
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
@@ -1001,6 +1004,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
 
     // Perform the initial placement on created clusters.
     place_clusters(p_placement);
+    update_drawing_data_structures();
 }
 
 void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
@@ -1217,6 +1221,7 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     //       made part of the placement and verify placement should check for
     //       it.
     post_place_sync();
+    update_drawing_data_structures();
 }
 
 void APPack::legalize(const PartialPlacement& p_placement) {
@@ -1302,4 +1307,14 @@ void APPack::legalize(const PartialPlacement& p_placement) {
 
     // Synchronize the pins in the clusters after placement.
     post_place_sync();
+    update_drawing_data_structures();
+}
+
+void FullLegalizer::update_drawing_data_structures() {
+#ifndef NO_GRAPHICS
+    // update graphic resources incase of clustering changes
+    if (get_draw_state_vars()) {
+        get_draw_state_vars()->refresh_graphic_resources_after_cluster_change();
+    }
+#endif
 }
