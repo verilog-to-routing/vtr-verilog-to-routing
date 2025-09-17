@@ -478,20 +478,15 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
 /**
  * @brief builds the extra length-0 CHANX nodes to handle 3D custom switchblocks edges in the RR graph.
  *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
- *  @param layer switch block layer-coordinate
  *  @param x_coord switch block x_coordinate
  *  @param y_coord switch block y-coordinate
  *  @param const_index_offset index to the correct node type for RR node cost initialization
- *  @param nodes_per_chan number of tracks per channel (x, y)
- *  @param chan_details_x channel-x details (length, start and end points, ...)
  */
 static void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
                                        const int x_coord,
                                        const int y_coord,
                                        const std::vector<t_bottleneck_link>& interdie_3d_links,
-                                       const int const_index_offset,
-                                       const t_chan_width& nodes_per_chan,
-                                       const t_chan_details& chan_details_x);
+                                       const int const_index_offset);
 
 static void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
                                    int x_coord,
@@ -2091,7 +2086,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             // since these die-crossing connections have more delays.
             if (grid.get_num_layers() > 1) {
                 build_inter_die_3d_rr_chan(rr_graph_builder, i, j, interdie_3d_links[i][j],
-                    CHANX_COST_INDEX_START + num_seg_types_x + num_seg_types_y, chan_width, chan_details_x);
+                    CHANX_COST_INDEX_START + num_seg_types_x + num_seg_types_y);
             }
 
             for (int layer = 0; layer < (int)grid.get_num_layers(); ++layer) {
@@ -3160,11 +3155,8 @@ static void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
                                        const int x_coord,
                                        const int y_coord,
                                        const std::vector<t_bottleneck_link>& interdie_3d_links,
-                                       const int const_index_offset,
-                                       const t_chan_width& nodes_per_chan,
-                                       const t_chan_details& chan_details_x) {
+                                       const int const_index_offset) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
-    const t_chan_seg_details* seg_details = chan_details_x[x_coord][y_coord].data();
     const size_t num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     // 3D connections within the switch blocks use some CHANZ nodes to allow a single 3D connection to be driven
