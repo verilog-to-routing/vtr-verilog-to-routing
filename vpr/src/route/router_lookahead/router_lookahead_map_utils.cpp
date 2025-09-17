@@ -936,7 +936,7 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
            "delay_cost\n";
 
     std::vector<e_rr_type> chan_types{e_rr_type::CHANX, e_rr_type::CHANY};
-    if (num_layers  > 1) {
+    if (num_layers > 1) {
         chan_types.push_back(e_rr_type::CHANZ);
     }
 

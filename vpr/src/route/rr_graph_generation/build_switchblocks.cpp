@@ -379,7 +379,6 @@ static void compute_wire_connections(const t_physical_tile_loc& sb_loc,
     e_rr_type from_chan_type, to_chan_type; // the type of channel - i.e. CHANX or CHANY
     t_physical_tile_loc from_loc, to_loc;
 
-
     // For indexing into this switchblock's permutation funcs
     SBSideConnection side_conn(from_side, to_side);
     // For indexing into FPGA's switchblock map
@@ -454,7 +453,7 @@ static void compute_wireconn_connections(e_directionality directionality,
                           &scratchpad->potential_src_wires,
                           &scratchpad->scratch_wires);
 
-    get_switchpoint_wires(to_chan_details[to_loc.x][to_loc.y].data(), to_chan_type, to_loc.x, to_loc.y,  sb_conn.to_side,
+    get_switchpoint_wires(to_chan_details[to_loc.x][to_loc.y].data(), to_chan_type, to_loc.x, to_loc.y, sb_conn.to_side,
                           wireconn.to_switchpoint_set, wire_type_sizes_to, /*is_dest=*/true,
                           wireconn.to_switchpoint_order, rng, &scratchpad->potential_dest_wires,
                           &scratchpad->scratch_wires);

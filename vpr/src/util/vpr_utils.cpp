@@ -63,14 +63,14 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat) {
     if (rr_graph.node_type(inode) == e_rr_type::OPIN || rr_graph.node_type(inode) == e_rr_type::IPIN) {
         //Pin names
         t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
-                                                                     rr_graph.node_ylow(rr_node),
-                                                                          rr_graph.node_layer_low(rr_node)});
+                                                                           rr_graph.node_ylow(rr_node),
+                                                                           rr_graph.node_layer_low(rr_node)});
         rr_node_arch_name += block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node), is_flat);
     } else if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK) {
         //Set of pins associated with SOURCE/SINK
         t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
-                                                                     rr_graph.node_ylow(rr_node),
-                                                                          rr_graph.node_layer_low(rr_node)});
+                                                                           rr_graph.node_ylow(rr_node),
+                                                                           rr_graph.node_layer_low(rr_node)});
         auto pin_names = block_type_class_index_to_pin_names(type, rr_graph.node_class_num(rr_node), is_flat);
         if (pin_names.size() > 1) {
             rr_node_arch_name += rr_graph.node_type_string(inode);
@@ -1657,8 +1657,8 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph_view.node_xlow(node_id),
-                                                                          rr_graph_view.node_ylow(node_id),
-                                                                               rr_graph_view.node_layer_low(node_id)});
+                                                                                rr_graph_view.node_ylow(node_id),
+                                                                                rr_graph_view.node_layer_low(node_id)});
 
     if (node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE) {
         return get_tile_class_max_ptc(physical_type, is_flat);

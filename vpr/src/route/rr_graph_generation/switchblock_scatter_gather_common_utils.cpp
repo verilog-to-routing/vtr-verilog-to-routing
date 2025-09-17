@@ -68,14 +68,13 @@ static bool is_core_sb(const DeviceGrid& grid, const t_physical_tile_loc& loc);
  */
 static bool match_sb_xy(const DeviceGrid& grid, const t_physical_tile_loc& loc, const t_specified_loc& sb);
 
-
 static bool is_corner_sb(const DeviceGrid& grid, const t_physical_tile_loc& loc) {
     bool is_corner = false;
     if ((loc.x == 0 && loc.y == 0) || (loc.x == 0 && loc.y == int(grid.height()) - 2) || //-2 for no perim channels
         (loc.x == int(grid.width()) - 2 && loc.y == 0) ||                                //-2 for no perim channels
         (loc.x == int(grid.width()) - 2 && loc.y == int(grid.height()) - 2)) {           //-2 for no perim channels
-            is_corner = true;
-        }
+        is_corner = true;
+    }
     return is_corner;
 }
 
@@ -259,7 +258,7 @@ bool sb_not_here(const DeviceGrid& grid,
                  const std::vector<bool>& inter_cluster_rr,
                  const t_physical_tile_loc& loc,
                  e_sb_location sb_location,
-                 const t_specified_loc& specified_loc/*=t_specified_loc()*/) {
+                 const t_specified_loc& specified_loc /*=t_specified_loc()*/) {
     if (!inter_cluster_rr[loc.layer_num]) {
         return true;
     }

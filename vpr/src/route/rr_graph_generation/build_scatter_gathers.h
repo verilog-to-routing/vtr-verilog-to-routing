@@ -9,15 +9,15 @@
 
 /// Identifies a specific channel location in the device grid.
 struct t_chan_loc {
-    t_physical_tile_loc location;   ///< Physical grid location of the channel
-    e_rr_type chan_type;            ///< Type of routing channel (e.g., CHANX, CHANY)
-    e_side side;                    ///< Side of the reference switch block the channel lies on
+    t_physical_tile_loc location; ///< Physical grid location of the channel
+    e_rr_type chan_type;          ///< Type of routing channel (e.g., CHANX, CHANY)
+    e_side side;                  ///< Side of the reference switch block the channel lies on
 };
 
 /// Represents a wire candidate for scatter/gather connections.
 struct t_sg_candidate {
-    t_chan_loc chan_loc;                    ///< Channel location (coordinates, type, side) where the wire lies.
-    t_wire_switchpoint wire_switchpoint;    ///< Wire index and its valid switchpoint
+    t_chan_loc chan_loc;                 ///< Channel location (coordinates, type, side) where the wire lies.
+    t_wire_switchpoint wire_switchpoint; ///< Wire index and its valid switchpoint
 };
 
 /// Represents a scatter/gather bottleneck connection between two locations.

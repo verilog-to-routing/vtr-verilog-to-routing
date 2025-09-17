@@ -2078,7 +2078,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             // since these die-crossing connections have more delays.
             if (grid.get_num_layers() > 1) {
                 build_inter_die_3d_rr_chan(rr_graph_builder, i, j, interdie_3d_links[i][j],
-                    CHANX_COST_INDEX_START + num_seg_types_x + num_seg_types_y);
+                                           CHANX_COST_INDEX_START + num_seg_types_x + num_seg_types_y);
             }
 
             for (int layer = 0; layer < (int)grid.get_num_layers(); ++layer) {
@@ -2137,11 +2137,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 num_edges += interdie_3d_rr_edges_to_create.size();
                 interdie_3d_rr_edges_to_create.clear();
             }
-
         }
     }
-
-
 
     VTR_LOGV(route_verbosity > 1, "CHAN->CHAN type edge count:%d\n", num_edges);
 
@@ -3197,7 +3194,6 @@ static void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
             VTR_ASSERT_SAFE(interdie_3d_links[track_num].scatter_loc.layer_num < interdie_3d_links[track_num].gather_loc.layer_num);
             rr_graph_builder.set_node_direction(node, Direction::DEC);
         }
-
     }
 }
 

@@ -8,7 +8,6 @@
 
 #include <vector>
 
-
 /** Contains info about a wire segment type */
 struct t_wire_info {
     int length;    ///< the length of this type of wire segment in tiles
@@ -97,11 +96,11 @@ int get_switchpoint_of_wire(e_rr_type chan_type,
                             e_side sb_side);
 
 /**
-* @brief Evaluates a connection formula for scatter/gather and custom switchblock patterns.
-*
-* Sets variables "from" and "to" to the given wire counts and evaluates
-* the formula string using the provided parser
-*/
+ * @brief Evaluates a connection formula for scatter/gather and custom switchblock patterns.
+ *
+ * Sets variables "from" and "to" to the given wire counts and evaluates
+ * the formula string using the provided parser
+ */
 int evaluate_num_conns_formula(vtr::FormulaParser& formula_parser,
                                vtr::t_formula_data& formula_data,
                                const std::string& num_conns_formula,

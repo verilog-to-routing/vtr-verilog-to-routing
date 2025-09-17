@@ -153,8 +153,8 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     VTR_ASSERT(to_type == e_rr_type::SINK || to_type == e_rr_type::IPIN);
 
     t_physical_tile_type_ptr to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
-                                                                         rr_graph.node_ylow(to_node),
-                                                                   rr_graph.node_layer_low(to_node)});
+                                                                               rr_graph.node_ylow(to_node),
+                                                                               rr_graph.node_layer_low(to_node)});
     int to_tile_index = to_tile_type->index;
 
     int to_ptc = rr_graph.node_ptc_num(to_node);

@@ -46,7 +46,7 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
                                                         const t_chan_details& chan_details_y,
                                                         const t_wire_type_sizes& wire_type_sizes_x,
                                                         const t_wire_type_sizes& wire_type_sizes_y,
-                                                        bool is_dest) ;
+                                                        bool is_dest);
 
 //
 // Static Function Definitions
@@ -63,7 +63,7 @@ static void index_to_correct_channels(const t_wireconn_inf& pattern,
         t_physical_tile_loc chan_loc;
         e_rr_type chan_type;
 
-        index_into_correct_chan(loc, side, chan_details_x, chan_details_y,chan_loc, chan_type);
+        index_into_correct_chan(loc, side, chan_details_x, chan_details_y, chan_loc, chan_type);
 
         if (!chan_coords_out_of_bounds(chan_loc, chan_type)) {
             correct_channels.push_back({chan_loc, chan_type, side});
@@ -134,7 +134,6 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
                     candidates.push_back({chan_loc, chan_type, chan_side, {iwire, wire_switchpoint}});
                 }
             }
-
         }
     }
 
@@ -187,11 +186,10 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 VTR_ASSERT(sg_link_it != sg_pattern.sg_links.end());
                 const t_sg_link& sg_link = *sg_link_it;
 
-
                 auto seg_it = std::ranges::find_if(segment_inf,
-                    [&](const t_segment_inf& seg) noexcept {
-                        return seg.name == sg_link.seg_type;
-                    });
+                                                   [&](const t_segment_inf& seg) noexcept {
+                                                       return seg.name == sg_link.seg_type;
+                                                   });
 
                 VTR_ASSERT(seg_it != segment_inf.end());
                 const t_segment_inf& wire_segment = *seg_it;
@@ -209,16 +207,16 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 }
 
                 auto gather_wire_candidates = find_candidate_wires(gather_channels,
-                                                                            sg_pattern.gather_pattern.from_switchpoint_set,
-                                                                            chan_details_x, chan_details_y,
-                                                                            wire_type_sizes_x, wire_type_sizes_y,
-                                                                            /*is_dest=*/false);
+                                                                   sg_pattern.gather_pattern.from_switchpoint_set,
+                                                                   chan_details_x, chan_details_y,
+                                                                   wire_type_sizes_x, wire_type_sizes_y,
+                                                                   /*is_dest=*/false);
 
                 auto scatter_wire_candidates = find_candidate_wires(scatter_channels,
-                                                                             sg_pattern.scatter_pattern.to_switchpoint_set,
-                                                                             chan_details_x, chan_details_y,
-                                                                             wire_type_sizes_x, wire_type_sizes_y,
-                                                                             /*is_dest=*/true);
+                                                                    sg_pattern.scatter_pattern.to_switchpoint_set,
+                                                                    chan_details_x, chan_details_y,
+                                                                    wire_type_sizes_x, wire_type_sizes_y,
+                                                                    /*is_dest=*/true);
 
                 int bottleneck_fanin = evaluate_num_conns_formula(formula_parser,
                                                                   formula_data,
@@ -279,9 +277,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                         }
                         bottleneck_links.push_back(std::move(bottleneck_link));
                     }
-
                 }
-
             }
         }
     }

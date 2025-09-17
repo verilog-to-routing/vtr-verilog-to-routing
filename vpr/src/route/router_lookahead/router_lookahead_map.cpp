@@ -505,9 +505,15 @@ static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, in
 
     int chan_index;
     switch (rr_type) {
-        case e_rr_type::CHANX: chan_index = 0; break;
-        case e_rr_type::CHANY: chan_index = 1; break;
-        case e_rr_type::CHANZ: chan_index = 2; break;
+        case e_rr_type::CHANX:
+            chan_index = 0;
+            break;
+        case e_rr_type::CHANY:
+            chan_index = 1;
+            break;
+        case e_rr_type::CHANZ:
+            chan_index = 2;
+            break;
         default:
             VTR_ASSERT(false);
     }
@@ -584,9 +590,15 @@ static void set_lookahead_map_costs(unsigned from_layer_num,
                                     util::t_routing_cost_map& routing_cost_map) {
     int chan_index;
     switch (chan_type) {
-        case e_rr_type::CHANX: chan_index = 0; break;
-        case e_rr_type::CHANY: chan_index = 1; break;
-        case e_rr_type::CHANZ: chan_index = 2; break;
+        case e_rr_type::CHANX:
+            chan_index = 0;
+            break;
+        case e_rr_type::CHANY:
+            chan_index = 1;
+            break;
+        case e_rr_type::CHANZ:
+            chan_index = 2;
+            break;
         default:
             VTR_ASSERT(false);
     }
@@ -608,9 +620,15 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 
     int chan_index;
     switch (chan_type) {
-        case e_rr_type::CHANX: chan_index = 0; break;
-        case e_rr_type::CHANY: chan_index = 1; break;
-        case e_rr_type::CHANZ: chan_index = 2; break;
+        case e_rr_type::CHANX:
+            chan_index = 0;
+            break;
+        case e_rr_type::CHANY:
+            chan_index = 1;
+            break;
+        case e_rr_type::CHANZ:
+            chan_index = 2;
+            break;
         default:
             VTR_ASSERT(false);
     }

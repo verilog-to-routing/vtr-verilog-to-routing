@@ -63,7 +63,5 @@ class MapLookahead : public RouterLookahead {
  */
 typedef vtr::NdMatrix<util::Cost_Entry, 6> t_wire_cost_map;
 
-
-
 void read_router_lookahead(const std::string& file);
 void write_router_lookahead(const std::string& file);
