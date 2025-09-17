@@ -1838,7 +1838,7 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
                                                        const std::vector<int>& sets_per_seg_type,
                                                        const t_chan_width* nodes_per_chan,
                                                        const e_fc_type fc_type,
-                                                       const enum e_directionality directionality,
+                                                       const e_directionality directionality,
                                                        bool* Fc_clipped,
                                                        bool is_flat) {
     // Initialize Fc of all blocks to zero
@@ -4075,7 +4075,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? e_parallel_axis::X_AXIS : e_parallel_axis::Y_AXIS;
             int seg_index = get_parallel_seg_index(iseg, seg_index_map, wanted_axis);
 
-            /*The segment at index iseg doesn't have the proper adjacency so skip building Fc_out conenctions for it*/
+            // The segment at index iseg doesn't have the proper adjacency so skip building Fc_out connections for it.
             if (seg_index < 0)
                 continue;
 

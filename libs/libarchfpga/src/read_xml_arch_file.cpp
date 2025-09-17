@@ -2070,7 +2070,7 @@ static void process_fc(pugi::xml_node Node,
 
                 //Apply any matching overrides
                 bool default_overriden = false;
-                for (const auto& fc_override : fc_overrides) {
+                for (const t_fc_override& fc_override : fc_overrides) {
                     bool apply_override = false;
                     if (!fc_override.port_name.empty() && !fc_override.seg_name.empty()) {
                         //Both port and seg names are specified require exact match on both

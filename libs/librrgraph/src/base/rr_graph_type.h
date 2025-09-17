@@ -38,8 +38,8 @@ enum class e_graph_type {
  *
  * This map is used to translate indices from the unified segment vector
  * (`segment_inf` in the device context, which contains all segments regardless of axis)
- * to axis-specific segment vectors (`segment_inf_x` or `segment_inf_y`), based on the
- * segment's parallel axis.
+ * to axis-specific segment vectors (`segment_inf_x` or `segment_inf_y` or `segment_inf_z`),
+ * based on the segment's parallel axis.
  *
  * Each entry maps a unified segment index to a pair containing:
  *   - The index in the corresponding axis-specific segment vector
