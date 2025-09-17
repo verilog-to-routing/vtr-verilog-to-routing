@@ -9,6 +9,49 @@
 
 #include <vector>
 
+//
+// Static Function Declrations
+//
+
+/**
+ * @brief Finds the routing channels corresponding to a given scatter or gather pattern and location.
+ *
+ * @param pattern Scatter/gather (SG) pattern to be processed.
+ * @param loc Physical switchblock location where the SG pattern is to be applied.
+ * @param chan_details_x Channel details for horizontal routing channels.
+ * @param chan_details_y Channel details for vertical routing channels.
+ * @param correct_channels Output: list of valid channel locations and types.
+ */
+static void index_to_correct_channels(const t_wireconn_inf& pattern,
+                                      const t_physical_tile_loc& loc,
+                                      const t_chan_details& chan_details_x,
+                                      const t_chan_details& chan_details_y,
+                                      std::vector<t_chan_loc>& correct_channels);
+
+/**
+ * @brief Collects candidate wires from given channels that match specified switchpoints.
+ *
+ * @param channels List of channel locations to search for candiates.
+ * @param wire_switchpoints_vec Set of wire segments and valid switchpoints for matching.
+ * @param chan_details_x Channel details for horizontal routing channels.
+ * @param chan_details_y Channel details for vertical routing channels.
+ * @param is_dest True if searching for destination (scatter) wires, false for source (gather).
+ * @param wire_type_sizes_x Stores the number of wires of each wire segment type and their starting index for horizontal routing channels.
+ * @param wire_type_sizes_y Stores the number of wires of each wire segment type and their starting index for vertical routing channels.
+ * @return Vector of candidate wires that satisfy the switchpoint and direction constraints.
+ */
+static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan_loc>& channels,
+                                                        const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
+                                                        const t_chan_details& chan_details_x,
+                                                        const t_chan_details& chan_details_y,
+                                                        const t_wire_type_sizes& wire_type_sizes_x,
+                                                        const t_wire_type_sizes& wire_type_sizes_y,
+                                                        bool is_dest) ;
+
+//
+// Static Function Definitions
+//
+
 static void index_to_correct_channels(const t_wireconn_inf& pattern,
                                       const t_physical_tile_loc& loc,
                                       const t_chan_details& chan_details_x,
@@ -28,15 +71,13 @@ static void index_to_correct_channels(const t_wireconn_inf& pattern,
     }
 }
 
-static
-std::vector<t_sg_candidate>
-            find_candidate_wires(const std::vector<t_chan_loc>& channels,
-                                 const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
-                                 const t_chan_details& chan_details_x,
-                                 const t_chan_details& chan_details_y,
-                                 const t_wire_type_sizes& wire_type_sizes_x,
-                                 const t_wire_type_sizes& wire_type_sizes_y,
-                                 bool is_dest) {
+static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan_loc>& channels,
+                                                        const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
+                                                        const t_chan_details& chan_details_x,
+                                                        const t_chan_details& chan_details_y,
+                                                        const t_wire_type_sizes& wire_type_sizes_x,
+                                                        const t_wire_type_sizes& wire_type_sizes_y,
+                                                        bool is_dest) {
 
     // TODO: reuse
     std::vector<t_sg_candidate> candidates;
@@ -99,6 +140,10 @@ std::vector<t_sg_candidate>
 
     return candidates;
 }
+
+//
+// Non-satatic Function Definitions
+//
 
 std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
                                                                          const std::vector<bool>& inter_cluster_rr,
