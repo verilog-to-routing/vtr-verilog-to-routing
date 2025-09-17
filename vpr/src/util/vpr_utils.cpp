@@ -1679,6 +1679,9 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_tile, pin_physical_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
     VTR_ASSERT(!x_offset.empty());
     RRNodeId node_id = RRNodeId::INVALID();
+    // Pin sides from get_pin_coordinates are those specified in the architecture. However, when
+    // adding pins to the RR Graph, not all sides may be included (depending on the block’s location).
+    // Therefore, we iterate over all sides to find a valid node id.
     for (int coord_idx = 0; coord_idx < (int)pin_sides.size(); coord_idx++) {
         node_id = rr_spatial_lookup.find_node(root_loc.layer_num,
                                               root_loc.x + x_offset[coord_idx],

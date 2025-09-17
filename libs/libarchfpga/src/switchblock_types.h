@@ -40,7 +40,8 @@ enum class e_switch_block_type {
 /**
  * @brief At the intersection of routing channels, left, right, top and bottom specify the x- and y-directed channels
  * while above and under specify the switch block wires one a layer above or below the current one. above and below
- * are only used for multi-layer FPGAs. 
+ * are only used for multi-layer FPGAs. Note that the order of 2D sides is important, as it corresponds to the bit 
+ * order in t_rr_node_data::dir_side_.sides.
  */
 enum e_side : unsigned char {
     TOP = 0,

@@ -441,6 +441,11 @@ class RRGraphView {
         return node_storage_.is_node_on_specific_side(node, side);
     }
 
+    /** @brief Get the sides where the node locates on. */
+    inline const std::vector<e_side> node_sides(RRNodeId node) const {
+        return node_storage_.node_sides(node);
+    }
+
     /** @brief Return a string representing the side of a routing resource node. 
      */
     inline const char* node_side_string(RRNodeId node) const {
