@@ -328,7 +328,7 @@ static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire
 }
 
 static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
-    //num_conns is now interpretted as a formula and processed in build_switchblocks
+    // num_conns is now interpreted as a formula and processed in build_switchblocks
     wireconn.num_conns_formula = num_conns;
 }
 
@@ -340,7 +340,7 @@ static void set_switch_func_type(SBSideConnection& conn, const char* func_type) 
     }
 
     // Only valid sides are right, top, left, bottom, above and under
-    if (std::string(func_type).find_first_not_of("rtlbauRTLBAU") != std::string::npos) {
+    if (std::string(func_type).find_first_not_of("rtlbRTLB") != std::string::npos) {
         archfpga_throw(__FILE__, __LINE__, "Unknown direction specified: %s\n", func_type);
     }
 
@@ -350,12 +350,6 @@ static void set_switch_func_type(SBSideConnection& conn, const char* func_type) 
     // Can't go from side to same side
     if (to_side == from_side) {
         archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified, cannot go from side to same side: %s\n", func_type);
-    }
-
-    // We don't allow specification of patterns that imply edges going over 2 or more layers
-    // (this doesn't seem electrically logical), so we disallow going from above/under to above/under.
-    if ((to_side == ABOVE || to_side == UNDER) && (from_side == ABOVE || from_side == UNDER)) {
-        archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified, cannot go from above/under to above/under: %s\n", func_type);
     }
 
     conn.set_sides(from_side, to_side);

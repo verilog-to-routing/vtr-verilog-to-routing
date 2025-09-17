@@ -251,8 +251,8 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
             }
 
             // now we iterate over all the potential side1->side2 connections
-            for (e_side from_side : TOTAL_3D_SIDES) {
-                for (e_side to_side : TOTAL_3D_SIDES) {
+            for (e_side from_side : TOTAL_2D_SIDES) {
+                for (e_side to_side : TOTAL_2D_SIDES) {
                     // Fill appropriate entry of the sb_conns map with vector specifying the wires the current wire will connect to
                     compute_wire_connections(sb_loc, from_side, to_side,
                                              chan_details_x, chan_details_y, sb,
@@ -449,18 +449,13 @@ static void compute_wireconn_connections(e_directionality directionality,
                                          t_wireconn_scratchpad* scratchpad) {
     constexpr bool verbose = false;
 
-    // Choose the from_side to be the same as to_side if the connection is travelling across dice in multi-die FPGAs
-    e_side from_side = (sb_conn.from_side != ABOVE && sb_conn.from_side != UNDER) ? sb_conn.from_side : sb_conn.to_side;
-    // Choose the to_side to be the same as from_side if the connection is travelling across dice in multi-die FPGAs
-    e_side to_side = (sb_conn.to_side != ABOVE && sb_conn.to_side != UNDER) ? sb_conn.to_side : sb_conn.from_side;
-
     // vectors that will contain indices of the wires belonging to the source/dest wire types/points
-    get_switchpoint_wires(from_chan_details[from_loc.x][from_loc.y].data(), from_chan_type, from_loc.x, from_loc.y, from_side,
+    get_switchpoint_wires(from_chan_details[from_loc.x][from_loc.y].data(), from_chan_type, from_loc.x, from_loc.y, sb_conn.from_side,
                           wireconn.from_switchpoint_set, wire_type_sizes_from, /*is_dest=*/false, wireconn.from_switchpoint_order, rng,
                           &scratchpad->potential_src_wires,
                           &scratchpad->scratch_wires);
 
-    get_switchpoint_wires(to_chan_details[to_loc.x][to_loc.y].data(), to_chan_type, to_loc.x, to_loc.y, to_side,
+    get_switchpoint_wires(to_chan_details[to_loc.x][to_loc.y].data(), to_chan_type, to_loc.x, to_loc.y,  sb_conn.to_side,
                           wireconn.to_switchpoint_set, wire_type_sizes_to, /*is_dest=*/true,
                           wireconn.to_switchpoint_order, rng, &scratchpad->potential_dest_wires,
                           &scratchpad->scratch_wires);
@@ -536,18 +531,18 @@ static void compute_wireconn_connections(e_directionality directionality,
 
         Direction from_wire_direction = from_chan_details[from_loc.x][from_loc.y][from_wire].direction();
         if (from_wire_direction == Direction::INC) {
-            /* if this is a unidirectional wire headed in the increasing direction (relative to coordinate system)
-             * then switch block source side should be BOTTOM or LEFT */
+            // If this is a unidirectional wire headed in the increasing direction (relative to coordinate system)
+            // then switch block source side should be BOTTOM or LEFT
             if (sb_conn.from_side == TOP || sb_conn.from_side == RIGHT) {
                 continue;
             }
-            VTR_ASSERT(sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT || sb_conn.from_side == ABOVE || sb_conn.from_side == UNDER);
+            VTR_ASSERT(sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT);
         } else if (from_wire_direction == Direction::DEC) {
-            /* a wire heading in the decreasing direction can only connect from the TOP or RIGHT sides of a switch block */
+            // A wire heading in the decreasing direction can only connect from the TOP or RIGHT sides of a switch block
             if (sb_conn.from_side == BOTTOM || sb_conn.from_side == LEFT) {
                 continue;
             }
-            VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT || sb_conn.from_side == ABOVE || sb_conn.from_side == UNDER);
+            VTR_ASSERT(sb_conn.from_side == TOP || sb_conn.from_side == RIGHT);
         } else {
             VTR_ASSERT(from_wire_direction == Direction::BIDIR);
         }

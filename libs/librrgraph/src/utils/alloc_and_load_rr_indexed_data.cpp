@@ -88,7 +88,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name) {
-    int total_num_segment = segment_inf_x.size() + segment_inf_y.size() + segment_inf_z.size();
+    const size_t total_num_segment = segment_inf_x.size() + segment_inf_y.size() + segment_inf_z.size();
 
     // CHAX & CHANY segment list sizes may differ, but if we're using uniform channels, they will have equal sizes
     int num_rr_indexed_data = CHANX_COST_INDEX_START + total_num_segment;

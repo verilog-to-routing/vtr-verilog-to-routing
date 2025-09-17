@@ -47,10 +47,7 @@ enum e_side : unsigned char {
     RIGHT = 1,
     BOTTOM = 2,
     LEFT = 3,
-    NUM_2D_SIDES = 4,
-    ABOVE = 5,
-    UNDER = 7,
-    NUM_3D_SIDES = 6,
+    NUM_2D_SIDES = 4
 };
 
 inline const std::unordered_map<char, e_side> CHAR_SIDE_MAP = {
@@ -61,17 +58,10 @@ inline const std::unordered_map<char, e_side> CHAR_SIDE_MAP = {
     {'B', BOTTOM},
     {'b', BOTTOM},
     {'L', LEFT},
-    {'l', LEFT},
-    {'A', ABOVE},
-    {'a', ABOVE},
-    {'U', UNDER},
-    {'u', UNDER}};
+    {'l', LEFT}};
 
 constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     // Set of all side orientations
 constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; // String versions of side orientations
-
-constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         // Set of all side orientations including different layers
-constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; // String versions of side orientations including different layers
 
 /**
  * @brief Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere)
