@@ -3,9 +3,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 #include "globals.h"
 #include "place_macro.h"
+#include "vpr_context.h"
+#include "vpr_error.h"
 #include "vpr_types.h"
 #include "place_util.h"
 #include "placer_state.h"
@@ -291,11 +294,147 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
 }
 
 float PlacementAnnealer::estimate_starting_temperature_() {
+
     if (placer_opts_.anneal_sched.type == e_sched_type::USER_SCHED) {
         return placer_opts_.anneal_sched.init_t;
     }
 
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    switch (placer_opts_.anneal_init_t_estimator) {
+        case e_anneal_init_t_estimator::COST_VARIANCE:
+            return estimate_starting_temp_using_cost_variance_();
+        case e_anneal_init_t_estimator::EQUILIBRIUM:
+            return estimate_equilibrium_temp_();
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                            "Unrecognized initial temperature estimator type");
+    };
+}
+
+float PlacementAnnealer::estimate_equilibrium_temp_() {
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+
+    // Determines the block swap loop count.
+    // TODO: Revisit this. We may be able to get away with doing fewer trial
+    //       swaps. That or we may be able to get a more accurate initial
+    //       temperature by doing more moves.
+    int move_lim = std::min(annealing_state_.move_lim_max, (int)cluster_ctx.clb_nlist.blocks().size());
+
+    // Perform N trial swaps and collect the change in cost for each of these
+    // swaps. Accepted swaps are swaps which resulted in a negative change in
+    // cost, rejected swaps are swaps which resulted in a positive change in
+    // cost.
+    std::vector<double> accepted_swaps;
+    std::vector<double> rejected_swaps;
+    accepted_swaps.reserve(move_lim);
+    rejected_swaps.reserve(move_lim);
+    for (int i = 0; i < move_lim; i++) {
+        t_swap_result swap_result = try_swap_(*move_generator_1_,
+                                              placer_opts_.place_algorithm,
+                                              false /*manual_move_enabled*/);
+
+        if (swap_result.move_result == e_move_result::ACCEPTED) {
+            accepted_swaps.push_back(swap_result.delta_c);
+            // TODO: Look into not actually accepting these.
+            swap_stats_.num_swap_accepted++;
+        } else if (swap_result.move_result == e_move_result::ABORTED) {
+            // Note: We do not keep track of the change in cost due to aborted
+            //       swaps. These are not interesting for this approach.
+            swap_stats_.num_swap_aborted++;
+        } else {
+            rejected_swaps.push_back(swap_result.delta_c);
+            swap_stats_.num_swap_rejected++;
+        }
+    }
+
+    // Computed the total change in cost due to accepted swaps.
+    double total_accepted_cost = 0.0;
+    for (double accepted_cost : accepted_swaps) {
+        total_accepted_cost += accepted_cost;
+    }
+
+    // Find the magnitude of the largest reject swap cost. This is useful for
+    // picking a worst-case initial temperature.
+    double max_rejected_swap_cost = 0.0;
+    for (double rejected_cost : rejected_swaps) {
+        max_rejected_swap_cost = std::max(max_rejected_swap_cost,
+                                          std::abs(rejected_cost));
+    }
+
+    // Perform a binary search to try and find the equilibrium temperature for
+    // this placement. This is the temperature that we expect would lead to no
+    // overall change in temperature. We do this by computing the expected
+    // change in cost given a trial temperature and try larger / smaller
+    // temperatures until one is found that causes the change cost is close to
+    // 0. Since the expected change in cost is monotonically increasing for
+    // all positive temperatures, this method will return a unique result if it
+    // exists within this range.
+    //      Initialize the lower bound temperature to 0. The temperature cannot
+    //      be less than 0.
+    double lower_bound_temp = 0.0;
+    //      Initialize the upper bound temperature. It is possible for
+    //      the equilibrium temperature to be infinite if the initial placement
+    //      is so bad that no swaps are accepted. In that case this value will
+    //      be returned instead of infinity.
+    //      At this temperature, the probability of accepting this worst rejected
+    //      swap would be 71.655% (e^(-1/3)).
+    //      TODO: Investigate if this is a good initial temperature for these
+    //            cases.
+    double upper_bound_temp = 3.0 * max_rejected_swap_cost;
+    //      The max search iterations should never be hit, but it is here as an
+    //      exit condition to prevent infinite loops.
+    constexpr unsigned max_search_iters = 100;
+    for (unsigned binary_search_iter = 0; binary_search_iter < max_search_iters; binary_search_iter++) {
+        // Exit condition for binary search. Could be hit if the lower and upper
+        // bounds are arbitrarily close.
+        if (lower_bound_temp >= upper_bound_temp)
+            break;
+
+        // Try the temperature in the middle of the lower and upper bounds.
+        double trial_temp = (lower_bound_temp + upper_bound_temp) / 2.0;
+
+        // Return the trial temperature if it is within 6 decimal-points of precision.
+        // NOTE: This is arbitrary.
+        // TODO: We could stop this early and then use Newton's Method to quickly
+        //       touch it up to a more accurate value.
+        if (std::abs(upper_bound_temp - lower_bound_temp) / trial_temp < 1e-6)
+            return trial_temp;
+
+        // Calculate the expected change in cost at this temperature (which we
+        // call the residual here).
+        double expected_total_post_rejected_cost = 0.0;
+        for (double rejected_cost : rejected_swaps) {
+            // Expected change in cost after a rejected swap is the change in
+            // cost multiplied by the probability that this swap is accepted at
+            // this temperature.
+            double acceptance_prob = std::exp((-1.0 * rejected_cost) / trial_temp);
+            expected_total_post_rejected_cost += rejected_cost * acceptance_prob;
+        }
+        double residual = expected_total_post_rejected_cost + total_accepted_cost;
+
+        if (residual < 0) {
+            // Since the function is monotonically increasing, if the residual
+            // is negative, then the lower bound should be raised to the trial
+            // temperature.
+            lower_bound_temp = trial_temp;
+        } else if (residual > 0) {
+            // Similarly, if the residual is positive, then the upper bound should
+            // be lowered to the trial temperature.
+            upper_bound_temp = trial_temp;
+        } else {
+            // If we happened to exactly hit the risidual, then this is the
+            // exact temperature we should use.
+            return trial_temp;
+        }
+    }
+
+    // If we get down here, it means that the upper loop did not reach a solution;
+    // however, we know that the answer should be somewhere between lower and upper
+    // bound. Therefore, return the average of the two.
+    return (lower_bound_temp + upper_bound_temp) / 2.0;
+}
+
+float PlacementAnnealer::estimate_starting_temp_using_cost_variance_() {
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     // Use to calculate the average of cost when swap is accepted.
     int num_accepted = 0;
@@ -318,14 +457,14 @@ float PlacementAnnealer::estimate_starting_temperature_() {
 #endif /*NO_GRAPHICS*/
 
         // Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
-        e_move_result swap_result = try_swap_(*move_generator_1_, placer_opts_.place_algorithm, manual_move_enabled);
+        t_swap_result swap_result = try_swap_(*move_generator_1_, placer_opts_.place_algorithm, manual_move_enabled);
 
-        if (swap_result == e_move_result::ACCEPTED) {
+        if (swap_result.move_result == e_move_result::ACCEPTED) {
             num_accepted++;
             av += costs_.cost;
             sum_of_squares += costs_.cost * costs_.cost;
             swap_stats_.num_swap_accepted++;
-        } else if (swap_result == e_move_result::ABORTED) {
+        } else if (swap_result.move_result == e_move_result::ABORTED) {
             swap_stats_.num_swap_aborted++;
         } else {
             swap_stats_.num_swap_rejected++;
@@ -345,7 +484,7 @@ float PlacementAnnealer::estimate_starting_temperature_() {
     return init_temp;
 }
 
-e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
+t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                                            const t_place_algorithm& place_algorithm,
                                            bool manual_move_enabled) {
     /* Picks some block and moves it to another spot.  If this spot is
@@ -646,7 +785,11 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                    "\t\tAfter move Place cost %e, bb_cost %e, timing cost %e\n",
                    costs_.cost, costs_.bb_cost, costs_.timing_cost);
-    return move_outcome;
+
+    t_swap_result swap_result;
+    swap_result.move_result = move_outcome;
+    swap_result.delta_c = delta_c;
+    return swap_result;
 }
 
 void PlacementAnnealer::outer_loop_update_timing_info() {
@@ -687,13 +830,13 @@ void PlacementAnnealer::placement_inner_loop() {
 
     // Inner loop begins
     for (int inner_iter = 0, inner_crit_iter_count = 1; inner_iter < annealing_state_.move_lim; inner_iter++) {
-        e_move_result swap_result = try_swap_(move_generator, placer_opts_.place_algorithm, manual_move_enabled);
+        t_swap_result swap_result = try_swap_(move_generator, placer_opts_.place_algorithm, manual_move_enabled);
 
-        if (swap_result == e_move_result::ACCEPTED) {
+        if (swap_result.move_result == e_move_result::ACCEPTED) {
             // Move was accepted.  Update statistics that are useful for the annealing schedule.
             placer_stats_.single_swap_update(costs_);
             swap_stats_.num_swap_accepted++;
-        } else if (swap_result == e_move_result::ABORTED) {
+        } else if (swap_result.move_result == e_move_result::ABORTED) {
             swap_stats_.num_swap_aborted++;
         } else { // swap_result == REJECTED
             swap_stats_.num_swap_rejected++;
