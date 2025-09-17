@@ -35,7 +35,7 @@ using vtr::t_formula_data;
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 //Process the desired order of a wireconn
-static void parse_switchpoint_order(const char* order, e_switch_point_order& switchpoint_order);
+static void parse_switchpoint_order(std::string_view order, e_switch_point_order& switchpoint_order);
 
 /**
  * @brief Parses an inline `<wireconn>` node using its attributes.
@@ -86,7 +86,7 @@ static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire
 static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn);
 
 /* Set connection from_side and to_side for custom switch block pattern*/
-static void set_switch_func_type(SBSideConnection& conn, const char* func_type);
+static void set_switch_func_type(SBSideConnection& conn, std::string_view func_type);
 
 /* parse switch_override in wireconn */
 static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const std::vector<t_arch_switch_inf>& switches);
@@ -282,12 +282,12 @@ static t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, cons
     return wire_switchpoints;
 }
 
-static void parse_switchpoint_order(const char* order, e_switch_point_order& switchpoint_order) {
-    if (order == std::string("")) {
+static void parse_switchpoint_order(std::string_view order, e_switch_point_order& switchpoint_order) {
+    if (order == "") {
         switchpoint_order = e_switch_point_order::SHUFFLED; //Default
-    } else if (order == std::string("fixed")) {
+    } else if (order == "fixed") {
         switchpoint_order = e_switch_point_order::FIXED;
-    } else if (order == std::string("shuffled")) {
+    } else if (order == "shuffled") {
         switchpoint_order = e_switch_point_order::SHUFFLED;
     } else {
         archfpga_throw(__FILE__, __LINE__, "Unrecognized switchpoint order '%s'", order);
@@ -332,15 +332,14 @@ static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
     wireconn.num_conns_formula = num_conns;
 }
 
-//set sides for a specific conn for custom switch block pattern
-static void set_switch_func_type(SBSideConnection& conn, const char* func_type) {
+static void set_switch_func_type(SBSideConnection& conn, std::string_view func_type) {
 
-    if (std::string(func_type).length() != 2) {
+    if (func_type.length() != 2) {
         archfpga_throw(__FILE__, __LINE__, "Custom switchblock func type must be 2 characters long: %s\n", func_type);
     }
 
     // Only valid sides are right, top, left, bottom, above and under
-    if (std::string(func_type).find_first_not_of("rtlbRTLB") != std::string::npos) {
+    if (func_type.find_first_not_of("rtlbRTLB") != std::string::npos) {
         archfpga_throw(__FILE__, __LINE__, "Unknown direction specified: %s\n", func_type);
     }
 
