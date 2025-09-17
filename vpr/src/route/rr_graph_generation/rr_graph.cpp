@@ -185,9 +185,9 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
                                                                   const RRGraphView& rr_graph,
-                                                                  const int num_seg_types,
-                                                                  const int num_seg_types_x,
-                                                                  const int num_seg_types_y,
+                                                                  const size_t num_seg_types,
+                                                                  const size_t num_seg_types_x,
+                                                                  const size_t num_seg_types_y,
                                                                   const t_unified_to_parallel_seg_index& seg_index_map,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
@@ -201,8 +201,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const int Fs,
                                                                   t_sblock_pattern& sblock_pattern,
                                                                   const std::vector<vtr::Matrix<int>>& Fc_out,
-                                                                  vtr::NdMatrix<int, 3>& Fc_xofs,
-                                                                  vtr::NdMatrix<int, 3>& Fc_yofs,
                                                                   const t_chan_width& chan_width,
                                                                   const int wire_to_ipin_switch,
                                                                   const int wire_to_pin_between_dice_switch,
@@ -1159,18 +1157,6 @@ static void build_rr_graph(e_graph_type graph_type,
     }
     device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
 
-    // These are data structures used by the unidir opin mapping. They are used
-    // to spread connections evenly for each segment type among the available
-    // wire start points
-    vtr::NdMatrix<int, 3> Fc_xofs({grid.height() - 1,
-                                   grid.width() - 1,
-                                   segment_inf_x.size()},
-                                  0); //[0..grid.height()-2][0..grid.width()-2][0..num_seg_types_x-1]
-    vtr::NdMatrix<int, 3> Fc_yofs({grid.width() - 1,
-                                   grid.height() - 1,
-                                   segment_inf_y.size()},
-                                  0); //[0..grid.width()-2][0..grid.height()-2][0..num_seg_types_y-1]
-
     // START SB LOOKUP
     // Alloc and load the switch block lookup
     vtr::NdMatrix<std::vector<int>, 3> switch_block_conn;
@@ -1324,7 +1310,7 @@ static void build_rr_graph(e_graph_type graph_type,
         opin_to_track_map,
         interdie_3d_links,
         switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
-        Fc_out, Fc_xofs, Fc_yofs,
+        Fc_out,
         nodes_per_chan,
         wire_to_arch_ipin_switch,
         wire_to_pin_between_dice_switch,
@@ -1945,9 +1931,9 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
                                                                   const RRGraphView& rr_graph,
-                                                                  const int num_seg_types,
-                                                                  const int num_seg_types_x,
-                                                                  const int num_seg_types_y,
+                                                                  const size_t num_seg_types,
+                                                                  const size_t num_seg_types_x,
+                                                                  const size_t num_seg_types_y,
                                                                   const t_unified_to_parallel_seg_index& seg_index_map,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
@@ -1961,8 +1947,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const int Fs,
                                                                   t_sblock_pattern& sblock_pattern,
                                                                   const std::vector<vtr::Matrix<int>>& Fc_out,
-                                                                  vtr::NdMatrix<int, 3>& Fc_xofs,
-                                                                  vtr::NdMatrix<int, 3>& Fc_yofs,
                                                                   const t_chan_width& chan_width,
                                                                   const int wire_to_ipin_switch,
                                                                   const int wire_to_pin_between_dice_switch,
@@ -2034,6 +2018,14 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
     VTR_LOGV(route_verbosity > 1, "SOURCE->OPIN and IPIN->SINK edge count:%d\n", num_edges);
     num_edges = 0;
+
+    // These are data structures used by the unidir opin mapping. They are used
+    // to spread connections evenly for each segment type among the available
+    // wire start points
+    // [0..grid.height()-2][0..grid.width()-2][0..num_seg_types_x/y-1]
+    vtr::NdMatrix<int, 3> Fc_xofs({grid.height() - 1, grid.width() - 1, num_seg_types_x}, 0);
+    vtr::NdMatrix<int, 3> Fc_yofs({grid.width() - 1, grid.height() - 1, num_seg_types_y}, 0);
+
     // Build opins
     int rr_edges_before_directs = 0;
     for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
