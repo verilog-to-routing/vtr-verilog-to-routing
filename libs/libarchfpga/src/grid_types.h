@@ -13,8 +13,7 @@
 struct t_metadata_dict;
 
 /**
- * @brief Grid location specification, used to capture user's intended architecture specification.
- * will be later turned into a flattened device grid according to the device's size.
+ * @brief Grid location specification
  * Each member is a formula evaluated in terms of 'W' (device width),
  * and 'H' (device height). Formulas can be evaluated using parse_formula()
  * from expr_eval.h.
