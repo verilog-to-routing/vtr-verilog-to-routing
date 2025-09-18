@@ -1408,32 +1408,27 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
             if (sb_edge.from_wire != from_wire) continue;
 
             int to_wire = sb_edge.to_wire;
-            int to_layer = sb_edge.to_wire_layer;
             // Get the index of the switch connecting the two wires
             int src_switch = sb_edge.switch_ind;
 
-            if (to_layer == layer) { // track-to-track connection within the same layer
-                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, to_x, to_y, to_chan_type, to_wire);
 
-                if (!to_node) {
-                    continue;
-                }
+            if (!to_node) {
+                continue;
+            }
 
-                // Apply any switch overrides
-                if (should_apply_switch_override(switch_override)) {
-                    src_switch = switch_override;
-                }
+            // Apply any switch overrides
+            if (should_apply_switch_override(switch_override)) {
+                src_switch = switch_override;
+            }
 
-                rr_edges_to_create.emplace_back(from_rr_node, to_node, src_switch, false);
+            rr_edges_to_create.emplace_back(from_rr_node, to_node, src_switch, false);
+            ++edge_count;
+
+            if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
+                // Add reverse edge since bidirectional
+                rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch, false);
                 ++edge_count;
-
-                if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
-                    // Add reverse edge since bidirectional
-                    rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch, false);
-                    ++edge_count;
-                }
-            } else { // track-to_track connection crossing layer
-                VTR_ASSERT(false);
             }
         }
     }

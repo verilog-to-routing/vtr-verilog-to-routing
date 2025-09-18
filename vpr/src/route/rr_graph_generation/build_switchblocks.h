@@ -77,9 +77,7 @@ struct t_hash_Switchblock_Lookup {
     }
 };
 
-/**
- * @brief Contains the required information to build an RR graph edge for a switch block connection
- */
+/// @brief Contains the required information to build an RR graph edge for a switch block connection.
 struct t_switchblock_edge {
     /// Source wire ptc_num index in a channel
     short from_wire;
@@ -89,15 +87,6 @@ struct t_switchblock_edge {
 
     /// RR graph switch index that connects the source wire to the destination wire that connect two tracks in same layer
     short switch_ind;
-
-    /// RR graph switch index that connects two tracks in different layers
-    short switch_ind_between_layers;
-
-    /// The layer index that the source wire is located at
-    short from_wire_layer;
-
-    /// The layer index that the destination wire is located at
-    short to_wire_layer;
 };
 
 /**

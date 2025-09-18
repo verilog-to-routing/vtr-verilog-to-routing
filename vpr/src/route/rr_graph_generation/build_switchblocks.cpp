@@ -567,24 +567,18 @@ static void compute_wireconn_connections(e_directionality directionality,
 
             int to_wire = potential_dest_wires[dest_wire_ind].wire; //Index in channel
 
-            /* create the struct containing information about the target wire segment which will be added to the
-             * sb connections map */
+            // Initialize information about the target wire segment which will be added to the sb connections map
             t_switchblock_edge sb_edge;
             sb_edge.from_wire = from_wire;
             sb_edge.to_wire = to_wire;
-            sb_edge.from_wire_layer = from_loc.layer_num;
-            sb_edge.to_wire_layer = to_loc.layer_num;
 
             // if the switch override has been set, use that, Otherwise use default
             if (wireconn.switch_override_indx != DEFAULT_SWITCH) {
                 sb_edge.switch_ind = wireconn.switch_override_indx;
             } else if (from_loc.layer_num == to_loc.layer_num) {
                 sb_edge.switch_ind = to_chan_details[to_loc.x][to_loc.y][to_wire].arch_wire_switch();
-                sb_edge.switch_ind_between_layers = -1; //the connection does not cross any layers
             } else {
-                VTR_ASSERT(from_loc.layer_num != to_loc.layer_num);
-                sb_edge.switch_ind = to_chan_details[to_loc.x][to_loc.y][to_wire].arch_wire_switch();
-                sb_edge.switch_ind_between_layers = to_chan_details[to_loc.x][to_loc.y][to_wire].arch_inter_die_switch();
+                VTR_ASSERT(false);
             }
             VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);
 
