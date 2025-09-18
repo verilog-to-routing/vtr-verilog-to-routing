@@ -5,33 +5,10 @@
                 <add_atom name_pattern="m~6" />
                 <add_atom name_pattern="m~7" />
             </reference_group>
-            <relative_group>
+            <relative_group x_offset="1" y_offset="2" layer_offset="0" sub_tile_offset="0">
                 <add_atom name_pattern="m~8" />
                 <add_atom name_pattern="m~9" />
             </relative_group>
-            <relative_location x_offset="1" y_offset="2" layer_offset="0" sub_tile_offset="0" />
-        </macro>
-        <macro name="macro_2">
-            <reference_group>
-                <add_atom name_pattern="m~10" />
-                <add_atom name_pattern="m~11" />
-            </reference_group>
-            <relative_group>
-                <add_atom name_pattern="m~12" />
-                <add_atom name_pattern="n~0" />
-            </relative_group>
-            <relative_location x_offset="1" y_offset="-1" layer_offset="0" sub_tile_offset="0" />
-        </macro>
-        <macro name="macro_3">
-            <reference_group>
-                <add_atom name_pattern="n~1" />
-                <add_atom name_pattern="n~2" />
-            </reference_group>
-            <relative_group>
-                <add_atom name_pattern="n~3" />
-                <add_atom name_pattern="n~4" />
-            </relative_group>
-            <relative_location x_offset="1" y_offset="*" layer_offset="*" sub_tile_offset="*" />
         </macro>
     </macro_list>
 </vpr_constraints>
