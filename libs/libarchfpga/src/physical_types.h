@@ -257,7 +257,7 @@ struct t_layer_def {
 };
 
 struct t_grid_def {
-    GridDefType grid_type = GridDefType::AUTO; //The type of this grid specification
+    e_grid_def_type grid_type = e_grid_def_type::AUTO; //The type of this grid specification
 
     std::string name = ""; //The name of this device
 

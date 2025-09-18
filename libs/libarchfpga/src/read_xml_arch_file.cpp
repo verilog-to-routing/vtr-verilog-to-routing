@@ -2585,7 +2585,7 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
     if (layout_type_tag.name() == std::string("auto_layout")) {
         expect_only_attributes(layout_type_tag, {"aspect_ratio"}, loc_data);
 
-        grid_def.grid_type = GridDefType::AUTO;
+        grid_def.grid_type = e_grid_def_type::AUTO;
 
         grid_def.aspect_ratio = get_attribute(layout_type_tag, "aspect_ratio", loc_data, ReqOpt::OPTIONAL).as_float(1.);
         grid_def.name = "auto";
@@ -2593,7 +2593,7 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
     } else if (layout_type_tag.name() == std::string("fixed_layout")) {
         expect_only_attributes(layout_type_tag, {"width", "height", "name"}, loc_data);
 
-        grid_def.grid_type = GridDefType::FIXED;
+        grid_def.grid_type = e_grid_def_type::FIXED;
         grid_def.width = get_attribute(layout_type_tag, "width", loc_data).as_int();
         grid_def.height = get_attribute(layout_type_tag, "height", loc_data).as_int();
         std::string name = get_attribute(layout_type_tag, "name", loc_data).value();
@@ -2654,7 +2654,7 @@ static void process_block_type_locs(t_grid_def& grid_def,
         // tags do not have. For this reason we check if loc_spec_tag is an interposer tag
         // and switch code paths if it is.
         if (loc_type == std::string("interposer_cut")) {
-            if (grid_def.grid_type == GridDefType::AUTO) {
+            if (grid_def.grid_type == e_grid_def_type::AUTO) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposers are not currently supported for auto sized devices.");
             }
 

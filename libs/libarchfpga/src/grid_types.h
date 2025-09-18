@@ -13,25 +13,20 @@
 struct t_metadata_dict;
 
 /**
- * @brief Grid location specification
+ * @brief Grid location specification, used to capture user's intended architecture specification.
+ * will be later turned into a flattened device grid according to the device's size.
  * Each member is a formula evaluated in terms of 'W' (device width),
  * and 'H' (device height). Formulas can be evaluated using parse_formula()
  * from expr_eval.h.
  */
 struct t_grid_loc_spec {
-    std::string start_expr; //Starting position (inclusive)
-    std::string end_expr;   //Ending position (inclusive)
+    std::string start_expr; ///<Starting position (inclusive)
+    std::string end_expr;   ///<Ending position (inclusive)
 
-    std::string repeat_expr; //Distance between repeated
-                             // region instances
+    std::string repeat_expr; ///<Distance between repeated region instances
 
-    std::string incr_expr; //Distance between block instantiations
-                           // with the region
+    std::string incr_expr; ///<Distance between block instantiations with the region
 };
-
-/* Definition of how to place physical logic block in the grid.
-
- */
 
 /**
  * @brief Definition of how to place physical logic block in the grid.
@@ -69,7 +64,7 @@ struct t_grid_loc_spec {
  *                            <-------------->
  *                                 repeatx
  *
- * startx/endx and endx/endy define a rectangular region instances dimensions.
+ * startx/endx and endx/endy define a rectangular region instance's dimensions.
  * The region instance is then repeated every repeatx/repeaty (if specified).
  *
  * Within a particular region instance a block of block_type is laid down every
@@ -103,29 +98,38 @@ struct t_grid_loc_def {
     t_grid_loc_def(std::string block_type_val, int priority_val)
         : block_type(std::move(block_type_val))
         , priority(priority_val)
-        , x{"0", "W-1", "max(w+1,W)", "w"} //Fill in x direction, no repeat, incr by block width
-        , y{"0", "H-1", "max(h+1,H)", "h"} //Fill in y direction, no repeat, incr by block height
+        , x{"0", "W-1", "max(w+1,W)", "w"} // Fill in x direction, no repeat, incr by block width
+        , y{"0", "H-1", "max(h+1,H)", "h"} // Fill in y direction, no repeat, incr by block height
     {}
 
-    std::string block_type; //The block type name
+    std::string block_type; ///< The block type name
 
-    int priority = 0; //Priority of the specification.
-                      // In case of conflicting specifications
-                      // the largest priority wins.
+    int priority = 0; ///< Priority of the specification. In case of conflicting specifications the largest priority wins.
 
-    t_grid_loc_spec x; //Horizontal location specification
-    t_grid_loc_spec y; //Vertical location specification
+    t_grid_loc_spec x; ///< Horizontal location specification
+    t_grid_loc_spec y; ///< Vertical location specification
 
-    // When 1 metadata tag is split among multiple t_grid_loc_def, one
-    // t_grid_loc_def is arbitrarily chosen to own the metadata, and the other
-    // t_grid_loc_def point to the owned version.
+    /**
+     * @brief When 1 metadata tag is split among multiple t_grid_loc_def, one
+     * t_grid_loc_def is arbitrarily chosen to own the metadata, and the other
+     * t_grid_loc_def point to the owned version.
+     * 
+     */
     std::unique_ptr<t_metadata_dict> owned_meta;
-    t_metadata_dict* meta = nullptr; // Metadata for this location definition. This
-                                     // metadata may be shared with multiple grid_locs
-                                     // that come from a common definition.
+
+    /**
+     * @brief Metadata for this location definition. This
+     * metadata may be shared with multiple grid_locs
+     * that come from a common definition.
+     */
+    t_metadata_dict* meta = nullptr;
 };
 
-enum class GridDefType {
+/**
+ * @brief Enum for specfying if the architecture grid specification is for an auto sized device (variable size)
+ * or a fixed size device.
+ */
+enum class e_grid_def_type {
     AUTO,
     FIXED
 };
