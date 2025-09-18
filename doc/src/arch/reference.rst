@@ -581,6 +581,32 @@ Grid Layout Example
 
     Example FPGA grid
 
+
+.. arch:tag:: <interposer_cut dim=x|y loc="int"/>
+
+    :req_param dim: Dimension or axis of the cut. 'X' or 'x' means a horizontal cut while 'Y' or 'y' means a vertical cut.
+    :req_param loc: Location of the cut. Cuts are done above or to the right of the tiles at coordinate 'loc'. For example a cut with dim=x and loc=0 would cut the vertical wires above tiles in the 0th row. Currently only integer values are supported.
+
+    .. note:: Interposers are experimental and are currently not supported by VPR and using the related tags will not actually result in any changes to the flow.
+    Defines an interposer cut for modelling 2.5D interposer-based architectures. An interposer cut will cut all connections at location 'loc' along the axis 'dim' Leaving the two sides completely unconnected.
+    To reconnect the two sides, this tag can have multiple <interdie_wire> tags as children to specify the connection between the two sides.
+
+.. arch:tag:: <interdie_wire sg_name="string" sg_link="string" offset_start="expr" offset_end="expr" offset_increment="expr" num="int"/>
+
+    :req_param sg_name: Name of the scatter-gather pattern to be used for the interdie connection.
+    :req_param sg_link: Name of the scatter-gather link to be used for the interdie connection.
+    :req_param offset_start: Starting point of scatter-gather instantiations.
+    :req_param offset_end: Ending point of scatter-gather instantiations
+    :req_param offset_increment: Increment/distance between scatter-gather instantiations.
+    :req_param num: Number of scatter-gather instantiations per switchblock location.
+
+    Defines the interdie wiring between the two sides of the cut. Connectivity is defined using scatter-gather patterns. Starting at 'offset_start' from location of the cut and moving by 'offset_increment' until we reach the location of 'offset_end' away from the cut, 'num' scatter-gather patterns defined by 'sg_name' and 'sg_link' will be instantiated.
+    Note that these offset points always define the starting point of the scatter-gather pattern's sg_link. offset_start, offset_end and offset_increment can be integer values or expressions involving W and H (device width and height.)
+
+    .. figure:: scatter_gather_images/interposer_diagram.png
+        
+        An example of how specifying interposers in VTR works. Connections between the two sides of a cut are first severed after which the two sides are reconnected using scatter_gather patterns. In this example the length of the sg_link wire used is 3. Note that there are 'num' of each pattern at each switchblock location.
+
 .. _arch_device_info:
 
 FPGA Device Information

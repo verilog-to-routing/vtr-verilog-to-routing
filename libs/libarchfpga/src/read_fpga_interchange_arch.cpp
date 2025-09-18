@@ -2244,7 +2244,7 @@ struct ArchReader {
             grid_def.width += 2;
             grid_def.height += 2;
 
-            grid_def.grid_type = GridDefType::FIXED;
+            grid_def.grid_type = e_grid_def_type::FIXED;
 
             if (name == "auto") {
                 // At the moment, the interchange specifies fixed-layout only architectures,
