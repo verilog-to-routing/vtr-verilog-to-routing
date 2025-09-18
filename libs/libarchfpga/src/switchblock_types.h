@@ -64,10 +64,7 @@ inline const std::unordered_map<char, e_side> CHAR_SIDE_MAP = {
 constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     // Set of all side orientations
 constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; // String versions of side orientations
 
-/**
- * @brief Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere)
- * 
- */
+/// @brief Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere)
 enum class e_sb_location {
     E_PERIMETER = 0,
     E_CORNER,
@@ -96,7 +93,6 @@ struct t_sb_loc_spec {
 
 /**
  * @brief represents a connection between two sides of a switchblock
- * 
  */
 class SBSideConnection {
   public:
@@ -141,7 +137,6 @@ enum class e_switch_point_order {
 
 /**
  * @brief A collection of switchpoints associated with a segment
- * 
  */
 struct t_wire_switchpoints {
     std::string segment_name;      ///< The type of segment
@@ -150,7 +145,6 @@ struct t_wire_switchpoints {
 
 /**
  * @brief Used to list information about a set of track segments that should connect through a switchblock
- * 
  */
 struct t_wireconn_inf {
     std::vector<t_wire_switchpoints> from_switchpoint_set;                     ///< The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)

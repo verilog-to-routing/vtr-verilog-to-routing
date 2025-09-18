@@ -85,7 +85,7 @@ struct t_switchblock_edge {
     /// Destination wire ptc_num index in a channel
     short to_wire;
 
-    /// RR graph switch index that connects the source wire to the destination wire that connect two tracks in same layer
+    /// RR graph switch index that connects the source wire to the destination wire that connect two tracks
     short switch_ind;
 };
 

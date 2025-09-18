@@ -25,7 +25,10 @@
  * 5. A short (metal connection).
  * 
  * 
- * @note Despite the RRGraph containing millions of edges, there are only a few switch types. Therefore, all switch details, including R and C, are stored using a flyweight pattern (rr_switch_inf) rather than being directly embedded in the edge-related data of the RRGraph. Each edge stores the ID of its associated switch for easy lookup.
+ * @note Despite the RRGraph containing millions of edges, there are only a few switch types.
+ * Therefore, all switch details, including R and C, are stored using a flyweight pattern (rr_switch_inf)
+ * rather than being directly embedded in the edge-related data of the RRGraph.
+ * Each edge stores the ID of its associated switch for easy lookup.
  * 
  * 
  * \internal
@@ -225,21 +228,15 @@ class RRGraphView {
         return node_storage_.node_yhigh(node);
     }
 
-    /** @brief Return the layer num of a specified node.
-    */
-    // inline short node_layer(RRNodeId node) const {
-    //     return node_storage_.node_layer(node);
-    // }
-
+    /// @brief Returns the highest layer where a node is located at.
     inline short node_layer_high(RRNodeId node) const {
         return node_storage_.node_layer_high(node);
     }
 
+    /// @brief Returns the lowest layer where a node is located at.
     inline short node_layer_low(RRNodeId node) const {
         return node_storage_.node_layer_low(node);
     }
-
-
     
     /** 
      * @brief Return the bend start of a specified node.
