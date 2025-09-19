@@ -284,3 +284,55 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
 
     return bottleneck_links;
 }
+
+void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& interposer_inf,
+                                            std::vector<t_scatter_gather_pattern>& sg_patterns) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
+
+    const size_t num_layers = grid.get_num_layers();
+    const size_t grid_width = grid.width();
+    const size_t grid_height = grid.height();
+
+    VTR_ASSERT(interposer_inf.size() == num_layers);
+
+    for (size_t layer = 0; layer < num_layers; layer++) {
+
+        for (const t_interposer_cut_inf& cut_inf : interposer_inf[layer].interposer_cuts) {
+            const int cut_loc = cut_inf.loc;
+            e_interposer_cut_dim cut_dim = cut_inf.dim;
+
+            for (const t_interdie_wire_inf& wire_inf : cut_inf) {
+                VTR_ASSERT(wire_inf.offset_definition.repeat_expr.empty());
+
+                const int start = std::stoi(wire_inf.offset_definition.start_expr) + cut_loc;
+                const int end = std::stoi(wire_inf.offset_definition.end_expr) + cut_loc;
+                const int incr = std::stoi(wire_inf.offset_definition.incr_expr);
+
+                auto sg_it = std::ranges::find_if(sg_patterns, [&wire_inf](const t_scatter_gather_pattern& sg) {
+                    return wire_inf.sg_name == sg.name;
+                });
+
+                VTR_ASSERT(sg_it != sg_patterns.end());
+
+                t_sb_loc_spec x_region, y_region;
+
+                x_region.start = (cut_dim == e_interposer_cut_dim::X) ? cut_loc + start : 0;
+                x_region.end = (cut_dim == e_interposer_cut_dim::X) ? cut_loc + end : grid_width - 1;
+                x_region.incr = (cut_dim == e_interposer_cut_dim::X) ? incr : 1;
+                y_region.start = (cut_dim == e_interposer_cut_dim::Y) ? cut_loc + start : 0;
+                y_region.end = (cut_dim == e_interposer_cut_dim::Y) ? cut_loc + end : grid_height - 1;
+                y_region.incr = (cut_dim == e_interposer_cut_dim::Y) ? incr : 1;
+
+                t_sg_location sg_location{.type = e_sb_location::E_XY_SPECIFIED,
+                                          .x_spec = x_region,
+                                          .y_spec = y_region,
+                                          .num = wire_inf.num,
+                                          .sg_link_name = wire_inf.sg_link};
+
+                sg_it->sg_locations.push_back(std::move(sg_location));
+
+            }
+        }
+    }
+}

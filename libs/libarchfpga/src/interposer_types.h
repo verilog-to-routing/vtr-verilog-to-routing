@@ -4,7 +4,6 @@
  * @file interposer_types.h
  * @brief This file contains types used for parsing interposer-related tags such as <interposer_cut> and <interdie_wire>
  * and converting that information into the device architecture-related data structures.
- * 
  */
 
 #include <unordered_map>
@@ -14,7 +13,6 @@
 
 /**
  * @brief Enum for direction of an interposer cut. X means horizontal cut and Y means vertical cut.
- * 
  */
 enum class e_interposer_cut_dim {
     X,
@@ -30,7 +28,6 @@ inline const std::unordered_map<char, e_interposer_cut_dim> CHAR_INTERPOSER_DIM_
 
 /**
  * @brief Struct containing information of interdire wires i.e. connections between the dies on an interposer
- * 
  */
 struct t_interdie_wire_inf {
     std::string sg_name;  ///< Name of the scatter-gather pattern to be used for the interdie connection
@@ -48,7 +45,6 @@ struct t_interdie_wire_inf {
 
 /**
  * @brief Struct containing information of an interposer cut
- * 
  */
 struct t_interposer_cut_inf {
     e_interposer_cut_dim dim;                        ///< Dimension or axis of interposer cut.
