@@ -25,7 +25,7 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
     pugiutil::expect_only_children(interposer_cut_tag, {"interdie_wire"}, loc_data);
 
     for (pugi::xml_node interdie_wire_tag : interposer_cut_tag.children()) {
-        const std::vector<std::string> interdie_wire_attributes = {{"sg", "sg_link", "offset_start", "offset_end", "offset_increment", "num"}};
+        const std::vector<std::string> interdie_wire_attributes = {{"sg_name", "sg_link", "offset_start", "offset_end", "offset_increment", "num"}};
         pugiutil::expect_only_attributes(interdie_wire_tag, interdie_wire_attributes, loc_data);
 
         t_interdie_wire_inf interdie_wire;
