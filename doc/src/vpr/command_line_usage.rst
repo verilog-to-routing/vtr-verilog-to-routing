@@ -840,6 +840,18 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``1.0``
 
+.. option:: --anneal_auto_init_t_estimator {cost_variance, equilibrium}
+
+   Controls which estimation method is used when selecting the starting temperature
+   for the automatic annealing schedule.
+
+   The options for estimators are:
+
+   * ``cost_variance``: Estimates the initial temperature using the variance of cost after a set of trial swaps. The initial temperature is set to a value proportional to the variance.
+   * ``equilibrium``: Estimates the initial temperature by trying to predict the equilibrium temperature for the initial placement (i.e. the temperature that would result in no change in cost).
+
+    **Default** ``cost_variance``
+
 .. option:: --init_t <float>
 
     The starting temperature of the anneal for the manual annealing schedule.
