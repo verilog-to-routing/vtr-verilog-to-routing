@@ -744,7 +744,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
-        VTR_ASSERT(layer_num >= 0);
+        // Currently, we only support two layers
+        VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
         rr_graph_builder_->set_node_layer_low(node_id, layer_num);
     }
 
@@ -752,7 +753,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
-        VTR_ASSERT(layer_num >= 0);
+        // Currently, we only support two layers
+        VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
+        VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
         rr_graph_builder_->set_node_layer_high(node_id, layer_num);
     }
 

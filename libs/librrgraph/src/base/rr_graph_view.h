@@ -229,12 +229,12 @@ class RRGraphView {
     }
 
     /// @brief Returns the highest layer where a node is located at.
-    inline short node_layer_high(RRNodeId node) const {
+    inline char node_layer_high(RRNodeId node) const {
         return node_storage_.node_layer_high(node);
     }
 
     /// @brief Returns the lowest layer where a node is located at.
-    inline short node_layer_low(RRNodeId node) const {
+    inline char node_layer_low(RRNodeId node) const {
         return node_storage_.node_layer_low(node);
     }
     
