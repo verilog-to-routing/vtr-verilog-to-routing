@@ -456,7 +456,7 @@ static float comp_initial_acc_cost(RRNodeId node_id,
 
         if (rr_type == e_rr_type::CHANX) {
             int y = rr_graph.node_ylow(node_id);
-            int layer = rr_graph.node_layer(node_id);
+            int layer = rr_graph.node_layer_low(node_id);
             for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
                 max_util = std::max(max_util, chanx_util[layer][x][y]);
             }
@@ -464,7 +464,7 @@ static float comp_initial_acc_cost(RRNodeId node_id,
         } else {
             VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANY);
             int x = rr_graph.node_xlow(node_id);
-            int layer = rr_graph.node_layer(node_id);
+            int layer = rr_graph.node_layer_low(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
                 max_util = std::max(max_util, chany_util[layer][x][y]);
             }
@@ -777,8 +777,8 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     int ymin = rr_graph.node_ylow(driver_rr);
     int xmax = rr_graph.node_xhigh(driver_rr);
     int ymax = rr_graph.node_yhigh(driver_rr);
-    int layer_min = rr_graph.node_layer(driver_rr);
-    int layer_max = rr_graph.node_layer(driver_rr);
+    int layer_min = rr_graph.node_layer_low(driver_rr);
+    int layer_max = rr_graph.node_layer_high(driver_rr);
 
     auto net_sinks = net_list.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
@@ -788,19 +788,19 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_xlow(sink_rr) <= rr_graph.node_xhigh(sink_rr));
         VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
 
-        VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
-        VTR_ASSERT(rr_graph.node_layer(sink_rr) <= (int)device_ctx.grid.get_num_layers() - 1);
+        VTR_ASSERT(rr_graph.node_layer_low(sink_rr) >= 0);
+        VTR_ASSERT(rr_graph.node_layer_low(sink_rr) <= (int)device_ctx.grid.get_num_layers() - 1);
 
         vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
                                                               rr_graph.node_ylow(sink_rr),
-                                                              rr_graph.node_layer(sink_rr)});
+                                                              rr_graph.node_layer_low(sink_rr)});
 
         xmin = std::min<int>(xmin, tile_bb.xmin());
         xmax = std::max<int>(xmax, tile_bb.xmax());
         ymin = std::min<int>(ymin, tile_bb.ymin());
         ymax = std::max<int>(ymax, tile_bb.ymax());
-        layer_min = std::min<int>(layer_min, rr_graph.node_layer(sink_rr));
-        layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
+        layer_min = std::min<int>(layer_min, rr_graph.node_layer_low(sink_rr));
+        layer_max = std::max<int>(layer_max, rr_graph.node_layer_high(sink_rr));
     }
 
     // Want the channels on all 4 sides to be usable, even if bb_factor = 0.
@@ -869,7 +869,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 auto port_eq = get_port_equivalency_from_class_physical_num(type, iclass);
                 VTR_ASSERT(port_eq == PortEquivalence::INSTANCE);
 
-                /* Always 0 for pads and for RECEIVER (IPIN) classes */
+                // Always 0 for pads and for RECEIVER (IPIN) classes
                 for (ipin = 0; ipin < num_local_opin; ipin++) {
                     RRNodeId inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
                     VTR_ASSERT(inode && size_t(inode) < rr_graph.num_nodes());

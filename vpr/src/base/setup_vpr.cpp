@@ -533,7 +533,6 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
     RouterOpts->flat_routing = Options.flat_routing;
     RouterOpts->has_choke_point = Options.router_opt_choke_points;
-    RouterOpts->custom_3d_sb_fanin_fanout = Options.custom_3d_sb_fanin_fanout;
     RouterOpts->with_timing_analysis = Options.timing_analysis;
 
     RouterOpts->verify_route_file_switch_id = Options.verify_route_file_switch_id;

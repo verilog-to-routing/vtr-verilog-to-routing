@@ -277,7 +277,8 @@
   </xs:simpleType>
 
   <xs:complexType name="node_loc">
-    <xs:attribute name="layer" type="xs:int" default="0"/>
+    <xs:attribute name="layer_low" type="xs:int" default="0"/>
+    <xs:attribute name="layer_high" type="xs:int" default="0"/>
     <xs:attribute name="xlow" type="xs:int" use="required"/>
     <xs:attribute name="ylow" type="xs:int" use="required"/>
     <xs:attribute name="xhigh" type="xs:int" use="required"/>

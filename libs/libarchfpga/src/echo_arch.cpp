@@ -185,13 +185,13 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     }
 
     switch (arch->sb_type) {
-        case (WILTON):
+        case e_switch_block_type::WILTON:
             fprintf(Echo, "\tSwitch Block: type wilton fs %d\n", arch->Fs);
             break;
-        case (UNIVERSAL):
+        case (e_switch_block_type::UNIVERSAL):
             fprintf(Echo, "\tSwitch Block: type universal fs %d\n", arch->Fs);
             break;
-        case (SUBSET):
+        case e_switch_block_type::SUBSET:
             fprintf(Echo, "\tSwitch Block: type subset fs %d\n", arch->Fs);
             break;
         default:
@@ -201,7 +201,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     fprintf(Echo, "\tInput Connect Block Switch Name Within a Same Die: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_within_die].c_str());
 
     //if there is more than one layer available, print the connection block switch name that is used for connection between two dice
-    for (const auto& layout : arch->grid_layouts) {
+    for (const t_grid_def& layout : arch->grid_layouts) {
         int num_layers = (int)layout.layers.size();
         if (num_layers > 1) {
             fprintf(Echo, "\tInput Connect Block Switch Name Between Two Dice: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_between_dice].c_str());
@@ -257,14 +257,6 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             //wire_switch == arch_opin_switch
             fprintf(Echo, "\t\t\t\ttype unidir mux_name for within die connections: %s\n",
                     arch->switches[seg.arch_wire_switch].name.c_str());
-            //if there is more than one layer available, print the segment switch name that is used for connection between two dice
-            for (const auto& layout : arch->grid_layouts) {
-                int num_layers = (int)layout.layers.size();
-                if (num_layers > 1) {
-                    fprintf(Echo, "\t\t\t\ttype unidir mux_name for between two dice connections: %s\n",
-                            arch->switches[seg.arch_inter_die_switch].name.c_str());
-                }
-            }
         } else { //Should be bidir
             fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",
                     arch->switches[seg.arch_wire_switch].name.c_str(),

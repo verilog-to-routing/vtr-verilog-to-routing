@@ -1,6 +1,7 @@
 
 #include "rr_node_indices.h"
 
+#include "build_scatter_gathers.h"
 #include "describe_rr_node.h"
 #include "globals.h"
 #include "physical_types.h"
@@ -323,8 +324,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 }
 
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const DeviceGrid& grid,
-                                              const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
+                                              const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
                                               int* index) {
     // In case of multi-die FPGAs, we add extra nodes of type CHANZ to
     // support inter-die communication coming from switch blocks (connection between two tracks in different layers)
@@ -332,34 +332,31 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     // 1) type = CHANZ
     // 2) xhigh == xlow, yhigh == ylow
     // 3) ptc = [0:number_of_connection-1]
-    // 4) direction = NONE
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
 
-    for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
-        // Skip the current die if architecture file specifies that it doesn't have global resource routing
-        if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
-            continue;
-        }
+    for (size_t x = 0; x < grid.width(); x++) {
+        for (size_t y = 0; y < grid.height(); y++) {
+            const int num_chanz_nodes = interdie_3d_links[x][y].size();
 
-        for (size_t y = 0; y < grid.height() - 1; ++y) {
-            for (size_t x = 1; x < grid.width() - 1; ++x) {
-                // how many track-to-track connection go from current layer to other layers
-                int conn_count = extra_nodes_per_switchblock[x][y];
+            // reserve extra nodes for inter-die track-to-track connection
+            for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANZ, num_chanz_nodes);
+            }
 
-                // skip if no connection is required
-                if (conn_count == 0) {
-                    continue;
-                }
-
-                // reserve extra nodes for inter-die track-to-track connection
-                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANZ, conn_count);
-                for (int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++) {
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANZ, rr_node_offset);
+            for (int track_num = 0; track_num < num_chanz_nodes; track_num++) {
+                bool incremnet_index = false;
+                for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANZ, track_num);
                     if (!inode) {
                         inode = RRNodeId(*index);
-                        ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANZ, rr_node_offset);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANZ, track_num);
+                        incremnet_index = true;
                     }
+                }
+
+                if (incremnet_index) {
+                    ++(*index);
                 }
             }
         }
@@ -466,7 +463,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                       describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                         }
 
-                        if (rr_graph.node_layer(inode) != l) {
+                        if (l < rr_graph.node_layer_low(inode) && l > rr_graph.node_layer_high(inode)) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node layer does not match between rr_nodes and rr_node_indices (%s/%s): %s",
                                       rr_node_typename[rr_graph.node_type(inode)],
                                       rr_node_typename[rr_type],

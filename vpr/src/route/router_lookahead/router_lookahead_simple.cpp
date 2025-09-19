@@ -68,8 +68,9 @@ std::pair<float, float> SimpleLookahead::get_expected_delay_and_cong(RRNodeId fr
     e_rr_type from_type = rr_graph.node_type(from_node);
     util::Cost_Entry cost_entry(0, 0);
     if (is_chanxy(from_type) || is_chanz(from_type)) {
-        int from_layer_num = rr_graph.node_layer(from_node);
-        int to_layer_num = rr_graph.node_layer(to_node);
+        // TODO: handle CHANZ nodes
+        int from_layer_num = rr_graph.node_layer_low(from_node);
+        int to_layer_num = rr_graph.node_layer_low(to_node);
 
         auto [delta_x, delta_y] = util::get_xy_deltas(from_node, to_node);
         delta_x = abs(delta_x);

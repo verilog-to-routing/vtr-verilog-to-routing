@@ -272,7 +272,7 @@ void draw_congestion(ezgl::renderer* g) {
     //Record min/max congestion
     float min_congestion_ratio = 1.;
     float max_congestion_ratio = min_congestion_ratio;
-    auto congested_rr_nodes = collect_congested_rr_nodes();
+    std::vector<RRNodeId> congested_rr_nodes = collect_congested_rr_nodes();
     for (RRNodeId inode : congested_rr_nodes) {
         short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = rr_graph.node_capacity(inode);
@@ -333,7 +333,7 @@ void draw_congestion(ezgl::renderer* g) {
 
     //Draw each congested node
     for (RRNodeId inode : congested_rr_nodes) {
-        int layer_num = rr_graph.node_layer(inode);
+        int layer_num = rr_graph.node_layer_low(inode);
         int transparency_factor = get_rr_node_transparency(inode);
         if (!draw_state->draw_layer_display[layer_num].visible)
             continue;
@@ -663,8 +663,8 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node) {
     t_draw_state* draw_state = get_draw_state_vars();
     const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
 
-    int current_node_layer = rr_graph.node_layer(current_node);
-    int prev_node_layer = rr_graph.node_layer(prev_node);
+    int current_node_layer = rr_graph.node_layer_low(current_node);
+    int prev_node_layer = rr_graph.node_layer_low(prev_node);
 
     if (!(is_inter_cluster_node(rr_graph, current_node)) || !(is_inter_cluster_node(rr_graph, prev_node))) {
         return false;

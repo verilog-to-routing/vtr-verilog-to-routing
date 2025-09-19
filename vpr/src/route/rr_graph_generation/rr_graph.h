@@ -51,13 +51,14 @@ void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                   const float R_minW_nmos,
                                   const float R_minW_pmos,
                                   const int wire_to_arch_ipin_switch,
-                                  int* wire_to_rr_ipin_switch);
+                                  RRSwitchId* wire_to_rr_ipin_switch);
 
 void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         const std::vector<t_segment_inf>& segment_inf_x,
                         const std::vector<t_segment_inf>& segment_inf_y,
-                        int wire_to_rr_ipin_switch,
-                        enum e_base_cost_type base_cost_type);
+                        const std::vector<t_segment_inf>& segment_inf_z,
+                        RRSwitchId wire_to_rr_ipin_switch,
+                        e_base_cost_type base_cost_type);
 
 std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                        const int max_pins,
@@ -65,7 +66,7 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
                                                        const std::vector<int>& sets_per_seg_type,
                                                        const t_chan_width* nodes_per_chan,
                                                        const e_fc_type fc_type,
-                                                       const enum e_directionality directionality,
+                                                       const e_directionality directionality,
                                                        bool* Fc_clipped,
                                                        bool is_flat);
 

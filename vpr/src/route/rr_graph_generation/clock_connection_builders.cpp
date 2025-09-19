@@ -110,7 +110,8 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int la
     rr_graph_builder.set_node_name(node_index, arch->default_clock_network_name);
     rr_graph_builder.set_node_class_num(node_index, ptc);
     rr_graph_builder.set_node_coordinates(node_index, x, y, x, y);
-    rr_graph_builder.set_node_layer(node_index, layer);
+    rr_graph_builder.set_node_layer_low(node_index, layer);
+    rr_graph_builder.set_node_layer_high(node_index, layer);
     rr_graph_builder.set_node_capacity(node_index, 1);
     rr_graph_builder.set_node_cost_index(node_index, RRIndexedDataId(SINK_COST_INDEX));
 

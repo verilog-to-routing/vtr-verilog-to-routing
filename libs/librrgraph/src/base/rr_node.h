@@ -20,7 +20,7 @@
 // The RR graph has since been refactored into the t_rr_graph_storage object.
 // To prevent requiring all callsites where the std::vector<t_rr_node> to be
 // changed at once, t_rr_graph_storage implements an interface that appears
-// similiar to std::vector<t_rr_node>, even though the underlying storage is
+// similar to std::vector<t_rr_node>, even though the underlying storage is
 // no longer a array of t_rr_node's.
 //
 // The t_rr_node class forwards all data accesses to t_rr_graph_storage, and
