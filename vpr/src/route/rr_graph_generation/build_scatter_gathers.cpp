@@ -315,18 +315,17 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
 
                 VTR_ASSERT(sg_it != sg_patterns.end());
 
-                t_sb_loc_spec x_region, y_region;
+                t_specified_loc region;
 
-                x_region.start = (cut_dim == e_interposer_cut_dim::X) ? cut_loc + start : 0;
-                x_region.end = (cut_dim == e_interposer_cut_dim::X) ? cut_loc + end : grid_width - 1;
-                x_region.incr = (cut_dim == e_interposer_cut_dim::X) ? incr : 1;
-                y_region.start = (cut_dim == e_interposer_cut_dim::Y) ? cut_loc + start : 0;
-                y_region.end = (cut_dim == e_interposer_cut_dim::Y) ? cut_loc + end : grid_height - 1;
-                y_region.incr = (cut_dim == e_interposer_cut_dim::Y) ? incr : 1;
+                region.reg_x.start = (cut_dim == e_interposer_cut_dim::X) ? cut_loc + start : 0;
+                region.reg_x.end = (cut_dim == e_interposer_cut_dim::X) ? cut_loc + end : grid_width - 1;
+                region.reg_x.incr = (cut_dim == e_interposer_cut_dim::X) ? incr : 1;
+                region.reg_y.start = (cut_dim == e_interposer_cut_dim::Y) ? cut_loc + start : 0;
+                region.reg_y.end = (cut_dim == e_interposer_cut_dim::Y) ? cut_loc + end : grid_height - 1;
+                region.reg_y.incr = (cut_dim == e_interposer_cut_dim::Y) ? incr : 1;
 
                 t_sg_location sg_location{.type = e_sb_location::E_XY_SPECIFIED,
-                                          .x_spec = x_region,
-                                          .y_spec = y_region,
+                                          .region = region,
                                           .num = wire_inf.num,
                                           .sg_link_name = wire_inf.sg_link};
 
