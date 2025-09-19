@@ -503,21 +503,7 @@ static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, in
     VTR_ASSERT_SAFE(delta_x < static_cast<int>(f_wire_cost_map.dim_size(4)));
     VTR_ASSERT_SAFE(delta_y < static_cast<int>(f_wire_cost_map.dim_size(5)));
 
-    int chan_index;
-    switch (rr_type) {
-        case e_rr_type::CHANX:
-            chan_index = 0;
-            break;
-        case e_rr_type::CHANY:
-            chan_index = 1;
-            break;
-        case e_rr_type::CHANZ:
-            chan_index = 2;
-            break;
-        default:
-            VTR_ASSERT(false);
-    }
-
+    const int chan_index = util::chan_type_to_index(rr_type);
     return f_wire_cost_map[from_layer_num][to_layer_num][chan_index][seg_index][delta_x][delta_y];
 }
 
@@ -588,20 +574,7 @@ static void set_lookahead_map_costs(unsigned from_layer_num,
                                     int segment_index,
                                     e_rr_type chan_type,
                                     util::t_routing_cost_map& routing_cost_map) {
-    int chan_index;
-    switch (chan_type) {
-        case e_rr_type::CHANX:
-            chan_index = 0;
-            break;
-        case e_rr_type::CHANY:
-            chan_index = 1;
-            break;
-        case e_rr_type::CHANZ:
-            chan_index = 2;
-            break;
-        default:
-            VTR_ASSERT(false);
-    }
+    const int chan_index = util::chan_type_to_index(chan_type);
 
     // set the lookahead cost map entries with a representative cost entry from routing_cost_map
     for (unsigned to_layer = 0; to_layer < routing_cost_map.dim_size(0); to_layer++) {
@@ -618,20 +591,7 @@ static void set_lookahead_map_costs(unsigned from_layer_num,
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    int chan_index;
-    switch (chan_type) {
-        case e_rr_type::CHANX:
-            chan_index = 0;
-            break;
-        case e_rr_type::CHANY:
-            chan_index = 1;
-            break;
-        case e_rr_type::CHANZ:
-            chan_index = 2;
-            break;
-        default:
-            VTR_ASSERT(false);
-    }
+    const int chan_index = util::chan_type_to_index(chan_type);
 
     const int num_layers = device_ctx.grid.get_num_layers();
     const int grid_width = device_ctx.grid.width();
