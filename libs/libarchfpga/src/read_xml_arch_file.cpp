@@ -3818,11 +3818,11 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
     pugi::xml_node Node;
 
     // Count the number of segs and check they are in fact of segment elements.
-    int NumSegs = count_children(Parent, "segment", loc_data);
+    int num_segs = count_children(Parent, "segment", loc_data);
 
     // Alloc segment list
-    if (NumSegs > 0) {
-        Segs.resize(NumSegs);
+    if (num_segs > 0) {
+        Segs.resize(num_segs);
     }
 
     // Load the segments.
@@ -3832,7 +3832,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
     bool y_axis_seg_found = false; // Flags to see if we have any y-directed segment type specified
     bool z_axis_seg_found = false; // Flags to see if we have any z-directed segment type specified
 
-    for (int i = 0; i < NumSegs; ++i) {
+    for (int i = 0; i < num_segs; ++i) {
         /* Get segment name */
         tmp = get_attribute(Node, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (tmp) {
@@ -4174,7 +4174,7 @@ static void process_bend(pugi::xml_node Node, t_segment_inf& segment, const int 
         part_len.push_back(list.size() + 1 - sum_len);
 }
 
-static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data,
+static void calculate_custom_sb_locations(const pugiutil::loc_data& loc_data,
                                           const pugi::xml_node& SubElem,
                                           const int grid_width,
                                           const int grid_height,
@@ -4299,7 +4299,7 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             // we have to parse the region specification and apply the SB pattern to all the locations fall into the specified
             // region based on device width and height.
             if (sb.specified_loc.x == ARCH_FPGA_UNDEFINED_VAL && sb.specified_loc.y == ARCH_FPGA_UNDEFINED_VAL) {
-                calculate_custom_SB_locations(loc_data, SubElem, grid_width, grid_height, sb);
+                calculate_custom_sb_locations(loc_data, SubElem, grid_width, grid_height, sb);
             }
         }
 
