@@ -174,7 +174,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
         for (const t_sg_location& sg_loc_info : sg_pattern.sg_locations) {
 
             for (const t_physical_tile_loc gather_loc : grid.all_locations()) {
-                if (sb_not_here(grid, inter_cluster_rr, gather_loc, sg_loc_info.type)) {
+                if (sb_not_here(grid, inter_cluster_rr, gather_loc, sg_loc_info.type, sg_loc_info.region)) {
                     continue;
                 }
 

@@ -51,7 +51,7 @@ bool sb_not_here(const DeviceGrid& grid,
                  const std::vector<bool>& inter_cluster_rr,
                  const t_physical_tile_loc& loc,
                  e_sb_location sb_location,
-                 const t_specified_loc& specified_loc = t_specified_loc());
+                 const t_specified_loc& specified_loc);
 
 /**
  * @brief finds the correct channel (x or y), and the coordinates to index into it based on the
