@@ -348,7 +348,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     int ylow = rr_graph.node_ylow(rr_node);
     int yhigh = rr_graph.node_yhigh(rr_node);
     int layer_low = rr_graph.node_layer_low(rr_node);
-    int layer_high = rr_graph.node_layer_low(rr_node);
+    int layer_high = rr_graph.node_layer_high(rr_node);
     int ptc_num = rr_graph.node_ptc_num(rr_node);
     int capacity = rr_graph.node_capacity(rr_node);
     RRIndexedDataId cost_index = rr_graph.node_cost_index(rr_node);

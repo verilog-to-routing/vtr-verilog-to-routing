@@ -431,8 +431,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             segment_inf_vec_ptr = &segment_inf_z_;
         }
 
-        for(std::vector<t_segment_inf>::size_type i=0; i < segment_inf_vec_ptr->size(); i++){
-            if((*segment_inf_vec_ptr)[i].seg_index == segment_id)
+        for (size_t i = 0; i < segment_inf_vec_ptr->size(); i++){
+            if ((*segment_inf_vec_ptr)[i].seg_index == segment_id)
                 return static_cast<int>(i);
         }
 
@@ -741,7 +741,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline void set_node_loc_layer_low(int layer_num, int& inode) final {
-        auto node = (*rr_nodes_)[inode];
+        const t_rr_node& node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
         // Currently, we only support two layers
@@ -750,7 +750,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline void set_node_loc_layer_high(int layer_num, int& inode) final {
-        auto node = (*rr_nodes_)[inode];
+        const t_rr_node& node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
         // Currently, we only support two layers

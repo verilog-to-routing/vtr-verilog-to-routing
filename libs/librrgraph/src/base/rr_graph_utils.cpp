@@ -154,7 +154,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
         auto node_id = RRNodeId(node);
 
-        if (rr_graph.node_type((RRNodeId)node_id) != e_rr_type::SINK) {
+        if (rr_graph.node_type(node_id) != e_rr_type::SINK) {
             continue;
         }
 
@@ -170,10 +170,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
         }
 
         const int node_layer = rr_graph.node_layer_low(node_id);
-        // Only CHANZ nodes spand across multiple layers. We're processing SINK nodes
-        if (node_layer !=  rr_graph.node_layer_high(node_id)) {
-            continue;
-        }
+        VTR_ASSERT(node_layer == rr_graph.node_layer_high(node_id));
 
         int node_ptc = rr_graph.node_ptc_num(node_id);
 
