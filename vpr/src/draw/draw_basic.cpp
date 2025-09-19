@@ -191,6 +191,15 @@ void drawplace(ezgl::renderer* g) {
     }
 }
 
+void draw_analytical_place(ezgl::renderer* g) {
+    // Fill the entire visible world with green
+    ezgl::rectangle vw = g->get_visible_world();
+    g->set_line_dash(ezgl::line_dash::none);
+    g->set_line_width(0);
+    g->set_color(ezgl::color(0, 180, 0)); // green fill
+    g->fill_rectangle(vw);
+}
+
 /* This routine draws the nets on the placement.  The nets have not *
  * yet been routed, so we just draw a chain showing a possible path *
  * for each net.  This gives some idea of future congestion.        */

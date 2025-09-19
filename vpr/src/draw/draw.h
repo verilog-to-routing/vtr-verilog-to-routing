@@ -55,6 +55,9 @@ void update_screen(ScreenUpdatePriority priority,
  */
 void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry);
 
+void set_initial_world_ap();
+void set_initial_world();
+
 /* Sets the static show_graphics and gr_automode variables to the    *
  * desired values.  They control if graphics are enabled and, if so, *
  * how often the user is prompted for input.                         */

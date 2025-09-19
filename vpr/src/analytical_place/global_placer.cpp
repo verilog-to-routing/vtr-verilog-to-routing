@@ -18,6 +18,7 @@
 #include "ap_netlist_fwd.h"
 #include "atom_netlist.h"
 #include "device_grid.h"
+#include "draw.h"
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
 #include "globals.h"
@@ -450,6 +451,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
                           *density_manager_,
                           pre_cluster_timing_manager_);
 
+    update_screen(ScreenUpdatePriority::MAJOR, "Global Placement Complete", e_pic_type::ANALYTICAL_PLACEMENT, nullptr);
     // Return the placement from the final iteration.
     return best_p_placement;
 }
