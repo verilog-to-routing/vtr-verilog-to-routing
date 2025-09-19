@@ -259,7 +259,7 @@ void log_flat_placement_reconstruction_info(
         VTR_ASSERT(flat_placement_info.blk_layer[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS);
         VTR_ASSERT(flat_placement_info.blk_sub_tile[atom_blk_id] != FlatPlacementInfo::UNDEFINED_SUB_TILE);
 
-         // Get the (x, y, layer) position of the block.
+        // Get the (x, y, layer) position of the block.
         float blk_x = flat_placement_info.blk_x_pos[atom_blk_id];
         float blk_y = flat_placement_info.blk_y_pos[atom_blk_id];
         float blk_layer = flat_placement_info.blk_layer[atom_blk_id];

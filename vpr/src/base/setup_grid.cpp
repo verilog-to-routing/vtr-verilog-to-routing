@@ -35,7 +35,8 @@ static std::vector<t_logical_block_type_ptr> grid_overused_resources(const Devic
 static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts, float maximum_utilization);
 static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height, bool warn_out_of_range = true, const std::vector<t_logical_block_type_ptr>& limiting_resources = std::vector<t_logical_block_type_ptr>());
 
-static void CheckGrid(const DeviceGrid& grid);
+///@brief Check if grid is valid
+static void check_grid(const DeviceGrid& grid);
 
 static void set_grid_block_type(int priority,
                                 const t_physical_tile_type* type,
@@ -117,7 +118,7 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
             return build_device_grid(*layout, layout->width, layout->height);
         }
     } else {
-        //Use the specified device
+        // Use the specified device
         auto cmp = [&](const t_grid_def& grid_def) {
             return grid_def.name == layout_name;
         };
@@ -545,7 +546,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 
     auto device_grid = DeviceGrid(grid_def.name, grid, limiting_resources);
 
-    CheckGrid(device_grid);
+    check_grid(device_grid);
 
     return device_grid;
 }
@@ -615,8 +616,8 @@ static void set_grid_block_type(int priority,
             priority, type->name.c_str());
     }
 
-    //Mark all the grid tiles 'covered' by this block with the appropriate type
-    //and width/height offsets
+    // Mark all the grid tiles 'covered' by this block with the appropriate type
+    // and width/height offsets
     std::set<TypeLocation> root_blocks_to_rip_up;
     auto& device_ctx = g_vpr_ctx.device();
     for (size_t x = x_root; x < x_root + type->width; ++x) {
@@ -654,9 +655,9 @@ static void set_grid_block_type(int priority,
         }
     }
 
-    //Rip-up any invalidated blocks
+    // Rip-up any invalidated blocks
     for (auto invalidated_root : root_blocks_to_rip_up) {
-        //Mark all the grid locations used by this root block as empty
+        // Mark all the grid locations used by this root block as empty
         for (size_t x = invalidated_root.x; x < invalidated_root.x + invalidated_root.type->width; ++x) {
             int x_offset = x - invalidated_root.x;
             for (size_t y = invalidated_root.y; y < invalidated_root.y + invalidated_root.type->height; ++y) {
@@ -690,65 +691,53 @@ static void set_grid_block_type(int priority,
     }
 }
 
-///@brief Check grid is valid
-static void CheckGrid(const DeviceGrid& grid) {
-    for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) { //Check each die individually
-        for (int i = 0; i < (int)grid.width(); ++i) {
-            for (int j = 0; j < (int)grid.height(); ++j) {
-                const t_physical_tile_loc tile_loc(i, j, layer_num);
-                const auto& type = grid.get_physical_type(tile_loc);
-                int width_offset = grid.get_width_offset(tile_loc);
-                int height_offset = grid.get_height_offset(tile_loc);
-                if (nullptr == type) {
-                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has no type.\n", i, j, layer_num);
-                }
+static void check_grid(const DeviceGrid& grid) {
+    for (const t_physical_tile_loc tile_loc : grid.all_locations()) {
+        const t_physical_tile_type_ptr type = grid.get_physical_type(tile_loc);
+        int width_offset = grid.get_width_offset(tile_loc);
+        int height_offset = grid.get_height_offset(tile_loc);
+        if (nullptr == type) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has no type.\n", tile_loc.layer_num, tile_loc.x, tile_loc.y);
+        }
 
-                if ((grid.get_width_offset(tile_loc) < 0)
-                    || (grid.get_width_offset(tile_loc) >= type->width)) {
-                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has invalid width offset (%d).\n",
-                                    i,
-                                    j,
-                                    layer_num,
-                                    width_offset);
-                }
-                if ((grid.get_height_offset(tile_loc) < 0)
-                    || (grid.get_height_offset(tile_loc) >= type->height)) {
-                    VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has invalid height offset (%d).\n",
-                                    i,
-                                    j,
-                                    layer_num,
-                                    height_offset);
-                }
+        if ((grid.get_width_offset(tile_loc) < 0) || (grid.get_width_offset(tile_loc) >= type->width)) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has invalid width offset (%d).\n",
+                            tile_loc.layer_num, tile_loc.x, tile_loc.y,
+                            width_offset);
+        }
+        if ((grid.get_height_offset(tile_loc) < 0) || (grid.get_height_offset(tile_loc) >= type->height)) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Grid Location (%d,%d,%d) has invalid height offset (%d).\n",
+                            tile_loc.layer_num, tile_loc.x, tile_loc.y,
+                            height_offset);
+        }
 
-                //Verify that type and width/height offsets are correct (e.g. for dimension > 1 blocks)
-                if (grid.get_width_offset(tile_loc) == 0 && grid.get_height_offset(tile_loc) == 0) {
-                    //From the root block check that all other blocks are correct
-                    for (int x = i; x < i + type->width; ++x) {
-                        int x_offset = x - i;
-                        for (int y = j; y < j + type->height; ++y) {
-                            int y_offset = y - j;
-                            const t_physical_tile_loc tile_loc_offset(x, y, layer_num);
-                            const auto& tile_type = grid.get_physical_type(tile_loc_offset);
-                            int tile_width_offset = grid.get_width_offset(tile_loc_offset);
-                            int tile_height_offset = grid.get_height_offset(tile_loc_offset);
-                            if (tile_type != type) {
-                                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                                "Grid Location (%d,%d,%d) should have type '%s' (based on root location) but has type '%s'\n",
-                                                i, j, layer_num, type->name.c_str(), type->name.c_str());
-                            }
+        // Verify that type and width/height offsets are correct (e.g. for dimension > 1 blocks)
+        if (grid.get_width_offset(tile_loc) == 0 && grid.get_height_offset(tile_loc) == 0) {
+            // From the root block check that all other blocks are correct
+            for (int x = tile_loc.x; x < tile_loc.x + type->width; ++x) {
+                int x_offset = x - tile_loc.x;
+                for (int y = tile_loc.y; y < tile_loc.y + type->height; ++y) {
+                    int y_offset = y - tile_loc.y;
+                    const t_physical_tile_loc tile_loc_offset(x, y, tile_loc.layer_num);
+                    const auto& tile_type = grid.get_physical_type(tile_loc_offset);
+                    int tile_width_offset = grid.get_width_offset(tile_loc_offset);
+                    int tile_height_offset = grid.get_height_offset(tile_loc_offset);
+                    if (tile_type != type) {
+                        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                        "Grid Location (%d,%d,%d) should have type '%s' (based on root location) but has type '%s'\n",
+                                        tile_loc.layer_num, tile_loc.x, tile_loc.y, type->name.c_str(), type->name.c_str());
+                    }
 
-                            if (tile_width_offset != x_offset) {
-                                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                                "Grid Location (%d,%d,%d) of type '%s' should have width offset '%d' (based on root location) but has '%d'\n",
-                                                i, j, layer_num, type->name.c_str(), x_offset, tile_width_offset);
-                            }
+                    if (tile_width_offset != x_offset) {
+                        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                        "Grid Location (%d,%d,%d) of type '%s' should have width offset '%d' (based on root location) but has '%d'\n",
+                                        tile_loc.layer_num, tile_loc.x, tile_loc.y, type->name.c_str(), x_offset, tile_width_offset);
+                    }
 
-                            if (tile_height_offset != y_offset) {
-                                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                                "Grid Location (%d,%d,%d)  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n",
-                                                i, j, layer_num, type->name.c_str(), y_offset, tile_height_offset);
-                            }
-                        }
+                    if (tile_height_offset != y_offset) {
+                        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                        "Grid Location (%d,%d,%d)  of type '%s' should have height offset '%d' (based on root location) but has '%d'\n",
+                                        tile_loc.layer_num, tile_loc.x, tile_loc.y, type->name.c_str(), y_offset, tile_height_offset);
                     }
                 }
             }

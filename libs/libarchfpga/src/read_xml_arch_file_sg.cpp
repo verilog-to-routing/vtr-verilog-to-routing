@@ -4,6 +4,7 @@
 #include "pugixml_util.hpp"
 #include "arch_error.h"
 #include "switchblock_types.h"
+#include "vtr_util.h"
 
 /**
  * @brief Parses all <sg_link> tags under a <sg_link_list> tag.
@@ -26,32 +27,12 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
         sg_link.seg_type = pugiutil::get_attribute(node, "seg_type", loc_data).as_string();
 
         // Since the offset attributes are optional and might not exist, the as_int method will return a value of zero if the attribute is empty
-        int x_offset = pugiutil::get_attribute(node, "x_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
-        int y_offset = pugiutil::get_attribute(node, "y_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
-        int z_offset = pugiutil::get_attribute(node, "z_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
+        sg_link.x_offset = pugiutil::get_attribute(node, "x_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
+        sg_link.y_offset = pugiutil::get_attribute(node, "y_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
+        sg_link.z_offset = pugiutil::get_attribute(node, "z_offset", loc_data, pugiutil::OPTIONAL).as_int(0);
 
-        if (x_offset == 0 && y_offset == 0 && z_offset == 0) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "All offset fields in the <sg_link> are zero or missing.");
-        }
-
-        // We expect exactly one non-zero offset so the gather and scatter points are joined by a node that can be represented by a straight wire.
-        if (x_offset != 0) {
-            sg_link.x_offset = x_offset;
-            if (y_offset != 0 || z_offset != 0) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "More than one of the offset fields in the <sg_link> are non-zero.");
-            }
-        }
-        if (y_offset != 0) {
-            sg_link.y_offset = y_offset;
-            if (x_offset != 0 || z_offset != 0) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "More than one of the offset fields in the <sg_link> are non-zero.");
-            }
-        }
-        if (z_offset != 0) {
-            sg_link.z_offset = z_offset;
-            if (y_offset != 0 || x_offset != 0) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "More than one of the offset fields in the <sg_link> are non-zero.");
-            }
+        if (!vtr::exactly_k_conditions(1, sg_link.x_offset != 0, sg_link.y_offset != 0, sg_link.z_offset != 0)) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "One and only one of the offset fields in the <sg_link> should be non-zero.");
         }
 
         sg_link_list.push_back(sg_link);

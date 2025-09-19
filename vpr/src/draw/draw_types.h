@@ -32,7 +32,6 @@
 #include "ezgl/color.hpp"
 #include "ezgl/application.hpp"
 
-
 /// @brief Whether to draw routed nets or flylines (direct lines between sources and sinks).
 enum e_draw_nets {
     DRAW_ROUTED_NETS,
@@ -333,6 +332,9 @@ struct t_draw_state {
     void set_block_color(ClusterBlockId blk, ezgl::color color);
     void reset_block_color(ClusterBlockId blk);
     void reset_block_colors();
+
+    ///@brief Refresh graphics resources' size after update to cluster blocks size
+    void refresh_graphic_resources_after_cluster_change();
 
     std::vector<std::pair<t_pl_loc, ezgl::color>> colored_locations;
 

@@ -976,9 +976,9 @@ void draw_crit_path(ezgl::renderer* g) {
                     g->set_line_dash(ezgl::line_dash::none);
                     g->set_line_width(0);
                 }
-            } 
-            
-            if(draw_state->show_crit_path_routing) {
+            }
+
+            if (draw_state->show_crit_path_routing) {
                 //Draw the routed version of the timing edge
                 draw_routed_timing_edge_connection(prev_node, node, color, g);
             }

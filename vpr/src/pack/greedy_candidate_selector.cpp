@@ -1271,7 +1271,7 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appa
     vtr::NdMatrix<bool, 3> visited({flat_grid_num_layers,
                                     flat_grid_width,
                                     flat_grid_height},
-                                    false);
+                                   false);
 
     t_physical_tile_loc cluster_tile_loc(cluster_gain_stats.flat_cluster_position.x,
                                          cluster_gain_stats.flat_cluster_position.y,
