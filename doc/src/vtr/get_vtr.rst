@@ -9,7 +9,7 @@ How to Cite
 Citations are important in academia, as they ensure contributors receive credit for their efforts.
 Therefore please use the following paper as a general citation whenever you use VTR:
     
-    M. A. Elgammal, A. Mohaghegh, S. G. Shahrouz, F. Mahmoudi, F. Koşar, K. Talaei, J. Fife, D. Khadivi, K. E. Murray, A. Boutros, K.B. Kent, J. Goeders, V. Betz "VTR 9: Open-Source CAD for Fabric and Beyond FPGA Architecture Exploration" ACM TRETS, 2024
+    M. A. Elgammal, A. Mohaghegh, S. G. Shahrouz, F. Mahmoudi, F. Koşar, K. Talaei, J. Fife, D. Khadivi, K. E. Murray, A. Boutros, K.B. Kent, J. Goeders, V. Betz "VTR 9: Open-Source CAD for Fabric and Beyond FPGA Architecture Exploration" ACM TRETS, 2025
 
 Bibtex:
 

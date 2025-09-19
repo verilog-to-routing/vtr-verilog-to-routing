@@ -552,7 +552,7 @@ void generate_opname_ram (t_node* vqm_node, const LogicalModels& arch_models, st
                 reg_outputs = true;
             }
         } else {
-            VTR_ASSERT(ram_info.mode == "dual_port" || ram_info.mode == "bidir_dual_port");
+            VTR_ASSERT(ram_info.mode == "dual_port" || ram_info.mode == "bidir_dual_port" || ram_info.mode == "quad_port");
             VTR_ASSERT_MSG(ram_info.port_b_input_clock, "RAM inputs always assumed sequential");
 
             if (ram_info.mode == "dual_port" && ram_info.port_b_output_clock) {
@@ -565,6 +565,16 @@ void generate_opname_ram (t_node* vqm_node, const LogicalModels& arch_models, st
                     reg_outputs = false; //Comb output
                 } else {
                     cout << "Unable to resolve whether bi-dir dual port RAM " << vqm_node->name << " outputs are sequential or combinational:\n";
+                    cout << "   port A output sequential: " << bool(ram_info.port_a_output_clock) << "\n";
+                    cout << "   port B output sequential: " << bool(ram_info.port_b_output_clock) << "\n";
+                }
+            } else {
+                if (ram_info.port_a_output_clock && ram_info.port_b_output_clock) {
+                    reg_outputs = true; //Sequential output
+                } else if (!ram_info.port_a_output_clock && !ram_info.port_b_output_clock) {
+                    reg_outputs = false; //Comb output
+                } else {
+                    cout << "Unable to resolve whether quad port RAM " << vqm_node->name << " outputs are sequential or combinational:\n";
                     cout << "   port A output sequential: " << bool(ram_info.port_a_output_clock) << "\n";
                     cout << "   port B output sequential: " << bool(ram_info.port_b_output_clock) << "\n";
                 }
@@ -602,6 +612,8 @@ void generate_opname_ram (t_node* vqm_node, const LogicalModels& arch_models, st
         //&& (port_b_data_width == NULL) && (port_b_addr_width == NULL)) {
     if(ram_info.mode == "single_port" || ram_info.mode == "rom") {
         VTR_ASSERT(ram_info.port_b_addr_width == 0);
+        VTR_ASSERT(ram_info.port_b_addr2_width == 0);
+        VTR_ASSERT(ram_info.port_a_addr2_width == 0);
 
         //Only print the address width, the data widths are handled by the VPR memory class
         mode_hash.append(".port_a_address_width{" + std::to_string(ram_info.port_a_addr_width) + "}");
@@ -613,8 +625,9 @@ void generate_opname_ram (t_node* vqm_node, const LogicalModels& arch_models, st
         }
 
     //A dual port memory, both port A and B params have been found
-    } else {
-        VTR_ASSERT(ram_info.mode == "dual_port" || ram_info.mode == "bidir_dual_port");
+    } else if (ram_info.mode == "dual_port" || ram_info.mode == "bidir_dual_port"){
+        VTR_ASSERT(ram_info.port_b_addr2_width == 0);
+        VTR_ASSERT(ram_info.port_a_addr2_width == 0);
         
         //2) Both ports are the same size, so only append the address widths, the data widths are handled by the VPR memory class
         if (   (ram_info.port_a_data_width == ram_info.port_b_data_width)
@@ -640,6 +653,53 @@ void generate_opname_ram (t_node* vqm_node, const LogicalModels& arch_models, st
 
             tmp_mode_hash.append(".port_a_address_width{" + std::to_string(ram_info.port_a_addr_width) + "}");
             tmp_mode_hash.append(".port_b_address_width{" + std::to_string(ram_info.port_b_addr_width) + "}");
+
+            //Each port has a different size, so print both the address and data widths. Mixed widths are not handled by the VPR memory class
+            tmp_mode_hash.append(".port_a_data_width{" + std::to_string(ram_info.port_a_data_width) + "}");
+            tmp_mode_hash.append(".port_b_data_width{" + std::to_string(ram_info.port_b_data_width) + "}");
+
+            LogicalModelId arch_model_id = arch_models.get_model_by_name(tmp_mode_hash);
+            if (!arch_model_id.is_valid()) {
+                //3a) Not found, use the default name (no specific address/data widths)
+                ; // do nothing
+            } else {
+                //3b) Use the more detailed name, since it was found in the architecture
+                mode_hash = tmp_mode_hash;
+            }
+        }
+    } else {
+        VTR_ASSERT(ram_info.mode == "quad_port");
+        
+        //2) Both ports are the same size, so only append the address widths, the data widths are handled by the VPR memory class
+        if (   (ram_info.port_a_data_width == ram_info.port_b_data_width)
+            && (ram_info.port_a_addr_width == ram_info.port_b_addr_width)
+            && (ram_info.port_a_addr_width == ram_info.port_b_addr2_width)
+            && (ram_info.port_a_addr2_width == ram_info.port_b_addr2_width)) {
+
+            mode_hash.append(".port_a_address_width{" + std::to_string(ram_info.port_a_addr_width) + "}");
+            mode_hash.append(".port_a_address2_width{" + std::to_string(ram_info.port_a_addr2_width) + "}");
+            mode_hash.append(".port_b_address_width{" + std::to_string(ram_info.port_b_addr_width) + "}");
+            mode_hash.append(".port_b_address2_width{" + std::to_string(ram_info.port_b_addr2_width) + "}");
+
+            LogicalModelId arch_model_id = arch_models.get_model_by_name(mode_hash);
+            if (!arch_model_id.is_valid()) {
+                cout << "Error: could not find dual port (non-mixed_width) memory primitive '" << mode_hash << "' in architecture file";
+                exit(1);
+            }
+        //3) Mixed width dual port ram
+        } else {
+            //Make a temporary copy of the mode hash
+            string tmp_mode_hash = mode_hash;
+
+            /*
+             * Try to see if the detailed version exists in the architecture,
+             * if it does, use it.  Otherwise use the operation mode only.
+             */
+
+            tmp_mode_hash.append(".port_a_address_width{" + std::to_string(ram_info.port_a_addr_width) + "}");
+            tmp_mode_hash.append(".port_a_address2_width{" + std::to_string(ram_info.port_a_addr2_width) + "}");
+            tmp_mode_hash.append(".port_b_address_width{" + std::to_string(ram_info.port_b_addr_width) + "}");
+            tmp_mode_hash.append(".port_b_address2_width{" + std::to_string(ram_info.port_b_addr2_width) + "}");
 
             //Each port has a different size, so print both the address and data widths. Mixed widths are not handled by the VPR memory class
             tmp_mode_hash.append(".port_a_data_width{" + std::to_string(ram_info.port_a_data_width) + "}");
@@ -997,8 +1057,10 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
     //We need to save the ram data and address widths, to identfy the RAM type (singel port, rom, simple dual port, true dual port)
     t_node_parameter* port_a_data_width = NULL;
     t_node_parameter* port_a_addr_width = NULL;
+    t_node_parameter* port_a_addr2_width = NULL;
     t_node_parameter* port_b_data_width = NULL;
     t_node_parameter* port_b_addr_width = NULL;
+    t_node_parameter* port_b_addr2_width = NULL;
 
 	for (int i = 0; i < vqm_node->number_of_params; i++){
 		//Each parameter specifies a configuration of the node in the circuit.
@@ -1020,6 +1082,11 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
             port_a_addr_width = temp_param;
             continue;
         }
+        if (strcmp (temp_param->name, "port_a_address2_width") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_INTEGER );
+            port_a_addr2_width = temp_param;
+            continue;
+        }
         if (strcmp (temp_param->name, "port_b_data_width") == 0){
             VTR_ASSERT( temp_param->type == NODE_PARAMETER_INTEGER );
             port_b_data_width = temp_param;
@@ -1028,6 +1095,11 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
         if (strcmp (temp_param->name, "port_b_address_width") == 0){
             VTR_ASSERT( temp_param->type == NODE_PARAMETER_INTEGER );
             port_b_addr_width = temp_param;
+            continue;
+        }
+        if (strcmp (temp_param->name, "port_b_address2_width") == 0){
+            VTR_ASSERT( temp_param->type == NODE_PARAMETER_INTEGER );
+            port_b_addr2_width = temp_param;
             continue;
         }
         if (strcmp (temp_param->name, "port_a_address_clock") == 0){ // This parameter doesn't exist for Stratix 10 - clock0 is always used for port address_a
@@ -1096,6 +1168,12 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
     VTR_ASSERT(port_a_data_width);
     ram_info.port_a_data_width = port_a_data_width->value.integer_value;
 
+    if (port_a_addr2_width) {
+        ram_info.port_a_addr2_width = port_a_addr2_width->value.integer_value;
+    }
+    if (port_b_addr2_width) {
+        ram_info.port_b_addr2_width = port_b_addr2_width->value.integer_value;
+    } 
     if (port_b_addr_width) {
         ram_info.port_b_addr_width = port_b_addr_width->value.integer_value;
     }
