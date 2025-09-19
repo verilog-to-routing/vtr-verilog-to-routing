@@ -338,7 +338,7 @@ static void set_switch_func_type(SBSideConnection& conn, std::string_view func_t
         archfpga_throw(__FILE__, __LINE__, "Custom switchblock func type must be 2 characters long: %s\n", func_type);
     }
 
-    // Only valid sides are right, top, left, bottom, above and under
+    // Only valid sides are right, top, left, bottom
     if (func_type.find_first_not_of("rtlbRTLB") != std::string::npos) {
         archfpga_throw(__FILE__, __LINE__, "Unknown direction specified: %s\n", func_type);
     }

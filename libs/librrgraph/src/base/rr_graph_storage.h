@@ -1107,12 +1107,12 @@ class t_rr_graph_view {
     }
 
     /// @brief Retrieve the lowest layer (die) number where the given RRNodeId is located.
-    short node_layer_low(RRNodeId id) const {
+    char node_layer_low(RRNodeId id) const {
         return node_layer_low_[id];
     }
 
     /// @brief Retrieve the highest layer (die) number where the given RRNodeId is located.
-    short node_layer_high(RRNodeId id) const {
+    char node_layer_high(RRNodeId id) const {
         return node_layer_high_[id];
     }
 

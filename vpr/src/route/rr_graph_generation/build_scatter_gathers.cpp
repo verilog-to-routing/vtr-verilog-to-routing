@@ -141,7 +141,7 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
 }
 
 //
-// Non-satatic Function Definitions
+// Non-static Function Definitions
 //
 
 std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
@@ -320,9 +320,11 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
                 region.reg_x.start = (cut_dim == e_interposer_cut_dim::X) ? cut_loc + start : 0;
                 region.reg_x.end = (cut_dim == e_interposer_cut_dim::X) ? cut_loc + end : grid_width - 1;
                 region.reg_x.incr = (cut_dim == e_interposer_cut_dim::X) ? incr : 1;
+                region.reg_x.repeat = std::numeric_limits<int>::max();
                 region.reg_y.start = (cut_dim == e_interposer_cut_dim::Y) ? cut_loc + start : 0;
                 region.reg_y.end = (cut_dim == e_interposer_cut_dim::Y) ? cut_loc + end : grid_height - 1;
                 region.reg_y.incr = (cut_dim == e_interposer_cut_dim::Y) ? incr : 1;
+                region.reg_y.repeat = std::numeric_limits<int>::max();
 
                 t_sg_location sg_location{.type = e_sb_location::E_XY_SPECIFIED,
                                           .region = region,

@@ -164,9 +164,9 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
 
     load_rr_indexed_data_base_costs(rr_graph, rr_indexed_data, base_cost_type, echo_enabled, echo_file_name);
 
-    if (true) {
+    if (echo_enabled) {
         print_rr_index_info(rr_indexed_data,
-                            "indexed_data.txt",
+                            echo_file_name,
                             segment_inf,
                             segment_inf_x.size(),
                             segment_inf_x.size() + segment_inf_y.size());

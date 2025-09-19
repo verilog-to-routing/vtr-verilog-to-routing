@@ -358,4 +358,26 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
 void dump_readable_router_lookahead_map(const std::string& file_name,
                                         const std::vector<int>& dim_sizes,
                                         WireCostCallBackFunction wire_cost_func);
+
+ /// @brief Converts a routing channel type (CHANX/CHANY/CHANZ) to an index
+ /// to access the channel type dimension of the router lookahead table.
+inline int chan_type_to_index(e_rr_type chan_type) {
+    int chan_index;
+    switch (chan_type) {
+        case e_rr_type::CHANX:
+            chan_index = 0;
+            break;
+        case e_rr_type::CHANY:
+            chan_index = 1;
+            break;
+        case e_rr_type::CHANZ:
+            chan_index = 2;
+            break;
+        default:
+            VTR_ASSERT(false);
+    }
+
+    return chan_index;
+}
+
 } // namespace util

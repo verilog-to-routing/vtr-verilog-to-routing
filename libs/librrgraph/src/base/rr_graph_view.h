@@ -229,12 +229,12 @@ class RRGraphView {
     }
 
     /// @brief Returns the highest layer where a node is located at.
-    inline short node_layer_high(RRNodeId node) const {
+    inline char node_layer_high(RRNodeId node) const {
         return node_storage_.node_layer_high(node);
     }
 
     /// @brief Returns the lowest layer where a node is located at.
-    inline short node_layer_low(RRNodeId node) const {
+    inline char node_layer_low(RRNodeId node) const {
         return node_storage_.node_layer_low(node);
     }
     
@@ -416,7 +416,7 @@ class RRGraphView {
             else {                                                      // signal travels in increasing direction, stays at same point, or can travel both directions
                 start_x = " (" + std::to_string(node_xlow(node)) + ","; //start coordinates have smaller value
                 start_y = std::to_string(node_ylow(node)) + ",";
-                start_layer_str = std::to_string(node_layer_high(node)) + ")";
+                start_layer_str = std::to_string(node_layer_low(node)) + ")";
                 end_x = " (" + std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
                 end_y = std::to_string(node_yhigh(node)) + ",";
                 end_layer_str = std::to_string(node_layer_high(node)) + ")"; //layer number
