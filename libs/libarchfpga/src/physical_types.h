@@ -48,6 +48,7 @@
 #include "vib_inf.h"
 
 #include "scatter_gather_types.h"
+#include "interposer_types.h"
 
 //Forward declarations
 struct t_clock_network;
@@ -80,6 +81,7 @@ class t_pb_graph_edge;
 struct t_cluster_placement_primitive;
 struct t_arch;
 enum class e_sb_type;
+struct t_interposer_cut_inf;
 
 /****************************************************************************/
 /* FPGA metadata types                                                      */
@@ -248,130 +250,14 @@ typedef enum e_power_estimation_method_ t_power_estimation_method;
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
 /*************************************************************************************************/
-/* Grid location specification
- *  Each member is a formula evaluated in terms of 'W' (device width),
- *  and 'H' (device height). Formulas can be evaluated using parse_formula()
- *  from expr_eval.h.
- */
-struct t_grid_loc_spec {
-    t_grid_loc_spec(std::string start, std::string end, std::string repeat, std::string incr)
-        : start_expr(std::move(start))
-        , end_expr(std::move(end))
-        , repeat_expr(std::move(repeat))
-        , incr_expr(std::move(incr)) {}
-
-    std::string start_expr; //Starting position (inclusive)
-    std::string end_expr;   //Ending position (inclusive)
-
-    std::string repeat_expr; //Distance between repeated
-                             // region instances
-
-    std::string incr_expr; //Distance between block instantiations
-                           // with the region
-};
-
-/* Definition of how to place physical logic block in the grid.
- *  This defines a region of the grid to be set to a specific type
- *  (provided its priority is high enough to override other blocks).
- *
- *  The diagram below illustrates the layout specification.
- *
- *                      +----+                +----+           +----+
- *                      |    |                |    |           |    |
- *                      |    |                |    |    ...    |    |
- *                      |    |                |    |           |    |
- *                      +----+                +----+           +----+
- *
- *                        .                     .                 .
- *                        .                     .                 .
- *                        .                     .                 .
- *
- *                      +----+                +----+           +----+
- *                      |    |                |    |           |    |
- *                      |    |                |    |    ...    |    |
- *                      |    |                |    |           |    |
- *                      +----+                +----+           +----+
- *                   ^
- *                   |
- *           repeaty |
- *                   |
- *                   v        (endx,endy)
- *                      +----+                +----+           +----+
- *                      |    |                |    |           |    |
- *                      |    |                |    |    ...    |    |
- *                      |    |                |    |           |    |
- *                      +----+                +----+           +----+
- *       (startx,starty)
- *                            <-------------->
- *                                 repeatx
- *
- *  startx/endx and endx/endy define a rectangular region instances dimensions.
- *  The region instance is then repeated every repeatx/repeaty (if specified).
- *
- *  Within a particular region instance a block of block_type is laid down every
- *  incrx/incry units (if not specified defaults to block width/height):
- *
- *
- *    * = an instance of block_type within the region
- *
- *                    +------------------------------+
- *                    |*         *         *        *|
- *                    |                              |
- *                    |                              |
- *                    |                              |
- *                    |                              |
- *                    |                              |
- *                    |*         *         *        *|
- *                ^   |                              |
- *                |   |                              |
- *          incry |   |                              |
- *                |   |                              |
- *                v   |                              |
- *                    |*         *         *        *|
- *                    +------------------------------+
- *
- *                      <------->
- *                        incrx
- *
- *  In the above diagram incrx = 10, and incry = 6
- */
-struct t_grid_loc_def {
-    t_grid_loc_def(std::string block_type_val, int priority_val)
-        : block_type(std::move(block_type_val))
-        , priority(priority_val)
-        , x("0", "W-1", "max(w+1,W)", "w") //Fill in x direction, no repeat, incr by block width
-        , y("0", "H-1", "max(h+1,H)", "h") //Fill in y direction, no repeat, incr by block height
-    {}
-
-    std::string block_type; //The block type name
-
-    int priority = 0; //Priority of the specification.
-                      // In case of conflicting specifications
-                      // the largest priority wins.
-
-    t_grid_loc_spec x; //Horizontal location specification
-    t_grid_loc_spec y; //Vertical location specification
-
-    // When 1 metadata tag is split among multiple t_grid_loc_def, one
-    // t_grid_loc_def is arbitrarily chosen to own the metadata, and the other
-    // t_grid_loc_def point to the owned version.
-    std::unique_ptr<t_metadata_dict> owned_meta;
-    t_metadata_dict* meta = nullptr; // Metadata for this location definition. This
-                                     // metadata may be shared with multiple grid_locs
-                                     // that come from a common definition.
-};
-
-enum GridDefType {
-    AUTO,
-    FIXED
-};
 
 struct t_layer_def {
-    std::vector<t_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
+    std::vector<t_grid_loc_def> loc_defs;              ///< List of block location definitions for this layer specification
+    std::vector<t_interposer_cut_inf> interposer_cuts; ///< List of interposer cuts in this layer
 };
 
 struct t_grid_def {
-    GridDefType grid_type = GridDefType::AUTO; //The type of this grid specification
+    e_grid_def_type grid_type = e_grid_def_type::AUTO; //The type of this grid specification
 
     std::string name = ""; //The name of this device
 
