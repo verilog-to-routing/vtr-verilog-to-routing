@@ -101,10 +101,10 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //Layout
     fprintf(Echo, "*************************************************\n");
     for (const auto& grid_layout : arch->grid_layouts) {
-        if (grid_layout.grid_type == GridDefType::AUTO) {
+        if (grid_layout.grid_type == e_grid_def_type::AUTO) {
             fprintf(Echo, "Layout: '%s' Type: auto Aspect_Ratio: %f\n", grid_layout.name.c_str(), grid_layout.aspect_ratio);
         } else {
-            VTR_ASSERT(grid_layout.grid_type == GridDefType::FIXED);
+            VTR_ASSERT(grid_layout.grid_type == e_grid_def_type::FIXED);
             fprintf(Echo, "Layout: '%s' Type: fixed Width: %d Height %d\n", grid_layout.name.c_str(), grid_layout.width, grid_layout.height);
         }
     }

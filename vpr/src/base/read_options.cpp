@@ -6,6 +6,7 @@
 #include "argparse.hpp"
 
 #include "ap_flow_enums.h"
+#include "vpr_types.h"
 #include "vtr_log.h"
 #include "vtr_path.h"
 #include "vtr_util.h"
@@ -177,7 +178,9 @@ struct ParseAPAnalyticalSolver {
 struct ParseAPPartialLegalizer {
     ConvertedValue<e_ap_partial_legalizer> from_str(const std::string& str) {
         ConvertedValue<e_ap_partial_legalizer> conv_value;
-        if (str == "bipartitioning")
+        if (str == "none")
+            conv_value.set_value(e_ap_partial_legalizer::Identity);
+        else if (str == "bipartitioning")
             conv_value.set_value(e_ap_partial_legalizer::BiPartitioning);
         else if (str == "flow-based")
             conv_value.set_value(e_ap_partial_legalizer::FlowBased);
@@ -192,6 +195,9 @@ struct ParseAPPartialLegalizer {
     ConvertedValue<std::string> to_str(e_ap_partial_legalizer val) {
         ConvertedValue<std::string> conv_value;
         switch (val) {
+            case e_ap_partial_legalizer::Identity:
+                conv_value.set_value("none");
+                break;
             case e_ap_partial_legalizer::BiPartitioning:
                 conv_value.set_value("bipartitioning");
                 break;
@@ -205,7 +211,7 @@ struct ParseAPPartialLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"bipartitioning", "flow-based"};
+        return {"none", "bipartitioning", "flow-based"};
     }
 };
 
@@ -216,8 +222,8 @@ struct ParseAPFullLegalizer {
             conv_value.set_value(e_ap_full_legalizer::Naive);
         else if (str == "appack")
             conv_value.set_value(e_ap_full_legalizer::APPack);
-        else if (str == "basic-min-disturbance")
-            conv_value.set_value(e_ap_full_legalizer::Basic_Min_Disturbance);
+        else if (str == "flat-recon")
+            conv_value.set_value(e_ap_full_legalizer::FlatRecon);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_full_legalizer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -235,8 +241,8 @@ struct ParseAPFullLegalizer {
             case e_ap_full_legalizer::APPack:
                 conv_value.set_value("appack");
                 break;
-            case e_ap_full_legalizer::Basic_Min_Disturbance:
-                conv_value.set_value("basic-min-disturbance");
+            case e_ap_full_legalizer::FlatRecon:
+                conv_value.set_value("flat-recon");
             default:
                 VTR_ASSERT(false);
         }
@@ -244,7 +250,7 @@ struct ParseAPFullLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"naive", "appack", "basic-min-disturbance"};
+        return {"naive", "appack", "flat-recon"};
     }
 };
 
@@ -685,6 +691,44 @@ struct ParsePlaceAgentSpace {
     }
 };
 
+struct ParsePlaceInitTEstimator {
+    ConvertedValue<e_anneal_init_t_estimator> from_str(const std::string& str) {
+        ConvertedValue<e_anneal_init_t_estimator> conv_value;
+        if (str == "cost_variance")
+            conv_value.set_value(e_anneal_init_t_estimator::COST_VARIANCE);
+        else if (str == "equilibrium")
+            conv_value.set_value(e_anneal_init_t_estimator::EQUILIBRIUM);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_anneal_init_t_estimator (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_anneal_init_t_estimator val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_anneal_init_t_estimator::COST_VARIANCE:
+                conv_value.set_value("cost_variance");
+                break;
+            case e_anneal_init_t_estimator::EQUILIBRIUM:
+                conv_value.set_value("equilibrium");
+                break;
+            default: {
+                std::stringstream msg;
+                msg << "Unknown e_anneal_init_t_estimator type.";
+                conv_value.set_error(msg.str());
+            }
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"cost_variance", "equilibrium"};
+    }
+};
+
 struct ParseFixPins {
     ConvertedValue<e_pad_loc_type> from_str(const std::string& str) {
         ConvertedValue<e_pad_loc_type> conv_value;
@@ -1070,6 +1114,8 @@ struct ParseRouterLookahead {
             conv_value.set_value(e_router_lookahead::COMPRESSED_MAP);
         else if (str == "extended_map")
             conv_value.set_value(e_router_lookahead::EXTENDED_MAP);
+        else if (str == "simple")
+            conv_value.set_value(e_router_lookahead::SIMPLE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -1089,6 +1135,8 @@ struct ParseRouterLookahead {
             conv_value.set_value("map");
         } else if (val == e_router_lookahead::COMPRESSED_MAP) {
             conv_value.set_value("compressed_map");
+        } else if (val == e_router_lookahead::SIMPLE) {
+            conv_value.set_value("simple");
         } else {
             VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
             conv_value.set_value("extended_map");
@@ -1097,7 +1145,7 @@ struct ParseRouterLookahead {
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "compressed_map", "extended_map"};
+        return {"classic", "map", "compressed_map", "extended_map", "simple"};
     }
 };
 
@@ -1838,7 +1886,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     file_grp.add_argument(args.write_flat_place_file, "--write_flat_place")
         .help(
-            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists cluster and intra-cluster placement coordinates for each atom and can be used to reconstruct a clustering and placement solution.")
+            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_legalized_flat_place_file, "--write_legalized_flat_place")
+        .help(
+            "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
@@ -1937,6 +1990,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     ap_grp.add_argument<e_ap_partial_legalizer, ParseAPPartialLegalizer>(args.ap_partial_legalizer, "--ap_partial_legalizer")
         .help(
             "Controls which Partial Legalizer the Global Placer will use in the AP Flow.\n"
+            " * none: Does not perform any partial legalization. This is used for testing and debugging the AP flow and is not intended to be used as part of a real AP flow.\n"
             " * bipartitioning: Creates minimum windows around over-dense regions of the device bi-partitions the atoms in these windows such that the region is no longer over-dense and the atoms are in tiles that they can be placed into.\n"
             " * flow-based: Flows atoms from regions that are overfilled to regions that are underfilled.")
         .default_value("bipartitioning")
@@ -1947,7 +2001,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls which Full Legalizer to use in the AP Flow.\n"
             " * naive: Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.\n"
             " * appack: Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.\n"
-            " * basic-min-disturbance: Use the Basic Min. Disturbance Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.")
+            " * flat-recon: Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.")
         .default_value("appack")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2256,6 +2310,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "of the initial placement, this may improve or hurt the quality of the final "
             "placement.")
         .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_anneal_init_t_estimator, ParsePlaceInitTEstimator>(args.place_init_t_estimator, "--anneal_auto_init_t_estimator")
+        .help(
+            "Controls which estimation method is used when selecting the starting temperature "
+            "for the automatic annealing schedule.\n"
+            "\n"
+            "The options for estimators are:\n"
+            "\tcost_variance: Estimates the initial temperature using the variance "
+            "of cost after a set of trial swaps.\n"
+            "\tequilibrium: Estimates the initial temperature by trying to "
+            "predict the equilibrium temperature for the initial placement "
+            "(i.e. the temperature that would result in no change in cost).")
+        .default_value("cost_variance")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceInitT, "--init_t")
@@ -2970,6 +3038,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " to reduce the run-time to build the router lookahead and also its memory footprint\n"
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"
+            " * simple: A purely distance-based lookahead loaded from an external file\n"
             "\n"
             " The extended map differs from the map lookahead in the lookahead computation.\n"
             " It is better suited for architectures that have specialized routing for specific\n"

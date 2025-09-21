@@ -116,7 +116,7 @@
 bool is_opin(int ipin, t_physical_tile_type_ptr type);
 
 ///@brief Returns true if the specified pin is located at "from_layer" and it is connected to "to_layer"
-bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from_layer, int to_layer, int num_of_avail_layer);
+bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from_layer, int to_layer, unsigned num_of_avail_layer);
 
 /**
  * @brief Returns the corresponding physical pin based on the input parameters:

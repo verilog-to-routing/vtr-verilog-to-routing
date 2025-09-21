@@ -51,6 +51,7 @@ jobs:
         ./dev/upgrade_vtr_archs.sh
         make get_symbiflow_benchmarks
         make get_zeroasic_rr_graphs
+        make get_flat_placements
 
     # Build VTR using the default build options.
     - name: 'Build VTR'
@@ -144,6 +145,7 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: 3.12.3
+
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
@@ -153,7 +155,7 @@ jobs:
       id: cpu-cores
 
     - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+      run: ./install_apt_packages.sh
 
     - uses: hendrikmuhs/ccache-action@v1.2
       with:

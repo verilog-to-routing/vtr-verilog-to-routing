@@ -6,6 +6,7 @@
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
 #include "logic_types.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_export.h"
 #include "vpr_utils.h"
@@ -390,14 +391,14 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
                 if (port_eq == PortEquivalence::INSTANCE) {
                     //The pin is part of an instance equivalent class, hence we need to reserve a pin
 
-                    VTR_ASSERT(get_pin_type_from_pin_physical_num(type, clb_pin) == DRIVER);
+                    VTR_ASSERT(get_pin_type_from_pin_physical_num(type, clb_pin) == e_pin_type::DRIVER);
 
                     /* Check to make sure class is in same range as that assigned to block */
                     VTR_ASSERT(iclass >= class_range.low && iclass <= class_range.high);
 
-                    //We push back OPEN to reserve space to store the exact pin which
+                    //We push back UNDEFINED to reserve space to store the exact pin which
                     //will be reserved (determined later)
-                    clb_opins_used_locally[blk_id][iclass].emplace_back(OPEN);
+                    clb_opins_used_locally[blk_id][iclass].emplace_back(UNDEFINED);
                 }
             }
         }
@@ -642,10 +643,10 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
                 t_block_loc blk_loc;
                 blk_loc = get_block_loc(blk_id, is_flat);
                 auto class_type = get_class_type_from_class_physical_num(type, iclass);
-                if (class_type == DRIVER) {
+                if (class_type == e_pin_type::DRIVER) {
                     rr_type = e_rr_type::SOURCE;
                 } else {
-                    VTR_ASSERT(class_type == RECEIVER);
+                    VTR_ASSERT(class_type == e_pin_type::RECEIVER);
                     rr_type = e_rr_type::SINK;
                 }
 
@@ -788,7 +789,7 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
 
         VTR_ASSERT(rr_graph.node_layer(sink_rr) >= 0);
-        VTR_ASSERT(rr_graph.node_layer(sink_rr) <= device_ctx.grid.get_num_layers() - 1);
+        VTR_ASSERT(rr_graph.node_layer(sink_rr) <= (int)device_ctx.grid.get_num_layers() - 1);
 
         vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(sink_rr),
                                                               rr_graph.node_ylow(sink_rr),
@@ -802,12 +803,11 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
         layer_max = std::max<int>(layer_max, rr_graph.node_layer(sink_rr));
     }
 
-    /* Want the channels on all 4 sides to be usable, even if bb_factor = 0. */
+    // Want the channels on all 4 sides to be usable, even if bb_factor = 0.
     xmin -= 1;
     ymin -= 1;
 
-    /* Expand the net bounding box by bb_factor, then clip to the physical *
-     * chip area.                                                          */
+    // Expand the net bounding box by bb_factor, then clip to the physical chip area.
 
     t_bb bb;
 

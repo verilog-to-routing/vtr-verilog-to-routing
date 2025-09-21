@@ -1,3 +1,4 @@
+#include "physical_types.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
 
@@ -470,15 +471,17 @@ void check_rr_node(const RRGraphView& rr_graph,
     }
 
 
-    e_pin_type class_type = OPEN;
+    e_pin_type class_type = e_pin_type::OPEN;
     int class_num_pins = -1;
+    std::vector<e_side> rr_graph_sides;
+    std::vector<e_side> arch_side_vec;
     switch (rr_type) {
         case e_rr_type::SOURCE:
         case e_rr_type::SINK:
             class_type = get_class_type_from_class_physical_num(type, ptc_num);
             class_num_pins = get_class_num_pins_from_class_physical_num(type, ptc_num);
             if (ptc_num >= class_max_ptc
-                || class_type != ((rr_type == e_rr_type::SOURCE) ? DRIVER : RECEIVER)) {
+                || class_type != ((rr_type == e_rr_type::SOURCE) ? e_pin_type::DRIVER : e_pin_type::RECEIVER)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
@@ -502,13 +505,26 @@ void check_rr_node(const RRGraphView& rr_graph,
         case e_rr_type::IPIN:
             class_type = get_pin_type_from_pin_physical_num(type, ptc_num);
             if (ptc_num >= pin_max_ptc
-                || class_type != ((rr_type == e_rr_type::OPIN) ? DRIVER : RECEIVER)) {
+                || class_type != ((rr_type == e_rr_type::OPIN) ? e_pin_type::DRIVER : e_pin_type::RECEIVER)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
             if (capacity != 1) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+            }
+            rr_graph_sides = rr_graph.node_sides(rr_node);
+            std::tie(std::ignore, std::ignore, arch_side_vec) = get_pin_coordinates(type, ptc_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
+            // sides in the architecture are a superset of the sides for a pin in RR Graph. We iterate over the sides stored
+            // in the RR Graph to ensure that all of them also exist in the architecture.   
+            for (size_t i = 0; i < rr_graph_sides.size(); i++) {
+                if (std::find(arch_side_vec.begin(), arch_side_vec.end(), rr_graph_sides[i]) == arch_side_vec.end()) {
+                    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: inode %d (type %d) has a different side '%s' in the RR graph and the architecture.\n", 
+                                inode, 
+                                rr_type, 
+                                TOTAL_2D_SIDE_STRINGS[rr_graph_sides[i]]);
+                }
             }
             break;
 

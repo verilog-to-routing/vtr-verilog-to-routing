@@ -19,7 +19,7 @@ t_compressed_wire_cost_map f_compressed_wire_cost_map;
 
 static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& segment_inf_vec);
 
-static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec);
+static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec, int route_verbosity);
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map);
@@ -47,7 +47,7 @@ static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_ty
 
 static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& segment_inf_vec) {
     const auto& grid = g_vpr_ctx.device().grid;
-    compressed_loc_index_map.resize({grid.width(), grid.height()}, OPEN);
+    compressed_loc_index_map.resize({grid.width(), grid.height()}, UNDEFINED);
 
     int max_seg_lenght = std::numeric_limits<int>::min();
 
@@ -109,7 +109,8 @@ static int initialize_compressed_loc_structs(const std::vector<t_segment_inf>& s
     return sample_point_num;
 }
 
-static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec) {
+static void compute_router_wire_compressed_lookahead(const std::vector<t_segment_inf>& segment_inf_vec,
+                                                     int route_verbosity) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     const auto& device_ctx = g_vpr_ctx.device();
@@ -133,7 +134,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
         sorted_sample_loc[sample_loc.first] = std::set<int>(sample_loc.second.begin(), sample_loc.second.end());
     }
     //Profile each wire segment type
-    for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
+    for (size_t from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
         for (const auto& segment_inf : segment_inf_vec) {
             std::map<e_rr_type, std::vector<RRNodeId>> sample_nodes;
             std::vector<e_rr_type> chan_types;
@@ -150,7 +151,8 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
                                                                                        chan_type,
                                                                                        segment_inf,
                                                                                        sample_locations,
-                                                                                       false);
+                                                                                       /*sample_all_locs=*/false,
+                                                                                       route_verbosity);
                 if (routing_cost_map.empty()) {
                     continue;
                 }
@@ -185,7 +187,7 @@ static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_i
                 }
                 util::Expansion_Cost_Entry& expansion_cost_entry = routing_cost_map[to_layer][ix][iy];
                 int compressed_idx = compressed_loc_index_map[ix][iy];
-                VTR_ASSERT(compressed_idx != OPEN);
+                VTR_ASSERT(compressed_idx != UNDEFINED);
 
                 f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer][compressed_idx] = expansion_cost_entry.get_representative_cost_entry(util::e_representative_entry_method::SMALLEST);
             }
@@ -201,12 +203,14 @@ static void fill_in_missing_compressed_lookahead_entries(const std::map<int, std
         chan_index = 1;
     }
 
-    auto& device_ctx = g_vpr_ctx.device();
-    int grid_width = static_cast<int>(device_ctx.grid.width());
-    int grid_height = static_cast<int>(device_ctx.grid.height());
-    /* find missing cost entries and fill them in by copying a nearby cost entry */
-    for (int from_layer_num = 0; from_layer_num < device_ctx.grid.get_num_layers(); from_layer_num++) {
-        for (int to_layer_num = 0; to_layer_num < device_ctx.grid.get_num_layers(); ++to_layer_num) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const int grid_width = static_cast<int>(device_ctx.grid.width());
+    const int grid_height = static_cast<int>(device_ctx.grid.height());
+    const int grid_layers = static_cast<int>(device_ctx.grid.get_num_layers());
+
+    // find missing cost entries and fill them in by copying a nearby cost entry
+    for (int from_layer_num = 0; from_layer_num < grid_layers; from_layer_num++) {
+        for (int to_layer_num = 0; to_layer_num < grid_layers; ++to_layer_num) {
             for (int ix = 0; ix < grid_width; ix++) {
                 for (int iy = 0; iy < grid_height; iy++) {
                     if (sample_locations.find(ix) == sample_locations.end() || sample_locations.at(ix).find(iy) == sample_locations[ix].end()) {
@@ -295,7 +299,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
                                                                 int segment_index,
                                                                 int chan_index) {
     int missing_point_idx = compressed_loc_index_map[missing_dx][missing_dy];
-    VTR_ASSERT(missing_point_idx != OPEN);
+    VTR_ASSERT(missing_point_idx != UNDEFINED);
     VTR_ASSERT(std::isnan(f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_point_idx].delay));
     VTR_ASSERT(std::isnan(f_compressed_wire_cost_map[from_layer_num][chan_index][segment_index][to_layer_num][missing_point_idx].congestion));
 
@@ -308,8 +312,8 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
     float neighbour_delay_sum = 0;
     float neighbour_cong_sum = 0;
 
-    int neighbour_x = OPEN;
-    int neighbour_y = OPEN;
+    int neighbour_x = UNDEFINED;
+    int neighbour_y = UNDEFINED;
 
     if (missing_dx == 0 && missing_dy == 0) {
         return util::Cost_Entry(0., 0.);
@@ -386,9 +390,10 @@ static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_ty
 }
 
 /******** Interface class member function definitions ********/
-CompressedMapLookahead::CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat)
+CompressedMapLookahead::CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity)
     : det_routing_arch_(det_routing_arch)
-    , is_flat_(is_flat) {}
+    , is_flat_(is_flat)
+    , route_verbosity_(route_verbosity) {}
 
 float CompressedMapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
@@ -504,11 +509,11 @@ void CompressedMapLookahead::compute(const std::vector<t_segment_inf>& segment_i
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
     //First compute the delay map when starting from the various wire types
     //(CHANX/CHANY)in the routing architecture
-    compute_router_wire_compressed_lookahead(segment_inf);
+    compute_router_wire_compressed_lookahead(segment_inf, route_verbosity_);
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
-    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_);
+    this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
 }
 
 void CompressedMapLookahead::write(const std::string& file_name) const {

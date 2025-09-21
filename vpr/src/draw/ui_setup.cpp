@@ -18,13 +18,23 @@
 #include "save_graphics.h"
 #include "search_bar.h"
 #include "ui_setup.h"
+#include "gtkcomboboxhelper.h"
 
 #include "ezgl/application.hpp"
+
+/**
+ * @brief Helper function to connect a toggle button to a callback function
+ */
+static void setup_checkbox_button(std::string button_id, ezgl::application* app, bool* toggle_state) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    GtkToggleButton* checkbox_button = GTK_TOGGLE_BUTTON(app->get_object(button_id.c_str()));
+    draw_state->checkbox_data.emplace_back(app, toggle_state);
+    g_signal_connect(checkbox_button, "toggled", G_CALLBACK(toggle_checkbox_cbk), &draw_state->checkbox_data.back());
+}
 
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
-    gtk_button_set_label(window, "Window");
     g_signal_connect(window, "clicked", G_CALLBACK(toggle_window_mode), app);
 
     //button to search, created in main.ui
@@ -50,15 +60,27 @@ void basic_button_setup(ezgl::application* app) {
  * @param app ezgl::application ptr
  */
 void net_button_setup(ezgl::application* app) {
-    //Toggle net signal connection
-    GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNets"));
-    g_signal_connect(toggle_nets, "changed", G_CALLBACK(toggle_nets_cbk), app);
+
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleNets"));
+    g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_show_nets_cbk), app);
+
+    // Manages net type
+    GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNetType"));
+    g_signal_connect(toggle_nets, "changed", G_CALLBACK(toggle_draw_nets_cbk), app);
+
+    setup_checkbox_button("ToggleInterClusterNets", app, &draw_state->draw_inter_cluster_nets);
+
+    setup_checkbox_button("ToggleIntraClusterNets", app, &draw_state->draw_intra_cluster_nets);
+
+    setup_checkbox_button("FanInFanOut", app, &draw_state->highlight_fan_in_fan_out);
 
     //Manages net alpha
     GtkSpinButton* net_alpha = GTK_SPIN_BUTTON(app->get_object("NetAlpha"));
     g_signal_connect(net_alpha, "value-changed", G_CALLBACK(set_net_alpha_value_cbk), app);
     gtk_spin_button_set_increments(net_alpha, 1, 1);
-    gtk_spin_button_set_range(net_alpha, 1, 255);
+    gtk_spin_button_set_range(net_alpha, 0, 255);
 
     //Manages net max fanout
     GtkSpinButton* max_fanout = GTK_SPIN_BUTTON(app->get_object("NetMaxFanout"));
@@ -110,11 +132,22 @@ void block_button_setup(ezgl::application* app) {
  * buttons.
  */
 void routing_button_setup(ezgl::application* app) {
-    auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+    t_draw_state* draw_state = get_draw_state_vars();
 
     //Toggle RR
-    GtkComboBoxText* toggle_rr_box = GTK_COMBO_BOX_TEXT(app->get_object("ToggleRR"));
-    g_signal_connect(toggle_rr_box, "changed", G_CALLBACK(toggle_rr_cbk), app);
+    GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleRR"));
+    g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_rr_cbk), app);
+
+    // RR Checkboxes
+
+    setup_checkbox_button("ToggleRRChannels", app, &draw_state->draw_channel_nodes);
+    setup_checkbox_button("ToggleInterClusterPinNodes", app, &draw_state->draw_inter_cluster_pins);
+    setup_checkbox_button("ToggleRRIntraClusterNodes", app, &draw_state->draw_intra_cluster_nodes);
+    setup_checkbox_button("ToggleRRSBox", app, &draw_state->draw_switch_box_edges);
+    setup_checkbox_button("ToggleRRCBox", app, &draw_state->draw_connection_box_edges);
+    setup_checkbox_button("ToggleRRIntraClusterEdges", app, &draw_state->draw_intra_cluster_edges);
+    setup_checkbox_button("ToggleHighlightRR", app, &draw_state->highlight_rr_edges);
 
     //Toggle Congestion
     GtkComboBoxText* toggle_congestion = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCongestion"));
@@ -144,7 +177,7 @@ void routing_button_setup(ezgl::application* app) {
 void view_button_setup(ezgl::application* app) {
     int num_layers;
 
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     num_layers = device_ctx.grid.get_num_layers();
 
     // Hide the button if we only have one layer
@@ -213,32 +246,54 @@ void search_setup(ezgl::application* app) {
     gtk_entry_completion_set_match_func(wildcardComp, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
 }
 
-/*
+/**
  * @brief connects critical path button to its cbk fn
  *
  * @param app ezgl application
  */
 void crit_path_button_setup(ezgl::application* app) {
-    GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
-    g_signal_connect(toggle_crit_path, "changed", G_CALLBACK(toggle_crit_path_cbk), app);
-    show_widget("ToggleCritPath", app);
+
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    // Toggle Critical Path
+    GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleCritPath"));
+    g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_crit_path_cbk), app);
+
+    // Checkboxes for critical path
+    setup_checkbox_button("ToggleCritPathFlylines", app, &draw_state->show_crit_path_flylines);
+    setup_checkbox_button("ToggleCritPathRouting", app, &draw_state->show_crit_path_routing);
+    setup_checkbox_button("ToggleCritPathDelays", app, &draw_state->show_crit_path_delays);
 }
 
-/*
+/**
  * @brief Hides or displays critical path routing / routing delay UI elements
  *
  * @param app ezgl app
  */
-void hide_crit_path_routing(ezgl::application* app, bool hide) {
-    GtkComboBoxText* toggle_crit_path = GTK_COMBO_BOX_TEXT(app->get_object("ToggleCritPath"));
-    if (hide) {
-        gtk_combo_box_text_remove(toggle_crit_path, 4);
-        gtk_combo_box_text_remove(toggle_crit_path, 3);
+void hide_crit_path_routing(ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    bool state = draw_state->setup_timing_info && draw_state->pic_on_screen == ROUTING && draw_state->show_crit_path;
+
+    gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathRouting")), state);
+}
+
+void hide_draw_routing(ezgl::application* app) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    GtkComboBoxText* toggle_nets = GTK_COMBO_BOX_TEXT(app->get_object("ToggleNetType"));
+
+    // Enable the option to draw routing only during the routing stage
+    int route_item_index = get_item_index_by_text(toggle_nets, "Routing");
+    if (draw_state->pic_on_screen == PLACEMENT) {
+        if (route_item_index != -1) {
+            gtk_combo_box_text_remove(toggle_nets, route_item_index);
+        }
     } else {
-        gtk_combo_box_text_insert_text(toggle_crit_path, 3, "Crit Path Routing");
-        gtk_combo_box_text_insert_text(toggle_crit_path, 4, "Crit Path Routing Delays");
+        if (route_item_index == -1) {
+            gtk_combo_box_text_append(toggle_nets, "2", "Routing");
+        }
     }
 }
+
 /*
  * @brief Hides the widget with the given name
  *
@@ -265,8 +320,8 @@ void show_widget(std::string widgetName, ezgl::application* app) {
  */
 void load_block_names(ezgl::application* app) {
     auto blockStorage = GTK_LIST_STORE(app->get_object("BlockNames"));
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
     for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
@@ -287,7 +342,7 @@ void load_block_names(ezgl::application* app) {
  */
 void load_net_names(ezgl::application* app) {
     auto netStorage = GTK_LIST_STORE(app->get_object("NetNames"));
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     GtkTreeIter iter;
     //Loading net names
     for (AtomNetId id : atom_ctx.netlist().nets()) {

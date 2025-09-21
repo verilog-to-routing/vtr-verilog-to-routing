@@ -186,12 +186,12 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
     //   / = (high_x, low_y)
     //   \ = (low_x, high_y)
     //   + = device edge
-    const size_t mid_x = vtr::nint(device_width / 2);
-    const size_t mid_y = vtr::nint(device_height / 2);
+    const size_t mid_x = device_width / 2;
+    const size_t mid_y = device_height / 2;
     const size_t low_x = std::min(longest_length, mid_x);
     const size_t low_y = std::min(longest_length, mid_y);
     const size_t high_x = (longest_length <= device_width) ? std::max(device_width - longest_length, mid_x) : mid_x;
-    const size_t high_y = (longest_length <= device_height) ? std::max(device_width - longest_length, mid_y) : mid_y;
+    const size_t high_y = (longest_length <= device_height) ? std::max(device_height - longest_length, mid_y) : mid_y;
 
     vtr::NdMatrix<float, 4> delta_delays({num_layers, num_layers, device_width, device_height});
 
@@ -395,15 +395,15 @@ static bool verify_delta_delays(const vtr::NdMatrix<float, 4>& delta_delays) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
-    for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); ++from_layer_num) {
-        for (int to_layer_num = 0; to_layer_num < grid.get_num_layers(); ++to_layer_num) {
+    for (size_t from_layer_num = 0; from_layer_num < grid.get_num_layers(); ++from_layer_num) {
+        for (size_t to_layer_num = 0; to_layer_num < grid.get_num_layers(); ++to_layer_num) {
             for (size_t x = 0; x < grid.width(); ++x) {
                 for (size_t y = 0; y < grid.height(); ++y) {
                     float delta_delay = delta_delays[from_layer_num][to_layer_num][x][y];
 
                     if (delta_delay < 0.) {
                         VPR_ERROR(VPR_ERROR_PLACE,
-                                  "Found invalid negative delay %g for delta [%d,%d,%d,%d]",
+                                  "Found invalid negative delay %g for delta [%u,%u,%u,%u]",
                                   delta_delay, from_layer_num, to_layer_num, x, y);
                     }
                 }
@@ -529,9 +529,9 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
 
     vtr::Matrix<bool> found_matrix({matrix.dim_size(0), matrix.dim_size(1)}, false);
 
-    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, from_layer_num}));
+    auto best_driver_ptcs = get_best_classes(e_pin_type::DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, from_layer_num}));
     for (int driver_ptc : best_driver_ptcs) {
-        VTR_ASSERT(driver_ptc != OPEN);
+        VTR_ASSERT(driver_ptc != UNDEFINED);
         RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(from_layer_num, source_x, source_y, e_rr_type::SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
@@ -563,9 +563,9 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
                     }
                 } else {
                     bool found_a_sink = false;
-                    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, to_layer_num}));
+                    auto best_sink_ptcs = get_best_classes(e_pin_type::RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, to_layer_num}));
                     for (int sink_ptc : best_sink_ptcs) {
-                        VTR_ASSERT(sink_ptc != OPEN);
+                        VTR_ASSERT(sink_ptc != UNDEFINED);
                         RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(to_layer_num, sink_x, sink_y, e_rr_type::SINK, sink_ptc);
 
                         if (sink_rr_node == RRNodeId::INVALID())
@@ -614,6 +614,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
             int delta_y = abs(sink_y - source_y);
             if (!found_matrix[delta_x][delta_y]) {
                 add_delay_to_matrix(matrix, delta_x, delta_y, IMPOSSIBLE_DELTA);
+#ifdef VERBOSE
                 VTR_LOG_WARN("Unable to route between blocks at (%d,%d,%d) and (%d,%d,%d) to characterize delay (setting to %g)\n",
                              source_x,
                              source_y,
@@ -622,6 +623,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
                              sink_y,
                              to_layer_num,
                              IMPOSSIBLE_DELTA);
+#endif
             }
         }
     }
@@ -646,17 +648,17 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
     bool successfully_routed = false;
 
     // Get the rr nodes to route between
-    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, source_layer}));
-    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, sink_layer}));
+    auto best_driver_ptcs = get_best_classes(e_pin_type::DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, source_layer}));
+    auto best_sink_ptcs = get_best_classes(e_pin_type::RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, sink_layer}));
 
     for (int driver_ptc : best_driver_ptcs) {
-        VTR_ASSERT(driver_ptc != OPEN);
+        VTR_ASSERT(driver_ptc != UNDEFINED);
         RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_layer, source_x, source_y, e_rr_type::SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
 
         for (int sink_ptc : best_sink_ptcs) {
-            VTR_ASSERT(sink_ptc != OPEN);
+            VTR_ASSERT(sink_ptc != UNDEFINED);
             RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_layer, sink_x, sink_y, e_rr_type::SINK, sink_ptc);
 
             if (sink_rr_node == RRNodeId::INVALID())
@@ -677,10 +679,12 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
         if (successfully_routed) break;
     }
 
+#ifdef VERBOSE
     if (!successfully_routed) {
         VTR_LOG_WARN("Unable to route between blocks at (%d,%d,%d) and (%d,%d,%d) to characterize delay (setting to %g)\n",
                      source_x, source_y, source_layer, sink_x, sink_y, sink_layer, net_delay_value);
     }
+#endif
 
     return net_delay_value;
 }
@@ -705,8 +709,8 @@ static float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
         auto itr = std::max_element(delays.begin(), delays.end());
         delay = *itr;
     } else if (reducer == e_reducer::MEDIAN) {
-        std::stable_sort(delays.begin(), delays.end());
-        delay = vtr::median(delays.begin(), delays.end());
+        std::sort(delays.begin(), delays.end());
+        delay = vtr::median_presorted<float>(delays.begin(), delays.end());
     } else if (reducer == e_reducer::ARITHMEAN) {
         delay = vtr::arithmean(delays.begin(), delays.end());
     } else if (reducer == e_reducer::GEOMEAN) {
@@ -834,7 +838,7 @@ bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     bool found = false;
     int found_layer_num = -1;
     //TODO: Function *FOR NOW* assumes that from/to blocks are at same die and have a same layer nums
-    for (int layer_num = 0; layer_num < grid.get_num_layers() && !found; ++layer_num) {
+    for (int layer_num = 0; layer_num < (int)grid.get_num_layers() && !found; ++layer_num) {
         for (int x = 0; x < (int)grid.width() && !found; ++x) {
             to_x = x + direct->x_offset;
             if (to_x < 0 || to_x >= (int)grid.width()) continue;

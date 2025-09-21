@@ -50,7 +50,7 @@ int ClusteredNetlist::block_pin_net_index(const ClusterBlockId blk_id, const int
         return pin_net_index(pin_id);
     }
 
-    return OPEN;
+    return UNDEFINED;
 }
 
 ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int logical_pin_index) const {
@@ -93,7 +93,7 @@ int ClusteredNetlist::net_pin_logical_index(const ClusterNetId net_id, int net_p
         return pin_logical_index(pin_id);
     }
 
-    return OPEN; //No valid pin found
+    return UNDEFINED; //No valid pin found
 }
 
 /*

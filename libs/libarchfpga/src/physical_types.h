@@ -25,6 +25,7 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
+#include <cstdint>
 #include <functional>
 #include <utility>
 #include <vector>
@@ -42,8 +43,12 @@
 #include "logic_types.h"
 #include "clock_types.h"
 #include "switchblock_types.h"
+#include "arch_types.h"
 
 #include "vib_inf.h"
+
+#include "scatter_gather_types.h"
+#include "interposer_types.h"
 
 //Forward declarations
 struct t_clock_network;
@@ -76,6 +81,7 @@ class t_pb_graph_edge;
 struct t_cluster_placement_primitive;
 struct t_arch;
 enum class e_sb_type;
+struct t_interposer_cut_inf;
 
 /****************************************************************************/
 /* FPGA metadata types                                                      */
@@ -161,7 +167,7 @@ struct t_metadata_dict : vtr::flat_map<
 
 /* Pins describe I/O into clustered logic block.
  * A pin may be unconnected, driving a net or in the fanout, respectively. */
-enum e_pin_type {
+enum class e_pin_type : int8_t {
     OPEN = -1,
     DRIVER = 0,
     RECEIVER = 1
@@ -244,130 +250,14 @@ typedef enum e_power_estimation_method_ t_power_estimation_method;
 /*************************************************************************************************/
 /* FPGA grid layout data types                                                                   */
 /*************************************************************************************************/
-/* Grid location specification
- *  Each member is a formula evaluated in terms of 'W' (device width),
- *  and 'H' (device height). Formulas can be evaluated using parse_formula()
- *  from expr_eval.h.
- */
-struct t_grid_loc_spec {
-    t_grid_loc_spec(std::string start, std::string end, std::string repeat, std::string incr)
-        : start_expr(std::move(start))
-        , end_expr(std::move(end))
-        , repeat_expr(std::move(repeat))
-        , incr_expr(std::move(incr)) {}
-
-    std::string start_expr; //Starting position (inclusive)
-    std::string end_expr;   //Ending position (inclusive)
-
-    std::string repeat_expr; //Distance between repeated
-                             // region instances
-
-    std::string incr_expr; //Distance between block instantiations
-                           // with the region
-};
-
-/* Definition of how to place physical logic block in the grid.
- *  This defines a region of the grid to be set to a specific type
- *  (provided its priority is high enough to override other blocks).
- *
- *  The diagram below illustrates the layout specification.
- *
- *                      +----+                +----+           +----+
- *                      |    |                |    |           |    |
- *                      |    |                |    |    ...    |    |
- *                      |    |                |    |           |    |
- *                      +----+                +----+           +----+
- *
- *                        .                     .                 .
- *                        .                     .                 .
- *                        .                     .                 .
- *
- *                      +----+                +----+           +----+
- *                      |    |                |    |           |    |
- *                      |    |                |    |    ...    |    |
- *                      |    |                |    |           |    |
- *                      +----+                +----+           +----+
- *                   ^
- *                   |
- *           repeaty |
- *                   |
- *                   v        (endx,endy)
- *                      +----+                +----+           +----+
- *                      |    |                |    |           |    |
- *                      |    |                |    |    ...    |    |
- *                      |    |                |    |           |    |
- *                      +----+                +----+           +----+
- *       (startx,starty)
- *                            <-------------->
- *                                 repeatx
- *
- *  startx/endx and endx/endy define a rectangular region instances dimensions.
- *  The region instance is then repeated every repeatx/repeaty (if specified).
- *
- *  Within a particular region instance a block of block_type is laid down every
- *  incrx/incry units (if not specified defaults to block width/height):
- *
- *
- *    * = an instance of block_type within the region
- *
- *                    +------------------------------+
- *                    |*         *         *        *|
- *                    |                              |
- *                    |                              |
- *                    |                              |
- *                    |                              |
- *                    |                              |
- *                    |*         *         *        *|
- *                ^   |                              |
- *                |   |                              |
- *          incry |   |                              |
- *                |   |                              |
- *                v   |                              |
- *                    |*         *         *        *|
- *                    +------------------------------+
- *
- *                      <------->
- *                        incrx
- *
- *  In the above diagram incrx = 10, and incry = 6
- */
-struct t_grid_loc_def {
-    t_grid_loc_def(std::string block_type_val, int priority_val)
-        : block_type(std::move(block_type_val))
-        , priority(priority_val)
-        , x("0", "W-1", "max(w+1,W)", "w") //Fill in x direction, no repeat, incr by block width
-        , y("0", "H-1", "max(h+1,H)", "h") //Fill in y direction, no repeat, incr by block height
-    {}
-
-    std::string block_type; //The block type name
-
-    int priority = 0; //Priority of the specification.
-                      // In case of conflicting specifications
-                      // the largest priority wins.
-
-    t_grid_loc_spec x; //Horizontal location specification
-    t_grid_loc_spec y; //Vertical location specification
-
-    // When 1 metadata tag is split among multiple t_grid_loc_def, one
-    // t_grid_loc_def is arbitrarily chosen to own the metadata, and the other
-    // t_grid_loc_def point to the owned version.
-    std::unique_ptr<t_metadata_dict> owned_meta;
-    t_metadata_dict* meta = nullptr; // Metadata for this location definition. This
-                                     // metadata may be shared with multiple grid_locs
-                                     // that come from a common definition.
-};
-
-enum GridDefType {
-    AUTO,
-    FIXED
-};
 
 struct t_layer_def {
-    std::vector<t_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
+    std::vector<t_grid_loc_def> loc_defs;              ///< List of block location definitions for this layer specification
+    std::vector<t_interposer_cut_inf> interposer_cuts; ///< List of interposer cuts in this layer
 };
 
 struct t_grid_def {
-    GridDefType grid_type = GridDefType::AUTO; //The type of this grid specification
+    e_grid_def_type grid_type = e_grid_def_type::AUTO; //The type of this grid specification
 
     std::string name = ""; //The name of this device
 
@@ -871,9 +761,9 @@ struct t_physical_pin {
  *                  above the base die, the layer_num is 1 and so on.
  */
 struct t_physical_tile_loc {
-    int x = OPEN;
-    int y = OPEN;
-    int layer_num = OPEN;
+    int x = ARCH_FPGA_UNDEFINED_VAL;
+    int y = ARCH_FPGA_UNDEFINED_VAL;
+    int layer_num = ARCH_FPGA_UNDEFINED_VAL;
 
     t_physical_tile_loc() = default;
 
@@ -882,11 +772,44 @@ struct t_physical_tile_loc {
         , y(y_val)
         , layer_num(layer_num_val) {}
 
-    // Returns true if this type location layer_num/x/y is not equal to OPEN
+    // Returns true if this type location layer_num/x/y is not equal to ARCH_FPGA_UNDEFINED_VAL
     operator bool() const {
-        return !(x == OPEN || y == OPEN || layer_num == OPEN);
+        return !(x == ARCH_FPGA_UNDEFINED_VAL || y == ARCH_FPGA_UNDEFINED_VAL || layer_num == ARCH_FPGA_UNDEFINED_VAL);
+    }
+
+    /**
+     * @brief Comparison operator for t_physical_tile_loc
+     *
+     * Tiles are ordered first by layer number, then by x, and finally by y.
+     */
+    friend bool operator<(const t_physical_tile_loc& lhs, const t_physical_tile_loc& rhs) {
+        if (lhs.layer_num != rhs.layer_num)
+            return lhs.layer_num < rhs.layer_num;
+        if (lhs.x != rhs.x)
+            return lhs.x < rhs.x;
+        return lhs.y < rhs.y;
+    }
+
+    friend bool operator==(const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
+        return a.x == b.x && a.y == b.y && a.layer_num == b.layer_num;
+    }
+
+    friend bool operator!=(const t_physical_tile_loc& a, const t_physical_tile_loc& b) {
+        return !(a == b);
     }
 };
+
+namespace std {
+template<>
+struct hash<t_physical_tile_loc> {
+    std::size_t operator()(const t_physical_tile_loc& v) const noexcept {
+        std::size_t seed = std::hash<int>{}(v.x);
+        vtr::hash_combine(seed, v.y);
+        vtr::hash_combine(seed, v.layer_num);
+        return seed;
+    }
+};
+} // namespace std
 
 /** Describes I/O and clock ports of a physical tile type
  *
@@ -1367,7 +1290,7 @@ class t_pb_graph_node {
      * There is a root-level pb_graph_node assigned to each logical type. Each logical type can contain multiple primitives.
      * If this pb_graph_node is associated with a primitive, a unique number is assigned to it within the logical block level.
      */
-    int primitive_num = OPEN;
+    int primitive_num = ARCH_FPGA_UNDEFINED_VAL;
 
     /* Contains a collection of mode indices that cannot be used as they produce conflicts during VPR packing stage
      *
@@ -1576,7 +1499,7 @@ class t_pb_graph_edge {
     int* pack_pattern_indices;
     bool infer_pattern;
 
-    int switch_type_idx = OPEN; /* architecture switch id of the edge - used when flat_routing is enabled */
+    int switch_type_idx = ARCH_FPGA_UNDEFINED_VAL; /* architecture switch id of the edge - used when flat_routing is enabled */
 
     // class member functions
   public:
@@ -2245,4 +2168,7 @@ struct t_arch {
 
     // added for vib
     std::vector<VibInf> vib_infs;
+
+    /// Stores information for scatter-gather patterns that can be used to define some of the rr-graph connectivity
+    std::vector<t_scatter_gather_pattern> scatter_gather_patterns;
 };

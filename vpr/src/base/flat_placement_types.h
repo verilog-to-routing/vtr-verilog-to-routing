@@ -70,8 +70,6 @@ class FlatPlacementInfo {
     static constexpr float UNDEFINED_POS = -1.f;
     /// @brief Identifier for an undefined sub tile.
     static constexpr int UNDEFINED_SUB_TILE = -1;
-    /// @brief Identifier for an undefined site idx.
-    static constexpr int UNDEFINED_SITE_IDX = -1;
 
     // The following three floating point numbers describe the flat position of
     // an atom block. These are floats instead of integers to allow for flat
@@ -91,10 +89,6 @@ class FlatPlacementInfo {
     /// @brief The sub tile location of each atom block. Is UNDEFINED_SUB_TILE
     ///        if undefined.
     vtr::vector<AtomBlockId, int> blk_sub_tile;
-    /// @brief The flat site idx of each atom block. This is an optional index
-    ///        into a linearized list of primitive locations within a cluster-
-    ///        level block. Is UNDEFINED_SITE_IDX if undefined.
-    vtr::vector<AtomBlockId, int> blk_site_idx;
 
     /// @brief A flag to signify if this object has been constructed with data
     ///        or not. This makes it easier to detect if a flat placement exists
@@ -135,6 +129,5 @@ class FlatPlacementInfo {
         , blk_y_pos(atom_netlist.blocks().size(), UNDEFINED_POS)
         , blk_layer(atom_netlist.blocks().size(), UNDEFINED_POS)
         , blk_sub_tile(atom_netlist.blocks().size(), UNDEFINED_SUB_TILE)
-        , blk_site_idx(atom_netlist.blocks().size(), UNDEFINED_SITE_IDX)
         , valid(true) {}
 };

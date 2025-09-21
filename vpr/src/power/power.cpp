@@ -605,38 +605,32 @@ static void power_usage_blocks(t_power_usage* power_usage) {
 
     t_logical_block_type_ptr logical_block;
 
-    /* Loop through all grid locations */
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        for (int x = 0; x < (int)device_ctx.grid.width(); x++) {
-            for (int y = 0; y < (int)device_ctx.grid.height(); y++) {
-                auto physical_tile = device_ctx.grid.get_physical_type({x, y, layer_num});
-                int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
-                int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
+    // Loop through all grid locations
+    for (const t_physical_tile_loc tile_loc : device_ctx.grid.all_locations()) {
+        t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type(tile_loc);
+        int width_offset = device_ctx.grid.get_width_offset(tile_loc);
+        int height_offset = device_ctx.grid.get_height_offset(tile_loc);
 
-                if ((width_offset != 0)
-                    || (height_offset != 0)
-                    || is_empty_type(physical_tile)) {
-                    continue;
-                }
+        if (width_offset != 0 || height_offset != 0 || is_empty_type(physical_tile)) {
+            continue;
+        }
 
-                for (int z = 0; z < physical_tile->capacity; z++) {
-                    t_pb* pb = nullptr;
-                    t_power_usage pb_power;
+        for (int z = 0; z < physical_tile->capacity; z++) {
+            t_pb* pb = nullptr;
+            t_power_usage pb_power;
 
-                    ClusterBlockId iblk = place_ctx.grid_blocks().block_at_location({x, y, z, layer_num});
+            ClusterBlockId iblk = place_ctx.grid_blocks().block_at_location({tile_loc, z});
 
-                    if (iblk) {
-                        pb = cluster_ctx.clb_nlist.block_pb(iblk);
-                        logical_block = cluster_ctx.clb_nlist.block_type(iblk);
-                    } else {
-                        logical_block = pick_logical_type(physical_tile);
-                    }
-
-                    /* Calculate power of this CLB */
-                    power_usage_pb(&pb_power, pb, logical_block->pb_graph_head, iblk);
-                    power_add_usage(power_usage, &pb_power);
-                }
+            if (iblk) {
+                pb = cluster_ctx.clb_nlist.block_pb(iblk);
+                logical_block = cluster_ctx.clb_nlist.block_type(iblk);
+            } else {
+                logical_block = pick_logical_type(physical_tile);
             }
+
+            // Calculate power of this CLB
+            power_usage_pb(&pb_power, pb, logical_block->pb_graph_head, iblk);
+            power_add_usage(power_usage, &pb_power);
         }
     }
 }
@@ -828,7 +822,7 @@ static void power_usage_routing(t_power_usage* power_usage,
 
             for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rt_node.inode); edge_idx++) {
                 const auto& next_node_id = size_t(rr_graph.edge_sink_node(rt_node.inode, edge_idx));
-                if (next_node_id != size_t(OPEN)) {
+                if (next_node_id != size_t(UNDEFINED)) {
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
 
                     switch (rr_graph.node_type(RRNodeId(next_node_id))) {
@@ -1201,7 +1195,7 @@ void power_routing_init(const t_det_routing_arch& routing_arch) {
     rr_node_power = new t_rr_node_power[rr_graph.num_nodes()];
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         rr_node_power[(size_t)rr_id] = t_rr_node_power();
-        rr_node_power[(size_t)rr_id].driver_switch_type = OPEN;
+        rr_node_power[(size_t)rr_id].driver_switch_type = UNDEFINED;
     }
 
     /* Initialize Mux Architectures */
@@ -1267,7 +1261,7 @@ void power_routing_init(const t_det_routing_arch& routing_arch) {
     for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
         for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rr_node_idx); edge_idx++) {
             if (size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))) {
-                if (rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == OPEN) {
+                if (rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == UNDEFINED) {
                     rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type = rr_graph.edge_switch(rr_node_idx, edge_idx);
                 } else {
                     VTR_ASSERT(rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == rr_graph.edge_switch(rr_node_idx, edge_idx));

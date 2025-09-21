@@ -35,18 +35,19 @@
  *			the two files are swapped on command line.
  *
  */
-
 #include <cstring>
 #include <map>
-#include <set>
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <unordered_set>
 
 #include "logic_types.h"
+#include "physical_types.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
+#include "read_xml_arch_file_interposer.h"
 #include "read_xml_arch_file_vib.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -68,6 +69,9 @@
 #include "vtr_expr_eval.h"
 
 #include "read_xml_arch_file_noc_tag.h"
+#include "read_xml_arch_file_sg.h"
+
+#include "interposer_types.h"
 
 using namespace std::string_literals;
 using pugiutil::ReqOpt;
@@ -550,6 +554,12 @@ void xml_read_arch(const char* ArchFile,
             process_noc_tag(Next, arch, loc_data);
         }
 
+        // Process scatter-gather patterns (optional)
+        Next = get_single_child(architecture, "scatter_gather_list", loc_data, pugiutil::OPTIONAL);
+        if (Next) {
+            process_sg_tag(Next, arch, loc_data, arch->switches);
+        }
+
         SyncModelsPbTypes(arch, LogicalBlockTypes);
         check_models(arch);
 
@@ -636,10 +646,10 @@ static void load_pin_loc(pugi::xml_node Locations,
         for (int pin_num = 0; pin_num < type->num_pins; ++pin_num) {
             auto class_type = get_pin_type_from_pin_physical_num(type, pin_num);
 
-            if (class_type == RECEIVER) {
+            if (class_type == e_pin_type::RECEIVER) {
                 input_pins.push_back(pin_num);
             } else {
-                VTR_ASSERT(class_type == DRIVER);
+                VTR_ASSERT(class_type == e_pin_type::DRIVER);
                 output_pins.push_back(pin_num);
             }
         }
@@ -2247,7 +2257,7 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                 //Use the specified switch
                 sb_switch_override = find_switch_by_name(arch.switches, sb_switch_override_str);
 
-                if (sb_switch_override == OPEN) {
+                if (sb_switch_override == ARCH_FPGA_UNDEFINED_VAL) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
                                    vtr::string_fmt("Invalid <sb_loc> 'switch_override' attribute '%s' (no matching switch named '%s' found)\n",
                                                    sb_switch_override_str.c_str(), sb_switch_override_str.c_str())
@@ -2300,7 +2310,7 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
             //Use the specified switch
             internal_switch = find_switch_by_name(arch.switches, internal_switch_name);
 
-            if (internal_switch == OPEN) {
+            if (internal_switch == ARCH_FPGA_UNDEFINED_VAL) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(switchblock_locations),
                                vtr::string_fmt("Invalid <switchblock_locations> 'internal_switch' attribute '%s' (no matching switch named '%s' found)\n",
                                                internal_switch_name.c_str(), internal_switch_name.c_str())
@@ -2571,11 +2581,11 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
     num_of_avail_layer = get_number_of_layers(layout_type_tag, loc_data);
     bool has_layer = layout_type_tag.child("layer");
 
-    //Determine the grid specification type
+    // Determine the grid specification type
     if (layout_type_tag.name() == std::string("auto_layout")) {
         expect_only_attributes(layout_type_tag, {"aspect_ratio"}, loc_data);
 
-        grid_def.grid_type = GridDefType::AUTO;
+        grid_def.grid_type = e_grid_def_type::AUTO;
 
         grid_def.aspect_ratio = get_attribute(layout_type_tag, "aspect_ratio", loc_data, ReqOpt::OPTIONAL).as_float(1.);
         grid_def.name = "auto";
@@ -2583,13 +2593,13 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
     } else if (layout_type_tag.name() == std::string("fixed_layout")) {
         expect_only_attributes(layout_type_tag, {"width", "height", "name"}, loc_data);
 
-        grid_def.grid_type = GridDefType::FIXED;
+        grid_def.grid_type = e_grid_def_type::FIXED;
         grid_def.width = get_attribute(layout_type_tag, "width", loc_data).as_int();
         grid_def.height = get_attribute(layout_type_tag, "height", loc_data).as_int();
         std::string name = get_attribute(layout_type_tag, "name", loc_data).value();
 
         if (name == "auto") {
-            //We name <auto_layout> as 'auto', so don't allow a user to specify it
+            // We name <auto_layout> as 'auto', so don't allow a user to specify it
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
                            vtr::string_fmt("The name '%s' is reserved for auto-sized layouts; please choose another name", name.c_str()).c_str());
         }
@@ -2604,27 +2614,26 @@ static t_grid_def process_grid_layout(vtr::string_internment& strings,
 
     grid_def.layers.resize(num_of_avail_layer);
     arch->layer_global_routing.resize(num_of_avail_layer);
-    //No layer tag is specified (only one die is specified in the arch file)
-    //Need to process layout_type_tag children to get block types locations in the grid
+    // No layer tag is specified (only one die is specified in the arch file)
+    // Need to process layout_type_tag children to get block types locations in the grid
     if (has_layer) {
-        std::set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
-        //One or more than one layer tag is specified
-        auto layer_tag_specified = layout_type_tag.children("layer");
-        for (auto layer_child : layer_tag_specified) {
-            int die_number;
-            bool has_global_routing;
-            //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
-            //Need to process each <layer> tag children to get block types locations for each grid
-            die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
-            has_global_routing = get_attribute(layer_child, "has_prog_routing", loc_data, ReqOpt::OPTIONAL).as_bool(true);
+        std::unordered_set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
+        for (pugi::xml_node layer_child : layout_type_tag.children("layer")) {
+
+            // More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
+            // Need to process each <layer> tag children to get block types locations for each grid
+            int die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
+            bool has_global_routing = get_attribute(layer_child, "has_prog_routing", loc_data, ReqOpt::OPTIONAL).as_bool(true);
             arch->layer_global_routing.at(die_number) = has_global_routing;
             VTR_ASSERT(die_number >= 0 && die_number < num_of_avail_layer);
-            auto insert_res = seen_die_numbers.insert(die_number);
-            VTR_ASSERT_MSG(insert_res.second, "Two different layers with a same die number may have been specified in the Architecture file");
+
+            // If the die number is not actually inserted in the seen_die_numbers set, it means that it's a duplicate
+            auto [_, did_insert_in_set] = seen_die_numbers.insert(die_number);
+            VTR_ASSERT_MSG(did_insert_in_set, "Two different layers with a same die number may have been specified in the Architecture file");
             process_block_type_locs(grid_def, die_number, strings, layer_child, loc_data);
         }
     } else {
-        //if only one die is available, then global routing resources must exist in that die
+        // If only one die is available, then global routing resources must exist in that die
         int die_number = 0;
         arch->layer_global_routing.at(die_number) = true;
         process_block_type_locs(grid_def, die_number, strings, layout_type_tag, loc_data);
@@ -2638,9 +2647,29 @@ static void process_block_type_locs(t_grid_def& grid_def,
                                     pugi::xml_node layout_block_type_tag,
                                     const pugiutil::loc_data& loc_data) {
     //Process all the block location specifications
-    for (auto loc_spec_tag : layout_block_type_tag.children()) {
-        auto loc_type = loc_spec_tag.name();
-        auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
+    for (pugi::xml_node loc_spec_tag : layout_block_type_tag.children()) {
+        const char* loc_type = loc_spec_tag.name();
+
+        // There are multiple attributes that are shared by every other tag that interposer
+        // tags do not have. For this reason we check if loc_spec_tag is an interposer tag
+        // and switch code paths if it is.
+        if (loc_type == std::string("interposer_cut")) {
+            if (grid_def.grid_type == e_grid_def_type::AUTO) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposers are not currently supported for auto sized devices.");
+            }
+
+            t_interposer_cut_inf interposer_cut = parse_interposer_cut_tag(loc_spec_tag, loc_data);
+            
+            if ((interposer_cut.dim == e_interposer_cut_dim::X && interposer_cut.loc >= grid_def.height) || (interposer_cut.dim == e_interposer_cut_dim::Y && interposer_cut.loc >= grid_def.width)) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposer cut dimensions are outside of device bounds");
+            }
+
+            grid_def.layers.at(die_number).interposer_cuts.push_back(interposer_cut);
+            continue;
+        }
+
+        // Continue parsing for non-interposer tags
+        const char* type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
         int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
         t_metadata_dict meta = process_meta_data(strings, loc_spec_tag, loc_data);
 
@@ -4234,25 +4263,16 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             }
         }
 
-        /* get the switchblock location */
+        // get the switchblock location
         SubElem = get_single_child(Node, "switchblock_location", loc_data);
         tmp = get_attribute(SubElem, "type", loc_data).as_string(nullptr);
         if (tmp) {
-            if (strcmp(tmp, "EVERYWHERE") == 0) {
-                sb.location = e_sb_location::E_EVERYWHERE;
-            } else if (strcmp(tmp, "PERIMETER") == 0) {
-                sb.location = e_sb_location::E_PERIMETER;
-            } else if (strcmp(tmp, "CORE") == 0) {
-                sb.location = e_sb_location::E_CORE;
-            } else if (strcmp(tmp, "CORNER") == 0) {
-                sb.location = e_sb_location::E_CORNER;
-            } else if (strcmp(tmp, "FRINGE") == 0) {
-                sb.location = e_sb_location::E_FRINGE;
-            } else if (strcmp(tmp, "XY_SPECIFIED") == 0) {
-                sb.location = e_sb_location::E_XY_SPECIFIED;
-            } else {
+            auto sb_location_iter = SB_LOCATION_STRING_MAP.find(tmp);
+            if (sb_location_iter == SB_LOCATION_STRING_MAP.end()) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
                                vtr::string_fmt("unrecognized switchblock location: %s\n", tmp).c_str());
+            } else {
+                sb.location = sb_location_iter->second;
             }
         }
 
@@ -5036,7 +5056,7 @@ static int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches, s
         }
     }
 
-    return -1;
+    return ARCH_FPGA_UNDEFINED_VAL;
 }
 
 static e_side string_to_side(const std::string& side_str) {

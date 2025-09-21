@@ -309,15 +309,14 @@ typedef Cost_Entry (*WireCostFunc)(e_rr_type, int, int, int, int, int);
 /**
  * @brief For each tile, iterate over its OPINs and store which segment types are accessible from each OPIN
  */
-t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat);
+t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
+                                                    int route_verbosity);
 
-t_chan_ipins_delays compute_router_chan_ipin_lookahead();
+t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity);
 
 t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_graph,
                                                          t_physical_tile_type_ptr physical_tile,
-                                                         int layer,
-                                                         int x,
-                                                         int y);
+                                                         const t_physical_tile_loc& tile_loc);
 
 /* returns index of a node from which to start routing */
 RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset);
@@ -333,11 +332,12 @@ RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int t
 std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
 
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
-                                        int from_layer_num,
+                                        unsigned from_layer_num,
                                         const e_rr_type& chan_type,
                                         const t_segment_inf& segment_inf,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
-                                        bool sample_all_locs);
+                                        bool sample_all_locs,
+                                        int route_verbosity);
 
 /**
  * @brief Iterate over all of the wire segments accessible from the SOURCE/OPIN (stored in src_opin_delay_map) and return the minimum cost (congestion and delay) across them to the sink

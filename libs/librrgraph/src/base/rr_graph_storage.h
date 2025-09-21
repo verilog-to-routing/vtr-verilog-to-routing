@@ -2,6 +2,7 @@
 
 #include <bitset>
 
+#include "librrgraph_types.h"
 #include "vtr_vector.h"
 #include "physical_types.h"
 #include "rr_graph_storage_utils.h"
@@ -52,13 +53,13 @@
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
 struct alignas(16) t_rr_node_data {
-    int16_t cost_index_ = -1;
-    int16_t rc_index_ = -1;
+    int16_t cost_index_ = LIBRRGRAPH_UNDEFINED_VAL;
+    int16_t rc_index_ = LIBRRGRAPH_UNDEFINED_VAL;
 
-    int16_t xlow_ = -1;
-    int16_t ylow_ = -1;
-    int16_t xhigh_ = -1;
-    int16_t yhigh_ = -1;
+    int16_t xlow_ = LIBRRGRAPH_UNDEFINED_VAL;
+    int16_t ylow_ = LIBRRGRAPH_UNDEFINED_VAL;
+    int16_t xhigh_ = LIBRRGRAPH_UNDEFINED_VAL;
+    int16_t yhigh_ = LIBRRGRAPH_UNDEFINED_VAL;
 
     e_rr_type type_ = e_rr_type::NUM_RR_TYPES;
 
@@ -218,6 +219,9 @@ class t_rr_graph_storage {
                 node_storage_.data(), node_storage_.size()),
             id, side);
     }
+
+    /** @brief Get the sides where the node locates on. */
+    const std::vector<e_side> node_sides(RRNodeId id) const;
 
     /* FIXME: This function should be DEPRECATED!
      * Developers can easily use the following codes with more flexibility
