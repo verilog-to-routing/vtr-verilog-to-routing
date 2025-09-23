@@ -302,7 +302,7 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
             const int cut_loc = cut_inf.loc;
             e_interposer_cut_dim cut_dim = cut_inf.dim;
 
-            for (const t_interdie_wire_inf& wire_inf : cut_inf) {
+            for (const t_interdie_wire_inf& wire_inf : cut_inf.interdie_wires) {
                 VTR_ASSERT(wire_inf.offset_definition.repeat_expr.empty());
 
                 const int start = std::stoi(wire_inf.offset_definition.start_expr) + cut_loc;

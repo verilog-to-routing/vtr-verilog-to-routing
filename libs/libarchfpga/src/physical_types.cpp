@@ -3,6 +3,7 @@
 #include "vtr_math.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
+#include "vtr_assert.h"
 
 #include "arch_util.h"
 
@@ -471,4 +472,14 @@ const t_physical_tile_port* t_sub_tile::get_port_by_pin(int pin) const {
     }
 
     return nullptr;
+}
+
+const t_grid_def& t_arch::grid_layout() const {
+    for (const t_grid_def& layout : grid_layouts) {
+        if (layout.name == device_layout) {
+            return layout;
+        }
+    }
+    VTR_ASSERT_SAFE_MSG(false, "Device layout not found.");
+    return grid_layouts.front(); // unreachable, keeps compiler happy
 }

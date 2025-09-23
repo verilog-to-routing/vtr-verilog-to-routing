@@ -2127,7 +2127,11 @@ struct t_arch {
     // types of connections requires a different switch, all names should correspond to a switch in Switches.
     std::vector<std::string> ipin_cblock_switch_name;
 
-    std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+    /// Set of potential device layouts
+    std::vector<t_grid_def> grid_layouts;
+
+    /// Returns the selected layout
+    const t_grid_def& grid_layout() const;
 
     // the layout that is chosen to be used with command line options
     // It is used to generate custom SB for a specific locations within the device

@@ -554,7 +554,8 @@ static std::vector<int> get_src_pins_in_cluster(const std::unordered_set<int>& p
 static int get_chain_idx(const std::vector<int>& pin_idx_vec, const std::vector<int>& pin_chain, int new_idx);
 
 /**
- * If pin chain is a part of a chain already added to all_chains, add the new parts to the corresponding chain. Otherwise, add pin_chain as a new chain to all_chains.
+ * If pin chain is a part of a chain already added to all_chains, add the new parts to the corresponding chain.
+ * Otherwise, add pin_chain as a new chain to all_chains.
  */
 static void add_pin_chain(const std::vector<int>& pin_chain,
                           int chain_idx,
@@ -606,6 +607,7 @@ static void build_rr_graph(e_graph_type graph_type,
                            const e_clock_modeling clock_modeling,
                            const std::vector<t_direct_inf>& directs,
                            const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
+                           const std::vector<t_layer_def>& interposer_inf,
                            RRSwitchId* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings,
@@ -710,6 +712,7 @@ void create_rr_graph(e_graph_type graph_type,
                                router_opts.clock_modeling,
                                directs,
                                device_ctx.arch->scatter_gather_patterns,
+                               device_ctx.arch->grid_layout().layers,
                                &det_routing_arch.wire_to_rr_ipin_switch,
                                is_flat,
                                Warnings,
@@ -949,6 +952,7 @@ static void build_rr_graph(e_graph_type graph_type,
                            const e_clock_modeling clock_modeling,
                            const std::vector<t_direct_inf>& directs,
                            const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
+                           const std::vector<t_layer_def>& interposer_inf,
                            RRSwitchId* wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings,
@@ -1207,6 +1211,11 @@ static void build_rr_graph(e_graph_type graph_type,
     // END SB LOOKUP
 
     vtr::NdMatrix<std::vector<t_bottleneck_link>, 2> interdie_3d_links;
+
+    std::vector<t_scatter_gather_pattern> sg_patterns_copy = scatter_gather_patterns;
+
+    convert_interposer_cuts_to_sg_patterns(interposer_inf, sg_patterns_copy);
+
     const std::vector<t_bottleneck_link> bottleneck_links = alloc_and_load_scatter_gather_connections(scatter_gather_patterns,
                                                                                                       inter_cluster_prog_rr,
                                                                                                       segment_inf,
