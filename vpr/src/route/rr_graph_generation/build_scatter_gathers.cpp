@@ -309,7 +309,7 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
                 const int end = std::stoi(wire_inf.offset_definition.end_expr) + cut_loc;
                 const int incr = std::stoi(wire_inf.offset_definition.incr_expr);
 
-                auto sg_it = std::ranges::find_if(sg_patterns, [&wire_inf](const t_scatter_gather_pattern& sg) {
+                auto sg_it = std::ranges::find_if(sg_patterns, [&wire_inf](const t_scatter_gather_pattern& sg) noexcept {
                     return wire_inf.sg_name == sg.name;
                 });
 
