@@ -22,11 +22,11 @@
  * @param chan_details_y Channel details for vertical routing channels.
  * @param correct_channels Output: list of valid channel locations and types.
  */
-static void index_to_correct_channels(const t_wireconn_inf& pattern,
-                                      const t_physical_tile_loc& loc,
-                                      const t_chan_details& chan_details_x,
-                                      const t_chan_details& chan_details_y,
-                                      std::vector<t_chan_loc>& correct_channels);
+static void index_to_correct_sg_channels(const t_wireconn_inf& pattern,
+                                         const t_physical_tile_loc& loc,
+                                         const t_chan_details& chan_details_x,
+                                         const t_chan_details& chan_details_y,
+                                         std::vector<t_chan_loc>& correct_channels);
 
 /**
  * @brief Collects candidate wires from given channels that match specified switchpoints.
@@ -52,11 +52,11 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
 // Static Function Definitions
 //
 
-static void index_to_correct_channels(const t_wireconn_inf& pattern,
-                                      const t_physical_tile_loc& loc,
-                                      const t_chan_details& chan_details_x,
-                                      const t_chan_details& chan_details_y,
-                                      std::vector<t_chan_loc>& correct_channels) {
+static void index_to_correct_sg_channels(const t_wireconn_inf& pattern,
+                                         const t_physical_tile_loc& loc,
+                                         const t_chan_details& chan_details_x,
+                                         const t_chan_details& chan_details_y,
+                                         std::vector<t_chan_loc>& correct_channels) {
     correct_channels.clear();
 
     for (e_side side : pattern.sides) {
@@ -89,9 +89,9 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
         const t_chan_seg_details* chan_details = (chan_type == e_rr_type::CHANX) ? chan_details_x[chan_loc.x][chan_loc.y].data() : chan_details_y[chan_loc.x][chan_loc.y].data();
 
         for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec) {
-            auto wire_type = vtr::string_view(wire_switchpoints.segment_name);
+            std::string_view wire_type(wire_switchpoints.segment_name);
 
-            if (wire_type_sizes.find(wire_type) == wire_type_sizes.end()) {
+            if (wire_type_sizes.count(wire_type) == 0) {
                 // wire_type_sizes may not contain wire_type if its seg freq is 0
                 continue;
             }
@@ -129,7 +129,9 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
                     int wire_switchpoint = get_switchpoint_of_wire(chan_type, chan_details[iwire], seg_coord, chan_side);
 
                     // Check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so
-                    if (wire_switchpoint != valid_switchpoint) continue;
+                    if (wire_switchpoint != valid_switchpoint) {
+                        continue;
+                    }
 
                     candidates.push_back({chan_loc, chan_type, chan_side, {iwire, wire_switchpoint}});
                 }
@@ -199,8 +201,8 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 scatter_loc.y = gather_loc.y + sg_link.y_offset;
                 scatter_loc.layer_num = gather_loc.layer_num + sg_link.z_offset;
 
-                index_to_correct_channels(sg_pattern.gather_pattern, gather_loc, chan_details_x, chan_details_y, gather_channels);
-                index_to_correct_channels(sg_pattern.scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
+                index_to_correct_sg_channels(sg_pattern.gather_pattern, gather_loc, chan_details_x, chan_details_y, gather_channels);
+                index_to_correct_sg_channels(sg_pattern.scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
 
                 if (gather_channels.empty() || scatter_channels.empty()) {
                     continue;

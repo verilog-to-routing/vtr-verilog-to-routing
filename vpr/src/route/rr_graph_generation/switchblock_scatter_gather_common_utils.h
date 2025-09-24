@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <string_view>
+
 #include "device_grid.h"
 #include "rr_types.h"
 #include "rr_graph_type.h"
@@ -35,7 +37,7 @@ struct t_wire_switchpoint {
 };
 
 /// Used to get info about a given wire type based on the name
-typedef vtr::flat_map<vtr::string_view, t_wire_info> t_wire_type_sizes;
+typedef vtr::flat_map<std::string_view, t_wire_info> t_wire_type_sizes;
 
 /**
  * @brief check whether a switch block exists in a specified coordinate within the device grid

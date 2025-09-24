@@ -2,7 +2,7 @@
 Physical Types
 ========
 
-These types are used to capture user's intended architecture specification and will be later turned into a flattened device grid according to the device's size.
+These types are used to capture user's intended architecture specification.
 
 .. doxygenstruct:: t_arch
    :project: vpr

@@ -285,7 +285,7 @@ struct ArchReader {
         set_arch_file_name(arch_file);
 
         for (std::string str : ar_.getStrList()) {
-            auto interned_string = arch_->strings.intern_string(vtr::string_view(str.c_str()));
+            auto interned_string = arch_->strings.intern_string(str);
             arch_->interned_strings.push_back(interned_string);
         }
     }

@@ -165,14 +165,14 @@ static t_wire_type_sizes count_chan_wire_type_sizes(const t_chan_seg_details* ch
     int num_wires = 0;
     t_wire_info wire_info;
 
-    vtr::string_view wire_type = channel[0].type_name();
+    std::string_view wire_type = channel[0].type_name();
     int length = channel[0].length();
     int start = 0;
 
     t_wire_type_sizes wire_type_sizes;
 
     for (int iwire = 0; iwire < nodes_per_chan; iwire++) {
-        vtr::string_view new_type = channel[iwire].type_name();
+        std::string_view new_type = channel[iwire].type_name();
         int new_length = channel[iwire].length();
         int new_start = iwire;
         if (new_type != wire_type) {
