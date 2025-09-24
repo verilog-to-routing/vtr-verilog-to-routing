@@ -1216,7 +1216,7 @@ static void build_rr_graph(e_graph_type graph_type,
 
     convert_interposer_cuts_to_sg_patterns(interposer_inf, sg_patterns_copy);
 
-    const std::vector<t_bottleneck_link> bottleneck_links = alloc_and_load_scatter_gather_connections(scatter_gather_patterns,
+    const std::vector<t_bottleneck_link> bottleneck_links = alloc_and_load_scatter_gather_connections(sg_patterns_copy,
                                                                                                       inter_cluster_prog_rr,
                                                                                                       segment_inf,
                                                                                                       chan_details_x, chan_details_y,
