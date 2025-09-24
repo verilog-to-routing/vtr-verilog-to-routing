@@ -195,6 +195,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_track_to_pin_lookup& track_to_pin_lookup_y,
                                                                   const t_pin_to_track_lookup& opin_to_track_map,
                                                                   const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
+                                                                  const std::vector<t_bottleneck_link>& sg_links,
+                                                                  const std::vector<std::pair<RRNodeId, int>>& sg_node_indices,
                                                                   const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                                                                   t_sb_connection_map* sb_conn_map,
                                                                   const DeviceGrid& grid,
@@ -492,6 +494,13 @@ static void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
                                    const t_chan_details& chan_details_y,
                                    const std::vector<t_bottleneck_link>& interdie_3d_links,
                                    t_rr_edge_info_set& interdie_3d_rr_edges_to_create);
+
+static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
+                                            const std::vector<t_bottleneck_link>& sg_links,
+                                            const std::vector<std::pair<RRNodeId, int>>& sg_node_indices,
+                                            const t_chan_details& chan_details_x,
+                                            const t_chan_details& chan_details_y,
+                                            t_rr_edge_info_set& non_3d_sg_rr_edges_to_create);
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 
@@ -1230,10 +1239,10 @@ static void build_rr_graph(e_graph_type graph_type,
         device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
     }
 
-    std::vector<RRNodeId> non_3d_sg_nodes = alloc_and_load_non_3d_sg_pattern_rr_node_indices(device_ctx.rr_graph_builder,
-                                                                                             bottleneck_links,
-                                                                                             nodes_per_chan,
-                                                                                             num_rr_nodes);
+    std::vector<std::pair<RRNodeId, int>> non_3d_sg_nodes = alloc_and_load_non_3d_sg_pattern_rr_node_indices(device_ctx.rr_graph_builder,
+                                                                                                             bottleneck_links,
+                                                                                                             nodes_per_chan,
+                                                                                                            num_rr_nodes);
     device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
 
     // START IPIN MAP
@@ -1323,6 +1332,8 @@ static void build_rr_graph(e_graph_type graph_type,
         track_to_pin_lookup_x, track_to_pin_lookup_y,
         opin_to_track_map,
         interdie_3d_links,
+        bottleneck_links,
+        non_3d_sg_nodes,
         switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
         Fc_out,
         nodes_per_chan,
@@ -1954,6 +1965,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const t_track_to_pin_lookup& track_to_pin_lookup_y,
                                                                   const t_pin_to_track_lookup& opin_to_track_map,
                                                                   const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
+                                                                  const std::vector<t_bottleneck_link>& sg_links,
+                                                                  const std::vector<std::pair<RRNodeId, int>>& sg_node_indices,
                                                                   const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                                                                   t_sb_connection_map* sb_conn_map,
                                                                   const DeviceGrid& grid,
@@ -2131,11 +2144,10 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                   wire_to_pin_between_dice_switch,
                                   directionality);
 
-                    //Create the actual CHAN->CHAN edges
+                    // Create the actual CHAN->CHAN edges
                     uniquify_edges(rr_edges_to_create);
                     alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
                     num_edges += rr_edges_to_create.size();
-
                     rr_edges_to_create.clear();
                 }
             }
@@ -2151,6 +2163,12 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
         }
     }
+
+    add_and_connect_non_3d_sg_links(rr_graph_builder, sg_links, sg_node_indices, chan_details_x, chan_details_y, rr_edges_to_create);
+    uniquify_edges(rr_edges_to_create);
+    alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
+    num_edges += rr_edges_to_create.size();
+    rr_edges_to_create.clear();
 
     VTR_LOGV(route_verbosity > 1, "CHAN->CHAN type edge count:%d\n", num_edges);
 
@@ -3236,7 +3254,6 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
             int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
             non_3d_sg_rr_edges_to_create.emplace_back(node_id, scatter_node, switch_index, false);
         }
-
     }
 }
 
