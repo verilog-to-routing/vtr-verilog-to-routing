@@ -129,7 +129,9 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
                     int wire_switchpoint = get_switchpoint_of_wire(chan_type, chan_details[iwire], seg_coord, chan_side);
 
                     // Check if this wire belongs to one of the specified switchpoints; add it to our 'wires' vector if so
-                    if (wire_switchpoint != valid_switchpoint) continue;
+                    if (wire_switchpoint != valid_switchpoint) {
+                        continue;
+                    }
 
                     candidates.push_back({chan_loc, chan_type, chan_side, {iwire, wire_switchpoint}});
                 }
@@ -141,7 +143,7 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
 }
 
 //
-// Non-satatic Function Definitions
+// Non-static Function Definitions
 //
 
 std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
