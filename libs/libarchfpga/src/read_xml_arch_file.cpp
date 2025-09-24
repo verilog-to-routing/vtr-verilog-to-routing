@@ -2659,7 +2659,7 @@ static void process_block_type_locs(t_grid_def& grid_def,
             }
 
             t_interposer_cut_inf interposer_cut = parse_interposer_cut_tag(loc_spec_tag, loc_data);
-            
+
             if ((interposer_cut.dim == e_interposer_cut_dim::X && interposer_cut.loc >= grid_def.height) || (interposer_cut.dim == e_interposer_cut_dim::Y && interposer_cut.loc >= grid_def.width)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposer cut dimensions are outside of device bounds");
             }
