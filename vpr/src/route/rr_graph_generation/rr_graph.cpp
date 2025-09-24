@@ -1234,6 +1234,7 @@ static void build_rr_graph(e_graph_type graph_type,
                                                                                              bottleneck_links,
                                                                                              nodes_per_chan,
                                                                                              num_rr_nodes);
+    device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
 
     // START IPIN MAP
     // Create ipin map lookups
@@ -3148,6 +3149,94 @@ static void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
             int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
             interdie_3d_rr_edges_to_create.emplace_back(chanz_node, scatter_node, switch_index, false);
         }
+    }
+}
+
+static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
+                                            const std::vector<t_bottleneck_link>& sg_links,
+                                            const std::vector<std::pair<RRNodeId, int>>& sg_node_indices,
+                                            const t_chan_details& chan_details_x,
+                                            const t_chan_details& chan_details_y,
+                                            t_rr_edge_info_set& non_3d_sg_rr_edges_to_create) {
+    VTR_ASSERT(sg_links.size() == sg_node_indices.size());
+    const size_t num_links = sg_links.size();
+
+    for (size_t i = 0; i < num_links; i++) {
+
+        const t_bottleneck_link& link = sg_links[i];
+
+        int xlow, xhigh, ylow, yhigh;
+        e_rr_type chan_type;
+        Direction direction;
+        const t_physical_tile_loc& src_loc = link.gather_loc;
+        const t_physical_tile_loc& dst_loc = link.scatter_loc;
+
+        VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
+        const int layer = src_loc.layer_num;
+
+        if (dst_loc.x > src_loc.x) {
+            chan_type = e_rr_type::CHANX;
+            direction = Direction::INC;
+            ylow = yhigh = dst_loc.y;
+            xlow = src_loc.x + 1;
+            xhigh = dst_loc.x;
+        } else if (dst_loc.x < src_loc.x) {
+            chan_type = e_rr_type::CHANX;
+            direction = Direction::DEC;
+            ylow = yhigh = dst_loc.y;
+            xlow = dst_loc.x + 1;
+            xhigh = src_loc.x;
+        } else if (dst_loc.y > src_loc.y) {
+            chan_type = e_rr_type::CHANY;
+            direction = Direction::INC;
+            xlow = xhigh = dst_loc.x;
+            ylow = src_loc.y + 1;
+            yhigh = dst_loc.y;
+        } else if (dst_loc.y < src_loc.y) {
+            chan_type = e_rr_type::CHANY;
+            direction = Direction::DEC;
+            xlow = xhigh = dst_loc.x;
+            ylow = dst_loc.y + 1;
+            yhigh = src_loc.y;
+        } else {
+            VTR_ASSERT(false);
+        }
+
+        const RRNodeId node_id = sg_node_indices[i].first;
+        const int track_num = sg_node_indices[i].second;
+
+        rr_graph_builder.set_node_layer_low(node_id, layer);
+        rr_graph_builder.set_node_layer_high(node_id, layer);
+        rr_graph_builder.set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
+        rr_graph_builder.set_node_capacity(node_id, 1);
+        // rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset));
+
+        // float R = 0;
+        // float C = 0;
+        // rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+        rr_graph_builder.set_node_type(node_id, chan_type);
+        rr_graph_builder.set_node_track_num(node_id, track_num);
+
+        rr_graph_builder.set_node_direction(node_id, direction);
+
+        for (const t_sg_candidate& gather_wire : link.gather_fanin_connections) {
+            const t_physical_tile_loc& chan_loc = gather_wire.chan_loc.location;
+            e_rr_type chan_type = gather_wire.chan_loc.chan_type;
+            RRNodeId gather_node = rr_graph_builder.node_lookup().find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, chan_type, gather_wire.wire_switchpoint.wire);
+
+            non_3d_sg_rr_edges_to_create.emplace_back(gather_node, node_id, link.arch_wire_switch, false);
+        }
+
+        for (const t_sg_candidate& scatter_wire : link.scatter_fanout_connections) {
+            const t_physical_tile_loc& chan_loc = scatter_wire.chan_loc.location;
+            e_rr_type chan_type = scatter_wire.chan_loc.chan_type;
+            const t_chan_details& chan_details = (chan_type == e_rr_type::CHANX) ? chan_details_x : chan_details_y;
+            RRNodeId scatter_node =  rr_graph_builder.node_lookup().find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, chan_type, scatter_wire.wire_switchpoint.wire);
+
+            int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
+            non_3d_sg_rr_edges_to_create.emplace_back(node_id, scatter_node, switch_index, false);
+        }
+
     }
 }
 

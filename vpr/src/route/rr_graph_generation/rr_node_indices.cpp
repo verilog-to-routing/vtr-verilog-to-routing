@@ -363,7 +363,7 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-std::vector<RRNodeId> alloc_and_load_non_3d_sg_pattern_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                                                        const std::vector<t_bottleneck_link>& bottleneck_links,
                                                                        const t_chan_width& chan_width_inf,
                                                                        int& index) {
@@ -373,7 +373,7 @@ std::vector<RRNodeId> alloc_and_load_non_3d_sg_pattern_rr_node_indices(RRGraphBu
     vtr::NdMatrix<int, 3> chanx_ptc({grid.get_num_layers(), grid.width(), grid.height()}, chan_width_inf.x_max);
     vtr::NdMatrix<int, 3> chany_ptc({grid.get_num_layers(), grid.width(), grid.height()}, chan_width_inf.y_max);
 
-    std::vector<RRNodeId> node_indices;
+    std::vector<std::pair<RRNodeId, int>> node_indices;
     node_indices.reserve(bottleneck_links.size());
 
     for (const t_bottleneck_link& link : bottleneck_links) {
@@ -421,7 +421,7 @@ std::vector<RRNodeId> alloc_and_load_non_3d_sg_pattern_rr_node_indices(RRGraphBu
         VTR_ASSERT(rr_graph_builder.node_lookup().find_nodes_in_range(layer, xlow, ylow, xhigh, yhigh, chan_type, ptc).empty());
 
         const RRNodeId inode = RRNodeId(index);
-        node_indices.push_back(inode);
+        node_indices.push_back({inode, ptc});
         index++;
 
         for (int x = xlow; x <= xhigh; x++) {
