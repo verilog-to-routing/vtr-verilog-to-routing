@@ -363,6 +363,78 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     }
 }
 
+std::vector<RRNodeId> alloc_and_load_non_3d_sg_pattern_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                                                       const std::vector<t_bottleneck_link>& bottleneck_links,
+                                                                       const t_chan_width& chan_width_inf,
+                                                                       int& index) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
+
+    vtr::NdMatrix<int, 3> chanx_ptc({grid.get_num_layers(), grid.width(), grid.height()}, chan_width_inf.x_max);
+    vtr::NdMatrix<int, 3> chany_ptc({grid.get_num_layers(), grid.width(), grid.height()}, chan_width_inf.y_max);
+
+    std::vector<RRNodeId> node_indices;
+    node_indices.reserve(bottleneck_links.size());
+
+    for (const t_bottleneck_link& link : bottleneck_links) {
+        int xlow, xhigh, ylow, yhigh;
+        e_rr_type chan_type;
+        const t_physical_tile_loc& src_loc = link.gather_loc;
+        const t_physical_tile_loc& dst_loc = link.scatter_loc;
+
+        VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
+        const int layer = src_loc.layer_num;
+
+        if (dst_loc.x > src_loc.x) {
+            chan_type = e_rr_type::CHANX;
+            ylow = yhigh = dst_loc.y;
+            xlow = src_loc.x + 1;
+            xhigh = dst_loc.x;
+        } else if (dst_loc.x < src_loc.x) {
+            chan_type = e_rr_type::CHANX;
+            ylow = yhigh = dst_loc.y;
+            xlow = dst_loc.x + 1;
+            xhigh = src_loc.x;
+        } else if (dst_loc.y > src_loc.y) {
+            chan_type = e_rr_type::CHANY;
+            xlow = xhigh = dst_loc.x;
+            ylow = src_loc.y + 1;
+            yhigh = dst_loc.y;
+        } else if (dst_loc.y < src_loc.y) {
+            chan_type = e_rr_type::CHANY;
+            xlow = xhigh = dst_loc.x;
+            ylow = dst_loc.y + 1;
+            yhigh = src_loc.y;
+        } else {
+            VTR_ASSERT(false);
+        }
+
+        vtr::NdMatrix<int, 3>& ptc_matrix = (chan_type == e_rr_type::CHANX) ? chanx_ptc : chany_ptc;
+
+        int ptc = 0;
+        for (int x = xlow; x <= xhigh; x++) {
+            for (int y = ylow; y <= yhigh; y++) {
+                ptc = std::max(ptc, ptc_matrix[layer][x][y]);
+            }
+        }
+
+        VTR_ASSERT(rr_graph_builder.node_lookup().find_nodes_in_range(layer, xlow, ylow, xhigh, yhigh, chan_type, ptc).empty());
+
+        const RRNodeId inode = RRNodeId(index);
+        node_indices.push_back(inode);
+        index++;
+
+        for (int x = xlow; x <= xhigh; x++) {
+            for (int y = ylow; y <= yhigh; y++) {
+                rr_graph_builder.node_lookup().add_node(inode, layer, x, y, chan_type, ptc);
+                ptc_matrix[layer][x][y] = ptc + 1;
+            }
+        }
+    }
+
+    return node_indices;
+}
+
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                          t_physical_tile_type_ptr physical_tile,
                                          const t_physical_tile_loc& root_loc,

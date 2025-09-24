@@ -1231,6 +1231,11 @@ static void build_rr_graph(e_graph_type graph_type,
         device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
     }
 
+    std::vector<RRNodeId> non_3d_sg_nodes = alloc_and_load_non_3d_sg_pattern_rr_node_indices(device_ctx.rr_graph_builder,
+                                                                                             bottleneck_links,
+                                                                                             nodes_per_chan,
+                                                                                             num_rr_nodes);
+
     // START IPIN MAP
     // Create ipin map lookups
 

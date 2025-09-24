@@ -41,6 +41,11 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
                                               int* index);
 
+std::vector<RRNodeId> alloc_and_load_non_3d_sg_pattern_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                                                       const std::vector<t_bottleneck_link>& bottleneck_links,
+                                                                       const t_chan_width& chan_width_inf,
+                                                                       int& index);
+
 /**
  * @brief Allocates and loads RR node indices for a specific tile.
  *
