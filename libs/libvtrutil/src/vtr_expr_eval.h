@@ -13,14 +13,14 @@
 
 /**
  * @file
- * @brief   This file implements an expressopn evaluator
+ * @brief   This file implements an expression evaluator
  *
  * The expression evaluator is capable of performing many operations on given variables, 
  * after parsing the expression. The parser goes character by character and identifies 
  * the type of char or chars. (e.g bracket, comma, number, operator, variable). 
  * The supported operations include addition, subtraction, multiplication, division, 
  * finding max, min, gcd, lcm, as well as boolean operators such as &&, ||, ==, >=, <= etc. 
- * The result is returned as an int value and operation precedance is taken into account. 
+ * The result is returned as an int value and operation precedence is taken into account.
  * (e.g given 3-2*4, the result will be -5). This class is also used to parse expressions 
  * indicating breakpoints. The breakpoint expressions consist of variable names such as 
  * move_num, temp_num, from_block etc, and boolean operators (e.g move_num == 3). 
@@ -46,12 +46,11 @@ class t_formula_data {
     ///@brief set the value of a specific part of the formula
     void set_var_value(std::string_view var, int value) { vars_[var] = value; }
 
-    ///@brief get the value of a specific part of the formula (the var can be c-style string)
+    ///@brief get the value of a specific part of the formula.
     int get_var_value(std::string_view var) const {
         auto iter = vars_.find(var);
         if (iter == vars_.end()) {
-            std::string copy(var.data(), var.size());
-            throw vtr::VtrError(vtr::string_fmt("No value found for variable '%s' from expression\n", copy.c_str()), __FILE__, __LINE__);
+            throw vtr::VtrError(vtr::string_fmt("No value found for variable '%s' from expression\n", var.data()), __FILE__, __LINE__);
         }
 
         return iter->second;
