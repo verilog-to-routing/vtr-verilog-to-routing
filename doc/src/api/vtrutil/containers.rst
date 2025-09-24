@@ -99,12 +99,6 @@ vtr_array_view
    :project: vtr
    :members:
 
-vtr_string_view
----------------
-.. doxygenclass:: vtr::string_view
-   :project: vtr
-   :members:
-
 vtr_cache
 ---------
 .. doxygenclass:: vtr::Cache

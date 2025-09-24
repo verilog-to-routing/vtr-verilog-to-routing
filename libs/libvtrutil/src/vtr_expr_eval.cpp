@@ -318,7 +318,7 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
             //A number
             fobj->type = E_FML_NUMBER;
             fobj->data.num = mydata.get_var_value(
-                vtr::string_view(
+                std::string_view(
                     var_name.data(),
                     var_name.size()));
         } else if (is_variable(var_name)) {

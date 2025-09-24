@@ -4,10 +4,10 @@
 #include <vector>
 #include <stack>
 #include <cstring>
+#include <string_view>
 
 #include "vtr_util.h"
 #include "vtr_error.h"
-#include "vtr_string_view.h"
 #include "vtr_flat_map.h"
 #include "../../../vpr/src/draw/breakpoint_state_globals.h"
 
@@ -44,18 +44,10 @@ class t_formula_data {
     }
 
     ///@brief set the value of a specific part of the formula
-    void set_var_value(vtr::string_view var, int value) { vars_[var] = value; }
-
-    ///@brief set the value of a specific part of the formula (the var can be c-style string)
-    void set_var_value(const char* var, int value) { vars_[vtr::string_view(var)] = value; }
-
-    ///@brief get the value of a specific part of the formula
-    int get_var_value(const std::string& var) const {
-        return get_var_value(vtr::string_view(var.data(), var.size()));
-    }
+    void set_var_value(std::string_view var, int value) { vars_[var] = value; }
 
     ///@brief get the value of a specific part of the formula (the var can be c-style string)
-    int get_var_value(vtr::string_view var) const {
+    int get_var_value(std::string_view var) const {
         auto iter = vars_.find(var);
         if (iter == vars_.end()) {
             std::string copy(var.data(), var.size());
@@ -66,7 +58,7 @@ class t_formula_data {
     }
 
   private:
-    vtr::flat_map<vtr::string_view, int> vars_;
+    vtr::flat_map<std::string_view, int> vars_;
 };
 
 /**** Enums ****/
