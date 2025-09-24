@@ -972,8 +972,8 @@ enum class e_place_delta_delay_algorithm {
  *        for the placer.
  */
 enum class e_anneal_init_t_estimator {
-    COST_VARIANCE,      ///<Estimate the initial temperature using the variance in cost of a set of trial swaps.
-    EQUILIBRIUM,        ///<Estimate the initial temperature by predicting the equilibrium temperature for the initial placement.
+    COST_VARIANCE, ///<Estimate the initial temperature using the variance in cost of a set of trial swaps.
+    EQUILIBRIUM,   ///<Estimate the initial temperature by predicting the equilibrium temperature for the initial placement.
 };
 
 enum class e_move_type;

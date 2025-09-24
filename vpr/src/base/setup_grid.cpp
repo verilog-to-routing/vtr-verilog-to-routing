@@ -84,7 +84,7 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
     if (layout_name == "auto") {
         VTR_ASSERT(!grid_layouts.empty());
         //Auto-size
-        if (grid_layouts[0].grid_type == GridDefType::AUTO) {
+        if (grid_layouts[0].grid_type == e_grid_def_type::AUTO) {
             //Auto layout of the specified dimensions
             return build_device_grid(grid_layouts[0], width, height);
         } else {
@@ -152,7 +152,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
     DeviceGrid grid;
 
     auto is_auto_grid_def = [](const t_grid_def& grid_def) {
-        return grid_def.grid_type == GridDefType::AUTO;
+        return grid_def.grid_type == e_grid_def_type::AUTO;
     };
 
     auto auto_layout_itr = std::find_if(grid_layouts.begin(), grid_layouts.end(), is_auto_grid_def);
@@ -230,8 +230,8 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
             grid_layouts_view.push_back(&layout);
         }
         auto area_cmp = [](const t_grid_def* lhs, const t_grid_def* rhs) {
-            VTR_ASSERT(lhs->grid_type == GridDefType::FIXED);
-            VTR_ASSERT(rhs->grid_type == GridDefType::FIXED);
+            VTR_ASSERT(lhs->grid_type == e_grid_def_type::FIXED);
+            VTR_ASSERT(rhs->grid_type == e_grid_def_type::FIXED);
 
             int lhs_area = lhs->width * lhs->height;
             int rhs_area = rhs->width * rhs->height;
@@ -339,7 +339,7 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::ma
 
 ///@brief Build the specified device grid
 static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range, const std::vector<t_logical_block_type_ptr>& limiting_resources) {
-    if (grid_def.grid_type == GridDefType::FIXED) {
+    if (grid_def.grid_type == e_grid_def_type::FIXED) {
         if (grid_def.width != int(grid_width) || grid_def.height != int(grid_height)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Requested grid size (%zu%zu) does not match fixed device size (%dx%d)",

@@ -89,7 +89,7 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
         const t_chan_seg_details* chan_details = (chan_type == e_rr_type::CHANX) ? chan_details_x[chan_loc.x][chan_loc.y].data() : chan_details_y[chan_loc.x][chan_loc.y].data();
 
         for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec) {
-            auto wire_type = vtr::string_view(wire_switchpoints.segment_name);
+            std::string_view wire_type(wire_switchpoints.segment_name);
 
             if (wire_type_sizes.count(wire_type) == 0) {
                 // wire_type_sizes may not contain wire_type if its seg freq is 0

@@ -315,12 +315,9 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
             }
 
         } else if (!is_breakpoint) {
-            //A number
+            // A number
             fobj->type = E_FML_NUMBER;
-            fobj->data.num = mydata.get_var_value(
-                vtr::string_view(
-                    var_name.data(),
-                    var_name.size()));
+            fobj->data.num = mydata.get_var_value(var_name);
         } else if (is_variable(var_name)) {
             fobj->type = E_FML_VARIABLE;
             if (same_string(var_name, "temp_count"))

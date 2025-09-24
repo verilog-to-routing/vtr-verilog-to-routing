@@ -126,11 +126,11 @@
  */
 
 #include <algorithm>
+#include <string_view>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
 #include "vtr_log.h"
-#include "vtr_string_view.h"
 
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -278,6 +278,7 @@ void free_switchblock_permutations(t_sb_connection_map* sb_conns) {
     vtr::malloc_trim(0);
 }
 
+
 static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
                                   e_rr_type chan_type,
                                   int x,
@@ -300,7 +301,7 @@ static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
     for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec) {
         collected_wire_switchpoints.clear();
 
-        auto wire_type = vtr::string_view(wire_switchpoints.segment_name);
+        std::string_view wire_type = wire_switchpoints.segment_name;
 
         if (wire_type_sizes.find(wire_type) == wire_type_sizes.end()) {
             // wire_type_sizes may not contain wire_type if its seg freq is 0
