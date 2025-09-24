@@ -211,7 +211,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const e_clock_modeling clock_modeling,
-                                                                  bool is_flat,
                                                                   const int route_verbosity);
 
 static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_builder,
@@ -1335,7 +1334,6 @@ static void build_rr_graph(e_graph_type graph_type,
         clb_to_clb_directs,
         is_global_graph,
         clock_modeling,
-        is_flat,
         route_verbosity);
 
     // Verify no incremental node allocation.
@@ -1971,7 +1969,6 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const e_clock_modeling clock_modeling,
-                                                                  bool /*is_flat*/,
                                                                   const int route_verbosity) {
     // We take special care when creating RR graph edges (there are typically many more
     // edges than nodes in an RR graph).
