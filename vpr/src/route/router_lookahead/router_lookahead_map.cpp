@@ -515,6 +515,11 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     const auto& grid = device_ctx.grid;
 
     const size_t num_layers = grid.get_num_layers();
+    // The wire look-ahead table has dimension for channel type.
+    // In 3-d architectures we have three channel types: CHANX, CHANY, and CHANZ.
+    // In 2-d architectures we only have two channel types: CHANX and CHANY.
+    // The size of this dimension is determined based on how many layers are available
+    // in the architecture.
     const size_t chan_type_dim_size = (num_layers == 1) ? 2 : 3;
 
     //Re-allocate
