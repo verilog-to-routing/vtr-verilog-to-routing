@@ -36,7 +36,6 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
                                                   const float R_minW_nmos,
                                                   const float R_minW_pmos);
 
-
 /**
  * @brief Allocate and populate rr_switch entries for all fan-ins used in the RR graph.
  *

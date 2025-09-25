@@ -217,16 +217,16 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //It always consists of 10 alphanumeric digits, a decimal
     //and a sign
     for (int i = 0; i < (int)arch->switches.size(); i++) {
-        if (arch->switches[i].type() == SwitchType::MUX) {
+        if (arch->switches[i].type() == e_switch_type::MUX) {
             fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->switches[i].name.c_str());
-        } else if (arch->switches[i].type() == SwitchType::TRISTATE) {
+        } else if (arch->switches[i].type() == e_switch_type::TRISTATE) {
             fprintf(Echo, "\tSwitch[%d]: name %s type tristate\n", i + 1, arch->switches[i].name.c_str());
-        } else if (arch->switches[i].type() == SwitchType::SHORT) {
+        } else if (arch->switches[i].type() == e_switch_type::SHORT) {
             fprintf(Echo, "\tSwitch[%d]: name %s type short\n", i + 1, arch->switches[i].name.c_str());
-        } else if (arch->switches[i].type() == SwitchType::BUFFER) {
+        } else if (arch->switches[i].type() == e_switch_type::BUFFER) {
             fprintf(Echo, "\tSwitch[%d]: name %s type buffer\n", i + 1, arch->switches[i].name.c_str());
         } else {
-            VTR_ASSERT(arch->switches[i].type() == SwitchType::PASS_GATE);
+            VTR_ASSERT(arch->switches[i].type() == e_switch_type::PASS_GATE);
             fprintf(Echo, "\tSwitch[%d]: name %s type pass_gate\n", i + 1, arch->switches[i].name.c_str());
         }
         fprintf(Echo, "\t\t\t\tR %e Cin %e Cout %e\n", arch->switches[i].R,

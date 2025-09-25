@@ -229,7 +229,7 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_c
     if (chanx_xlow <= chany_x) { /* Can draw connection going right */
         /* Connection not at end of the CHANX segment. */
         x1 = draw_coords->tile_x[chany_x] + draw_coords->get_tile_width();
-        if (rr_graph.node_direction(chanx_node) != Direction::BIDIR && (SwitchType)switch_type != SwitchType::SHORT) {
+        if (rr_graph.node_direction(chanx_node) != Direction::BIDIR && (e_switch_type)switch_type != e_switch_type::SHORT) {
             if (edge_dir == FROM_X_TO_Y) {
                 if (rr_graph.node_direction(chanx_node) == Direction::DEC) { /* If dec wire, then going left */
                     x1 = draw_coords->tile_x[chany_x + 1];
@@ -243,7 +243,7 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_c
         /* Connection not at end of the CHANY segment. */
         y2 = draw_coords->tile_y[chanx_y] + draw_coords->get_tile_width();
 
-        if (rr_graph.node_direction(chany_node) != Direction::BIDIR && (SwitchType)switch_type != SwitchType::SHORT) {
+        if (rr_graph.node_direction(chany_node) != Direction::BIDIR && (e_switch_type)switch_type != e_switch_type::SHORT) {
             if (edge_dir == FROM_Y_TO_X) {
                 if (rr_graph.node_direction(chany_node) == Direction::DEC) { /* If dec wire, then going down */
                     y2 = draw_coords->tile_y[chanx_y + 1];

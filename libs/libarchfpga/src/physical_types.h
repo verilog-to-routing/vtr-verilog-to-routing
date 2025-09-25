@@ -340,7 +340,7 @@ enum class PortEquivalence {
  *           class.                                                *
  * pinlist[]:  List of clb pin numbers which belong to this class. */
 struct t_class {
-    enum e_pin_type type;
+    e_pin_type type;
     PortEquivalence equivalence;
     int num_pins;
     std::vector<int> pinlist; /* [0..num_pins - 1] */
@@ -1669,7 +1669,7 @@ struct t_segment_inf {
     ///  The capacitance of a routing track, per unit logic block length.
     float Cmetal;
 
-    enum e_directionality directionality;
+    e_directionality directionality;
 
     /**
      * @brief Defines what axis the segment is parallel to. See e_parallel_axis
@@ -1753,7 +1753,7 @@ struct t_hash_segment_inf {
     }
 };
 
-enum class SwitchType {
+enum class e_switch_type {
     MUX = 0,   //A configurable (buffered) mux (single-driver)
     TRISTATE,  //A configurable tristate-able buffer (multi-driver)
     PASS_GATE, //A configurable pass transistor switch (multi-driver)
@@ -1763,11 +1763,11 @@ enum class SwitchType {
     NUM_SWITCH_TYPES
 };
 
-constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_TYPE_STRINGS = {{"MUX", "TRISTATE", "PASS_GATE", "SHORT", "BUFFER", "INVALID"}};
+constexpr std::array<const char*, size_t(e_switch_type::NUM_SWITCH_TYPES)> SWITCH_TYPE_STRINGS = {{"MUX", "TRISTATE", "PASS_GATE", "SHORT", "BUFFER", "INVALID"}};
 
-bool switch_type_is_buffered(SwitchType type);
-bool switch_type_is_configurable(SwitchType type);
-e_directionality switch_type_directionality(SwitchType type);
+bool switch_type_is_buffered(e_switch_type type);
+bool switch_type_is_configurable(e_switch_type type);
+e_directionality switch_type_directionality(e_switch_type type);
 
 /* Constant/Reserved names for switches in architecture XML
  * Delayless switch:
@@ -1836,7 +1836,7 @@ struct t_arch_switch_inf {
 
   public:
     //Returns the type of switch
-    SwitchType type() const;
+    e_switch_type type() const;
 
     //Returns true if this switch type isolates its input and output into
     //separate DC-connected subcircuits
@@ -1856,10 +1856,10 @@ struct t_arch_switch_inf {
 
   public:
     void set_Tdel(int fanin, float delay);
-    void set_type(SwitchType type_val);
+    void set_type(e_switch_type type_val);
 
   private:
-    SwitchType type_ = SwitchType::INVALID;
+    e_switch_type type_ = e_switch_type::INVALID;
 
     /**
      * @brief   Maps the number of inputs to a delay.

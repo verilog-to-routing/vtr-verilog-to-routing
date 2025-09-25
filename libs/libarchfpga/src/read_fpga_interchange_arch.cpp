@@ -2368,15 +2368,15 @@ struct ArchReader {
             t_arch_switch_inf* as = &arch_->switches[i];
 
             R = Cin = Cint = Cout = Tdel = 0.0;
-            SwitchType type;
+            e_switch_type type;
 
             if (i == 0) {
                 switch_name = "short";
-                type = SwitchType::SHORT;
+                type = e_switch_type::SHORT;
                 R = 0.0;
             } else if (i == 1) {
                 switch_name = "generic";
-                type = SwitchType::MUX;
+                type = e_switch_type::MUX;
                 R = 0.0;
             } else {
                 auto entry = pip_timing_models_list[i - 2];
@@ -2404,7 +2404,7 @@ struct ArchReader {
                 name << "Tdel" << std::scientific << Tdel;
 
                 switch_name = name.str() + std::to_string(i);
-                type = entry.first ? SwitchType::MUX : SwitchType::PASS_GATE;
+                type = entry.first ? e_switch_type::MUX : e_switch_type::PASS_GATE;
             }
 
             /* Should never happen */
@@ -2415,7 +2415,7 @@ struct ArchReader {
 
             as->name = switch_name;
             as->set_type(type);
-            as->mux_trans_size = as->type() == SwitchType::MUX ? 1 : 0;
+            as->mux_trans_size = as->type() == e_switch_type::MUX ? 1 : 0;
 
             as->R = R;
             as->Cin = Cin;
@@ -2423,7 +2423,7 @@ struct ArchReader {
             as->Cinternal = Cint;
             as->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel);
 
-            if (as->type() == SwitchType::SHORT || as->type() == SwitchType::PASS_GATE) {
+            if (as->type() == e_switch_type::SHORT || as->type() == e_switch_type::PASS_GATE) {
                 as->buf_size_type = BufferSize::ABSOLUTE;
                 as->buf_size = 0;
                 as->power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;

@@ -4439,25 +4439,25 @@ static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Parent,
         /* As noted above, due to their configuration of pass transistors feeding into a buffer,
          * only multiplexers and tristate buffers have an internal capacitance element.         */
 
-        SwitchType type = SwitchType::MUX;
+        e_switch_type type = e_switch_type::MUX;
         if (0 == strcmp(type_name, "mux")) {
-            type = SwitchType::MUX;
+            type = e_switch_type::MUX;
             expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Cinternal", "Tdel", "buf_size", "power_buf_size", "mux_trans_size"}, " with type '"s + type_name + "'"s, loc_data);
 
         } else if (0 == strcmp(type_name, "tristate")) {
-            type = SwitchType::TRISTATE;
+            type = e_switch_type::TRISTATE;
             expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Cinternal", "Tdel", "buf_size", "power_buf_size"}, " with type '"s + type_name + "'"s, loc_data);
 
         } else if (0 == strcmp(type_name, "buffer")) {
-            type = SwitchType::BUFFER;
+            type = e_switch_type::BUFFER;
             expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel", "buf_size", "power_buf_size"}, " with type '"s + type_name + "'"s, loc_data);
 
         } else if (0 == strcmp(type_name, "pass_gate")) {
-            type = SwitchType::PASS_GATE;
+            type = e_switch_type::PASS_GATE;
             expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel"}, " with type '"s + type_name + "'"s, loc_data);
 
         } else if (0 == strcmp(type_name, "short")) {
-            type = SwitchType::SHORT;
+            type = e_switch_type::SHORT;
             expect_only_attributes(Node, {"type", "name", "R", "Cin", "Cout", "Tdel"}, " with type "s + type_name + "'"s, loc_data);
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
@@ -4473,7 +4473,7 @@ static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Parent,
         // architecture without Cinternal without breaking the program flow.
         ReqOpt CINTERNAL_REQD = ReqOpt::OPTIONAL;
 
-        if (arch_switch.type() == SwitchType::SHORT) {
+        if (arch_switch.type() == e_switch_type::SHORT) {
             //Cin/Cout are optional on shorts, since they really only have one capacitance
             CIN_REQD = ReqOpt::OPTIONAL;
             COUT_REQD = ReqOpt::OPTIONAL;
@@ -4482,15 +4482,15 @@ static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Parent,
         arch_switch.Cout = get_attribute(Node, "Cout", loc_data, COUT_REQD).as_float(0);
         arch_switch.Cinternal = get_attribute(Node, "Cinternal", loc_data, CINTERNAL_REQD).as_float(0);
 
-        if (arch_switch.type() == SwitchType::MUX) {
+        if (arch_switch.type() == e_switch_type::MUX) {
             //Only muxes have mux transistors
             arch_switch.mux_trans_size = get_attribute(Node, "mux_trans_size", loc_data, ReqOpt::OPTIONAL).as_float(1);
         } else {
             arch_switch.mux_trans_size = 0.;
         }
 
-        if (arch_switch.type() == SwitchType::SHORT
-            || arch_switch.type() == SwitchType::PASS_GATE) {
+        if (arch_switch.type() == e_switch_type::SHORT
+            || arch_switch.type() == e_switch_type::PASS_GATE) {
             //No buffers
             arch_switch.buf_size_type = BufferSize::ABSOLUTE;
             arch_switch.buf_size = 0.;

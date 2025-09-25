@@ -46,7 +46,7 @@ struct t_rr_switch_inf {
 
   public:
     /// Returns the type of switch
-    SwitchType type() const;
+    e_switch_type type() const;
 
     /// Returns true if this switch type isolates its input and output into
     /// separate DC-connected subcircuits
@@ -68,8 +68,8 @@ struct t_rr_switch_inf {
     };
 
   public:
-    void set_type(SwitchType type_val);
+    void set_type(e_switch_type type_val);
 
   private:
-    SwitchType type_ = SwitchType::INVALID;
+    e_switch_type type_ = e_switch_type::INVALID;
 };

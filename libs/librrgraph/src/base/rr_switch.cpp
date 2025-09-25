@@ -1,7 +1,7 @@
 
 #include "rr_switch.h"
 
-SwitchType t_rr_switch_inf::type() const {
+e_switch_type t_rr_switch_inf::type() const {
     return type_;
 }
 
@@ -49,6 +49,6 @@ std::size_t t_rr_switch_inf::Hasher::operator()(const t_rr_switch_inf& s) const 
     return hash_val;
 }
 
-void t_rr_switch_inf::set_type(SwitchType type_val) {
+void t_rr_switch_inf::set_type(e_switch_type type_val) {
     type_ = type_val;
 }

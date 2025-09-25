@@ -9,7 +9,7 @@
  * t_arch_switch_inf
  */
 
-SwitchType t_arch_switch_inf::type() const {
+e_switch_type t_arch_switch_inf::type() const {
     return type_;
 }
 
@@ -44,32 +44,32 @@ void t_arch_switch_inf::set_Tdel(int fanin, float delay) {
     Tdel_map_[fanin] = delay;
 }
 
-void t_arch_switch_inf::set_type(SwitchType type_val) {
+void t_arch_switch_inf::set_type(e_switch_type type_val) {
     type_ = type_val;
 }
 
-bool switch_type_is_buffered(SwitchType type) {
+bool switch_type_is_buffered(e_switch_type type) {
     //Muxes and Tristates isolate their input and output into
     //separate DC connected sub-circuits
-    return type == SwitchType::MUX
-           || type == SwitchType::TRISTATE
-           || type == SwitchType::BUFFER;
+    return type == e_switch_type::MUX
+           || type == e_switch_type::TRISTATE
+           || type == e_switch_type::BUFFER;
 }
 
-bool switch_type_is_configurable(SwitchType type) {
+bool switch_type_is_configurable(e_switch_type type) {
     //Shorts and buffers are non-configurable
-    return !(type == SwitchType::SHORT
-             || type == SwitchType::BUFFER);
+    return !(type == e_switch_type::SHORT
+             || type == e_switch_type::BUFFER);
 }
 
-e_directionality switch_type_directionality(SwitchType type) {
-    if (type == SwitchType::SHORT || type == SwitchType::PASS_GATE) {
+e_directionality switch_type_directionality(e_switch_type type) {
+    if (type == e_switch_type::SHORT || type == e_switch_type::PASS_GATE) {
         //Shorts and pass gates can conduct in either direction
         return e_directionality::BI_DIRECTIONAL;
     } else {
-        VTR_ASSERT_SAFE(type == SwitchType::MUX
-                        || type == SwitchType::TRISTATE
-                        || type == SwitchType::BUFFER);
+        VTR_ASSERT_SAFE(type == e_switch_type::MUX
+                        || type == e_switch_type::TRISTATE
+                        || type == e_switch_type::BUFFER);
         //Buffered switches can only drive in one direction
         return e_directionality::UNI_DIRECTIONAL;
     }
