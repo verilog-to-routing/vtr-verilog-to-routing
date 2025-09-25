@@ -139,8 +139,8 @@ class t_annealing_state {
  * @brief Struct to hold the results of a swap.
  */
 struct t_swap_result {
-    e_move_result move_result;  ///< The result of the move (e.g. Accept, Reject, etc.)
-    double delta_c;             ///< The change in cost that resulted from the swap.
+    e_move_result move_result; ///< The result of the move (e.g. Accept, Reject, etc.)
+    double delta_c;            ///< The change in cost that resulted from the swap.
 };
 
 /**

@@ -64,6 +64,7 @@ For more specific documentation about VPR see :ref:`vpr`.
    api/vtrutil/index
    api/ezgl/index
    api/vprinternals/index
+   api/libarchfpga/index
 
 Indices and tables
 ==================
