@@ -7,16 +7,15 @@
 
 class RRGraphBuilder;
 
-
 void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
-                                 const std::vector<int>& class_num_vec,
-                                 const t_physical_tile_loc& root_loc,
-                                 t_physical_tile_type_ptr physical_type);
+                          const std::vector<int>& class_num_vec,
+                          const t_physical_tile_loc& root_loc,
+                          t_physical_tile_type_ptr physical_type);
 
 void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
-                              const std::vector<int>& pin_num_vec,
-                              const t_physical_tile_loc& root_loc,
-                              t_physical_tile_type_ptr physical_type);
+                       const std::vector<int>& pin_num_vec,
+                       const t_physical_tile_loc& root_loc,
+                       t_physical_tile_type_ptr physical_type);
 
 /**
  * @brief Add the edges between IPIN to SINK and SOURCE to OPIN to rr_edges_to_create
@@ -29,9 +28,9 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
  * @param switches_remapped A flag to indicate whether edge switch IDs are remapped
  */
 void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
-                                     const std::vector<int>& class_num_vec,
-                                     const t_physical_tile_loc& tile_loc,
-                                     t_rr_edge_info_set& rr_edges_to_create,
-                                     const int delayless_switch,
-                                     t_physical_tile_type_ptr physical_type_ptr,
-                                     bool switches_remapped);
+                              const std::vector<int>& class_num_vec,
+                              const t_physical_tile_loc& tile_loc,
+                              t_rr_edge_info_set& rr_edges_to_create,
+                              const int delayless_switch,
+                              t_physical_tile_type_ptr physical_type_ptr,
+                              bool switches_remapped);

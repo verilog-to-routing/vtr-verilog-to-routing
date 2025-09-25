@@ -19,7 +19,6 @@ static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                 t_arch_switch_fanin& arch_switch_fanins,
                                 const std::map<int, t_arch_switch_inf>& arch_sw_map);
 
-
 /* load the global device_ctx.rr_switch_inf variable. also keep track of, for each arch switch, what
  * index of the rr_switch_inf array each version of its fanin has been mapped to (through switch_fanin map) */
 static void load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
@@ -194,7 +193,7 @@ void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
 
     /* switch indices of each rr_node original point into the global device_ctx.arch_switch_inf array.
      * now we want to remap these indices to point into the global device_ctx.rr_switch_inf array
-    * which contains switch info at different fan-in values */
+     * which contains switch info at different fan-in values */
     rr_graph_builder.remap_rr_node_switch_indices(arch_switch_fanins);
 
     // now we need to set the wire_to_rr_ipin_switch variable which points the detailed routing architecture

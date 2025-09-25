@@ -12,7 +12,6 @@
 #include "rr_graph_switch_utils.h"
 #include "check_rr_graph.h"
 
-
 static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
                                     vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                     bool is_flat);
@@ -179,27 +178,6 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
                           std::vector<int>& pin_index_vec,
                           std::vector<std::vector<t_pin_chain_node>>& all_chains,
                           bool is_new_chain);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
                                     vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
@@ -1055,37 +1033,16 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void build_intra_cluster_rr_graph(e_graph_type graph_type,
-                                         const DeviceGrid& grid,
-                                         const std::vector<t_physical_tile_type>& types,
-                                         const RRGraphView& rr_graph,
-                                         const int delayless_switch,
-                                         float R_minW_nmos,
-                                         float R_minW_pmos,
-                                         RRGraphBuilder& rr_graph_builder,
-                                         bool is_flat,
-                                         bool load_rr_graph) {
+                                  const DeviceGrid& grid,
+                                  const std::vector<t_physical_tile_type>& types,
+                                  const RRGraphView& rr_graph,
+                                  const int delayless_switch,
+                                  float R_minW_nmos,
+                                  float R_minW_pmos,
+                                  RRGraphBuilder& rr_graph_builder,
+                                  bool is_flat,
+                                  bool load_rr_graph) {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     auto& device_ctx = g_vpr_ctx.mutable_device();
 

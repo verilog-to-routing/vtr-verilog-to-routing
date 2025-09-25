@@ -9,9 +9,9 @@
 #include "globals.h"
 
 void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
-                                 const std::vector<int>& class_num_vec,
-                                 const t_physical_tile_loc& root_loc,
-                                 t_physical_tile_type_ptr physical_type) {
+                          const std::vector<int>& class_num_vec,
+                          const t_physical_tile_loc& root_loc,
+                          t_physical_tile_type_ptr physical_type) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     for (int class_num : class_num_vec) {
@@ -42,9 +42,9 @@ void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
 }
 
 void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
-                              const std::vector<int>& pin_num_vec,
-                              const t_physical_tile_loc& root_loc,
-                              t_physical_tile_type_ptr physical_type) {
+                       const std::vector<int>& pin_num_vec,
+                       const t_physical_tile_loc& root_loc,
+                       t_physical_tile_type_ptr physical_type) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
     for (int pin_num : pin_num_vec) {
@@ -98,12 +98,12 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
 }
 
 void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
-                                     const std::vector<int>& class_num_vec,
-                                     const t_physical_tile_loc& tile_loc,
-                                     t_rr_edge_info_set& rr_edges_to_create,
-                                     const int delayless_switch,
-                                     t_physical_tile_type_ptr physical_type_ptr,
-                                     bool switches_remapped) {
+                              const std::vector<int>& class_num_vec,
+                              const t_physical_tile_loc& tile_loc,
+                              t_rr_edge_info_set& rr_edges_to_create,
+                              const int delayless_switch,
+                              t_physical_tile_type_ptr physical_type_ptr,
+                              bool switches_remapped) {
     for (int class_num : class_num_vec) {
         const std::vector<int>& pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, class_num);
         auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);

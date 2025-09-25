@@ -388,8 +388,6 @@ static void build_rr_graph(e_graph_type graph_type,
                            int* Warnings,
                            const int route_verbosity);
 
-
-
 /**
  * Return the ID for delayess switch. If the RR graph is loaded from a file, then the assumption
  * is that the returned ID should be a RR switch ID not architecture ID.
@@ -1176,10 +1174,6 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  &dummy_int);
     rr_graph_builder.partition_edges();
 }
-
-
-
-
 
 void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         const std::vector<t_segment_inf>& segment_inf_x,
