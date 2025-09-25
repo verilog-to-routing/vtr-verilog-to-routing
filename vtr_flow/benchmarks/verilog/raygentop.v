@@ -247,12 +247,12 @@ module delay1x3 (datain, dataout, clk);
        end 
     end 
 
-    always @(*)
+    always @(state or trigger or count)
     begin
        case (state)
           0 :
                    begin
-       		      output_xhdl0 = 1'b0 ; 
+       				  output_xhdl0 = 1'b0 ; 
                       if (trigger == 1'b1)
                       begin
                          next_state = 1 ; 
@@ -280,7 +280,7 @@ module delay1x3 (datain, dataout, clk);
                    end
           2 :
                    begin
-       		      output_xhdl0 = 1'b0 ; 
+       				  output_xhdl0 = 1'b0 ; 
                       if (trigger == 1'b0)
                       begin
                          next_state = 0 ; 
@@ -289,23 +289,8 @@ module delay1x3 (datain, dataout, clk);
                       begin
                          next_state = 2 ; 
 
-                      end
-                      temp_count = count;
+                      end 
                    end
-         // Create a default case to avoid inferring latches.
-         // Preserve original behavior by holding state, even if
-         // this is suboptimal for real designs
-         default: begin
-            //Note that output_xhdl is combinational and drives
-            //a top level signal called go.  To eliminate inferred
-            //latch for it, default it to zero here to hypothetically
-            //make sure that go is not asserted when the FSM goes
-            //awry
-            output_xhdl0 = 1'b0;
-            
-            next_state = state;
-            temp_count = count;
-         end
        endcase 
     end 
  endmodule
@@ -413,6 +398,20 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
     reg next_state; 
     wire we; 
 
+    reg[27:0] temp_origx;
+    reg[27:0] temp_origy;
+    reg[27:0] temp_origz;
+    reg[15:0] temp_m11;
+    reg[15:0] temp_m12;
+    reg[15:0] temp_m13;
+    reg[15:0] temp_m21;
+    reg[15:0] temp_m22;
+    reg[15:0] temp_m23;
+    reg[15:0] temp_m31;
+    reg[15:0] temp_m32;
+    reg[15:0] temp_m33;
+    reg[20:0] temp_bkcolour;
+
     // <<X-HDL>> Can't find translated component 'spram'. Module name may not match
     spram21x4 spraminst(we, texinfo, CfgData[20:0], clk); 
     assign we = ((CfgData_Ready == 1'b1) & (CfgAddr == 4'b1110)) ? 1'b1 : 1'b0 ;
@@ -439,26 +438,24 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
        end
        else
        begin
-          state <= next_state ;
-          if (CfgData_Ready) begin
-             if (CfgAddr == 4'b0001) origx <= CfgData;
-             if (CfgAddr == 4'b0010) origy <= CfgData;
-             if (CfgAddr == 4'b0011) origz <= CfgData;
-             if (CfgAddr == 4'b0100) m11 <= CfgData[15:0];
-             if (CfgAddr == 4'b0101) m12 <= CfgData[15:0];
-             if (CfgAddr == 4'b0110) m13 <= CfgData[15:0];
-             if (CfgAddr == 4'b0111) m21 <= CfgData[15:0];
-             if (CfgAddr == 4'b1000) m22 <= CfgData[15:0];
-             if (CfgAddr == 4'b1001) m23 <= CfgData[15:0];
-             if (CfgAddr == 4'b1010) m31 <= CfgData[15:0];
-             if (CfgAddr == 4'b1011) m32 <= CfgData[15:0];
-             if (CfgAddr == 4'b1100) m33 <= CfgData[15:0];
-             if (CfgAddr == 4'b1101) bkcolour <= CfgData[20:0];
-          end
+          state <= next_state ; 
+          origx <= temp_origx;
+          origy <= temp_origy;
+          origz <= temp_origz;
+          m11 <= temp_m11;
+          m12 <= temp_m12;
+          m13 <= temp_m13;
+          m21 <= temp_m21;
+          m22 <= temp_m22;
+          m23 <= temp_m23;
+          m31 <= temp_m31;
+          m32 <= temp_m32;
+         m33 <= temp_m33;
+          bkcolour <= bkcolour;
        end 
     end 
 
-    always @(*)
+    always @(state or CfgData_Ready)
     begin
        case (state)
           0 :
@@ -473,6 +470,59 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
                       begin
                          next_state = 0 ; 
                       end 
+
+              if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0001))
+                        begin
+											temp_origx = CfgData ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0010))
+                        begin
+                                           temp_origy = CfgData ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0011))
+                        begin
+                                           temp_origz = CfgData ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0100))
+                        begin
+                                           temp_m11 = CfgData[15:0] ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0101))
+                        begin
+                                           temp_m12 = CfgData[15:0] ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0110))
+                        begin
+                                           temp_m13 = CfgData[15:0] ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b0111))
+                        begin
+                                           temp_m21 = CfgData[15:0] ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1000))
+                        begin
+                                           temp_m22 = CfgData[15:0] ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1001))
+                        begin
+                                           temp_m23 = CfgData[15:0] ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1010))
+                        begin
+                                           temp_m31 = CfgData[15:0] ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1011))
+                        begin
+                                           temp_m32 = CfgData[15:0] ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1100))
+                        begin
+                                           temp_m33 = CfgData[15:0] ; 
+						end
+                        else if ((CfgData_Ready == 1'b1) && (CfgAddr == 4'b1101))
+                        begin
+                                           temp_bkcolour = CfgData[20:0] ; 
+						end
                    end
           1 :
                    begin
@@ -516,9 +566,9 @@ module rgconfigmemory (CfgAddr, CfgData, CfgData_Ready, want_CfgData, origx, ori
 	 end
 //changed to odin 2 ram specifications
 
-single_port_ram 
-  # (.ADDR_WIDTH(8), .DATA_WIDTH(21))
-new_ram(
+defparam new_ram.ADDR_WIDTH = 8;
+defparam new_ram.DATA_WIDTH = 21;
+single_port_ram new_ram(
   .clk (clk),
   .we(we),
   .data(datain),
@@ -650,452 +700,345 @@ module rgsramcontroller (want_addr, addr_ready, addrin, want_data, data_ready, d
           fbdata <= tm3_sram_data_in ; 
           fbdatavalid <= fbdatavalidl ; 
 
-          fbdatavalidl <= temp_fbdatavalidl;
-          texelready <= temp_texelready;
-          shadedataready <= temp_shadedataready;
-          fcount <= temp_fcount;
-          faddress <= temp_faddress;
-          waddress <= temp_waddress;
+fbdatavalidl <= temp_fbdatavalidl;
+texelready <= temp_texelready;
+shadedataready <= temp_shadedataready;
+fcount <= temp_fcount;
+faddress <= temp_faddress;
+waddress <= temp_waddress;
 
        end 
     end 
 
+    always @(state or addr_ready or data_ready or waddress or datain or wantDir or 
+             want_read or wantwriteback or writebackdata or writebackaddr or 
+             fcount or fbpage or faddress or fbnextscanline or triID or wantshadedata or 
+             wanttexel or texeladdr)
 
-   always @(*)
-     begin
-        case (state)
+    begin
+       case (state)
+
           0 :
-            begin
-	       tm3_sram_we = 8'b11111111 ; 
-	       tm3_sram_oe = 2'b01 ; 
-	       tm3_sram_adsp = 1'b0 ; 
-	       tm3_sram_data_xhdl0 = 0;
-	       tm3_sram_addr = {1'b0, waddress} ; 
-	       want_addr = 1'b1 ; 
-	       want_data = 1'b1 ; 
-	       read_ready = 1'b1 ; 
-	       dirReady = 1'b0 ; 
-	       writebackack = 1'b0 ; 
+                   begin
+				       tm3_sram_we = 8'b11111111 ; 
+				       tm3_sram_oe = 2'b01 ; 
+				       tm3_sram_adsp = 1'b0 ; 
+				       tm3_sram_data_xhdl0 = 0;
+				       tm3_sram_addr = {1'b0, waddress} ; 
+				       want_addr = 1'b1 ; 
+				       want_data = 1'b1 ; 
+				       read_ready = 1'b1 ; 
+				       dirReady = 1'b0 ; 
+				       writebackack = 1'b0 ; 
+                      if (addr_ready == 1'b1)
+                      begin
+                         next_state = 1 ; 
+                      end
+                      else if (want_read == 1'b1)
+                      begin
+                         next_state = 2 ; 
+                      end
+                      else if (data_ready == 1'b1)
+                      begin
 
-	       temp_fbdatavalidl = 1'b0 ; 
-	       temp_shadedataready = 1'b0 ; 
-	       temp_texelready = 1'b0 ; 
-               if (addr_ready == 1'b1)
+                         next_state = 3 ; 
+                      end
+                      else if (wantDir == 1'b1)
+                      begin
+                         next_state = 5 ; 
+                      end
+                      else if (wantwriteback == 1'b1)
+                      begin
+                         next_state = 6 ; 
+                      end
+                      else if (wantshadedata == 1'b1)
+                      begin
 
-                 begin
-                    temp_waddress = addrin ; 
-                 end 
-               else begin
-                  temp_waddress = waddress;
-               end
-               temp_faddress = faddress;
-               temp_fcount = fcount;
-               
-            end
+                         next_state = 9 ; 
+                      end
+                      else if (wanttexel == 1'b1)
+                      begin
+                         next_state = 10 ; 
+                      end
+                      else if (fcount != 0)
+                      begin
+                         next_state = 7 ; 
+                      end
+                      else if (fbnextscanline == 1'b1)
+                      begin
+
+                         next_state = 8 ; 
+                      end
+                      else
+                      begin
+                         next_state = 0 ; 
+                      end 
+				          temp_fbdatavalidl = 1'b0 ; 
+				          temp_shadedataready = 1'b0 ; 
+				          temp_texelready = 1'b0 ; 
+                         if (addr_ready == 1'b1)
+
+                         begin
+                            temp_waddress = addrin ; 
+                         end 
+
+                   end
           1 :
-            begin
-	       tm3_sram_we = 8'b11111111 ; 
-	       tm3_sram_oe = 2'b01 ; 
-	       tm3_sram_adsp = 1'b0 ; 
-	       tm3_sram_data_xhdl0 = 0;
-	       tm3_sram_addr = {1'b0, waddress} ; 
-               want_addr = 1'b0 ; 
-	       want_data = 1'b1 ; 
-	       read_ready = 1'b1 ; 
-	       dirReady = 1'b0 ; 
-	       writebackack = 1'b0 ; 
+                   begin
+				       tm3_sram_we = 8'b11111111 ; 
+				       tm3_sram_oe = 2'b01 ; 
+				       tm3_sram_adsp = 1'b0 ; 
+				       tm3_sram_data_xhdl0 = 0;
+				       tm3_sram_addr = {1'b0, waddress} ; 
+				       want_data = 1'b1 ; 
+				       read_ready = 1'b1 ; 
+				       dirReady = 1'b0 ; 
+				       writebackack = 1'b0 ; 
+                      want_addr = 1'b0 ; 
+                      if (addr_ready == 1'b0)
+                      begin
+                         next_state = 0 ; 
 
-               temp_fbdatavalidl = fbdatavalidl;
-               temp_shadedataready = shadedataready;
-               temp_texelready = texelready;
-               temp_waddress = waddress;
-               temp_faddress = faddress;
-               temp_fcount = fcount;
-               
-            end
+                      end
+                      else
+                      begin
+                         next_state = 1 ; 
+                      end 
+                   end
           2 :
-            begin
-	       tm3_sram_we = 8'b11111111 ; 
-	       tm3_sram_oe = 2'b01 ; 
-	       tm3_sram_adsp = 1'b0 ; 
-	       tm3_sram_data_xhdl0 = 0;
-	       tm3_sram_addr = {1'b0, waddress} ; 
-	       want_addr = 1'b1 ; 
-	       want_data = 1'b1 ; 
-               read_ready = 1'b0 ; 
-	       dirReady = 1'b0 ; 
-	       writebackack = 1'b0 ; 
+                   begin
+				       tm3_sram_we = 8'b11111111 ; 
+				       tm3_sram_oe = 2'b01 ; 
+				       tm3_sram_adsp = 1'b0 ; 
+				       tm3_sram_data_xhdl0 = 0;
+				       tm3_sram_addr = {1'b0, waddress} ; 
+				       want_addr = 1'b1 ; 
+				       want_data = 1'b1 ; 
+				       dirReady = 1'b0 ; 
+				       writebackack = 1'b0 ; 
 
-	       temp_fbdatavalidl = 1'b0 ; 
-	       temp_shadedataready = 1'b0 ; 
-	       temp_texelready = 1'b0 ; 
-               if (want_read == 1'b0)
-                 begin
+                      read_ready = 1'b0 ; 
+                      if (want_read == 1'b0)
+                      begin
+                         next_state = 0 ; 
+                      end
+                      else
+                      begin
+                         next_state = 2 ; 
+                      end 
 
-                    temp_waddress = waddress + 1 ; 
-                 end 
-               else begin
-                  temp_waddress = waddress;
-               end
-               temp_faddress = faddress;
-               temp_fcount = fcount;
-            end
+				          temp_fbdatavalidl = 1'b0 ; 
+				          temp_shadedataready = 1'b0 ; 
+				          temp_texelready = 1'b0 ; 
+                         if (want_read == 1'b0)
+                         begin
+
+                            temp_waddress = waddress + 1 ; 
+                         end 
+
+                   end
           3 :
-            begin
-               tm3_sram_we = 8'b00000000 ; 
-               tm3_sram_oe = 2'b11 ; 
-               tm3_sram_adsp = 1'b0 ; 
-               tm3_sram_data_xhdl0 = datain ; 
-	       tm3_sram_addr = {1'b0, waddress} ; 
-	       want_addr = 1'b1 ; 
-               want_data = 1'b0 ; 
-	       read_ready = 1'b1 ; 
-	       dirReady = 1'b0 ; 
-	       writebackack = 1'b0 ; 
- 
-	       temp_fbdatavalidl = 1'b0 ; 
-	       temp_shadedataready = 1'b0 ; 
-	       temp_texelready = 1'b0 ; 
-               temp_waddress = waddress + 1 ; 
-               temp_faddress = faddress;
-               temp_fcount = fcount;
+                   begin
+				       tm3_sram_addr = {1'b0, waddress} ; 
+				       want_addr = 1'b1 ; 
+				       read_ready = 1'b1 ; 
+				       dirReady = 1'b0 ; 
+				       writebackack = 1'b0 ; 
+                      tm3_sram_data_xhdl0 = datain ; 
+                      tm3_sram_we = 8'b00000000 ; 
 
-            end
+
+                   tm3_sram_oe = 2'b11 ; 
+                      tm3_sram_adsp = 1'b0 ; 
+                      want_data = 1'b0 ; 
+                      next_state = 4 ; 
+
+				          temp_fbdatavalidl = 1'b0 ; 
+				          temp_shadedataready = 1'b0 ; 
+				          temp_texelready = 1'b0 ; 
+                         temp_waddress = waddress + 1 ; 
+
+                   end
           4 :
-            begin
-	       tm3_sram_we = 8'b11111111 ; 
-	       tm3_sram_oe = 2'b01 ; 
-	       tm3_sram_adsp = 1'b0 ; 
-	       tm3_sram_data_xhdl0 = 0;
-	       tm3_sram_addr = {1'b0, waddress} ; 
-	       want_addr = 1'b1 ; 
-               want_data = 1'b0 ; 
-	       read_ready = 1'b1 ; 
-	       dirReady = 1'b0 ; 
-	       writebackack = 1'b0 ; 
+                   begin
+				       tm3_sram_we = 8'b11111111 ; 
+				       tm3_sram_oe = 2'b01 ; 
+				       tm3_sram_adsp = 1'b0 ; 
+				       tm3_sram_data_xhdl0 = 0;
+				       tm3_sram_addr = {1'b0, waddress} ; 
+				       want_addr = 1'b1 ; 
+				       read_ready = 1'b1 ; 
+				       dirReady = 1'b0 ; 
+				       writebackack = 1'b0 ; 
+                      if (data_ready == 1'b0)
+                      begin
 
-               temp_fbdatavalidl = fbdatavalidl;
-               temp_shadedataready = shadedataready;
-               temp_texelready = texelready;
-               temp_waddress = waddress;
-               temp_faddress = faddress;
-               temp_fcount = fcount;
-            end
+                         next_state = 0 ; 
+                      end
+                      else
+                      begin
+                         next_state = 4 ; 
+                      end 
+                      want_data = 1'b0 ; 
+                   end
 
           5 :
-            begin
-	       tm3_sram_we = 8'b11111111 ; 
-	       tm3_sram_oe = 2'b01 ; 
-	       tm3_sram_adsp = 1'b0 ; 
-	       tm3_sram_data_xhdl0 = 0;
-	       tm3_sram_addr = {1'b0, waddress} ; 
-	       want_addr = 1'b1 ; 
-	       want_data = 1'b1 ; 
-	       read_ready = 1'b1 ; 
-               dirReady = 1'b1 ; 
-	       writebackack = 1'b0 ; 
+                   begin
+				       tm3_sram_we = 8'b11111111 ; 
+				       tm3_sram_oe = 2'b01 ; 
+				       tm3_sram_adsp = 1'b0 ; 
+				       tm3_sram_data_xhdl0 = 0;
+				       tm3_sram_addr = {1'b0, waddress} ; 
+				       want_addr = 1'b1 ; 
+				       want_data = 1'b1 ; 
+				       read_ready = 1'b1 ; 
+				       writebackack = 1'b0 ; 
 
-	       temp_fbdatavalidl = 1'b0 ; 
-	       temp_shadedataready = 1'b0 ; 
-	       temp_texelready = 1'b0 ; 
-               if (wantDir == 1'b0)
-                 begin
-                    temp_waddress = waddress + 1 ; 
-                 end 
-               else begin
-                  temp_waddress = waddress;
-               end
-               temp_faddress = faddress;
-               temp_fcount = fcount;
-            end
+                     dirReady = 1'b1 ; 
+                      if (wantDir == 1'b0)
+                      begin
+                         next_state = 0 ; 
+
+                      end
+                      else
+                      begin
+                         next_state = 5 ; 
+                      end 
+
+				          temp_fbdatavalidl = 1'b0 ; 
+				          temp_shadedataready = 1'b0 ; 
+				          temp_texelready = 1'b0 ; 
+                         if (wantDir == 1'b0)
+                         begin
+                            temp_waddress = waddress + 1 ; 
+                         end 
+
+                   end
           6 :
-            begin
-               tm3_sram_we = 8'b00000000 ; 
-               tm3_sram_oe = 2'b11 ; 
-               tm3_sram_adsp = 1'b0 ; 
-               tm3_sram_data_xhdl0 = writebackdata ; 
-               tm3_sram_addr = {1'b0, writebackaddr} ; 
-	       want_addr = 1'b1 ; 
-	       want_data = 1'b1 ; 
-	       read_ready = 1'b1 ; 
-	       dirReady = 1'b0 ; 
-               writebackack = 1'b1 ; 
+                   begin
+				       want_addr = 1'b1 ; 
+				       want_data = 1'b1 ; 
+				       read_ready = 1'b1 ; 
+				       dirReady = 1'b0 ; 
 
-               temp_fbdatavalidl = fbdatavalidl;
-               temp_shadedataready = shadedataready;
-               temp_texelready = texelready;
-               temp_waddress = waddress;
-               temp_faddress = faddress;
-               temp_fcount = fcount;
-            end
+                      tm3_sram_data_xhdl0 = writebackdata ; 
+                      tm3_sram_we = 8'b00000000 ; 
+                      tm3_sram_oe = 2'b11 ; 
+                      tm3_sram_adsp = 1'b0 ; 
+                      tm3_sram_addr = {1'b0, writebackaddr} ; 
+                      writebackack = 1'b1 ; 
+                      next_state = 0 ; 
+                   end
 
           7 :
-            begin
-	       tm3_sram_we = 8'b11111111 ; 
-	       tm3_sram_oe = 2'b01 ; 
-	       tm3_sram_adsp = 1'b0 ; 
-	       tm3_sram_data_xhdl0 = 0;
-               tm3_sram_addr = {3'b011, fbpage, faddress} ; 
-	       want_addr = 1'b1 ; 
-	       want_data = 1'b1 ; 
-	       read_ready = 1'b1 ; 
-	       dirReady = 1'b0 ; 
-	       writebackack = 1'b0 ; 
+                   begin
+				       tm3_sram_we = 8'b11111111 ; 
+				       tm3_sram_oe = 2'b01 ; 
+				       tm3_sram_adsp = 1'b0 ; 
+				       tm3_sram_data_xhdl0 = 0;
+				       want_addr = 1'b1 ; 
+				       want_data = 1'b1 ; 
+				       read_ready = 1'b1 ; 
+				       dirReady = 1'b0 ; 
+				       writebackack = 1'b0 ; 
+                      tm3_sram_addr = {3'b011, fbpage, faddress} ; 
+                      if ((fcount == 1) | (addr_ready == 1'b1) | (want_read == 1'b1) | (data_ready == 1'b1) | (wantDir == 1'b1) | (wantwriteback == 1'b1))
+                      begin
+                         next_state = 0 ; 
 
-	       temp_shadedataready = 1'b0 ; 
-	       temp_texelready = 1'b0 ; 
-               temp_fbdatavalidl = 1'b1 ; 
-               temp_waddress = waddress;
-               if (fcount != 0)
-                 begin
-                    temp_faddress = faddress + 1 ; 
-                    temp_fcount = fcount - 1 ; 
-                 end 
-               else begin
-                  temp_faddress = faddress;
-                  temp_fcount = fcount;
-               end
-            end
+                      end
+                      else
+                      begin
+                         next_state = 7 ; 
+                      end 
+
+
+				          temp_shadedataready = 1'b0 ; 
+				          temp_texelready = 1'b0 ; 
+                         temp_fbdatavalidl = 1'b1 ; 
+                         if (fcount != 0)
+                         begin
+                            temp_faddress = faddress + 1 ; 
+                            temp_fcount = fcount - 1 ; 
+                         end 
+
+                   end
           8 :
-            begin
-	       tm3_sram_we = 8'b11111111 ; 
-	       tm3_sram_oe = 2'b01 ; 
-	       tm3_sram_adsp = 1'b0 ; 
-	       tm3_sram_data_xhdl0 = 0;
-	       tm3_sram_addr = {1'b0, waddress} ; 
-	       want_addr = 1'b1 ; 
-	       want_data = 1'b1 ; 
-	       read_ready = 1'b1 ; 
-	       dirReady = 1'b0 ; 
-	       writebackack = 1'b0 ; 
- 
-	       temp_fbdatavalidl = 1'b0 ; 
-	       temp_shadedataready = 1'b0 ; 
-	       temp_texelready = 1'b0 ; 
-               temp_waddress = waddress;
-               temp_fcount = 7'b1101011 ; 
-               if (faddress == 25680)
-                 begin
-                    temp_faddress = 0;
-                 end
-               else begin
-                  temp_faddress = faddress;
-               end
-            end
-          9 :
-            begin
-	       tm3_sram_we = 8'b11111111 ; 
-	       tm3_sram_oe = 2'b01 ; 
-	       tm3_sram_adsp = 1'b0 ; 
-	       tm3_sram_data_xhdl0 = 0;
-	       want_addr = 1'b1 ; 
-	       want_data = 1'b1 ; 
-	       read_ready = 1'b1 ; 
-	       dirReady = 1'b0 ; 
-	       writebackack = 1'b0 ; 
-               tm3_sram_addr = {3'b010, triID} ; 
+                   begin
+				       tm3_sram_we = 8'b11111111 ; 
+				       tm3_sram_oe = 2'b01 ; 
+				       tm3_sram_adsp = 1'b0 ; 
+				       tm3_sram_data_xhdl0 = 0;
+				       tm3_sram_addr = {1'b0, waddress} ; 
+				       want_addr = 1'b1 ; 
+				       want_data = 1'b1 ; 
+				       read_ready = 1'b1 ; 
+				       dirReady = 1'b0 ; 
+				       writebackack = 1'b0 ; 
+                      next_state = 7 ; 
 
-	       temp_fbdatavalidl = 1'b0 ; 
-	       temp_texelready = 1'b0 ; 
-               temp_shadedataready = 1'b1 ; 
-               temp_waddress = waddress;
-               temp_faddress = faddress;
-               temp_fcount = fcount;
-            end
+				   				          temp_fbdatavalidl = 1'b0 ; 
+				          temp_shadedataready = 1'b0 ; 
+				          temp_texelready = 1'b0 ; 
+                         temp_fcount = 7'b1101011 ; 
+                         if (faddress == 25680)
+                         begin
+                            temp_faddress = 0;
+                         end 
+                   end
+          9 :
+                   begin
+				       tm3_sram_we = 8'b11111111 ; 
+				       tm3_sram_oe = 2'b01 ; 
+				       tm3_sram_adsp = 1'b0 ; 
+				       tm3_sram_data_xhdl0 = 0;
+				       want_addr = 1'b1 ; 
+				       want_data = 1'b1 ; 
+				       read_ready = 1'b1 ; 
+				       dirReady = 1'b0 ; 
+				       writebackack = 1'b0 ; 
+                      tm3_sram_addr = {3'b010, triID} ; 
+                      next_state = 0 ; 
+
+				          temp_fbdatavalidl = 1'b0 ; 
+				          temp_texelready = 1'b0 ; 
+                         temp_shadedataready = 1'b1 ; 
+                   end
 
           10 :
-            begin
-	       tm3_sram_we = 8'b11111111 ; 
-	       tm3_sram_oe = 2'b01 ; 
-	       tm3_sram_adsp = 1'b0 ; 
-	       tm3_sram_data_xhdl0 = 0;
-	       want_addr = 1'b1 ; 
-	       want_data = 1'b1 ; 
-	       read_ready = 1'b1 ; 
-	       dirReady = 1'b0 ; 
-	       writebackack = 1'b0 ; 
-               tm3_sram_addr = {1'b0, texeladdr} ; 
+                   begin
+				       tm3_sram_we = 8'b11111111 ; 
+				       tm3_sram_oe = 2'b01 ; 
+				       tm3_sram_adsp = 1'b0 ; 
+				       tm3_sram_data_xhdl0 = 0;
+				       want_addr = 1'b1 ; 
+				       want_data = 1'b1 ; 
+				       read_ready = 1'b1 ; 
+				       dirReady = 1'b0 ; 
+				       writebackack = 1'b0 ; 
+                      tm3_sram_addr = {1'b0, texeladdr} ; 
+                      next_state = 0 ; 
 
-	       temp_fbdatavalidl = 1'b0 ; 
-	       temp_shadedataready = 1'b0 ; 
-               temp_texelready = 1'b1 ; 
-               temp_waddress = waddress;
-               temp_faddress = faddress;
-               temp_fcount = fcount;
-            end
-          // Create a default case to avoid inferring latches.
-          // for temp_* variables we can hold previous state to
-          // preserve design intent.  For variables that are
-          // not re-registered, we must make a choice about
-          // what the default behavior should be that will
-          // potentially change functionality vs. previous revision
-          // for previously undefined state decoding.  Make a best
-          // effort based on how the signals appear to idle when
-          // not being used by the FSM by matching state 0
-          default: begin
-	     tm3_sram_we = 8'b11111111 ; 
-	     tm3_sram_oe = 2'b01 ; 
-	     tm3_sram_adsp = 1'b0 ; 
-	     tm3_sram_data_xhdl0 = 0;
-	     tm3_sram_addr = {1'b0, waddress} ; 
-	     want_addr = 1'b1 ; 
-	     want_data = 1'b1 ; 
-	     read_ready = 1'b1 ; 
-	     dirReady = 1'b0 ; 
-	     writebackack = 1'b0 ; 
-
-             temp_fbdatavalidl = fbdatavalidl;
-             temp_shadedataready = shadedataready;
-             temp_texelready = texelready;
-             temp_waddress = waddress;
-             temp_faddress = faddress;
-             temp_fcount = fcount;
-          end
-        endcase 
-     end 
-
-   always @(*)
-     begin
-        case (state)
-          0 :
-            begin
-               if (addr_ready == 1'b1)
-                 begin
-                    next_state = 1 ; 
-                 end
-               else if (want_read == 1'b1)
-                 begin
-                    next_state = 2 ; 
-                 end
-               else if (data_ready == 1'b1)
-                 begin
-
-                    next_state = 3 ; 
-                 end
-               else if (wantDir == 1'b1)
-                 begin
-                    next_state = 5 ; 
-                 end
-               else if (wantwriteback == 1'b1)
-                 begin
-                    next_state = 6 ; 
-                 end
-               else if (wantshadedata == 1'b1)
-                 begin
-
-                    next_state = 9 ; 
-                 end
-               else if (wanttexel == 1'b1)
-                 begin
-                    next_state = 10 ; 
-                 end
-               else if (fcount != 0)
-                 begin
-                    next_state = 7 ; 
-                 end
-               else if (fbnextscanline == 1'b1)
-                 begin
-
-                    next_state = 8 ; 
-                 end
-               else
-                 begin
-                    next_state = 0 ; 
-                 end 
-            end
-          1 :
-            begin
-               if (addr_ready == 1'b0)
-                 begin
-                    next_state = 0 ; 
-
-                 end
-               else
-                 begin
-                    next_state = 1 ; 
-                 end 
-            end
-          2 :
-            begin
-               if (want_read == 1'b0)
-                 begin
-                    next_state = 0 ; 
-                 end
-               else
-                 begin
-                    next_state = 2 ; 
-                 end 
-            end
-          3 :
-            begin
-               next_state = 4 ; 
-            end
-          4 :
-            begin
-               if (data_ready == 1'b0)
-                 begin
-
-                    next_state = 0 ; 
-                 end
-               else
-                 begin
-                    next_state = 4 ; 
-                 end 
-            end
-          5 :
-            begin
-               if (wantDir == 1'b0)
-                 begin
-                    next_state = 0 ; 
-
-                 end
-               else
-                 begin
-                    next_state = 5 ; 
-                 end 
-            end
-          6 :
-            begin
-               next_state = 0 ; 
-            end
-
-          7 :
-            begin
-               if ((fcount == 1) | (addr_ready == 1'b1) | (want_read == 1'b1) | (data_ready == 1'b1) | (wantDir == 1'b1) | (wantwriteback == 1'b1))
-                 begin
-                    next_state = 0 ; 
-
-                 end
-               else
-                 begin
-                    next_state = 7 ; 
-                 end 
-            end
-          8 :
-            begin
-               next_state = 7 ; 
-            end
-          9 :
-            begin
-               next_state = 0 ; 
-            end
-
-          10 :
-            begin
-               next_state = 0 ; 
-            end
-          // Add a default to avoid inferring latches.  Preserve original functionality
-          // by holding previous state, even if this is suboptimal for real circuits:
-          default: begin
-             next_state = state;
-          end
-        endcase 
-     end 
-
+				          temp_fbdatavalidl = 1'b0 ; 
+				          temp_shadedataready = 1'b0 ; 
+                         temp_texelready = 1'b1 ; 
+                   end
+       endcase 
+    end 
  endmodule
 
     
-  module raysend (as, ack, addr, dir, origx, origy, origz, rgData, rgAddr, rgWE, rgAddrValid, rgDone, globalreset, clk, statepeek);
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+ module raysend (as, ack, addr, dir, origx, origy, origz, rgData, rgAddr, rgWE, rgAddrValid, rgDone, globalreset, clk, statepeek);
 
     input as; 
     output ack; 
@@ -1155,7 +1098,7 @@ rgAddr <= temp_rgAddr;
        end 
     end 
 
-    always @(*)
+    always @(state or ack or as or rgDone)
     begin
 
        case (state)
@@ -1177,24 +1120,11 @@ rgAddr <= temp_rgAddr;
                             temp_rgWE = 3'b001 ; 
                             temp_rgAddrValid = 1'b1 ; 
                             temp_rgAddr = addr ; 
-                         end
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                         else begin
-                            temp_rgData = rgData;
-                            temp_rgWE = rgWE;
-                            temp_rgAddrValid = rgAddrValid;
-                            temp_rgAddr = addr ; 
-                         end
+                         end 
                          if (as == 1'b0 & ack == 1'b1)
                          begin
                             temp_ack = 1'b0 ; 
-                         end
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                         else begin
-                           temp_ack = ack;
-                         end
+                         end 
 
                    end
           1 :
@@ -1209,22 +1139,11 @@ rgAddr <= temp_rgAddr;
                       end 
                       statepeek = 3'b010 ; 
 
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                      temp_rgData = rgData;
-                      temp_rgWE = rgWE;
-                      temp_rgAddr = rgAddr;
- 
                          if (rgDone == 1'b1)
                          begin
                             temp_rgAddrValid = 1'b0 ; 
                          end 
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                         else begin
-                            temp_rgAddrValid = rgAddrValid;
-                         end
-                      temp_ack = ack;
+
                    end
           2 :
                    begin
@@ -1238,21 +1157,11 @@ rgAddr <= temp_rgAddr;
                       end 
                       statepeek = 3'b011 ; 
 
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                      temp_rgData = rgData;
-                      temp_rgWE = rgWE;
-                      temp_rgAddr = rgAddr;
- 
                          if (rgDone == 1'b1)
                          begin
                             temp_rgAddrValid = 1'b0 ; 
                          end 
-                         else begin
-                            temp_rgAddrValid = rgAddrValid;
-                         end
 
-                      temp_ack = ack;
                    end
            3 :
                    begin
@@ -1266,21 +1175,11 @@ rgAddr <= temp_rgAddr;
                       end 
                       statepeek = 3'b100 ; 
 
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                      temp_rgData = rgData;
-                      temp_rgWE = rgWE;
-                      temp_rgAddr = rgAddr;
- 
                          if (rgDone == 1'b1)
                          begin
                             temp_rgAddrValid = 1'b0 ; 
                          end 
-                         else begin
-                            temp_rgAddrValid = rgAddrValid;
-                         end
 
-                      temp_ack = ack;
                    end
          4 :
                    begin
@@ -1294,20 +1193,10 @@ rgAddr <= temp_rgAddr;
                       end 
                       statepeek = 3'b101 ; 
 
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                      temp_rgData = rgData;
-                      temp_rgWE = rgWE;
-                      temp_rgAddr = rgAddr;
- 
                          if (rgDone == 1'b1)
                          begin
                             temp_rgAddrValid = 1'b0 ; 
                          end 
-                         else begin
-                            temp_rgAddrValid = rgAddrValid;
-                         end
-                      temp_ack = ack;
                    end
 
           5 :
@@ -1322,20 +1211,11 @@ rgAddr <= temp_rgAddr;
                       end 
                       statepeek = 3'b110 ; 
 
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                      temp_rgData = rgData;
-                      temp_rgWE = rgWE;
-                      temp_rgAddr = rgAddr;
- 
                          temp_ack = 1'b1 ; 
                          if (rgDone == 1'b1)
                          begin
                             temp_rgAddrValid = 1'b0 ; 
                          end 
-                         else begin
-                            temp_rgAddrValid = rgAddrValid;
-                         end
 
                    end
 
@@ -1343,11 +1223,6 @@ rgAddr <= temp_rgAddr;
                    begin
                       next_state = 2 ; 
 
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                      temp_rgAddr = rgAddr;
-                      temp_ack = ack;
-                      
                          temp_rgData = {4'b0000, origy} ; 
                          temp_rgWE = 3'b010 ; 
                          temp_rgAddrValid = 1'b1 ; 
@@ -1357,11 +1232,6 @@ rgAddr <= temp_rgAddr;
                    begin
                       next_state = 3 ; 
 
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                      temp_rgAddr = rgAddr;
-                      temp_ack = ack;
-                      
                          temp_rgData = {4'b0000, origz} ; 
                          temp_rgWE = 3'b011 ; 
                          temp_rgAddrValid = 1'b1 ; 
@@ -1370,11 +1240,6 @@ rgAddr <= temp_rgAddr;
                    begin
                       next_state = 4 ; 
 
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                      temp_rgAddr = rgAddr;
-                      temp_ack = ack;
-                      
                          temp_rgData = {dir[31:16], dir[47:32]} ; 
                          temp_rgWE = 3'b100 ; 
                          temp_rgAddrValid = 1'b1 ; 
@@ -1383,32 +1248,19 @@ rgAddr <= temp_rgAddr;
                    begin
                       next_state = 5 ; 
 
-                      //need to hold previous value explicitly to prevent
-                      //latch inference
-                      temp_rgAddr = rgAddr;
-                      temp_ack = ack;
-                      
                          temp_rgData = {16'b0000000000000000, dir[15:0]} ; 
                           temp_rgWE = 3'b101 ; 
                          temp_rgAddrValid = 1'b1 ; 
                    end
-           // The original FSM did not have a default case.  We want to add one
-           // to prevent modern synthesis tools from inferring latches in this
-           // logic.  To preserve as much of the original behavior as possible,
-           // hold the previous flop values whereever possible, even though
-           // this will cause the FSM to lock up if it gets in an illegal state
-           default: begin
-              temp_rgData = rgData;
-              temp_rgWE = rgWE;
-              temp_rgAddrValid = rgAddrValid;
-              temp_rgAddr = rgAddr;
-              temp_ack = ack;
-              next_state = state;
-           end
        endcase 
     end 
- endmodule   
-        
+ endmodule
+
+    
+    
+    
+    
+    
 
  module raygencont (go, initcount, busyout, cycles, nextaddr, nas0, nas1, page, dirReady, wantDir, dirIn, addrIn, as, addr, ack, dir, raygroup0, raygroupvalid0, busy0, raygroup1, raygroupvalid1, busy1, globalreset, clk, statepeek);
 
@@ -1507,25 +1359,8 @@ rgAddr <= temp_rgAddr;
 	addr[1:0] <= temp_addr[1:0];
         state <= next_state ; 
 
-          // dir is only loaded if state == 1, make enable logic here rather
-          // than risk latch inference below
-          if (state == 1) begin
-	     dir <= dirIn;
-          end
-          
-          // This matches original logic for all explicitly defined
-          // states; with a simulation testbench, we could show whether
-          // there are bugs introduced by allowing this to increment
-          // during states that are not part of the next state logic
-          if (state == 0) begin
-             if (go) begin
-                cycles <= 0;
-             end
-          end
-          else begin
-	     cycles <= cycles + 1;
-          end
-
+	dir <= temp_dir;
+	cycles <= temp_cycles;
 	loaded <= temp_loaded;	
 	groupID <= temp_groupID;
 	count <= temp_count;
@@ -1543,361 +1378,250 @@ rgAddr <= temp_rgAddr;
     assign nas0 = temp_nas0;
     assign nas1 = temp_nas1;
 
-   always @(*)
-     begin
-        case (state)
+    always @(state or go or ack or busy or dirReady or addr or count or loaded)
+    begin
+       case (state)
           0 :
-            begin
-               temp_addr[1:0] = 2'b00 ; 
-               temp_loaded = 2'b00 ; 
-               temp_groupID = 2'b00 ; 
-               temp_count = initcount ; 
-               temp_active = 1'b0 ; 
-               temp_raygroupvalid0 = raygroupvalid0;
-               temp_raygroupvalid1 = raygroupvalid1;
-            end
-          1 :
-            begin
-               if (dirReady == 1'b1 & addr[1:0] == 2'b10)
-                 begin
-                    if (active == 1'b0)
-                      begin
-                         temp_loaded[0] = 1'b1 ;
-                         temp_loaded[1] = loaded[1];
-                      end
-                    else
-                      begin
-                         temp_loaded[1] = 1'b1 ;
-                         temp_loaded[0] = loaded[0];
-                      end 
-                 end
-               else begin
-                  temp_loaded = loaded;
-               end
-               
-               temp_addr[1:0] = addr;
-               temp_groupID = groupID; 
-               temp_count = count; 
-               temp_active = active;
-               temp_raygroupvalid0 = raygroupvalid0;
-               temp_raygroupvalid1 = raygroupvalid1;
-            end
-          2 :
-            begin
-               if ((ack == 1'b1) & (addr[1:0] != 2'b10))
-                 begin
-                    temp_active = active;
-                    temp_addr[1:0] = addr[1:0] + 2'b01 ; 
-                    temp_raygroupvalid0 = raygroupvalid0;
-                    temp_raygroupvalid1 = raygroupvalid1;
-                 end 
-               else if ((ack == 1'b1) & addr[1:0] == 2'b10)
-                 begin
-                    if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
-                      begin
-                         temp_active = active;
-                         temp_addr[1:0] = addr;
-                         temp_raygroupvalid0 = 1'b1 ; 
-                         temp_raygroupvalid1 = raygroupvalid1;
-                      end
-                    else if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
-                      begin                         
-                         temp_active = active;
-                         temp_addr[1:0] = addr;
-                         temp_raygroupvalid0 = raygroupvalid0;
-                         temp_raygroupvalid1 = 1'b1 ; 
-                      end
-                    else if ((loaded[0]) == 1'b0)
-                      begin
-                         temp_active = 1'b0 ; 
-                         temp_addr[1:0] = 2'b00 ; 
-                         temp_raygroupvalid0 = raygroupvalid0;
-                         temp_raygroupvalid1 = raygroupvalid1;
-                      end
-                    else if ((loaded[1]) == 1'b0)
-                      begin
-                         temp_active = 1'b1 ; 
-                         temp_addr[1:0] = 2'b00 ; 
-                         temp_raygroupvalid0 = raygroupvalid0;
-                         temp_raygroupvalid1 = raygroupvalid1;
-                      end
-                    else
-                      begin
-                         temp_addr[1:0] = addr;
-                         temp_active = active;
-                         temp_raygroupvalid0 = raygroupvalid0;
-                         temp_raygroupvalid1 = raygroupvalid1;
-                      end
-                 end
-               else begin
-                  temp_addr[1:0] = addr;
-                  temp_active = active;
-                  temp_raygroupvalid0 = raygroupvalid0;
-                  temp_raygroupvalid1 = raygroupvalid1;
-               end
-               temp_loaded = loaded; 
-               temp_groupID = groupID; 
-               temp_count = count; 
-            end
-          3 :
-            begin
-               if ((busy[0]) == 1'b1)
-                 begin
-                    temp_groupID = {groupID[1], ~groupID[0]} ; 
-                    temp_raygroupvalid0 = 1'b0 ; 
-                    temp_count = count - 1 ; 
-                    if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
-                      begin
-                         temp_raygroupvalid1 = 1'b1 ;
-                         temp_active = active;
-                         
-                      end
-                    else if ((loaded[1]) == 1'b0)
-                      begin
-                         temp_raygroupvalid1 = raygroupvalid1 ;
-                         temp_active = 1'b1 ; 
-                      end
-                    else
-                      begin
-                         temp_raygroupvalid1 = raygroupvalid1 ;
-                         temp_active = 1'b0 ; 
-                      end 
-                 end 
-               else begin
-                  temp_active = active;
-                  temp_raygroupvalid0 = raygroupvalid0;
-                  temp_raygroupvalid1 = raygroupvalid1;
-                  temp_count = count;
-                  temp_groupID = groupID;
-               end
-               temp_loaded = {loaded[1], 1'b0} ; 
-               temp_addr[1:0] = 2'b00 ; 
-            end
-          4 :
-            begin
-               if ((busy[1]) == 1'b1)
-                 begin
-                    temp_groupID = {~groupID[1], groupID[0]} ; 
-                    temp_raygroupvalid1 = 1'b0 ; 
-                    temp_count = count - 1 ; 
-                    if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
-                      begin
-                         temp_raygroupvalid0 = 1'b1 ;
-                         temp_active = active;
-                      end
-
-                    else if ((loaded[0]) == 1'b0)
-                      begin
-                         temp_raygroupvalid0 = raygroupvalid0 ;
-                         temp_active = 1'b0 ; 
-                      end
-                    else
-                      begin
-                         temp_raygroupvalid0 = raygroupvalid0;
-                         temp_active = 1'b1 ; 
-                      end 
-                 end
-               else begin
-                  temp_active = active;
-                  temp_raygroupvalid0 = raygroupvalid0;
-                  temp_raygroupvalid1 = raygroupvalid1;
-                  temp_count = count;
-                  temp_groupID = groupID;
-               end
-               temp_loaded = {1'b0, loaded[0]} ; 
-               temp_addr[1:0] = 2'b00 ; 
-            end
-          // add a default to prevent latch inference.  preserve original
-          // design intent and hold previous state
-          default: begin
-             temp_addr[1:0] = addr;
-             temp_loaded = loaded; 
-             temp_groupID = groupID; 
-             temp_count = count; 
-             temp_active = active;
-             temp_raygroupvalid0 = raygroupvalid0;
-             temp_raygroupvalid1 = raygroupvalid1;
-           end
-        endcase 
-    end
-
-   always @(*)
-     begin
-        case (state)
-          0 :
-            begin
-       	       as = 1'b0 ; 
-       	       wantDir = 1'b0 ; 
-               statepeek = 3'b001 ; 
-	       temp_busyout = 1'b0;
-	       temp_nas0 = 1'b0;
-	       temp_nas1 = 1'b0;
-            end
-          1 :
-            begin
-               as = dirReady ; 
-               wantDir = 1'b1 ; 
-               statepeek = 3'b010 ; 
-	       temp_busyout = 1'b1;
-    	       if (addr[1:0] == 2'b00 & dirReady == 1'b1 & active == 1'b0) 
-		 begin
-		    temp_nas0 = 1'b1;
-		    temp_nas1 = 1'b1;
-		 end
-               else begin
-                  temp_nas0 = 1'b0;
-                  temp_nas1 = 1'b0;
-               end
-            end
-          2 :
-            begin
-               wantDir = 1'b0 ; 
-               as = 1'b1 ; 
-               statepeek = 3'b011 ; 
-	       temp_busyout = 1'b1;
-	       temp_nas0 = 1'b0;
-	       temp_nas1 = 1'b0;
-            end
-          // Create a default to avoid latch inference
-          // use the pattern from other states to make
-          // choices about how to calculate each value.
-          // this preserves design intent for defined states
-          // while not guaranteeing identical behavior for
-          // undefined states.
-          // Note that states 3 and 4 were previously explicitly
-          // defined for these signals but match the defaults.
-          default: begin
-             //***NOTE:  The original behavior of "wantDir" and "as" is almost
-             //          certainly buggy, as the values are undefined for
-             //          states 3-7 and so behavior during states 3-4 (which are
-             //          actually used unlike states 5-7) would have
-             //          held as = 1 and wantDir = 0 regardless of whether
-             //          that was the desired effect or not.  It seems unlikely
-             //          that latched behavior was envisioned, as the clock
-             //          for these latches is not well defined.  We thus have
-             //          to guess as to the desired value for these bits in
-             //          states 3, 4, (and 5-7 for that matter).  The next state
-             //          logic bounces around, so there's not much insight
-             //          to be gleaned from it.  The safe choice appears to be
-             //          to set them both inactive even though that definitely
-             //          changes the behavior of the circuit by allowing as to
-             //          clear on transitions from states 2-3 or 2-4.
-             wantDir = 1'b0;
-             as = 1'b0;
-             statepeek = state + 1 ; 
-	     temp_busyout = 1'b1;
-	     temp_nas0 = 1'b0;
-	     temp_nas1 = 1'b0;
-          end
-        endcase 
-    end 
-
-   always @(*)
-     begin
-        case (state)
-          0 :
-            begin
-               if (go == 1'b1)
-                 begin
-                    next_state = 1 ; 
-                 end
-               else
-                 begin
-                    next_state = 0 ; 
-                 end 
-            end
-          1 :
-            begin
-               if (dirReady == 1'b1)
-                 begin
-                    next_state = 2 ; 
-                 end
-               else
-                 begin
-                    next_state = 1 ; 
-                 end 
-            end
-          2 :
-            begin
-               if ((ack == 1'b1) & (addr[1:0] != 2'b10))
-                 begin
-                    next_state = 1 ; 
-                 end
-               else if (ack == 1'b1)
-                 begin
-                    if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
-                      begin
-                         next_state = 3 ; 
-                      end
-                    else if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
-                      begin
-                         next_state = 4 ; 
-                      end
-                    else if (loaded != 2'b11)
+                   begin
+       				as = 1'b0 ; 
+       				wantDir = 1'b0 ; 
+                      if (go == 1'b1)
                       begin
                          next_state = 1 ; 
                       end
-                    else
+                      else
+                      begin
+                         next_state = 0 ; 
+                      end 
+                      statepeek = 3'b001 ; 
+						temp_busyout = 1'b0;
+						temp_nas0 = 1'b0;
+						temp_nas1 = 1'b0;
+
+
+                         if (go == 1'b1)
+                         begin
+                            temp_cycles = 0;
+                         end 
+                         temp_addr[1:0] = 2'b00 ; 
+                         temp_loaded = 2'b00 ; 
+                         temp_groupID = 2'b00 ; 
+                         temp_count = initcount ; 
+                         temp_active = 1'b0 ; 
+
+                   end
+          1 :
+                   begin
+                      as = dirReady ; 
+                      wantDir = 1'b1 ; 
+                      if (dirReady == 1'b1)
+                      begin
+                         next_state = 2 ; 
+                      end
+                      else
+                      begin
+                         next_state = 1 ; 
+                      end 
+                     statepeek = 3'b010 ; 
+						temp_busyout = 1'b1;
+    				if (addr[1:0] == 2'b00 & dirReady == 1'b1 & active == 1'b0) 
+					begin
+						 temp_nas0 = 1'b1;
+						 temp_nas1 = 1'b1;
+					end
+
+                         temp_dir = dirIn ; 
+                         if (dirReady == 1'b1 & addr[1:0] == 2'b10)
+                         begin
+                            if (active == 1'b0)
+                            begin
+                               temp_loaded[0] = 1'b1 ; 
+                            end
+                            else
+                            begin
+                               temp_loaded[1] = 1'b1 ; 
+                            end 
+                         end 
+             temp_cycles = cycles + 1 ; 
+
+
+                   end
+          2 :
+                   begin
+                      wantDir = 1'b0 ; 
+                      as = 1'b1 ; 
+                      if ((ack == 1'b1) & (addr[1:0] != 2'b10))
+                      begin
+                         next_state = 1 ; 
+                      end
+                      else if (ack == 1'b1)
+                      begin
+                         if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
+                         begin
+                            next_state = 3 ; 
+                         end
+                         else if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
+                         begin
+                            next_state = 4 ; 
+                         end
+                         else if (loaded != 2'b11)
+                         begin
+
+                            next_state = 1 ; 
+                         end
+                         else
+                         begin
+                            next_state = 2 ; 
+                         end 
+                      end
+                      else
                       begin
                          next_state = 2 ; 
                       end 
-                 end
-               else
-                 begin
-                    next_state = 2 ; 
-                 end 
-            end
-          3 :
-            begin
-               if ((busy[0]) == 1'b0)
-                 begin
-                    next_state = 3 ; 
-                 end
-               else if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
-                 begin
-                    next_state = 4 ; 
-                 end
-               else if (count > 0)
-                 begin
-                    next_state = 1 ; 
-                 end
-               else
-                 begin
-                    next_state = 0 ; 
-                 end 
-            end
+                      statepeek = 3'b011 ; 
+						temp_busyout = 1'b1;
+						temp_nas0 = 1'b0;
+						temp_nas1 = 1'b0;
+
+                         if ((ack == 1'b1) & (addr[1:0] != 2'b10))
+                         begin
+                            temp_addr[1:0] = addr[1:0] + 2'b01 ; 
+                         end 
+                         else if ((ack == 1'b1) & addr[1:0] == 2'b10)
+                         begin
+                            if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
+                            begin
+                               temp_raygroupvalid0 = 1'b1 ; 
+                            end
+                            else if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
+                            begin
+
+                               temp_raygroupvalid1 = 1'b1 ; 
+                            end
+                            else if ((loaded[0]) == 1'b0)
+                            begin
+                               temp_active = 1'b0 ; 
+                               temp_addr[1:0] = 2'b00 ; 
+                            end
+                            else if ((loaded[1]) == 1'b0)
+                            begin
+                               temp_active = 1'b1 ; 
+                               temp_addr[1:0] = 2'b00 ; 
+                            end 
+                         end 
+
+             temp_cycles = cycles + 1 ; 
+                   end
           4 :
-            begin
-               if ((busy[1]) == 1'b0)
-                 begin
-                    next_state = 4 ; 
-                 end
-               else if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
-                 begin
-                    next_state = 3 ; 
-                 end
-               else if (count > 0)
-                 begin
+                   begin
+                      if ((busy[1]) == 1'b0)
+                      begin
+                         next_state = 4 ; 
+                      end
+                      else if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
+                      begin
+                         next_state = 3 ; 
+                      end
+                      else if (count > 0)
+                      begin
 
-                    next_state = 1 ; 
-                 end
-               else
-                 begin
-                    next_state = 0 ; 
-                 end 
-            end
-          // add a default to prevent latch inference
-          // hold previous state to preserve original design
-          // intent, even if this is not optimal behavior
-          default:
-            next_state = state;
-        endcase 
+                         next_state = 1 ; 
+                      end
+                      else
+                      begin
+                         next_state = 0 ; 
+                      end 
+                      statepeek = 3'b101 ; 
+						temp_busyout = 1'b1;
+						temp_nas0 = 1'b0;
+						temp_nas1 = 1'b0;
+
+                     if ((busy[1]) == 1'b1)
+                         begin
+                            temp_groupID[1] = ~groupID[1] ; 
+                            temp_raygroupvalid1 = 1'b0 ; 
+                            temp_count = count - 1 ; 
+                            if ((loaded[0]) == 1'b1 & (busy[0]) == 1'b0)
+                            begin
+                               temp_raygroupvalid0 = 1'b1 ; 
+                            end
+
+                            else if ((loaded[0]) == 1'b0)
+                            begin
+                               temp_active = 1'b0 ; 
+                            end
+                            else
+                            begin
+                               temp_active = 1'b1 ; 
+                            end 
+                         end 
+                         temp_loaded[1] = 1'b0 ; 
+                         temp_addr[1:0] = 2'b00 ; 
+
+             temp_cycles = cycles + 1 ; 
+                   end
+          3 :
+                   begin
+                      if ((busy[0]) == 1'b0)
+                      begin
+                         next_state = 3 ; 
+
+                      end
+                      else if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
+                      begin
+                         next_state = 4 ; 
+                      end
+                      else if (count > 0)
+                      begin
+                         next_state = 1 ; 
+                      end
+                      else
+                      begin
+                         next_state = 0 ; 
+
+                      end 
+                      statepeek = 3'b100 ; 
+						temp_busyout = 1'b1;
+						temp_nas0 = 1'b0;
+						temp_nas1 = 1'b0;
+
+                         if ((busy[0]) == 1'b1)
+                         begin
+                            temp_groupID[0] = ~groupID[0] ; 
+                            temp_raygroupvalid0 = 1'b0 ; 
+                            temp_count = count - 1 ; 
+                            if ((loaded[1]) == 1'b1 & (busy[1]) == 1'b0)
+                            begin
+                               temp_raygroupvalid1 = 1'b1 ; 
+
+                            end
+                            else if ((loaded[1]) == 1'b0)
+                            begin
+                               temp_active = 1'b1 ; 
+                            end
+                            else
+                            begin
+                               temp_active = 1'b0 ; 
+                            end 
+                         end 
+                         temp_loaded[0] = 1'b0 ; 
+                         temp_addr[1:0] = 2'b00 ; 
+
+
+             temp_cycles = cycles + 1 ; 
+                   end
+       endcase 
     end 
-
  endmodule
     
     
-  module resultrecieve (valid01, valid10, id01a, id01b, id01c, id10a, id10b, id10c, hit01a, hit01b, hit01c, hit10a, hit10b, hit10c, u01a, u01b, u01c, v01a, v01b, v01c, u10a, u10b, u10c, v10a, v10b, v10c, rgResultData, rgResultReady, rgResultSource, globalreset, clk);
+    
+    
+    
+    
+    
+
+ module resultrecieve (valid01, valid10, id01a, id01b, id01c, id10a, id10b, id10c, hit01a, hit01b, hit01c, hit10a, hit10b, hit10c, u01a, u01b, u01c, v01a, v01b, v01c, u10a, u10b, u10c, v10a, v10b, v10c, rgResultData, rgResultReady, rgResultSource, globalreset, clk);
 
     output valid01; 
     reg valid01;
@@ -1961,6 +1685,34 @@ rgAddr <= temp_rgAddr;
     input globalreset; 
     input clk; 
 
+    reg temp_valid01;
+    reg temp_valid10;
+    reg[15:0] temp_id01a;
+    reg[15:0] temp_id01b;
+    reg[15:0] temp_id01c;
+    reg[15:0] temp_id10a;
+    reg[15:0] temp_id10b;
+    reg[15:0] temp_id10c;
+    reg temp_hit01a;
+    reg temp_hit01b;
+    reg temp_hit01c;
+    reg temp_hit10a;
+    reg temp_hit10b;
+    reg temp_hit10c;
+    reg[7:0] temp_u01a;
+    reg[7:0] temp_u01b;
+    reg[7:0] temp_u01c;
+    reg[7:0] temp_v01a;
+    reg[7:0] temp_v01b;
+    reg[7:0] temp_v01c;
+    reg[7:0] temp_u10a;
+    reg[7:0] temp_u10b;
+    reg[7:0] temp_u10c;
+    reg[7:0] temp_v10a;
+    reg[7:0] temp_v10b;
+    reg[7:0] temp_v10c;
+
+
     reg[2:0] state; 
     reg[2:0] next_state; 
 
@@ -2002,68 +1754,34 @@ rgAddr <= temp_rgAddr;
        begin
           state <= next_state ; 
 
-          if (state == 0) begin
-             if (rgResultReady == 1'b1 & rgResultSource == 2'b01)
-               begin
-                  id01a <= rgResultData[31:16] ; 
-                  id01b <= rgResultData[15:0] ; 
-               end
-             else if (rgResultReady == 1'b1 & rgResultSource == 2'b10)
-               begin
-                  id10a <= rgResultData[31:16] ; 
-                  id10b <= rgResultData[15:0] ; 
-               end
-          end
-          if (state == 1) begin
-             id01c <= rgResultData[15:0];
-             hit01a <= rgResultData[18];
-             hit01b <= rgResultData[17];
-             hit01c <= rgResultData[16];
-          end
-          if (state == 2) begin
-             u01a <= rgResultData[23:16];
-             u01b <= rgResultData[15:8];
-             u01c <= rgResultData[7:0];
-          end
-          if (state == 5) begin
-             u10a <= rgResultData[23:16];
-             u10b <= rgResultData[15:8];
-             u10c <= rgResultData[7:0];
-          end
-          if (state == 3) begin
-             v01a <= rgResultData[23:16];
-             v01b <= rgResultData[15:8];
-             v01c <= rgResultData[7:0];
-          end
-          if (state == 6) begin
-             v10a <= rgResultData[23:16];
-             v10b <= rgResultData[15:8];
-             v10c <= rgResultData[7:0];
-          end
-          if (state == 4) begin
-             id10c <= rgResultData[15:0] ; 
-             hit10a <= rgResultData[18];
-             hit10b <= rgResultData[17];
-             hit10c <= rgResultData[16];
-          end
-
-          if (state == 3) begin
-             valid01 <= 1'b1;
-          end
-          else begin
-             valid01 <= 1'b0;
-          end
-          if (state == 6) begin
-             valid10 <= 1'b1;
-          end
-          else begin
-             valid10 <= 1'b0;
-          end
+valid01 <= temp_valid01;
+valid10 <= temp_valid10;
+id01a <= temp_id01a;
+id01b <= temp_id01b;
+id01c <= temp_id01c;
+hit01a <= temp_hit01a;
+hit01b <= temp_hit01b;
+hit01c <= temp_hit01c;
+u01a <= temp_u01a;
+u01b <= temp_u01b;
+u01c <= temp_u01c;
+u10a <= temp_u10a;
+u10b <= temp_u10b;
+u10c <= temp_u10c;
+v01a <= temp_v01a;
+v01b <= temp_v01b;
+v01c <= temp_v01c;
+v10a <= temp_v10a;
+v10b <= temp_v10b;
+v10c <= temp_v10c;
+hit10a <= temp_hit10a;
+hit10b <= temp_hit10b;
+hit10c <= temp_hit10c;
        end 
     end 
 
 
-    always @(*)
+    always @(state or rgResultReady or rgResultSource)
     begin
        case (state)
           0 :
@@ -2074,46 +1792,117 @@ rgAddr <= temp_rgAddr;
                       end
                       else if (rgResultReady == 1'b1 & rgResultSource == 2'b10)
                       begin
+
                          next_state = 4 ; 
                       end
                       else
                       begin
                          next_state = 0 ; 
                       end 
+
+
+			temp_valid01 = 1'b0 ; 
+				          temp_valid10 = 1'b0 ; 
+                         if (rgResultReady == 1'b1 & rgResultSource == 2'b01)
+                         begin
+                            temp_id01a = rgResultData[31:16] ; 
+                            temp_id01b = rgResultData[15:0] ; 
+                         end
+                         else if (rgResultReady == 1'b1 & rgResultSource == 2'b10)
+                         begin
+                            temp_id10a = rgResultData[31:16] ; 
+                            temp_id10b = rgResultData[15:0] ; 
+                         end 
+
                    end
 
           1 :
                    begin
                       next_state = 2 ; 
+
+			temp_valid01 = 1'b0 ; 
+				          temp_valid10 = 1'b0 ; 
+                         temp_id01c = rgResultData[15:0] ; 
+                         temp_hit01a = rgResultData[18] ; 
+                         temp_hit01b = rgResultData[17] ; 
+                         temp_hit01c = rgResultData[16] ; 
+
                    end
           2 :
 
                    begin
                       next_state = 3 ; 
+
+			temp_valid01 = 1'b0 ; 
+				          temp_valid10 = 1'b0 ; 
+                         temp_u01a = rgResultData[23:16] ; 
+                         temp_u01b = rgResultData[15:8] ; 
+                         temp_u01c = rgResultData[7:0] ; 
+
                    end
           3 :
                    begin
                       next_state = 0 ; 
+
+				          temp_valid10 = 1'b0 ; 
+                         temp_v01a = rgResultData[23:16] ; 
+                         temp_v01b = rgResultData[15:8] ; 
+                         temp_v01c = rgResultData[7:0] ; 
+                         temp_valid01 = 1'b1 ; 
+
                    end
           4 :
                    begin
                       next_state = 5 ; 
+
+          				temp_valid01 = 1'b0 ; 
+				          temp_valid10 = 1'b0 ; 
+                         temp_id10c = rgResultData[15:0] ; 
+
+                         temp_hit10a = rgResultData[18] ; 
+                         temp_hit10b = rgResultData[17] ; 
+                         temp_hit10c = rgResultData[16] ; 
+
                    end
           5 :
 
                    begin
                       next_state = 6 ; 
+
+          				temp_valid01 = 1'b0 ; 
+				          temp_valid10 = 1'b0 ; 
+                         temp_u10a = rgResultData[23:16] ; 
+                         temp_u10b = rgResultData[15:8] ; 
+                         temp_u10c = rgResultData[7:0] ; 
+
                    end
           6 :
                    begin
                       next_state = 0 ; 
+
+      				temp_valid01 = 1'b0 ; 
+                         temp_v10a = rgResultData[23:16] ; 
+                         temp_v10b = rgResultData[15:8] ; 
+                         temp_v10c = rgResultData[7:0] ; 
+                         temp_valid10 = 1'b1 ; 
+
                    end
-          default: begin
-            next_state = state;
-          end
        endcase 
     end 
- endmodule   
+ endmodule
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
 
  module resultwriter (valid01, valid10, id01a, id01b, id01c, id10a, id10b, id10c, hit01a, hit01b, hit01c, hit10a, hit10b, hit10c, u01a, u01b, u01c, v01a, v01b, v01c, u10a, u10b, u10c, v10a, v10b, v10c, addr, as01, as10, bkcolour, shadedata, triID, wantshadedata, shadedataready, texinfo, texaddr, texeladdr, texel, wanttexel, texelready, dataout, addrout, write, ack, globalreset, clk);
@@ -2211,6 +2000,7 @@ rgAddr <= temp_rgAddr;
 
     reg temp_pending01; 
     reg temp_pending10; 
+    reg temp_process01; 
     reg temp_texmap; 
     reg[20:0] temp_texinfol; 
     reg[20:0] temp_shadedataa; 
@@ -2250,592 +2040,601 @@ rgAddr <= temp_rgAddr;
        begin
           state <= next_state ; 
 
-          if (state == 0) begin
-             process01 <= pending01;
-          end
-          
-          pending01 <= temp_pending01;
-          pending10 <= temp_pending10;
-          texmap <= temp_texmap;
-          texinfol <= temp_texinfol;
-          shadedataa <= temp_shadedataa;
-          shadedatab <= temp_shadedatab;
-          shadedatac <= temp_shadedatac;
-          
-          dataout <= {1'b0, shadedataa, shadedatab, shadedatac} ;
+process01 <= temp_process01;
+pending01 <= temp_pending01;
+pending10 <= temp_pending10;
+texmap <= temp_texmap;
+texinfol <= temp_texinfol;
+shadedataa <= temp_shadedataa;
+shadedatab <= temp_shadedatab;
+shadedatac <= temp_shadedatac;
+
+    dataout <= {1'b0, 
+					shadedataa[20],
+					shadedataa[19],
+					shadedataa[18],
+					shadedataa[17],
+					shadedataa[16],
+					shadedataa[15],
+					shadedataa[14],
+					shadedataa[13],
+					shadedataa[12],
+					shadedataa[11],
+					shadedataa[10],
+					shadedataa[9],
+					shadedataa[8],
+					shadedataa[7],
+					shadedataa[6],
+					shadedataa[5],
+					shadedataa[4],
+					shadedataa[3],
+					shadedataa[2],
+					shadedataa[1],
+					shadedataa[0],
+					shadedatab[20],
+					shadedatab[19],
+					shadedatab[18],
+					shadedatab[17],
+					shadedatab[16],
+					shadedatab[15],
+					shadedatab[14],
+					shadedatab[13],
+					shadedatab[12],
+					shadedatab[11],
+					shadedatab[10],
+					shadedatab[9],
+					shadedatab[8],
+					shadedatab[7],
+					shadedatab[6],
+					shadedatab[5],
+					shadedatab[4],
+					shadedatab[3],
+					shadedatab[2],
+					shadedatab[1],
+					shadedatab[0],
+					shadedatac[20],
+					shadedatac[19],
+					shadedatac[18],
+					shadedatac[17],
+					shadedatac[16],
+					shadedatac[15],
+					shadedatac[14],
+					shadedatac[13],
+					shadedatac[12],
+					shadedatac[11],
+					shadedatac[10],
+					shadedatac[9],
+					shadedatac[8],
+					shadedatac[7],
+					shadedatac[6],
+					shadedatac[5],
+					shadedatac[4],
+					shadedatac[3],
+					shadedatac[2],
+					shadedatac[1],
+					shadedatac[0]} ;
        end 
 //    end 
 // PAJ used to be assign, but weird error, so added as register   assign dataout = {1'b0, 
     end 
     assign addrout = (process01 == 1'b1) ? addrout01 : addrout10 ;
 
-   always @(*)
-     begin
-        case (state)
+    always @(state or process01 or pending10 or ack or shadedataready or id01a or 
+             id01b or id01c or id10a or id10b or id10c or selectuv or hita or 
+             hitb or hitc or shadedata or pending01 or texmap or texelready)
+    begin
+       case (state)
           0 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       selectuv = 0;
-	       lmenable = 1'b0 ; 
-	       wanttexel = 1'b0 ; 
-            end
-          1 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       selectuv = 0;
-	       lmenable = 1'b0 ; 
-	       wanttexel = 1'b0 ; 
-            end
-          2 :
-            begin
-	       lmenable = 1'b0 ; 
-	       wanttexel = 1'b0 ; 
-               wantshadedata = 1'b1 ; 
-               selectuv[2] = ~process01 ; 
-               selectuv[1:0] = 2'b00 ; 
-               if (process01 == 1'b1)
-                 begin
-                    triID = id01a ; 
-
-                 end
-               else
-                 begin
-                    triID = id10a ; 
-                 end 
-            end
-          3 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       lmenable = 1'b0 ; 
-	       wanttexel = 1'b0 ; 
-               selectuv[2] = ~process01 ; 
-               selectuv[1:0] = 2'b00 ; 
-            end
-          4 :
-            begin
-	       wantshadedata = 1'b0 ; 
-	       lmenable = 1'b0 ; 
-	       wanttexel = 1'b0 ; 
-               selectuv[2] = ~process01 ; 
-               selectuv[1:0] = 2'b01 ; 
-               if (process01 == 1'b1)
-                 begin
-                    triID = id01b ; 
-                 end
-               else
-                 begin
-                    triID = id10b ; 
-                 end 
-            end
-          5 :
-            begin
-	       lmenable = 1'b0 ; 
-	       wanttexel = 1'b0 ; 
-               wantshadedata = 1'b1 ; 
-               selectuv[2] = ~process01 ; 
-               selectuv[1:0] = 2'b10 ; 
-               if (process01 == 1'b1)
-                 begin
-                    triID = id01c ; 
-                 end
-               else
-                 begin
-                    triID = id10c ; 
-                 end 
-            end
-          6 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       lmenable = 1'b0 ; 
-	       wanttexel = 1'b0 ;
-               selectuv[2] = ~process01 ; 
-               selectuv[1:0] = 2'b01 ; 
-            end
-           7 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       lmenable = 1'b0 ; 
-	       wanttexel = 1'b0 ; 
-               selectuv[2] = ~process01 ; 
-               selectuv[1:0] = 2'b10 ; 
-            end
-          8 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       wanttexel = 1'b0 ; 
-               selectuv[2] = ~process01 ; 
-               selectuv[1:0] = 2'b00 ; 
-               lmenable = 1'b1 ; 
-            end
-          9 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       wanttexel = 1'b0 ; 
-               selectuv[2] = ~process01 ; 
-               selectuv[1:0] = 2'b01 ; 
-               lmenable = 1'b1 ; 
-            end
-          10 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       wanttexel = 1'b0 ; 
-               selectuv[2] = ~process01 ; 
-               selectuv[1:0] = 2'b10 ; 
-               lmenable = 1'b1 ; 
-            end
-          11 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       selectuv = 0;
-	       lmenable = 1'b0 ; 
-               wanttexel = 1'b1 ; 
-            end
-          12 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       selectuv = 0;
-	       lmenable = 1'b0 ; 
-               wanttexel = 1'b1 ; 
-            end
-          13 :
-            begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       selectuv = 0;
-	       lmenable = 1'b0 ; 
-               wanttexel = 1'b1 ; 
-            end
-          // Default needed to prevent latch inference; set everything to zero
-          // for undefined state.  This represents a change in design intent
-          // vs. original code, albeit a subtle one
-          default: begin
-	       wantshadedata = 1'b0 ; 
-   	       triID = 0;
-	       selectuv = 0;
-	       lmenable = 1'b0 ; 
-               wanttexel = 1'b0 ; 
-          end
-        endcase 
-   end 
-
-   always @(*)
-     begin
-        case (state)
-          1 :
-            begin
-               if (ack == 1'b1 & process01 == 1'b1)
-                 begin
-                    temp_pending01 = 1'b0 ; 
-                    temp_pending10 = pending10;
-                 end
-
-               else if (ack == 1'b1 & process01 == 1'b0)
-                 begin
-                    temp_pending10 = 1'b0 ; 
-                    temp_pending01 = pending01;
-                 end
-               //add an else to hold the register value to prevent
-               //latch inference while preserving design intent
-               else begin
-                  temp_pending01 = pending01;
-                  temp_pending10 = pending10;
-               end
-            end
-          // Create a default to avoid latch inference.  This has a couple of side effects:
-          // 1.  the two unused states in the FSM will pick up this logic (subtle change
-          //     in design intent)
-          // 2.  We can collapse the case statement to eliminate redundancy -- most
-          //     states calculate these values as follows:
-          default :
-            begin
-	       if (valid01 == 1'b1)
-		 begin
-		    temp_pending01 = 1'b1 ; 
-		 end
-               //add an else to hold the register value to prevent
-               //latch inference while preserving design intent
-               else begin
-                  temp_pending01 = pending01;
-               end
-               
-	       if (valid10 == 1'b1)
-		 begin
-		    temp_pending10 = 1'b1 ; 
-		 end 
-               //add an else to hold the register value to prevent
-               //latch inference while preserving design intent
-               else begin
-                  temp_pending10 = pending10;
-               end
-            end
-        endcase 
-     end 
-
-   always @(*)
-     begin
-        case (state)
-          1 :
-            begin
-    	       if (process01 == 1'b1 &  ack == 1'b1)
-		 begin
-		    temp_shiften01 = 1'b1;
-		    temp_shiften10 = 1'b1;
-		 end
-               else begin
-                  temp_shiften01 = 1'b0;
-                  temp_shiften10 = 1'b0;
-               end
-	       temp_write = 1'b1;
-            end
-          // Create a default to avoid latch inference.  This has a couple of side effects:
-          // 1.  the two unused states in the FSM will pick up this logic (subtle change
-          //     in design intent)
-          // 2.  We can collapse the case statement to eliminate redundancy -- most
-          //     states calculate these values as follows:
-          default: begin
-	       temp_shiften01 = 1'b0;
-	       temp_shiften10 = 1'b0;
-	       temp_write = 1'b0;
-          end             
-        endcase 
-     end 
-
-   always @(*)
-     begin
-        case (state)
-          2 :
-            begin
-               if (hita == 1'b1)
-                 begin
-                    temp_shadedataa = shadedata[20:0] ; 
-                    temp_texmap = (~shadedata[63]) & shadedata[62] ; 
-                 end
-               else
-                 begin
-                    temp_shadedataa = bkcolour ;
-                    temp_texmap = texmap;
-                 end
-
-               temp_shadedatab = shadedatab;
-               temp_shadedatac = shadedatac;
-               temp_texinfol = texinfol;
-               
-            end
-          3 :
-            begin
-               temp_texinfol = texinfo ;
-
-               temp_shadedataa = shadedataa;
-               temp_shadedatab = shadedatab;
-               temp_shadedatac = shadedatac;
-               temp_texmap = texmap;
-            end
-          4 :
-            begin
-               if (hitb == 1'b1)
-                 begin
-                    temp_shadedatab = shadedata[20:0] ; 
-                    temp_texmap = (~shadedata[63]) & shadedata[62] ; 
-                 end
-               else
-                 begin
-                    temp_shadedatab = bkcolour ; 
-                    temp_texmap = texmap;
-                 end 
-               temp_shadedataa = shadedataa;
-               temp_shadedatac = shadedatac;
-               temp_texinfol = texinfol;
-            end
-          5 :
-            begin
-               if (hitc == 1'b1)
-                 begin
-                    temp_shadedatac = shadedata[20:0] ; 
-                    temp_texmap = (~shadedata[63]) & shadedata[62] ; 
-                 end
-               else
-                 begin
-                    temp_shadedatac = bkcolour ; 
-                    temp_texmap = texmap;
-                 end 
-               temp_shadedataa = shadedataa;
-               temp_shadedatab = shadedatab;
-               temp_texinfol = texinfol;
-            end
-          6 :
-            begin
-               temp_texinfol = texinfo ; 
-
-               temp_shadedataa = shadedataa;
-               temp_shadedatab = shadedatab;
-               temp_shadedatac = shadedatac;
-               temp_texmap = texmap;
-            end
-          7 :
-            begin
-               temp_texinfol = texinfo ; 
- 
-               temp_shadedataa = shadedataa;
-               temp_shadedatab = shadedatab;
-               temp_shadedatac = shadedatac;
-               temp_texmap = texmap;
-            end
-          8 :
-            begin
-               temp_shadedataa[6:0] = blb ; 
-               temp_shadedataa[13:7] = blg ; 
-               temp_shadedataa[20:14] = blr ; 
- 
-               temp_shadedatab = shadedatab;
-               temp_shadedatac = shadedatac;
-               temp_texinfol = texinfol ; 
-               temp_texmap = texmap;
-            end
-          9 :
-            begin
-               temp_shadedatab[6:0] = blb ; 
-               temp_shadedatab[13:7] = blg ; 
-               temp_shadedatab[20:14] = blr ; 
-
-               temp_shadedataa = shadedataa;
-               temp_shadedatac = shadedatac;
-               temp_texinfol = texinfol ; 
-               temp_texmap = texmap;
-            end
-          10 :
-            begin
-               temp_shadedatac[6:0] = blb ; 
-               temp_shadedatac[13:7] = blg ; 
-               temp_shadedatac[20:14] = blr ; 
-
-               temp_shadedataa = shadedataa;
-               temp_shadedatab = shadedatab;
-               temp_texinfol = texinfol ; 
-               temp_texmap = texmap;
-            end
-          11 :
-            begin
-               temp_shadedataa[6:0] = texelb ; 
-               temp_shadedataa[13:7] = texelg ; 
-               temp_shadedataa[20:14] = texelr ; 
-
-               temp_shadedatab = shadedatab;
-               temp_shadedatac = shadedatac;
-               temp_texinfol = texinfol ; 
-               temp_texmap = texmap;
-            end
-          12 :
-            begin
-               temp_shadedatab[6:0] = texelb ; 
-               temp_shadedatab[13:7] = texelg ; 
-               temp_shadedatab[20:14] = texelr ; 
-
-               temp_shadedataa = shadedataa;
-               temp_shadedatac = shadedatac;
-               temp_texinfol = texinfol ; 
-               temp_texmap = texmap;
-            end
-          13 :
-            begin
-               temp_shadedatac[6:0] = texelb ; 
-               temp_shadedatac[13:7] = texelg ; 
-               temp_shadedatac[20:14] = texelr ; 
-
-               temp_shadedataa = shadedataa;
-               temp_shadedatab = shadedatab;
-               temp_texinfol = texinfol ; 
-               temp_texmap = texmap;
-            end
-          //create a default to avoid latch inference; use to hold
-          //previous state and thus preserve design intent
-          default: begin
-             temp_shadedataa = shadedataa;
-             temp_shadedatab = shadedatab;
-             temp_shadedatac = shadedatac;
-             temp_texinfol = texinfol;
-             temp_texmap = texmap;
-          end
-        endcase 
-     end 
-
-   always @(*)
-     begin
-        case (state)
-          0 :
-            begin
-               if (pending01 == 1'b1 | pending10 == 1'b1)
-                 begin
-                    next_state = 2 ; 
-                 end
-               else
-                 begin
-                    next_state = 0 ; 
-                 end 
-            end
-          1 :
-            begin
-               if (ack == 1'b1)
-                 begin
-                    next_state = 0 ; 
-                 end
-               else
-                 begin
-                    next_state = 1 ; 
-                 end 
-            end
-          2 :
-            begin
-               if (shadedataready == 1'b1)
-                 begin
-                    if (hita == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       selectuv = 0;
+				       lmenable = 1'b0 ; 
+				       wanttexel = 1'b0 ; 
+                      if (pending01 == 1'b1 | pending10 == 1'b1)
                       begin
-                         next_state = 3 ; 
+                         next_state = 2 ; 
                       end
-                    else
+                      else
 
+                      begin
+                         next_state = 0 ; 
+                      end 
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+                         temp_process01 = pending01 ; 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+          2 :
+                   begin
+				       lmenable = 1'b0 ; 
+				       wanttexel = 1'b0 ; 
+                      wantshadedata = 1'b1 ; 
+                      selectuv[2] = ~process01 ; 
+                      selectuv[1:0] = 2'b00 ; 
+                      if (process01 == 1'b1)
+                      begin
+                         triID = id01a ; 
+
+                      end
+                      else
+                      begin
+                         triID = id10a ; 
+                      end 
+                      if (shadedataready == 1'b1)
+                      begin
+                         if (hita == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
+                         begin
+                            next_state = 3 ; 
+                         end
+                         else
+
+                         begin
+                            next_state = 4 ; 
+                         end 
+                      end
+                      else
+                      begin
+                         next_state = 2 ; 
+                      end 
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+
+                         if (hita == 1'b1)
+                         begin
+                            temp_shadedataa = shadedata[20:0] ; 
+                            temp_texmap = (~shadedata[63]) & shadedata[62] ; 
+                         end
+                         else
+                         begin
+                            temp_shadedataa = bkcolour ; 
+                         end 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+          3 :
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       lmenable = 1'b0 ; 
+				       wanttexel = 1'b0 ; 
+                      selectuv[2] = ~process01 ; 
+
+                      selectuv[1:0] = 2'b00 ; 
+                      next_state = 8 ; 
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+                         temp_texinfol = texinfo ; 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+
+                   end
+          8 :
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       wanttexel = 1'b0 ; 
+                      selectuv[2] = ~process01 ; 
+                      selectuv[1:0] = 2'b00 ; 
+                      lmenable = 1'b1 ; 
+                      if (texmap == 1'b1)
+                      begin
+
+                         next_state = 11 ; 
+                      end
+                      else
                       begin
                          next_state = 4 ; 
                       end 
-                 end
-               else
-                 begin
-                    next_state = 2 ; 
-                 end 
-            end
-          3 :
-            begin
-               next_state = 8 ; 
-            end
-          4 :
-            begin
-               if (shadedataready == 1'b1)
-                 begin
-                    if (hitb == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+                         temp_shadedataa[6:0] = blb ; 
+                         temp_shadedataa[13:7] = blg ; 
+                         temp_shadedataa[20:14] = blr ; 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+          11 :
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       selectuv = 0;
+				       lmenable = 1'b0 ; 
+
+                      wanttexel = 1'b1 ; 
+                      if (texelready == 1'b1)
                       begin
-                         next_state = 6 ; 
+                         next_state = 4 ; 
                       end
-                    else
+                      else
+                      begin
+                         next_state = 11 ; 
+                      end 
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+
+                         temp_shadedataa[6:0] = texelb ; 
+                         temp_shadedataa[13:7] = texelg ; 
+                         temp_shadedataa[20:14] = texelr ; 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+          12 :
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       selectuv = 0;
+				       lmenable = 1'b0 ; 
+
+                      wanttexel = 1'b1 ; 
+                      if (texelready == 1'b1)
+                      begin
+                         next_state = 5 ; 
+                      end
+                      else
+                      begin
+                         next_state = 12 ; 
+                      end 
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+                         temp_shadedatab[6:0] = texelb ; 
+                         temp_shadedatab[13:7] = texelg ; 
+                         temp_shadedatab[20:14] = texelr ; 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+          13 :
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       selectuv = 0;
+				       lmenable = 1'b0 ; 
+
+                      wanttexel = 1'b1 ; 
+                      if (texelready == 1'b1)
+                      begin
+                         next_state = 1 ; 
+                      end
+                      else
+                      begin
+                         next_state = 13 ; 
+                      end 
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+
+                         temp_shadedatac[6:0] = texelb ; 
+                         temp_shadedatac[13:7] = texelg ; 
+                         temp_shadedatac[20:14] = texelr ; 
+
+                   end
+          6 :
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       lmenable = 1'b0 ; 
+				       wanttexel = 1'b0 ; 
+
+                      selectuv[2] = ~process01 ; 
+                      selectuv[1:0] = 2'b01 ; 
+                      next_state = 9 ; 
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+                         temp_texinfol = texinfo ; 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+          9 :
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       wanttexel = 1'b0 ; 
+                      selectuv[2] = ~process01 ; 
+                      selectuv[1:0] = 2'b01 ; 
+                      lmenable = 1'b1 ; 
+                      if (texmap == 1'b1)
+                      begin
+                         next_state = 12 ; 
+
+                      end
+                      else
                       begin
                          next_state = 5 ; 
                       end 
 
-                 end
-               else
-                 begin
-                    next_state = 4 ; 
-                 end 
-            end
-          5 :
-            begin
-               if (shadedataready == 1'b1)
-                 begin
-                    if (hitc == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
-                      begin
-                         next_state = 7 ; 
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
 
+                         temp_shadedatab[6:0] = blb ; 
+                         temp_shadedatab[13:7] = blg ; 
+                         temp_shadedatab[20:14] = blr ; 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+          7 :
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       lmenable = 1'b0 ; 
+				       wanttexel = 1'b0 ; 
+                      selectuv[2] = ~process01 ; 
+                      selectuv[1:0] = 2'b10 ; 
+                      next_state = 10 ; 
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+                         temp_texinfol = texinfo ; 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+
+          10 :
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       wanttexel = 1'b0 ; 
+                      selectuv[2] = ~process01 ; 
+                      selectuv[1:0] = 2'b10 ; 
+                      if (texmap == 1'b1)
+                      begin
+                         next_state = 13 ; 
                       end
-                    else
+                      else
                       begin
                          next_state = 1 ; 
                       end 
-                 end
-               else
-                 begin
-                    next_state = 5 ; 
-                 end 
-            end
-          6 :
-            begin
-               next_state = 9 ; 
-            end
-          7 :
-            begin
-               next_state = 10 ; 
-            end
-          8 :
-            begin
-               if (texmap == 1'b1)
-                 begin
-                    next_state = 11 ; 
-                 end
-               else
-                 begin
-                    next_state = 4 ; 
-                 end 
-            end
-          9 :
-            begin
-               if (texmap == 1'b1)
-                 begin
-                    next_state = 12 ; 
 
-                 end
-               else
-                 begin
-                    next_state = 5 ; 
-                 end 
-            end
-          10 :
-            begin
-               if (texmap == 1'b1)
-                 begin
-                    next_state = 13 ; 
-                 end
-               else
-                 begin
-                    next_state = 1 ; 
-                 end 
-            end
-          11 :
-            begin
-               if (texelready == 1'b1)
-                 begin
-                    next_state = 4 ; 
-                 end
-               else
-                 begin
-                    next_state = 11 ; 
-                 end 
-            end
-          12 :
-            begin
-               if (texelready == 1'b1)
-                 begin
-                    next_state = 5 ; 
-                 end
-               else
-                 begin
-                    next_state = 12 ; 
-                 end 
-            end
-          13 :
-            begin
-               if (texelready == 1'b1)
-                 begin
-                    next_state = 1 ; 
-                 end
-               else
-                 begin
-                    next_state = 13 ; 
-                 end 
-            end
-          // create a default to avoid latch inference; preserving intent by holding
-          // circuit in invalid states
-          default: begin
-             next_state = state;
-          end
-        endcase 
-     end 
+                      lmenable = 1'b1 ; 
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+                         temp_shadedatac[6:0] = blb ; 
+                         temp_shadedatac[13:7] = blg ; 
+                         temp_shadedatac[20:14] = blr ; 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+          4 :
+                   begin
+				       wantshadedata = 1'b0 ; 
+				       lmenable = 1'b0 ; 
+				       wanttexel = 1'b0 ; 
+                      selectuv[2] = ~process01 ; 
+                      selectuv[1:0] = 2'b01 ; 
+                      if (process01 == 1'b1)
+                      begin
+                         triID = id01b ; 
+                      end
+                      else
+                      begin
+
+                         triID = id10b ; 
+                      end 
+                      if (shadedataready == 1'b1)
+                      begin
+                         if (hitb == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
+                         begin
+                            next_state = 6 ; 
+                         end
+                         else
+                         begin
+                            next_state = 5 ; 
+                         end 
+
+                      end
+                      else
+                      begin
+                         next_state = 4 ; 
+                      end 
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+
+                         if (hitb == 1'b1)
+                         begin
+                            temp_shadedatab = shadedata[20:0] ; 
+                            temp_texmap = (~shadedata[63]) & shadedata[62] ; 
+                         end
+                         else
+                         begin
+                            temp_shadedatab = bkcolour ; 
+                         end 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+          5 :
+                   begin
+				       lmenable = 1'b0 ; 
+				       wanttexel = 1'b0 ; 
+                      wantshadedata = 1'b1 ; 
+                      selectuv[2] = ~process01 ; 
+                      selectuv[1:0] = 2'b10 ; 
+                      if (process01 == 1'b1)
+
+                      begin
+                         triID = id01c ; 
+                      end
+                      else
+                      begin
+                         triID = id10c ; 
+                      end 
+                      if (shadedataready == 1'b1)
+                      begin
+                         if (hitc == 1'b1 & ((shadedata[63]) == 1'b1 | shadedata[63:62] == 2'b01))
+                         begin
+                            next_state = 7 ; 
+
+                         end
+                         else
+                         begin
+                            next_state = 1 ; 
+                         end 
+                      end
+                      else
+                      begin
+                         next_state = 5 ; 
+                      end 
+
+	          if (valid01 == 1'b1)
+				          begin
+				             temp_pending01 = 1'b1 ; 
+				          end 
+				          if (valid10 == 1'b1)
+				          begin
+				             temp_pending10 = 1'b1 ; 
+				          end 
+
+                         if (hitc == 1'b1)
+                          begin
+                            temp_shadedatac = shadedata[20:0] ; 
+                            temp_texmap = (~shadedata[63]) & shadedata[62] ; 
+                         end
+                         else
+                         begin
+                            temp_shadedatac = bkcolour ; 
+                         end 
+
+							temp_shiften01 = 1'b0;
+							temp_shiften10 = 1'b0;
+					    	temp_write = 1'b0;
+                   end
+          1 :
+
+                   begin
+				       wantshadedata = 1'b0 ; 
+   				       triID = 0;
+				       selectuv = 0;
+				       lmenable = 1'b0 ; 
+				       wanttexel = 1'b0 ; 
+                      if (ack == 1'b1)
+                      begin
+                         next_state = 0 ; 
+                      end
+                      else
+                      begin
+                         next_state = 1 ; 
+                      end 
+
+                         if (ack == 1'b1 & process01 == 1'b1)
+                         begin
+                            temp_pending01 = 1'b0 ; 
+                         end
+
+                          else if (ack == 1'b1 & process01 == 1'b0)
+                         begin
+                            temp_pending10 = 1'b0 ; 
+                         end 
+
+    				if (process01 == 1'b1 &  ack == 1'b1)
+						begin
+							temp_shiften01 = 1'b1;
+							temp_shiften10 = 1'b1;
+						end
+					    temp_write = 1'b1;
+                   end
+       endcase 
+    end 
  endmodule
  //////////////////////////////////////////////////////////////////////////////////////////////
  //
@@ -2865,7 +2664,7 @@ rgAddr <= temp_rgAddr;
 
     reg[15:0] col16; 
 
-    always @(*)
+    always @(dataline or texelselect)
     begin
        case (texelselect)
           2'b00 :
@@ -3016,7 +2815,8 @@ rgAddr <= temp_rgAddr;
         reg[6:0] bvl; 
         reg[6:0] bwl; 
 
-        always @(*)
+        always @(selectuv or u01a or u01b or u01c or v01a or v01b or v01c or u10a or 
+                 u10b or u10c or v10a or v10b or v10c)
         begin
            case (selectuv)
               3'b000 :
