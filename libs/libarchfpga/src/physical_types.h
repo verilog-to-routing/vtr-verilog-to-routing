@@ -1535,14 +1535,15 @@ struct t_pb_graph_pin_power {
 /* Description of routing channel distribution across the FPGA, only available for global routing
  * Width is standard dev. for Gaussian.  xpeak is where peak     *
  * occurs. dc is the dc offset for Gaussian and pulse waveforms. */
-enum e_stat {
+enum class e_stat {
     UNIFORM,
     GAUSSIAN,
     PULSE,
     DELTA
 };
+
 struct t_chan {
-    enum e_stat type;
+    e_stat type;
     float peak;
     float width;
     float xpeak;

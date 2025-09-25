@@ -123,25 +123,25 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     fprintf(Echo, "\tChannel Width Distribution:\n");
 
     switch (arch->Chans.chan_x_dist.type) {
-        case (UNIFORM):
+        case e_stat::UNIFORM:
             fprintf(Echo, "\t\tx: type uniform peak %e\n",
                     arch->Chans.chan_x_dist.peak);
             break;
-        case (GAUSSIAN):
+        case e_stat::GAUSSIAN:
             fprintf(Echo,
                     "\t\tx: type gaussian peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_x_dist.peak, arch->Chans.chan_x_dist.width,
                     arch->Chans.chan_x_dist.xpeak, arch->Chans.chan_x_dist.dc);
             break;
-        case (PULSE):
+        case e_stat::PULSE:
             fprintf(Echo,
                     "\t\tx: type pulse peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_x_dist.peak, arch->Chans.chan_x_dist.width,
                     arch->Chans.chan_x_dist.xpeak, arch->Chans.chan_x_dist.dc);
             break;
-        case (DELTA):
+        case e_stat::DELTA:
             fprintf(Echo,
                     "\t\tx: distr dleta peak %e \
 						  Xpeak %e dc %e\n",
@@ -154,25 +154,25 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     }
 
     switch (arch->Chans.chan_y_dist.type) {
-        case (UNIFORM):
+        case e_stat::UNIFORM:
             fprintf(Echo, "\t\ty: type uniform peak %e\n",
                     arch->Chans.chan_y_dist.peak);
             break;
-        case (GAUSSIAN):
+        case e_stat::GAUSSIAN:
             fprintf(Echo,
                     "\t\ty: type gaussian peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_y_dist.peak, arch->Chans.chan_y_dist.width,
                     arch->Chans.chan_y_dist.xpeak, arch->Chans.chan_y_dist.dc);
             break;
-        case (PULSE):
+        case e_stat::PULSE:
             fprintf(Echo,
                     "\t\ty: type pulse peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_y_dist.peak, arch->Chans.chan_y_dist.width,
                     arch->Chans.chan_y_dist.xpeak, arch->Chans.chan_y_dist.dc);
             break;
-        case (DELTA):
+        case e_stat::DELTA:
             fprintf(Echo,
                     "\t\ty: distr dleta peak %e \
 						  Xpeak %e dc %e\n",

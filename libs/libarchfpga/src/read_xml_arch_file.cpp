@@ -3033,16 +3033,16 @@ static void process_chan_width_distr_dir(pugi::xml_node Node, t_chan* chan, cons
 
     Prop = get_attribute(Node, "distr", loc_data).value();
     if (strcmp(Prop, "uniform") == 0) {
-        chan->type = UNIFORM;
+        chan->type = e_stat::UNIFORM;
     } else if (strcmp(Prop, "gaussian") == 0) {
-        chan->type = GAUSSIAN;
+        chan->type = e_stat::GAUSSIAN;
         hasXpeak = hasWidth = hasDc = ReqOpt::REQUIRED;
     } else if (strcmp(Prop, "pulse") == 0) {
-        chan->type = PULSE;
+        chan->type = e_stat::PULSE;
         hasXpeak = hasWidth = hasDc = ReqOpt::REQUIRED;
     } else if (strcmp(Prop, "delta") == 0) {
         hasXpeak = hasDc = ReqOpt::REQUIRED;
-        chan->type = DELTA;
+        chan->type = e_stat::DELTA;
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                        vtr::string_fmt("Unknown property %s for chan_width_distr x\n", Prop).c_str());

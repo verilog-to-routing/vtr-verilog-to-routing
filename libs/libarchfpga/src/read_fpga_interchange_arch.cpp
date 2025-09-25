@@ -2317,12 +2317,12 @@ struct ArchReader {
         arch_->R_minW_nmos = 6065.520020;
         arch_->R_minW_pmos = 18138.500000;
         arch_->grid_logic_tile_area = 14813.392;
-        arch_->Chans.chan_x_dist.type = UNIFORM;
+        arch_->Chans.chan_x_dist.type = e_stat::UNIFORM;
         arch_->Chans.chan_x_dist.peak = 1;
         arch_->Chans.chan_x_dist.width = 0;
         arch_->Chans.chan_x_dist.xpeak = 0;
         arch_->Chans.chan_x_dist.dc = 0;
-        arch_->Chans.chan_y_dist.type = UNIFORM;
+        arch_->Chans.chan_y_dist.type = e_stat::UNIFORM;
         arch_->Chans.chan_y_dist.peak = 1;
         arch_->Chans.chan_y_dist.width = 0;
         arch_->Chans.chan_y_dist.xpeak = 0;

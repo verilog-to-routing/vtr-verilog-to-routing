@@ -105,11 +105,11 @@ void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
     rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cout = arch_sw_inf.at(arch_switch_idx).Cout;
     rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Tdel = rr_switch_Tdel;
     rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].mux_trans_size = arch_sw_inf.at(arch_switch_idx).mux_trans_size;
-    if (arch_sw_inf.at(arch_switch_idx).buf_size_type == BufferSize::AUTO) {
+    if (arch_sw_inf.at(arch_switch_idx).buf_size_type == e_buffer_size::AUTO) {
         // Size based on resistance
         rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = trans_per_buf(arch_sw_inf.at(arch_switch_idx).R, R_minW_nmos, R_minW_pmos);
     } else {
-        VTR_ASSERT(arch_sw_inf.at(arch_switch_idx).buf_size_type == BufferSize::ABSOLUTE);
+        VTR_ASSERT(arch_sw_inf.at(arch_switch_idx).buf_size_type == e_buffer_size::ABSOLUTE);
         // Use the specified size
         rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = arch_sw_inf.at(arch_switch_idx).buf_size;
     }
@@ -134,11 +134,11 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
     rr_switch_inf.Cout = arch_sw_inf.Cout;
     rr_switch_inf.Tdel = rr_switch_Tdel;
     rr_switch_inf.mux_trans_size = arch_sw_inf.mux_trans_size;
-    if (arch_sw_inf.buf_size_type == BufferSize::AUTO) {
+    if (arch_sw_inf.buf_size_type == e_buffer_size::AUTO) {
         // Size based on resistance
         rr_switch_inf.buf_size = trans_per_buf(arch_sw_inf.R, R_minW_nmos, R_minW_pmos);
     } else {
-        VTR_ASSERT(arch_sw_inf.buf_size_type == BufferSize::ABSOLUTE);
+        VTR_ASSERT(arch_sw_inf.buf_size_type == e_buffer_size::ABSOLUTE);
         // Use the specified size
         rr_switch_inf.buf_size = arch_sw_inf.buf_size;
     }
