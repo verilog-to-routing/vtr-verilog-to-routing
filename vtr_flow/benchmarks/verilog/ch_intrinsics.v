@@ -47,20 +47,28 @@ reg [`MEMORY_CONTROLLER_TAG_SIZE-1:0] prevTag;
 always @(posedge clk)
 	prevTag <= tag;
    
-always @(posedge clk)
+always @(*)
 begin
    if (~tag)
 	begin
-		str_address <= memory_controller_address[4:0];
-		str_write_enable <= memory_controller_write_enable;
-		str_in[7:0] <= memory_controller_in[7:0];
+		str_address = memory_controller_address[4:0];
+		str_write_enable = memory_controller_write_enable;
+		str_in[7:0] = memory_controller_in[7:0];
 	end
+   else 
+     begin
+	str_address = 5'h0;
+        str_write_enable = 1'b0;
+        str_in[7:0] = 8'h0;
+     end
 end
 
-always @(posedge clk)
+always @(*)
 begin
   if (~prevTag)
-    memory_controller_out <= str_out;
+    memory_controller_out = str_out;
+  else 
+    memory_controller_out = 'h0;
 end
 
 endmodule 
@@ -272,15 +280,21 @@ case(cur_state)
 	end
 endcase
 
-always @(posedge clk)
+always @(*)
 begin
 
 	if (cur_state == 4'b1101)
 	begin
-		memory_controller_address <= s_07;
-		memory_controller_write_enable <= 1'b1;
-		memory_controller_in <= c;
+		memory_controller_address = s_07;
+		memory_controller_write_enable = 1'b1;
+		memory_controller_in = c;
 	end
+        else
+          begin
+	     memory_controller_address = 'h0;
+	     memory_controller_write_enable = 1'b0;
+             memory_controller_in = 'h0;
+          end             
 
 end
 
