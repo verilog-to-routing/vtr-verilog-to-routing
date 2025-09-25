@@ -389,7 +389,7 @@ static void build_rr_graph(e_graph_type graph_type,
                            const int route_verbosity);
 
 /**
- * Return the ID for delayess switch. If the RR graph is loaded from a file, then the assumption
+ * Return the ID for delay-less switch. If the RR graph is loaded from a file, then the assumption
  * is that the returned ID should be a RR switch ID not architecture ID.
  * @param det_routing_arch Contain the information from architecture file
  * @param load_rr_graph Indicate whether the RR graph is loaded from a file
