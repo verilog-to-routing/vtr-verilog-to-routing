@@ -37,6 +37,7 @@ struct t_options {
     argparse::ArgValue<std::string> write_constraints_file;
     argparse::ArgValue<std::string> read_flat_place_file;
     argparse::ArgValue<std::string> write_flat_place_file;
+    argparse::ArgValue<std::string> write_legalized_flat_place_file;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
     argparse::ArgValue<std::string> read_placement_delay_lookup;
@@ -132,6 +133,7 @@ struct t_options {
     argparse::ArgValue<bool> ShowPlaceTiming;
     argparse::ArgValue<float> PlaceInnerNum;
     argparse::ArgValue<float> place_auto_init_t_scale;
+    argparse::ArgValue<e_anneal_init_t_estimator> place_init_t_estimator;
     argparse::ArgValue<float> PlaceInitT;
     argparse::ArgValue<float> PlaceExitT;
     argparse::ArgValue<float> PlaceAlphaT;

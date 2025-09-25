@@ -43,6 +43,24 @@ void t_draw_state::reset_block_colors() {
               true);
 }
 
+void t_draw_state::refresh_graphic_resources_after_cluster_change() {
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+
+    // Resize block color vectors to match the possibly new clustered size
+    block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
+    use_default_block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
+    reset_block_colors();
+
+    // Resize net color as well since they might be rebuild in analytical placement
+    if (is_flat) {
+        net_color.resize(atom_ctx.netlist().nets().size());
+    } else {
+        net_color.resize(cluster_ctx.clb_nlist.nets().size());
+    }
+    std::fill(net_color.begin(), net_color.end(), ezgl::BLACK);
+}
+
 /**************************************************
  * begin t_draw_pb_type_info function definitions *
  **************************************************/

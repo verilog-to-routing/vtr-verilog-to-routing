@@ -473,6 +473,8 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     e_pin_type class_type = e_pin_type::OPEN;
     int class_num_pins = -1;
+    std::vector<e_side> rr_graph_sides;
+    std::vector<e_side> arch_side_vec;
     switch (rr_type) {
         case e_rr_type::SOURCE:
         case e_rr_type::SINK:
@@ -510,6 +512,19 @@ void check_rr_node(const RRGraphView& rr_graph,
             if (capacity != 1) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+            }
+            rr_graph_sides = rr_graph.node_sides(rr_node);
+            std::tie(std::ignore, std::ignore, arch_side_vec) = get_pin_coordinates(type, ptc_num, std::vector<e_side>(TOTAL_2D_SIDES.begin(), TOTAL_2D_SIDES.end()));
+            // sides in the architecture are a superset of the sides for a pin in RR Graph. We iterate over the sides stored
+            // in the RR Graph to ensure that all of them also exist in the architecture.   
+            for (size_t i = 0; i < rr_graph_sides.size(); i++) {
+                if (std::find(arch_side_vec.begin(), arch_side_vec.end(), rr_graph_sides[i]) == arch_side_vec.end()) {
+                    VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: inode %d (type %d) has a different side '%s' in the RR graph and the architecture.\n", 
+                                inode, 
+                                rr_type, 
+                                TOTAL_2D_SIDE_STRINGS[rr_graph_sides[i]]);
+                }
             }
             break;
 

@@ -248,9 +248,7 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
 
 RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             t_physical_tile_type_ptr physical_tile,
-                            const int layer,
-                            const int root_i,
-                            const int root_j,
+                            const t_physical_tile_loc& root_loc,
                             int pin_physical_num);
 
 /**
@@ -286,9 +284,7 @@ AtomPinId get_rr_node_atom_pin_id(RRNodeId rr_node_id);
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               t_physical_tile_type_ptr physical_tile,
-                              const int layer,
-                              const int i,
-                              const int j,
+                              const t_physical_tile_loc& root_loc,
                               int class_physical_num);
 
 /// @brief Check whether the given nodes are in the same cluster
@@ -313,17 +309,13 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second);
 
 bool directconnect_exists(RRNodeId src_rr_node, RRNodeId sink_rr_node);
 
-std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
-                                                               int i,
-                                                               int j,
+std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(const t_physical_tile_loc& tile_loc,
                                                                t_physical_tile_type_ptr physical_type);
 
 /**
- * @brief Returns the list of pins inside the tile located at (layer, i, j), except for the ones which are on a chain
+ * @brief Returns the list of pins inside the tile located at tile_loc, except for the ones which are on a chain
  */
-std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
-                                                            const int i,
-                                                            const int j,
+std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_tile_loc& tile_loc,
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type);
@@ -342,7 +334,7 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
  * The 'net_is_global_' flag is used to identify global nets, which can be either clock signals or specified as global by user constraints.
  * The 'net_is_ignored_' flag ensures that the router will ignore routing for the net.
  *
- * @param route_constraints User-defined route constraints to guide the application of constraints.
+ * @param constraint User-defined route constraints to guide the application of constraints.
  */
 void apply_route_constraints(const UserRouteConstraints& constraint);
 

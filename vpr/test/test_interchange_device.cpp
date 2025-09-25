@@ -51,7 +51,7 @@ TEST_CASE("read_interchange_layout", "[vpr]") {
     FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
 
     auto& gd = arch.grid_layouts[0];
-    REQUIRE(gd.grid_type == GridDefType::FIXED);
+    REQUIRE(gd.grid_type == e_grid_def_type::FIXED);
     REQUIRE(gd.height == 12);
     REQUIRE(gd.width == 12);
 

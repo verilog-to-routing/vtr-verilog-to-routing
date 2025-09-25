@@ -241,7 +241,7 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
                                                                   const t_bb& bounding_box,
                                                                   RRNodeId target_node,
                                                                   const t_bb& target_bb) {
-    VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
+    VTR_ASSERT(bounding_box.layer_max < (int)g_vpr_ctx.device().grid.get_num_layers());
 
     const RRNodeId& from_node = current.index;
 

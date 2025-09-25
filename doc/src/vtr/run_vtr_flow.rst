@@ -65,9 +65,6 @@ They will cause VPR to perform only :ref:`packing and placement <general_options
     # Using the Yosys conventional Verilog parser
     ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file>
 
-    # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
-    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -parser system-verilog
-
 Running the VTR flow with the default configuration using the Yosys standalone front-end.
 The parser for these runs is considered the Yosys conventional Verilog/SystemVerilog parser (i.e., ``read_verilog -sv``), as the parser is not explicitly specified.
 
@@ -78,7 +75,9 @@ The parser for these runs is considered the Yosys conventional Verilog/SystemVer
 
 Will run the VTR flow (default configuration) with Yosys-Slang plugin for Yosys frontend using Parmys plugin as partial mapper.
 The Yosys-Slang SystemVerilog parser supports the (i.e., ``read_slang``) command. Yosys-Slang builds on top of the slang library to provide comprehensive SystemVerilog support.
-Enable the Yosys-Slang plugin with the ``-DSLANG_SYSTEMVERILOG=ON`` compile flag for the Parmys front-end.
+Enable the Yosys-Slang plugin with the ``-DSLANG_SYSTEMVERILOG=ON`` compile flag while building the VTR project with yosys as a frontend.
+
+.. note:: Yosys-Slang is currently **experimental**.
 
 .. code-block:: bash
 
@@ -199,16 +198,16 @@ Detailed Command-line Options
 
 .. option:: -min_hard_mult_size <int>
 
-    Tells Parmys/ODIN II the minimum multiplier size that should be implemented
-    using hard multiplier (if available). Smaller multipliers will be
-    implemented using soft logic.
+    Tells Parmys/ODIN II the minimum multiplier size (in bits) that should be 
+    implemented using a hard multiplier (if available). Smaller multipliers will 
+    be implemented using soft logic.
 
     **Default:** 3
 
 .. option:: -min_hard_adder_size <int>
 
-    Tells Parmys/ODIN II the minimum adder size that should be implemented
-    using hard adders (if available). Smaller adders will be
+    Tells Parmys/ODIN II the minimum adder size (in bits) that should be 
+    implemented using hard adders (if available). Smaller adders will be
     implemented using soft logic.
 
     **Default:** 1
@@ -232,18 +231,6 @@ Detailed Command-line Options
 .. option:: -use_odin_simulation 
     
     Tells ODIN II to run simulation.
-
-.. option:: -min_hard_mult_size <min_hard_mult_size>
-    
-    Tells Parmys/ODIN II the minimum multiplier size (in bits) to be implemented using hard multiplier.
-    
-    **Default:** 3
-
-.. option:: -min_hard_adder_size <MIN_HARD_ADDER_SIZE>
-    
-    Tells Parmys/ODIN II the minimum adder size (in bits) that should be implemented using hard adder.
-    
-    **Default:** 1
 
 .. option:: -top_module <TOP_MODULE>
     

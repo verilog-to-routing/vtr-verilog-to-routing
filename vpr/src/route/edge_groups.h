@@ -43,7 +43,7 @@ class EdgeGroups {
   private:
     struct node_data {
         std::unordered_set<RRNodeId> edges; // Set of indices into graph_
-        int set = UNDEFINED;                     // Index into rr_non_config_node_sets_
+        int set = UNDEFINED;                // Index into rr_non_config_node_sets_
     };
 
     // Perform a DFS traversal marking everything reachable with the same set id

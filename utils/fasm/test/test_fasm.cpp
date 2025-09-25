@@ -277,8 +277,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                                           (size_t)inode,
                                           sink_inode, 
                                           switch_id,
-                                          vtr::string_view("fasm_features"), 
-                                          vtr::string_view(value.data(), value.size()),
+                                          "fasm_features",
+                                          value,
                                           device_ctx.arch);
             }
         }

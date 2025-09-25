@@ -311,6 +311,12 @@ struct BlifAllocCallback : public blifparse::Callback {
     }
 
     void blackbox() override {
+        LogicalModelId arch_model_id = models_.get_model_by_name(curr_model().netlist_name());
+        if (!arch_model_id.is_valid()) {
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Blackbox BLIF model '%s' has no equivalent architecture model.",
+                      curr_model().netlist_name().c_str());
+        }
+
         //We treat black-boxes as netlists during parsing so they should contain
         //only inpads/outpads
         for (const auto& blk_id : curr_model().blocks()) {
@@ -537,12 +543,6 @@ struct BlifAllocCallback : public blifparse::Callback {
 
     bool verify_blackbox_model(AtomNetlist& blif_model) {
         LogicalModelId arch_model_id = models_.get_model_by_name(blif_model.netlist_name());
-
-        if (!arch_model_id.is_valid()) {
-            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "BLIF model '%s' has no equivalent architecture model.",
-                      blif_model.netlist_name().c_str());
-        }
-
         const t_model& arch_model = models_.get_model(arch_model_id);
 
         //Verify each port on the model

@@ -83,7 +83,7 @@ ResultTy median(Container c) {
 ///@brief Returns the median of a whole container, assuming that it is already
 ///       sorted.
 template<typename ResultTy = double, typename Container>
-ResultTy median_presorted(const Container &c) {
+ResultTy median_presorted(const Container& c) {
     return median_presorted<ResultTy>(std::begin(c), std::end(c));
 }
 
@@ -116,7 +116,7 @@ double geomean(const InputIterator first, const InputIterator last, double init 
 
 ///@brief Returns the geometric mean of a whole container
 template<typename Container>
-double geomean(const Container &c) {
+double geomean(const Container& c) {
     return geomean(std::begin(c), std::end(c));
 }
 
@@ -139,7 +139,7 @@ double arithmean(const InputIterator first, const InputIterator last, double ini
 
 ///@brief Returns the aritmatic mean of a whole container
 template<typename Container>
-double arithmean(const Container &c) {
+double arithmean(const Container& c) {
     return arithmean(std::begin(c), std::end(c));
 }
 

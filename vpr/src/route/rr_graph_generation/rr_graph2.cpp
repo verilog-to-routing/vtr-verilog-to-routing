@@ -140,7 +140,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
  *
  * @return true if the connection going to another layer, false otherwise.
  */
-static bool is_sb_conn_layer_crossing(enum e_side src_side, enum e_side dest_side);
+static bool is_sb_conn_layer_crossing(e_side src_side, e_side dest_side);
 
 /**
  * @brief finds corresponding RR nodes for a 3D SB edge and fill 3D custom switch block information (offset to correct extra CHANX nodes, source tracks, ..)
@@ -1015,12 +1015,12 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
         auto& device_ctx = g_vpr_ctx.device();
         for (unsigned int i = 0; i < types.size(); i++) {
             if (!track_to_pin_map[i].empty()) {
-                for (int layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
+                for (size_t layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
                     for (int track = 0; track < max_chan_width; ++track) {
                         for (int width = 0; width < types[i].width; ++width) {
                             for (int height = 0; height < types[i].height; ++height) {
                                 for (int side = 0; side < 4; ++side) {
-                                    fprintf(fp, "\nTYPE:%s width:%d height:%d layer:%d\n", types[i].name.c_str(), width, height, layer);
+                                    fprintf(fp, "\nTYPE:%s width:%d height:%d layer:%lu\n", types[i].name.c_str(), width, height, layer);
                                     fprintf(fp, "\nSIDE:%d TRACK:%d \n", side, track);
                                     for (size_t con = 0; con < track_to_pin_map[i][track][width][height][layer][side].size(); con++) {
                                         fprintf(fp, "%d ", track_to_pin_map[i][track][width][height][layer][side][con]);
@@ -1036,7 +1036,7 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
     }
 }
 
-static bool is_sb_conn_layer_crossing(enum e_side src_side, enum e_side dest_side) {
+static bool is_sb_conn_layer_crossing(e_side src_side, e_side dest_side) {
     if (src_side < NUM_2D_SIDES && dest_side < NUM_2D_SIDES) {
         return false;
     }
@@ -1075,7 +1075,7 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
 
     for (size_t y = 0; y < grid_ctx.height(); y++) {
         for (size_t x = 0; x < grid_ctx.width(); x++) {
-            for (int layer = 0; layer < grid_ctx.get_num_layers(); layer++) {
+            for (int layer = 0; layer < (int)grid_ctx.get_num_layers(); layer++) {
 
                 int num_of_3d_conn = 0;
                 for (e_side from_side : TOTAL_3D_SIDES) {
@@ -1158,9 +1158,9 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                     side = (0 == pass ? RIGHT : LEFT);
                 }
 
-                for (int layer_index = 0; layer_index < device_ctx.grid.get_num_layers(); layer_index++) {
+                for (int layer_index = 0; layer_index < (int)device_ctx.grid.get_num_layers(); layer_index++) {
                     /* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
-                    auto type = device_ctx.grid.get_physical_type({x, y, layer_index});
+                    t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({x, y, layer_index});
                     if (type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
                         continue;
 
@@ -1570,8 +1570,8 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                 VTR_ASSERT(to_layer != layer);
                 // Check if current connection is valid, since switch block pattern is very general,
                 // we might see invalid layer in connection, so we just skip those
-                if ((layer < 0 || layer >= device_ctx.grid.get_num_layers())
-                    || (to_layer < 0 || to_layer >= device_ctx.grid.get_num_layers())) {
+                if ((layer < 0 || layer >= (int)device_ctx.grid.get_num_layers())
+                    || (to_layer < 0 || to_layer >= (int)device_ctx.grid.get_num_layers())) {
                     continue;
                 }
 
