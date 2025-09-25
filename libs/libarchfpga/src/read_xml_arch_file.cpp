@@ -4492,17 +4492,17 @@ static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Parent,
         if (arch_switch.type() == e_switch_type::SHORT
             || arch_switch.type() == e_switch_type::PASS_GATE) {
             //No buffers
-            arch_switch.buf_size_type = BufferSize::ABSOLUTE;
+            arch_switch.buf_size_type = e_buffer_size::ABSOLUTE;
             arch_switch.buf_size = 0.;
             arch_switch.power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
             arch_switch.power_buffer_size = 0.;
         } else {
             auto buf_size_attrib = get_attribute(Node, "buf_size", loc_data, ReqOpt::OPTIONAL);
             if (!buf_size_attrib || buf_size_attrib.as_string() == std::string("auto")) {
-                arch_switch.buf_size_type = BufferSize::AUTO;
+                arch_switch.buf_size_type = e_buffer_size::AUTO;
                 arch_switch.buf_size = 0.;
             } else {
-                arch_switch.buf_size_type = BufferSize::ABSOLUTE;
+                arch_switch.buf_size_type = e_buffer_size::ABSOLUTE;
                 arch_switch.buf_size = buf_size_attrib.as_float();
             }
 

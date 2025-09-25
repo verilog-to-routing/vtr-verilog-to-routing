@@ -2424,12 +2424,12 @@ struct ArchReader {
             as->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel);
 
             if (as->type() == e_switch_type::SHORT || as->type() == e_switch_type::PASS_GATE) {
-                as->buf_size_type = BufferSize::ABSOLUTE;
+                as->buf_size_type = e_buffer_size::ABSOLUTE;
                 as->buf_size = 0;
                 as->power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
                 as->power_buffer_size = 0.;
             } else {
-                as->buf_size_type = BufferSize::AUTO;
+                as->buf_size_type = e_buffer_size::AUTO;
                 as->buf_size = 0.;
                 as->power_buffer_type = POWER_BUFFER_TYPE_AUTO;
             }

@@ -971,7 +971,7 @@ struct t_pb_type {
     int num_pb = 0;
     char* blif_model = nullptr;
     LogicalModelId model_id;
-    enum e_pb_type_class class_type = UNKNOWN_CLASS;
+    e_pb_type_class class_type = UNKNOWN_CLASS;
 
     t_mode* modes = nullptr; /* [0..num_modes-1] */
     int num_modes = 0;
@@ -1074,8 +1074,8 @@ struct t_pin_to_pin_annotation {
 
     std::vector<std::pair<int, std::string>> annotation_entries;
 
-    enum e_pin_to_pin_annotation_type type;
-    enum e_pin_to_pin_annotation_format format;
+    e_pin_to_pin_annotation_type type;
+    e_pin_to_pin_annotation_format format;
 
     char* input_pins;
     char* output_pins;
@@ -1111,7 +1111,7 @@ struct t_pin_to_pin_annotation {
  *      parent_mode_index: Mode of parent as int
  */
 struct t_interconnect {
-    enum e_interconnect type;
+    e_interconnect type;
     char* name;
 
     char* input_string;
@@ -1783,7 +1783,7 @@ constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
 /* An intracluster switch automatically added to the RRG by the flat router. */
 constexpr const char* VPR_INTERNAL_SWITCH_NAME = "__vpr_intra_cluster_switch__";
 
-enum class BufferSize {
+enum class e_buffer_size {
     AUTO,
     ABSOLUTE
 };
@@ -1826,7 +1826,7 @@ struct t_arch_switch_inf {
     float Cinternal = 0.;
     /// The area of each transistor in the segment's driving mux measured in minimum width transistor units
     float mux_trans_size = 1.;
-    BufferSize buf_size_type = BufferSize::AUTO;
+    e_buffer_size buf_size_type = e_buffer_size::AUTO;
     /// The area of the buffer. If set to zero, area should be calculated from R
     float buf_size = 0.;
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
