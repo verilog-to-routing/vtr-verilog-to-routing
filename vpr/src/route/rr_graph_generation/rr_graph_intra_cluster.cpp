@@ -260,7 +260,7 @@ static void alloc_and_load_intra_cluster_rr_graph(RRGraphBuilder& rr_graph_build
                                      physical_tile,
                                      load_rr_graph);
 
-            //Create the actual SOURCE->OPIN, IPIN->SINK edges
+            // Create the actual SOURCE->OPIN, IPIN->SINK edges
             uniquify_edges(rr_edges_to_create);
             rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
             num_edges += rr_edges_to_create.size();
@@ -382,8 +382,7 @@ static void build_cluster_internal_edges(RRGraphBuilder& rr_graph_builder,
         add_pb_child_to_list(pb_q, pb);
     }
 
-    // Edges going in/out of the nodes on the chain are not added by the previous functions, they are added
-    // by this function
+    // Edges going in/out of the nodes on the chain are not added by the previous functions, they are added by this function
     num_collapsed_nodes += add_edges_for_collapsed_nodes(rr_graph_builder,
                                                          rr_edges_to_create,
                                                          physical_type,
@@ -998,7 +997,7 @@ void build_intra_cluster_rr_graph(e_graph_type graph_type,
                                   const DeviceGrid& grid,
                                   const std::vector<t_physical_tile_type>& types,
                                   const RRGraphView& rr_graph,
-                                  const int delayless_switch,
+                                  int delayless_switch,
                                   float R_minW_nmos,
                                   float R_minW_pmos,
                                   RRGraphBuilder& rr_graph_builder,
