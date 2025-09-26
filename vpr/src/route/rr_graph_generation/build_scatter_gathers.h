@@ -21,6 +21,8 @@ struct t_sg_candidate {
 };
 
 /// Represents a scatter/gather bottleneck connection between two locations.
+/// This data structure is used in RR graph generation to model a node that is
+/// driven by wires at a gather location and drives wires at a scatter location.
 struct t_bottleneck_link {
     t_physical_tile_loc gather_loc;                         ///< Source switchblock location.
     t_physical_tile_loc scatter_loc;                        ///< Destination switchblock location.
@@ -44,7 +46,7 @@ struct t_bottleneck_link {
  * @param chan_details_y Channel details for vertical routing channels.
  * @param nodes_per_chan Channel width data.
  * @param interdie_3d_links Output: matrix storing inter-die (3D) bottleneck links.
- * @return Vector of intra-die bottleneck links.
+ * @return Vector of non-3d bottleneck links.
  */
 std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
                                                                          const std::vector<bool>& inter_cluster_rr,

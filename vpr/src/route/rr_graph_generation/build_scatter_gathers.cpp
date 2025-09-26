@@ -102,13 +102,18 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
             int first_type_wire = wire_type_sizes.at(wire_type).start;
             int last_type_wire = first_type_wire + num_type_wires - 1;
 
+            // Walk through each wire segment of specified type and check whether it matches one
+            // of the specified switchpoints.
+            // Note that we walk through the points in order, this ensures that returned switchpoints
+            // match the order specified in the architecture, which we assume is a priority order specified
+            // by the architect.
             for (int valid_switchpoint : wire_switchpoints.switchpoints) {
                 for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++) {
                     Direction seg_direction = chan_details[iwire].direction();
 
-                    /* unidirectional wires going in the decreasing direction can have an outgoing edge
-                     * only from the top or right switch block sides, and an incoming edge only if they are
-                     * at the left or bottom sides (analogous for wires going in INC direction) */
+                    // unidirectional wires going in the decreasing direction can have an outgoing edge
+                    // only from the top or right switch block sides, and an incoming edge only if they are
+                    // at the left or bottom sides (analogous for wires going in INC direction) */
                     if (chan_side == TOP || chan_side == RIGHT) {
                         if (seg_direction == Direction::DEC && is_dest) {
                             continue;
