@@ -1,16 +1,17 @@
 
 #include "build_scatter_gathers.h"
 
+#include <vector>
+
 #include "switchblock_scatter_gather_common_utils.h"
 #include "scatter_gather_types.h"
 #include "rr_types.h"
 #include "globals.h"
 #include "vtr_assert.h"
-
-#include <vector>
+#include "vtr_random.h"
 
 //
-// Static Function Declrations
+// Static Function Declarations
 //
 
 /**
@@ -31,13 +32,14 @@ static void index_to_correct_sg_channels(const t_wireconn_inf& pattern,
 /**
  * @brief Collects candidate wires from given channels that match specified switchpoints.
  *
- * @param channels List of channel locations to search for candiates.
+ * @param channels List of channel locations to search for candidates.
  * @param wire_switchpoints_vec Set of wire segments and valid switchpoints for matching.
  * @param chan_details_x Channel details for horizontal routing channels.
  * @param chan_details_y Channel details for vertical routing channels.
- * @param is_dest True if searching for destination (scatter) wires, false for source (gather).
  * @param wire_type_sizes_x Stores the number of wires of each wire segment type and their starting index for horizontal routing channels.
  * @param wire_type_sizes_y Stores the number of wires of each wire segment type and their starting index for vertical routing channels.
+ * @param is_dest True if searching for destination (scatter) wires, false for source (gather).
+ * @param rng Random number generator used to shuffle wire candidates.
  * @return Vector of candidate wires that satisfy the switchpoint and direction constraints.
  */
 static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan_loc>& channels,
@@ -46,7 +48,8 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
                                                         const t_chan_details& chan_details_y,
                                                         const t_wire_type_sizes& wire_type_sizes_x,
                                                         const t_wire_type_sizes& wire_type_sizes_y,
-                                                        bool is_dest);
+                                                        bool is_dest,
+                                                        vtr::RngContainer& rng);
 
 //
 // Static Function Definitions
@@ -77,7 +80,8 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
                                                         const t_chan_details& chan_details_y,
                                                         const t_wire_type_sizes& wire_type_sizes_x,
                                                         const t_wire_type_sizes& wire_type_sizes_y,
-                                                        bool is_dest) {
+                                                        bool is_dest,
+                                                        vtr::RngContainer& rng) {
 
     // TODO: reuse
     std::vector<t_sg_candidate> candidates;
@@ -144,6 +148,9 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
         }
     }
 
+    // TODO: Whether we shuffle candidates or not should be determined by switch point order type.
+    vtr::shuffle(candidates.begin(), candidates.end(), rng);
+
     return candidates;
 }
 
@@ -157,6 +164,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const t_chan_details& chan_details_x,
                                                                          const t_chan_details& chan_details_y,
                                                                          const t_chan_width& nodes_per_chan,
+                                                                         vtr::RngContainer& rng,
                                                                          vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
@@ -229,14 +237,14 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                               sg_pattern.gather_pattern.from_switchpoint_set,
                                                               chan_details_x, chan_details_y,
                                                               wire_type_sizes_x, wire_type_sizes_y,
-                                                              /*is_dest=*/false);
+                                                              /*is_dest=*/false, rng);
 
                 std::vector<t_sg_candidate> scatter_wire_candidates;
                 scatter_wire_candidates = find_candidate_wires(scatter_channels,
                                                                sg_pattern.scatter_pattern.to_switchpoint_set,
                                                                chan_details_x, chan_details_y,
                                                                wire_type_sizes_x, wire_type_sizes_y,
-                                                               /*is_dest=*/true);
+                                                               /*is_dest=*/true, rng);
 
                 int bottleneck_fanin = evaluate_num_conns_formula(formula_parser,
                                                                   formula_data,

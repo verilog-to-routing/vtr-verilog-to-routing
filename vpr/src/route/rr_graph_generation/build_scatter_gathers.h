@@ -7,6 +7,9 @@
 
 #include <vector>
 
+// forward declartion
+namespace vtr {class RngContainer; }
+
 /// Identifies a specific channel location in the device grid.
 struct t_chan_loc {
     t_physical_tile_loc location; ///< Physical grid location of the channel
@@ -45,6 +48,7 @@ struct t_bottleneck_link {
  * @param chan_details_x Channel details for horizontal routing channels.
  * @param chan_details_y Channel details for vertical routing channels.
  * @param nodes_per_chan Channel width data.
+ * @param rng Random number generator used to shuffle wire candidates.
  * @param interdie_3d_links Output: matrix storing inter-die (3D) bottleneck links.
  * @return Vector of non-3d bottleneck links.
  */
@@ -54,4 +58,5 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const t_chan_details& chan_details_x,
                                                                          const t_chan_details& chan_details_y,
                                                                          const t_chan_width& nodes_per_chan,
+                                                                         vtr::RngContainer& rng,
                                                                          vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links);

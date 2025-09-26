@@ -1212,6 +1212,7 @@ static void build_rr_graph(e_graph_type graph_type,
                                                                                                       segment_inf,
                                                                                                       chan_details_x, chan_details_y,
                                                                                                       nodes_per_chan,
+                                                                                                      switchpoint_rng,
                                                                                                       interdie_3d_links);
 
     // Check whether RR graph need to allocate new nodes for 3D connections.
