@@ -672,7 +672,6 @@ void update_draw_pres_fac(const float /*new_pres_fac*/) {
 
 #ifndef NO_GRAPHICS
 void update_router_info_and_check_bp(bp_router_type type, int net_id) {
-    t_draw_state* draw_state = get_draw_state_vars();
     if (type == BP_ROUTE_ITER)
         get_bp_state_globals()->get_glob_breakpoint_state()->router_iter++;
     else if (type == BP_NET_ID)
