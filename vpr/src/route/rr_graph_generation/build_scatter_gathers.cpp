@@ -208,17 +208,19 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     continue;
                 }
 
-                auto gather_wire_candidates = find_candidate_wires(gather_channels,
-                                                                   sg_pattern.gather_pattern.from_switchpoint_set,
-                                                                   chan_details_x, chan_details_y,
-                                                                   wire_type_sizes_x, wire_type_sizes_y,
-                                                                   /*is_dest=*/false);
+                std::vector<t_sg_candidate> gather_wire_candidates;
+                gather_wire_candidates = find_candidate_wires(gather_channels,
+                                                              sg_pattern.gather_pattern.from_switchpoint_set,
+                                                              chan_details_x, chan_details_y,
+                                                              wire_type_sizes_x, wire_type_sizes_y,
+                                                              /*is_dest=*/false);
 
-                auto scatter_wire_candidates = find_candidate_wires(scatter_channels,
-                                                                    sg_pattern.scatter_pattern.to_switchpoint_set,
-                                                                    chan_details_x, chan_details_y,
-                                                                    wire_type_sizes_x, wire_type_sizes_y,
-                                                                    /*is_dest=*/true);
+                std::vector<t_sg_candidate> scatter_wire_candidates;
+                scatter_wire_candidates = find_candidate_wires(scatter_channels,
+                                                               sg_pattern.scatter_pattern.to_switchpoint_set,
+                                                               chan_details_x, chan_details_y,
+                                                               wire_type_sizes_x, wire_type_sizes_y,
+                                                               /*is_dest=*/true);
 
                 int bottleneck_fanin = evaluate_num_conns_formula(formula_parser,
                                                                   formula_data,
