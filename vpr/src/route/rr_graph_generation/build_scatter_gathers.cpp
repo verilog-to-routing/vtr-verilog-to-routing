@@ -205,8 +205,19 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 index_to_correct_sg_channels(sg_pattern.scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
 
                 if (gather_channels.empty() || scatter_channels.empty()) {
+                    VTR_LOGV_WARN(gather_channels.empty(),
+                                  "Scatter-gather pattern '%s' with SG link '%s' has no gather channels at location (layer=%i, x=%i, y=%i)\n",
+                                  sg_pattern.name.c_str(), sg_link.name.c_str(),
+                                  gather_loc.layer_num, gather_loc.x, gather_loc.y);
+
+                    VTR_LOGV_WARN(scatter_channels.empty(),
+                                  "Scatter-gather pattern '%s' with SG link '%s' has no scatter channels at location (layer=%i, x=%i, y=%i)\n",
+                                  sg_pattern.name.c_str(), sg_link.name.c_str(),
+                                  scatter_loc.layer_num, scatter_loc.x, scatter_loc.y);
+
                     continue;
                 }
+
 
                 std::vector<t_sg_candidate> gather_wire_candidates;
                 gather_wire_candidates = find_candidate_wires(gather_channels,
