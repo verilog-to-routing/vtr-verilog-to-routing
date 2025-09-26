@@ -478,7 +478,8 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_graph_builder.set_node_pin_num(node, pin_num);
 
                     rr_graph_builder.set_node_capacity(node, 1);
-                    rr_graph_builder.set_node_layer(node, layer);
+                    rr_graph_builder.set_node_layer_low(node, layer);
+                    rr_graph_builder.set_node_layer_high(node, layer);
 
                     // cost index is a FIXED value for OPIN
                     rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(OPIN_COST_INDEX));
@@ -531,7 +532,8 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_graph_builder.set_node_pin_num(node, pin_num);
 
                     rr_graph_builder.set_node_capacity(node, 1);
-                    rr_graph_builder.set_node_layer(node, layer);
+                    rr_graph_builder.set_node_layer_low(node, layer);
+                    rr_graph_builder.set_node_layer_high(node, layer);
 
                     // cost index is a FIXED value for OPIN
                     rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(IPIN_COST_INDEX));
@@ -577,7 +579,8 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
                                               grid_coordinate.x() + phy_tile_type->width - 1,
                                               grid_coordinate.y() + phy_tile_type->height - 1);
         rr_graph_builder.set_node_class_num(node, iclass);
-        rr_graph_builder.set_node_layer(node, (int)layer);
+        rr_graph_builder.set_node_layer_low(node, (short)layer);
+        rr_graph_builder.set_node_layer_high(node, (short)layer);
 
         // The capacity should be the number of pins in this class
         rr_graph_builder.set_node_capacity(node, phy_tile_type->class_inf[iclass].num_pins);
@@ -623,7 +626,8 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                               grid_coordinate.x() + phy_tile_type->width - 1,
                                               grid_coordinate.y() + phy_tile_type->height - 1);
         rr_graph_builder.set_node_class_num(node, iclass);
-        rr_graph_builder.set_node_layer(node, layer);
+        rr_graph_builder.set_node_layer_low(node, layer);
+        rr_graph_builder.set_node_layer_high(node, layer);
 
         rr_graph_builder.set_node_capacity(node, 1);
 
@@ -663,7 +667,8 @@ static void load_one_grid_mux_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_mux_num(node, i_mux);
 
         rr_graph_builder.set_node_capacity(node, 1);
-        rr_graph_builder.set_node_layer(node, layer);
+        rr_graph_builder.set_node_layer_low(node, layer);
+        rr_graph_builder.set_node_layer_high(node, layer);
 
         // cost index is a FIXED value for MUX
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(MUX_COST_INDEX));
@@ -841,7 +846,8 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             rr_node_track_ids[node].push_back(itrack);
 
             rr_graph_builder.set_node_capacity(node, 1);
-            rr_graph_builder.set_node_layer(node, layer);
+            rr_graph_builder.set_node_layer_low(node, layer);
+            rr_graph_builder.set_node_layer_high(node, layer);
 
             // assign switch id
             size_t seg_id = chan_details.get_track_segment_id(itrack);

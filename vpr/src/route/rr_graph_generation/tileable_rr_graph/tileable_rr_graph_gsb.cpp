@@ -220,11 +220,11 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
     size_t actual_from_track = from_track % num_to_tracks;
 
     switch (switch_block_type) {
-        case SUBSET: /* NB:  Global routing uses SUBSET too */
+        case e_switch_block_type::SUBSET: /* NB:  Global routing uses SUBSET too */
             to_tracks = get_to_track_list(Fs, actual_from_track, num_to_tracks);
             /* Finish, we return */
             return to_tracks;
-        case UNIVERSAL:
+        case e_switch_block_type::UNIVERSAL:
             if ((from_side == LEFT)
                 || (from_side == RIGHT)) {
                 /* For the prev_side, to_track is from_track
@@ -257,7 +257,7 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
             /* Finish, we return */
             return to_tracks;
             /* End switch_block_type == UNIVERSAL case. */
-        case WILTON:
+        case e_switch_block_type::WILTON:
             /* See S. Wilton Phd thesis, U of T, 1996 p. 103 for details on following. */
             if (from_side == LEFT) {
                 if (to_side == RIGHT) { /* CHANX to CHANX */

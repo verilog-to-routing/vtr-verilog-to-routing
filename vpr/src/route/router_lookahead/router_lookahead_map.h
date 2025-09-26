@@ -41,16 +41,27 @@ class MapLookahead : public RouterLookahead {
     float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const override;
 };
 
-/* provides delay/congestion estimates to travel specified distances
- * in the x/y direction */
-// This is a 6D array storing the cost to travel from a node of type CHANX/CHANY to a point that is dx, dy further, and is on the "layer_num" layer.
-// To store this information, the first index is the layer number that the node under consideration is on, the second index is the layer number of the target node, the third index represents the type of channel (X/Y)
-// that the node under consideration belongs to, the forth is the segment type (specified in the architecture file under the "segmentlist" tag), the fourth is the
-// target "layer_num" mentioned above, the fifth is dx, and the last one is dy.
-typedef vtr::NdMatrix<util::Cost_Entry, 6> t_wire_cost_map; //[0..num_layers][0..num_layers][0..1][[0..num_seg_types-1][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
-                                                            //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
-                                                            // The first index is the layer number that the node under consideration is on, and the second index
-                                                            // is the layer number that the target node is on.
+/**
+ * @brief Provides delay/congestion estimates to travel specified distances
+ * in the x/y direction
+ *
+ * This is a 6D array storing the cost to travel from a node of type CHANX/CHANY/CHANZ
+ * to a point that is dx, dy further, and is on the "layer_num" layer.
+ *
+ * To store this information:
+ * - The first index is the layer number that the node under consideration is on.
+ * - The second index is the layer number of the target node.
+ * - The third index represents the type of channel (X/Y/Z) that the node under consideration belongs to.
+ * - The forth is the segment type (specified in the architecture file under the "segmentlist" tag).
+ * - The fifth is dx.
+ * - The last one is dy.
+ *
+ * @note [0..num_layers][0..num_layers][0..2][0..num_seg_types-1][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+ * - [0..2] entry distinguish between CHANX/CHANY/CHANZ start nodes respectively
+ * - The first index is the layer number that the node under consideration is on.
+ * - The second index is the layer number that the target node is on.
+ */
+typedef vtr::NdMatrix<util::Cost_Entry, 6> t_wire_cost_map;
 
 void read_router_lookahead(const std::string& file);
 void write_router_lookahead(const std::string& file);

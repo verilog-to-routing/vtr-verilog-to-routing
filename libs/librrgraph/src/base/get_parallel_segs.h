@@ -4,11 +4,11 @@
 #include "physical_types.h"
 
 /**
- * @brief Returns segments aligned with a given axis, including BOTH_AXIS segments.
+ * @brief Filters segments aligned with a given axis and records index mappings.
  *
- * Filters the unified segment list (`segment_inf`) to include only segments matching
- * the specified `parallel_axis` or marked as `BOTH_AXIS`. Also populates `seg_index_map`
- * to map unified indices to axis-specific ones.
+ * Iterates through the unified segment list (`segment_inf`) and selects segments
+ * whose `parallel_axis` matches the requested `parallel_axis`. If the requested
+ * axis is not `Z_AXIS`, segments marked as `BOTH_AXIS` are also included.
  *
  * @param segment_inf    Unified list of all segments.
  * @param seg_index_map  Map from unified to axis-specific segment indices.
