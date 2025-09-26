@@ -254,6 +254,21 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 bottleneck_fanout = std::min<int>(bottleneck_fanout, scatter_wire_candidates.size());
 
                 if (bottleneck_fanin == 0 || bottleneck_fanout == 0) {
+
+                    VTR_LOGV_WARN(bottleneck_fanin == 0,
+                                  "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
+                                  "has zero gather fanin connections (candidates=%zu)\n",
+                                  sg_pattern.name.c_str(), sg_link.name.c_str(),
+                                  gather_loc.layer_num, gather_loc.x, gather_loc.y,
+                                  gather_wire_candidates.size());
+
+                    VTR_LOGV_WARN(bottleneck_fanout == 0,
+                                  "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
+                                  "has zero scatter fanout connections (candidates=%zu)\n",
+                                  sg_pattern.name.c_str(), sg_link.name.c_str(),
+                                  scatter_loc.layer_num, scatter_loc.x, scatter_loc.y,
+                                  scatter_wire_candidates.size());
+
                     continue;
                 }
 
