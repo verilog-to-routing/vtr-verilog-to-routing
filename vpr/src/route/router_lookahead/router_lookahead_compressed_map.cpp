@@ -509,12 +509,16 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
 
 void CompressedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
-    //First compute the delay map when starting from the various wire types
-    //(CHANX/CHANY)in the routing architecture
+
+    VTR_ASSERT_MSG(g_vpr_ctx.device().grid.get_num_layers() == 1,
+                   "Compressed map router lookahead does not support 3D architectures.");
+
+    // First compute the delay map when starting from the various wire types
+    // (CHANX/CHANY) in the routing architecture
     compute_router_wire_compressed_lookahead(segment_inf, route_verbosity_);
 
-    //Next, compute which wire types are accessible (and the cost to reach them)
-    //from the different physical tile type's SOURCEs & OPINs
+    // Next, compute which wire types are accessible (and the cost to reach them)
+    // from the different physical tile type's SOURCEs & OPINs
     this->src_opin_delays = util::compute_router_src_opin_lookahead(is_flat_, route_verbosity_);
 }
 
