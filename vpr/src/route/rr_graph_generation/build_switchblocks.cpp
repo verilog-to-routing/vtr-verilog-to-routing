@@ -278,7 +278,6 @@ void free_switchblock_permutations(t_sb_connection_map* sb_conns) {
     vtr::malloc_trim(0);
 }
 
-
 static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
                                   e_rr_type chan_type,
                                   int x,

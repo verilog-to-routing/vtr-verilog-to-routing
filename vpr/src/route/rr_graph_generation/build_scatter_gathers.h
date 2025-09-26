@@ -8,7 +8,9 @@
 #include <vector>
 
 // forward declartion
-namespace vtr {class RngContainer; }
+namespace vtr {
+class RngContainer;
+}
 
 /// Identifies a specific channel location in the device grid.
 struct t_chan_loc {

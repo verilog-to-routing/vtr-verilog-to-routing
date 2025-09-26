@@ -231,7 +231,6 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     continue;
                 }
 
-
                 std::vector<t_sg_candidate> gather_wire_candidates;
                 gather_wire_candidates = find_candidate_wires(gather_channels,
                                                               sg_pattern.gather_pattern.from_switchpoint_set,

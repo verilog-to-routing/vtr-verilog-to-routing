@@ -4313,7 +4313,8 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             if (sb.specified_loc.x >= grid_width || sb.specified_loc.y >= grid_height) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
                                vtr::string_fmt("Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n",
-                                   sb.specified_loc.x, sb.specified_loc.y, grid_width, grid_height).c_str());
+                                               sb.specified_loc.x, sb.specified_loc.y, grid_width, grid_height)
+                                   .c_str());
             }
 
             // if the switchblock exact location is not specified and a region is specified within the architecture file,
