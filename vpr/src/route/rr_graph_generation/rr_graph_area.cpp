@@ -385,11 +385,11 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                         case e_rr_type::CHANZ:
                             if (!chan_node_switch_done[size_t(to_node)]) {
                                 int switch_index = rr_graph.edge_switch(RRNodeId(from_node), iedge);
-                                SwitchType switch_type = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type();
+                                e_switch_type switch_type = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type();
 
                                 int fan_in = rr_graph.node_fan_in(to_node);
 
-                                if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::MUX) {
+                                if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == e_switch_type::MUX) {
                                     /* Each wire segment begins with a multipexer followed by a driver for unidirectional */
                                     /* Each multiplexer contains all the fan-in to that routing node */
                                     /* Add up area of multiplexer */
@@ -400,9 +400,9 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                     /* The buffer size should already have been auto-sized (if required) when
                                      * the rr switches were created from the arch switches */
                                     ntrans += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buf_size;
-                                } else if (switch_type == SwitchType::SHORT) {
+                                } else if (switch_type == e_switch_type::SHORT) {
                                     ntrans += 0.; //Electrical shorts contribute no transistor area
-                                } else if (switch_type == SwitchType::BUFFER) {
+                                } else if (switch_type == e_switch_type::BUFFER) {
                                     if (fan_in != 1) {
                                         std::string msg = vtr::string_fmt(
                                             "Uni-directional RR node driven by non-configurable "
@@ -538,7 +538,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit, flo
     unsharable_switch_trans = new float[num_switch];
 
     for (i = 0; i < num_switch; i++) {
-        if (rr_graph.rr_switch_inf(RRSwitchId(i)).type() == SwitchType::SHORT) {
+        if (rr_graph.rr_switch_inf(RRSwitchId(i)).type() == e_switch_type::SHORT) {
             //Electrical shorts do not use any transistors
             unsharable_switch_trans[i] = 0.;
         } else {

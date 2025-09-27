@@ -10,6 +10,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_node_fwd.h"
 #include "rr_edge.h"
+#include "rr_switch.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"

@@ -386,7 +386,7 @@ static void setup_switches(const t_arch& Arch,
     }
 
     /* Delayless switch for connecting sinks and sources with their pins. */
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_type(SwitchType::MUX);
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_type(e_switch_type::MUX);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].name = std::string(VPR_DELAYLESS_SWITCH_NAME);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].Cin = 0.;
@@ -394,7 +394,7 @@ static void setup_switches(const t_arch& Arch,
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].mux_trans_size = 0.;
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size_type = BufferSize::ABSOLUTE;
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size_type = e_buffer_size::ABSOLUTE;
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size = 0.;
     VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
     VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch.delayless_switch].configurable(), "Delayless switch expected to be configurable");

@@ -123,25 +123,25 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     fprintf(Echo, "\tChannel Width Distribution:\n");
 
     switch (arch->Chans.chan_x_dist.type) {
-        case (UNIFORM):
+        case e_stat::UNIFORM:
             fprintf(Echo, "\t\tx: type uniform peak %e\n",
                     arch->Chans.chan_x_dist.peak);
             break;
-        case (GAUSSIAN):
+        case e_stat::GAUSSIAN:
             fprintf(Echo,
                     "\t\tx: type gaussian peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_x_dist.peak, arch->Chans.chan_x_dist.width,
                     arch->Chans.chan_x_dist.xpeak, arch->Chans.chan_x_dist.dc);
             break;
-        case (PULSE):
+        case e_stat::PULSE:
             fprintf(Echo,
                     "\t\tx: type pulse peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_x_dist.peak, arch->Chans.chan_x_dist.width,
                     arch->Chans.chan_x_dist.xpeak, arch->Chans.chan_x_dist.dc);
             break;
-        case (DELTA):
+        case e_stat::DELTA:
             fprintf(Echo,
                     "\t\tx: distr dleta peak %e \
 						  Xpeak %e dc %e\n",
@@ -154,25 +154,25 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     }
 
     switch (arch->Chans.chan_y_dist.type) {
-        case (UNIFORM):
+        case e_stat::UNIFORM:
             fprintf(Echo, "\t\ty: type uniform peak %e\n",
                     arch->Chans.chan_y_dist.peak);
             break;
-        case (GAUSSIAN):
+        case e_stat::GAUSSIAN:
             fprintf(Echo,
                     "\t\ty: type gaussian peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_y_dist.peak, arch->Chans.chan_y_dist.width,
                     arch->Chans.chan_y_dist.xpeak, arch->Chans.chan_y_dist.dc);
             break;
-        case (PULSE):
+        case e_stat::PULSE:
             fprintf(Echo,
                     "\t\ty: type pulse peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_y_dist.peak, arch->Chans.chan_y_dist.width,
                     arch->Chans.chan_y_dist.xpeak, arch->Chans.chan_y_dist.dc);
             break;
-        case (DELTA):
+        case e_stat::DELTA:
             fprintf(Echo,
                     "\t\ty: distr dleta peak %e \
 						  Xpeak %e dc %e\n",
@@ -217,16 +217,16 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //It always consists of 10 alphanumeric digits, a decimal
     //and a sign
     for (int i = 0; i < (int)arch->switches.size(); i++) {
-        if (arch->switches[i].type() == SwitchType::MUX) {
+        if (arch->switches[i].type() == e_switch_type::MUX) {
             fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->switches[i].name.c_str());
-        } else if (arch->switches[i].type() == SwitchType::TRISTATE) {
+        } else if (arch->switches[i].type() == e_switch_type::TRISTATE) {
             fprintf(Echo, "\tSwitch[%d]: name %s type tristate\n", i + 1, arch->switches[i].name.c_str());
-        } else if (arch->switches[i].type() == SwitchType::SHORT) {
+        } else if (arch->switches[i].type() == e_switch_type::SHORT) {
             fprintf(Echo, "\tSwitch[%d]: name %s type short\n", i + 1, arch->switches[i].name.c_str());
-        } else if (arch->switches[i].type() == SwitchType::BUFFER) {
+        } else if (arch->switches[i].type() == e_switch_type::BUFFER) {
             fprintf(Echo, "\tSwitch[%d]: name %s type buffer\n", i + 1, arch->switches[i].name.c_str());
         } else {
-            VTR_ASSERT(arch->switches[i].type() == SwitchType::PASS_GATE);
+            VTR_ASSERT(arch->switches[i].type() == e_switch_type::PASS_GATE);
             fprintf(Echo, "\tSwitch[%d]: name %s type pass_gate\n", i + 1, arch->switches[i].name.c_str());
         }
         fprintf(Echo, "\t\t\t\tR %e Cin %e Cout %e\n", arch->switches[i].R,

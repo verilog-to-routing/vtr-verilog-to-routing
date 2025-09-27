@@ -112,8 +112,8 @@ void CheckSetup(const t_packer_opts& packer_opts,
     }
 
     if (e_route_type::DETAILED == router_opts.route_type) {
-        if ((chans.chan_x_dist.type != UNIFORM)
-            || (chans.chan_y_dist.type != UNIFORM)) {
+        if ((chans.chan_x_dist.type != e_stat::UNIFORM)
+            || (chans.chan_y_dist.type != e_stat::UNIFORM)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Detailed routing currently only supported on FPGAs with uniform channel distributions.\n");
         }

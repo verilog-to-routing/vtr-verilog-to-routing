@@ -543,18 +543,18 @@ static float comp_width(t_chan* chan, float x, float separation) {
     float val;
 
     switch (chan->type) {
-        case UNIFORM:
+        case e_stat::UNIFORM:
             val = chan->peak;
             break;
 
-        case GAUSSIAN:
+        case e_stat::GAUSSIAN:
             val = (x - chan->xpeak) * (x - chan->xpeak)
                   / (2 * chan->width * chan->width);
             val = chan->peak * exp(-val);
             val += chan->dc;
             break;
 
-        case PULSE:
+        case e_stat::PULSE:
             val = (float)fabs((double)(x - chan->xpeak));
             if (val > chan->width / 2.) {
                 val = 0;
@@ -564,7 +564,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
             val += chan->dc;
             break;
 
-        case DELTA:
+        case e_stat::DELTA:
             val = x - chan->xpeak;
             if (val > -separation / 2. && val <= separation / 2.)
                 val = chan->peak;
