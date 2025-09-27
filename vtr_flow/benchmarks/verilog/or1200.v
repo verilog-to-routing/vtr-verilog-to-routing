@@ -182,22 +182,22 @@
 `define OR1200_DU_DSR_WIDTH 14
 
 
-`define OR1200_EXCEPT_UNUSED		3'hf
-`define OR1200_EXCEPT_TRAP		3'he
-`define OR1200_EXCEPT_BREAK		3'hd
-`define OR1200_EXCEPT_SYSCALL		3'hc
-`define OR1200_EXCEPT_RANGE		3'hb
-`define OR1200_EXCEPT_ITLBMISS		3'ha
-`define OR1200_EXCEPT_DTLBMISS		3'h9
-`define OR1200_EXCEPT_INT		3'h8
-`define OR1200_EXCEPT_ILLEGAL		3'h7
-`define OR1200_EXCEPT_ALIGN		3'h6
-`define OR1200_EXCEPT_TICK		3'h5
-`define OR1200_EXCEPT_IPF		3'h4
-`define OR1200_EXCEPT_DPF		3'h3
-`define OR1200_EXCEPT_BUSERR		3'h2
-`define OR1200_EXCEPT_RESET		3'h1
-`define OR1200_EXCEPT_NONE		3'h0
+`define OR1200_EXCEPT_UNUSED		4'hf
+`define OR1200_EXCEPT_TRAP		4'he
+`define OR1200_EXCEPT_BREAK		4'hd
+`define OR1200_EXCEPT_SYSCALL		4'hc
+`define OR1200_EXCEPT_RANGE		4'hb
+`define OR1200_EXCEPT_ITLBMISS		4'ha
+`define OR1200_EXCEPT_DTLBMISS		4'h9
+`define OR1200_EXCEPT_INT		4'h8
+`define OR1200_EXCEPT_ILLEGAL		4'h7
+`define OR1200_EXCEPT_ALIGN		4'h6
+`define OR1200_EXCEPT_TICK		4'h5
+`define OR1200_EXCEPT_IPF		4'h4
+`define OR1200_EXCEPT_DPF		4'h3
+`define OR1200_EXCEPT_BUSERR		4'h2
+`define OR1200_EXCEPT_RESET		4'h1
+`define OR1200_EXCEPT_NONE		4'h0
 
 `define OR1200_OPERAND_WIDTH		32
 `define OR1200_REGFILE_ADDR_WIDTH	5
@@ -1690,8 +1690,7 @@ always @(posedge clk )
 //
 // Async calculation of new PC value. This value is used for addressing the IC.
 //
-always @(pcreg or branch_addrofs or binsn_addr or flag or branch_op or except_type
-	or except_start or lr_restor or epcr or spr_pc_we or spr_dat_i or except_prefix) begin
+always @(*) begin
 	case ({spr_pc_we, except_start, branch_op})	// synopsys parallel_case
 		{2'b00, `OR1200_BRANCHOP_NOP}: begin
 			pc = {pcreg + 30'b000000000000000000000000000001, 2'b0};
@@ -2212,7 +2211,7 @@ assign rfe = (pre_branch_op == `OR1200_BRANCHOP_RFE) | (branch_op == `OR1200_BRA
 //
 // Generation of sel_a
 //
-always @(rf_addrw or id_insn or rfwb_op or wbforw_valid or wb_rfaddrw)
+always @(*)
 	if ((id_insn[20:16] == rf_addrw) && rfwb_op[0])
 		sel_a = `OR1200_SEL_EX_FORW;
 	else if ((id_insn[20:16] == wb_rfaddrw) && wbforw_valid)
@@ -2223,7 +2222,7 @@ always @(rf_addrw or id_insn or rfwb_op or wbforw_valid or wb_rfaddrw)
 //
 // Generation of sel_b
 //
-always @(rf_addrw or sel_imm or id_insn or rfwb_op or wbforw_valid or wb_rfaddrw)
+always @(*)
 	if (sel_imm)
 		sel_b = `OR1200_SEL_IMM;
 	else if ((id_insn[15:11] == rf_addrw) && rfwb_op[0])
@@ -2268,7 +2267,7 @@ end
 //
 // Decode of multicycle
 //
-always @(id_insn) begin
+always @(*) begin
   case (id_insn[31:26])		// synopsys parallel_case
 
     // l.lwz
@@ -2319,7 +2318,7 @@ end
 //
 // Decode of imm_signextend
 //
-always @(id_insn) begin
+always @(*) begin
   case (id_insn[31:26])		// synopsys parallel_case
 
 	// l.addi
@@ -2362,7 +2361,7 @@ end
 //
 // LSU addr offset
 //
-always @(lsu_op or ex_insn) begin
+always @(*) begin
 	lsu_addrofs[10:0] = ex_insn[10:0];
 	case(lsu_op)	// synopsys parallel_case
 		`OR1200_LSUOP_SB : 
@@ -3099,9 +3098,9 @@ assign const_zero_data = 32'b00000000000000000000000000000000;
 wire [31:0] dont_care_out;
 wire [31:0] dont_care_out2;
 
-defparam rf_a.ADDR_WIDTH = `OR1200_REGFILE_ADDR_WIDTH;
-defparam rf_a.DATA_WIDTH = `OR1200_OPERAND_WIDTH;
-dual_port_ram rf_a(	
+dual_port_ram 
+  # (.ADDR_WIDTH(`OR1200_REGFILE_ADDR_WIDTH), .DATA_WIDTH(`OR1200_OPERAND_WIDTH))
+rf_a(	
 
   .clk (clk),
   .we1(const_zero),
@@ -3142,9 +3141,9 @@ or1200_tpram_32x32 rf_a(
 // Instantiation of register file two-port RAM B
 //
 
-defparam rf_b.ADDR_WIDTH = `OR1200_REGFILE_ADDR_WIDTH;
-defparam rf_b.DATA_WIDTH = `OR1200_OPERAND_WIDTH;
-dual_port_ram rf_b(	
+dual_port_ram 
+  # (.ADDR_WIDTH(`OR1200_REGFILE_ADDR_WIDTH), .DATA_WIDTH(`OR1200_OPERAND_WIDTH))
+rf_b(	
   .clk (clk),
   .we1(const_zero),
   .we2(rf_we),
@@ -3257,7 +3256,7 @@ end
 //
 // Forwarding logic for operand A register
 //
-always @(ex_forw or wb_forw or rf_dataa or sel_a) begin
+always @(*) begin
 
 	case (sel_a)	
 		`OR1200_SEL_EX_FORW:
@@ -3272,7 +3271,7 @@ end
 //
 // Forwarding logic for operand B register
 //
-always @(simm or ex_forw or wb_forw or rf_datab or sel_b) begin
+always @(*) begin
 
 	case (sel_b)	// synopsys parallel_case
 
@@ -3369,7 +3368,7 @@ assign result_and = a & b;
 
 // Central part of the ALU
 //
-always @(alu_op or a or b or result_sum or result_and or macrc_op or shifted_rotated or mult_mac_result) 
+always @(*) 
 begin
 
 	case (alu_op)		// synopsys parallel_case
@@ -3432,7 +3431,7 @@ end
 //
 // Examples for move byte, set bit and clear bit
 //
-always @(cust5_op or cust5_limm or a or b) begin
+always @(*) begin
 	case (cust5_op)		// synopsys parallel_case
 		5'h1 : begin 
 			case (cust5_limm[1:0])
@@ -3458,7 +3457,7 @@ end
 //
 // Generate flag and flag write enable
 //
-always @(alu_op or result_sum or result_and or flagcomp) begin
+always @(*) begin
 	case (alu_op)		// synopsys parallel_case
 
 		`OR1200_ALUOP_ADD : begin
@@ -3490,10 +3489,7 @@ end
 //
 // Generate SR[CY] write enable
 //
-always @(alu_op or cy_sum
-
-
-	) begin
+always @(*) begin
 	case (alu_op)		// synopsys parallel_case
 
 		`OR1200_ALUOP_ADD : begin
@@ -3516,7 +3512,7 @@ end
 //
 // Shifts and rotation
 //
-always @(shrot_op or a or b) begin
+always @(*) begin
 	case (shrot_op)		// synopsys parallel_case
 	2'b00 :
 				shifted_rotated = (a << 2);
@@ -3534,7 +3530,7 @@ end
 //
 // First type of compare implementation
 //
-always @(comp_op or a_eq_b or a_lt_b) begin
+always @(*) begin
 	case(comp_op[2:0])	// synopsys parallel_case
 		`OR1200_COP_SFEQ:
 			flagcomp = a_eq_b;
@@ -3654,7 +3650,7 @@ assign div_tmp = mul_prod_r[63:32] - y;
 // Select result of current ALU operation to be forwarded
 // to next instruction and to WB stage
 //
-always @(alu_op or mul_prod_r or mac_r or a or b)
+always @(*)
 	case(alu_op)	
 
 		`OR1200_ALUOP_DIV:
@@ -3939,7 +3935,7 @@ assign spr_cs = unqualified_cs & {{read_spr | write_spr},{read_spr | write_spr},
 //
 // Decoding of groups
 //
-always @(spr_addr)
+always @(*)
 	case (spr_addr[15:11])	
 		5'b00000: unqualified_cs = 32'b00000000000000000000000000000001;
 		5'b00001: unqualified_cs = 32'b00000000000000000000000000000010;
@@ -4063,8 +4059,7 @@ always @(posedge clk)
 //
 // MTSPR/MFSPR interface
 //
-always @(sprs_op or spr_addr or sys_data or spr_dat_mac or spr_dat_pic or spr_dat_pm or
-	spr_dat_dmmu or spr_dat_immu or spr_dat_du or spr_dat_tt) begin
+always @(*) begin
 	case (sprs_op)	// synopsys parallel_case
 		`OR1200_ALUOP_MTSR : begin
 			write_spr = 1'b1;
@@ -4598,7 +4593,7 @@ reg	[31:0]	spr_dat_o;	// SPR Read Data
 //
 // Implementation of VR, UPR and configuration registers
 //
-always @(spr_addr)
+always @(*)
 	if (~|spr_addr[31:4])
 
 		case(spr_addr[3:0])		// synopsys parallel_case
@@ -4686,9 +4681,8 @@ always @(spr_addr)
 			end
 			default: spr_dat_o = 32'h00000000;
 		endcase
-		
-
-
+        else  spr_dat_o = 32'h00000000;
+           
 //
 
 endmodule
@@ -4752,7 +4746,7 @@ end
 //
 // Write-back multiplexer
 //
-always @(muxin_a or muxin_b or muxin_c or muxin_d or rfwb_op) begin
+always @(*) begin
 	case(rfwb_op[`OR1200_RFWBOP_WIDTH-1:1]) 
 		2'b00: muxout = muxin_a;
 		2'b01: begin
@@ -4843,7 +4837,7 @@ assign dcpu_adr_o = addrbase + addrofs;
 assign dcpu_cycstb_o = du_stall | lsu_unstall | except_align ? 1'b0 : |lsu_op;
 assign dcpu_we_o = lsu_op[3];
 assign dcpu_tag_o = dcpu_cycstb_o ? `OR1200_DTAG_ND : `OR1200_DTAG_IDLE;
-always @(lsu_op or dcpu_adr_o)
+always @(*)
 	case({lsu_op, dcpu_adr_o[1:0]})
 		{`OR1200_LSUOP_SB, 2'b00} : dcpu_sel_o = 4'b1000;
 		{`OR1200_LSUOP_SB, 2'b01} : dcpu_sel_o = 4'b0100;
@@ -4919,7 +4913,7 @@ assign memdata = {memdata_hh, memdata_hl, memdata_lh, memdata_ll};
 //
 // Mux to memdata[31:24]
 //
-always @(lsu_op or addr or regdata) begin
+always @(*) begin
 	case({lsu_op, addr[1:0]})	// synopsys parallel_case
 		{`OR1200_LSUOP_SB, 2'b00} : memdata_hh = regdata[7:0];
 		{`OR1200_LSUOP_SH, 2'b00} : memdata_hh = regdata[15:8];
@@ -4930,7 +4924,7 @@ end
 //
 // Mux to memdata[23:16]
 //
-always @(lsu_op or addr or regdata) begin
+always @(*) begin
 	case({lsu_op, addr[1:0]})	// synopsys parallel_case
 		{`OR1200_LSUOP_SW, 2'b00} : memdata_hl = regdata[23:16];
 		default : memdata_hl = regdata[7:0];
@@ -4940,7 +4934,7 @@ end
 //
 // Mux to memdata[15:8]
 //
-always @(lsu_op or addr or regdata) begin
+always @(*) begin
 	case({lsu_op, addr[1:0]})	// synopsys parallel_case
 		{`OR1200_LSUOP_SB, 2'b10} : memdata_lh = regdata[7:0];
 		default : memdata_lh = regdata[15:8];
@@ -4950,7 +4944,7 @@ end
 //
 // Mux to memdata[7:0]
 //
-always @(regdata)
+always @(*)
 	memdata_ll = regdata[7:0];
 
 endmodule
@@ -4986,7 +4980,7 @@ assign regdata = {regdata_hh, regdata_hl, regdata_lh, regdata_ll};
 //
 // Byte select 0
 //
-always @(addr or lsu_op) begin
+always @(*) begin
 	case({lsu_op[2:0], addr})	// synopsys parallel_case
 		{3'b011, 2'b00}:			// lbz/lbs 0
 			sel_byte0 = `OR1200_M2R_BYTE3;	// take byte 3
@@ -5004,7 +4998,7 @@ end
 //
 // Byte select 1
 //
-always @(addr or lsu_op) begin
+always @(*) begin
 	case({lsu_op[2:0], addr})	// synopsys parallel_case
 		{3'b010, 2'b00}:			// lbz
 			sel_byte1 = `OR1200_M2R_ZERO;	// zero extend
@@ -5026,7 +5020,7 @@ end
 //
 // Byte select 2
 //
-always @(addr or lsu_op) begin
+always @(*) begin
 	case({lsu_op[2:0], addr})	// synopsys parallel_case
 		{3'b010, 2'b00}:	
 sel_byte2 = `OR1200_M2R_ZERO;			// lbz
@@ -5052,7 +5046,7 @@ end
 //
 // Byte select 3
 //
-always @(addr or lsu_op) begin
+always @(*) begin
 	case({lsu_op[2:0], addr}) // synopsys parallel_case
 		{3'b010, 2'b00}:
 			sel_byte3 = `OR1200_M2R_ZERO;	// zero extend		// lbz
@@ -5078,7 +5072,7 @@ end
 //
 // Byte 0
 //
-always @(sel_byte0 or memdata)
+always @(*)
  begin
 		case(sel_byte0)
 		`OR1200_M2R_BYTE0: begin
@@ -5101,7 +5095,7 @@ end
 //
 // Byte 1
 //
-always @(sel_byte1 or memdata) begin
+always @(*) begin
 
 	case(sel_byte1) 
 
@@ -5133,7 +5127,7 @@ end
 //
 // Byte 2
 //
-always @(sel_byte2 or memdata) begin
+always @(*) begin
 
 
 	case(sel_byte2) 
@@ -5162,7 +5156,7 @@ end
 //
 // Byte 3
 //
-always @(sel_byte3 or memdata) begin
+always @(*) begin
 
 	case(sel_byte3) 
 		`OR1200_M2R_ZERO: begin
@@ -5182,7 +5176,10 @@ always @(sel_byte3 or memdata) begin
 			end
 		`OR1200_M2R_EXTB3: begin
 				regdata_hh =  {{memdata[31]},{memdata[31]},{memdata[31]},{memdata[31]},{memdata[31]},{memdata[31]},{memdata[31]},{memdata[31]}};
-			end
+		end
+                default: begin
+                   regdata_hh = {{memdata[31]},{memdata[31]},{memdata[31]},{memdata[31]},{memdata[31]},{memdata[31]},{memdata[31]},{memdata[31]}};
+                end
 	endcase
 end
 
@@ -5195,7 +5192,7 @@ end
 //
 // Alignment
 //
-always @(addr or memdata) begin
+always @(*) begin
 	case(addr) 
 		2'b00:
 			aligned = memdata;
@@ -5212,7 +5209,7 @@ end
 // Bytes
 //
 /*
-always @(lsu_op or aligned) begin
+always @(*) begin
 	case(lsu_op) 
 		`OR1200_LSUOP_LBZ: begin
 				regdata[7:0] = aligned[31:24];
