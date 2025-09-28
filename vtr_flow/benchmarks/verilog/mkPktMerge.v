@@ -200,8 +200,7 @@ module mkPktMerge(CLK,
 	     WILL_FIRE_RL_fi0_advance ;
 
   // register fi0HasPrio
-  always@(WILL_FIRE_RL_arbitrate or
-	  fi0HasPrio or WILL_FIRE_RL_fi0_advance or WILL_FIRE_RL_fi1_advance)
+  always@(*)
   begin
    // case (1'b1) // synopsys parallel_case
      // WILL_FIRE_RL_arbitrate: fi0HasPrio__D_IN = !fi0HasPrio;
@@ -246,10 +245,7 @@ module mkPktMerge(CLK,
   assign fi1__CLR = 1'b0 ;
 
   // submodule fo
-  always@(WILL_FIRE_RL_arbitrate or
-	  MUX_fo__enq_1__VAL_1 or
-	  WILL_FIRE_RL_fi0_advance or
-	  fi0__D_OUT or WILL_FIRE_RL_fi1_advance or fi1__D_OUT)
+  always@(*)
   begin
    // case (1'b1) // synopsys parallel_case
       //WILL_FIRE_RL_arbitrate: fo__D_IN = MUX_fo__enq_1__VAL_1;
@@ -562,12 +558,14 @@ reg			full_n_r, empty_n_r;
  
  wire [`dw-1:0] junk_in;
  
+ wire [`dw-1:0] doutz;
+
  // manually assign
  assign junk_in = 0;
 
-defparam ram1.ADDR_WIDTH = `aw;
-defparam ram1.DATA_WIDTH = `dw;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`aw), .DATA_WIDTH(`dw))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -579,7 +577,6 @@ dual_port_ram   ram1(
 	.data2 (	junk_in)
 	);
  
- wire [`dw-1:0] doutz;
 assign dout = (1'b1) ? doutz: junk_out;
 
 ////////////////////////////////////////////////////////////////////
@@ -973,12 +970,14 @@ reg			full_n_r, empty_n_r;
  
  wire [`dw-1:0] junk_in;
  
+ wire [`dw-1:0] doutz;
+
  // manually assign
  assign junk_in = 0;
 
-defparam ram1.ADDR_WIDTH = `aw;
-defparam ram1.DATA_WIDTH = `dw;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`aw), .DATA_WIDTH(`dw))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -990,7 +989,6 @@ dual_port_ram   ram1(
 	.data2 (	junk_in)
 	);
  
-wire [`dw-1:0] doutz;
 assign dout = (1'b1) ? doutz: junk_out;
 
 ////////////////////////////////////////////////////////////////////
@@ -1385,12 +1383,14 @@ reg			full_n_r, empty_n_r;
  
  wire [`dw-1:0] junk_in;
  
+ wire [`dw-1:0] doutz;
+
  // manually assign
  assign junk_in = 0;
 
-defparam ram1.ADDR_WIDTH = `aw;
-defparam ram1.DATA_WIDTH = `dw;
-dual_port_ram   ram1(
+dual_port_ram   
+  # (.ADDR_WIDTH(`aw), .DATA_WIDTH(`dw))
+ram1(
 	.clk(		clk		),
 	.addr1(		rp		),
 	.addr2(		wp		),
@@ -1402,7 +1402,6 @@ dual_port_ram   ram1(
 	.data2 (	junk_in)
 	);
  
- wire [`dw-1:0] doutz;
 assign dout = (1'b1) ? doutz: junk_out;
 
 ////////////////////////////////////////////////////////////////////

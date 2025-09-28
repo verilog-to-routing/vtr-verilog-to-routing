@@ -55,12 +55,12 @@ class MetadataBind {
 
     void set_name(const char* name) {
         if (!ignore_) {
-            name_ = strings_->intern_string(vtr::string_view(name));
+            name_ = strings_->intern_string(name);
         }
     }
     void set_value(const char* value) {
         if (!ignore_) {
-            value_ = strings_->intern_string(vtr::string_view(value));
+            value_ = strings_->intern_string(value);
         }
     }
     void set_node_target(int inode) {
@@ -321,7 +321,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_node_metadata_(rr_node_metadata)
         , rr_edge_metadata_(rr_edge_metadata)
         , strings_(strings)
-        , empty_(strings_->intern_string(vtr::string_view("")))
+        , empty_(strings_->intern_string(""))
         , report_error_(nullptr)
         , is_flat_(is_flat) {
         // Initialize internal data

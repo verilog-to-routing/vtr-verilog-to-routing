@@ -2294,7 +2294,7 @@ module my_wrapper_divider(rst, clk, data_in_a, data_in_b, data_out);
 			y <= Y;
 	end
 
-	always @(y)
+	always @(*)
 	begin
 		case (y)
 			S1 :
@@ -2370,7 +2370,7 @@ module my_divider(clk, rst, start, LA, EB, data_in_a, data_in_b, Remainder, data
 	reg [INPUT_WIDTH_A-1:0] DataA;
 	reg ff0;
 
-	always @(start or y or zero)
+	always @(*)
 	begin
 		case(y)
 			S1:
@@ -2409,7 +2409,7 @@ module my_divider(clk, rst, start, LA, EB, data_in_a, data_in_b, Remainder, data
 			y <= Y;
 	end
 
-	always @(y or start or Cout or zero)
+	always @(*)
 	begin
 		case (y)
 			S1:

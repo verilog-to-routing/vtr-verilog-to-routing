@@ -126,11 +126,11 @@
  */
 
 #include <algorithm>
+#include <string_view>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
 #include "vtr_log.h"
-#include "vtr_string_view.h"
 
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -182,7 +182,7 @@ struct t_wireconn_scratchpad {
 
 /************ Typedefs ************/
 /* Used to get info about a given wire type based on the name */
-typedef vtr::flat_map<vtr::string_view, WireInfo> t_wire_type_sizes;
+typedef vtr::flat_map<std::string_view, WireInfo> t_wire_type_sizes;
 
 /************ Function Declarations ************/
 /**
@@ -453,7 +453,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
         }
 
         // Iterate over the x,y, layer coordinates spanning the FPGA, filling in all the switch blocks that exist
-        for (int layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
+        for (size_t layer_coord = 0; layer_coord < grid.get_num_layers(); layer_coord++) {
             for (size_t x_coord = 0; x_coord < grid.width(); x_coord++) {
                 for (size_t y_coord = 0; y_coord <= grid.height(); y_coord++) {
                     if (sb_not_here(grid, inter_cluster_rr, x_coord, y_coord, layer_coord, sb)) {
@@ -571,7 +571,7 @@ static bool is_core_sb(const DeviceGrid& grid, const std::vector<bool>& inter_cl
 static bool is_prog_routing_avail(const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, int layer) {
     bool is_prog_avail = true;
     //make sure layer number is legal
-    VTR_ASSERT(layer >= 0 && layer < grid.get_num_layers());
+    VTR_ASSERT(layer >= 0 && layer < (int)grid.get_num_layers());
     //check if the current layer has programmable routing resources before trying to build a custom switch blocks
     if (!inter_cluster_rr.at(layer)) {
         is_prog_avail = false;
@@ -650,14 +650,14 @@ static t_wire_type_sizes count_wire_type_sizes(const t_chan_seg_details* channel
     int num_wires = 0;
     WireInfo wire_info;
 
-    vtr::string_view wire_type = channel[0].type_name();
+    std::string_view wire_type = channel[0].type_name();
     int length = channel[0].length();
     int start = 0;
 
     t_wire_type_sizes wire_type_sizes;
 
     for (int iwire = 0; iwire < nodes_per_chan; iwire++) {
-        vtr::string_view new_type = channel[iwire].type_name();
+        std::string_view new_type = channel[iwire].type_name();
         int new_length = channel[iwire].length();
         int new_start = iwire;
         if (new_type != wire_type) {
@@ -700,7 +700,7 @@ static void get_switchpoint_wires(const DeviceGrid& grid,
     for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec) {
         collected_wire_switchpoints.clear();
 
-        auto wire_type = vtr::string_view(wire_switchpoints.segment_name);
+        std::string_view wire_type = wire_switchpoints.segment_name;
         const std::vector<int>& points = wire_switchpoints.switchpoints;
 
         if (wire_type_sizes.find(wire_type) == wire_type_sizes.end()) {
@@ -1106,7 +1106,7 @@ static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coor
     bool result = true;
 
     /* the layer that channel is located at must be legal regardless of chan_type*/
-    if (layer_coord < 0 || layer_coord > grid.get_num_layers()) {
+    if (layer_coord < 0 || layer_coord > (int)grid.get_num_layers()) {
         return result;
     }
 
