@@ -29,7 +29,7 @@
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_intra_cluster.h"
-#include "rr_graph_source_sink.h"
+#include "rr_graph_tile_nodes.h"
 #include "rr_graph_timing_params.h"
 #include "check_rr_graph.h"
 #include "echo_files.h"

@@ -8,7 +8,7 @@
 #include "vpr_utils.h"
 #include "physical_types_util.h"
 #include "rr_node_indices.h"
-#include "rr_graph_source_sink.h"
+#include "rr_graph_tile_nodes.h"
 #include "rr_graph_switch_utils.h"
 #include "check_rr_graph.h"
 
