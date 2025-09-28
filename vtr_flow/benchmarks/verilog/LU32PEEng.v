@@ -508,7 +508,7 @@ begin
 	end
 end
 
-always @ (cur_state)
+always @ (*)
 begin
 	case (cur_state)
 	`MODE1:
@@ -1064,7 +1064,7 @@ begin
 end
 
 // connections to top block memory ports
-always @ (topSourceSel or topWriteSel or curReadDataLU or addResult31 or addResult30 or addResult29 or addResult28 or addResult27 or addResult26 or addResult25 or addResult24 or addResult23 or addResult22 or addResult21 or addResult20 or addResult19 or addResult18 or addResult17 or addResult16 or addResult15 or addResult14 or addResult13 or addResult12 or addResult11 or addResult10 or addResult9 or addResult8 or addResult7 or addResult6 or addResult5 or addResult4 or addResult3 or addResult2 or addResult1 or addResult0)
+always @ (*)
 begin
 	if (topSourceSel == 1'b0)
 		case (topWriteSel)
@@ -1765,7 +1765,7 @@ else if (waitCycles >7'b0000000)
 end
 
 // determining next state of main FSM
-always @ (currentState or start or mode or m or n or counter or mdivk or topIdxCounter or doneFetchRow or divCounter or j or stop2 or waitCycles or stop or i1)
+always @ (*)
 begin
 	case (currentState)
 	`cSETUP:
@@ -1957,7 +1957,7 @@ begin
 	endcase
 end
 
-always @ (currentRowState or currentState or nextState or i1 or topIdxCounter or mdivk or msIdxCounter or readRowCounter or j or n or mode)
+always @ (*)
 begin
 	if (currentRowState == `cDONE_FETCH_ROW)
 		doneFetchRow = 1;
@@ -1975,7 +1975,7 @@ begin
 end
 
 // second FSM that controls the control signals to temp_top block
-always @ (currentRowState or nextTopIdxCounter or n or startFetchRow or loadRow or topIdx or mdivk or nextState)
+always @ (*)
 begin
 	case (currentRowState)
 	`cFETCH_ROW:
@@ -2606,9 +2606,9 @@ assign j = |byteena_a;
  assign q = subwire | dummy;
  assign dummy = value_out & 1024'b0;
 
-defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
-defparam inst1.DATA_WIDTH = `RAMWIDTH;
-dual_port_ram inst1( 
+dual_port_ram 
+  # (.ADDR_WIDTH(`rRAMSIZEWIDTH), .DATA_WIDTH(`RAMWIDTH))
+inst1( 
 .clk (clk),
 .we1(wren),
 .we2(1'b0),
@@ -2650,9 +2650,9 @@ assign j = |byteena_a;
  assign q = subwire | dummy;
  assign dummy = value_out & 1024'b0;
 
-defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
-defparam inst1.DATA_WIDTH = `RAMWIDTH;
-dual_port_ram inst1( 
+dual_port_ram 
+  # (.ADDR_WIDTH(`rRAMSIZEWIDTH), .DATA_WIDTH(`RAMWIDTH))
+inst1( 
 .clk (clk),
 .we1(wren),
 .we2(1'b0),
@@ -2694,9 +2694,9 @@ assign j = |byteena_a;
  assign q = subwire | dummy;
  assign dummy = value_out & 1024'b0;
 
-defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
-defparam inst1.DATA_WIDTH = `RAMWIDTH;
-dual_port_ram inst1( 
+dual_port_ram 
+  # (.ADDR_WIDTH(`rRAMSIZEWIDTH), .DATA_WIDTH(`RAMWIDTH))
+inst1( 
 .clk (clk),
 .we1(wren),
 .we2(1'b0),
@@ -2737,9 +2737,9 @@ assign j = |byteena_a;
  assign q = subwire | dummy;
  assign dummy = value_out & 1024'b0;
 
-defparam inst1.ADDR_WIDTH = `rRAMSIZEWIDTH;
-defparam inst1.DATA_WIDTH = `RAMWIDTH;
-dual_port_ram inst1( 
+dual_port_ram 
+  # (.ADDR_WIDTH(`rRAMSIZEWIDTH), .DATA_WIDTH(`RAMWIDTH))
+inst1( 
 .clk (clk),
 .we1(wren),
 .we2(1'b0),
@@ -2779,9 +2779,9 @@ module top_ram (
 	assign q = sub_wire0 | dummy;
 	assign dummy = junk_output & 32'b0;
 
-    defparam inst2.ADDR_WIDTH = 12;
-    defparam inst2.DATA_WIDTH = 32;        
- dual_port_ram inst2(
+dual_port_ram 
+  # (.ADDR_WIDTH(12), .DATA_WIDTH(32))
+inst2(
  .clk (clk),
  .we1(wren),
  .we2(1'b0),
@@ -3324,9 +3324,10 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 64 ))
 		status_cnt <= status_cnt + 1'b1;
 end 
-  defparam ram_addr.ADDR_WIDTH = `rFIFORSIZEWIDTH;
-  defparam ram_addr.DATA_WIDTH = `rFIFOINPUTWIDTH;
-  dual_port_ram ram_addr(
+
+  dual_port_ram 
+  # (.ADDR_WIDTH(`rFIFORSIZEWIDTH), .DATA_WIDTH(`rFIFOINPUTWIDTH))
+ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
 .addr1 (wr_pointer) , // address_0 input 
@@ -3454,9 +3455,9 @@ begin // : STATUS_COUNTER
 end 
 assign usedw = status_cnt[`wFIFOSIZEWIDTH-1:0];
 
-  defparam ram_addr.ADDR_WIDTH = `wFIFOSIZEWIDTH;
-  defparam ram_addr.DATA_WIDTH = `wFIFOINPUTWIDTH;
-  dual_port_ram ram_addr(
+  dual_port_ram 
+  # (.ADDR_WIDTH(`wFIFOSIZEWIDTH), .DATA_WIDTH(`wFIFOINPUTWIDTH))
+ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
 .addr1 (wr_pointer) , // address_0 input 
@@ -3531,9 +3532,9 @@ begin // : STATUS_COUNTER
 		status_cnt <= status_cnt + 1;
 end
 
-  defparam ram_addr.ADDR_WIDTH = `aFIFOSIZEWIDTH;
-  defparam ram_addr.DATA_WIDTH = `aFIFOWIDTH;
-  dual_port_ram ram_addr(
+  dual_port_ram 
+  # (.ADDR_WIDTH(`aFIFOSIZEWIDTH), .DATA_WIDTH(`aFIFOWIDTH))
+ram_addr(
 .we1      (wrreq)      , // write enable
  .we2      (rdreq)       , // Read enable
 .addr1 (wr_pointer) , // address_0 input 
@@ -3603,9 +3604,10 @@ begin // : STATUS_COUNTER
 	else if ((wrreq) && (!rdreq) && (status_cnt != 16 ))
 		status_cnt <= status_cnt + 1'b1;
 end
-    defparam ram_addr.ADDR_WIDTH = `mFIFOSIZEWIDTH;
-    defparam ram_addr.DATA_WIDTH = `mFIFOWIDTH;
-	dual_port_ram ram_addr(
+
+	dual_port_ram 
+          # (.ADDR_WIDTH(`mFIFOSIZEWIDTH), .DATA_WIDTH(`mFIFOWIDTH))
+        ram_addr(
 	.we1      (wrreq)      , // write enable
 	.we2      (rdreq)       , // Read enable
 	.addr1 (wr_pointer) , // address_0 input
@@ -3676,7 +3678,7 @@ module fpu_add (clock, a1, b1, sum);
 	reg smaller; //smaller is 1 if a < b, 0 otherwise  
 	  
 	//Shift mantissa's to have the same exponent  
-	always @ (a or b) begin  
+	always @ (*) begin  
 		//a_exp = a[30:23];  
 		//b_exp = b[30:23];  
 		//a_man = {1'b1, a[22:0]};  
@@ -3861,7 +3863,7 @@ module fpu_add (clock, a1, b1, sum);
 	end  
   
 	//Perform the addition operation  
-	always @ (a_man or b_man or a or b) begin  
+	always @ (*) begin  
 		if (a_man < b_man) begin  
 			smaller = 1'b1;  
 		end else begin  
@@ -3906,7 +3908,7 @@ module fpu_add (clock, a1, b1, sum);
 	//Store the number  
 	// we already have the sign.  
 	  
-	always @ (sum_man or a_exp) begin  
+	always @ (*) begin  
 		if (sum_man[24])begin //shif sum >> by 1, add 1 to the exponent.  
 			sum[22:0] = sum_man[23:1];  
 			sum[30:23] = a_exp + 8'b00000001;  
@@ -4044,7 +4046,7 @@ module fpu_div(clock, n, d, div);
 	end  
 	  
 	//Find the exponent, store in div_exp.  
-	always @ (n_exp or d_exp) begin  
+	always @ (*) begin  
 		if (n_exp >= d_exp) begin  
 			div_exp = 8'b01111111 + (n_exp - d_exp);  
 		end else begin  
@@ -4057,12 +4059,12 @@ module fpu_div(clock, n, d, div);
 	  
 	//Store the result. Shift exponents appropriately. Store sign.  
 	//Sign  
-	always @ (n_sign or d_sign) begin  
+	always @ (*) begin  
 		div[31] = n_sign ^ d_sign;  
 	end  
 	  
 	//Mantissa and Exponent  
-	always @ (div_man or div_exp) begin  
+	always @ (*) begin  
 		if (div_man[23]) begin //do nothing  
 			div[22:0] = div_man[22:0];  
 			div[30:23] = div_exp;  
@@ -4209,7 +4211,7 @@ module div_24b(numer, denom, res);
 	// end  
 	  
 	//res[23]  
-	always @ (denom_pad or numer23) begin  
+	always @ (*) begin  
 	  
 		if (denom_pad[23:0] <= numer23[46:23]) begin 
 			res[23] = 1'b1; 
@@ -4854,7 +4856,7 @@ assign shiftb = b[23 - 1] ? 1 :
   // If number is denorm, shift the significand the appropriate amount 
 //  assign shifteda = a[`WSIG-1:0] << shifta;  
 	//Must have constant shifts for ODIN  
-	always @ (shifta or a) begin  
+	always @ (*) begin  
 		case (shifta)   
 			5'b00001: begin  
 				shifteda = a[`WSIG-1:0] << 5'b00001; 
@@ -4957,7 +4959,7 @@ assign shiftb = b[23 - 1] ? 1 :
   assign norma 	= aisdenorm ? shifteda : {1'b1, a[`WSIG-1:0]}; 
  
  // assign shiftedb = b[`WSIG-1:0] << shiftb;  
-	always @ (shiftb or b) begin  
+	always @ (*) begin  
 		case (shiftb)   
 			5'b00001: begin  
 				shiftedb = b[`WSIG-1:0] << 5'b00001; 
@@ -5170,7 +5172,7 @@ module shift(normalized, selectedexp, shiftprod, shiftexp, shiftloss);
   // shift significand 
   //assign postshift	= preshift >> actualshiftamt;  
   //We can only have constant shifts for ODIN:  
-  always @ (actualshiftamt or preshift) begin  
+  always @ (*) begin  
 		case (actualshiftamt)   
 			5'b00001: begin  
 				postshift = preshift >> 5'b00001; 
