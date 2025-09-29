@@ -766,6 +766,17 @@ bool valid_expression(std::string exp) {
             return false;
     }
 
+    //use the formula parser for checking the validity of the formula.
+    //we ignore the actual result here, since we only care about whether parsing succeeds without a VtrError.
+    vtr::FormulaParser fp;
+    vtr::t_formula_data dummy;
+    try {
+        int result = fp.parse_formula(exp, dummy, true);
+        (void)result; 
+    } catch (const vtr::VtrError& e) {
+        return false;
+    }
+
     return true;
 }
 
