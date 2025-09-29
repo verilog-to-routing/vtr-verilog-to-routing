@@ -190,7 +190,7 @@
 
 /*
  * Notes in include header files in a head file 
- * Only include the neccessary header files 
+ * Only include the necessary header files
  * that is required by the data types in the function/class declarations!
  */
 /* Header files should be included in a sequence */
@@ -206,6 +206,7 @@
 /* VPR header files go third */
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
+#include "rr_switch.h"
 
 class RRGraph {
   public: /* Types */

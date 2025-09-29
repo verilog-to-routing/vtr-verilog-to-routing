@@ -15,7 +15,7 @@
 #include "vpr_error.h"
 #include "vpr_utils.h"
 
-#include "rr_graph.h"
+#include "rr_graph_switch_utils.h"
 #include "check_rr_graph.h"
 #include "get_parallel_segs.h"
 #include "device_grid_annotation.h"

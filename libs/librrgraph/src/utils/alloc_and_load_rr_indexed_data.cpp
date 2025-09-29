@@ -652,7 +652,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
         if (rr_graph.node_type(node) == e_rr_type::CHANX || rr_graph.node_type(node) == e_rr_type::CHANY) {
             int switch_index = rr_graph.rr_nodes().edge_switch(edge);
 
-            if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::SHORT) {
+            if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == e_switch_type::SHORT) {
                 num_shorts++;
                 continue;
             }
