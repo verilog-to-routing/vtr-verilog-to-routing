@@ -19,6 +19,9 @@
 #include "atom_netlist.h"
 #include "device_grid.h"
 #include "draw.h"
+#ifndef NO_GRAPHICS
+#include "draw_global.h"
+#endif
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
 #include "globals.h"
@@ -353,6 +356,10 @@ PartialPlacement SimPLGlobalPlacer::place() {
     PartialPlacement best_p_placement(ap_netlist_);
     double best_ub_hpwl = std::numeric_limits<double>::max();
 
+#ifndef NO_GRAPHICS
+    get_draw_state_vars()->set_ap_partial_placement_ref(p_placement);
+    update_screen(ScreenUpdatePriority::MAJOR, "AP starts", ANALYTICAL_PLACEMENT, nullptr);
+#endif
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
         float iter_start_time = runtime_timer.elapsed_sec();
@@ -362,12 +369,22 @@ PartialPlacement SimPLGlobalPlacer::place() {
         solver_->solve(i, p_placement);
         float solver_end_time = runtime_timer.elapsed_sec();
         double lb_hpwl = p_placement.get_hpwl(ap_netlist_);
+#ifndef NO_GRAPHICS
+        // Per iteration analytical solve display
+        std::string iter_msg = vtr::string_fmt("AP Iteration %zu after analytical solve", i);
+        update_screen(ScreenUpdatePriority::MAJOR, iter_msg.c_str(), ANALYTICAL_PLACEMENT, nullptr);
+#endif
 
         // Run the legalizer.
         float legalizer_start_time = runtime_timer.elapsed_sec();
         partial_legalizer_->legalize(p_placement);
         float legalizer_end_time = runtime_timer.elapsed_sec();
         double ub_hpwl = p_placement.get_hpwl(ap_netlist_);
+#ifndef NO_GRAPHICS
+        // Per iteration legalized display
+        iter_msg = vtr::string_fmt("AP Iteration %zu after partial legalization", i);
+        update_screen(ScreenUpdatePriority::MAJOR, iter_msg.c_str(), ANALYTICAL_PLACEMENT, nullptr);
+#endif
 
         // Perform a timing update
         float timing_update_start_time = runtime_timer.elapsed_sec();
@@ -423,6 +440,8 @@ PartialPlacement SimPLGlobalPlacer::place() {
 
         if (hpwl_relative_gap < target_hpwl_relative_gap_)
             break;
+
+
     }
 
     // Update the setup slacks. This is performed down here (as well as being
@@ -451,7 +470,17 @@ PartialPlacement SimPLGlobalPlacer::place() {
                           *density_manager_,
                           pre_cluster_timing_manager_);
 
+<<<<<<< HEAD
     update_screen(ScreenUpdatePriority::MAJOR, "Global Placement Complete", e_pic_type::ANALYTICAL_PLACEMENT, nullptr);
+=======
+
+#ifndef NO_GRAPHICS
+    // Final display of the last iteration's placement
+    get_draw_state_vars()->set_ap_partial_placement_ref(p_placement);
+    update_screen(ScreenUpdatePriority::MAJOR, "Global Placement Complete", ANALYTICAL_PLACEMENT, nullptr);
+    get_draw_state_vars()->clear_ap_partial_placement_ref();
+#endif
+>>>>>>> dc6e76ac9 ([draw ap] ap draw working with the rest of the draw)
     // Return the placement from the final iteration.
     return best_p_placement;
 }

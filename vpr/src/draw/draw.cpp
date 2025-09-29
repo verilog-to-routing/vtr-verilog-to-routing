@@ -18,6 +18,7 @@
 #include "draw.h"
 
 #include "draw_interposer.h"
+#include "draw_types.h"
 #include "timing_info.h"
 #include "physical_types.h"
 
@@ -529,7 +530,19 @@ void set_initial_world() {
 }
 
 void set_initial_world_ap() {
-    initial_world = ezgl::rectangle({-1, -1}, {1, 1});
+    constexpr float VISIBLE_MARGIN = 0.01f;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    const size_t grid_w = device_ctx.grid.width();
+    const size_t grid_h = device_ctx.grid.height();
+
+
+    float draw_width = static_cast<float>(grid_w);
+    float draw_height = static_cast<float>(grid_h);
+
+    initial_world = ezgl::rectangle(
+        {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
+        {(1.f + VISIBLE_MARGIN) * draw_width, (1.f + VISIBLE_MARGIN) * draw_height});
 }
 
 #ifndef NO_GRAPHICS
@@ -657,6 +670,11 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
              * removed.  Note that even though global nets are not drawn, their  *
              * fanins and fanouts are highlighted when you click on a block      *
              * attached to them.                                                 */
+
+            if (get_draw_state_vars()->pic_on_screen == ANALYTICAL_PLACEMENT) {
+                // No selection in analytical placement mode yet
+                return;
+            }
 
             /* Control + mouse click to select multiple nets. */
             if (!(event->state & GDK_CONTROL_MASK))
