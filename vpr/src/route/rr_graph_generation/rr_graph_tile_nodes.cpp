@@ -12,7 +12,7 @@ void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
                           const std::vector<int>& class_num_vec,
                           const t_physical_tile_loc& root_loc,
                           t_physical_tile_type_ptr physical_type) {
-    auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
+    DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     for (int class_num : class_num_vec) {
         e_pin_type class_type = get_class_type_from_class_physical_num(physical_type, class_num);
@@ -106,7 +106,7 @@ void connect_src_sink_to_pins(RRGraphBuilder& rr_graph_builder,
                               bool switches_remapped) {
     for (int class_num : class_num_vec) {
         const std::vector<int>& pin_list = get_pin_list_from_class_physical_num(physical_type_ptr, class_num);
-        auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
+        e_pin_type class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
         RRNodeId class_rr_node_id = get_class_rr_node_id(rr_graph_builder.node_lookup(), physical_type_ptr, tile_loc, class_num);
         VTR_ASSERT(class_rr_node_id != RRNodeId::INVALID());
         for (int pin_num : pin_list) {
