@@ -382,12 +382,12 @@ class RRGraphBuilder {
         node_storage_.add_node_side(id, new_side);
     }
 
-    /** @brief It maps arch_switch_inf indicies to rr_switch_inf indicies. */
+    /** @brief It maps arch_switch_inf indices to rr_switch_inf indices. */
     inline void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin) {
         node_storage_.remap_rr_node_switch_indices(switch_fanin);
     }
 
-    /** @brief Marks that edge switch values are rr switch indicies*/
+    /** @brief Marks that edge switch values are rr switch indices*/
     inline void mark_edges_as_rr_switch_ids() {
         node_storage_.mark_edges_as_rr_switch_ids();
     }

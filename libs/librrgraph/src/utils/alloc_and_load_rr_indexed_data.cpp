@@ -658,7 +658,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
     num_switches = 0;
     num_shorts = 0;
     buffered = LIBRRGRAPH_UNDEFINED_VAL;
-
+    
     for (const RREdgeId edge : fan_in_list[inode]) {
         // Want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments
         e_rr_type node_type = rr_graph.node_type(inode);
@@ -666,7 +666,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
         if (is_chanxy(node_type) || is_chanz(node_type)) {
             RRSwitchId switch_index = (RRSwitchId)rr_graph.rr_nodes().edge_switch(edge);
 
-            if (rr_graph.rr_switch_inf(switch_index).type() == SwitchType::SHORT) {
+            if (rr_graph.rr_switch_inf(switch_index).type() == e_switch_type::SHORT) {
                 num_shorts++;
                 continue;
             }

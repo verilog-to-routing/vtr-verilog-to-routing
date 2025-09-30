@@ -10,6 +10,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_node_fwd.h"
 #include "rr_edge.h"
+#include "rr_switch.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"
@@ -788,7 +789,7 @@ class t_rr_graph_storage {
      * init_fan_in does not need to be invoked before this method.
      */
      size_t count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
-                             t_arch_switch_fanin& arch_switch_fanins);
+                              t_arch_switch_fanin& arch_switch_fanins);
 
     /** @brief Maps arch_switch_inf indicies to rr_switch_inf indicies.
      *

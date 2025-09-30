@@ -2085,23 +2085,23 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return uxsd::enum_node_type::UXSD_INVALID;
     }
 
-    SwitchType from_uxsd_switch_type(uxsd::enum_switch_type type) {
-        SwitchType switch_type = SwitchType::INVALID;
+    e_switch_type from_uxsd_switch_type(uxsd::enum_switch_type type) {
+        e_switch_type switch_type = e_switch_type::INVALID;
         switch (type) {
             case uxsd::enum_switch_type::TRISTATE:
-                switch_type = SwitchType::TRISTATE;
+                switch_type = e_switch_type::TRISTATE;
                 break;
             case uxsd::enum_switch_type::MUX:
-                switch_type = SwitchType::MUX;
+                switch_type = e_switch_type::MUX;
                 break;
             case uxsd::enum_switch_type::PASS_GATE:
-                switch_type = SwitchType::PASS_GATE;
+                switch_type = e_switch_type::PASS_GATE;
                 break;
             case uxsd::enum_switch_type::SHORT:
-                switch_type = SwitchType::SHORT;
+                switch_type = e_switch_type::SHORT;
                 break;
             case uxsd::enum_switch_type::BUFFER:
-                switch_type = SwitchType::BUFFER;
+                switch_type = e_switch_type::BUFFER;
                 break;
             default:
                 report_error(
@@ -2111,17 +2111,17 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return switch_type;
     }
 
-    uxsd::enum_switch_type to_uxsd_switch_type(SwitchType type) {
+    uxsd::enum_switch_type to_uxsd_switch_type(e_switch_type type) {
         switch (type) {
-            case SwitchType::TRISTATE:
+            case e_switch_type::TRISTATE:
                 return uxsd::enum_switch_type::TRISTATE;
-            case SwitchType::MUX:
+            case e_switch_type::MUX:
                 return uxsd::enum_switch_type::MUX;
-            case SwitchType::PASS_GATE:
+            case e_switch_type::PASS_GATE:
                 return uxsd::enum_switch_type::PASS_GATE;
-            case SwitchType::SHORT:
+            case e_switch_type::SHORT:
                 return uxsd::enum_switch_type::SHORT;
-            case SwitchType::BUFFER:
+            case e_switch_type::BUFFER:
                 return uxsd::enum_switch_type::BUFFER;
             default:
                 report_error(
