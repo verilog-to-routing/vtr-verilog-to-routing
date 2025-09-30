@@ -515,6 +515,8 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 #endif /* NO_GRAPHICS */
 }
 
+#ifndef NO_GRAPHICS
+
 void set_initial_world() {
     constexpr float VISIBLE_MARGIN = 0.01;
     t_draw_coords* draw_coords = get_draw_coords_vars();
@@ -546,8 +548,6 @@ void set_initial_world_ap() {
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
         {(1.f + VISIBLE_MARGIN) * draw_width, (1.f + VISIBLE_MARGIN) * draw_height});
 }
-
-#ifndef NO_GRAPHICS
 
 int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {
     /* Returns the track number of this routing resource node.   */
