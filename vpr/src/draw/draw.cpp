@@ -296,7 +296,7 @@ void update_screen(ScreenUpdatePriority priority,
      * value controls whether or not the Proceed button must be clicked to   *
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
     t_draw_state* draw_state = get_draw_state_vars();
-
+    
     strcpy(draw_state->default_message, msg);
 
     if (!draw_state->show_graphics)
@@ -312,10 +312,12 @@ void update_screen(ScreenUpdatePriority priority,
 
         state_change = true;
 
-        if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
-            set_initial_world_ap();
-        } else {
-            set_initial_world();
+        if (draw_state->show_graphics) {
+            if (pic_on_screen_val == ANALYTICAL_PLACEMENT) {
+                set_initial_world_ap();
+            } else {
+                set_initial_world();
+            }
         }
 
         if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
