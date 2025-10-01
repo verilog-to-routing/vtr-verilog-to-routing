@@ -66,6 +66,7 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
         // Try to find a node with the current track_num
 
         const t_bottleneck_link& link = interdie_3d_links[track_num];
+        VTR_ASSERT_SAFE(link.chan_type == e_rr_type::CHANZ);
         const char layer_low = std::min(link.gather_loc.layer_num, link.scatter_loc.layer_num);
         const char layer_high = std::max(link.gather_loc.layer_num, link.scatter_loc.layer_num);
 
@@ -82,8 +83,7 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
 
         rr_graph_builder.set_node_layer(node, layer_low, layer_high);
         rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
-        // TODO: the index doesn't make any sense. We need to an RRIndexedDataId for CHANZ nodes
-        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset));
+        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset + link.parallel_segment_index));
         rr_graph_builder.set_node_capacity(node, 1); // GLOBAL routing handled elsewhere
         float R = 0;
         float C = 0;
