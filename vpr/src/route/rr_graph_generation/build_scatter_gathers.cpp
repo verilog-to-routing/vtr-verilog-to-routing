@@ -230,16 +230,6 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 index_to_correct_sg_channels(sg_pattern.scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
 
                 if (gather_channels.empty() || scatter_channels.empty()) {
-                    VTR_LOGV_WARN(gather_channels.empty(),
-                                  "Scatter-gather pattern '%s' with SG link '%s' has no gather channels at location (layer=%i, x=%i, y=%i)\n",
-                                  sg_pattern.name.c_str(), sg_link.name.c_str(),
-                                  gather_loc.layer_num, gather_loc.x, gather_loc.y);
-
-                    VTR_LOGV_WARN(scatter_channels.empty(),
-                                  "Scatter-gather pattern '%s' with SG link '%s' has no scatter channels at location (layer=%i, x=%i, y=%i)\n",
-                                  sg_pattern.name.c_str(), sg_link.name.c_str(),
-                                  scatter_loc.layer_num, scatter_loc.x, scatter_loc.y);
-
                     continue;
                 }
 
@@ -316,6 +306,9 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                         i_s = (i_s + 1) % bottleneck_fanout;
                     }
 
+                    bottleneck_link.chan_type = chan_type;
+                    bottleneck_link.parallel_segment_index = std::distance(segment_inf.begin(), seg_it);
+
                     if (is_3d_link) {
                         if (sg_link.z_offset < 0 && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL) {
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch_dec;
@@ -330,8 +323,6 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch;
                         }
 
-                        bottleneck_link.chan_type = chan_type;
-                        bottleneck_link.parallel_segment_index = std::distance(segment_inf.begin(), seg_it);
                         bottleneck_links.push_back(std::move(bottleneck_link));
                     }
                 }

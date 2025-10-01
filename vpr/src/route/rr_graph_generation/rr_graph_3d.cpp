@@ -62,7 +62,7 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
     // 3) xhigh=xlow, yhigh=ylow
 
     // Go through allocated nodes until no nodes are found within the RRGraph builder
-    for (int track_num = 0; /*no condition*/; track_num++) {
+    for (size_t track_num = 0; track_num < interdie_3d_links.size(); track_num++) {
         // Try to find a node with the current track_num
 
         const t_bottleneck_link& link = interdie_3d_links[track_num];
