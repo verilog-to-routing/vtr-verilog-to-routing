@@ -702,8 +702,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
         // We set the layer num 0 - If it is specified in the XML, it will be overwritten
-        rr_graph_builder_->set_node_layer_low(node_id, 0);
-        rr_graph_builder_->set_node_layer_high(node_id, 0);
+        rr_graph_builder_->set_node_layer(node_id, 0, 0);
        
         return inode;
     }
@@ -746,7 +745,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         // Currently, we only support two layers
         VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
-        rr_graph_builder_->set_node_layer_low(node_id, layer_num);
+
+        char layer_high = rr_graph_->node_layer_high(node_id);
+        rr_graph_builder_->set_node_layer(node_id, layer_num, layer_high);
     }
 
     inline void set_node_loc_layer_high(int layer_num, int& inode) final {
@@ -755,8 +756,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         // Currently, we only support two layers
         VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
-        VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
-        rr_graph_builder_->set_node_layer_high(node_id, layer_num);
+        char layer_low = rr_graph_->node_layer_low(node_id);
+        rr_graph_builder_->set_node_layer(node_id, layer_low, layer_num);
     }
 
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {

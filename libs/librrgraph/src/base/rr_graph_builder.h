@@ -238,14 +238,9 @@ class RRGraphBuilder {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
 
-    /// @brief Set the low layer coordinate where the given node is located at.
-    inline void set_node_layer_low(RRNodeId id, int layer){
-        node_storage_.set_node_layer_low(id, layer);
-    }
-
-    /// @brief Set the high layer coordinate where the given node is located at.
-    inline void set_node_layer_high(RRNodeId id, int layer){
-        node_storage_.set_node_layer_high(id, layer);
+    /// @brief Set the layer range where the given node spans.
+    inline void set_node_layer(RRNodeId id, char layer_low, char layer_high){
+        node_storage_.set_node_layer(id, layer_low, layer_high);
     }
 
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */

@@ -1961,8 +1961,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
             rr_graph_builder.set_node_coordinates(node, x_coord, start, x_coord, end);
         }
 
-        rr_graph_builder.set_node_layer_low(node, layer);
-        rr_graph_builder.set_node_layer_high(node, layer);
+        rr_graph_builder.set_node_layer(node, layer, layer);
 
         int length = end - start + 1;
         float R = length * seg_details[track].Rmetal();
@@ -2030,7 +2029,6 @@ static void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
     // 1) type: CHANZ
     // 2) ptc_num: [0:num_of_3d_connections - 1]
     // 3) xhigh=xlow, yhigh=ylow
-    // 4) directionality: NONE (neither incremental nor decremental in 2D space)
 
     // Go through allocated nodes until no nodes are found within the RRGraph builder
     for (int track_num = 0; /*no condition*/; track_num++) {
@@ -2048,8 +2046,7 @@ static void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
         }
 
         // TODO: layer numbers should be extracted from link info
-        rr_graph_builder.set_node_layer_low(node, 0);
-        rr_graph_builder.set_node_layer_high(node, 1);
+        rr_graph_builder.set_node_layer(node, 0, 1);
 
         rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
         // TODO: the index doesn't make any sense. We need to an RRIndexedDataId for CHANZ nodes
