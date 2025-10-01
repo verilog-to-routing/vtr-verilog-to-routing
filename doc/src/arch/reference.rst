@@ -2010,7 +2010,7 @@ The ``<segment>`` tag and its contents are described below.
 
         .. note:: It is required that both x and y segment axis details are given or that at least one segment within ``segmentlist`` 
             is specified without the ``axis`` tag (i.e. at least one segment applies to both x-directed and y-directed 
-            chanels). For 3-d architectures, it is required that at least one write segment with `axis="z"` is defined.
+            channels). For 3-d architectures, it is required that at least one wire segment with `axis="z"` is defined.
 
     :req_param name:
         A unique alphanumeric name to identify this segment type.
