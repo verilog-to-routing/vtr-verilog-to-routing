@@ -210,7 +210,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 scatter_loc.y = gather_loc.y + sg_link.y_offset;
                 scatter_loc.layer_num = gather_loc.layer_num + sg_link.z_offset;
 
-                const std::vector<t_segment_inf> segment_inf& = (sg_link.x_offset != 0) ? segment_inf_x :
+                const std::vector<t_segment_inf>& segment_inf = (sg_link.x_offset != 0) ? segment_inf_x :
                                                                 (sg_link.y_offset != 0) ? segment_inf_y : segment_inf_z;
 
                 const e_rr_type chan_type = (sg_link.x_offset != 0) ? e_rr_type::CHANX :
