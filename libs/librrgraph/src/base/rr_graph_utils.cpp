@@ -240,6 +240,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
 }
 
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph) {
+    // TODO: once OPINs are connected to CHANZ nodes, this function should be reworked.
     bool limited_to_opin = true;
     for (const RRNodeId from_node : rr_graph.nodes()) {
         for (t_edge_size edge : rr_graph.edges(from_node)) {
