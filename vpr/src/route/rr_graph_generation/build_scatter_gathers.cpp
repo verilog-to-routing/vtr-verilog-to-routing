@@ -7,6 +7,7 @@
 #include "scatter_gather_types.h"
 #include "rr_types.h"
 #include "globals.h"
+#include "rr_graph_uxsdcxx_interface.h"
 #include "vtr_assert.h"
 #include "vtr_random.h"
 
@@ -160,7 +161,9 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
 
 std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
                                                                          const std::vector<bool>& inter_cluster_rr,
-                                                                         const std::vector<t_segment_inf>& segment_inf,
+                                                                         const std::vector<t_segment_inf>& segment_inf_x,
+                                                                         const std::vector<t_segment_inf>& segment_inf_y,
+                                                                         const std::vector<t_segment_inf>& segment_inf_z,
                                                                          const t_chan_details& chan_details_x,
                                                                          const t_chan_details& chan_details_y,
                                                                          const t_chan_width& nodes_per_chan,
@@ -201,6 +204,19 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 VTR_ASSERT(sg_link_it != sg_pattern.sg_links.end());
                 const t_sg_link& sg_link = *sg_link_it;
 
+                VTR_ASSERT(vtr::exactly_k_conditions(1, sg_link.x_offset != 0, sg_link.y_offset != 0, sg_link.z_offset != 0));
+                t_physical_tile_loc scatter_loc;
+                scatter_loc.x = gather_loc.x + sg_link.x_offset;
+                scatter_loc.y = gather_loc.y + sg_link.y_offset;
+                scatter_loc.layer_num = gather_loc.layer_num + sg_link.z_offset;
+
+                const std::vector<t_segment_inf> segment_inf& = (sg_link.x_offset != 0) ? segment_inf_x :
+                                                                (sg_link.y_offset != 0) ? segment_inf_y : segment_inf_z;
+
+                const e_rr_type chan_type = (sg_link.x_offset != 0) ? e_rr_type::CHANX :
+                                            (sg_link.y_offset != 0) ? e_rr_type::CHANY : e_rr_type::CHANZ;
+
+
                 auto seg_it = std::ranges::find_if(segment_inf,
                                                    [&](const t_segment_inf& seg) noexcept {
                                                        return seg.name == sg_link.seg_type;
@@ -209,10 +225,6 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 VTR_ASSERT(seg_it != segment_inf.end());
                 const t_segment_inf& wire_segment = *seg_it;
 
-                t_physical_tile_loc scatter_loc;
-                scatter_loc.x = gather_loc.x + sg_link.x_offset;
-                scatter_loc.y = gather_loc.y + sg_link.y_offset;
-                scatter_loc.layer_num = gather_loc.layer_num + sg_link.z_offset;
 
                 index_to_correct_sg_channels(sg_pattern.gather_pattern, gather_loc, chan_details_x, chan_details_y, gather_channels);
                 index_to_correct_sg_channels(sg_pattern.scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
@@ -317,6 +329,9 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                         } else {
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch;
                         }
+
+                        bottleneck_link.chan_type = chan_type;
+                        bottleneck_link.parallel_segment_index = std::distance(segment_inf.begin(), seg_it);
                         bottleneck_links.push_back(std::move(bottleneck_link));
                     }
                 }

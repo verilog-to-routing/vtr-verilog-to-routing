@@ -913,7 +913,7 @@ static void build_rr_graph(e_graph_type graph_type,
     vtr::NdMatrix<std::vector<t_bottleneck_link>, 2> interdie_3d_links;
     const std::vector<t_bottleneck_link> bottleneck_links = alloc_and_load_scatter_gather_connections(scatter_gather_patterns,
                                                                                                       inter_cluster_prog_rr,
-                                                                                                      segment_inf,
+                                                                                                      segment_inf_x, segment_inf_y, segment_inf_z,
                                                                                                       chan_details_x, chan_details_y,
                                                                                                       nodes_per_chan,
                                                                                                       switchpoint_rng,

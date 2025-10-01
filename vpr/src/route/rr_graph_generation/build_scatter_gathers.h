@@ -7,7 +7,7 @@
 
 #include <vector>
 
-// forward declartion
+// forward declaration
 namespace vtr {
 class RngContainer;
 }
@@ -32,6 +32,8 @@ struct t_bottleneck_link {
     t_physical_tile_loc gather_loc;                         ///< Source switchblock location.
     t_physical_tile_loc scatter_loc;                        ///< Destination switchblock location.
     int arch_wire_switch;                                   ///< The switch (mux) used to drive the bottleneck wire.
+    int parallel_segment_index;
+    e_rr_type chan_type;
     std::vector<t_sg_candidate> gather_fanin_connections;   ///< Wires driving the bottleneck link at  `gather_loc`
     std::vector<t_sg_candidate> scatter_fanout_connections; ///< Wires driven by the bottleneck link at `scatter_loc`
 };
@@ -46,7 +48,7 @@ struct t_bottleneck_link {
  *
  * @param scatter_gather_patterns List of scatter/gather connection patterns.
  * @param inter_cluster_rr Flags indicating whether each layer has inter-cluster routing resources.
- * @param segment_inf Wire segment type information.
+ * @param segment_inf_x, segment_inf_y, segment_inf_z Wire segment type information along each axis.
  * @param chan_details_x Channel details for horizontal routing channels.
  * @param chan_details_y Channel details for vertical routing channels.
  * @param nodes_per_chan Channel width data.
@@ -56,7 +58,9 @@ struct t_bottleneck_link {
  */
 std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
                                                                          const std::vector<bool>& inter_cluster_rr,
-                                                                         const std::vector<t_segment_inf>& segment_inf,
+                                                                         const std::vector<t_segment_inf>& segment_inf_x,
+                                                                         const std::vector<t_segment_inf>& segment_inf_y,
+                                                                         const std::vector<t_segment_inf>& segment_inf_z,
                                                                          const t_chan_details& chan_details_x,
                                                                          const t_chan_details& chan_details_y,
                                                                          const t_chan_width& nodes_per_chan,
