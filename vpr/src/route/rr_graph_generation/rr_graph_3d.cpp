@@ -71,7 +71,7 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
         const char layer_high = std::max(link.gather_loc.layer_num, link.scatter_loc.layer_num);
 
         RRNodeId node = rr_graph_builder.node_lookup().find_node(layer_low, x_coord, y_coord, e_rr_type::CHANZ, track_num);
-        for (size_t layer = layer_low; layer <= layer_high; layer++) {
+        for (char layer = layer_low; layer <= layer_high; layer++) {
             VTR_ASSERT(node == rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, e_rr_type::CHANZ, track_num));
         }
 
