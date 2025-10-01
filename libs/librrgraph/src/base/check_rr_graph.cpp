@@ -420,10 +420,6 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANX:
-            if (xlow < 0 || xhigh > grid_width - 1 || yhigh > grid_height - 2 || yhigh != ylow) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
-            }
             if (route_type == e_route_type::GLOBAL && xlow != xhigh) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
@@ -431,10 +427,6 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANY:
-            if (xhigh > grid_width - 2 || ylow < 0 || yhigh > grid_height - 1 || xlow != xhigh) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "Error in check_rr_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
-            }
             if (route_type == e_route_type::GLOBAL && ylow != yhigh) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
@@ -442,7 +434,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANZ:
-            if (xhigh != xlow || yhigh != ylow || xhigh > grid_width - 1 || yhigh > grid_height - 1) {
+            if (xhigh != xlow || yhigh != ylow) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "Error in check_rr_node: CHANZ out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
