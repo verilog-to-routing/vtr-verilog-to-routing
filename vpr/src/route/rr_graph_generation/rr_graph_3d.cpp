@@ -45,17 +45,16 @@ void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
 }
 
 void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
-                                       const int x_coord,
-                                       const int y_coord,
+                                       int x_coord,
+                                       int y_coord,
                                        const std::vector<t_bottleneck_link>& interdie_3d_links,
-                                       const int const_index_offset) {
+                                       int const_index_offset) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
-    const size_t num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
     // 3D connections within the switch blocks use some CHANZ nodes to allow a single 3D connection to be driven
     // by multiple tracks in the source layer, and drives multiple tracks in the destination layer.
     // These nodes have already been added to RRGraph builder, this function will go through all added nodes
-    // with specific location (layer, x_coord, y_coord) and sets their attributes.
+    // with specific location (x_coord, y_coord) and sets their attributes.
 
     // These nodes have the following attributes:
     // 1) type: CHANZ
@@ -66,8 +65,12 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
     for (int track_num = 0; /*no condition*/; track_num++) {
         // Try to find a node with the current track_num
 
-        RRNodeId node = rr_graph_builder.node_lookup().find_node(0, x_coord, y_coord, e_rr_type::CHANZ, track_num);
-        for (size_t layer = 1; layer < num_layers; layer++) {
+        const t_bottleneck_link& link = interdie_3d_links[track_num];
+        const char layer_low = std::min(link.gather_loc.layer_num, link.scatter_loc.layer_num);
+        const char layer_high = std::max(link.gather_loc.layer_num, link.scatter_loc.layer_num);
+
+        RRNodeId node = rr_graph_builder.node_lookup().find_node(layer_low, x_coord, y_coord, e_rr_type::CHANZ, track_num);
+        for (size_t layer = layer_low; layer <= layer_high; layer++) {
             VTR_ASSERT(node == rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, e_rr_type::CHANZ, track_num));
         }
 
@@ -77,9 +80,7 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
             break;
         }
 
-        // TODO: layer numbers should be extracted from link info
-        rr_graph_builder.set_node_layer(node, 0, 1);
-
+        rr_graph_builder.set_node_layer(node, layer_low, layer_high);
         rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
         // TODO: the index doesn't make any sense. We need to an RRIndexedDataId for CHANZ nodes
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset));
@@ -90,10 +91,10 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
 
         rr_graph_builder.set_node_type(node, e_rr_type::CHANZ);
         rr_graph_builder.set_node_track_num(node, track_num);
-        if (interdie_3d_links[track_num].scatter_loc.layer_num > interdie_3d_links[track_num].gather_loc.layer_num) {
+        if (link.scatter_loc.layer_num > link.gather_loc.layer_num) {
             rr_graph_builder.set_node_direction(node, Direction::INC);
         } else {
-            VTR_ASSERT_SAFE(interdie_3d_links[track_num].scatter_loc.layer_num < interdie_3d_links[track_num].gather_loc.layer_num);
+            VTR_ASSERT_SAFE(link.scatter_loc.layer_num < link.gather_loc.layer_num);
             rr_graph_builder.set_node_direction(node, Direction::DEC);
         }
     }

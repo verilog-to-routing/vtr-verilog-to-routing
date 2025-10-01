@@ -16,10 +16,10 @@ struct t_bottleneck_link;
  *  @param const_index_offset index to the correct node type for RR node cost initialization
  */
 void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
-                                       const int x_coord,
-                                       const int y_coord,
+                                       int x_coord,
+                                       int y_coord,
                                        const std::vector<t_bottleneck_link>& interdie_3d_links,
-                                       const int const_index_offset);
+                                       int const_index_offset);
 
 void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
                                    int x_coord,
