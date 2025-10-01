@@ -7,12 +7,12 @@
 #include "globals.h"
 
 void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
-                                   int x_coord,
-                                   int y_coord,
-                                   const t_chan_details& chan_details_x,
-                                   const t_chan_details& chan_details_y,
-                                   const std::vector<t_bottleneck_link>& interdie_3d_links,
-                                   t_rr_edge_info_set& interdie_3d_rr_edges_to_create) {
+                            int x_coord,
+                            int y_coord,
+                            const t_chan_details& chan_details_x,
+                            const t_chan_details& chan_details_y,
+                            const std::vector<t_bottleneck_link>& interdie_3d_links,
+                            t_rr_edge_info_set& interdie_3d_rr_edges_to_create) {
 
     const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
     const int num_tracks = interdie_3d_links.size();
@@ -45,10 +45,10 @@ void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
 }
 
 void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
-                                       int x_coord,
-                                       int y_coord,
-                                       const std::vector<t_bottleneck_link>& interdie_3d_links,
-                                       int const_index_offset) {
+                                int x_coord,
+                                int y_coord,
+                                const std::vector<t_bottleneck_link>& interdie_3d_links,
+                                int const_index_offset) {
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     // 3D connections within the switch blocks use some CHANZ nodes to allow a single 3D connection to be driven
