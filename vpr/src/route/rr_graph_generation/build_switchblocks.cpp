@@ -278,7 +278,6 @@ void free_switchblock_permutations(t_sb_connection_map* sb_conns) {
     vtr::malloc_trim(0);
 }
 
-
 static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
                                   e_rr_type chan_type,
                                   int x,
@@ -323,9 +322,9 @@ static void get_switchpoint_wires(const t_chan_seg_details* chan_details,
             for (int iwire = first_type_wire; iwire <= last_type_wire; iwire++) {
                 Direction seg_direction = chan_details[iwire].direction();
 
-                /* unidirectional wires going in the decreasing direction can have an outgoing edge
-                 * only from the top or right switch block sides, and an incoming edge only if they are
-                 * at the left or bottom sides (analogous for wires going in INC direction) */
+                // unidirectional wires going in the decreasing direction can have an outgoing edge
+                // only from the top or right switch block sides, and an incoming edge only if they are
+                // at the left or bottom sides (analogous for wires going in INC direction)
                 if (side == TOP || side == RIGHT) {
                     if (seg_direction == Direction::DEC && is_dest) {
                         continue;

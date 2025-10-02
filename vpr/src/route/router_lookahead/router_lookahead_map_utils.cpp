@@ -507,7 +507,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead(int route_verbosity) {
             for (int ix = min_x; ix < max_x; ix++) {
                 for (int iy = min_y; iy < max_y; iy++) {
                     for (auto rr_type : {e_rr_type::CHANX, e_rr_type::CHANY}) {
-                        for (const RRNodeId& node_id : node_lookup.find_channel_nodes(sample_loc.layer_num, ix, iy, rr_type)) {
+                        for (const RRNodeId node_id : node_lookup.find_channel_nodes(sample_loc.layer_num, ix, iy, rr_type)) {
                             //Find the IPINs which are reachable from the wires within the bounding box
                             //around the selected tile location
                             dijkstra_flood_to_ipins(node_id, chan_ipins_delays);

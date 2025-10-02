@@ -78,8 +78,7 @@ RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, e_rr_type type, in
     node_storage_.emplace_back();
     node_tilable_track_nums_.emplace_back();
     RRNodeId new_node = RRNodeId(node_storage_.size() - 1);
-    node_storage_.set_node_layer_low(new_node, layer);
-    node_storage_.set_node_layer_high(new_node, layer);
+    node_storage_.set_node_layer(new_node, layer, layer);
     node_storage_.set_node_type(new_node, type);
     node_storage_.set_node_coordinates(new_node, x, y, x, y);
     node_storage_.set_node_ptc_num(new_node, ptc);

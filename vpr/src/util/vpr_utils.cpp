@@ -1420,25 +1420,20 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
  * but for switch usage analysis, we need to convert the index back to the
  * type / fanin combination
  */
-static int convert_switch_index(int* switch_index, int* fanin) {
-    if (*switch_index == -1)
-        return 1;
-
-    auto& device_ctx = g_vpr_ctx.device();
+static std::pair<int, int> convert_switch_index(RRSwitchId rr_switch_id) {
+    VTR_ASSERT(rr_switch_id.is_valid());
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     for (int iswitch = 0; iswitch < (int)device_ctx.arch_switch_inf.size(); iswitch++) {
         for (auto itr = device_ctx.switch_fanin_remap[iswitch].begin(); itr != device_ctx.switch_fanin_remap[iswitch].end(); itr++) {
-            if (itr->second == *switch_index) {
-                *switch_index = iswitch;
-                *fanin = itr->first;
-                return 0;
+            if (itr->second == rr_switch_id) {
+                return {iswitch, itr->first};
             }
         }
     }
-    *switch_index = -1;
-    *fanin = -1;
-    VTR_LOG("\n\nerror converting switch index ! \n\n");
-    return -1;
+
+    VTR_LOG_ERROR("\n\nerror converting switch index ! \n\n");
+    return {-1, -1};
 }
 
 /*
@@ -1469,18 +1464,18 @@ void print_switch_usage() {
         VTR_LOG_WARN("Cannot print switch usage stats: device_ctx.switch_fanin_remap is empty\n");
         return;
     }
-    std::map<int, int>* switch_fanin_count;
-    std::map<int, float>* switch_fanin_delay;
-    switch_fanin_count = new std::map<int, int>[device_ctx.all_sw_inf.size()];
-    switch_fanin_delay = new std::map<int, float>[device_ctx.all_sw_inf.size()];
+
+    std::vector<std::map<int, int>> switch_fanin_count(device_ctx.all_sw_inf.size());
+    std::vector<std::map<int, float>> switch_fanin_delay(device_ctx.all_sw_inf.size());
     // a node can have multiple inward switches, so
     // map key: switch index; map value: count (fanin)
-    std::map<int, int>* inward_switch_inf = new std::map<int, int>[rr_graph.num_nodes()];
-    for (const RRNodeId& inode : rr_graph.nodes()) {
+    vtr::vector<RRNodeId, std::map<RRSwitchId, int>> inward_switch_inf(rr_graph.num_nodes());
+
+    for (const RRNodeId inode : rr_graph.nodes()) {
         int num_edges = rr_graph.num_edges(inode);
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int switch_index = rr_graph.edge_switch(inode, iedge);
-            int to_node_index = size_t(rr_graph.edge_sink_node(inode, iedge));
+            RRSwitchId switch_index = (RRSwitchId)rr_graph.edge_switch(inode, iedge);
+            RRNodeId to_node_index = rr_graph.edge_sink_node(inode, iedge);
             // Assumption: suppose for a L4 wire (bi-directional): ----+----+----+----, it can be driven from any point (0, 1, 2, 3).
             //             physically, the switch driving from point 1 & 3 should be the same. But we will assign then different switch
             //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
@@ -1490,26 +1485,19 @@ void print_switch_usage() {
             inward_switch_inf[to_node_index][switch_index]++;
         }
     }
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        std::map<int, int>::iterator itr;
-        for (itr = inward_switch_inf[(size_t)rr_id].begin(); itr != inward_switch_inf[(size_t)rr_id].end(); itr++) {
-            int switch_index = itr->first;
-            int fanin = itr->second;
-            float Tdel = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Tdel;
-            int status = convert_switch_index(&switch_index, &fanin);
-            if (status == -1) {
-                delete[] switch_fanin_count;
-                delete[] switch_fanin_delay;
-                delete[] inward_switch_inf;
-                return;
+
+    for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
+        for (const auto [rr_switch_id, node_switch_fanin] : inward_switch_inf[rr_id]) {
+            float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
+            const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
+            if (switch_fanin_count[arch_switch_id].count(fanin) == 0) {
+                switch_fanin_count[arch_switch_id][fanin] = 0;
             }
-            if (switch_fanin_count[switch_index].count(fanin) == 0) {
-                switch_fanin_count[switch_index][fanin] = 0;
-            }
-            switch_fanin_count[switch_index][fanin]++;
-            switch_fanin_delay[switch_index][fanin] = Tdel;
+            switch_fanin_count[arch_switch_id][fanin]++;
+            switch_fanin_delay[arch_switch_id][fanin] = Tdel;
         }
     }
+
     VTR_LOG("\n=============== switch usage stats ===============\n");
     for (int iswitch = 0; iswitch < (int)device_ctx.all_sw_inf.size(); iswitch++) {
         std::string s_name = device_ctx.all_sw_inf.at(iswitch).name;
@@ -1524,9 +1512,6 @@ void print_switch_usage() {
         }
     }
     VTR_LOG("\n==================================================\n\n");
-    delete[] switch_fanin_count;
-    delete[] switch_fanin_delay;
-    delete[] inward_switch_inf;
 }
 
 int max_pins_per_grid_tile() {
@@ -1924,7 +1909,7 @@ std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
 
 t_arch_switch_inf create_internal_arch_sw(float delay) {
     t_arch_switch_inf arch_switch_inf;
-    arch_switch_inf.set_type(SwitchType::MUX);
+    arch_switch_inf.set_type(e_switch_type::MUX);
     std::ostringstream stream_obj;
     stream_obj << delay << std::scientific;
     arch_switch_inf.name = (std::string(VPR_INTERNAL_SWITCH_NAME) + "/" + stream_obj.str());
@@ -1934,7 +1919,7 @@ t_arch_switch_inf create_internal_arch_sw(float delay) {
     arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay);
     arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
     arch_switch_inf.mux_trans_size = 0.;
-    arch_switch_inf.buf_size_type = BufferSize::ABSOLUTE;
+    arch_switch_inf.buf_size_type = e_buffer_size::ABSOLUTE;
     arch_switch_inf.buf_size = 0.;
     arch_switch_inf.intra_tile = true;
 

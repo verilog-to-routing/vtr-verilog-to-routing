@@ -702,8 +702,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         rr_graph_builder_->set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
         // We set the layer num 0 - If it is specified in the XML, it will be overwritten
-        rr_graph_builder_->set_node_layer_low(node_id, 0);
-        rr_graph_builder_->set_node_layer_high(node_id, 0);
+        rr_graph_builder_->set_node_layer(node_id, 0, 0);
        
         return inode;
     }
@@ -746,7 +745,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         // Currently, we only support two layers
         VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
-        rr_graph_builder_->set_node_layer_low(node_id, layer_num);
+
+        char layer_high = rr_graph_->node_layer_high(node_id);
+        rr_graph_builder_->set_node_layer(node_id, layer_num, layer_high);
     }
 
     inline void set_node_loc_layer_high(int layer_num, int& inode) final {
@@ -755,8 +756,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         // Currently, we only support two layers
         VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
-        VTR_ASSERT(layer_num >= 0 && layer_num <= 1);
-        rr_graph_builder_->set_node_layer_high(node_id, layer_num);
+        char layer_low = rr_graph_->node_layer_low(node_id);
+        rr_graph_builder_->set_node_layer(node_id, layer_low, layer_num);
     }
 
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {
@@ -2085,23 +2086,23 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return uxsd::enum_node_type::UXSD_INVALID;
     }
 
-    SwitchType from_uxsd_switch_type(uxsd::enum_switch_type type) {
-        SwitchType switch_type = SwitchType::INVALID;
+    e_switch_type from_uxsd_switch_type(uxsd::enum_switch_type type) {
+        e_switch_type switch_type = e_switch_type::INVALID;
         switch (type) {
             case uxsd::enum_switch_type::TRISTATE:
-                switch_type = SwitchType::TRISTATE;
+                switch_type = e_switch_type::TRISTATE;
                 break;
             case uxsd::enum_switch_type::MUX:
-                switch_type = SwitchType::MUX;
+                switch_type = e_switch_type::MUX;
                 break;
             case uxsd::enum_switch_type::PASS_GATE:
-                switch_type = SwitchType::PASS_GATE;
+                switch_type = e_switch_type::PASS_GATE;
                 break;
             case uxsd::enum_switch_type::SHORT:
-                switch_type = SwitchType::SHORT;
+                switch_type = e_switch_type::SHORT;
                 break;
             case uxsd::enum_switch_type::BUFFER:
-                switch_type = SwitchType::BUFFER;
+                switch_type = e_switch_type::BUFFER;
                 break;
             default:
                 report_error(
@@ -2111,17 +2112,17 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return switch_type;
     }
 
-    uxsd::enum_switch_type to_uxsd_switch_type(SwitchType type) {
+    uxsd::enum_switch_type to_uxsd_switch_type(e_switch_type type) {
         switch (type) {
-            case SwitchType::TRISTATE:
+            case e_switch_type::TRISTATE:
                 return uxsd::enum_switch_type::TRISTATE;
-            case SwitchType::MUX:
+            case e_switch_type::MUX:
                 return uxsd::enum_switch_type::MUX;
-            case SwitchType::PASS_GATE:
+            case e_switch_type::PASS_GATE:
                 return uxsd::enum_switch_type::PASS_GATE;
-            case SwitchType::SHORT:
+            case e_switch_type::SHORT:
                 return uxsd::enum_switch_type::SHORT;
-            case SwitchType::BUFFER:
+            case e_switch_type::BUFFER:
                 return uxsd::enum_switch_type::BUFFER;
             default:
                 report_error(

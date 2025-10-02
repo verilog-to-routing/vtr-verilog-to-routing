@@ -119,7 +119,7 @@ class edge_idx_iterator {
 
 typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
+typedef std::vector<std::map<int, RRSwitchId>> t_arch_switch_fanin;
 
 /**
  * @brief Resistance/Capacitance data for an RR Node.

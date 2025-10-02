@@ -27,7 +27,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const float R_minW_pmos,
                                     const e_base_cost_type& base_cost_type,
                                     const std::vector<t_direct_inf>& directs,
-                                    RRSwitchId* wire_to_rr_ipin_switch,
+                                    RRSwitchId& wire_to_rr_ipin_switch,
                                     const bool& shrink_boundary,
                                     const bool& perimeter_cb,
                                     const bool& through_channel,

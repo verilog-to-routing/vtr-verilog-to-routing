@@ -238,14 +238,9 @@ class RRGraphBuilder {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
 
-    /// @brief Set the low layer coordinate where the given node is located at.
-    inline void set_node_layer_low(RRNodeId id, int layer){
-        node_storage_.set_node_layer_low(id, layer);
-    }
-
-    /// @brief Set the high layer coordinate where the given node is located at.
-    inline void set_node_layer_high(RRNodeId id, int layer){
-        node_storage_.set_node_layer_high(id, layer);
+    /// @brief Set the layer range where the given node spans.
+    inline void set_node_layer(RRNodeId id, char layer_low, char layer_high){
+        node_storage_.set_node_layer(id, layer_low, layer_high);
     }
 
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
@@ -382,12 +377,12 @@ class RRGraphBuilder {
         node_storage_.add_node_side(id, new_side);
     }
 
-    /** @brief It maps arch_switch_inf indicies to rr_switch_inf indicies. */
+    /** @brief It maps arch_switch_inf indices to rr_switch_inf indices. */
     inline void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin) {
         node_storage_.remap_rr_node_switch_indices(switch_fanin);
     }
 
-    /** @brief Marks that edge switch values are rr switch indicies*/
+    /** @brief Marks that edge switch values are rr switch indices*/
     inline void mark_edges_as_rr_switch_ids() {
         node_storage_.mark_edges_as_rr_switch_ids();
     }

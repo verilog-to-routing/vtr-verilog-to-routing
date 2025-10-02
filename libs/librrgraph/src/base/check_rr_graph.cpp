@@ -192,7 +192,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                  */
                 if ((to_rr_type == e_rr_type::CHANX || to_rr_type == e_rr_type::CHANY)
                     && (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY)) {
-                    SwitchType switch_type = rr_graph.rr_switch_inf(RRSwitchId(kv.first)).type();
+                    e_switch_type switch_type = rr_graph.rr_switch_inf(RRSwitchId(kv.first)).type();
 
                     VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
                               inode, kv.second, to_node, kv.first, SWITCH_TYPE_STRINGS[size_t(switch_type)]);
@@ -420,10 +420,6 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANX:
-            if (xlow < 0 || xhigh > grid_width - 1 || yhigh > grid_height - 2 || yhigh != ylow) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
-            }
             if (route_type == e_route_type::GLOBAL && xlow != xhigh) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
@@ -431,10 +427,6 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANY:
-            if (xhigh > grid_width - 2 || ylow < 0 || yhigh > grid_height - 1 || xlow != xhigh) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "Error in check_rr_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
-            }
             if (route_type == e_route_type::GLOBAL && ylow != yhigh) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
@@ -442,7 +434,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANZ:
-            if (xhigh != xlow || yhigh != ylow || xhigh > grid_width - 1 || yhigh > grid_height - 1) {
+            if (xhigh != xlow || yhigh != ylow) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "Error in check_rr_node: CHANZ out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
@@ -654,7 +646,7 @@ static void check_rr_edge(const RRGraphView& rr_graph,
 
     int to_fanin = rr_graph.node_fan_in(RRNodeId(to_node));
     switch (switch_type) {
-        case SwitchType::BUFFER:
+        case e_switch_type::BUFFER:
             //Buffer switches are non-configurable, and uni-directional -- they must have only one driver
             if (to_fanin != 1) {
                 std::string msg = "Non-configurable BUFFER type switch must have only one driver. ";
@@ -664,10 +656,10 @@ static void check_rr_edge(const RRGraphView& rr_graph,
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }
             break;
-        case SwitchType::TRISTATE:  //Fallthrough
-        case SwitchType::MUX:       //Fallthrough
-        case SwitchType::PASS_GATE: //Fallthrough
-        case SwitchType::SHORT:     //Fallthrough
+        case e_switch_type::TRISTATE:  //Fallthrough
+        case e_switch_type::MUX:       //Fallthrough
+        case e_switch_type::PASS_GATE: //Fallthrough
+        case e_switch_type::SHORT:     //Fallthrough
             break;                  //pass
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type %d", switch_type);

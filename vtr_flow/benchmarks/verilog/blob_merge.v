@@ -1447,7 +1447,7 @@ module divider(//clk,
    reg [10:0]    divider_copy8;
    wire [10:0]   remainder8;
    
-always @ (opa or opb)
+always @ (*)
 begin
 //stage initial
  quotient0 = 11'b00000000000;
