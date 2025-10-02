@@ -2051,17 +2051,17 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
 
         for (const t_sg_candidate& gather_wire : link.gather_fanin_connections) {
             const t_physical_tile_loc& chan_loc = gather_wire.chan_loc.location;
-            e_rr_type chan_type = gather_wire.chan_loc.chan_type;
-            RRNodeId gather_node = rr_graph_builder.node_lookup().find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, chan_type, gather_wire.wire_switchpoint.wire);
+            e_rr_type gather_chan_type = gather_wire.chan_loc.chan_type;
+            RRNodeId gather_node = rr_graph_builder.node_lookup().find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, gather_chan_type, gather_wire.wire_switchpoint.wire);
 
             non_3d_sg_rr_edges_to_create.emplace_back(gather_node, node_id, link.arch_wire_switch, false);
         }
 
         for (const t_sg_candidate& scatter_wire : link.scatter_fanout_connections) {
             const t_physical_tile_loc& chan_loc = scatter_wire.chan_loc.location;
-            e_rr_type chan_type = scatter_wire.chan_loc.chan_type;
-            const t_chan_details& chan_details = (chan_type == e_rr_type::CHANX) ? chan_details_x : chan_details_y;
-            RRNodeId scatter_node =  rr_graph_builder.node_lookup().find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, chan_type, scatter_wire.wire_switchpoint.wire);
+            e_rr_type scatter_chan_type = scatter_wire.chan_loc.chan_type;
+            const t_chan_details& chan_details = (scatter_chan_type == e_rr_type::CHANX) ? chan_details_x : chan_details_y;
+            RRNodeId scatter_node =  rr_graph_builder.node_lookup().find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, scatter_chan_type, scatter_wire.wire_switchpoint.wire);
 
             int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
             non_3d_sg_rr_edges_to_create.emplace_back(node_id, scatter_node, switch_index, false);
