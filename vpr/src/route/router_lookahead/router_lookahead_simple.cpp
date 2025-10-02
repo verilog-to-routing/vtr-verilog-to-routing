@@ -67,9 +67,10 @@ std::pair<float, float> SimpleLookahead::get_expected_delay_and_cong(RRNodeId fr
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     util::Cost_Entry cost_entry(0, 0);
-    if (is_chanxy(from_type) || is_chanz(from_type)) {
-        int from_layer_num = rr_graph.node_layer(from_node);
-        int to_layer_num = rr_graph.node_layer(to_node);
+    if (is_chanxy(from_type)) {
+        // TODO: handle CHANZ nodes
+        int from_layer_num = rr_graph.node_layer_low(from_node);
+        int to_layer_num = rr_graph.node_layer_low(to_node);
 
         auto [delta_x, delta_y] = util::get_xy_deltas(from_node, to_node);
         delta_x = abs(delta_x);
@@ -93,10 +94,16 @@ std::pair<float, float> SimpleLookahead::get_expected_delay_and_cong(RRNodeId fr
 }
 
 void SimpleLookahead::read(const std::string& file) {
+    const size_t num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    VTR_ASSERT_MSG(num_layers == 1, "Simple router look-ahead does not support 3-d architectures.");
+
     read_router_lookahead(file);
 }
 
 void SimpleLookahead::write(const std::string& file) const {
+    const size_t num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    VTR_ASSERT_MSG(num_layers == 1, "Simple router look-ahead does not support 3-d architectures.");
+
     if (vtr::check_file_name_extension(file, ".csv")) {
         std::vector<int> simple_cost_map_size(simple_cost_map.ndims());
         for (size_t i = 0; i < simple_cost_map.ndims(); ++i) {

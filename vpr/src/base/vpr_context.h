@@ -280,7 +280,7 @@ struct DeviceContext : public Context {
      * map key: num of all possible fanin of that type of switch on chip
      * map value: remapped switch index (index in rr_switch_inf)
      */
-    std::vector<std::map<int, int>> switch_fanin_remap;
+    t_arch_switch_fanin switch_fanin_remap;
 
     /*******************************************************************
      * Architecture

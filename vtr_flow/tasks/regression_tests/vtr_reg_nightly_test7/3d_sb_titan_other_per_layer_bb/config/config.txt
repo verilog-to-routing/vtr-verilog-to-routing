@@ -49,4 +49,4 @@ qor_parse_file=qor_vpr_titan.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_vpr_titan.txt
 
-script_params=-starting_stage vpr --route_chan_width 300 --max_router_iterations 400 --router_lookahead map --custom_3d_sb_fanin_fanout 60 --place_bounding_box_mode per_layer_bb
+script_params=-starting_stage vpr --route_chan_width 300 --max_router_iterations 400 --router_lookahead map --place_bounding_box_mode per_layer_bb

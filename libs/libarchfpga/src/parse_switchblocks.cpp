@@ -35,7 +35,7 @@ using vtr::t_formula_data;
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 //Process the desired order of a wireconn
-static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order);
+static void parse_switchpoint_order(std::string_view order, e_switch_point_order& switchpoint_order);
 
 /**
  * @brief Parses an inline `<wireconn>` node using its attributes.
@@ -86,7 +86,7 @@ static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire
 static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn);
 
 /* Set connection from_side and to_side for custom switch block pattern*/
-static void set_switch_func_type(SBSideConnection& conn, const char* func_type);
+static void set_switch_func_type(SBSideConnection& conn, std::string_view func_type);
 
 /* parse switch_override in wireconn */
 static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const std::vector<t_arch_switch_inf>& switches);
@@ -282,13 +282,13 @@ static t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, cons
     return wire_switchpoints;
 }
 
-static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order) {
-    if (order == std::string("")) {
-        switchpoint_order = SwitchPointOrder::SHUFFLED; //Default
-    } else if (order == std::string("fixed")) {
-        switchpoint_order = SwitchPointOrder::FIXED;
-    } else if (order == std::string("shuffled")) {
-        switchpoint_order = SwitchPointOrder::SHUFFLED;
+static void parse_switchpoint_order(std::string_view order, e_switch_point_order& switchpoint_order) {
+    if (order == "") {
+        switchpoint_order = e_switch_point_order::SHUFFLED; //Default
+    } else if (order == "fixed") {
+        switchpoint_order = e_switch_point_order::FIXED;
+    } else if (order == "shuffled") {
+        switchpoint_order = e_switch_point_order::SHUFFLED;
     } else {
         archfpga_throw(__FILE__, __LINE__, "Unrecognized switchpoint order '%s'", order);
     }
@@ -328,19 +328,18 @@ static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire
 }
 
 static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
-    //num_conns is now interpretted as a formula and processed in build_switchblocks
+    // num_conns is now interpreted as a formula and processed in build_switchblocks
     wireconn.num_conns_formula = num_conns;
 }
 
-//set sides for a specific conn for custom switch block pattern
-static void set_switch_func_type(SBSideConnection& conn, const char* func_type) {
+static void set_switch_func_type(SBSideConnection& conn, std::string_view func_type) {
 
-    if (std::string(func_type).length() != 2) {
+    if (func_type.length() != 2) {
         archfpga_throw(__FILE__, __LINE__, "Custom switchblock func type must be 2 characters long: %s\n", func_type);
     }
 
-    // Only valid sides are right, top, left, bottom, above and under
-    if (std::string(func_type).find_first_not_of("rtlbauRTLBAU") != std::string::npos) {
+    // Only valid sides are right, top, left, bottom
+    if (func_type.find_first_not_of("rtlbRTLB") != std::string::npos) {
         archfpga_throw(__FILE__, __LINE__, "Unknown direction specified: %s\n", func_type);
     }
 
@@ -350,12 +349,6 @@ static void set_switch_func_type(SBSideConnection& conn, const char* func_type) 
     // Can't go from side to same side
     if (to_side == from_side) {
         archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified, cannot go from side to same side: %s\n", func_type);
-    }
-
-    // We don't allow specification of patterns that imply edges going over 2 or more layers
-    // (this doesn't seem electrically logical), so we disallow going from above/under to above/under.
-    if ((to_side == ABOVE || to_side == UNDER) && (from_side == ABOVE || from_side == UNDER)) {
-        archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified, cannot go from above/under to above/under: %s\n", func_type);
     }
 
     conn.set_sides(from_side, to_side);

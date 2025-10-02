@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/soheil/vpr_repos/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 5d51b89242fe6e463629ac43a72e4606
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 040903603053940a1b24392c38663b59
  */
 
 #include <functional>
@@ -371,7 +371,8 @@ public:
 
 	/** Generated for complex type "node_loc":
 	 * <xs:complexType name="node_loc">
-	 *   <xs:attribute name="layer" type="xs:int" default="0" />
+	 *   <xs:attribute name="layer_low" type="xs:int" default="0" />
+	 *   <xs:attribute name="layer_high" type="xs:int" default="0" />
 	 *   <xs:attribute name="xlow" type="xs:int" use="required" />
 	 *   <xs:attribute name="ylow" type="xs:int" use="required" />
 	 *   <xs:attribute name="xhigh" type="xs:int" use="required" />
@@ -380,8 +381,10 @@ public:
 	 *   <xs:attribute name="ptc" type="xs:string" use="required" />
 	 * </xs:complexType>
 	*/
-	virtual inline int get_node_loc_layer(typename ContextTypes::NodeLocReadContext &ctx) = 0;
-	virtual inline void set_node_loc_layer(int layer, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
+	virtual inline int get_node_loc_layer_high(typename ContextTypes::NodeLocReadContext &ctx) = 0;
+	virtual inline void set_node_loc_layer_high(int layer_high, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
+	virtual inline int get_node_loc_layer_low(typename ContextTypes::NodeLocReadContext &ctx) = 0;
+	virtual inline void set_node_loc_layer_low(int layer_low, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline const char * get_node_loc_ptc(typename ContextTypes::NodeLocReadContext &ctx) = 0;
 	virtual inline void set_node_loc_ptc(const char * ptc, typename ContextTypes::NodeLocWriteContext &ctx) = 0;
 	virtual inline enum_loc_side get_node_loc_side(typename ContextTypes::NodeLocReadContext &ctx) = 0;

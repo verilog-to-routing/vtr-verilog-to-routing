@@ -51,7 +51,7 @@ inline ClusterBlockId get_cluster_block_from_rr_node(RRNodeId inode) {
 
     t_physical_tile_loc node_phy_tile_loc(rr_graph.node_xlow(inode),
                                           rr_graph.node_ylow(inode),
-                                          rr_graph.node_layer(inode));
+                                          rr_graph.node_layer_low(inode));
     auto physical_tile = device_ctx.grid.get_physical_type(node_phy_tile_loc);
 
     int source_pin = rr_graph.node_pin_num(inode);
@@ -67,7 +67,7 @@ inline ClusterBlockId get_cluster_block_from_rr_node(RRNodeId inode) {
     ClusterBlockId clb = place_ctx.grid_blocks().block_at_location({rr_graph.node_xlow(inode) - width_offset,
                                                                     rr_graph.node_ylow(inode) - height_offset,
                                                                     subtile,
-                                                                    rr_graph.node_layer(inode)});
+                                                                    rr_graph.node_layer_low(inode)});
 
     return clb;
 }
@@ -207,7 +207,7 @@ static void sync_pb_routes_to_routing(void) {
             ClusterBlockId clb = get_cluster_block_from_rr_node(source_inode);
             auto physical_tile = device_ctx.grid.get_physical_type({rr_graph.node_xlow(source_inode),
                                                                     rr_graph.node_ylow(source_inode),
-                                                                    rr_graph.node_layer(source_inode)});
+                                                                    rr_graph.node_layer_low(source_inode)});
             int source_pin = rr_graph.node_pin_num(source_inode);
             int sink_pin = rr_graph.node_pin_num(sink_inode);
 
@@ -329,7 +329,7 @@ static void sync_clustered_netlist_to_routing(void) {
 
             auto physical_tile = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rt_node.inode),
                                                                     rr_graph.node_ylow(rt_node.inode),
-                                                                    rr_graph.node_layer(rt_node.inode)});
+                                                                    rr_graph.node_layer_low(rt_node.inode)});
 
             int pin_index = rr_graph.node_pin_num(rt_node.inode);
 

@@ -96,6 +96,7 @@
     <switch type="mux" name="ipin_cblock" R="1055.232544" Cout="0." Cin="0.000000e+00" Tdel="8.045000e-11" mux_trans_size="0.983352" buf_size="auto"/>
     <!--switch type for connecting two dices-->
     <switch type="mux" name="inter_die_ipin_cblock" R="1055.232544" Cout="0." Cin="0.000000e+00" Tdel="8.045000e-11" mux_trans_size="0.983352" buf_size="auto"/>
+    <switch type="mux" name="segz_driver" R="450" Cin="0.60e-15" Cout="4.82e-15" Tdel="59e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
   </switchlist>
   <segmentlist>
     <segment freq="1.000000" length="1" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
@@ -103,6 +104,9 @@
       <mux_inter_die name="inter_die_seg_driver"/>
       <sb type="pattern">1 1</sb>
       <cb type="pattern">1</cb>
+    </segment>
+    <segment name="LZ" freq="0" length="1" type="unidir" Rmetal="201.7" Cmetal="18.0e-15" axis="z">
+      <mux name="segz_driver"/>
     </segment>
   </segmentlist>
   <complexblocklist>

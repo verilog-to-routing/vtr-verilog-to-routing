@@ -32,7 +32,6 @@
 #include <unordered_map>
 #include <string>
 #include <map>
-#include <unordered_map>
 #include <limits>
 #include <unordered_set>
 
@@ -1574,28 +1573,6 @@ enum class SegResType {
 /// String versions of segment resource types
 constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING{"GCLK", "GENERAL"};
 
-/// Defines the type of switch block used in FPGA routing.
-enum e_switch_block_type {
-    /// If the type is SUBSET, I use a Xilinx-like switch block where track i in one channel always
-    /// connects to track i in other channels.
-    SUBSET,
-
-    /// If type is WILTON, I use a switch block where track i
-    /// does not always connect to track i in other channels.
-    /// See Steve Wilton, PhD Thesis, University of Toronto, 1996.
-    WILTON,
-
-    /// The UNIVERSAL switch block is from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.
-    UNIVERSAL,
-
-    /// The FULL switch block type allows for complete connectivity between tracks.
-    FULL,
-
-    /// A CUSTOM switch block has also been added which allows a user to describe custom permutation functions and connection patterns.
-    /// See comment at top of SRC/route/build_switchblocks.c
-    CUSTOM
-};
-
 enum e_Fc_type {
     ABSOLUTE,
     FRACTIONAL
@@ -1634,14 +1611,14 @@ struct t_segment_inf {
      * specified in the architecture file. If -1, this value was not set in the
      * architecture file and arch_wire_switch should be used for "DEC_DIR" wire segments.
      */
-    short arch_wire_switch_dec = -1;
+    short arch_wire_switch_dec = ARCH_FPGA_UNDEFINED_VAL;
 
     /**
      * @brief Same as arch_opin_switch but used only for decremental tracks if
      * it is specified in the architecture file. If -1, this value was not set in
      * the architecture file and arch_opin_switch should be used for "DEC_DIR" wire segments.
      */
-    short arch_opin_switch_dec = -1;
+    short arch_opin_switch_dec = ARCH_FPGA_UNDEFINED_VAL;
 
     /**
      * @brief Index of the switch type that connects output pins (OPINs) to this
@@ -1649,7 +1626,7 @@ struct t_segment_inf {
      * the switches from the architecture file, not the expanded list of switches
      * that is built at the end of build_rr_graph.
      */
-    short arch_inter_die_switch = -1;
+    short arch_inter_die_switch = ARCH_FPGA_UNDEFINED_VAL;
 
     /**
      * @brief The fraction of logic blocks along its length to which this segment can connect.
@@ -1729,7 +1706,6 @@ inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
            && a.length == b.length
            && a.arch_wire_switch == b.arch_wire_switch
            && a.arch_opin_switch == b.arch_opin_switch
-           && a.arch_inter_die_switch == b.arch_inter_die_switch
            && a.frac_cb == b.frac_cb
            && a.frac_sb == b.frac_sb
            && a.longline == b.longline

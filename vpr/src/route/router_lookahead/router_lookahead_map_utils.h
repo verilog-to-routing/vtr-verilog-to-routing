@@ -319,7 +319,8 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
                                                          const t_physical_tile_loc& tile_loc);
 
 /* returns index of a node from which to start routing */
-RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset);
+RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset);
+RRNodeId get_chanz_start_node(int start_x, int start_y, int seg_index, int track_offset, Direction dir);
 
 /**
  * @brief Computes the absolute delta_x and delta_y offset
@@ -333,7 +334,7 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node);
 
 t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                                         unsigned from_layer_num,
-                                        const e_rr_type& chan_type,
+                                        const e_rr_type chan_type,
                                         const t_segment_inf& segment_inf,
                                         const std::unordered_map<int, std::unordered_set<int>>& sample_locs,
                                         bool sample_all_locs,
@@ -357,4 +358,26 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
 void dump_readable_router_lookahead_map(const std::string& file_name,
                                         const std::vector<int>& dim_sizes,
                                         WireCostCallBackFunction wire_cost_func);
+
+/// @brief Converts a routing channel type (CHANX/CHANY/CHANZ) to an index
+/// to access the channel type dimension of the router lookahead table.
+inline int chan_type_to_index(e_rr_type chan_type) {
+    int chan_index;
+    switch (chan_type) {
+        case e_rr_type::CHANX:
+            chan_index = 0;
+            break;
+        case e_rr_type::CHANY:
+            chan_index = 1;
+            break;
+        case e_rr_type::CHANZ:
+            chan_index = 2;
+            break;
+        default:
+            VTR_ASSERT(false);
+    }
+
+    return chan_index;
+}
+
 } // namespace util

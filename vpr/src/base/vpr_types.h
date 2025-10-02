@@ -1313,8 +1313,8 @@ struct t_router_opts {
     enum e_route_type route_type;
     int fixed_channel_width;
     int min_channel_width_hint; ///<Hint to binary search of what the minimum channel width is
-    enum e_router_algorithm router_algorithm;
-    enum e_base_cost_type base_cost_type;
+    e_router_algorithm router_algorithm;
+    e_base_cost_type base_cost_type;
     float astar_fac;
     float astar_offset;
     float router_profiler_astar_fac;
@@ -1374,8 +1374,6 @@ struct t_router_opts {
 
     bool flat_routing;
     bool has_choke_point;
-
-    int custom_3d_sb_fanin_fanout = 1;
 
     bool with_timing_analysis;
 
@@ -1496,7 +1494,7 @@ struct t_det_routing_arch {
 
     /// keeps track of the type of RR graph switch
     /// that connects wires to ipins in the RR graph
-    int wire_to_rr_ipin_switch;
+    RRSwitchId wire_to_rr_ipin_switch;
 
     /// keeps track of the type of RR graph switch that connects wires
     /// from another die to ipins in different die in the RR graph
@@ -1664,5 +1662,3 @@ class RouteStatus {
 };
 
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
-
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;

@@ -19,7 +19,7 @@
  * corresponding rr_switch entries, and fills the fanin --> rr_switch mapping.
  */
 static void load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
-                               std::vector<std::map<int, int>>& switch_fanin_remap,
+                               t_arch_switch_fanin& switch_fanin_remap,
                                const std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                const float R_minW_nmos,
                                const float R_minW_pmos,
@@ -40,7 +40,7 @@ static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
 //
 
 static void load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
-                               std::vector<std::map<int, int>>& switch_fanin_remap,
+                               t_arch_switch_fanin& switch_fanin_remap,
                                const std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                const float R_minW_nmos,
                                const float R_minW_pmos,
@@ -53,7 +53,7 @@ static void load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
             // the fanin value is in it->first, and we'll need to set what index this i_arch_switch/fanin
             // combination maps to (within rr_switch_inf) in it->second)
             int fanin;
-            int i_rr_switch;
+            RRSwitchId i_rr_switch;
             std::tie(fanin, i_rr_switch) = fanin_rrswitch;
 
             // setup device_ctx.switch_fanin_remap, for future swich usage analysis
@@ -90,7 +90,7 @@ static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
 void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
                                      const std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                      int arch_switch_idx,
-                                     int rr_switch_idx,
+                                     RRSwitchId rr_switch_idx,
                                      int fanin,
                                      const float R_minW_nmos,
                                      const float R_minW_pmos) {
@@ -98,24 +98,24 @@ void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
     double rr_switch_Tdel = arch_sw_inf.at(arch_switch_idx).Tdel(fanin);
 
     // copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].set_type(arch_sw_inf.at(arch_switch_idx).type());
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].R = arch_sw_inf.at(arch_switch_idx).R;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cin = arch_sw_inf.at(arch_switch_idx).Cin;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cinternal = arch_sw_inf.at(arch_switch_idx).Cinternal;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cout = arch_sw_inf.at(arch_switch_idx).Cout;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Tdel = rr_switch_Tdel;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].mux_trans_size = arch_sw_inf.at(arch_switch_idx).mux_trans_size;
+    rr_graph_builder.rr_switch()[rr_switch_idx].set_type(arch_sw_inf.at(arch_switch_idx).type());
+    rr_graph_builder.rr_switch()[rr_switch_idx].R = arch_sw_inf.at(arch_switch_idx).R;
+    rr_graph_builder.rr_switch()[rr_switch_idx].Cin = arch_sw_inf.at(arch_switch_idx).Cin;
+    rr_graph_builder.rr_switch()[rr_switch_idx].Cinternal = arch_sw_inf.at(arch_switch_idx).Cinternal;
+    rr_graph_builder.rr_switch()[rr_switch_idx].Cout = arch_sw_inf.at(arch_switch_idx).Cout;
+    rr_graph_builder.rr_switch()[rr_switch_idx].Tdel = rr_switch_Tdel;
+    rr_graph_builder.rr_switch()[rr_switch_idx].mux_trans_size = arch_sw_inf.at(arch_switch_idx).mux_trans_size;
     if (arch_sw_inf.at(arch_switch_idx).buf_size_type == e_buffer_size::AUTO) {
         // Size based on resistance
-        rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = trans_per_buf(arch_sw_inf.at(arch_switch_idx).R, R_minW_nmos, R_minW_pmos);
+        rr_graph_builder.rr_switch()[rr_switch_idx].buf_size = trans_per_buf(arch_sw_inf.at(arch_switch_idx).R, R_minW_nmos, R_minW_pmos);
     } else {
         VTR_ASSERT(arch_sw_inf.at(arch_switch_idx).buf_size_type == e_buffer_size::ABSOLUTE);
         // Use the specified size
-        rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = arch_sw_inf.at(arch_switch_idx).buf_size;
+        rr_graph_builder.rr_switch()[rr_switch_idx].buf_size = arch_sw_inf.at(arch_switch_idx).buf_size;
     }
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].name = arch_sw_inf.at(arch_switch_idx).name;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_type = arch_sw_inf.at(arch_switch_idx).power_buffer_type;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_size = arch_sw_inf.at(arch_switch_idx).power_buffer_size;
+    rr_graph_builder.rr_switch()[rr_switch_idx].name = arch_sw_inf.at(arch_switch_idx).name;
+    rr_graph_builder.rr_switch()[rr_switch_idx].power_buffer_type = arch_sw_inf.at(arch_switch_idx).power_buffer_type;
+    rr_graph_builder.rr_switch()[rr_switch_idx].power_buffer_size = arch_sw_inf.at(arch_switch_idx).power_buffer_size;
 }
 
 t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_sw_inf,
@@ -169,12 +169,12 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
  * Then we create these rr switches and update the switch indices
  * of rr_nodes to index into the rr_switch_inf array. */
 void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
-                                  std::vector<std::map<int, int>>& switch_fanin_remap,
+                                  t_arch_switch_fanin& switch_fanin_remap,
                                   const std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                   const float R_minW_nmos,
                                   const float R_minW_pmos,
                                   const int wire_to_arch_ipin_switch,
-                                  int* wire_to_rr_ipin_switch) {
+                                  RRSwitchId& wire_to_rr_ipin_switch) {
     // we will potentially be creating a couple of versions of each arch switch where
     // each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
     // with this expanded list of switches.
@@ -207,7 +207,7 @@ void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
     // return a representative switch
     if (arch_switch_fanins[wire_to_arch_ipin_switch].count(UNDEFINED)) {
         // only have one ipin cblock switch. OK.
-        (*wire_to_rr_ipin_switch) = arch_switch_fanins[wire_to_arch_ipin_switch][UNDEFINED];
+        wire_to_rr_ipin_switch = arch_switch_fanins[wire_to_arch_ipin_switch][UNDEFINED];
     } else if (arch_switch_fanins[wire_to_arch_ipin_switch].size() != 0) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                         "Not currently allowing an ipin cblock switch to have multiple fan-ins");
@@ -216,7 +216,7 @@ void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
         // the generated RR graph.
         // Instead of throwing an error we issue a warning. This means that check_rr_graph() etc. will run to give more information
         // and allow graphics to be brought up for users to debug their architectures.
-        (*wire_to_rr_ipin_switch) = UNDEFINED;
+        wire_to_rr_ipin_switch = RRSwitchId::INVALID();
         VTR_LOG_WARN("No switch found for the ipin cblock in RR graph. Check if there is an error in arch file, or if no connection blocks are being built in RR graph\n");
     }
 }

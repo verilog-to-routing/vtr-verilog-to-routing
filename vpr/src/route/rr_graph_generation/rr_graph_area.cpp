@@ -24,17 +24,17 @@ static const e_trans_area_eq trans_area_eq = AREA_IMPROVED_NMOS_ONLY;
 
 /************************ Subroutines local to this module *******************/
 
-static void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit);
+static void count_bidir_routing_transistors(int num_switch, RRSwitchId wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit);
 
 static void count_unidir_routing_transistors(std::vector<t_segment_inf>& segment_inf,
-                                             int wire_to_ipin_switch,
+                                             RRSwitchId wire_to_ipin_switch,
                                              float R_minW_nmos,
                                              float R_minW_pmos,
                                              const float trans_sram_bit,
                                              bool is_flat);
 
 static float get_cblock_trans(vtr::vector<RRNodeId, int>& num_inputs_to_cblock,
-                              int wire_to_ipin_switch,
+                              RRSwitchId wire_to_ipin_switch,
                               int max_inputs_to_cblock,
                               float trans_sram_bit);
 
@@ -54,7 +54,7 @@ static float trans_per_R(float Rtrans, float R_minW_trans);
 
 void count_routing_transistors(enum e_directionality directionality,
                                int num_switch,
-                               int wire_to_ipin_switch,
+                               RRSwitchId wire_to_ipin_switch,
                                std::vector<t_segment_inf>& segment_inf,
                                float R_minW_nmos,
                                float R_minW_pmos,
@@ -87,7 +87,7 @@ void count_routing_transistors(enum e_directionality directionality,
     }
 }
 
-void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit) {
+static void count_bidir_routing_transistors(int num_switch, RRSwitchId wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit) {
     /* Tri-state buffers are designed as a buffer followed by a pass transistor. *
      * I make Rbuffer = Rpass_transitor = 1/2 Rtri-state_buffer.                 *
      * I make the pull-up and pull-down sides of the buffer the same strength -- *
@@ -300,12 +300,12 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
     VTR_LOG("\n");
 }
 
-void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*/,
-                                      int wire_to_ipin_switch,
-                                      float R_minW_nmos,
-                                      float R_minW_pmos,
-                                      const float trans_sram_bit,
-                                      bool is_flat) {
+static void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*/,
+                                             RRSwitchId wire_to_ipin_switch,
+                                             float R_minW_nmos,
+                                             float R_minW_pmos,
+                                             const float trans_sram_bit,
+                                             bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -484,7 +484,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 }
 
 static float get_cblock_trans(vtr::vector<RRNodeId, int>& num_inputs_to_cblock,
-                              int wire_to_ipin_switch,
+                              RRSwitchId wire_to_ipin_switch,
                               int max_inputs_to_cblock,
                               float trans_sram_bit) {
     /* Computes the transistors in the input connection block multiplexers and   *
@@ -508,8 +508,8 @@ static float get_cblock_trans(vtr::vector<RRNodeId, int>& num_inputs_to_cblock,
 
     for (int i = 1; i <= max_inputs_to_cblock; i++) {
         trans_per_cblock[i] = trans_per_mux(i, trans_sram_bit,
-                                            rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).mux_trans_size);
-        trans_per_cblock[i] += rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).buf_size;
+                                            rr_graph.rr_switch_inf(wire_to_ipin_switch).mux_trans_size);
+        trans_per_cblock[i] += rr_graph.rr_switch_inf(wire_to_ipin_switch).buf_size;
     }
 
     trans_count = 0.;

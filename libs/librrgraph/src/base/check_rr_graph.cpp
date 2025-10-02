@@ -234,11 +234,11 @@ void check_rr_graph(const RRGraphView& rr_graph,
         size_t inode = (size_t)rr_node;
         e_rr_type rr_type = rr_graph.node_type(rr_node);
         int ptc_num = rr_graph.node_ptc_num(rr_node);
-        int layer_num = rr_graph.node_layer(rr_node);
+        int layer_low = rr_graph.node_layer_low(rr_node);
         int xlow = rr_graph.node_xlow(rr_node);
         int ylow = rr_graph.node_ylow(rr_node);
 
-        t_physical_tile_type_ptr type = grid.get_physical_type({xlow, ylow, layer_num});
+        t_physical_tile_type_ptr type = grid.get_physical_type({xlow, ylow, layer_low});
 
         if (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN) {
             // #TODO: No edges are added for internal pins. However, they need to be checked somehow!
@@ -278,7 +278,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                         if (has_adjacent_channel(rr_graph, grid, node)) {
                             auto block_type = grid.get_physical_type({rr_graph.node_xlow(rr_node),
                                                                       rr_graph.node_ylow(rr_node),
-                                                                      rr_graph.node_layer(rr_node)});
+                                                                      rr_graph.node_layer_low(rr_node)});
                             std::string pin_name = block_type_pin_index_to_name(block_type, rr_graph.node_pin_num(rr_node), is_flat);
                             /* Print error messages for all the sides that a node may appear */
                             for (const e_side& node_side : TOTAL_2D_SIDES) {
@@ -315,10 +315,10 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
     /* Returns true if inode refers to a global CLB input pin node.   */
      t_physical_tile_type_ptr type = grid.get_physical_type({rr_graph.node_xlow(inode),
                                                             rr_graph.node_ylow(inode),
-                                                            rr_graph.node_layer(inode)});
+                                                            rr_graph.node_layer_low(inode)});
 
     if (rr_graph.node_type(inode) != e_rr_type::IPIN)
-        return (false);
+        return false;
 
     int ipin = rr_graph.node_pin_num(inode);
 
@@ -330,7 +330,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                    const DeviceGrid& grid,
                    const VibDeviceGrid& vib_grid,
                    const t_chan_width& chan_width,
-                   const enum e_route_type route_type, 
+                   const e_route_type route_type,
                    const int inode,
                    bool is_flat) {
     //Make sure over-flow doesn't happen
@@ -347,7 +347,8 @@ void check_rr_node(const RRGraphView& rr_graph,
     int xhigh = rr_graph.node_xhigh(rr_node);
     int ylow = rr_graph.node_ylow(rr_node);
     int yhigh = rr_graph.node_yhigh(rr_node);
-    int layer_num = rr_graph.node_layer(rr_node);
+    int layer_low = rr_graph.node_layer_low(rr_node);
+    int layer_high = rr_graph.node_layer_high(rr_node);
     int ptc_num = rr_graph.node_ptc_num(rr_node);
     int capacity = rr_graph.node_capacity(rr_node);
     RRIndexedDataId cost_index = rr_graph.node_cost_index(rr_node);
@@ -362,9 +363,9 @@ void check_rr_node(const RRGraphView& rr_graph,
                         "in check_rr_node: rr endpoints (%d,%d) and (%d,%d) are out of range.\n", xlow, ylow, xhigh, yhigh);
     }
 
-    if (layer_num < 0 || layer_num > grid_layers - 1) {
+    if (layer_low < 0 || layer_high > grid_layers - 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in check_rr_node: rr endpoints layer_num (%d) is out of range.\n", layer_num);
+                        "in check_rr_node: rr endpoints layer range (%d, %d) is out of range.\n", layer_low, layer_high);
     }
 
     if (ptc_num < 0) {
@@ -378,7 +379,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     }
 
     // Check that the segment is within the array and such.
-    t_physical_tile_type_ptr type = grid.get_physical_type({xlow, ylow, layer_num});
+    t_physical_tile_type_ptr type = grid.get_physical_type({xlow, ylow, layer_low});
 
     switch (rr_type) {
         case e_rr_type::SOURCE:
@@ -398,7 +399,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
             }
 
-            vtr::Rect<int> tile_bb = grid.get_tile_bb({xlow, ylow, layer_num});
+            vtr::Rect<int> tile_bb = grid.get_tile_bb({xlow, ylow, layer_low});
             if (xlow < tile_bb.xmin() || ylow < tile_bb.ymin() || xhigh > tile_bb.xmax() || yhigh > tile_bb.ymax()) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d), which is outside the bounds of the grid tile containing it.\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
@@ -419,10 +420,6 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANX:
-            if (xlow < 0 || xhigh > grid_width - 1 || yhigh > grid_height - 2 || yhigh != ylow) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_rr_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
-            }
             if (route_type == e_route_type::GLOBAL && xlow != xhigh) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
@@ -430,10 +427,6 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANY:
-            if (xhigh > grid_width - 2 || ylow < 0 || yhigh > grid_height - 1 || xlow != xhigh) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "Error in check_rr_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
-            }
             if (route_type == e_route_type::GLOBAL && ylow != yhigh) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: node %d spans multiple channel segments (not allowed for global routing).\n", inode);
@@ -441,7 +434,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             break;
 
         case e_rr_type::CHANZ:
-            if (xhigh != xlow || yhigh != ylow || xhigh > grid_width - 1 || ylow < 1 || yhigh > grid_height - 1) {
+            if (xhigh != xlow || yhigh != ylow) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "Error in check_rr_node: CHANZ out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
             }
@@ -464,7 +457,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     int mux_max_ptc = -1;
     const VibInf* vib_type = nullptr;
     if (vib_grid.get_num_layers() > 0) {
-        vib_type = vib_grid.get_vib(layer_num, xlow, ylow);
+        vib_type = vib_grid.get_vib(layer_low, xlow, ylow);
     }
     if (vib_type) {
         mux_max_ptc = (int)vib_type->get_first_stages().size();

@@ -6,7 +6,7 @@
 #include "rr_graph_view.h"
 #include "librrgraph_types.h"
 
-/*
+/**
  * @brief Walk backwards from origin SINK, and insert all cluster-edge IPINs to which origin is connected to sink_ipins
  *
  * @param rr_graph
@@ -154,8 +154,9 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
     for (size_t node = 0; node < rr_graph.num_nodes(); ++node) {
         auto node_id = RRNodeId(node);
 
-        if (rr_graph.node_type((RRNodeId)node_id) != e_rr_type::SINK)
+        if (rr_graph.node_type(node_id) != e_rr_type::SINK) {
             continue;
+        }
 
         int node_xlow = rr_graph.node_xlow(node_id);
         int node_ylow = rr_graph.node_ylow(node_id);
@@ -164,13 +165,16 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
 
         // Skip "0x0" nodes; either the tile is 1x1, or we have seen the node on a previous call of this function
         // and its new location has already been set
-        if ((node_xhigh - node_xlow) == 0 && (node_yhigh - node_ylow) == 0)
+        if ((node_xhigh - node_xlow) == 0 && (node_yhigh - node_ylow) == 0) {
             continue;
+        }
 
-        int node_layer = rr_graph.node_layer(node_id);
+        const int node_layer = rr_graph.node_layer_low(node_id);
+        VTR_ASSERT(node_layer == rr_graph.node_layer_high(node_id));
+
         int node_ptc = rr_graph.node_ptc_num(node_id);
 
-        t_physical_tile_loc tile_loc = {node_xlow, node_ylow, node_layer};
+        t_physical_tile_loc tile_loc{node_xlow, node_ylow, node_layer};
         t_physical_tile_type_ptr tile_type = grid.get_physical_type(tile_loc);
         vtr::Rect<int> tile_bb = grid.get_tile_bb(tile_loc);
 
@@ -236,12 +240,13 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
 }
 
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph) {
+    // TODO: once OPINs are connected to CHANZ nodes, this function should be reworked.
     bool limited_to_opin = true;
     for (const RRNodeId from_node : rr_graph.nodes()) {
         for (t_edge_size edge : rr_graph.edges(from_node)) {
             RRNodeId to_node = rr_graph.edge_sink_node(from_node, edge);
-            int from_layer = rr_graph.node_layer(from_node);
-            int to_layer = rr_graph.node_layer(to_node);
+            int from_layer = rr_graph.node_layer_low(from_node);
+            int to_layer = rr_graph.node_layer_low(to_node);
 
             if (from_layer != to_layer) {
                 if (rr_graph.node_type(from_node) != e_rr_type::OPIN) {
@@ -271,6 +276,11 @@ bool chanx_chany_nodes_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1,
 
     RRNodeId chanx_node = node1;
     RRNodeId chany_node = node2;
+
+    // If CHANX and CHANY nodes are not in the same layer, they are not adjacent
+    if (rr_graph.node_layer_low(chanx_node) != rr_graph.node_layer_low(chany_node)) {
+        return false;
+    }
 
     // Check vertical (Y) adjacency
     if (rr_graph.node_ylow(chany_node) > rr_graph.node_ylow(chanx_node) + 1 ||
@@ -332,13 +342,11 @@ bool chan_same_type_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RR
     int xhigh1 = rr_graph.node_xhigh(node1);
     int ylow1 = rr_graph.node_ylow(node1);
     int yhigh1 = rr_graph.node_yhigh(node1);
-    int layer1 = rr_graph.node_layer(node1);
 
     int xlow2 = rr_graph.node_xlow(node2);
     int xhigh2 = rr_graph.node_xhigh(node2);
     int ylow2 = rr_graph.node_ylow(node2);
     int yhigh2 = rr_graph.node_yhigh(node2);
-    int layer2 = rr_graph.node_layer(node2);
 
     if (type == e_rr_type::CHANX) {
         if (ylow1 != ylow2) {
@@ -376,8 +384,7 @@ bool chan_same_type_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RR
     } else if (type == e_rr_type::CHANZ) {
         // Same X/Y span, adjacent layer
         bool same_xy = (xlow1 == xlow2 && xhigh1 == xhigh2 && ylow1 == ylow2 && yhigh1 == yhigh2);
-        bool adjacent_layer = std::abs(layer1 - layer2) == 1;
-        return same_xy && adjacent_layer;
+        return same_xy;
     } else {
         VTR_ASSERT_MSG(false, "Unexpected RR node type in chan_same_type_are_adjacent().\n");
     }

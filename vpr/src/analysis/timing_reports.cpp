@@ -38,8 +38,8 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
         bb.xmax = rr_graph.node_xhigh(route_tree_root);
         bb.ymin = rr_graph.node_ylow(route_tree_root);
         bb.ymax = rr_graph.node_yhigh(route_tree_root);
-        bb.layer_min = rr_graph.node_layer(route_tree_root);
-        bb.layer_max = rr_graph.node_layer(route_tree_root);
+        bb.layer_min = rr_graph.node_layer_low(route_tree_root);
+        bb.layer_max = rr_graph.node_layer_high(route_tree_root);
 
         // Iterate over all nodes in the route tree and update the bounding box
         for (auto& rt_node : route_tree.all_nodes()) {
@@ -51,8 +51,8 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
             bb.ymin = std::min(static_cast<int>(rr_graph.node_ylow(inode)), bb.ymin);
             bb.ymax = std::max(static_cast<int>(rr_graph.node_yhigh(inode)), bb.ymax);
 
-            bb.layer_min = std::min(static_cast<int>(rr_graph.node_layer(inode)), bb.layer_min);
-            bb.layer_max = std::max(static_cast<int>(rr_graph.node_layer(inode)), bb.layer_max);
+            bb.layer_min = std::min(static_cast<int>(rr_graph.node_layer_low(inode)), bb.layer_min);
+            bb.layer_max = std::max(static_cast<int>(rr_graph.node_layer_high(inode)), bb.layer_max);
         }
         return bb;
     };

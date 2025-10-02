@@ -64,7 +64,7 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
         clock_to_connect_to, switch_point_name, switch_location.x, switch_location.y);
 
-    for (auto clock_index : clock_indices) {
+    for (int clock_index : clock_indices) {
         // Select wires to connect to at random
         std::shuffle(x_wire_indices.begin(), x_wire_indices.end(), rand_generator);
         std::shuffle(y_wire_indices.begin(), y_wire_indices.end(), rand_generator);
@@ -110,7 +110,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int la
     rr_graph_builder.set_node_name(node_index, arch->default_clock_network_name);
     rr_graph_builder.set_node_class_num(node_index, ptc);
     rr_graph_builder.set_node_coordinates(node_index, x, y, x, y);
-    rr_graph_builder.set_node_layer(node_index, layer);
+    rr_graph_builder.set_node_layer(node_index, layer, layer);
     rr_graph_builder.set_node_capacity(node_index, 1);
     rr_graph_builder.set_node_cost_index(node_index, RRIndexedDataId(SINK_COST_INDEX));
 
@@ -201,7 +201,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
         // or vice versa. If there are more chanx wire than chany wire or vice versa
         // then wrap around and start a one to one connection starting with the first node.
         // This ensures that each wire gets a connection.
-        for (auto to_index : to_rr_node_indices) {
+        for (int to_index : to_rr_node_indices) {
             for (size_t i = 0; i < num_connections; i++) {
                 if (from_itter == from_rr_node_indices.end()) {
                     from_itter = from_rr_node_indices.begin();

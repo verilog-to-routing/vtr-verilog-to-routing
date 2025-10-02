@@ -73,11 +73,11 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
 
     t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
                                                                             rr_graph.node_ylow(from_node),
-                                                                            rr_graph.node_layer(from_node)});
-    auto tile_index = tile_type->index;
+                                                                            rr_graph.node_layer_low(from_node)});
+    int tile_index = tile_type->index;
 
-    auto from_ptc = rr_graph.node_ptc_num(from_node);
-    int from_layer_num = rr_graph.node_layer(from_node);
+    int from_ptc = rr_graph.node_ptc_num(from_node);
+    int from_layer_num = rr_graph.node_layer_low(from_node);
 
     if (this->src_opin_delays[from_layer_num][tile_index][from_ptc].empty()) {
         //During lookahead profiling we were unable to find any wires which connected
@@ -152,13 +152,13 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     e_rr_type to_type = rr_graph.node_type(to_node);
     VTR_ASSERT(to_type == e_rr_type::SINK || to_type == e_rr_type::IPIN);
 
-    auto to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
-                                                           rr_graph.node_ylow(to_node),
-                                                           rr_graph.node_layer(to_node)});
-    auto to_tile_index = to_tile_type->index;
+    t_physical_tile_type_ptr to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
+                                                                               rr_graph.node_ylow(to_node),
+                                                                               rr_graph.node_layer_low(to_node)});
+    int to_tile_index = to_tile_type->index;
 
-    auto to_ptc = rr_graph.node_ptc_num(to_node);
-    int to_layer_num = rr_graph.node_layer(to_node);
+    int to_ptc = rr_graph.node_ptc_num(to_node);
+    int to_layer_num = rr_graph.node_layer_low(to_node);
 
     float site_pin_delay = 0.f;
     if (this->chan_ipins_delays[to_layer_num][to_tile_index].size() != 0) {
@@ -192,11 +192,10 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     int to_x = rr_graph.node_xlow(to_node);
     int to_y = rr_graph.node_ylow(to_node);
 
-    int to_layer_num = rr_graph.node_layer(to_node);
+    int to_layer_num = rr_graph.node_layer_low(to_node);
 
-    int dx, dy;
-    dx = to_x - from_x;
-    dy = to_y - from_y;
+    int dx = to_x - from_x;
+    int dy = to_y - from_y;
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {

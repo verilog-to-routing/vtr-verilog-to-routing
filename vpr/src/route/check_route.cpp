@@ -304,8 +304,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
         return false;
     }
 
-    /* Now we know the rr graph says these two nodes are adjacent.  Double  *
-     * check that this makes sense, to verify the rr graph.                 */
+    // Now we know the rr graph says these two nodes are adjacent. Double
+    // check that this makes sense, to verify the rr graph.
     VTR_ASSERT(reached);
 
     int num_adj = 0;
@@ -313,14 +313,14 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
     auto from_rr = RRNodeId(from_node);
     auto to_rr = RRNodeId(to_node);
     e_rr_type from_type = rr_graph.node_type(from_rr);
-    int from_layer = rr_graph.node_layer(from_rr);
+    int from_layer = rr_graph.node_layer_low(from_rr);
     int from_xlow = rr_graph.node_xlow(from_rr);
     int from_ylow = rr_graph.node_ylow(from_rr);
     int from_xhigh = rr_graph.node_xhigh(from_rr);
     int from_yhigh = rr_graph.node_yhigh(from_rr);
     int from_ptc = rr_graph.node_ptc_num(from_rr);
     e_rr_type to_type = rr_graph.node_type(to_rr);
-    int to_layer = rr_graph.node_layer(to_rr);
+    int to_layer = rr_graph.node_layer_low(to_rr);
     int to_xlow = rr_graph.node_xlow(to_rr);
     int to_ylow = rr_graph.node_ylow(to_rr);
     int to_xhigh = rr_graph.node_xhigh(to_rr);

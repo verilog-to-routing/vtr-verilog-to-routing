@@ -245,12 +245,14 @@ class t_rr_graph_storage {
         return node_fan_in_[id];
     }
 
-    /** @brief Find the layer number that RRNodeId is located at.
-     * it is zero if the FPGA only has one die.
-     * The layer number start from the base die (base die: 0, the die above it: 1, etc.)
-     */
-    short node_layer(RRNodeId id) const{
-        return node_layer_[id];
+    /// @brief Returns the lowest layer where the given node is located at.
+    short node_layer_low(RRNodeId id) const {
+        return node_layer_[id].first;
+    }
+
+    /// @brief Returns the highest layer where the given node is located at.
+    short node_layer_high(RRNodeId id) const {
+        return node_layer_[id].second;
     }
     
     /**
@@ -566,7 +568,7 @@ class t_rr_graph_storage {
         }
     }
 
-    /** @brief  Resize node storage to accomidate size RR nodes. */
+    /** @brief  Resize node storage to accommodate size RR nodes. */
     void resize(size_t size) {
         // No edges can be assigned if mutating the rr node array.
         VTR_ASSERT(!edges_read_);
@@ -677,7 +679,7 @@ class t_rr_graph_storage {
     void set_node_type(RRNodeId id, e_rr_type new_type);
     void set_node_name(RRNodeId id, const std::string& new_name);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
-    void set_node_layer(RRNodeId id, short layer);
+    void set_node_layer(RRNodeId id, char layer_low, char layer_high);
     void set_node_cost_index(RRNodeId, RRIndexedDataId new_cost_index);
     void set_node_bend_start(RRNodeId id, size_t bend_start);
     void set_node_bend_end(RRNodeId id, size_t bend_end);
@@ -778,7 +780,7 @@ class t_rr_graph_storage {
      * init_fan_in does not need to be invoked before this method.
      */
      size_t count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
-                             t_arch_switch_fanin& arch_switch_fanins);
+                              t_arch_switch_fanin& arch_switch_fanins);
 
     /** @brief Maps arch_switch_inf indicies to rr_switch_inf indicies.
      *
@@ -903,13 +905,13 @@ class t_rr_graph_storage {
     /** @brief Fan in counts for each RR node. */
     vtr::vector<RRNodeId, t_edge_size> node_fan_in_;
 
-    /** @brief
-     * Layer number that each RR node is located at
-     * Layer number refers to the die that the node belongs to. The layer number of base die is zero and die above it one, etc.
-     * This data is also considered as a hot data since it is used in inner loop of router, but since it didn't fit nicely into t_rr_node_data due to alignment issues, we had to store it
-     *in a separate vector.
-     */
-    vtr::vector<RRNodeId, short> node_layer_;
+    // Layer number refers to the die that the node belongs to.
+    // The layer number of base die is zero and die above it one, etc.
+    // This data is also considered as a hot data since it is used in inner loop of router,
+    // but since it didn't fit nicely into t_rr_node_data due to alignment issues, we had to store it in a separate vector.
+
+    /// @brief The layer range across which a given node spans: (layer_low, layer_high)
+    vtr::vector<RRNodeId, std::pair<char, char>> node_layer_;
 
     /**
      * @brief Stores the assigned names for the RRNode IDs.
@@ -1013,7 +1015,7 @@ class t_rr_graph_view {
         const vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
         const vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge,
         const vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in,
-        const vtr::array_view_id<RRNodeId, const short> node_layer,
+        const vtr::array_view_id<RRNodeId, const std::pair<char, char>> node_layer,
         const std::unordered_map<RRNodeId, std::string>& node_name,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
@@ -1092,14 +1094,14 @@ class t_rr_graph_view {
         return node_fan_in_[id];
     }
 
-    /**
-     * @brief Retrieve the layer (die) number where the given RRNodeId is located.
-     *
-     * @param id The RRNodeId for which to retrieve the layer number.
-     * @return The layer number (die) where the RRNodeId is located.
-     */
-    short node_layer(RRNodeId id) const{
-        return node_layer_[id];
+    /// @brief Retrieve the lowest layer (die) number where the given RRNodeId is located.
+    char node_layer_low(RRNodeId id) const {
+        return node_layer_[id].first;
+    }
+
+    /// @brief Retrieve the highest layer (die) number where the given RRNodeId is located.
+    char node_layer_high(RRNodeId id) const {
+        return node_layer_[id].second;
     }
 
     /**
@@ -1231,7 +1233,7 @@ class t_rr_graph_view {
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc_;
     vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge_;
     vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in_;
-    vtr::array_view_id<RRNodeId, const short> node_layer_;
+    vtr::array_view_id<RRNodeId, const std::pair<char, char>> node_layer_;
     const std::unordered_map<RRNodeId, std::string>& node_name_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;

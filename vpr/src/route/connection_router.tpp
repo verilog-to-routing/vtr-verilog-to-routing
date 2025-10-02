@@ -178,7 +178,7 @@ void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId s
     if (rr_graph_->node_type(sink_node) == e_rr_type::SINK) { // We need to get a bounding box for the sink's entire tile
         vtr::Rect<int> tile_bb = grid_.get_tile_bb({rr_graph_->node_xlow(sink_node),
                                                     rr_graph_->node_ylow(sink_node),
-                                                    rr_graph_->node_layer(sink_node)});
+                                                    rr_graph_->node_layer_low(sink_node)});
 
         target_bb.xmin = tile_bb.xmin();
         target_bb.ymin = tile_bb.ymin();
@@ -191,8 +191,8 @@ void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId s
         target_bb.ymax = rr_graph_->node_yhigh(sink_node);
     }
 
-    target_bb.layer_min = rr_graph_->node_layer(RRNodeId(sink_node));
-    target_bb.layer_max = rr_graph_->node_layer(RRNodeId(sink_node));
+    target_bb.layer_min = rr_graph_->node_layer_low(RRNodeId(sink_node));
+    target_bb.layer_max = rr_graph_->node_layer_high(RRNodeId(sink_node));
 
     // Start measuring path search time
     std::chrono::steady_clock::time_point begin_time = std::chrono::steady_clock::now();
@@ -408,8 +408,8 @@ inline void expand_highfanout_bounding_box(t_bb& bb, const t_bb& net_bb, RRNodeI
     bb.ymin = std::max<int>(net_bb.ymin, std::min<int>(bb.ymin, rr_graph->node_ylow(inode)));
     bb.xmax = std::min<int>(net_bb.xmax, std::max<int>(bb.xmax, rr_graph->node_xhigh(inode)));
     bb.ymax = std::min<int>(net_bb.ymax, std::max<int>(bb.ymax, rr_graph->node_yhigh(inode)));
-    bb.layer_min = std::min<int>(bb.layer_min, rr_graph->node_layer(inode));
-    bb.layer_max = std::max<int>(bb.layer_max, rr_graph->node_layer(inode));
+    bb.layer_min = std::min<int>(bb.layer_min, rr_graph->node_layer_low(inode));
+    bb.layer_max = std::max<int>(bb.layer_max, rr_graph->node_layer_high(inode));
 }
 
 /* Expand bb by HIGH_FANOUT_BB_FAC and clip against net_bb */
@@ -446,7 +446,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     int target_bin_x = grid_to_bin_x(rr_graph_->node_xlow(target_node), spatial_rt_lookup);
     int target_bin_y = grid_to_bin_y(rr_graph_->node_ylow(target_node), spatial_rt_lookup);
 
-    auto target_layer = rr_graph_->node_layer(target_node);
+    short target_layer = rr_graph_->node_layer_low(target_node);
 
     int chan_nodes_added = 0;
 
@@ -455,8 +455,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     highfanout_bb.xmax = rr_graph_->node_xhigh(target_node);
     highfanout_bb.ymin = rr_graph_->node_ylow(target_node);
     highfanout_bb.ymax = rr_graph_->node_yhigh(target_node);
-    highfanout_bb.layer_min = target_layer;
-    highfanout_bb.layer_max = target_layer;
+    highfanout_bb.layer_min = rr_graph_->node_layer_low(target_node);
+    highfanout_bb.layer_max = rr_graph_->node_layer_high(target_node);
 
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
@@ -489,7 +489,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 if (!inside_bb(rr_node_to_add, net_bounding_box))
                     continue;
 
-                auto rt_node_layer_num = rr_graph_->node_layer(rr_node_to_add);
+                auto rt_node_layer_num = rr_graph_->node_layer_low(rr_node_to_add);
                 if (rt_node_layer_num == target_layer)
                     found_node_on_same_layer = true;
 

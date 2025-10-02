@@ -560,12 +560,12 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
                                                                                   R_minW_pmos);
             RRSwitchId rr_switch_id = rr_graph.add_rr_switch(new_rr_switch_inf);
 
-            /*If the switch found inside the cluster has not seen before and RR graph is not read from a file,
-             * we need to add this switch to switch_fanin_remap data strcutre which is used later to remap switch IDs
-             * from architecture ID to RR graph switch ID. The reason why we don't this when RR graph is read from a file
-             * is that in that case, the switch IDs of edges are alreay RR graph switch IDs. */
-            std::vector<std::map<int, int>>& switch_fanin_remap = g_vpr_ctx.mutable_device().switch_fanin_remap;
-            switch_fanin_remap.push_back({{UNDEFINED, size_t(rr_switch_id)}});
+            // If the switch found inside the cluster has not seen before and RR graph is not read from a file,
+            // we need to add this switch to switch_fanin_remap data structure which is used later to remap switch IDs
+            // from architecture ID to RR graph switch ID. The reason why we don't this when RR graph is read from a file
+            // is that in that case, the switch IDs of edges are already RR graph switch IDs.
+            t_arch_switch_fanin& switch_fanin_remap = g_vpr_ctx.mutable_device().switch_fanin_remap;
+            switch_fanin_remap.push_back({{UNDEFINED, rr_switch_id}});
 
             return std::make_pair(true, new_key_num);
         } else {

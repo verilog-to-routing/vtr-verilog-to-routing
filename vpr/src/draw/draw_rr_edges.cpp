@@ -418,7 +418,7 @@ e_side get_pin_side(RRNodeId pin_node, RRNodeId chan_node) {
     t_physical_tile_loc tile_loc = {
         rr_graph.node_xlow(pin_node),
         rr_graph.node_ylow(pin_node),
-        rr_graph.node_layer(pin_node)};
+        rr_graph.node_layer_low(pin_node)};
 
     const auto& grid_type = device_ctx.grid.get_physical_type(tile_loc);
     int width_offset = device_ctx.grid.get_width_offset(tile_loc);
@@ -508,7 +508,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
     t_physical_tile_loc tile_loc = {
         rr_graph.node_xlow(pin_node),
         rr_graph.node_ylow(pin_node),
-        rr_graph.node_layer(pin_node)};
+        rr_graph.node_layer_low(pin_node)};
 
     const auto& grid_type = device_ctx.grid.get_physical_type(tile_loc);
     const e_rr_type channel_type = rr_graph.node_type(chan_node);
@@ -605,11 +605,11 @@ void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::r
 
     e_rr_type rr_type = rr_graph.node_type(inode);
     bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
-    int current_node_layer = rr_graph.node_layer(inode);
+    int current_node_layer = rr_graph.node_layer_low(inode);
 
     e_rr_type prev_type = rr_graph.node_type(prev_node);
     bool prev_node_inter_cluster = is_inter_cluster_node(rr_graph, prev_node);
-    int prev_node_layer = rr_graph.node_layer(prev_node);
+    int prev_node_layer = rr_graph.node_layer_low(prev_node);
 
     t_draw_layer_display edge_visibility = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
 
