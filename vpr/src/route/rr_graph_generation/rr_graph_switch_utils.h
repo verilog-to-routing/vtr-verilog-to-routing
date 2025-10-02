@@ -1,6 +1,21 @@
 
 #pragma once
 
+/**
+ * @file
+ * @brief Utilities for creating and initializing rr_switch structures from architecture switches.
+ *
+ * This header defines functions that translate high-level architecture switch
+ * descriptions (`t_arch_switch_inf`) into detailed rr_switch items used in RR graph.
+ * These functions:
+ *   - Copy and resolve switch electrical parameters into `t_rr_switch_inf`.
+ *   - Expand architecture switches into fanin-specific rr_switch variants.
+ *   - Provide mappings from (arch_switch, fanin) --> rr_switch index.
+ *
+ * They are invoked during RR graph construction to allocate, initialize,
+ * and remap all switch information.
+ */
+
 #include <map>
 #include <vector>
 

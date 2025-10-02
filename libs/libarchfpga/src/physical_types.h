@@ -1532,9 +1532,7 @@ struct t_pb_graph_pin_power {
 /* FPGA Routing architecture                                                                     */
 /*************************************************************************************************/
 
-/* Description of routing channel distribution across the FPGA, only available for global routing
- * Width is standard dev. for Gaussian.  xpeak is where peak     *
- * occurs. dc is the dc offset for Gaussian and pulse waveforms. */
+/// @brief Description of routing channel distribution across the FPGA, only available for global routing
 enum class e_stat {
     UNIFORM,
     GAUSSIAN,
@@ -1542,12 +1540,15 @@ enum class e_stat {
     DELTA
 };
 
+/// @brief Parameters describing a channel distribution.
+/// @note  If detailed routing is performed, only a uniform (all channels in a given direction are the same width)
+/// distribution is supported.
 struct t_chan {
-    e_stat type;
-    float peak;
-    float width;
-    float xpeak;
-    float dc;
+    e_stat type;  ///< Distribution type
+    float peak;   ///< Peak value. For a UNIFORM distribution, this is the value for all channels (in a given direction).
+    float width;  ///< Standard deviation (Gaussian)
+    float xpeak;  ///< Peak location (Gaussian)
+    float dc;     ///< DC offset (Gaussian, pulse)
 };
 
 /* chan_x_dist: Describes the x-directed channel width distribution.         *
@@ -1754,13 +1755,14 @@ struct t_hash_segment_inf {
     }
 };
 
+/// @brief Enumerates switch types used in the FPGA architecture and RR graph.
 enum class e_switch_type {
-    MUX = 0,   //A configurable (buffered) mux (single-driver)
-    TRISTATE,  //A configurable tristate-able buffer (multi-driver)
-    PASS_GATE, //A configurable pass transistor switch (multi-driver)
-    SHORT,     //A non-configurable electrically shorted connection (multi-driver)
-    BUFFER,    //A non-configurable non-tristate-able buffer (uni-driver)
-    INVALID,   //Unspecified, usually an error
+    MUX = 0,   ///< A configurable (buffered) mux (single-driver)
+    TRISTATE,  ///< A configurable tristate-able buffer (multi-driver)
+    PASS_GATE, ///< A configurable pass transistor switch (multi-driver)
+    SHORT,     ///< A non-configurable electrically shorted connection (multi-driver)
+    BUFFER,    ///< A non-configurable non-tristate-able buffer (uni-driver)
+    INVALID,   ///< Unspecified, usually an error
     NUM_SWITCH_TYPES
 };
 
