@@ -263,6 +263,9 @@ struct DeviceContext : public Context {
 
     int delayless_switch_idx = UNDEFINED;
 
+    vtr::NdMatrix<int, 3> rr_chanx_width;
+    vtr::NdMatrix<int, 3> rr_chany_width;
+
     bool rr_graph_is_flat = false;
 
     /*
