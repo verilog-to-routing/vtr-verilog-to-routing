@@ -365,12 +365,12 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
 
                 t_specified_loc region;
 
-                region.reg_x.start = (cut_dim == e_interposer_cut_dim::X) ? cut_loc + start : 0;
-                region.reg_x.end = (cut_dim == e_interposer_cut_dim::X) ? cut_loc + end : grid_width - 1;
+                region.reg_x.start = (cut_dim == e_interposer_cut_dim::X) ? start : 0;
+                region.reg_x.end = (cut_dim == e_interposer_cut_dim::X) ? end : grid_width - 1;
                 region.reg_x.incr = (cut_dim == e_interposer_cut_dim::X) ? incr : 1;
                 region.reg_x.repeat = std::numeric_limits<int>::max();
-                region.reg_y.start = (cut_dim == e_interposer_cut_dim::Y) ? cut_loc + start : 0;
-                region.reg_y.end = (cut_dim == e_interposer_cut_dim::Y) ? cut_loc + end : grid_height - 1;
+                region.reg_y.start = (cut_dim == e_interposer_cut_dim::Y) ? start : 0;
+                region.reg_y.end = (cut_dim == e_interposer_cut_dim::Y) ? end : grid_height - 1;
                 region.reg_y.incr = (cut_dim == e_interposer_cut_dim::Y) ? incr : 1;
                 region.reg_y.repeat = std::numeric_limits<int>::max();
 
