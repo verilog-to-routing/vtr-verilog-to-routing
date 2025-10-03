@@ -85,7 +85,6 @@ static void draw_main_canvas(ezgl::renderer* g);
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window);
 
 static void setup_default_ezgl_callbacks(ezgl::application* app);
-static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
@@ -322,13 +321,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     draw_state->auto_proceed = (state_change && !should_pause);
 
     if (state_change                   //Must update buttons
-        || should_pause                //The priority means graphics should pause for user interaction
-        || draw_state->forced_pause) { //The user asked to pause
-
-        if (draw_state->forced_pause) {
-            VTR_LOG("Pausing in interactive graphics (user pressed 'Pause')\n");
-            draw_state->forced_pause = false; //Reset pause flag
-        }
+        || should_pause) {             //The priority means graphics should pause for user interaction
 
         application.run(on_stage_change_setup, act_on_mouse_press, act_on_mouse_move,
                         act_on_key_press);
@@ -955,10 +948,6 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
     g_signal_connect(zoom_fit_button, "clicked",
                      G_CALLBACK(ezgl::press_zoom_fit), app);
 
-    // Connect Pause button
-    GObject* pause_button = app->get_object("PauseButton");
-    g_signal_connect(pause_button, "clicked", G_CALLBACK(set_force_pause), app);
-
     // Connect Block Outline checkbox
     GObject* block_outline = app->get_object("blockOutline");
     g_signal_connect(block_outline, "toggled", G_CALLBACK(set_block_outline),
@@ -1094,12 +1083,6 @@ static void set_draw_partitions(GtkWidget* widget, gint /*response_id*/, gpointe
     //redraw
     application.update_message(draw_state->default_message);
     application.refresh_drawing();
-}
-
-static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    t_draw_state* draw_state = get_draw_state_vars();
-
-    draw_state->forced_pause = true;
 }
 
 static void run_graphics_commands(const std::string& commands) {
