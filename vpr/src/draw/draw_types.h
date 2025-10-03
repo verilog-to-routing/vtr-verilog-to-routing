@@ -91,7 +91,7 @@ enum e_draw_net_type {
 };
 
 /// Chanx to chany or vice versa?
-enum e_chan_edge_dir {
+enum class e_chan_edge_dir {
     FROM_X_TO_Y,
     FROM_Y_TO_X
 };

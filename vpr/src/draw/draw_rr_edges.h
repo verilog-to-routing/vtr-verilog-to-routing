@@ -17,25 +17,25 @@
 
 #include "ezgl/graphics.hpp"
 
-/**
- * @brief Draws the edge between two vertical channel nodes
- */
-void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch_type, ezgl::renderer* g);
+/// @brief Draws the edge between two vertical channel nodes
+void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId rr_switch_id, ezgl::renderer* g);
 
-/**
- * @brief Draws the edge between two horizontal channel nodes
- */
-void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch_type, ezgl::renderer* g);
+/// @brief Draws the edge between two horizontal channel nodes
+void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId rr_switch_id, ezgl::renderer* g);
 
 /**
  * @brief Draws the edge between a horizontal channel node and a vertical channel node
  * @param chanx_node The horizontal channel node
  * @param chany_node The vertical channel node
  * @param edge_dir The direction of the edge, FROM_X_TO_Y or FROM_Y_TO_X
- * @param switch_type The type of switch used for the connection
+ * @param rr_switch_id The switch used for the connection
  * @param g The ezgl renderer 
  */
-void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_chan_edge_dir edge_dir, short switch_type, ezgl::renderer* g);
+void draw_chanx_to_chany_edge(RRNodeId chanx_node,
+                              RRNodeId chany_node,
+                              e_chan_edge_dir edge_dir,
+                              RRSwitchId rr_switch_id,
+                              ezgl::renderer* g);
 
 /**
  * @brief Draws the edge between an intra-cluster pin and an inter-cluster pin when flat routing is enabled. Draws to each side of the inter-cluster RR node.
