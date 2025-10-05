@@ -78,11 +78,10 @@ void checkpoint() {
     VTR_LOG("Attempting to checkpoint current placement to file: %s\n", placer_checkpoint_file.c_str());
     print_place(nullptr, nullptr, placer_checkpoint_file.c_str(), g_vpr_ctx.placement().block_locs());
 
+    bool is_flat = g_vpr_ctx.routing().is_flat;
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+
     std::string router_checkpoint_file = "router_checkpoint.route";
     VTR_LOG("Attempting to checkpoint current routing to file: %s\n", router_checkpoint_file.c_str());
-
-    // TODO: Use vpr_setup().RouterOpts.flat_routing to determine is_flat value.
-    bool is_flat = false;
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     print_route(router_net_list, nullptr, router_checkpoint_file.c_str(), is_flat);
 }
