@@ -469,17 +469,25 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
         }
     }
 
+    std::vector<int> chanx_width_list(grid.height(), 0);
+    std::vector<int> chany_width_list(grid.width(), 0);
+
+    for (t_physical_tile_loc loc : grid.all_locations()) {
+        chanx_width_list[loc.y] = std::max(device_ctx.rr_chanx_width[loc.layer_num][loc.x][loc.y], chanx_width_list[loc.y]);
+        chany_width_list[loc.x] = std::max(device_ctx.rr_chany_width[loc.layer_num][loc.x][loc.y], chany_width_list[loc.x]);
+    }
+
     size_t j = 0;
     for (size_t i = 0; i < grid.width() - 1; i++) {
         draw_coords->tile_x[i] = i * draw_coords->get_tile_width() + j;
-        j += device_ctx.chan_width.y_list[i] + 1; // N wires need N+1 units of space
+        j += chany_width_list[i] + 1;   // N wires need N+1 units of space
     }
     draw_coords->tile_x[grid.width() - 1] = (grid.width() - 1) * draw_coords->get_tile_width() + j;
 
     j = 0;
     for (size_t i = 0; i < (grid.height() - 1); ++i) {
         draw_coords->tile_y[i] = i * draw_coords->get_tile_width() + j;
-        j += device_ctx.chan_width.x_list[i] + 1;
+        j += chanx_width_list[i] + 1;
     }
     draw_coords->tile_y[grid.height() - 1] = (grid.height() - 1) * draw_coords->get_tile_width() + j;
 
