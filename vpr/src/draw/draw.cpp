@@ -338,6 +338,12 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         }
     }
 
+    if (draw_state->show_graphics) {
+        application.update_message(msg);
+        application.refresh_drawing();
+        application.flush_drawing();
+    }
+
     if (draw_state->save_graphics) {
         std::string extension = "pdf";
         save_graphics(extension, draw_state->save_graphics_file_base);
