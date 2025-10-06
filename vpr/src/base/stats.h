@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <rr_graph_fwd.h>
 #include <vector>
 #include "netlist.h"
 #include "rr_graph_type.h"
@@ -14,13 +15,13 @@ class DeviceGrid;
  */
 void routing_stats(const Netlist<>& net_list,
                    bool full_stats,
-                   enum e_route_type route_type,
+                   e_route_type route_type,
                    std::vector<t_segment_inf>& segment_inf,
                    float R_minW_nmos,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
-                   enum e_directionality directionality,
-                   int wire_to_ipin_switch,
+                   e_directionality directionality,
+                   RRSwitchId wire_to_ipin_switch,
                    bool is_flat);
 
 /**

@@ -38,32 +38,32 @@ vtr::vector<RRNodeId, std::vector<short>>& RRGraphBuilder::node_ptc_storage() {
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     e_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);
-    short node_layer = node_storage_.node_layer(node);
 
     for (int ix = node_storage_.node_xlow(node); ix <= node_storage_.node_xhigh(node); ix++) {
         for (int iy = node_storage_.node_ylow(node); iy <= node_storage_.node_yhigh(node); iy++) {
+            for (int iz = node_storage_.node_layer_low(node); iz <= node_storage_.node_layer_high(node); iz++) {
+                switch (node_type) {
+                    case e_rr_type::SOURCE:
+                    case e_rr_type::SINK:
+                    case e_rr_type::CHANZ:
+                    case e_rr_type::CHANY:
+                    case e_rr_type::CHANX:
+                        node_lookup_.add_node(node, iz, ix, iy, node_type, node_ptc_num, TOTAL_2D_SIDES[0]);
+                        break;
 
-            switch (node_type) {
-                case e_rr_type::SOURCE:
-                case e_rr_type::SINK:
-                case e_rr_type::CHANZ:
-                case e_rr_type::CHANY:
-                case e_rr_type::CHANX:
-                    node_lookup_.add_node(node, node_layer, ix, iy, node_type, node_ptc_num, TOTAL_2D_SIDES[0]);
-                    break;
-
-                case e_rr_type::OPIN:
-                case e_rr_type::IPIN:
-                    for (const e_side side : TOTAL_2D_SIDES) {
-                        if (node_storage_.is_node_on_specific_side(node, side)) {
-                            node_lookup_.add_node(node,node_layer, ix, iy, node_type, node_ptc_num, side);
+                    case e_rr_type::OPIN:
+                    case e_rr_type::IPIN:
+                        for (const e_side side : TOTAL_2D_SIDES) {
+                            if (node_storage_.is_node_on_specific_side(node, side)) {
+                                node_lookup_.add_node(node,iz, ix, iy, node_type, node_ptc_num, side);
+                            }
                         }
-                    }
-                    break;
+                        break;
 
-                default:
-                    VTR_LOG_ERROR("Invalid node type for node '%lu' in the routing resource graph file", size_t(node));
-                    break;
+                    default:
+                        VTR_LOG_ERROR("Invalid node type for node '%lu' in the routing resource graph file", size_t(node));
+                        break;
+                }
             }
         }
     }
@@ -78,7 +78,7 @@ RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, e_rr_type type, in
     node_storage_.emplace_back();
     node_tilable_track_nums_.emplace_back();
     RRNodeId new_node = RRNodeId(node_storage_.size() - 1);
-    node_storage_.set_node_layer(new_node, layer);
+    node_storage_.set_node_layer(new_node, layer, layer);
     node_storage_.set_node_type(new_node, type);
     node_storage_.set_node_coordinates(new_node, x, y, x, y);
     node_storage_.set_node_ptc_num(new_node, ptc);
@@ -287,7 +287,8 @@ void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_o
 }
 
 void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
-    VTR_ASSERT_MSG(node_storage_.node_type(node) == e_rr_type::CHANX || node_storage_.node_type(node) == e_rr_type::CHANY, "Update track node look-up is only valid to CHANX/CHANY nodes");
+    VTR_ASSERT_MSG(node_storage_.node_type(node) == e_rr_type::CHANX || node_storage_.node_type(node) == e_rr_type::CHANY,
+                   "Update track node look-up is only valid to CHANX/CHANY nodes");
 
     // Compute the track id based on the (x, y) coordinate
     size_t x_start = std::min(node_storage_.node_xlow(node), node_storage_.node_xhigh(node));
@@ -310,7 +311,7 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
             if (e_rr_type::CHANX == node_type || e_rr_type::CHANY == node_type) {
                 ptc = (node_type == e_rr_type::CHANX) ? node_tilable_track_nums_[node][x - node_storage_.node_xlow(node)] : 
                     node_tilable_track_nums_[node][y - node_storage_.node_ylow(node)];
-                node_lookup_.add_node(node, node_storage_.node_layer(node), x, y, node_type, ptc); 
+                node_lookup_.add_node(node, node_storage_.node_layer_low(node), x, y, node_type, ptc);
             }
         }
     }

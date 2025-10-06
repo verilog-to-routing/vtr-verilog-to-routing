@@ -358,7 +358,7 @@ void draw_rr_node(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
     const RRGraphView& rr_graph = device_ctx.rr_graph;
     e_rr_type rr_type = rr_graph.node_type(inode);
     bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
-    int node_layer = rr_graph.node_layer(inode);
+    int node_layer = rr_graph.node_layer_low(inode);
 
     // For 3D architectures, draw only visible layers
     if (!draw_state->draw_layer_display[node_layer].visible) {
@@ -480,7 +480,7 @@ void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen
     RRNodeId rr_node = node.id();
     t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
                                                                             rr_graph.node_ylow(rr_node),
-                                                                            rr_graph.node_layer(rr_node)});
+                                                                            rr_graph.node_layer_low(rr_node)});
 
     //Number of classes (i.e. src/sinks) we need to draw
     float num_class = tile_type->class_inf.size();
@@ -569,8 +569,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    for (const RRNodeId& inode : device_ctx.rr_graph.nodes()) {
-        int layer_num = rr_graph.node_layer(inode);
+    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
+        int layer_num = rr_graph.node_layer_low(inode);
         if (!draw_state->draw_layer_display[layer_num].visible) {
             continue; /* Don't check RR nodes on currently invisible layers*/
         }
@@ -715,7 +715,7 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
         int transparency_factor = get_rr_node_transparency(inode);
 
         // continue if rr_node layer is not visible
-        int layer_num = rr_graph.node_layer(inode);
+        int layer_num = rr_graph.node_layer_low(inode);
         if (!draw_state->draw_layer_display[layer_num].visible)
             continue;
 
@@ -771,7 +771,7 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
 
     i = rr_graph.node_xlow(rr_node);
     j = rr_graph.node_ylow(rr_node);
-    int layer_num = rr_graph.node_layer(rr_node);
+    int layer_num = rr_graph.node_layer_low(rr_node);
 
     xc = draw_coords->tile_x[i];
     yc = draw_coords->tile_y[j];
@@ -823,7 +823,7 @@ int get_rr_node_transparency(RRNodeId rr_node) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    int layer_num = rr_graph.node_layer(rr_node);
+    int layer_num = rr_graph.node_layer_low(rr_node);
 
     return draw_state->draw_layer_display[layer_num].alpha;
 }
