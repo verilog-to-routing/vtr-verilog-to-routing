@@ -29,10 +29,10 @@ enum class e_rr_type : unsigned char {
     OPIN,       ///<Output pin of a block
     CHANX,      ///<x-directed routing wire, or an x-directed segment of a channel for global routing
     CHANY,      ///<y-directed routing wire, or a y-directed segment of a channel for global routing
-    MUX,        ///<a routing multiplexer that does not traverse a significant distance before feeding
-                /// other rr-nodes. E.g. the first node in a 2-stage mux in a switch block.
     CHANZ,      ///<z-directed routing wire used to connect two different layers.
                 ///< For CHANZ nodes, xlow == xhigh and yhigh == ylow
+    MUX,        ///<a routing multiplexer that does not traverse a significant distance before feeding
+                /// other rr-nodes. E.g. the first node in a 2-stage mux in a switch block.
     NUM_RR_TYPES
 };
 
@@ -119,7 +119,7 @@ class edge_idx_iterator {
 
 typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
+typedef std::vector<std::map<int, RRSwitchId>> t_arch_switch_fanin;
 
 /**
  * @brief Resistance/Capacitance data for an RR Node.

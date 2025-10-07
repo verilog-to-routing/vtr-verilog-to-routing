@@ -24,64 +24,50 @@
 #include <X11/keysym.h>
 #endif
 
-void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch_type, ezgl::renderer* g) {
+void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId rr_switch_id, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    /* Draws a connection between two y-channel segments.  Passing in the track *
-     * numbers allows this routine to be used for both rr_graph and routing     *
-     * drawing->                                                                 */
-
-    float x1, x2, y1, y2;
-    ezgl::rectangle from_chan;
-    ezgl::rectangle to_chan;
-    int from_ylow, to_ylow, from_yhigh, to_yhigh; //, from_x, to_x;
-
     // Get the coordinates of the channel wires.
-    from_chan = draw_get_rr_chan_bbox(from_node);
-    to_chan = draw_get_rr_chan_bbox(to_node);
+    ezgl::rectangle from_chan = draw_get_rr_chan_bbox(from_node);
+    ezgl::rectangle to_chan = draw_get_rr_chan_bbox(to_node);
 
-    // from_x = rr_graph.node_xlow(RRNodeId(from_node));
-    // to_x = rr_graph.node_xlow(RRNodeId(to_node));
-    from_ylow = rr_graph.node_ylow(from_node);
-    from_yhigh = rr_graph.node_yhigh(from_node);
-    to_ylow = rr_graph.node_ylow(to_node);
-    to_yhigh = rr_graph.node_yhigh(to_node);
+    int from_ylow = rr_graph.node_ylow(from_node);
+    int from_yhigh = rr_graph.node_yhigh(from_node);
+    int to_ylow = rr_graph.node_ylow(to_node);
+    int to_yhigh = rr_graph.node_yhigh(to_node);
 
-    /* (x1, y1) point on from_node, (x2, y2) point on to_node. */
+    // (x1, y1) point on from_node, (x2, y2) point on to_node.
+    float x1 = from_chan.left();
+    float x2 = to_chan.left();
 
-    x1 = from_chan.left();
-    x2 = to_chan.left();
-
-    if (to_yhigh < from_ylow) { /* From upper to lower */
+    float y1, y2;
+    if (to_yhigh < from_ylow) { // From upper to lower
         y1 = from_chan.bottom();
         y2 = to_chan.top();
-    } else if (to_ylow > from_yhigh) { /* From lower to upper */
+    } else if (to_ylow > from_yhigh) { // From lower to upper
         y1 = from_chan.top();
         y2 = to_chan.bottom();
     }
-
-    /* Segments overlap in the channel.  Figure out best way to draw.  Have to  *
-     * make sure the drawing is symmetric in the from rr and to rr so the edges *
-     * will be drawn on top of each other for bidirectional connections.        */
-
-    /* UDSD Modification by WMF Begin */
+    // Segments overlap in the channel. Figure out the best way to draw. Have to
+    // make sure the drawing is symmetric in the from rr and to rr so the edges
+    // will be drawn on top of each other for bidirectional connections.
     else {
         if (rr_graph.node_direction(to_node) != Direction::BIDIR) {
-            if (rr_graph.node_direction(to_node) == Direction::INC) { /* INC wire starts at bottom edge */
+            if (rr_graph.node_direction(to_node) == Direction::INC) { // INC wire starts at bottom edge
 
                 y2 = to_chan.bottom();
-                /* since no U-turns from_tracks must be INC as well */
+                // since no U-turns from_tracks must be INC as well
                 y1 = draw_coords->tile_y[to_ylow - 1]
                      + draw_coords->get_tile_width();
-            } else { /* DEC wire starts at top edge */
+            } else { // DEC wire starts at top edge
 
                 y2 = to_chan.top();
                 y1 = draw_coords->tile_y[to_yhigh + 1];
             }
         } else {
-            if (to_ylow < from_ylow) { /* Draw from bottom edge of one to other. */
+            if (to_ylow < from_ylow) { // Draw from bottom edge of one to other.
                 y1 = from_chan.bottom();
                 y2 = draw_coords->tile_y[from_ylow - 1]
                      + draw_coords->get_tile_width();
@@ -89,86 +75,72 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch
                 y1 = draw_coords->tile_y[to_ylow - 1]
                      + draw_coords->get_tile_width();
                 y2 = to_chan.bottom();
-            } else if (to_yhigh > from_yhigh) { /* Draw from top edge of one to other. */
+            } else if (to_yhigh > from_yhigh) { // Draw from top edge of one to other.
                 y1 = from_chan.top();
                 y2 = draw_coords->tile_y[from_yhigh + 1];
             } else if (from_yhigh > to_yhigh) {
                 y1 = draw_coords->tile_y[to_yhigh + 1];
                 y2 = to_chan.top();
-            } else { /* Complete overlap: start and end both align. Draw outside the sbox */
+            } else { // Complete overlap: start and end both align. Draw outside the sbox
                 y1 = from_chan.bottom();
                 y2 = from_chan.bottom() + draw_coords->get_tile_width();
             }
         }
     }
 
-    /* UDSD Modification by WMF End */
     g->draw_line({x1, y1}, {x2, y2});
 
     draw_rr_switch(x1, y1, x2, y2,
-                   rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
-                   rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
+                   rr_graph.rr_switch_inf(rr_switch_id).buffered(),
+                   rr_graph.rr_switch_inf(rr_switch_id).configurable(), g);
 }
 
-void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch_type, ezgl::renderer* g) {
-    /* Draws a connection between two x-channel segments.  Passing in the track *
-     * numbers allows this routine to be used for both rr_graph and routing     *
-     * drawing->                                                                 */
-
+void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId rr_switch_id, ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    float x1, x2, y1, y2;
-    ezgl::rectangle from_chan;
-    ezgl::rectangle to_chan;
-    int from_xlow, to_xlow, from_xhigh, to_xhigh;
-
     // Get the coordinates of the channel wires.
-    from_chan = draw_get_rr_chan_bbox(from_node);
-    to_chan = draw_get_rr_chan_bbox(to_node);
+    ezgl::rectangle from_chan = draw_get_rr_chan_bbox(from_node);
+    ezgl::rectangle to_chan = draw_get_rr_chan_bbox(to_node);
 
-    /* (x1, y1) point on from_node, (x2, y2) point on to_node. */
+    // (x1, y1) point on from_node, (x2, y2) point on to_node.
+    float x1, x2;
+    float y1 = from_chan.bottom();
+    float y2 = to_chan.bottom();
 
-    y1 = from_chan.bottom();
-    y2 = to_chan.bottom();
-
-    from_xlow = rr_graph.node_xlow(from_node);
-    from_xhigh = rr_graph.node_xhigh(from_node);
-    to_xlow = rr_graph.node_xlow(to_node);
-    to_xhigh = rr_graph.node_xhigh(to_node);
+    int from_xlow = rr_graph.node_xlow(from_node);
+    int from_xhigh = rr_graph.node_xhigh(from_node);
+    int to_xlow = rr_graph.node_xlow(to_node);
+    int to_xhigh = rr_graph.node_xhigh(to_node);
     if (to_xhigh < from_xlow) { /* From right to left */
-        /* UDSD Note by WMF: could never happen for INC wires, unless U-turn. For DEC
-         * wires this handles well */
+        // Could never happen for INC wires, unless U-turn. For DEC wires this handles well
         x1 = from_chan.left();
         x2 = to_chan.right();
     } else if (to_xlow > from_xhigh) { /* From left to right */
-        /* UDSD Note by WMF: could never happen for DEC wires, unless U-turn. For INC
-         * wires this handles well */
+        // Could never happen for DEC wires, unless U-turn. For INC wires this handles well
         x1 = from_chan.right();
         x2 = to_chan.left();
     }
-
     /* Segments overlap in the channel.  Figure out best way to draw.  Have to  *
      * make sure the drawing is symmetric in the from rr and to rr so the edges *
      * will be drawn on top of each other for bidirectional connections.        */
-
     else {
         if (rr_graph.node_direction(to_node) != Direction::BIDIR) {
-            /* must connect to to_node's wire beginning at x2 */
-            if (rr_graph.node_direction(to_node) == Direction::INC) { /* INC wire starts at leftmost edge */
+            // must connect to to_node's wire beginning at x2
+            if (rr_graph.node_direction(to_node) == Direction::INC) { // INC wire starts at leftmost edge
                 VTR_ASSERT(from_xlow < to_xlow);
                 x2 = to_chan.left();
-                /* since no U-turns from_tracks must be INC as well */
+                // since no U-turns from_tracks must be INC as well
                 x1 = draw_coords->tile_x[to_xlow - 1]
                      + draw_coords->get_tile_width();
-            } else { /* DEC wire starts at rightmost edge */
+            } else { // DEC wire starts at rightmost edge
                 VTR_ASSERT(from_xhigh > to_xhigh);
                 x2 = to_chan.right();
                 x1 = draw_coords->tile_x[to_xhigh + 1];
             }
         } else {
-            if (to_xlow < from_xlow) { /* Draw from left edge of one to other */
+            if (to_xlow < from_xlow) { // Draw from left edge of one to other
                 x1 = from_chan.left();
                 x2 = draw_coords->tile_x[from_xlow - 1]
                      + draw_coords->get_tile_width();
@@ -177,14 +149,14 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch
                      + draw_coords->get_tile_width();
                 x2 = to_chan.left();
 
-            } /* The following then is executed when from_xlow == to_xlow */
-            else if (to_xhigh > from_xhigh) { /* Draw from right edge of one to other */
+            } // The following then is executed when from_xlow == to_xlow
+            else if (to_xhigh > from_xhigh) { // Draw from right edge of one to other
                 x1 = from_chan.right();
                 x2 = draw_coords->tile_x[from_xhigh + 1];
             } else if (from_xhigh > to_xhigh) {
                 x1 = draw_coords->tile_x[to_xhigh + 1];
                 x2 = to_chan.right();
-            } else { /* Complete overlap: start and end both align. Draw outside the sbox */
+            } else { // Complete overlap: start and end both align. Draw outside the sbox
                 x1 = from_chan.left();
                 x2 = from_chan.left() + draw_coords->get_tile_width();
             }
@@ -194,77 +166,75 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch
     g->draw_line({x1, y1}, {x2, y2});
 
     draw_rr_switch(x1, y1, x2, y2,
-                   rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
-                   rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
+                   rr_graph.rr_switch_inf(rr_switch_id).buffered(),
+                   rr_graph.rr_switch_inf(rr_switch_id).configurable(), g);
 }
 
-void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_chan_edge_dir edge_dir, short switch_type, ezgl::renderer* g) {
+void draw_chanx_to_chany_edge(RRNodeId chanx_node,
+                              RRNodeId chany_node,
+                              e_chan_edge_dir edge_dir,
+                              RRSwitchId rr_switch_id,
+                              ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    /* Draws an edge (SBOX connection) between an x-directed channel and a    *
-     * y-directed channel.                                                    */
+    const t_rr_switch_inf& rr_switch_inf = rr_graph.rr_switch_inf(rr_switch_id);
 
-    float x1, y1, x2, y2;
-    ezgl::rectangle chanx_bbox;
-    ezgl::rectangle chany_bbox;
-    int chanx_xlow, chany_x, chany_ylow, chanx_y;
+    // Get the coordinates of the CHANX and CHANY segments.
+    ezgl::rectangle chanx_bbox = draw_get_rr_chan_bbox(chanx_node);
+    ezgl::rectangle chany_bbox = draw_get_rr_chan_bbox(chany_node);
 
-    /* Get the coordinates of the CHANX and CHANY segments. */
-    chanx_bbox = draw_get_rr_chan_bbox(chanx_node);
-    chany_bbox = draw_get_rr_chan_bbox(chany_node);
+    // (x1,y1): point on CHANX segment, (x2,y2): point on CHANY segment.
+    float y1 = chanx_bbox.bottom();
+    float x2 = chany_bbox.left();
+    float x1, y2;
 
-    /* (x1,y1): point on CHANX segment, (x2,y2): point on CHANY segment. */
+    // these values xhigh/low yhigh/low mark the coordinates for the beginning and ends of the wire.
+    int chanx_xlow = rr_graph.node_xlow(chanx_node);
+    int chanx_y = rr_graph.node_ylow(chanx_node);
+    int chany_x = rr_graph.node_xlow(chany_node);
+    int chany_ylow = rr_graph.node_ylow(chany_node);
 
-    y1 = chanx_bbox.bottom();
-    x2 = chany_bbox.left();
-
-    // these values xhigh/low yhigh/low mark the cordinates for the begining and ends of the wire.
-    chanx_xlow = rr_graph.node_xlow(chanx_node);
-    chanx_y = rr_graph.node_ylow(chanx_node);
-    chany_x = rr_graph.node_xlow(chany_node);
-    chany_ylow = rr_graph.node_ylow(chany_node);
-
-    if (chanx_xlow <= chany_x) { /* Can draw connection going right */
-        /* Connection not at end of the CHANX segment. */
+    if (chanx_xlow <= chany_x) { // Can draw connection going right
+        // Connection not at end of the CHANX segment.
         x1 = draw_coords->tile_x[chany_x] + draw_coords->get_tile_width();
-        if (rr_graph.node_direction(chanx_node) != Direction::BIDIR && (e_switch_type)switch_type != e_switch_type::SHORT) {
-            if (edge_dir == FROM_X_TO_Y) {
-                if (rr_graph.node_direction(chanx_node) == Direction::DEC) { /* If dec wire, then going left */
+        if (rr_graph.node_direction(chanx_node) != Direction::BIDIR && rr_switch_inf.type() != e_switch_type::SHORT) {
+            if (edge_dir == e_chan_edge_dir::FROM_X_TO_Y) {
+                if (rr_graph.node_direction(chanx_node) == Direction::DEC) { // If dec wire, then going left
                     x1 = draw_coords->tile_x[chany_x + 1];
                 }
             }
         }
-    } else { /* Must draw connection going left. */
+    } else { // Must draw connection going left.
         x1 = chanx_bbox.left();
     }
-    if (chany_ylow <= chanx_y) { /* Can draw connection going up. */
-        /* Connection not at end of the CHANY segment. */
+    if (chany_ylow <= chanx_y) { // Can draw connection going up.
+        // Connection not at end of the CHANY segment.
         y2 = draw_coords->tile_y[chanx_y] + draw_coords->get_tile_width();
 
-        if (rr_graph.node_direction(chany_node) != Direction::BIDIR && (e_switch_type)switch_type != e_switch_type::SHORT) {
-            if (edge_dir == FROM_Y_TO_X) {
-                if (rr_graph.node_direction(chany_node) == Direction::DEC) { /* If dec wire, then going down */
+        if (rr_graph.node_direction(chany_node) != Direction::BIDIR && rr_switch_inf.type() != e_switch_type::SHORT) {
+            if (edge_dir == e_chan_edge_dir::FROM_Y_TO_X) {
+                if (rr_graph.node_direction(chany_node) == Direction::DEC) { // If dec wire, then going down
                     y2 = draw_coords->tile_y[chanx_y + 1];
                 }
             }
         }
 
-    } else { /* Must draw connection going down. */
+    } else { // Must draw connection going down.
         y2 = chany_bbox.bottom();
     }
 
     g->draw_line({x1, y1}, {x2, y2});
 
-    if (edge_dir == FROM_X_TO_Y) {
+    if (edge_dir == e_chan_edge_dir::FROM_X_TO_Y) {
         draw_rr_switch(x1, y1, x2, y2,
-                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
-                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
+                       rr_switch_inf.buffered(),
+                       rr_switch_inf.configurable(), g);
     } else {
         draw_rr_switch(x2, y2, x1, y1,
-                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).buffered(),
-                       rr_graph.rr_switch_inf(RRSwitchId(switch_type)).configurable(), g);
+                       rr_switch_inf.buffered(),
+                       rr_switch_inf.configurable(), g);
     }
 }
 
@@ -418,7 +388,7 @@ e_side get_pin_side(RRNodeId pin_node, RRNodeId chan_node) {
     t_physical_tile_loc tile_loc = {
         rr_graph.node_xlow(pin_node),
         rr_graph.node_ylow(pin_node),
-        rr_graph.node_layer(pin_node)};
+        rr_graph.node_layer_low(pin_node)};
 
     const auto& grid_type = device_ctx.grid.get_physical_type(tile_loc);
     int width_offset = device_ctx.grid.get_width_offset(tile_loc);
@@ -508,7 +478,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
     t_physical_tile_loc tile_loc = {
         rr_graph.node_xlow(pin_node),
         rr_graph.node_ylow(pin_node),
-        rr_graph.node_layer(pin_node)};
+        rr_graph.node_layer_low(pin_node)};
 
     const auto& grid_type = device_ctx.grid.get_physical_type(tile_loc);
     const e_rr_type channel_type = rr_graph.node_type(chan_node);
@@ -605,11 +575,11 @@ void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::r
 
     e_rr_type rr_type = rr_graph.node_type(inode);
     bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
-    int current_node_layer = rr_graph.node_layer(inode);
+    int current_node_layer = rr_graph.node_layer_low(inode);
 
     e_rr_type prev_type = rr_graph.node_type(prev_node);
     bool prev_node_inter_cluster = is_inter_cluster_node(rr_graph, prev_node);
-    int prev_node_layer = rr_graph.node_layer(prev_node);
+    int prev_node_layer = rr_graph.node_layer_low(prev_node);
 
     t_draw_layer_display edge_visibility = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
 
@@ -646,7 +616,7 @@ void draw_rr_edge(RRNodeId inode, RRNodeId prev_node, ezgl::color color, ezgl::r
 void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr_type, e_rr_type prev_type, ezgl::renderer* g) {
     const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
     t_edge_size iedge = find_edge(prev_node, inode);
-    short switch_type = rr_graph.edge_switch(prev_node, iedge);
+    RRSwitchId rr_switch_id = (RRSwitchId)rr_graph.edge_switch(prev_node, iedge);
 
     switch (rr_type) {
         case e_rr_type::IPIN:
@@ -660,11 +630,11 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
         case e_rr_type::CHANX:
             switch (prev_type) {
                 case e_rr_type::CHANX:
-                    draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
+                    draw_chanx_to_chanx_edge(prev_node, inode, rr_switch_id, g);
                     break;
 
                 case e_rr_type::CHANY:
-                    draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
+                    draw_chanx_to_chany_edge(inode, prev_node, e_chan_edge_dir::FROM_Y_TO_X, rr_switch_id, g);
                     break;
 
                 case e_rr_type::OPIN:
@@ -682,13 +652,11 @@ void draw_inter_cluster_rr_edge(RRNodeId inode, RRNodeId prev_node, e_rr_type rr
         case e_rr_type::CHANY:
             switch (prev_type) {
                 case e_rr_type::CHANX:
-                    draw_chanx_to_chany_edge(prev_node, inode,
-                                             FROM_X_TO_Y, switch_type, g);
+                    draw_chanx_to_chany_edge(prev_node, inode, e_chan_edge_dir::FROM_X_TO_Y, rr_switch_id, g);
                     break;
 
                 case e_rr_type::CHANY:
-                    draw_chany_to_chany_edge(prev_node, inode,
-                                             switch_type, g);
+                    draw_chany_to_chany_edge(prev_node, inode, rr_switch_id, g);
                     break;
 
                 case e_rr_type::OPIN:

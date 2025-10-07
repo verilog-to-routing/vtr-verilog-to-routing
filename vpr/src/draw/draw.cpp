@@ -241,7 +241,6 @@ static void draw_main_canvas(ezgl::renderer* g) {
 }
 
 static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
-
     // default setup for new window
     if (is_new_window) {
         basic_button_setup(app);
@@ -270,10 +269,6 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     hide_crit_path_routing(app);
 
     hide_draw_routing(app);
-
-    app->update_message(draw_state->default_message);
-    app->refresh_drawing();
-    app->flush_drawing();
 }
 
 #endif //NO_GRAPHICS
@@ -329,6 +324,12 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         if (!draw_state->graphics_commands.empty()) {
             run_graphics_commands(draw_state->graphics_commands);
         }
+    }
+
+    if (draw_state->show_graphics) {
+        application.update_message(msg);
+        application.refresh_drawing();
+        application.flush_drawing();
     }
 
     if (draw_state->save_graphics) {

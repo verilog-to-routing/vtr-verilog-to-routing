@@ -1,8 +1,25 @@
 
 #pragma once
 
+/**
+ * @file
+ * @brief Utilities for creating and initializing rr_switch structures from architecture switches.
+ *
+ * This header defines functions that translate high-level architecture switch
+ * descriptions (`t_arch_switch_inf`) into detailed rr_switch items used in RR graph.
+ * These functions:
+ *   - Copy and resolve switch electrical parameters into `t_rr_switch_inf`.
+ *   - Expand architecture switches into fanin-specific rr_switch variants.
+ *   - Provide mappings from (arch_switch, fanin) --> rr_switch index.
+ *
+ * They are invoked during RR graph construction to allocate, initialize,
+ * and remap all switch information.
+ */
+
 #include <map>
-#include <vector>
+
+#include "rr_graph_fwd.h"
+#include "rr_node_types.h"
 
 struct t_arch_switch_inf;
 struct t_rr_switch_inf;
@@ -25,7 +42,7 @@ class RRGraphBuilder;
 void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
                                      const std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                      int arch_switch_idx,
-                                     int rr_switch_idx,
+                                     RRSwitchId rr_switch_idx,
                                      int fanin,
                                      const float R_minW_nmos,
                                      const float R_minW_pmos);
@@ -53,9 +70,9 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
  * @param wire_to_rr_ipin_switch    Output: rr_switch index of the representative IPIN cblock switch.
  */
 void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
-                                  std::vector<std::map<int, int>>& switch_fanin_remap,
+                                  t_arch_switch_fanin& switch_fanin_remap,
                                   const std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                   const float R_minW_nmos,
                                   const float R_minW_pmos,
                                   const int wire_to_arch_ipin_switch,
-                                  int* wire_to_rr_ipin_switch);
+                                  RRSwitchId& wire_to_rr_ipin_switch);

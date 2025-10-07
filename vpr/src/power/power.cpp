@@ -979,7 +979,7 @@ static void power_usage_routing(t_power_usage* power_usage,
                 connectionbox_fanout = 0;
                 switchbox_fanout = 0;
                 for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
-                    if (rr_graph.edge_switch(rr_id, iedge) == routing_arch.wire_to_rr_ipin_switch) {
+                    if ((RRSwitchId)rr_graph.edge_switch(rr_id, iedge) == routing_arch.wire_to_rr_ipin_switch) {
                         connectionbox_fanout++;
                     } else if (rr_graph.edge_switch(rr_id, iedge) == routing_arch.delayless_switch) {
                         /* Do nothing */
@@ -1225,7 +1225,7 @@ void power_routing_init(const t_det_routing_arch& routing_arch) {
             case e_rr_type::CHANX:
             case e_rr_type::CHANY:
                 for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_node_idx); iedge++) {
-                    if (rr_graph.edge_switch(rr_node_idx, iedge) == routing_arch.wire_to_rr_ipin_switch) {
+                    if ((RRSwitchId)rr_graph.edge_switch(rr_node_idx, iedge) == routing_arch.wire_to_rr_ipin_switch) {
                         fanout_to_IPIN++;
                     } else if (rr_graph.edge_switch(rr_node_idx, iedge) != routing_arch.delayless_switch) {
                         fanout_to_seg++;

@@ -347,8 +347,9 @@ static void process_clock_routing(pugi::xml_node parent,
                                   const std::vector<t_arch_switch_inf>& switches,
                                   pugiutil::loc_data& loc_data);
 
-static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
+static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
                                                    const std::vector<t_arch_switch_inf>& switches,
+                                                   int num_layers,
                                                    const bool timing_enabled,
                                                    const bool switchblocklist_required,
                                                    const pugiutil::loc_data& loc_data);
@@ -459,13 +460,13 @@ void xml_read_arch(const char* ArchFile,
         Next = get_single_child(architecture, "switchlist", loc_data);
         arch->switches = process_switches(Next, timing_enabled, loc_data);
 
-        /* Process switchblocks. This depends on switches */
-        bool switchblocklist_required = (arch->sb_type == CUSTOM); //require this section only if custom switchblocks are used
+        // Process switchblocks. This depends on switches
+        bool switchblocklist_required = (arch->sb_type == e_switch_block_type::CUSTOM); // require this section only if custom switchblocks are used
         SWITCHBLOCKLIST_REQD = BoolToReqOpt(switchblocklist_required);
 
         /* Process segments. This depends on switches */
         Next = get_single_child(architecture, "segmentlist", loc_data);
-        arch->Segments = process_segments(Next, arch->switches, timing_enabled, switchblocklist_required, loc_data);
+        arch->Segments = process_segments(Next, arch->switches, num_of_avail_layers, timing_enabled, switchblocklist_required, loc_data);
 
         Next = get_single_child(architecture, "switchblocklist", loc_data, SWITCHBLOCKLIST_REQD);
         if (Next) {
@@ -2071,7 +2072,7 @@ static void process_fc(pugi::xml_node Node,
 
                 //Apply any matching overrides
                 bool default_overriden = false;
-                for (const auto& fc_override : fc_overrides) {
+                for (const t_fc_override& fc_override : fc_overrides) {
                     bool apply_override = false;
                     if (!fc_override.port_name.empty() && !fc_override.seg_name.empty()) {
                         //Both port and seg names are specified require exact match on both
@@ -2952,13 +2953,13 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
     Prop = get_attribute(Cur, "type", loc_data).value();
     // Parse attribute 'type', representing the major connectivity pattern for switch blocks
     if (strcmp(Prop, "wilton") == 0) {
-        arch->sb_type = WILTON;
+        arch->sb_type = e_switch_block_type::WILTON;
     } else if (strcmp(Prop, "universal") == 0) {
-        arch->sb_type = UNIVERSAL;
+        arch->sb_type = e_switch_block_type::UNIVERSAL;
     } else if (strcmp(Prop, "subset") == 0) {
-        arch->sb_type = SUBSET;
+        arch->sb_type = e_switch_block_type::SUBSET;
     } else if (strcmp(Prop, "custom") == 0) {
-        arch->sb_type = CUSTOM;
+        arch->sb_type = e_switch_block_type::CUSTOM;
         custom_switch_block = true;
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
@@ -2991,11 +2992,11 @@ static void process_tileable_device_parameters(t_arch* arch, const pugiutil::loc
     std::string sub_type_str = get_attribute(cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
     if (!sub_type_str.empty()) {
         if (sub_type_str == "wilton") {
-            arch->sb_sub_type = WILTON;
+            arch->sb_sub_type = e_switch_block_type::WILTON;
         } else if (sub_type_str == "universal") {
-            arch->sb_sub_type = UNIVERSAL;
+            arch->sb_sub_type = e_switch_block_type::UNIVERSAL;
         } else if (sub_type_str == "subset") {
-            arch->sb_sub_type = SUBSET;
+            arch->sb_sub_type = e_switch_block_type::SUBSET;
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                            "Unknown property %s for switch block subtype x\n", sub_type_str.c_str());
@@ -3824,8 +3825,9 @@ static void process_complex_blocks(pugi::xml_node Node,
     }
 }
 
-static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
+static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
                                                    const std::vector<t_arch_switch_inf>& switches,
+                                                   int num_layers,
                                                    const bool timing_enabled,
                                                    const bool switchblocklist_required,
                                                    const pugiutil::loc_data& loc_data) {
@@ -3836,22 +3838,22 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
     pugi::xml_node SubElem;
     pugi::xml_node Node;
 
-    /* Count the number of segs and check they are in fact
-     * of segment elements. */
-    int NumSegs = count_children(Parent, "segment", loc_data);
+    // Count the number of segs specified in the architecture file.
+    int num_segs = count_children(parent, "segment", loc_data);
 
-    /* Alloc segment list */
-    if (NumSegs > 0) {
-        Segs.resize(NumSegs);
+    // Alloc segment list
+    if (num_segs > 0) {
+        Segs.resize(num_segs);
     }
 
-    /* Load the segments. */
-    Node = get_first_child(Parent, "segment", loc_data);
+    // Load the segments.
+    Node = get_first_child(parent, "segment", loc_data);
 
-    bool x_axis_seg_found = false; /*Flags to see if we have any x-directed segment type specified*/
-    bool y_axis_seg_found = false; /*Flags to see if we have any y-directed segment type specified*/
+    bool x_axis_seg_found = false; // Flags to see if we have any x-directed segment type specified
+    bool y_axis_seg_found = false; // Flags to see if we have any y-directed segment type specified
+    bool z_axis_seg_found = false; // Flags to see if we have any z-directed segment type specified
 
-    for (int i = 0; i < NumSegs; ++i) {
+    for (int i = 0; i < num_segs; ++i) {
         /* Get segment name */
         tmp = get_attribute(Node, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (tmp) {
@@ -3906,16 +3908,19 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
             } else if (strcmp(tmp, "y") == 0) {
                 Segs[i].parallel_axis = e_parallel_axis::Y_AXIS;
                 y_axis_seg_found = true;
+            } else if (strcmp(tmp, "z") == 0) {
+                Segs[i].parallel_axis = e_parallel_axis::Z_AXIS;
+                z_axis_seg_found = true;
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                               vtr::string_fmt("Unsopported parralel axis type: %s\n", tmp).c_str());
+                               vtr::string_fmt("Unsupported parallel axis type: %s\n", tmp).c_str());
             }
         } else {
             x_axis_seg_found = true;
             y_axis_seg_found = true;
         }
 
-        /*Get segment resource type*/
+        // Get segment resource type
         tmp = get_attribute(Node, "res_type", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
         if (tmp) {
@@ -3924,7 +3929,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
                 Segs[i].res_type = static_cast<SegResType>(std::distance(RES_TYPE_STRING.begin(), it));
             } else {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                               vtr::string_fmt("Unsopported segment res_type: %s\n", tmp).c_str());
+                               vtr::string_fmt("Unsupported segment res_type: %s\n", tmp).c_str());
             }
         }
 
@@ -3933,16 +3938,16 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
          * (*Segs)[i].Cmetal_per_m = get_attribute(Node, "Cmetal_per_m", false,
          * 0.);*/
 
-        //Set of expected subtags (exact subtags are dependent on parameters)
+        // Set of expected subtags (exact subtags are dependent on parameters)
         std::vector<std::string> expected_subtags;
 
         if (!Segs[i].longline) {
-            //Long line doesn't accpet <sb> or <cb> since it assumes full population
+            // Long line doesn't accept <sb> or <cb> since it assumes full population
             expected_subtags.emplace_back("sb");
             expected_subtags.emplace_back("cb");
         }
 
-        /* Get the type */
+        // Get the type
         tmp = get_attribute(Node, "type", loc_data).value();
         if (0 == strcmp(tmp, "bidir")) {
             Segs[i].directionality = BI_DIRECTIONAL;
@@ -4110,7 +4115,12 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node Parent,
 
     if (!x_axis_seg_found || !y_axis_seg_found) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                       vtr::string_fmt("Atleast one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.").c_str());
+                       vtr::string_fmt("At least one segment per-axis needs to get specified if no segments with non-specified (default) axis attribute exist.").c_str());
+    }
+
+    if (num_layers > 1 && !z_axis_seg_found) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       vtr::string_fmt("At least one segment along Z axis needs to get specified if for 3D architectures.").c_str());
     }
 
     return Segs;
@@ -4185,7 +4195,11 @@ static void process_bend(pugi::xml_node Node, t_segment_inf& segment, const int 
         part_len.push_back(list.size() + 1 - sum_len);
 }
 
-static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb) {
+static void calculate_custom_sb_locations(const pugiutil::loc_data& loc_data,
+                                          const pugi::xml_node& SubElem,
+                                          const int grid_width,
+                                          const int grid_height,
+                                          t_switchblock_inf& sb) {
     auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
     auto endx_attr = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
 
@@ -4198,24 +4212,24 @@ static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, co
     auto incrx_attr = get_attribute(SubElem, "incrx", loc_data, ReqOpt::OPTIONAL);
     auto incry_attr = get_attribute(SubElem, "incry", loc_data, ReqOpt::OPTIONAL);
 
-    //parse the values from the architecture file and fill out SB region information
+    // parse the values from the architecture file and fill out SB region information
     vtr::FormulaParser p;
 
     vtr::t_formula_data vars;
     vars.set_var_value("W", grid_width);
     vars.set_var_value("H", grid_height);
 
-    sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
-    sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
+    sb.specified_loc.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
+    sb.specified_loc.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
 
-    sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
-    sb.reg_y.end = endy_attr.empty() ? (grid_height - 1) : p.parse_formula(endy_attr.value(), vars);
+    sb.specified_loc.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
+    sb.specified_loc.reg_y.end = endy_attr.empty() ? (grid_height - 1) : p.parse_formula(endy_attr.value(), vars);
 
-    sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
-    sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
+    sb.specified_loc.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
+    sb.specified_loc.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
 
-    sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
-    sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
+    sb.specified_loc.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
+    sb.specified_loc.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
 }
 
 /* Processes the switchblocklist section from the xml architecture file.
@@ -4276,7 +4290,7 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             }
         }
 
-        /* get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED*/
+        // Get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED
         if (sb.location == e_sb_location::E_XY_SPECIFIED) {
             if (arch->device_layout == "auto") {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
@@ -4291,22 +4305,23 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
             int grid_width = arch->grid_layouts.at(layout_index).width;
             int grid_height = arch->grid_layouts.at(layout_index).height;
 
-            /* Absolute location that this SB must be applied to, -1 if not specified*/
-            sb.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(-1);
-            sb.y = get_attribute(SubElem, "y", loc_data, ReqOpt::OPTIONAL).as_int(-1);
+            // Absolute location that this SB must be applied to, -1 if not specified
+            sb.specified_loc.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
+            sb.specified_loc.y = get_attribute(SubElem, "y", loc_data, ReqOpt::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
 
-            //check if the absolute value is within the device grid width and height
-            if (sb.x >= grid_width || sb.y >= grid_height) {
+            // Check if the absolute value is within the device grid width and height
+            if (sb.specified_loc.x >= grid_width || sb.specified_loc.y >= grid_height) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                               vtr::string_fmt("Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height).c_str());
+                               vtr::string_fmt("Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n",
+                                               sb.specified_loc.x, sb.specified_loc.y, grid_width, grid_height)
+                                   .c_str());
             }
 
-            /* if the the switchblock exact location is not specified and a region is specified within the architecture file,
-             * we have to parse the region specification and apply the SB pattern to all the locations fall into the specified 
-             * region based on device width and height.
-             */
-            if (sb.x == -1 && sb.y == -1) {
-                calculate_custom_SB_locations(loc_data, SubElem, grid_width, grid_height, sb);
+            // if the switchblock exact location is not specified and a region is specified within the architecture file,
+            // we have to parse the region specification and apply the SB pattern to all the locations fall into the specified
+            // region based on device width and height.
+            if (sb.specified_loc.x == ARCH_FPGA_UNDEFINED_VAL && sb.specified_loc.y == ARCH_FPGA_UNDEFINED_VAL) {
+                calculate_custom_sb_locations(loc_data, SubElem, grid_width, grid_height, sb);
             }
         }
 
@@ -4328,14 +4343,13 @@ static void process_switch_blocks(pugi::xml_node Parent, t_arch* arch, const pug
 
 static void process_cb_sb(pugi::xml_node Node, std::vector<bool>& list, const pugiutil::loc_data& loc_data) {
     const char* tmp = nullptr;
-    int i;
     int len = list.size();
 
     // Check the type. We only support 'pattern' for now.
     // Should add frac back eventually.
     tmp = get_attribute(Node, "type", loc_data).value();
     if (0 == strcmp(tmp, "pattern")) {
-        i = 0;
+        int i = 0;
 
         // Get the content string
         tmp = Node.child_value();
