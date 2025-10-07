@@ -383,6 +383,7 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                             const std::vector<std::pair<RRNodeId, int>>& sg_node_indices,
                                             const t_chan_details& chan_details_x,
                                             const t_chan_details& chan_details_y,
+                                            size_t num_seg_types_x,
                                             t_rr_edge_info_set& non_3d_sg_rr_edges_to_create);
 
 /**
@@ -1608,7 +1609,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
     }
 
-    add_and_connect_non_3d_sg_links(rr_graph_builder, sg_links, sg_node_indices, chan_details_x, chan_details_y, rr_edges_to_create);
+    add_and_connect_non_3d_sg_links(rr_graph_builder, sg_links, sg_node_indices, chan_details_x, chan_details_y, num_seg_types_x, rr_edges_to_create);
     uniquify_edges(rr_edges_to_create);
     alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
     num_edges += rr_edges_to_create.size();
@@ -2003,6 +2004,7 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                             const std::vector<std::pair<RRNodeId, int>>& sg_node_indices,
                                             const t_chan_details& chan_details_x,
                                             const t_chan_details& chan_details_y,
+                                            size_t num_seg_types_x,
                                             t_rr_edge_info_set& non_3d_sg_rr_edges_to_create) {
     VTR_ASSERT(sg_links.size() == sg_node_indices.size());
     const size_t num_links = sg_links.size();
@@ -2012,7 +2014,6 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
         const t_bottleneck_link& link = sg_links[i];
 
         int xlow, xhigh, ylow, yhigh;
-        e_rr_type chan_type;
         Direction direction;
         const t_physical_tile_loc& src_loc = link.gather_loc;
         const t_physical_tile_loc& dst_loc = link.scatter_loc;
@@ -2021,25 +2022,21 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
         const int layer = src_loc.layer_num;
 
         if (dst_loc.x > src_loc.x) {
-            chan_type = e_rr_type::CHANX;
             direction = Direction::INC;
             ylow = yhigh = dst_loc.y;
             xlow = src_loc.x + 1;
             xhigh = dst_loc.x;
         } else if (dst_loc.x < src_loc.x) {
-            chan_type = e_rr_type::CHANX;
             direction = Direction::DEC;
             ylow = yhigh = dst_loc.y;
             xlow = dst_loc.x + 1;
             xhigh = src_loc.x;
         } else if (dst_loc.y > src_loc.y) {
-            chan_type = e_rr_type::CHANY;
             direction = Direction::INC;
             xlow = xhigh = dst_loc.x;
             ylow = src_loc.y + 1;
             yhigh = dst_loc.y;
         } else if (dst_loc.y < src_loc.y) {
-            chan_type = e_rr_type::CHANY;
             direction = Direction::DEC;
             xlow = xhigh = dst_loc.x;
             ylow = dst_loc.y + 1;
@@ -2054,12 +2051,15 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_layer(node_id, layer, layer);
         rr_graph_builder.set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
         rr_graph_builder.set_node_capacity(node_id, 1);
-        // rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset));
 
-        // float R = 0;
-        // float C = 0;
-        // rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
-        rr_graph_builder.set_node_type(node_id, chan_type);
+        const size_t cons_index = link.chan_type == e_rr_type::CHANX ? CHANX_COST_INDEX_START + link.parallel_segment_index
+                                                                     : CHANX_COST_INDEX_START + num_seg_types_x + link.parallel_segment_index;
+        rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(cons_index));
+
+        float R = 0;
+        float C = 0;
+        rr_graph_builder.set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C, g_vpr_ctx.mutable_device().rr_rc_data)));
+        rr_graph_builder.set_node_type(node_id, link.chan_type);
         rr_graph_builder.set_node_track_num(node_id, track_num);
 
         rr_graph_builder.set_node_direction(node_id, direction);
