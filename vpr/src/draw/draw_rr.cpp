@@ -233,14 +233,11 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
     g->set_color(color, transparency_factor); //Ensure color is still set correctly if we drew any arrows/text
 }
 
-/* Draws all the edges that the user wants shown between inode and what it
- * connects to.  inode is assumed to be a CHANX, CHANY, or IPIN.           */
 void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    e_rr_type to_type;
     e_rr_type from_type = rr_graph.node_type(inode);
 
     // Currently don't visualize source or sinks.
@@ -250,7 +247,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
 
     for (t_edge_size iedge = 0, l = rr_graph.num_edges(inode); iedge < l; iedge++) {
         RRNodeId to_node = rr_graph.edge_sink_node(inode, iedge);
-        to_type = rr_graph.node_type(to_node);
+        e_rr_type to_type = rr_graph.node_type(to_node);
         bool edge_configurable = rr_graph.edge_is_configurable(inode, iedge);
 
         // Currently don't visualize source or sinks.
@@ -259,36 +256,14 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         }
 
         ezgl::color color = DEFAULT_RR_NODE_COLOR;
-        e_edge_type edge_type;
         bool draw_edge = true;
         bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
         bool to_node_inter_cluster = is_inter_cluster_node(rr_graph, to_node);
 
-        // Color map for edges based on {from_type, to_type}
-        const std::map<std::pair<e_rr_type, e_rr_type>, e_edge_type> edge_type_map = {
-            // Pin to pin connections
-            {{e_rr_type::IPIN, e_rr_type::IPIN}, e_edge_type::PIN_TO_IPIN},
-            {{e_rr_type::OPIN, e_rr_type::IPIN}, e_edge_type::PIN_TO_IPIN},
-            {{e_rr_type::OPIN, e_rr_type::OPIN}, e_edge_type::PIN_TO_OPIN},
-            {{e_rr_type::IPIN, e_rr_type::OPIN}, e_edge_type::PIN_TO_OPIN},
-
-            // Channel to pin connections
-            {{e_rr_type::OPIN, e_rr_type::CHANX}, e_edge_type::OPIN_TO_CHAN},
-            {{e_rr_type::OPIN, e_rr_type::CHANY}, e_edge_type::OPIN_TO_CHAN},
-            {{e_rr_type::CHANX, e_rr_type::IPIN}, e_edge_type::CHAN_TO_IPIN},
-            {{e_rr_type::CHANY, e_rr_type::IPIN}, e_edge_type::CHAN_TO_IPIN},
-
-            // Channel to channel connections
-            {{e_rr_type::CHANX, e_rr_type::CHANX}, e_edge_type::CHAN_TO_CHAN},
-            {{e_rr_type::CHANX, e_rr_type::CHANY}, e_edge_type::CHAN_TO_CHAN},
-            {{e_rr_type::CHANY, e_rr_type::CHANY}, e_edge_type::CHAN_TO_CHAN},
-            {{e_rr_type::CHANY, e_rr_type::CHANX}, e_edge_type::CHAN_TO_CHAN},
-        };
-
-        if (edge_type_map.find({from_type, to_type}) == edge_type_map.end()) {
+        if (EDGE_TYPE_COLOR_MAP.find({from_type, to_type}) == EDGE_TYPE_COLOR_MAP.end()) {
             continue; // Unsupported edge type
         }
-        edge_type = edge_type_map.at({from_type, to_type});
+        e_edge_type edge_type = EDGE_TYPE_COLOR_MAP.at({from_type, to_type});
 
         // Determine whether to draw the edge based on user options
 
