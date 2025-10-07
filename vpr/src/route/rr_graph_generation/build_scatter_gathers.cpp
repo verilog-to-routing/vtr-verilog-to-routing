@@ -210,12 +210,11 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 scatter_loc.y = gather_loc.y + sg_link.y_offset;
                 scatter_loc.layer_num = gather_loc.layer_num + sg_link.z_offset;
 
-                const std::vector<t_segment_inf>& segment_inf = (sg_link.x_offset != 0) ? segment_inf_x :
-                                                                (sg_link.y_offset != 0) ? segment_inf_y : segment_inf_z;
+                const std::vector<t_segment_inf>& segment_inf = (sg_link.x_offset != 0) ? segment_inf_x : (sg_link.y_offset != 0) ? segment_inf_y
+                                                                                                                                  : segment_inf_z;
 
-                const e_rr_type chan_type = (sg_link.x_offset != 0) ? e_rr_type::CHANX :
-                                            (sg_link.y_offset != 0) ? e_rr_type::CHANY : e_rr_type::CHANZ;
-
+                const e_rr_type chan_type = (sg_link.x_offset != 0) ? e_rr_type::CHANX : (sg_link.y_offset != 0) ? e_rr_type::CHANY
+                                                                                                                 : e_rr_type::CHANZ;
 
                 auto seg_it = std::ranges::find_if(segment_inf,
                                                    [&](const t_segment_inf& seg) noexcept {
@@ -224,7 +223,6 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
 
                 VTR_ASSERT(seg_it != segment_inf.end());
                 const t_segment_inf& wire_segment = *seg_it;
-
 
                 index_to_correct_sg_channels(sg_pattern.gather_pattern, gather_loc, chan_details_x, chan_details_y, gather_channels);
                 index_to_correct_sg_channels(sg_pattern.scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);

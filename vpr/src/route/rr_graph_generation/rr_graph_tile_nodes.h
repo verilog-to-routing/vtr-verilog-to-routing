@@ -1,17 +1,29 @@
 
 #pragma once
 
+/**
+ * @file
+ * @brief Functions for creating RR graph nodes for tile classes and pins.
+ *
+ * This header declares utilities used during RR graph construction:
+ * - Adds SOURCE and SINK nodes for within a tile.
+ * - Adds OPIN and IPIN nodes for physical pins of a tile.
+ * - Provides connections between source/sinks and pins using delayless switches.
+ */
+
 #include <vector>
 #include "physical_types.h"
 #include "rr_edge.h"
 
 class RRGraphBuilder;
 
+/// @brief Create SOURCE and SINK nodes for each class in a tile and set their properties.
 void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
                           const std::vector<int>& class_num_vec,
                           const t_physical_tile_loc& root_loc,
                           t_physical_tile_type_ptr physical_type);
 
+/// @brief Create OPIN and IPIN nodes for each pin in a tile and set their properties.
 void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                        const std::vector<int>& pin_num_vec,
                        const t_physical_tile_loc& root_loc,

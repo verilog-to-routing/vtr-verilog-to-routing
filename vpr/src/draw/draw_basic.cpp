@@ -165,9 +165,7 @@ void drawplace(ezgl::renderer* g) {
                         if (draw_state->draw_block_text) {
                             /* Draw text if the space has parts of the netlist */
                             if (bnum) {
-                                std::string name = cluster_ctx.clb_nlist.block_name(
-                                                       bnum)
-                                                   + vtr::string_fmt(" (#%zu)", size_t(bnum));
+                                std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
 
                                 g->draw_text(center, name.c_str(), abs_clb_bbox.width(),
                                              abs_clb_bbox.height());

@@ -31,6 +31,7 @@
 #include "ezgl/rectangle.hpp"
 #include "ezgl/color.hpp"
 #include "ezgl/application.hpp"
+#include "draw_color.h"
 
 /// @brief Whether to draw routed nets or flylines (direct lines between sources and sinks).
 enum e_draw_nets {
@@ -91,7 +92,7 @@ enum e_draw_net_type {
 };
 
 /// Chanx to chany or vice versa?
-enum e_chan_edge_dir {
+enum class e_chan_edge_dir {
     FROM_X_TO_Y,
     FROM_Y_TO_X
 };
@@ -123,6 +124,14 @@ enum class e_edge_type {
     CHAN_TO_CHAN, // channel to channel
     NUM_EDGE_TYPES
 };
+
+/// Maps edge types to the color with which they are visualized
+inline const vtr::array<e_edge_type, ezgl::color, (size_t)e_edge_type::NUM_EDGE_TYPES> EDGE_COLOR_MAP{
+    ezgl::LIGHT_PINK,
+    ezgl::MEDIUM_PURPLE,
+    ezgl::PINK,
+    ezgl::PURPLE,
+    blk_DARKGREEN};
 
 /**
  * @brief Structure used to hold data passed into the toggle checkbox callback function.

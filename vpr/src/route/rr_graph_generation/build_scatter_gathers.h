@@ -29,9 +29,9 @@ struct t_sg_candidate {
 /// This data structure is used in RR graph generation to model a node that is
 /// driven by wires at a gather location and drives wires at a scatter location.
 struct t_bottleneck_link {
-    t_physical_tile_loc gather_loc;                         ///< Source switchblock location.
-    t_physical_tile_loc scatter_loc;                        ///< Destination switchblock location.
-    int arch_wire_switch;                                   ///< The switch (mux) used to drive the bottleneck wire.
+    t_physical_tile_loc gather_loc;  ///< Source switchblock location.
+    t_physical_tile_loc scatter_loc; ///< Destination switchblock location.
+    int arch_wire_switch;            ///< The switch (mux) used to drive the bottleneck wire.
     int parallel_segment_index;
     e_rr_type chan_type;
     std::vector<t_sg_candidate> gather_fanin_connections;   ///< Wires driving the bottleneck link at  `gather_loc`
