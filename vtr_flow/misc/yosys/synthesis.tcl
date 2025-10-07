@@ -1,21 +1,24 @@
 yosys -import
-
 plugin -i parmys
-yosys -import
 
-read_verilog -nomem2reg +/parmys/vtr_primitives.v
-setattr -mod -set keep_hierarchy 1 single_port_ram
-setattr -mod -set keep_hierarchy 1 dual_port_ram
-
-# synlig path error handling
-if {[catch {set synlig $::env(synlig_exe_path)} err]} {
-	puts "Error: $err"
-	puts "synlig_exe_path is not set"
+# yosys-slang plugin error handling
+if {$env(PARSER) == "slang" } {
+	if {![info exists ::env(yosys_slang_path)]} {
+		puts "Error: $err"
+		puts "yosys_slang_path is not set"
+	} elseif {![file exists $::env(yosys_slang_path)]} {
+		error "Error: cannot find plugin at '$::env(yosys_slang_path)'. Run make with CMake param -DSLANG_SYSTEMVERILOG=ON to enable yosys-slang plugin."
+	} else {
+		plugin -i slang
+		yosys -import
+		puts "Using yosys-slang as yosys frontend"
+	}
+} elseif {$env(PARSER) == "default" } {
+	yosys -import
+	puts "Using Yosys read_verilog as yosys frontend"
 } else {
-	set synlig $::env(synlig_exe_path)
-	puts "Using parmys as partial mapper"
+	error "Invalid PARSER"
 }
-
 
 # arch file: QQQ
 # input files: [XXX]
@@ -25,17 +28,21 @@ if {[catch {set synlig $::env(synlig_exe_path)} err]} {
 
 parmys_arch -a QQQ
 
-if {$env(PARSER) == "surelog" } {
-	puts "Using Synlig read_uhdm command"
-	
-	exec $synlig -p "read_uhdm XXX"
-	
-} elseif {$env(PARSER) == "system-verilog" } {
-	puts "Using Synlig read_systemverilog "
-	exec $synlig -p "read_systemverilog XXX"
-	
+if {$env(PARSER) == "slang" } {
+	# Create a file list containing the name(s) of file(s) \
+	# to read together with read_slang
+	source [file join [pwd] "slang_filelist.tcl"]
+	set readfile [file join [pwd] "filelist.txt"]
+	#Writing names of circuit files to file list
+	build_filelist {XXX} $readfile
+	puts "Using Yosys read_slang command"
+	#Read vtr_primitives library and user design verilog in same command
+	read_slang -v $env(PRIMITIVES) -C $readfile
 } elseif {$env(PARSER) == "default" } {
 	puts "Using Yosys read_verilog command"
+	read_verilog -nomem2reg +/parmys/vtr_primitives.v
+	setattr -mod -set keep_hierarchy 1 single_port_ram
+ 	setattr -mod -set keep_hierarchy 1 dual_port_ram
 	read_verilog -sv -nolatches XXX
 } else {
 	error "Invalid PARSER"
@@ -74,13 +81,10 @@ techmap -map +/parmys/aldffe2dff.v
 opt -full
 
 # Separate options for Parmys execution (Verilog or SystemVerilog)
-if {$env(PARSER) == "default"} {
+if {$env(PARSER) == "default" || $env(PARSER) == "slang"} {
     # For Verilog, use -nopass for a simpler, faster flow
     parmys -a QQQ -nopass -c CCC YYY
-} elseif {$env(PARSER) == "system-verilog" || $env(PARSER) == "surelog"} {
-    # For Synlig SystemVerilog, run additional passes to handle complexity
-    parmys -a QQQ -c CCC YYY
-}
+} 
 
 opt -full
 

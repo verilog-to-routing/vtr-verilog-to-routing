@@ -5,19 +5,18 @@
  * @brief This file includes the most-utilized functions that manipulate the RRGraph object.
  */
 
-/* Include header files which include data structures used by
- * the function declaration
- */
 #include <vector>
+#include "librrgraph_types.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
-#include "rr_graph_view.h"
 #include "device_grid.h"
 
+class RRGraphView;
+
 struct t_pin_chain_node {
-    int pin_physical_num = OPEN;
-    int nxt_node_idx = OPEN;
+    int pin_physical_num = LIBRRGRAPH_UNDEFINED_VAL;
+    int nxt_node_idx = LIBRRGRAPH_UNDEFINED_VAL;
 
     t_pin_chain_node() = default;
     t_pin_chain_node(int pin_num, int nxt_idx) noexcept
@@ -51,8 +50,8 @@ struct t_cluster_pin_chain {
  * @return A vector of switch IDs
  */
 std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
-                                               const RRNodeId& from_node,
-                                               const RRNodeId& to_node);
+                                               RRNodeId from_node,
+                                               RRNodeId to_node);
 
 /**
  * @brief This function generates and returns a vector indexed by RRNodeId containing a vector of fan-in edges for each node.
@@ -93,8 +92,36 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
  * if that is the case. Can be used for multiple purposes. For example, to determine which type of bounding
  * box to be used to estimate the wire-length of a net.
  *
- * @param rr_graph
+ * @param rr_graph The routing resource graph
  *
  * @return limited_to_opin
  */
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
+
+/**
+ * @brief Check if a CHANX and a CHANY node are adjacent, regardless of their order.
+ *
+ * This function checks spatial adjacency between a CHANX and CHANY node without assuming
+ * any particular input order. If the node types are not one CHANX and one CHANY, an error is thrown.
+ *
+ * @param rr_graph The routing resource graph
+ * @param node1 One of the nodes (CHANX or CHANY)
+ * @param node2 The other node (CHANX or CHANY)
+ * @return true if the nodes are spatially adjacent, false otherwise
+ */
+bool chanx_chany_nodes_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RRNodeId node2);
+
+/**
+ * @brief Check if a CHANX or CHANY node is adjacent to a CHANZ node.
+ *
+ * @param rr_graph The routing resource graph
+ * @param node1 One of the RR nodes (CHANX, CHANY, or CHANZ)
+ * @param node2 The other RR node
+ * @return true if spatially adjacent, false otherwise
+ *
+ * @note Exactly one node must be CHANZ; the other must be CHANX or CHANY.
+ */
+bool chanxy_chanz_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RRNodeId node2);
+
+bool chan_same_type_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RRNodeId node2);
+

@@ -49,10 +49,11 @@
 #include <cstdint>
 #include <algorithm>
 #include <array>
+#include <string_view>
 
 #include "vtr_strong_id.h"
-#include "vtr_string_view.h"
 #include "vtr_vector.h"
+#include "vtr_hash.h"
 
 namespace vtr {
 
@@ -132,7 +133,7 @@ class interned_string_iterator {
         std::fill(parts_.begin(), parts_.end(), StringId());
         part_idx_ = size_t(-1);
         str_idx_ = size_t(-1);
-        view_ = vtr::string_view();
+        view_ = std::string_view();
     }
 
     const string_internment* internment_;
@@ -140,7 +141,7 @@ class interned_string_iterator {
     std::array<StringId, kMaxParts> parts_;
     size_t part_idx_;
     size_t str_idx_;
-    vtr::string_view view_;
+    std::string_view view_;
 };
 
 ///@brief == operator
@@ -346,7 +347,7 @@ class string_internment {
      * If interned_string is ever called with two strings of the same value,
      * the interned_string will be equal.
      */
-    interned_string intern_string(vtr::string_view view) {
+    interned_string intern_string(std::string_view view) {
         size_t num_parts = 1;
         for (const auto& c : view) {
             if (c == kSplitChar) {
@@ -381,12 +382,10 @@ class string_internment {
 
     /**
      * @brief Retrieve a string part based on id.
-     *
      * This method should not generally be called directly.
      */
-    vtr::string_view get_string(StringId id) const {
-        auto& str = strings_[id];
-        return vtr::string_view(str.data(), str.size());
+    std::string_view get_string(StringId id) const {
+        return strings_[id];
     }
 
     ///@brief Number of unique string parts stored.
@@ -395,7 +394,7 @@ class string_internment {
     }
 
   private:
-    StringId intern_one_string(vtr::string_view view) {
+    StringId intern_one_string(std::string_view view) {
         temporary_.assign(view.begin(), view.end());
         StringId next_id(strings_.size());
         auto result = string_to_id_.insert(std::make_pair(temporary_, next_id));

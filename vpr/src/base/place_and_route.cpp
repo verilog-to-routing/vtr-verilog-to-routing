@@ -71,19 +71,23 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
     e_graph_type graph_type;
     e_graph_type graph_directionality;
 
-    /* We have chosen to pass placer_opts_ref by reference because of its large size. *
-     * However, since the value is mutated later in the function, we declare a        *
-     * mutable variable called placer_opts equal to placer_opts_ref.                  */
+    // We have chosen to pass placer_opts_ref by reference because of its large size.
+    // However, since the value is mutated later in the function, we declare a
+    // mutable variable called placer_opts equal to placer_opts_ref.
 
     t_placer_opts placer_opts = placer_opts_ref;
 
-    /* Allocate the major routing structures. */
+    // Allocate the major routing structures.
 
     if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
         graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        // Branch on tileable routing
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
+        }
         graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
@@ -98,15 +102,15 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         current = router_opts.fixed_channel_width + 5 * udsd_multiplier;
         low = router_opts.fixed_channel_width - 1 * udsd_multiplier;
     } else {
-        /* Initialize binary serach guess */
+        // Initialize binary serach guess
 
         if (min_chan_width_hint > 0) {
-            //If the user provided a hint use it as the initial guess
+            // If the user provided a hint use it as the initial guess
             VTR_LOG("Initializing minimum channel width search using specified hint\n");
             current = min_chan_width_hint;
             using_minw_hint = true;
         } else {
-            //Otherwise base it off the architecture
+            // Otherwise base it off the architecture
             VTR_LOG("Initializing minimum channel width search based on maximum CLB pins\n");
             int max_pins = max_pins_per_grid_tile();
             current = max_pins + max_pins % 2;
@@ -115,7 +119,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         low = -1;
     }
 
-    /* Constraints must be checked to not break rr_graph generator */
+    // Constraints must be checked to not break rr_graph generator
     if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
         if (current % 2 != 0) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -140,9 +144,8 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         VTR_LOG("Attempting to route at %d channels (binary search bounds: [%d, %d])\n", current, low, high);
         fflush(stdout);
 
-        /* Check if the channel width is huge to avoid overflow.  Assume the *
-         * circuit is unroutable with the current router options if we're    *
-         * going to overflow.                                                */
+        // Check if the channel width is huge to avoid overflow.
+        // Assume the circuit is unroutable with the current router options if we're going to overflow.
         if (router_opts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH) {
             if (current > router_opts.fixed_channel_width * 4) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -198,31 +201,31 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
         if (success && !Fc_clipped) {
             if (current == high) {
-                /* Can't go any lower */
+                // Can't go any lower
                 final = current;
             }
             high = current;
 
-            /* If Fc_output is too high, set to full connectivity but warn the user */
+            // If Fc_output is too high, set to full connectivity but warn the user
             if (Fc_clipped) {
                 VTR_LOG_WARN("Fc_output was too high and was clipped to full (maximum) connectivity.\n");
             }
 
-            /* Save routing in case it is best. */
+            // Save routing in case it is best.
             save_routing(best_routing,
                          route_ctx.clb_opins_used_locally,
                          saved_clb_opins_used_locally);
 
-            //If the user gave us a minW hint (and we routed successfully at that width)
-            //make the initial guess closer to the current value instead of the standard guess.
+            // If the user gave us a minW hint (and we routed successfully at that width)
+            // make the initial guess closer to the current value instead of the standard guess.
             //
-            //To avoid wasting time at unroutable channel widths we want to determine an un-routable (but close
-            //to the hint channel width). Picking a value too far below the hint may cause us to waste time
-            //at an un-routable channel width.  Picking a value too close to the hint may cause a spurious
-            //failure (c.f. verify_binary_search). The scale_factor below seems a reasonable compromise.
+            // To avoid wasting time at unroutable channel widths we want to determine an un-routable (but close
+            // to the hint channel width). Picking a value too far below the hint may cause us to waste time
+            // at an un-routable channel width.  Picking a value too close to the hint may cause a spurious
+            // failure (c.f. verify_binary_search). The scale_factor below seems a reasonable compromise.
             //
-            //Note this is only active for only the first re-routing after the initial guess,
-            //and we use the default scale_factor otherwise
+            // Note this is only active for only the first re-routing after the initial guess,
+            // and we use the default scale_factor otherwise
             if (using_minw_hint && attempt_count == 1) {
                 scale_factor = 1.1;
             }
@@ -245,7 +248,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 VTR_ASSERT(current < high);
             }
 
-        } else { /* last route not successful */
+        } else { // last route not successful
             if (success && Fc_clipped) {
                 VTR_LOG("Routing rejected, Fc_output was too high.\n");
                 success = false;
@@ -259,7 +262,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 current = (high + low) / scale_factor; //Step to midpoint
             } else {
                 if (router_opts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH) {
-                    /* FOR Wneed = f(Fs) search */
+                    // FOR Wneed = f(Fs) search
                     if (low < router_opts.fixed_channel_width + 30) {
                         current = low + 5 * udsd_multiplier;
                     } else {
@@ -267,12 +270,12 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                         "Aborting: Wneed = f(Fs) search found exceedingly large Wneed (at least %d).\n", low);
                     }
                 } else {
-                    current = low * scale_factor; /* Haven't found upper bound yet */
+                    current = low * scale_factor; // Haven't found upper bound yet
 
                     if (std::abs(current - low) < udsd_multiplier) {
-                        //If high and scale_factor are both small, we might have ended
-                        //up with no change in current.
-                        //In that case, ensure we increase current by at least the track multiplier
+                        // If high and scale_factor are both small, we might have ended
+                        // up with no change in current.
+                        // In that case, ensure we increase current by at least the track multiplier
                         current = high + udsd_multiplier;
                     }
                     VTR_ASSERT(current > low);
@@ -282,21 +285,21 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         current = current + current % udsd_multiplier;
     }
 
-    /* The binary search above occasionally does not find the minimum    *
-     * routeable channel width.  Sometimes a circuit that will not route  *
-     * in 19 channels will route in 18, due to router flukiness.  If      *
-     * verify_binary_search is set, the code below will ensure that FPGAs *
-     * with channel widths of final-2 and final-3 wil not route           *
-     * successfully.  If one does route successfully, the router keeps    *
-     * trying smaller channel widths until two in a row (e.g. 8 and 9)    *
-     * fail.                                                              */
+    // The binary search above occasionally does not find the minimum routeable channel width.
+    // Sometimes a circuit that will not route in 19 channels will route in 18, due to router flukiness.
+    // If verify_binary_search is set, the code below will ensure that FPGAs with channel widths of
+    // final-2 and final-3 wil not route successfully.
+    // If one does route successfully, the router keeps trying smaller channel widths until two in a
+    // row (e.g. 8 and 9) fail.
 
     if (verify_binary_search) {
         VTR_LOG("\n");
         VTR_LOG("Verifying that binary search found min channel width...\n");
 
-        prev_success = true; /* Actually final - 1 failed, but this makes router */
-        /* try final-2 and final-3 even if both fail: safer */
+        // Actually final - 1 failed, but this makes router
+        prev_success = true;
+
+        // try final-2 and final-3 even if both fail: safer
         prev2_success = true;
 
         current = final - 2;
@@ -351,14 +354,15 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             prev_success = success;
             current--;
             if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
-                current--; /* width must be even */
+                // width must be even
+                current--;
             }
         }
     }
 
-    /* End binary search verification. */
-    /* Restore the best placement (if necessary), the best routing, and  *
-     * * the best channel widths for final drawing and statistics output.  */
+    // End binary search verification.
+    // Restore the best placement (if necessary), the best routing, and the
+    // best channel widths for final drawing and statistics output.
     t_chan_width chan_width = init_chan(final, arch->Chans, graph_directionality);
 
     free_rr_graph();
@@ -405,8 +409,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
 t_chan_width setup_chan_width(const t_router_opts& router_opts,
                               t_chan_width_dist chan_width_dist) {
-    /*we give plenty of tracks, this increases routability for the */
-    /*lookup table generation */
+    // we give plenty of tracks, this increases routability for the lookup table generation
 
     e_graph_type graph_directionality;
     int width_fac;
@@ -417,9 +420,9 @@ t_chan_width setup_chan_width(const t_router_opts& router_opts,
         auto type = find_most_common_tile_type(device_ctx.grid);
 
         width_fac = 4 * type->num_pins;
-        /*this is 2x the value that binary search starts */
-        /*this should be enough to allow most pins to   */
-        /*connect to tracks in the architecture */
+        // this is 2x the value that binary search starts
+        // this should be enough to allow most pins to
+        // connect to tracks in the architecture
     } else {
         width_fac = router_opts.fixed_channel_width;
     }
@@ -457,24 +460,28 @@ t_chan_width init_chan(int cfactor,
     if (grid.height() > 1) {
         int num_channels = grid.height() - 1;
         VTR_ASSERT(num_channels > 0);
-        float separation = 1.0 / num_channels; /* Norm. distance between two channels. */
+        // Norm. distance between two channels.
+        float separation = 1.0 / num_channels;
 
         for (size_t i = 0; i < grid.height(); ++i) {
             float y = float(i) / num_channels;
             chan_width.x_list[i] = compute_chan_width(cfactor, chan_x_dist, y, separation, graph_directionality);
-            chan_width.x_list[i] = std::max(chan_width.x_list[i], 1); //Minimum channel width 1
+            // Minimum channel width 1
+            chan_width.x_list[i] = std::max(chan_width.x_list[i], 1);
         }
     }
 
     if (grid.width() > 1) {
         int num_channels = grid.width() - 1;
         VTR_ASSERT(num_channels > 0);
-        float separation = 1.0 / num_channels; /* Norm. distance between two channels. */
+        // Norm. distance between two channels.
+        float separation = 1.0 / num_channels;
 
         for (size_t i = 0; i < grid.width(); ++i) {
             float x = float(i) / num_channels;
             chan_width.y_list[i] = compute_chan_width(cfactor, chan_y_dist, x, separation, graph_directionality);
-            chan_width.y_list[i] = std::max(chan_width.y_list[i], 1); //Minimum channel width 1
+            // Minimum channel width 1
+            chan_width.y_list[i] = std::max(chan_width.y_list[i], 1);
         }
     }
 
@@ -536,18 +543,18 @@ static float comp_width(t_chan* chan, float x, float separation) {
     float val;
 
     switch (chan->type) {
-        case UNIFORM:
+        case e_stat::UNIFORM:
             val = chan->peak;
             break;
 
-        case GAUSSIAN:
+        case e_stat::GAUSSIAN:
             val = (x - chan->xpeak) * (x - chan->xpeak)
                   / (2 * chan->width * chan->width);
             val = chan->peak * exp(-val);
             val += chan->dc;
             break;
 
-        case PULSE:
+        case e_stat::PULSE:
             val = (float)fabs((double)(x - chan->xpeak));
             if (val > chan->width / 2.) {
                 val = 0;
@@ -557,7 +564,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
             val += chan->dc;
             break;
 
-        case DELTA:
+        case e_stat::DELTA:
             val = x - chan->xpeak;
             if (val > -separation / 2. && val <= separation / 2.)
                 val = chan->peak;
@@ -569,7 +576,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "in comp_width: Unknown channel type %d.\n", chan->type);
-            val = OPEN;
+            val = UNDEFINED;
             break;
     }
 
@@ -589,7 +596,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
  * This function should only be called once
  */
 void post_place_sync() {
-    /* Go through each block */
+    // Go through each block
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
 

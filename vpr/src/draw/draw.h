@@ -94,7 +94,7 @@ ezgl::color to_ezgl_color(vtr::Color<float> color);
 /* This helper function determines whether a net has been highlighted. The highlighting
  * could be caused by the user clicking on a routing resource, toggled, or
  * fan-in/fan-out of a highlighted node. */
-bool draw_if_net_highlighted(ClusterNetId inet);
+bool draw_if_net_highlighted(ParentNetId inet);
 std::vector<RRNodeId> trace_routed_connection_rr_nodes(
     ClusterNetId net_id,
     int driver_pin,

@@ -9,6 +9,7 @@
 #include "vpr_types.h"
 #include "rr_graph_builder.h"
 #include "rr_graph_type.h"
+#include "clb2clb_directs.h"
 
 /* Warnings about the routing graph that can be returned.
  * This is to avoid output messages during a value sweep */
@@ -35,24 +36,27 @@ void create_rr_graph(e_graph_type graph_type,
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                          const t_det_routing_arch& det_routing_arch,
                          t_physical_tile_type_ptr physical_tile,
-                         int layer,
-                         int x,
-                         int y,
+                         const t_physical_tile_loc& tile_loc,
                          const int delayless_switch);
 
 void free_rr_graph();
 
-t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_sw_inf,
-                                                  const float R_minW_nmos,
-                                                  const float R_minW_pmos);
-// Sets the spec for the rr_switch based on the arch switch
-void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
-                                     const std::map<int, t_arch_switch_inf>& arch_sw_inf,
-                                     int arch_switch_idx,
-                                     int rr_switch_idx,
-                                     int fanin,
-                                     const float R_minW_nmos,
-                                     const float R_minW_pmos);
+void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
+                        const std::vector<t_segment_inf>& segment_inf_x,
+                        const std::vector<t_segment_inf>& segment_inf_y,
+                        const std::vector<t_segment_inf>& segment_inf_z,
+                        RRSwitchId wire_to_rr_ipin_switch,
+                        e_base_cost_type base_cost_type);
+
+std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
+                                                       const int max_pins,
+                                                       const std::vector<t_segment_inf>& segment_inf,
+                                                       const std::vector<int>& sets_per_seg_type,
+                                                       const t_chan_width* nodes_per_chan,
+                                                       const e_fc_type fc_type,
+                                                       const e_directionality directionality,
+                                                       bool* Fc_clipped,
+                                                       bool is_flat);
 
 t_non_configurable_rr_sets identify_non_configurable_rr_sets();
 

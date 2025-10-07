@@ -39,8 +39,8 @@
 %%
 ^[ \t]*\/\/[^\n\r]*(\n|\r\n)                /* skip one-line comments */
 ^[ \t]*\(\*[^\n\r]*\*\)                     /* skip synthesis attributes and directives */
-[ \t]+                                      /* skip white spaces */
-!					    /* skip the logical operator ! applied on the input ports of the lut - this results in lut mask not being valid anoymore */
+[ \t\n\r]+                                      /* skip white spaces */
+!				    /* skip the logical operator ! applied on the input ports of the lut - this results in lut mask not being valid anoymore */
 (\n|\r\n)                                   /* skip empty lines */
 module                                      return TOKEN_MODULE;
 endmodule                                   return TOKEN_ENDMODULE;
@@ -58,6 +58,11 @@ assign                                      return TOKEN_ASSIGN;
                                                 strncpy(yylval.string, yytext, yyleng+1);
                                                 return TOKEN_REGULARID;
                                             }
+~[a-zA-Z_][a-zA-Z_0-9$]*                     {
+                                                yylval.string = (char *)malloc(yyleng);
+                                                strncpy(yylval.string, yytext+1, yyleng);
+                                                return TOKEN_REGULARID;
+                                            }
 [-]?[1-9][0-9]*|0+                          {
                                                 yylval.value = atoi(yytext); 
                                                 return TOKEN_INTCONSTANT;
@@ -65,6 +70,11 @@ assign                                      return TOKEN_ASSIGN;
 \\[^ ^\t^;]+                                {
                                                 yylval.string = (char *)malloc(yyleng);
                                                 strcpy(yylval.string, yytext+1);
+                                                return TOKEN_ESCAPEDID;
+                                            }
+~\\[^ ^\t^;]+                               {
+                                                yylval.string = (char *)malloc(yyleng - 1);
+                                                strcpy(yylval.string, yytext+2);
                                                 return TOKEN_ESCAPEDID;
                                             }
 \"[^\"]*\"                                  {

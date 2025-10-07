@@ -140,3 +140,44 @@ void bad_attribute_value(const pugi::xml_attribute attr,
 
     throw ArchFpgaError(msg, loc_data.filename(), loc_data.line(node));
 }
+
+int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data) {
+    int max_die_num = -1;
+
+    const auto& layer_tag = layout_type_tag.children("layer");
+    for (const auto& layer_child : layer_tag) {
+        int die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
+        if (die_number > max_die_num) {
+            max_die_num = die_number;
+        }
+    }
+
+    if (max_die_num == -1) {
+        // For backwards compatibility, if no die number is specified, assume 1 layer
+        return 1;
+    } else {
+        return max_die_num + 1;
+    }
+}
+
+t_metadata_dict process_meta_data(vtr::string_internment& strings,
+                                  pugi::xml_node Parent,
+                                  const pugiutil::loc_data& loc_data) {
+    //	<metadata>
+    //	  <meta>CLBLL_L_</meta>
+    //	</metadata>
+    t_metadata_dict data;
+    pugi::xml_node metadata = get_single_child(Parent, "metadata", loc_data, ReqOpt::OPTIONAL);
+    if (metadata) {
+        pugi::xml_node meta_tag = get_first_child(metadata, "meta", loc_data);
+        while (meta_tag) {
+            std::string key = get_attribute(meta_tag, "name", loc_data).as_string();
+
+            std::string value = meta_tag.child_value();
+            data.add(strings.intern_string(key),
+                     strings.intern_string(value));
+            meta_tag = meta_tag.next_sibling(meta_tag.name());
+        }
+    }
+    return data;
+}

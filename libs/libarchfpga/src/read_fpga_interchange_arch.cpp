@@ -1,5 +1,6 @@
 
 #include "read_fpga_interchange_arch.h"
+#include "arch_types.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
@@ -16,9 +17,9 @@
 #include <map>
 #include <regex>
 #include <set>
-#include <stdlib.h>
+#include <cstdlib>
 #include <string>
-#include <string.h>
+#include <cstring>
 #include <zlib.h>
 #include <sstream>
 
@@ -284,7 +285,7 @@ struct ArchReader {
         set_arch_file_name(arch_file);
 
         for (std::string str : ar_.getStrList()) {
-            auto interned_string = arch_->strings.intern_string(vtr::string_view(str.c_str()));
+            auto interned_string = arch_->strings.intern_string(str);
             arch_->interned_strings.push_back(interned_string);
         }
     }
@@ -550,7 +551,7 @@ struct ArchReader {
             std::string wire_name = str(wire.getName());
 
             // pin name, bel name
-            int pin_id = OPEN;
+            int pin_id = ARCH_FPGA_UNDEFINED_VAL;
             bool pad_exists = false;
             bool all_inout_pins = true;
             std::string pad_bel_name;
@@ -577,7 +578,7 @@ struct ArchReader {
                     pin_id = pin;
             }
 
-            if (pin_id == OPEN) {
+            if (pin_id == ARCH_FPGA_UNDEFINED_VAL) {
                 // If no driver pin has been found, the assumption is that
                 // there must be a PAD with inout pin connected to other inout pins
                 for (auto pin : wire.getPins()) {
@@ -594,7 +595,7 @@ struct ArchReader {
                 }
             }
 
-            VTR_ASSERT(pin_id != OPEN);
+            VTR_ASSERT(pin_id != ARCH_FPGA_UNDEFINED_VAL);
 
             auto out_pin = site.getBelPins()[pin_id];
             auto out_pin_bel = get_bel_reader(site, str(out_pin.getBel()));
@@ -1674,10 +1675,10 @@ struct ArchReader {
      *         If a bel name index is specified, the bel pins are processed, otherwise the site ports
      *         are processed instead.
      */
-    void process_block_ports(t_pb_type* pb_type, Device::SiteType::Reader& site, size_t bel_name = OPEN) {
+    void process_block_ports(t_pb_type* pb_type, Device::SiteType::Reader& site, size_t bel_name = ARCH_FPGA_UNDEFINED_VAL) {
         // Prepare data based on pb_type level
         std::set<std::tuple<std::string, PORTS, int>> pins;
-        if (bel_name == (size_t)OPEN) {
+        if (bel_name == (size_t)ARCH_FPGA_UNDEFINED_VAL) {
             for (auto pin : site.getPins()) {
                 auto dir = pin.getDir() == INPUT ? IN_PORT : OUT_PORT;
                 pins.emplace(str(pin.getName()), dir, 1);
@@ -1845,14 +1846,14 @@ struct ArchReader {
         auto site_pins = site.getBelPins();
 
         std::string endpoint = direction == BACKWARD ? ic->input_string : ic->output_string;
-        auto ic_endpoints = vtr::split(endpoint, " ");
+        std::vector<std::string> ic_endpoints = vtr::StringToken(endpoint).split(" ");
 
         std::unordered_map<t_interconnect*, std::set<std::string>> pps_map;
 
         bool is_backward = direction == BACKWARD;
 
-        for (auto ep : ic_endpoints) {
-            auto parts = vtr::split(ep, ".");
+        for (const std::string& ep : ic_endpoints) {
+            auto parts = vtr::StringToken(ep).split(".");
             auto bel = parts[0];
             auto pin = parts[1];
 
@@ -1875,7 +1876,7 @@ struct ArchReader {
             if (bel_reader.getCategory() == ROUTING) {
                 for (auto bel_pin : bel_reader.getPins()) {
                     auto pin_reader = site_pins[bel_pin];
-                    auto pin_name = str(pin_reader.getName());
+                    std::string pin_name = str(pin_reader.getName());
 
                     if (pin_reader.getDir() != (is_backward ? INPUT : OUTPUT))
                         continue;
@@ -1889,7 +1890,7 @@ struct ArchReader {
                         std::string ic_to_find = bel + "." + pin_name;
 
                         bool found = false;
-                        for (auto out : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " "))
+                        for (const std::string& out : vtr::StringToken(is_backward ? other_ic->output_string : other_ic->input_string).split(" "))
                             found |= out == ic_to_find;
 
                         if (found) {
@@ -1911,7 +1912,7 @@ struct ArchReader {
                         t_interconnect* other_ic = &mode->interconnect[iic];
 
                         bool found = false;
-                        for (auto other_ep : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " ")) {
+                        for (const std::string& other_ep : vtr::StringToken(is_backward ? other_ic->output_string : other_ic->input_string).split(" ")) {
                             found |= other_ep == ep;
                         }
 
@@ -2243,7 +2244,7 @@ struct ArchReader {
             grid_def.width += 2;
             grid_def.height += 2;
 
-            grid_def.grid_type = GridDefType::FIXED;
+            grid_def.grid_type = e_grid_def_type::FIXED;
 
             if (name == "auto") {
                 // At the moment, the interchange specifies fixed-layout only architectures,
@@ -2316,18 +2317,18 @@ struct ArchReader {
         arch_->R_minW_nmos = 6065.520020;
         arch_->R_minW_pmos = 18138.500000;
         arch_->grid_logic_tile_area = 14813.392;
-        arch_->Chans.chan_x_dist.type = UNIFORM;
+        arch_->Chans.chan_x_dist.type = e_stat::UNIFORM;
         arch_->Chans.chan_x_dist.peak = 1;
         arch_->Chans.chan_x_dist.width = 0;
         arch_->Chans.chan_x_dist.xpeak = 0;
         arch_->Chans.chan_x_dist.dc = 0;
-        arch_->Chans.chan_y_dist.type = UNIFORM;
+        arch_->Chans.chan_y_dist.type = e_stat::UNIFORM;
         arch_->Chans.chan_y_dist.peak = 1;
         arch_->Chans.chan_y_dist.width = 0;
         arch_->Chans.chan_y_dist.xpeak = 0;
         arch_->Chans.chan_y_dist.dc = 0;
         arch_->ipin_cblock_switch_name.push_back(std::string("generic"));
-        arch_->SBType = WILTON;
+        arch_->sb_type = e_switch_block_type::WILTON;
         arch_->Fs = 3;
         default_fc_.specified = true;
         default_fc_.in_value_type = e_fc_value_type::FRACTIONAL;
@@ -2367,15 +2368,15 @@ struct ArchReader {
             t_arch_switch_inf* as = &arch_->switches[i];
 
             R = Cin = Cint = Cout = Tdel = 0.0;
-            SwitchType type;
+            e_switch_type type;
 
             if (i == 0) {
                 switch_name = "short";
-                type = SwitchType::SHORT;
+                type = e_switch_type::SHORT;
                 R = 0.0;
             } else if (i == 1) {
                 switch_name = "generic";
-                type = SwitchType::MUX;
+                type = e_switch_type::MUX;
                 R = 0.0;
             } else {
                 auto entry = pip_timing_models_list[i - 2];
@@ -2403,7 +2404,7 @@ struct ArchReader {
                 name << "Tdel" << std::scientific << Tdel;
 
                 switch_name = name.str() + std::to_string(i);
-                type = entry.first ? SwitchType::MUX : SwitchType::PASS_GATE;
+                type = entry.first ? e_switch_type::MUX : e_switch_type::PASS_GATE;
             }
 
             /* Should never happen */
@@ -2414,7 +2415,7 @@ struct ArchReader {
 
             as->name = switch_name;
             as->set_type(type);
-            as->mux_trans_size = as->type() == SwitchType::MUX ? 1 : 0;
+            as->mux_trans_size = as->type() == e_switch_type::MUX ? 1 : 0;
 
             as->R = R;
             as->Cin = Cin;
@@ -2422,13 +2423,13 @@ struct ArchReader {
             as->Cinternal = Cint;
             as->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel);
 
-            if (as->type() == SwitchType::SHORT || as->type() == SwitchType::PASS_GATE) {
-                as->buf_size_type = BufferSize::ABSOLUTE;
+            if (as->type() == e_switch_type::SHORT || as->type() == e_switch_type::PASS_GATE) {
+                as->buf_size_type = e_buffer_size::ABSOLUTE;
                 as->buf_size = 0;
                 as->power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
                 as->power_buffer_size = 0.;
             } else {
-                as->buf_size_type = BufferSize::AUTO;
+                as->buf_size_type = e_buffer_size::AUTO;
                 as->buf_size = 0.;
                 as->power_buffer_type = POWER_BUFFER_TYPE_AUTO;
             }
@@ -2465,7 +2466,7 @@ struct ArchReader {
             arch_->Segments[index].frequency = 1;
             arch_->Segments[index].Rmetal = 1e-12;
             arch_->Segments[index].Cmetal = 1e-12;
-            arch_->Segments[index].parallel_axis = BOTH_AXIS;
+            arch_->Segments[index].parallel_axis = e_parallel_axis::BOTH_AXIS;
 
             // TODO: Only bi-directional segments are created, but it the interchange format
             //       has directionality information on PIPs, which may be used to infer the

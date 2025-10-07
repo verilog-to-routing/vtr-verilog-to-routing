@@ -19,7 +19,7 @@ add_library(parmys SHARED
 )
 target_include_directories(parmys PUBLIC ${LIB_INCLUDE_DIRS})
 target_include_directories(parmys PUBLIC ${LIB_INCLUDE_DIRS_O})
-target_include_directories(parmys PUBLIC ${VTR_SOURCE_DIR}/yosys/share/include)
+target_include_directories(parmys PUBLIC ${VTR_SOURCE_DIR}/libs/EXTERNAL/yosys/share/include)
 
 add_definitions("-D_YOSYS_")
 add_dependencies(parmys yosys)

@@ -50,6 +50,8 @@ jobs:
         make get_ispd_benchmarks
         ./dev/upgrade_vtr_archs.sh
         make get_symbiflow_benchmarks
+        make get_zeroasic_rr_graphs
+        make get_flat_placements
 
     # Build VTR using the default build options.
     - name: 'Build VTR'
@@ -134,3 +136,38 @@ jobs:
         name: nightly_tests_golden
         path: |
           vtr_flow/**/vtr_reg_nightly*/**/golden_results.txt
+
+  Coverity:
+    name: 'Coverity Scan'
+    runs-on: ubuntu-24.04
+    steps:
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.12.3
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./install_apt_packages.sh
+
+    - uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ${{ github.job }}
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: '-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on'
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+        _COVERITY_URL: 'https://scan.coverity.com/download/linux64'
+        _COVERITY_MD5: 'd0d7d7df9d6609e578f85096a755fb8f'
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        ./.github/scripts/build.sh
+

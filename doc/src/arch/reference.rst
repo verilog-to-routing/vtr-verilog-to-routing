@@ -51,7 +51,7 @@ Each of these contains ``<port>`` tags:
 
     :req_param name: The port name.
 
-    :opt_param is_clock: Identifies if the port as a clock port.
+    :opt_param is_clock: Identifies if the port is a clock port.
 
         .. seealso:: The :ref:`Primitive Timing Modelling Tutorial <arch_model_timing_tutorial>` for usage of ``is_clock`` to model clock control blocks  such as clock generators, clock buffers/gates and clock muxes.
 
@@ -400,7 +400,7 @@ Grid Location Tags
 
         <col> RAM and <perimeter> io example
 
-.. arch:tag:: <row type="string" priority="int" starty="expr" repeaty="expr" startx="expr"/>
+.. arch:tag:: <row type="string" priority="int" starty="expr" repeaty="expr" startx="expr" incrx="expr"/>
 
     :req_param type:
         The name of the top-level complex block type (i.e. ``<pb_type>``) being specified.
@@ -427,7 +427,7 @@ Grid Location Tags
 
     Creates a row of the specified block type at ``starty``.
 
-    If ``repeaty`` is specified the column will be repeated wherever :math:`y = starty + k \cdot repeaty`, is satisfied for any positive integer :math:`k`.
+    If ``repeaty`` is specified the row will be repeated wherever :math:`y = starty + k \cdot repeaty`, is satisfied for any positive integer :math:`k`.
 
     A non-zero ``startx`` is typically used if a ``<perimeter>`` tag is specified to adjust the starting position of blocks with width > 1.
 
@@ -539,7 +539,7 @@ Grid Location Tags
 
         <!-- Create a 3x3 mesh of NoC routers (width 2, height 2) whose relative positions
              will scale with the device dimensions -->
-        <region type="NoC" startx="W/4 - w/2" starty="W/4 - w/2" incrx="W/4" incry="W/4" priority="3"/>
+        <region type="NoC" startx="W/4 - w/2" starty="H/4 - h/2" incrx="W/4" incry="H/4" priority="3"/>
 
     .. figure:: region_incr_mesh_fpga_grid.*
 
@@ -580,6 +580,32 @@ Grid Layout Example
 .. figure:: fpga_grid_example.*
 
     Example FPGA grid
+
+
+.. arch:tag:: <interposer_cut dim=x|y loc="int"/>
+
+    :req_param dim: Dimension or axis of the cut. 'X' or 'x' means a horizontal cut while 'Y' or 'y' means a vertical cut.
+    :req_param loc: Location of the cut. Cuts are done above or to the right of the tiles at coordinate 'loc'. For example a cut with dim=x and loc=0 would cut the vertical wires above tiles in the 0th row. Currently only integer values are supported.
+
+    .. note:: Interposers are experimental and are currently not supported by VPR and using the related tags will not actually result in any changes to the flow.
+    Defines an interposer cut for modelling 2.5D interposer-based architectures. An interposer cut will cut all connections at location 'loc' along the axis 'dim' Leaving the two sides completely unconnected.
+    To reconnect the two sides, this tag can have multiple <interdie_wire> tags as children to specify the connection between the two sides.
+
+.. arch:tag:: <interdie_wire sg_name="string" sg_link="string" offset_start="expr" offset_end="expr" offset_increment="expr" num="int"/>
+
+    :req_param sg_name: Name of the scatter-gather pattern to be used for the interdie connection.
+    :req_param sg_link: Name of the scatter-gather link to be used for the interdie connection.
+    :req_param offset_start: Starting point of scatter-gather instantiations.
+    :req_param offset_end: Ending point of scatter-gather instantiations
+    :req_param offset_increment: Increment/distance between scatter-gather instantiations.
+    :req_param num: Number of scatter-gather instantiations per switchblock location.
+
+    Defines the interdie wiring between the two sides of the cut. Connectivity is defined using scatter-gather patterns. Starting at 'offset_start' from location of the cut and moving by 'offset_increment' until we reach the location of 'offset_end' away from the cut, 'num' scatter-gather patterns defined by 'sg_name' and 'sg_link' will be instantiated.
+    Note that these offset points always define the starting point of the scatter-gather pattern's sg_link. offset_start, offset_end and offset_increment can be integer values or expressions involving W and H (device width and height.)
+
+    .. figure:: scatter_gather_images/interposer_diagram.png
+        
+        An example of how specifying interposers in VTR works. Connections between the two sides of a cut are first severed after which the two sides are reconnected using scatter_gather patterns. In this example the length of the sg_link wire used is 3. Note that there are 'num' of each pattern at each switchblock location.
 
 .. _arch_device_info:
 
@@ -623,7 +649,7 @@ The tags within the ``<device>`` tag are:
 
     Used for an area estimate of the amount of area taken by all the functional blocks.
 
-    .. note:: This value can be overriden for specific ``<pb_type>``s with the ``area`` attribute.
+    .. note:: This value can be overriden for specific ``<pb_type>`` s with the ``area`` attribute.
 
 
 .. arch:tag:: <switch_block type="{wilton | subset | universal | custom}" fs="int"/>
@@ -876,7 +902,7 @@ Tile
 The following tags are common to all ``<tile>`` tags:
 
 
-.. arch:tag:: <sub_tile name"string" capacity="{int}">
+.. arch:tag:: <sub_tile name="string" capacity="{int}">
 
     .. seealso:: For a tutorial on describing the usage of sub tiles for ``heterogeneous tiles`` (tiles which support multiple instances of the same or different :ref:`arch_complex_blocks`) definition see :ref:`heterogeneous_tiles_tutorial`.
 
@@ -885,9 +911,9 @@ The following tags are common to all ``<tile>`` tags:
 
     **Attributes:**
 
-    :req_param name: The name of this tile.
+    :req_param name: The name of this sub tile.
 
-        The name must be unique with respect to any other sibling ``<tile>`` tag.
+        The name must be unique with respect to any other sibling ``<sub_tile>`` tag.
 
     :opt_param capacity: The number of instances of this block type at each grid location.
 
@@ -926,7 +952,7 @@ The following tags are common to all ``<tile>`` tags:
 
             * ``full``: All input pins are considered logically equivalent (e.g. due to logical equivalance or a full-crossbar within the cluster).
 
-                All input pins can be swapped without limitation by the router. (Generates a single SINK rr-node shared by each input port pin.)
+                All input pins can be swapped without limitation by the router. (Generates a single SINK rr-node shared by all input port pins.)
 
             **default:** ``none``
 
@@ -957,11 +983,11 @@ The following tags are common to all ``<tile>`` tags:
 
             * ``full``: All output pins are considered logically equivalent.
 
-                All output pins can be swapped without limitation by the router. For example, this option would be appropriate to model an output port which has a full crossbar between it and the logic within the block that drives it. (Generates a single SRC rr-node shared by each output port pin.)
+                All output pins can be swapped without limitation by the router. For example, this option would be appropriate to model an output port which has a full crossbar between it and the logic within the block that drives it. (Generates a single SRC rr-node shared by all output port pins.)
 
             * ``instance``: Models that sub-instances within a block (e.g. LUTs/BLEs) can be swapped to achieve a limited form of output pin logical equivalence.
 
-                Like ``full``, this generates a single SRC rr-node shared by each output port pin. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs.
+                Like ``full``, this generates a single SRC rr-node shared by all output port pins. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs.
 
                 .. warning:: When using ``instance`` equivalence you must be careful to ensure output swapping would not make the cluster internal routing (previously computed by the clusterer) illegal; the tool does not update the cluster internal routing due to output pin swapping.
 
@@ -971,7 +997,7 @@ The following tags are common to all ``<tile>`` tags:
     .. arch:tag:: <clock name="string" num_pins="int" equivalent="{none|full}"/>
 
         Describes a clock port.
-        Multple clock ports are described using multiple ``<clock>`` tags.
+        Multiple clock ports are described using multiple ``<clock>`` tags.
         *See above descriptions on inputs*
 
     .. arch:tag:: <equivalent_sites>
@@ -1004,7 +1030,7 @@ The following tags are common to all ``<tile>`` tags:
 
             .. arch:tag:: <direct from="string" to="string">
 
-                Desctibes the mapping of a physical tile's port on the logical block's (pb_type) port.
+                Describes the mapping of a physical tile's port on the logical block's (pb_type) port.
                 ``direct`` is an option sub-tag of ``site``.
 
                 .. note:: This tag is needed only if the pin_mapping of the ``site`` is defined as ``custom``
@@ -1130,7 +1156,7 @@ The following tags are common to all ``<tile>`` tags:
             specifies that port ``my_input`` use a fractional :math:`F_c` of ``0.1`` when connecting to segments of type ``L4``, while the port ``my_output`` uses a fractional :math:`F_c` of ``0.2`` when connecting to segments of type ``L4``.
             All other port/segment combinations would use the default :math:`F_c` values.
 
-    .. arch:tag:: <pinlocations pattern="{spread|perimeter|custom}">
+    .. arch:tag:: <pinlocations pattern="{spread|perimeter|spread_inputs_perimeter_outputs|custom}">
 
         :req_param pattern:
             * ``spread`` denotes that the pins are to be spread evenly on all sides of the complex block.
@@ -1141,7 +1167,7 @@ The following tags are common to all ``<tile>`` tags:
 
                 .. note:: *Excludes* the internal sides of blocks with width > 1 and/or height > 1.
 
-            * ``spread_inputs_perimeter_outputs`` denotes that inputs pins are to be spread on all sides of the complex block, but output pins are to be spread only on perimeter sides of the block.
+            * ``spread_inputs_perimeter_outputs`` denotes that input pins are to be spread on all sides of the complex block, but output pins are to be spread only on perimeter sides of the block.
 
                 .. note:: This is useful for ensuring outputs do not connect to wires which fly-over a width > 1 and height > 1 block (e.g. if using ``short`` or ``buffer`` connections instead of a fully configurable switch block within the block).
 
@@ -1434,7 +1460,7 @@ The following tags are common to all <pb_type> tags:
 
         * ``full``: All input pins are considered logically equivalent (e.g. due to logical equivalance or a full-crossbar within the cluster).
 
-            All input pins can be swapped without limitation by the router. (Generates a single SINK rr-node shared by each input port pin.)
+            All input pins can be swapped without limitation by the router. (Generates a single SINK rr-node shared by all input port pins.)
 
         **default:** ``none``
 
@@ -1467,11 +1493,11 @@ The following tags are common to all <pb_type> tags:
 
         * ``full``: All output pins are considered logically equivalent.
 
-            All output pins can be swapped without limitation by the router. For example, this option would be appropriate to model an output port which has a full crossbar between it and the logic within the block that drives it. (Generates a single SRC rr-node shared by each output port pin.)
+            All output pins can be swapped without limitation by the router. For example, this option would be appropriate to model an output port which has a full crossbar between it and the logic within the block that drives it. (Generates a single SRC rr-node shared by all output port pins.)
 
         * ``instance``: Models that sub-instances within a block (e.g. LUTs/BLEs) can be swapped to achieve a limited form of output pin logical equivalence.
 
-            Like ``full``, this generates a single SRC rr-node shared by each output port pin. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs.
+            Like ``full``, this generates a single SRC rr-node shared by all output port pins. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs.
 
             .. warning:: When using ``instance`` equivalence you must be careful to ensure output swapping would not make the cluster internal routing (previously computed by the clusterer) illegal; the tool does not update the cluster internal routing due to output pin swapping.
 
@@ -1492,7 +1518,7 @@ The following tags are common to all <pb_type> tags:
 
     Specifies a mode of operation for the ``<pb_type>``.
     Each child mode tag denotes a different mode of operation for the ``<pb_type>``.
-    Each mode tag may contains other ``<pb_type>`` and ``<interconnect>`` tags.
+    Each mode tag may contain other ``<pb_type>`` and ``<interconnect>`` tags.
 
     .. note:: Modes within the same parent ``<pb_type>`` are mutually exclusive.
 
@@ -1614,7 +1640,7 @@ This tag impacts the CAD tool only, there is no architectural impact from defini
 
     This tag gives a hint to the CAD tool that certain architectural structures should stay together during packing.
     The tag labels interconnect edges with a pack pattern name.
-    All primitives connected by the same pack pattern name becomes a single pack pattern.
+    All primitives connected by the same pack pattern name become a single pack pattern.
     Any group of atoms in the user netlist that matches a pack pattern are grouped together by VPR to form a molecule.
     Molecules are kept together as one unit in VPR.
     This is useful because it allows the architect to help the CAD tool assign atoms to complex logic blocks that have interconnect with very limited flexibility.
@@ -1722,8 +1748,8 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
 
     Specifies a maximum and/or minimum delay from in_port to out_port.
 
-    * If ``in_port`` and ``out_port`` are non-sequential (i.e combinational) inputs specifies the combinational path delay between them.
-    * If ``in_port`` and ``out_port`` are sequential (i.e. have ``T_setup`` and/or ``T_clock_to_Q`` tags) specifies the combinational delay between the primitive's input and/or output registers.
+    * If ``in_port`` and ``out_port`` are non-sequential (i.e. combinational), specifies the combinational path delay between them.
+    * If ``in_port`` and ``out_port`` are sequential (i.e. have ``T_setup`` and/or ``T_clock_to_Q`` tags), specifies the combinational delay between the primitive's input and/or output registers.
 
     .. note:: At least one of the ``max`` or ``min`` attributes must be specified
 
@@ -1739,8 +1765,8 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
     Describe a timing matrix for all edges going from ``in_port`` to ``out_port``.
     Number of rows of matrix should equal the number of inputs, number of columns should equal the number of outputs.
 
-    * If ``in_port`` and ``out_port`` are non-sequential (i.e combinational) inputs specifies the combinational path delay between them.
-    * If ``in_port`` and ``out_port`` are sequential (i.e. have ``T_setup`` and/or ``T_clock_to_Q`` tags) specifies the combinational delay between the primitive's input and/or output registers.
+    * If ``in_port`` and ``out_port`` are non-sequential (i.e. combinational), specifies the combinational path delay between them.
+    * If ``in_port`` and ``out_port`` are sequential (i.e. have ``T_setup`` and/or ``T_clock_to_Q`` tags), specifies the combinational delay between the primitive's input and/or output registers.
 
     **Example:**
     The following defines a delay matrix for a 4-bit input port ``in``, and 3-bit output port ``out``:
@@ -1764,8 +1790,8 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
 
     Specifies a port's setup constraint.
 
-    * If ``port`` is an input specifies the external setup time of the primitive's input register (i.e. for paths terminating at the input register).
-    * If ``port`` is an output specifies the internal setup time of the primitive's output register (i.e. for paths terminating at the output register) .
+    * If ``port`` is an input, specifies the external setup time of the primitive's input register (i.e. for paths terminating at the input register).
+    * If ``port`` is an output, specifies the internal setup time of the primitive's output register (i.e. for paths terminating at the output register) .
 
     .. note:: Applies only to primitive ``<pb_type>`` tags
 
@@ -1777,8 +1803,8 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
 
     Specifies a port's hold constraint.
 
-    * If ``port`` is an input specifies the external hold time of the primitive's input register (i.e. for paths terminating at the input register).
-    * If ``port`` is an output specifies the internal hold time of the primitive's output register (i.e. for paths terminating at the output register) .
+    * If ``port`` is an input, specifies the external hold time of the primitive's input register (i.e. for paths terminating at the input register).
+    * If ``port`` is an output, specifies the internal hold time of the primitive's output register (i.e. for paths terminating at the output register) .
 
     .. note:: Applies only to primitive ``<pb_type>`` tags
 
@@ -1791,8 +1817,8 @@ Timing is specified through tags contained with in ``pb_type``, ``complete``, ``
 
     Specifies a port's clock-to-Q delay.
 
-    * If ``port`` is an input specifies the internal clock-to-Q delay of the primitive's input register (i.e. for paths starting at the input register).
-    * If ``port`` is an output specifies the external clock-to-Q delay of the primitive's output register (i.e. for paths starting at the output register) .
+    * If ``port`` is an input, specifies the internal clock-to-Q delay of the primitive's input register (i.e. for paths starting at the input register).
+    * If ``port`` is an output, specifies the external clock-to-Q delay of the primitive's output register (i.e. for paths starting at the output register) .
 
     .. note:: At least one of the ``max`` or ``min`` attributes must be specified
 
@@ -1908,7 +1934,7 @@ NoC topology
 ~~~~~~~~~~~~
 
 As mentioned above the ``<topology>`` tag can be used to specify the topology or how the routers in the NoC
-are connected to each other. The ``<topology>`` tag consists of a group ``<router>``tags.
+are connected to each other. The ``<topology>`` tag consists of multiple ``<router>`` tags.
 
 Below is an example of how the ``<topology>`` tag is used.
 
@@ -1975,16 +2001,16 @@ Wire Segments
 The content within the ``<segmentlist>`` tag consists of a group of ``<segment>`` tags.
 The ``<segment>`` tag and its contents are described below.
 
-.. arch:tag:: <segment axis="{x|y}" name="unique_name" length="int" type="{bidir|unidir}" res_type="{GCLK|GENERAL}" freq="float" Rmetal="float" Cmetal="float">content</segment>
+.. arch:tag:: <segment axis="{x|y|z}" name="unique_name" length="int" type="{bidir|unidir}" res_type="{GCLK|GENERAL}" freq="float" Rmetal="float" Cmetal="float">content</segment>
 
 
     :opt_param axis:
-        Specifies if the given segment applies to either x or y channels only. If this tag is not given, it is assumed that the given segment
-        description applies to both x-directed and y-directed channels.
+        Specifies if the given segment applies to x, y, or z channels only. If this tag is not given, it is assumed that the given segment
+        description applies to both x-directed and y-directed channels (and not to z-directed channels).
 
         .. note:: It is required that both x and y segment axis details are given or that at least one segment within ``segmentlist`` 
             is specified without the ``axis`` tag (i.e. at least one segment applies to both x-directed and y-directed 
-            chanels). 
+            channels). For 3-d architectures, it is required that at least one wire segment with `axis="z"` is defined.
 
     :req_param name:
         A unique alphanumeric name to identify this segment type.
@@ -1993,7 +2019,7 @@ The ``<segment>`` tag and its contents are described below.
         Either the number of logic blocks spanned by each segment, or the keyword ``longline``.
         Longline means segments of this type span the entire FPGA array.
 
-        .. note:: ``longline`` is only supported on with ``bidir`` routing
+        .. note:: ``longline`` is only supported for ``bidir`` routing
 
     :opt_param res_type:
         Specifies whether the segment belongs to the general or a clock routing network. If this tag is not specified, the resource type for
@@ -2012,9 +2038,9 @@ The ``<segment>`` tag and its contents are described below.
         Capacitance per unit length (in terms of logic blocks) of this wiring track, in Farads.
         For example, a segment of length 5 with Cmetal = 2e-14 F / logic block would have a total metal capacitance of 10e-13F.
 
-    :req_param directionality:
+    :req_param type:
         This is either unidirectional or bidirectional and indicates whether a segment has multiple drive points (bidirectional), or a single driver at one end of the wire segment (unidirectional).
-        All segments must have the same directionality value.
+        All segments must have the same type (i.e., directionality) value.
         See :cite:`lemieux_directional_and_singale_driver_wires` for a description of unidirectional single-driver wire segments.
 
     :req_param content:
@@ -2032,7 +2058,7 @@ The ``<segment>`` tag and its contents are described below.
     For example, the first length 6 wire in the figure below has an sb pattern of ``1 0 1 0 1 0 1``.
     The second wire has a pattern of ``0 1 0 1 0 1 0``.
     A ``1`` indicates the existence of a switch block and a ``0`` indicates that there is no switch box at that point.
-    Note that there a 7 entries in the integer list for a length 6 wire.
+    Note that there are 7 entries in the integer list for a length 6 wire.
     For a length L wire there must be L+1 entries separated by spaces.
 
     .. note:: Can not be specified for ``longline`` segments (which assume full switch block population)
@@ -2043,7 +2069,7 @@ The ``<segment>`` tag and its contents are described below.
     For example, the first length 6 wire in the figure below has an sb pattern of ``1 1 1 1 1 1``.
     The third wire has a pattern of ``1 0 0 1 1 0``.
     A ``1`` indicates the existence of a connection block and a ``0`` indicates that there is no connection box at that point.
-    Note that there a 6 entries in the integer list for a length 6 wire.
+    Note that there are 6 entries in the integer list for a length 6 wire.
     For a length L wire there must be L entries separated by spaces.
 
     .. note:: Can not be specified for ``longline`` segments (which assume full connection block population)
@@ -2054,7 +2080,7 @@ The ``<segment>`` tag and its contents are described below.
                      The switch type specified with the <mux> tag will be used for both the incrementing and decrementing wires within this segment. 
                      If more control is needed, the mux_inc and mux_dec tags can be used to assign different muxes to drive incremental and decremental wires within the segment.
 
-    .. note:: For UNIDIRECTIONAL only.
+    .. note:: This tag is only supported for unidirectional routing.
 
     Tag must be included and ``name`` must be the same as the name you give in ``<switch type="mux" name="...``
 
@@ -2065,7 +2091,7 @@ The ``<segment>`` tag and its contents are described below.
         Incremental wires are tracks within this segment that are heading in the "right" direction on the x-axis and the "top" direction on the y-axis.
         This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
 
-    .. note:: For UNIDIRECTIONAL only.
+    .. note:: This tag is only supported for unidirectional routing.
 
 .. arch:tag:: <mux_dec name="string">
     
@@ -2074,7 +2100,7 @@ The ``<segment>`` tag and its contents are described below.
         Incremental wires are tracks within this segment that are heading in the "left" direction on the x-axis and the "bottom" direction on the y-axis.
         This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
 
-    .. note:: For UNIDIRECTIONAL only.
+    .. note:: This tag is only supported for unidirectional routing.
 
     .. note:: For unidirectional segments, either <mux> tag or both <mux_inc> and <mux_dec> should be defined in the architecture file. If only the <mux> tag is defined, we assume that the same mux drives both incremental and decremental wires within this segment.     
 
@@ -2089,27 +2115,17 @@ The ``<segment>`` tag and its contents are described below.
 
     :req_param name: Name of the switch type used by other wires to drive this type of segment by default. This information is used during rr-graph construction, and a custom switch block can override this switch type for specific connections if desired.
 
-    .. note:: For BIDIRECTIONAL only.
-
     Tag must be included and the name must be the same as the name you give in ``<switch type="tristate|pass_gate" name="...`` for the switch which represents the wire switch in your architecture.
 
-.. arch:tag:: <opin_switch name="string"/>
+    .. note:: This tag is only supported for bidirectional routing.
 
-    .. note:: For BIDIRECTIONAL only.
+.. arch:tag:: <opin_switch name="string"/>
 
     :req_param name: Name of the switch type used by block pins to drive this type of segment.
 
     Tag must be included and ``name`` must be the same as the name you give in ``<switch type="tristate|pass_gate" name="...`` for the switch which represents the output pin switch in your architecture.
 
-    .. note::
-
-        In unidirectional segment mode, there is only a single buffer on the segment.
-        Its type is specified by assigning the same switch index to both wire_switch and opin_switch.
-        VPR will error out if these two are not the same.
-
-    .. note::
-
-        The switch used in unidirectional segment mode must be buffered.
+    .. note:: This tag is only supported for bidirectional routing.
 
 .. _clock_architecture:
 
@@ -2157,10 +2173,10 @@ The following example shows how a rib-spine (row/column) style clock architectur
 .. code-block:: xml
 
     <clocknetworks>
-        <metal_layers >
+        <metal_layers>
             <metal_layer name="global_spine" Rmetal="50.42" Cmetal="20.7e-15"/>
             <metal_layer name="global_rib" Rmetal="50.42" Cmetal="20.7e-15"/>
-        </metal_layers >
+        </metal_layers>
 
         <!-- Full Device: Center Spine -->
         <clock_network  name="spine1" num_inst="2">
@@ -2221,7 +2237,7 @@ The syntax of the wiring electrical information is:
 
     :req_param name: A unique string for reference.
     :req_param Rmetal: The resistance in Ohms of the wire per unit block in the FPGA architecture; a unit block usually corresponds to a logic cluster.
-    :req_pram Cmetal: The capacitance in Farads of the wire per unit block.
+    :req_param Cmetal: The capacitance in Farads of the wire per unit block.
 
 The ``<clock_network>`` element contains sub-elements that describe the clock distribution wires for the clock architecture.
 There could be more than one ``<clock_network>`` element to describe separate types of distribution wires.
@@ -2339,6 +2355,7 @@ Additional power options are specified within the ``<architecture>`` level ``<po
 
     :req_param logical_effort_factor: **Default:** ``4``.
 
+.. _direct_interconnect:
 
 Direct Inter-block Connections
 ------------------------------
@@ -2346,23 +2363,24 @@ Direct Inter-block Connections
 The content within the ``<directlist>`` tag consists of a group of ``<direct>`` tags.
 The ``<direct>`` tag and its contents are described below.
 
-.. arch:tag:: <direct name="string" from_pin="string" to_pin="string" x_offset="int" y_offset="int" z_offset="int" switch_name="string"/>
+.. arch:tag:: <direct name="string" from_pin="string" to_pin="string" x_offset="int" y_offset="int" z_offset="int" switch_name="string" from_side="{left|right|top|bottom}" to_side="{left|right|top|bottom}"/>
 
     :req_param name: is a unique alphanumeric string to name the connection.
     :req_param from_pin: pin of complex block that drives the connection.
     :req_param to_pin: pin of complex block that receives the connection.
-    :req_param x_offset:  The x location of the receiving CLB relative to the driving CLB.
-    :req_param y_offset: The y location of the receiving CLB relative to the driving CLB.
-    :req_param z_offset: The z location of the receiving CLB relative to the driving CLB.
-    :opt_param switch_name: [Optional, defaults to delay-less switch if not specified] The name of the ``<switch>`` from ``<switchlist>`` to be used for this direct connection.
-    :opt_param from_side: The associated from_pin's block side (must be one of ``left``, ``right``, ``top``, ``bottom`` or left unspecified)
-    :opt_param to_side: The associated to_pin's block side (must be one of ``left``, ``right``, ``top``, ``bottom`` or left unspecified)
+    :req_param x_offset:  The x location of the receiving complex block relative to the driving complex block.
+    :req_param y_offset: The y location of the receiving complex block relative to the driving complex block.
+    :req_param z_offset: The z location of the receiving complex block relative to the driving complex block.
+    :opt_param switch_name: The name of the ``<switch>`` from ``<switchlist>`` to be used for this direct connection.
+        **Default:** switch with zero delay (i.e., short)
+    :opt_param from_side: The associated from_pin's block side
+    :opt_param to_side: The associated to_pin's block side
 
     Describes a dedicated connection between two complex block pins that skips general interconnect.
     This is useful for describing structures such as carry chains as well as adjacent neighbour connections.
 
     The ``from_side`` and ``to_side`` options can usually be left unspecified.
-    However they can be used to explicitly control how directs to physically equivalent pins (which may appear on multiple sides) are handled.
+    However they can be used to explicitly control how direct connections to physically equivalent pins (which may appear on multiple sides) are handled.
 
     **Example:**
     Consider a carry chain where the ``cout`` of each CLB drives the ``cin`` of the CLB immediately below it, using the delay-less switch one would enter the following:
@@ -2484,7 +2502,7 @@ The full format is documented below.
     Defined under the ``<switchfuncs>`` XML node, one or more ``<func...>`` entries is used to specify permutation functions that connect different sides of a switch block.
 
 
-.. arch:tag:: <wireconn num_conns="expr" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." from_order="{fixed | shuffled}" to_order="{fixed | shuffled}" switch_override="string"/>
+.. arch:tag:: <wireconn num_conns="expr" from_type="string, string, string, ..." to_type="string, string, string, ..." from_switchpoint="int, int, int, ..." to_switchpoint="int, int, int, ..." from_order="{fixed | shuffled}" to_order="{fixed | shuffled}" switch_override="string" side="string"/>
 
     :req_param num_conns:
         Specifies how many connections should be created between the from_type/from_switchpoint set and the to_type/to_switchpoint set.
@@ -2549,7 +2567,7 @@ The full format is documented below.
         .. note:: In a unidirectional architecture wires can only be driven at their start point so ``to_switchpoint="0"`` is the only legal specification in this case.
 
     :opt_param from_order:
-        Specifies the order in which ``from_switchpoint``s are selected when creating edges.
+        Specifies the order in which ``from_switchpoint`` s are selected when creating edges.
 
         * ``fixed`` -- Switchpoints are selected in the order specified
 
@@ -2591,6 +2609,10 @@ The full format is documented below.
         By using a zero-delay and zero-resistance switch one can also create T and L shaped wire segments.
         
         **Default:** If no override is specified, the usual wire_switch that drives the ``to`` wire will be used. 
+    
+    :opt_param side:
+       Specifies the sides that connections are gathered from or scattered to. Valid sides are right, left, top and bottom and are represented by characters 'r', 'l', 't' and 'b'.
+       For example, to select connections from right, left and bottom set this attribute to "rlb". Note that this attribute is used only for :ref:`scatter_gather_patterns` and does not do anything for other usages of this tag. 
 
     .. arch:tag:: <from type="string" switchpoint="int, int, int, ..."/>
 
@@ -2632,6 +2654,116 @@ The full format is documented below.
     This specifies that the 'from' set is the union of L4 switchpoints 0, 1, 2 and 3; and L16 switchpoints 0, 4, 8 and 12.
     The 'to' set is all L4 switchpoint 0's.
     Note that since different switchpoints are selected from different segment types it is not possible to specify this without using ``<from>`` sub-tags.
+
+.. _scatter_gather_patterns:
+
+Scatter-Gather Patterns
+---------------------
+
+The content under the ``<scatter_gather_list>`` tag consists of one or more ``<sg_pattern>`` tags that are used to specify a scatter-gather pattern.
+Scatter-gather patterns can be used to specify multi-level switch patterns, rather than the direct wire-to-wire switch patterns of conventional switch blocks.
+These additional switches, wires and/or muxes will be added to the architecture, augmenting wires created using segment specifications and swiches created using switch box specifications.
+The number of any additional wires or muxes created by scatter-gather specifications will not vary with routing channel width.
+
+.. figure:: scatter_gather_images/scattergather_diagram.svg
+
+    Overview of how scatter-gather patterns work. First, connections from a switchblock location are selected according to the specification.
+    These selected connection are then muxed and passed through the scatter-gather node, which is typically a wire segment. The scatter-gather node then fans out or scatters in another switchblock location.
+
+.. note:: Scatter-Gather patterns are only supported for 3D architectures where the scatter-gather links are unidirectional. They are not currently supported in 2D architectures or with bidirectional sg_links.
+
+When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
+
+    .. code-block:: xml
+
+        <scatter_gather_list>
+            <sg_pattern name="name" type="unidir">
+                <gather>
+                    <!-- Gather 30 connections from the 0, 4, 8 or 12 position of L16 wires of all four sides of a switchblock location -->
+                    <wireconn num_conns="30" from_type="L16" from_switchpoint="0,12,8,4" side="rltb"/> 
+                <gather/>
+
+                <scatter>
+                    <!-- Scatter 30 connections to the starting position of L16 wires of all four sides of a switchblock location -->
+                    <wireconn num_conns="30" to_type="L16" to_switchpoint="0" side="rtlb"/>
+                <scatter/>
+                
+                <sg_link_list>
+                    <!-- Link going up one layer, using the '3D_SB_MUX' multiplexer to gather connections from the bottom layer and using the 'TSV' node/wire to move up one layer -->
+                    <sg_link name="L_UP" z_offset="1" x_offset="0" y_offset="0" mux="3D_SB_MUX" seg_type="TSV"/> 
+                    <!-- Same as above but moving one layer down -->
+                    <sg_link name="L_DOWN" z_offset="-1" mux="3D_SB_MUX" seg_type="TSV"/>
+                <sg_link_list/>
+                
+                <!-- Instantiate 10 'L_UP' sg_links per switchblock location everywhere on the device -->
+                <sg_location type="EVERYWHERE" num="10" sg_link="L_UP"/>
+                <!-- Instantiate 10 'L_DOWN' sg_links per switchblock location everywhere on the device -->
+                <sg_location type="EVERYWHERE" num="10" sg_link="L_DOWN"/>
+            <sg_pattern/>
+
+            <sg_pattern name="interposer_conn_sg" type="bidir">
+                ... <!-- Another scatter-gather pattern specification -->
+            <sg_pattern/>
+        <scatter_gather_list/>
+
+.. arch:tag:: <sg_pattern name="string" type={unidir|bidir}>
+
+    :req_param name: A unique alphanumeric string
+
+    :req_param type: Directionality of the scatter-gather connection
+
+        * ``unidir``: Added connections are unidirectional; all the gather connections are combined in a mux that then drives the scatter-gather node which in turn drives the wires specified in the scatter specification.
+
+        * ``bidir``: The gather and scatter connections are mirrored; the same scatter pattern is implemented at each end of the scatter-gather pattern. This implies the two muxes driving the scatter-gather node can have their outputs tri-state buffered. 
+
+.. arch:tag:: <gather>
+
+    Contains a ``<wireconn>`` tag specifying how the fan-in or gather connections are selected. See ``wireconn`` for the relevant specification.
+    This ``<wireconn>`` tag supports an additioinal ``side`` attribute which selects the sides that connections are gathered from (e.g. ``side="rltb"`` means that connections are gathered from the right, left, top, and bottom sides of the switch block).
+
+.. arch:tag:: <scatter>
+
+    Contains a ``<wireconn>`` tag specifying how the fan-out or scatter connections are selected. See ``wireconn`` for the relevant specification.
+    This ``<wireconn>`` tag supports an additioinal ``side`` attribute which selects the sides that connections are scattered to (e.g. ``side="rltb"`` means that connections are scattered to the right, left, top, and bottom sides of the switch block).
+
+.. arch:tag:: <sg_link_list>
+
+    Contains one or more ``<sg_link>`` tags specifying how the gather and scatter locations are connected (i.e. defines the used mux and scatter-gather node).
+    
+    .. note:: ``<sg_link>`` tags are not instantiations of the pattern and would not result in any changes to the device. Instead, the ``<sg_location>`` tag instantiates the pattern and selects one of the ``<sg_link>`` tags to be used for the instantiation.
+
+.. arch:tag:: <sg_link  name="string" x_offset="int" y_offset="int" z_offset="int" mux="string" seg_type="string">
+
+    :req_param name: A unique alphanumeric string
+
+    :req_param mux: Name of the multiplexer used to gather connections
+
+    :req_param seg_type: Name of the segment used to connect the gather and scatter locations (i.e. the type of the scatter-gather node)
+
+    :opt_param x_offset: Offset of the scatter relative to the gather in the x-axis
+
+    :opt_param y_offset: Offset of the scatter relative to the gather in the y-axis
+
+    :opt_param z_offset: Offset of the scatter relative to the gather in the z-axis
+
+    .. note:: Only one of the offset fields for the sg_link tag should be set. The magnitude of the offset will generally be chosen by the architecture file creator to match the length of the sg_link segment type.
+
+.. arch:tag:: <sg_location type="string" num="int" sg_link_name="string">
+
+    Instantiates the scatter-gather pattern with the specified sg_link.
+
+    :req_param num: Number of scatter-gather instances per matching location (e.g. per switch block)
+    
+    :req_param sg_link_name: Name of the ``sg_link`` used in the instantiation
+
+    :req_param type: Can be one of the following strings:
+        * ``EVERYWHERE`` – at each switch block of the FPGA
+        * ``PERIMETER`` – at each perimeter switch block (x-directed and/or y-directed channel segments may terminate here)
+        * ``CORNER`` – only at the corner switch blocks (both x and y-directed channels terminate here)
+        * ``FRINGE`` – same as PERIMETER but excludes corners
+        * ``CORE`` – everywhere but the perimeter
+    Sets the location on the FPGA where the connections described by this scatter-gather pattern be instantiated.
+
 
 .. _arch_metadata:
 
@@ -2679,4 +2811,355 @@ Example of a metadata block with 2 keys:
         <meta name="some_key">Some value</meta>
         <meta name="other key!">Other value!</meta>
       </metadata>
+
+.. _openfpga_arch_syntax:
+
+Additional Syntax for Tileable Architecture
+-------------------------------------------
+
+When tileable architecture is enabled, the following options are available in the architecture file:
+
+Layout
+~~~~~~
+
+``<layout>`` may include additioinal attributes to enable tileable routing resource graph generation
+
+.. option:: tileable="<bool>"
+
+  Turn ``on``/ ``off`` the tileable routing resource graph generator.
+  
+  The tileable routing architecture can minimize the number of unique modules in FPGA fabric to be physically implemented.
+
+  Technical details can be found in :cite:`XTang_FPT_2019`. 
+
+  .. note:: It is strongly recommended to enable the tileable routing architecture when you want to PnR large FPGA fabrics, which can effectively reduce the runtime.
+
+.. option:: through_channel="<bool>"
+  
+  Allow routing channels to pass through multi-width and multi-height programmable blocks. This is mainly used in heterogeneous FPGAs to increase routability, as illustrated in :numref:`fig_thru_channel`.
+  By default, it is ``false``.
+
+  .. _fig_thru_channel:
+  
+  .. figure:: thru_channel.png
+     :width: 100%
+     :alt: Impact of through channel
+  
+     Impact on routing architecture when through channel in multi-width and multi-height programmable blocks: (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``through_channel`` if you are not using the tileable routing resource graph generator!
+  
+  .. warning:: You cannot use ``spread`` pin location for the ``height > 1`` or ``width >1`` tiles when using the tileable routing resource graph. Otherwise, it will cause undriven pins in your device!!!
+
+.. option:: shrink_boundary="<bool>"
+  
+  Remove all the routing wires in empty regions. This is mainly used in non-rectangular FPGAs to avoid redundant routing wires in blank area, as illustrated in :numref:`fig_shrink_boundary`.
+  By default, it is ``false``.
+
+  .. _fig_shrink_boundary:
+  
+  .. figure:: shrink_boundary.png
+     :width: 100%
+     :alt: Impact of shrink boundary
+  
+     Impact on routing architecture when shrink-boundary: (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``shrink_boundary`` if you are not using the tileable routing resource graph generator!
+
+.. option:: perimeter_cb="<bool>"
+  
+  Allow connection blocks to appear around the blocks on the perimeter of the device (mainly I/Os). This is designed to enhance routability of I/Os on perimeter. It is also strongly recommended when a programmable clock network is required to touch clock pins on I/Os. As illustrated in :numref:`fig_perimeter_cb`, routing tracks can access three sides of each I/O when perimeter connection blocks are created. 
+
+  **Default:** ``false``
+
+.. warning:: When enabled, please only place outputs at one side of I/Os. For example, outputs of an I/O on the top side can only occur on the bottom side of the I/O tile. Otherwise, routability loss may be expected, leading to some pins being unreachable. Enable the ``opin2all_sides`` to recover routability loss. 
+
+  .. _fig_perimeter_cb:
+  
+  .. figure:: perimeter_cb.png
+     :width: 100%
+     :alt: Impact of perimeter_cb
+  
+     Impact on routing architecture when perimeter connection blocks are : (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``perimeter_cb`` if you are not using the tileable routing resource graph generator!
+
+.. option:: opin2all_sides="<bool>"
+
+  Allow each output pin of a programmable block to drive the routing tracks on all the sides of its adjacent switch block (see an illustrative example in :numref:`fig_opin2all_sides`). This can improve the routability of an FPGA fabric with an increase in the sizes of routing multiplexers in each switch block. 
+  
+  **Default:** ``false``
+
+  .. _fig_opin2all_sides:
+  
+  .. figure:: opin2all_sides.svg
+     :width: 100%
+     :alt: Impact of opin2all_sides
+  
+     Impact on routing architecture when the opin-to-all-sides: (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``opin2all_sides`` if you are not using the tileable routing resource graph generator!
+
+.. option:: concat_wire="<bool>"
+
+  In each switch block, allow each routing track which ends to drive another routing track on the opposite side, as such a wire can be continued in the same direction (see an illustrative example in :numref:`fig_concat_wire`). In other words, routing wires can be concatenated in the same direction across an FPGA fabric. This can improve the routability of an FPGA fabric with an increase in the sizes of routing multiplexers in each switch block. 
+  
+  **Default:** ``false``
+
+  .. _fig_concat_wire:
+  
+  .. figure:: concat_wire.svg
+     :width: 100%
+     :alt: Impact of concat_wire
+  
+     Impact on routing architecture when the wire concatenation: (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``concat_wire`` if you are not using the tileable routing resource graph generator!
+
+.. option:: concat_pass_wire="<bool>"
+
+  In each switch block, allow each routing track which passes to drive another routing track on the opposite side, as such a pass wire can be continued in the same direction (see an illustrative example in :numref:`fig_concat_pass_wire`). This can improve the routability of an FPGA fabric with an increase in the sizes of routing multiplexers in each switch block. 
+  
+  **Default:** ``false``
+
+  .. _fig_concat_wire:
+  
+  .. figure:: concat_pass_wire.svg
+     :width: 100%
+     :alt: Impact of concat_pass_wire
+  
+     Impact on routing architecture when the pass wire concatenation: (a) disabled; (b) enabled.
+
+  .. warning:: Do NOT enable ``concat_pass_wire`` if you are not using the tileable routing resource graph generator!
+
+A quick example to show tileable routing is enabled, other options, e.g., through channels are disabled:
+
+.. code-block:: xml
+
+  <layout tileable="true" through_channel="false" shrink_boundary="false" opin2all_sides="false" concat_wire="false" concat_pass_wire="false">
+  </layout>
+
+Switch Block
+~~~~~~~~~~~~
+
+``<switch_block>`` may include addition syntax to enable different connectivity for pass tracks
+
+.. option:: sub_type="<string>"
+  
+  Connecting type for pass tracks in each switch block.
+  The supported connecting patterns are ``subset``, ``universal`` and ``wilton``, being the same as the capability of VPR.
+  If not specified, the pass tracks will have the same connecting patterns as start/end tracks, which are defined in ``type``
+
+.. option:: sub_Fs="<int>"
+
+  Connectivity parameter for pass tracks in each switch block. Must be a multiple of 3.
+  If not specified, the pass tracks will have the same connectivity as start/end tracks, which are defined in ``fs``.
+
+A quick example which defines a switch block
+  - Starting/ending routing tracks are connected in the ``wilton`` pattern
+  - Each starting/ending routing track can drive 3 other starting/ending routing tracks
+  - Passing routing tracks are connected in the ``subset`` pattern
+  - Each passing routing track can drive 6 other starting/ending routing tracks
+
+.. code-block:: xml
+
+  <device>
+    <switch_block type="wilton" fs="3" sub_type="subset" sub_fs="6"/>
+  </device>
+
+Routing Segments
+~~~~~~~~~~~~~~~~
+
+When using tileable architecture, it is strongly recommended to give explicit names
+for each routing segment in ``<segmentlist>``.
+This is used to link ``circuit_model`` to routing segments.
+
+A quick example which defines a length-4 uni-directional routing segment called ``L4`` :
+
+.. code-block:: xml
+
+  <segmentlist>
+    <segment name="L4" freq="1" length="4" type="undir"/>
+  </segmentlist>
+
+.. note:: Currently, tileable architecture only supports uni-directional routing architectures.
+
+Direct Interconnect
+~~~~~~~~~~~~~~~~~~~
+
+This section introduces extensions on the architecture description file about direct connections between programmable blocks.
+
+Syntax
+~~~~~~
+
+The original direct connections in the directlist section are documented in :ref:`direct_interconnect`. Its description is given below:
+
+.. code-block:: xml
+
+  <directlist>
+    <direct name="string" from_pin="string" to_pin="string" x_offset="int" y_offset="int" z_offset="int" switch_name="string"/>
+  </directlist>
+
+.. note:: These options are required
+
+In the tileable architecture file, you may define additional attributes for each VPR's direct connection:
+
+.. code-block:: xml
+
+  <direct_connection>
+    <direct name="string" circuit_model_name="string" interconnection_type="string" x_dir="string" y_dir="string"/>
+  </directlist>
+
+.. note:: these options are optional. However, if ``interconnection_type`` is set to ``inter_column`` or ``inter_row``, then ``x_dir`` and ``y_dir`` are required.
+
+.. option:: interconnection_type="<string>"
+
+  Available types are ``inner_column_or_row`` | ``part_of_cb`` | ``inter_column`` | ``inter_row``
+
+  - ``inner_column_or_row`` indicates the direct connections are between tiles in the same column or row. This is the default value.
+  - ``part_of_cb`` indicates the direct connections will drive routing multiplexers in connection blocks. Therefore, it is no longer a strict point-to-point direct connection.
+  - ``inter_column`` indicates the direct connections are between tiles in two columns
+  - ``inter_row`` indicates the direct connections are between tiles in two rows
+
+.. note:: The following syntax is only applicable to ``inter_column`` and ``inter_row``
+
+.. option:: x_dir="<string>"
+
+  Available directionalities are ``positive`` | ``negative``, specifies if the next cell to connect has a bigger or lower ``x`` value.
+  Considering a coordinate system where (0,0) is the origin at the bottom left and ``x`` and ``y`` are positives: 
+
+    - x_dir="positive": 
+
+        - interconnection_type="inter_column": a column will be connected to a column on the ``right``, if it exists.
+
+        - interconnection_type="inter_row": the most on the ``right`` cell from a row connection will connect the most on the ``left`` cell of next row, if it exists.
+
+    - x_dir="negative": 
+
+        - interconnection_type="inter_column": a column will be connected to a column on the ``left``, if it exists.
+
+        - interconnection_type="inter_row": the most on the ``left`` cell from a row connection will connect the most on the ``right`` cell of next row, if it exists.
+
+.. option:: y_dir="<string>"
+
+  Available directionalities are ``positive`` | ``negative``, specifies if the next cell to connect has a bigger or lower x value.
+  Considering a coordinate system where (0,0) is the origin at the bottom left and `x` and `y` are positives:
+
+    - y_dir="positive": 
+
+        - interconnection_type="inter_column": the ``bottom`` cell of a column will be connected to the next column ``top`` cell, if it exists.
+
+        - interconnection_type="inter_row": a row will be connected on an ``above`` row, if it exists.
+
+    - y_dir="negative": 
+
+        - interconnection_type="inter_column": the ``top`` cell of a column will be connected to the next column ``bottom`` cell, if it exists.
+
+        - interconnection_type="inter_row": a row will be connected on a row ``below``, if it exists.
+
+Enhanced Connection Block
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A direct connection can also drive routing multiplexers of connection blocks. When such connection occurs in a connection block, it is called an enhanced connection block.
+:numref:`fig_ecb` illustrates the difference between a regular connection block and an enhanced connection block.
+
+.. _fig_ecb:
+
+.. figure:: ecb.png
+
+    Enhanced connection block vs. Regular connection block
+
+In such scenario, the type ``part_of_cb`` is required.
+
+.. warning:: Restrictions may be applied when building the direct connections as part of a connection block. 
+
+Direct connections can be inside a tile or across two tiles. Currently, across more than two tiles are not supported!
+:numref:`fig_ecb_allowed_direct_connection` illustrates the region (in red) where any input pin is allowed to be driven by any output pin.
+
+.. _fig_ecb_allowed_direct_connection:
+
+.. figure:: ecb_allowed_direct_connection.png
+
+    Allowed connections inside a tile for enhanced connection block (see the highlighted region)
+
+:numref:`fig_ecb_allowed_direct_connection_inner_tile_example` shows a few feedback connections which can be built inside connection blocks. Note that feedback connections are fully allowed between any pins on the same side of a programmable block.
+
+.. _fig_ecb_allowed_direct_connection_inner_tile_example:
+
+.. figure:: ecb_allowed_direct_connection_inner_tile_example.png
+
+    Example of feedback connections inside a tile for enhanced connection block
+
+For instance, a non-tileable VPR architecture defines:
+
+.. code-block:: xml
+
+  <directlist>
+    <!-- Add 2 inputs to the routing multiplexers inside a connection block which drives pin 'clb.I_top[0]' -->
+    <direct name="feedback" from_pin="clb.O_top[0:0]" to_pin="clb.I_top[0:0]" x_offset="0" y_offset="0" z_offset="0"/>
+    <direct name="feedback" from_pin="clb.O_top[1:1]" to_pin="clb.I_top[0:0]" x_offset="0" y_offset="0" z_offset="0"/>
+  </directlist>
+
+:numref:`fig_ecb_allowed_direct_connection_inter_tile_example` shows a few inter-tile connections which can be built inside connection blocks. Note that inter-tile connections are subjected to the restrictions depicted in :numref:`fig_ecb_allowed_direct_connection`
+
+.. _fig_ecb_allowed_direct_connection_inter_tile_example:
+
+.. figure:: ecb_allowed_direct_connection_inter_tile_example.png
+
+    Example of connections across two tiles for enhanced connection block
+
+:numref:`fig_ecb_forbid_direct_connection_example` illustrates some inner-tile and inter-tile connections which are not allowed. Note that feedback connections across different sides are restricted! 
+
+.. _fig_ecb_forbid_direct_connection_example:
+
+.. figure:: ecb_forbid_direct_connection_example.png
+
+    Restrictions on building direct connections as part of a connection block
+
+Inter-tile Connections
+~~~~~~~~~~~~~~~~~~~~~~
+
+For this example, we will study a scan-chain implementation. The description could be:
+
+In a non-tileable architecture:
+
+.. code-block:: xml
+
+  <directlist>
+    <direct name="scff_chain" from_pin="clb.sc_out" to_pin="clb.sc_in" x_offset="0" y_offset="-1" z_offset="0"/>
+  </directlist>
+
+In a tileable architecture:
+
+.. code-block:: xml
+
+  <direct_connection>
+    <direct name="scff_chain" interconnection_type="column" x_dir="positive" y_dir="positive"/>
+  </direct_connection>
+
+:numref:`fig_p2p_exple` is the graphical representation of the above scan-chain description on a 4x4 FPGA.
+
+.. _fig_p2p_exple:
+
+.. figure:: point2point_example.png
+
+    An example of scan-chain implementation
+
+
+In this figure, the red arrows represent the initial direct connection. The green arrows represent the point to point connection to connect all the columns of CLB.
+
+A point to point connection can be applied in different ways than showed in the example section. To help the designer implement their point to point connection, a truth table with our new parameters is provided below.
+
+:numref:`fig_p2p_trtable` provides all possible variable combination and the connection it will generate.
+
+.. _fig_p2p_trtable:
+
+.. figure:: point2point_truthtable.png
+
+    Point to point truth table
+
+VIB Architecture
+~~~~~~~~~~~~~~~~
+
+.. include:: VIB.rst
 

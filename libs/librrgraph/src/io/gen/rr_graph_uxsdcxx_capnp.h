@@ -4,10 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-
- * md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
+ * Cmdline: uxsdcxx/uxsdcap.py /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 040903603053940a1b24392c38663b59
  */
 
 #include <functional>
@@ -221,6 +220,8 @@ inline enum_node_type conv_enum_node_type(ucap::NodeType e, const std::function<
 		return enum_node_type::CHANX;
 	case ucap::NodeType::CHANY:
 		return enum_node_type::CHANY;
+	case ucap::NodeType::CHANZ:
+		return enum_node_type::CHANZ;
 	case ucap::NodeType::SOURCE:
 		return enum_node_type::SOURCE;
 	case ucap::NodeType::SINK:
@@ -229,6 +230,8 @@ inline enum_node_type conv_enum_node_type(ucap::NodeType e, const std::function<
 		return enum_node_type::OPIN;
 	case ucap::NodeType::IPIN:
 		return enum_node_type::IPIN;
+	case ucap::NodeType::MUX:
+		return enum_node_type::MUX;
 	default:
 		(*report_error)("Unknown enum_node_type");
 		throw std::runtime_error("Unreachable!");
@@ -243,6 +246,8 @@ inline ucap::NodeType conv_to_enum_node_type(enum_node_type e) {
 		return ucap::NodeType::CHANX;
 	case enum_node_type::CHANY:
 		return ucap::NodeType::CHANY;
+	case enum_node_type::CHANZ:
+		return ucap::NodeType::CHANZ;
 	case enum_node_type::SOURCE:
 		return ucap::NodeType::SOURCE;
 	case enum_node_type::SINK:
@@ -251,6 +256,8 @@ inline ucap::NodeType conv_to_enum_node_type(enum_node_type e) {
 		return ucap::NodeType::OPIN;
 	case enum_node_type::IPIN:
 		return ucap::NodeType::IPIN;
+	case enum_node_type::MUX:
+		return ucap::NodeType::MUX;
 	default:
 		throw std::runtime_error("Unknown enum_node_type");
 	}
@@ -762,9 +769,10 @@ inline void load_node_loc_capnp_type(const ucap::NodeLoc::Reader &root, T &out, 
 	(void)report_error;
 	(void)stack;
 
-	out.set_node_loc_layer(root.getLayer(), context);
+	out.set_node_loc_layer_high(root.getLayerHigh(), context);
+	out.set_node_loc_layer_low(root.getLayerLow(), context);
+	out.set_node_loc_ptc(root.getPtc().cStr(), context);
 	out.set_node_loc_side(conv_enum_loc_side(root.getSide(), report_error), context);
-	out.set_node_loc_twist(root.getTwist(), context);
 }
 
 template<class T, typename Context>
@@ -837,7 +845,7 @@ inline void load_node_capnp_type(const ucap::Node::Reader &root, T &out, Context
 	stack->push_back(std::make_pair("getLoc", 0));
 	if (root.hasLoc()) {
 		auto child_el = root.getLoc();
-		auto child_context = out.init_node_loc(context, child_el.getPtc(), child_el.getXhigh(), child_el.getXlow(), child_el.getYhigh(), child_el.getYlow());
+		auto child_context = out.init_node_loc(context, child_el.getXhigh(), child_el.getXlow(), child_el.getYhigh(), child_el.getYlow());
 		load_node_loc_capnp_type(child_el, out, child_context, report_error, stack);
 		out.finish_node_loc(child_context);
 	}
@@ -1220,12 +1228,11 @@ inline void write_node_capnp_type(T &in, ucap::Node::Builder &root, Context &con
 	{
 		auto child_context = in.get_node_loc(context);
 		auto node_loc = root.initLoc();
-		node_loc.setLayer(in.get_node_loc_layer(child_context));
+		node_loc.setLayerHigh(in.get_node_loc_layer_high(child_context));
+		node_loc.setLayerLow(in.get_node_loc_layer_low(child_context));
 		node_loc.setPtc(in.get_node_loc_ptc(child_context));
 		if((bool)in.get_node_loc_side(child_context))
 			node_loc.setSide(conv_to_enum_loc_side(in.get_node_loc_side(child_context)));
-		if((bool)in.get_node_loc_twist(child_context))
-			node_loc.setTwist(in.get_node_loc_twist(child_context));
 		node_loc.setXhigh(in.get_node_loc_xhigh(child_context));
 		node_loc.setXlow(in.get_node_loc_xlow(child_context));
 		node_loc.setYhigh(in.get_node_loc_yhigh(child_context));

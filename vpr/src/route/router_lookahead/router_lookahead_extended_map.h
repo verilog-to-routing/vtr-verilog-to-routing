@@ -9,11 +9,13 @@
 // Implementation of RouterLookahead based on source segment and destination connection box types
 class ExtendedMapLookahead : public RouterLookahead {
   public:
-    ExtendedMapLookahead(bool is_flat)
-        : is_flat_(is_flat) {}
+    ExtendedMapLookahead(bool is_flat, int route_verbosity)
+        : is_flat_(is_flat)
+        , route_verbosity_(route_verbosity) {}
 
   private:
     bool is_flat_;
+    int route_verbosity_;
     ///<Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
     util::t_src_opin_delays src_opin_delays;
 

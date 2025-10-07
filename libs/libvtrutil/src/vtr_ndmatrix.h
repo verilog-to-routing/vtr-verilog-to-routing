@@ -248,7 +248,9 @@ class NdMatrixBase {
   public: //Mutators
     ///@brief Set all elements to 'value'
     void fill(T value) {
-        std::fill(data_.get(), data_.get() + size(), value);
+        if (size() > 0) {
+            std::fill(data_.get(), data_.get() + size(), value);
+        }
     }
 
     /**
@@ -320,7 +322,7 @@ class NdMatrixBase {
 
     ///@brief Returns the size of the matrix (number of elements) calculated from the current dimensions
     size_t calc_size() const {
-        ///@brief Size is the product of all dimension sizes
+        // Size is the product of all dimension sizes
         size_t cnt = dim_size(0);
         for (size_t idim = 1; idim < ndims(); ++idim) {
             cnt *= dim_size(idim);

@@ -3,6 +3,7 @@
 
 #include "ap_flow_enums.h"
 #include "globals.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -37,30 +38,30 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     }
     VTR_LOG("\n");
 
-    VTR_LOG("Packer: %s\n", (vpr_setup.PackerOpts.doPacking ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Placer: %s\n", (vpr_setup.PlacerOpts.doPlacement ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Analytical Placer: %s\n", (vpr_setup.APOpts.doAP ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Router: %s\n", (vpr_setup.RouterOpts.doRouting ? "ENABLED" : "DISABLED"));
-    VTR_LOG("Analysis: %s\n", (vpr_setup.AnalysisOpts.doAnalysis ? "ENABLED" : "DISABLED"));
+    VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
+    VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.doPlacement]);
+    VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
+    VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
+    VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
     VTR_LOG("\n");
 
     VTR_LOG("VPR was run with the following options:\n\n");
 
     ShowNetlistOpts(vpr_setup.NetlistOpts);
 
-    if (vpr_setup.PackerOpts.doPacking) {
+    if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
         ShowPackerOpts(vpr_setup.PackerOpts);
     }
-    if (vpr_setup.PlacerOpts.doPlacement) {
+    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::SKIP) {
         ShowPlacerOpts(vpr_setup.PlacerOpts);
     }
-    if (vpr_setup.APOpts.doAP) {
+    if (vpr_setup.APOpts.doAP != e_stage_action::SKIP) {
         ShowAnalyticalPlacerOpts(vpr_setup.APOpts);
     }
-    if (vpr_setup.RouterOpts.doRouting) {
+    if (vpr_setup.RouterOpts.doRouting != e_stage_action::SKIP) {
         ShowRouterOpts(vpr_setup.RouterOpts);
     }
-    if (vpr_setup.AnalysisOpts.doAnalysis) {
+    if (vpr_setup.AnalysisOpts.doAnalysis != e_stage_action::SKIP) {
         ShowAnalysisOpts(vpr_setup.AnalysisOpts);
     }
     if (vpr_setup.NocOpts.noc) {
@@ -141,10 +142,10 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
 
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
                     auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
-                    if (pin_type == DRIVER) {
+                    if (pin_type == e_pin_type::DRIVER) {
                         L_num_p_inputs++;
                     } else {
-                        VTR_ASSERT(pin_type == RECEIVER);
+                        VTR_ASSERT(pin_type == e_pin_type::RECEIVER);
                         L_num_p_outputs++;
                     }
                 }
@@ -383,7 +384,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
         VTR_LOG("RouterOpts.enable_parallel_connection_router: %s\n", RouterOpts.enable_parallel_connection_router ? "true" : "false");
         VTR_LOG("RouterOpts.post_target_prune_fac: %f\n", RouterOpts.post_target_prune_fac);
-        VTR_LOG("RouterOpts.post_target_prune_offset: %f\n", RouterOpts.post_target_prune_offset);
+        VTR_LOG("RouterOpts.post_target_prune_offset: %g\n", RouterOpts.post_target_prune_offset);
         VTR_LOG("RouterOpts.multi_queue_num_threads: %d\n", RouterOpts.multi_queue_num_threads);
         VTR_LOG("RouterOpts.multi_queue_num_queues: %d\n", RouterOpts.multi_queue_num_queues);
         VTR_LOG("RouterOpts.multi_queue_direct_draining: %s\n", RouterOpts.multi_queue_direct_draining ? "true" : "false");
@@ -434,6 +435,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 break;
             case e_router_lookahead::EXTENDED_MAP:
                 VTR_LOG("EXTENDED_MAP\n");
+                break;
+            case e_router_lookahead::SIMPLE:
+                VTR_LOG("SIMPLE\n");
                 break;
             case e_router_lookahead::NO_OP:
                 VTR_LOG("NO_OP\n");
@@ -608,6 +612,9 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
     VTR_LOG("AnalyticalPlacerOpts.analytical_solver_type: ");
     switch (APOpts.analytical_solver_type) {
+        case e_ap_analytical_solver::Identity:
+            VTR_LOG("identity\n");
+            break;
         case e_ap_analytical_solver::QP_Hybrid:
             VTR_LOG("qp-hybrid\n");
             break;
@@ -620,6 +627,9 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
 
     VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
     switch (APOpts.partial_legalizer_type) {
+        case e_ap_partial_legalizer::Identity:
+            VTR_LOG("none\n");
+            break;
         case e_ap_partial_legalizer::BiPartitioning:
             VTR_LOG("bipartitioning\n");
             break;
@@ -638,8 +648,8 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
         case e_ap_full_legalizer::APPack:
             VTR_LOG("appack\n");
             break;
-        case e_ap_full_legalizer::Basic_Min_Disturbance:
-            VTR_LOG("basic-min-disturbance\n");
+        case e_ap_full_legalizer::FlatRecon:
+            VTR_LOG("flat-recon\n");
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown full_legalizer_type\n");

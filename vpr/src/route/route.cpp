@@ -10,7 +10,9 @@
 #include "route_profiling.h"
 #include "route_utils.h"
 #include "rr_graph.h"
+#include "router_lookahead_report.h"
 #include "vtr_time.h"
+#include "vtr_expr_eval.h"
 
 bool route(const Netlist<>& net_list,
            int width_fac,
@@ -41,6 +43,9 @@ bool route(const Netlist<>& net_list,
         graph_directionality = e_graph_type::BIDIR;
     } else {
         graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
+        }
         graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
@@ -124,7 +129,8 @@ bool route(const Netlist<>& net_list,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
                                                                           segment_inf,
-                                                                          is_flat);
+                                                                          is_flat,
+                                                                          router_opts.route_verbosity);
 
     if (is_flat) {
         // If is_flat is true, the router lookahead maps related to intra-cluster resources should be initialized since
@@ -144,13 +150,20 @@ bool route(const Netlist<>& net_list,
                                                        router_opts.write_router_lookahead,
                                                        router_opts.read_router_lookahead,
                                                        segment_inf,
-                                                       is_flat);
+                                                       is_flat,
+                                                       router_opts.route_verbosity);
         if (!router_opts.write_intra_cluster_router_lookahead.empty()) {
             router_lookahead->write_intra_cluster(router_opts.write_intra_cluster_router_lookahead);
         }
     }
 
     VTR_ASSERT(router_lookahead != nullptr);
+
+    // After the router lookahead has been fully created, generate the router
+    // lookahead report if requested.
+    if (router_opts.generate_router_lookahead_report) {
+        generate_router_lookahead_report(router_lookahead, router_opts);
+    }
 
     /* Routing parameters */
     float pres_fac = router_opts.first_iter_pres_fac;
@@ -217,7 +230,8 @@ bool route(const Netlist<>& net_list,
         budgeting_inf,
         routing_predictor,
         choking_spots,
-        is_flat);
+        is_flat,
+        router_opts.route_verbosity);
 
     RouterStats router_stats;
     float prev_iter_cumm_time = 0;
@@ -238,6 +252,10 @@ bool route(const Netlist<>& net_list,
     int rcv_finished_count = RCV_FINISH_EARLY_COUNTDOWN;
 
     print_route_status_header();
+#ifndef NO_GRAPHICS
+    // Reset router iteration in the current route attempt.
+    get_bp_state_globals()->get_glob_breakpoint_state()->router_iter = 0;
+#endif
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
         for (auto net_id : net_list.nets()) {
@@ -254,6 +272,11 @@ bool route(const Netlist<>& net_list,
         if (budgeting_inf.if_set()) {
             worst_negative_slack = timing_info->hold_total_negative_slack();
         }
+
+#ifndef NO_GRAPHICS
+        // Update router information and check breakpoint.
+        update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
+#endif
 
         /* Initial criticalities: set to 1 on the first iter if the user asked for it */
         if (router_opts.initial_timing == e_router_initial_timing::ALL_CRITICAL && itry == 1)
@@ -308,7 +331,9 @@ bool route(const Netlist<>& net_list,
         float iter_cumm_time = iteration_timer.elapsed_sec();
         float iter_elapsed_time = iter_cumm_time - prev_iter_cumm_time;
 
-        PartitionTreeDebug::log("Iteration " + std::to_string(itry) + " took " + std::to_string(iter_elapsed_time) + " s");
+        std::string iteration_msg = "Iteration " + std::to_string(itry) + " took " + std::to_string(iter_elapsed_time) + " s";
+
+        PartitionTreeDebug::log(iteration_msg);
 
         //Output progress
         print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, iter_results.stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
@@ -317,9 +342,9 @@ bool route(const Netlist<>& net_list,
 
         //Update graphics
         if (itry == 1) {
-            update_screen(first_iteration_priority, "Routing...", ROUTING, timing_info);
+            update_screen(first_iteration_priority, ("Initial Route: " + iteration_msg).c_str(), ROUTING, timing_info);
         } else {
-            update_screen(ScreenUpdatePriority::MINOR, "Routing...", ROUTING, timing_info);
+            update_screen(ScreenUpdatePriority::MINOR, ("Route: " + iteration_msg).c_str(), ROUTING, timing_info);
         }
 
         if (router_opts.save_routing_per_iteration) {
@@ -385,9 +410,6 @@ bool route(const Netlist<>& net_list,
         if (legal_convergence_count >= router_opts.max_convergence_count
             || iter_results.stats.connections_routed == 0
             || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics)) {
-#ifndef NO_GRAPHICS
-            update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
-#endif
             break; //Done routing
         }
 
@@ -395,9 +417,6 @@ bool route(const Netlist<>& net_list,
          * Abort checks: Should we give-up because this routing problem is unlikely to converge to a legal routing?
          */
         if (itry == 1 && early_exit_heuristic(router_opts, wirelength_info)) {
-#ifndef NO_GRAPHICS
-            update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
-#endif
             //Abort
             break;
         }
@@ -408,18 +427,12 @@ bool route(const Netlist<>& net_list,
 
             if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold && router_opts.routing_budgets_algorithm != YOYO) {
                 VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
-#ifndef NO_GRAPHICS
-                update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
-#endif
                 break; //Abort
             }
         }
 
         if (itry == 1 && router_opts.exit_after_first_routing_iteration) {
             VTR_LOG("Exiting after first routing iteration as requested\n");
-#ifndef NO_GRAPHICS
-            update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
-#endif
             break;
         }
 

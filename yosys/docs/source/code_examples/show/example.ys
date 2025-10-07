@@ -1,6 +1,0 @@
-read_verilog example.v
-show -format dot -prefix example_first
-proc
-show -format dot -prefix example_second
-opt
-show -format dot -prefix example_third

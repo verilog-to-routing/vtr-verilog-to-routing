@@ -10,7 +10,7 @@
 #include <memory>
 #include "PreClusterDelayCalculator.h"
 #include "PreClusterTimingGraphResolver.h"
-#include "SetupGrid.h"
+#include "setup_grid.h"
 #include "atom_lookup.h"
 #include "atom_netlist.h"
 #include "atom_netlist_fwd.h"
@@ -221,10 +221,10 @@ static void get_intercluster_switch_fanin_estimates(const t_arch& arch,
         for (int ipin : fc_spec.pins) {
             e_pin_type pin_type = get_pin_type_from_pin_physical_num(type, ipin);
 
-            if (pin_type == DRIVER) {
+            if (pin_type == e_pin_type::DRIVER) {
                 Fc_out = std::max(Fc, Fc_out);
             } else {
-                VTR_ASSERT(pin_type == RECEIVER);
+                VTR_ASSERT(pin_type == e_pin_type::RECEIVER);
                 Fc_in = std::max(Fc, Fc_in);
             }
         }

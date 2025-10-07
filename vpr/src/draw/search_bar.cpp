@@ -44,9 +44,9 @@
 extern std::string rr_highlight_message;
 
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     // get ID from search bar
     GtkEntry* text_entry = (GtkEntry*)app->get_object("TextInput");
@@ -207,58 +207,59 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
     //TODO: fixed sized char array may cause overflow.
     char message[250] = "";
 
-    if (hit_node) {
-        const auto& device_ctx = g_vpr_ctx.device();
-        auto nodes = draw_expand_non_configurable_rr_nodes(hit_node);
-        for (auto node : nodes) {
-            if (draw_state->draw_rr_node[node].color != ezgl::MAGENTA) {
-                /* If the node hasn't been clicked on before, highlight it
-                 * in magenta.
-                 */
-                draw_state->draw_rr_node[node].color = ezgl::MAGENTA;
-                draw_state->draw_rr_node[node].node_highlighted = true;
-
-            } else {
-                //Using white color to represent de-highlighting (or
-                //de-selecting) of node.
-                draw_state->draw_rr_node[node].color = ezgl::WHITE;
-                draw_state->draw_rr_node[node].node_highlighted = false;
-            }
-            //Print info about all nodes to terminal
-            VTR_LOG("%s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, node, draw_state->is_flat).c_str());
-        }
-
-        //Show info about *only* hit node to graphics
-        std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
-
-        sprintf(message, "Selected %s", info.c_str());
-        rr_highlight_message = message;
-
-        if (draw_state->draw_rr_toggle != DRAW_NO_RR) {
-            // If rr_graph is shown, highlight the fan-in/fan-outs for
-            // this node.
-            draw_highlight_fan_in_fan_out(nodes);
-        }
-    } else {
+    if (!hit_node) {
         application.update_message(draw_state->default_message);
         rr_highlight_message = "";
         application.refresh_drawing();
-        return false; //No hit
+        return false;
     }
 
-    if (draw_state->show_nets)
-        highlight_nets(message, hit_node, draw_state->is_flat);
-    else
-        application.update_message(message);
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
+    // Highlight neighboring non_configurable nodes in magenta as well
+    std::set<RRNodeId> nodes = draw_expand_non_configurable_rr_nodes(hit_node);
+
+    for (RRNodeId node : nodes) {
+        if (draw_state->draw_rr_node[node].color != ezgl::MAGENTA) {
+            // If the node hasn't been clicked on before, highlight it in magenta.
+            draw_state->draw_rr_node[node].color = ezgl::MAGENTA;
+            draw_state->draw_rr_node[node].node_highlighted = true;
+            draw_state->hit_nodes.insert(node);
+        } else {
+            //Using white color to represent de-highlighting (or de-selecting) of node.
+            draw_state->draw_rr_node[node].color = ezgl::WHITE;
+            draw_state->draw_rr_node[node].node_highlighted = false;
+            draw_state->hit_nodes.erase(node);
+        }
+
+        //Print info about all nodes to terminal including neighboring non-configurable nodes
+        VTR_LOG("%s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, node, draw_state->is_flat).c_str());
+    }
+
+    //Show info about *only* hit node to graphics
+    std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
+    sprintf(message, "Selected %s", info.c_str());
+    rr_highlight_message = message;
+
+    if (draw_state->show_nets) {
+        highlight_nets(message, hit_node);
+    }
+
+    // Highlight RR Edges if the user has selected this option
+    if (draw_state->show_rr && draw_state->highlight_rr_edges) {
+        draw_highlight_fan_in_fan_out(nodes);
+    }
+
+    application.update_message(message);
     application.refresh_drawing();
+
     return true;
 }
 
 void auto_zoom_rr_node(RRNodeId rr_node_id) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const RRGraphView& rr_graph = device_ctx.rr_graph;
     ezgl::rectangle rr_node;
 
     // find the location of the node
@@ -268,7 +269,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
             t_physical_tile_loc tile_loc = {
                 rr_graph.node_xlow(rr_node_id),
                 rr_graph.node_ylow(rr_node_id),
-                rr_graph.node_layer(rr_node_id)};
+                rr_graph.node_layer_low(rr_node_id)};
             t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(tile_loc);
             int width_offset = device_ctx.grid.get_width_offset(tile_loc);
             int height_offset = device_ctx.grid.get_height_offset(tile_loc);
@@ -308,7 +309,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
 void highlight_cluster_block(ClusterBlockId clb_index) {
     char msg[vtr::bufsize];
     t_draw_state* draw_state = get_draw_state_vars();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     /// determine block ///
@@ -346,9 +347,9 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
  * @return false | If sub-block not found (impossible in search case) or not shown at current zoom lvl
  */
 bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::application* app) {
-    const auto& atom_ctx = g_vpr_ctx.atom();
-    const auto& cl_ctx = g_vpr_ctx.clustering();
-    t_pb* pb = cl_ctx.clb_nlist.block_pb(cl_blk);
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    t_pb* pb = cluster_ctx.clb_nlist.block_pb(cl_blk);
 
     //Getting the pb* for the atom block
     auto atom_block_pb = find_atom_block_in_pb(atom_ctx.netlist().block_name(atom_blk), pb);
@@ -367,7 +368,7 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
 }
 
 void highlight_nets(ClusterNetId net_id) {
-    auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     t_draw_state* draw_state = get_draw_state_vars();
 
