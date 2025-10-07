@@ -1111,13 +1111,11 @@ void split_multiplier(nnode_t *node, int a0, int b0, int a1, int b1, netlist_t *
         for (int i = 0; i < addsmall->num_output_pins; i++) {
             connect_nodes(addsmall, i, addbig, i);
         }
-        // add_input_pin_to_node(addbig, get_zero_pin(netlist), addsmall->num_output_pins);
 
         // connect inputs to port b of addbig
         for (int i = 0; i < addsmall2->num_output_pins; i++) {
             connect_nodes(addsmall2, i, addbig, i + addbig->input_port_sizes[0]);
         }
-        // add_input_pin_to_node(addbig, get_zero_pin(netlist), addbig->input_port_sizes[0] + addsmall->num_output_pins);
 
         // remap the multiplier outputs coming directly from a0b0
         for (int i = 0; i < addbig->num_output_pins; i++) {
@@ -1392,7 +1390,6 @@ void iterate_multipliers(netlist_t *netlist)
     /* Can only perform the optimisation if hard multipliers exist! */
     if (hard_multipliers == NULL)
         return;
-    // std::cin.get();
     sizea = hard_multipliers->inputs->size;
     sizeb = hard_multipliers->inputs->next->size;
     if (sizea < sizeb) {
