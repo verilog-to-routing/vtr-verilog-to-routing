@@ -255,7 +255,6 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
             continue;
         }
 
-        ezgl::color color = DEFAULT_RR_NODE_COLOR;
         bool draw_edge = true;
         bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
         bool to_node_inter_cluster = is_inter_cluster_node(rr_graph, to_node);
@@ -284,17 +283,11 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
             draw_edge = draw_state->draw_connection_box_edges;
         }
 
-        // Select edge colors
-        const std::map<e_edge_type, ezgl::color> edge_color_map = {
-            {e_edge_type::PIN_TO_OPIN, ezgl::LIGHT_PINK},
-            {e_edge_type::PIN_TO_IPIN, ezgl::MEDIUM_PURPLE},
-            {e_edge_type::OPIN_TO_CHAN, ezgl::PINK},
-            {e_edge_type::CHAN_TO_IPIN, ezgl::PURPLE},
-            {e_edge_type::CHAN_TO_CHAN, blk_DARKGREEN}};
+        ezgl::color color = EDGE_COLOR_MAP.at(edge_type);
 
-        color = edge_color_map.at(edge_type);
-
-        if (!edge_configurable) color = blk_DARKGREY;
+        if (!edge_configurable) {
+            color = blk_DARKGREY;
+        }
 
         if ((from_type == e_rr_type::CHANX || from_type == e_rr_type::CHANY)
             && (to_type == e_rr_type::IPIN)
