@@ -817,6 +817,17 @@ struct ParMYSPass : public Pass {
         log("\nTechmap Time: ");
         log_time(techmap_time);
         log("\n--------------------------------------------------------------------\n");
+
+        fprintf(stderr, "[BLIF-OUT] POs=%d\n", odin_netlist->num_top_output_nodes);
+        for (int k=0; k<odin_netlist->num_top_output_nodes; ++k) {
+            npin_t* in = odin_netlist->top_output_nodes[k]->input_pins[0];
+            fprintf(stderr, "  PO[%d]: net=%s driver=%s.pin%d\n",
+                k,
+                in->net && in->net->name ? in->net->name : "(noname)",
+                (in->net && in->net->driver_pins[0]->node &&
+                in->net->driver_pins[0]->node->name) ? in->net->driver_pins[0]->node->name : "(null)",
+                in->net ? in->net->driver_pins[0]->pin_node_idx : -1);
+        }
     }
 
     static void report(netlist_t *odin_netlist)
