@@ -1,4 +1,6 @@
 
+#ifndef NO_GRAPHICS
+
 #include "draw_interposer.h"
 
 #include "draw_global.h"
@@ -49,3 +51,5 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         VTR_ASSERT(draw_state->pic_on_screen == e_pic_type::NO_PICTURE);
     }
 }
+
+#endif
