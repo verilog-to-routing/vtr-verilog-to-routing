@@ -263,7 +263,9 @@ struct DeviceContext : public Context {
 
     int delayless_switch_idx = UNDEFINED;
 
+    /// Stores the number of CHANX wire segments in each routing channel at [layer][x][y]
     vtr::NdMatrix<int, 3> rr_chanx_width;
+    /// Stores the number of CHANY wire segments in each routing channel at [layer][x][y]
     vtr::NdMatrix<int, 3> rr_chany_width;
 
     bool rr_graph_is_flat = false;
