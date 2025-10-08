@@ -346,7 +346,7 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
 
         for (const t_interposer_cut_inf& cut_inf : interposer_inf[layer].interposer_cuts) {
             const int cut_loc = cut_inf.loc;
-            e_interposer_cut_dim cut_dim = cut_inf.dim;
+            e_interposer_cut_type cut_type = cut_inf.dim;
 
             for (const t_interdie_wire_inf& wire_inf : cut_inf.interdie_wires) {
                 VTR_ASSERT(wire_inf.offset_definition.repeat_expr.empty());
@@ -363,13 +363,14 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
 
                 t_specified_loc region;
 
-                region.reg_x.start = (cut_dim == e_interposer_cut_dim::X) ? start : 0;
-                region.reg_x.end = (cut_dim == e_interposer_cut_dim::X) ? end : grid_width - 1;
-                region.reg_x.incr = (cut_dim == e_interposer_cut_dim::X) ? incr : 1;
+                region.reg_x.start = (cut_type == e_interposer_cut_type::VERT) ? start : 0;
+                region.reg_x.end = (cut_type == e_interposer_cut_type::VERT) ? end : grid_width - 1;
+                region.reg_x.incr = (cut_type == e_interposer_cut_type::VERT) ? incr : 1;
                 region.reg_x.repeat = std::numeric_limits<int>::max();
-                region.reg_y.start = (cut_dim == e_interposer_cut_dim::Y) ? start : 0;
-                region.reg_y.end = (cut_dim == e_interposer_cut_dim::Y) ? end : grid_height - 1;
-                region.reg_y.incr = (cut_dim == e_interposer_cut_dim::Y) ? incr : 1;
+
+                region.reg_y.start = (cut_type == e_interposer_cut_type::HORZ) ? start : 0;
+                region.reg_y.end = (cut_type == e_interposer_cut_type::HORZ) ? end : grid_height - 1;
+                region.reg_y.incr = (cut_type == e_interposer_cut_type::HORZ) ? incr : 1;
                 region.reg_y.repeat = std::numeric_limits<int>::max();
 
                 t_sg_location sg_location{.type = e_sb_location::E_XY_SPECIFIED,
