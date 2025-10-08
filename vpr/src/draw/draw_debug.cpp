@@ -772,7 +772,7 @@ bool valid_expression(std::string exp) {
     vtr::t_formula_data dummy;
     try {
         int result = fp.parse_formula(exp, dummy, true);
-        (void)result; 
+        (void)result;
     } catch (const vtr::VtrError& e) {
         return false;
     }
