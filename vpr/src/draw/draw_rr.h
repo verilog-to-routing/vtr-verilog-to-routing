@@ -28,7 +28,7 @@ void draw_rr(ezgl::renderer* g);
 void draw_rr_edges(RRNodeId from_node, ezgl::renderer* g);
 
 /// Color map for edges based on {from_type, to_type}
-inline const std::map<std::pair<e_rr_type, e_rr_type>, e_edge_type> EDGE_TYPE_COLOR_MAP = {
+inline const std::map<std::pair<e_rr_type, e_rr_type>, e_edge_type> EDGE_TYPE_MAP = {
     // Pin to pin connections
     {{e_rr_type::IPIN, e_rr_type::IPIN}, e_edge_type::PIN_TO_IPIN},
     {{e_rr_type::OPIN, e_rr_type::IPIN}, e_edge_type::PIN_TO_IPIN},

@@ -259,10 +259,10 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
         bool inode_inter_cluster = is_inter_cluster_node(rr_graph, inode);
         bool to_node_inter_cluster = is_inter_cluster_node(rr_graph, to_node);
 
-        if (EDGE_TYPE_COLOR_MAP.find({from_type, to_type}) == EDGE_TYPE_COLOR_MAP.end()) {
+        if (EDGE_TYPE_MAP.find({from_type, to_type}) == EDGE_TYPE_MAP.end()) {
             continue; // Unsupported edge type
         }
-        e_edge_type edge_type = EDGE_TYPE_COLOR_MAP.at({from_type, to_type});
+        e_edge_type edge_type = EDGE_TYPE_MAP.at({from_type, to_type});
 
         // Determine whether to draw the edge based on user options
 
