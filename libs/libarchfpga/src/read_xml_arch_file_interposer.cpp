@@ -17,10 +17,10 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
 
     if (x != ARCH_FPGA_UNDEFINED_VAL) {
         interposer.loc = x;
-        interposer.dim = e_interposer_cut_dim::X;
+        interposer.dim = e_interposer_cut_type::VERT;
     } else if (y != ARCH_FPGA_UNDEFINED_VAL) {
         interposer.loc = y;
-        interposer.dim = e_interposer_cut_dim::Y;
+        interposer.dim = e_interposer_cut_type::HORZ;
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(interposer_cut_tag),
                     "Interposer cut tag must specify where the cut is to appear using `x` or `y` attributes.");
