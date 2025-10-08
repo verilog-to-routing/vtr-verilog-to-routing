@@ -1,5 +1,7 @@
 #pragma once
 
+#ifndef NO_GRAPHICS
+
 // forward declaration
 namespace ezgl {
 class renderer;
@@ -10,3 +12,5 @@ class renderer;
 /// During routing, the cut lines are drawn closer to the side of routing channel to make it clear
 /// which side of the cut owns the channel.
 void draw_interposer_cuts(ezgl::renderer* g);
+
+#endif

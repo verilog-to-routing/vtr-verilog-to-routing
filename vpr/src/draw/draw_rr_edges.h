@@ -7,11 +7,6 @@
 
 #ifndef NO_GRAPHICS
 
-#include <cstdio>
-#include <cfloat>
-#include <cstring>
-#include <cmath>
-
 #include "draw_types.h"
 #include "rr_graph_fwd.h"
 
