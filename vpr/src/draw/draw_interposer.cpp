@@ -18,7 +18,8 @@ void draw_interposer_cuts(ezgl::renderer* g) {
 
     std::vector<std::pair<ezgl::point2d , ezgl::point2d>> lines_to_draw;
 
-    const ezgl::rectangle world = g->get_visible_world();
+    const ezgl::rectangle world {{draw_coords->tile_x.front() - draw_coords->get_tile_width(), draw_coords->tile_y.front() - draw_coords->get_tile_height()},
+{draw_coords->tile_x.back() + 2 * draw_coords->get_tile_width(), draw_coords->tile_y.back() + 2 * draw_coords->get_tile_height()}};
     g->set_color(ezgl::BLACK, 255);
 
     const float offset_factor = draw_state->pic_on_screen == PLACEMENT ? -0.5f : -0.5f / device_ctx.chan_width.max;
