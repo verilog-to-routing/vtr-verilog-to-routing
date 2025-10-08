@@ -383,10 +383,10 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         const t_layer_def& layer_def = grid_def.layers[layer];
 
         for (const t_interposer_cut_inf& cut_inf : layer_def.interposer_cuts) {
-            if (cut_inf.dim == e_interposer_cut_dim::X) {
+            if (cut_inf.dim == e_interposer_cut_type::VERT) {
                 vertical_interposer_cuts[layer].push_back(cut_inf.loc);
             } else {
-                VTR_ASSERT(cut_inf.dim == e_interposer_cut_dim::Y);
+                VTR_ASSERT(cut_inf.dim == e_interposer_cut_type::HORZ);
                 horizontal_interposer_cuts[layer].push_back(cut_inf.loc);
             }
         }
@@ -555,10 +555,10 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     }
 
     DeviceGrid device_grid(grid_def.name,
-                        grid,
-                        limiting_resources,
-                        std::move(horizontal_interposer_cuts),
-                        std::move(vertical_interposer_cuts));
+                           grid,
+                           limiting_resources,
+                           std::move(horizontal_interposer_cuts),
+                           std::move(vertical_interposer_cuts));
 
     check_grid(device_grid);
 

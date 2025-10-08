@@ -407,7 +407,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
     /*
      * Setup:
      * - The router will take over a 2x3 grid area
-     * - The NoC will be a 3x3 Mesh topology and located at 
+     * - The NoC will be a 3x3 Mesh topology and located at
      * the following positions:
      * - router 1: (0,0)
      * - router 2: (4,0)
@@ -593,7 +593,7 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
     /*
      * Setup:
      * - The router will take over a 2x3 grid area
-     * - The NoC will be a 3x3 Mesh topology and located at 
+     * - The NoC will be a 3x3 Mesh topology and located at
      * the following positions:
      * - router 1: (0,0)
      * - router 2: (4,0)
@@ -741,7 +741,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
     /*
      * Setup:
      * - The router will take over a 2x3 grid area
-     * - The NoC will be a 3x3 Mesh topology and located at 
+     * - The NoC will be a 3x3 Mesh topology and located at
      * the following positions:
      * - router 1: (0,0)
      * - router 2: (4,0)

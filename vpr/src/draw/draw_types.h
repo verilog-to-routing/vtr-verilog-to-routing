@@ -433,7 +433,7 @@ struct t_draw_coords {
      * to (tile_x[device_ctx.grid.width()-1]+tile_width, tile_y[device_ctx.grid.height()-1]+tile_width) in
      * the upper right corner.
      */
-    float *tile_x, *tile_y;
+    std::vector<float> tile_x, tile_y;
 
     ///@brief Half-width or Half-height of a pin. Set when init_draw_coords is called
     float pin_size;

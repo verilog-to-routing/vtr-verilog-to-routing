@@ -17,18 +17,18 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
 
     if (x != ARCH_FPGA_UNDEFINED_VAL) {
         interposer.loc = x;
-        interposer.dim = e_interposer_cut_dim::X;
+        interposer.dim = e_interposer_cut_type::VERT;
     } else if (y != ARCH_FPGA_UNDEFINED_VAL) {
         interposer.loc = y;
-        interposer.dim = e_interposer_cut_dim::Y;
+        interposer.dim = e_interposer_cut_type::HORZ;
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(interposer_cut_tag),
-                    "Interposer cut tag must specify where the cut is to appear using `x` or `y` attributes.");
+                       "Interposer cut tag must specify where the cut is to appear using `x` or `y` attributes.");
     }
 
     if (interposer.loc <= 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(interposer_cut_tag),
-                    "Interposer cut location must be a positive number.");
+                       "Interposer cut location must be a positive number.");
     }
 
     pugiutil::expect_only_children(interposer_cut_tag, {"interdie_wire"}, loc_data);
@@ -50,7 +50,7 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
 
         if (interdie_wire.num <= 0) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(interdie_wire_tag),
-                "The `num` attribute of an `interdie_wire` must be specified with a positive number.");
+                           "The `num` attribute of an `interdie_wire` must be specified with a positive number.");
         }
 
         interposer.interdie_wires.push_back(interdie_wire);

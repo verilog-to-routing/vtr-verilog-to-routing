@@ -16,6 +16,8 @@
 #include <cstring>
 #include <cmath>
 #include "draw.h"
+
+#include "draw_interposer.h"
 #include "timing_info.h"
 #include "physical_types.h"
 
@@ -174,6 +176,8 @@ static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     g->set_font_size(14);
+
+    draw_interposer_cuts(g);
 
     draw_block_pin_util();
     drawplace(g);
@@ -373,8 +377,8 @@ void alloc_draw_structs(const t_arch* arch) {
 
     /* Allocate the structures needed to draw the placement and routing->  Set *
      * up the default colors for blocks and nets.                             */
-    draw_coords->tile_x = new float[device_ctx.grid.width()];
-    draw_coords->tile_y = new float[device_ctx.grid.height()];
+    draw_coords->tile_x.resize(device_ctx.grid.width(), 0.f);
+    draw_coords->tile_y.resize(device_ctx.grid.height(), 0.f);
 
     /* For sub-block drawings inside clbs */
     draw_internal_alloc_blk();
@@ -415,10 +419,8 @@ void free_draw_structs() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     if (draw_coords != nullptr) {
-        delete[] draw_coords->tile_x;
-        draw_coords->tile_x = nullptr;
-        delete[] draw_coords->tile_y;
-        draw_coords->tile_y = nullptr;
+        vtr::release_memory(draw_coords->tile_x);
+        vtr::release_memory(draw_coords->tile_y);
     }
 
 #else

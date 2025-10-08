@@ -197,6 +197,14 @@ class DeviceGrid {
         return &grid_.get(n);
     }
 
+    inline const std::vector<std::vector<int>>& get_horizontal_interposer_cuts() const {
+        return horizontal_interposer_cuts_;
+    }
+
+    inline const std::vector<std::vector<int>>& get_vertical_interposer_cuts() const {
+        return vertical_interposer_cuts_;
+    }
+
   private:
     /// @brief Counts the number of each tile type on each layer and store it in instance_counts_.
     /// It is called in the constructor.

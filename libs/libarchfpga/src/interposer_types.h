@@ -10,12 +10,10 @@
 #include <string>
 #include "grid_types.h"
 
-/**
- * @brief Enum for direction of an interposer cut. X means horizontal cut and Y means vertical cut.
- */
-enum class e_interposer_cut_dim {
-    X,
-    Y
+/// @brief Enum for direction of an interposer cut.
+enum class e_interposer_cut_type {
+    HORZ,
+    VERT
 };
 
 /**
@@ -40,7 +38,7 @@ struct t_interdie_wire_inf {
  * @brief Struct containing information of an interposer cut
  */
 struct t_interposer_cut_inf {
-    e_interposer_cut_dim dim;                        ///< Axis of interposer cut location. The cut is perpendicular to this axis. This specifies the dimension of `loc`.
+    e_interposer_cut_type dim;                       ///< Axis of interposer cut location. The cut is perpendicular to this axis. This specifies the dimension of `loc`.
     int loc;                                         ///< Location of the cut on the grid. Locations start from zero and cuts will happen above or to the right of the tiles at location=loc.
     std::vector<t_interdie_wire_inf> interdie_wires; ///< Connectivity specification between the two sides of the cut.
 };
