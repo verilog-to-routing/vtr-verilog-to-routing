@@ -114,7 +114,7 @@
       <!--Fill with 'clb'-->
       <fill type="clb" priority="10"/>
 
-      <interposer_cut dim="y" loc="5">
+      <interposer_cut y="5">
         <interdie_wire sg_name="interposer_sg" sg_link="L_UP" offset_start="0" offset_end="0" offset_increment="1" num="4"/>
         <interdie_wire sg_name="interposer_sg" sg_link="L_DOWN" offset_start="1" offset_end="1" offset_increment="-1" num="4"/>
       </interposer_cut>
