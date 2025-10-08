@@ -2,7 +2,7 @@
 
 // forward declaration
 namespace ezgl {
-    class renderer;
+class renderer;
 }
 
 /// @brief Draws interposer cut lines.

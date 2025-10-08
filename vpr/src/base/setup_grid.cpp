@@ -555,10 +555,10 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
     }
 
     DeviceGrid device_grid(grid_def.name,
-                        grid,
-                        limiting_resources,
-                        std::move(horizontal_interposer_cuts),
-                        std::move(vertical_interposer_cuts));
+                           grid,
+                           limiting_resources,
+                           std::move(horizontal_interposer_cuts),
+                           std::move(vertical_interposer_cuts));
 
     check_grid(device_grid);
 
