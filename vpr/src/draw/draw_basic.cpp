@@ -77,33 +77,29 @@ void drawplace(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
-    ClusterBlockId bnum;
-    int num_sub_tiles;
-
-    int total_num_layers = device_ctx.grid.get_num_layers();
+    int total_num_layers = grid.get_num_layers();
 
     g->set_line_width(0);
     for (int layer_num = 0; layer_num < total_num_layers; layer_num++) {
         if (draw_state->draw_layer_display[layer_num].visible) {
-            for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
-                for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                    /* Only the first block of a group should control drawing */
-                    const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
-                    int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
-                    int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
+            for (int i = 0; i < (int)grid.width(); i++) {
+                for (int j = 0; j < (int)grid.height(); j++) {
+                    if (!grid.is_root_location({i, j, layer_num})) {
+                        continue;
+                    }
+
+                    // Only the first block of a group should control drawing
+                    const t_physical_tile_type_ptr type = grid.get_physical_type({i, j, layer_num});
 
                     //The transparency level for the current layer being drawn (0-255)
                     // 0 - opaque, 255 - transparent
                     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
-                    if (width_offset > 0
-                        || height_offset > 0)
-                        continue;
-
-                    num_sub_tiles = type->capacity;
+                    int num_sub_tiles = type->capacity;
                     /* Don't draw if tile capacity is zero. eg-> corners. */
                     if (num_sub_tiles == 0) {
                         continue;
@@ -111,7 +107,7 @@ void drawplace(ezgl::renderer* g) {
 
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Look at the tile at start of large block */
-                        bnum = grid_blocks.block_at_location({i, j, k, layer_num});
+                        ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
                         /* Fill background for the clb. Do not fill if "show_blk_internal"
                          * is toggled.
                          */
@@ -171,17 +167,12 @@ void drawplace(ezgl::renderer* g) {
                                              abs_clb_bbox.height());
                             }
                             /* Draw text for block type so that user knows what block */
-                            if (width_offset == 0
-                                && height_offset == 0) {
+                            if (grid.is_root_location({i, j, layer_num})) {
                                 std::string block_type_loc = type->name;
                                 block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
 
-                                g->draw_text(
-                                    center
-                                        - ezgl::point2d(0,
-                                                        abs_clb_bbox.height() / 4),
-                                    block_type_loc.c_str(), abs_clb_bbox.width(),
-                                    abs_clb_bbox.height());
+                                g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
+                                             block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
                             }
                         }
                     }
