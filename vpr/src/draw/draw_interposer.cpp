@@ -8,9 +8,10 @@
 void draw_interposer_cuts(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const RRGraphView& rr_graph = device_ctx.rr_graph;
     const DeviceGrid& grid = device_ctx.grid;
     t_draw_coords* draw_coords = get_draw_coords_vars();
+
+
 
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
@@ -20,7 +21,7 @@ void draw_interposer_cuts(ezgl::renderer* g) {
     const ezgl::rectangle world = g->get_visible_world();
     g->set_color(ezgl::BLACK, 255);
 
-    const float offset_factor = draw_state->pic_on_screen == PLACEMENT ? 1.5f : 2.0f;
+    const float offset_factor = draw_state->pic_on_screen == PLACEMENT ? -0.5f : -0.5f / device_ctx.chan_width.max;
 
     for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
         if (!draw_state->draw_layer_display[layer].visible) {
@@ -28,12 +29,12 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         }
 
         for (int cut_y : horizontal_cuts[layer]) {
-            float y = draw_coords->tile_y[cut_y] + offset_factor * draw_coords->get_tile_height() ;
+            float y = draw_coords->tile_y[cut_y + 1] + offset_factor * draw_coords->get_tile_height() ;
             lines_to_draw.push_back({{world.left(), y}, {world.right(), y}});
         }
 
         for (int cut_x : vertical_cuts[layer]) {
-            float x = draw_coords->tile_x[cut_x] + offset_factor * draw_coords->get_tile_width() ;
+            float x = draw_coords->tile_x[cut_x + 1] + offset_factor * draw_coords->get_tile_width() ;
             lines_to_draw.push_back({{x, world.bottom()}, {x, world.top()}});
         }
     }
