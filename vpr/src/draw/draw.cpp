@@ -183,7 +183,7 @@ static void draw_main_canvas(ezgl::renderer* g) {
     drawplace(g);
     draw_internal_draw_subblk(g);
 
-    if (draw_state->pic_on_screen == ROUTING) { // ROUTING on screen
+    if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
 
         draw_rr(g);
 
@@ -259,12 +259,12 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->pic_on_screen == PLACEMENT) {
+    if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
         hide_widget("RoutingMenuButton", app);
 
         draw_state->save_graphics_file_base = "vpr_placement";
 
-    } else if (draw_state->pic_on_screen == ROUTING) {
+    } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
         show_widget("RoutingMenuButton", app);
 
         draw_state->save_graphics_file_base = "vpr_routing";
@@ -278,7 +278,10 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
 
 #endif //NO_GRAPHICS
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<const SetupTimingInfo> setup_timing_info) {
+void update_screen(ScreenUpdatePriority priority,
+                   const char* msg,
+                   e_pic_type pic_on_screen_val,
+                   std::shared_ptr<const SetupTimingInfo> setup_timing_info) {
 #ifndef NO_GRAPHICS
 
     /* Updates the screen if the user has requested graphics.  The priority  *
@@ -301,10 +304,9 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
         state_change = true;
 
-        if (draw_state->pic_on_screen == NO_PICTURE) {
+        if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
             // Only add the canvas the first time we open graphics
-            application.add_canvas("MainCanvas", draw_main_canvas,
-                                   initial_world);
+            application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
         }
 
         draw_state->setup_timing_info = setup_timing_info;

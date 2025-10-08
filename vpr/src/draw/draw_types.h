@@ -179,7 +179,7 @@ struct t_draw_layer_display {
  */
 struct t_draw_state {
     ///@brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
-    pic_type pic_on_screen = NO_PICTURE;
+    e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
 
     ///@brief Whether to draw nets or not
     bool show_nets = false;

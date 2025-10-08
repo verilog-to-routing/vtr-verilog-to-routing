@@ -23,7 +23,7 @@ void draw_interposer_cuts(ezgl::renderer* g) {
     g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
     g->set_line_width(2);
 
-    const float offset_factor = draw_state->pic_on_screen == PLACEMENT ? -0.5f : -0.5f / device_ctx.chan_width.max;
+    const float offset_factor = draw_state->pic_on_screen == e_pic_type::PLACEMENT ? -0.5f : -0.5f / device_ctx.chan_width.max;
 
     for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
         if (!draw_state->draw_layer_display[layer].visible) {
@@ -41,11 +41,11 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         }
     }
 
-    if (draw_state->pic_on_screen == PLACEMENT || draw_state->pic_on_screen == ROUTING) {
+    if (draw_state->pic_on_screen == e_pic_type::PLACEMENT || draw_state->pic_on_screen == e_pic_type::ROUTING) {
         for (const auto& [start, end] : lines_to_draw) {
             g->draw_line(start, end);
         }
     } else {
-        VTR_ASSERT(draw_state->pic_on_screen == NO_PICTURE);
+        VTR_ASSERT(draw_state->pic_on_screen == e_pic_type::NO_PICTURE);
     }
 }
