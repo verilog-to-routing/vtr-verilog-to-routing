@@ -16,6 +16,8 @@
 #include <cstring>
 #include <cmath>
 #include "draw.h"
+
+#include "draw_interposer.h"
 #include "timing_info.h"
 #include "physical_types.h"
 
@@ -174,6 +176,8 @@ static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     g->set_font_size(14);
+
+    draw_interposer_cuts(g);
 
     draw_block_pin_util();
     drawplace(g);
@@ -454,7 +458,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     draw_coords->set_tile_width(clb_width);
     draw_coords->pin_size = 0.3;
     for (const auto& type : device_ctx.physical_tile_types) {
-        auto num_pins = type.num_pins;
+        int num_pins = type.num_pins;
         if (num_pins > 0) {
             draw_coords->pin_size = std::min(draw_coords->pin_size,
                                              (draw_coords->get_tile_width() / (4.0F * num_pins)));
