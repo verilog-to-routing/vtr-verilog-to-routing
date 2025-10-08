@@ -23,9 +23,28 @@
  */
 void draw_rr(ezgl::renderer* g);
 
-/* Draws all the edges that the user wants shown between inode and what it
- * connects to.  inode is assumed to be a CHANX, CHANY, or IPIN. */
+/// @brief Draws all the edges that the user wants shown between @p from_node and what it
+/// connects to. @p from_node is assumed to be a CHANX, CHANY, or IPIN.
 void draw_rr_edges(RRNodeId from_node, ezgl::renderer* g);
+
+/// Maps (from_type, to_type) pairs to an edge type used for drawing or classification.
+inline const std::map<std::pair<e_rr_type, e_rr_type>, e_edge_type> EDGE_TYPE_MAP = {
+    // Pin to pin connections
+    {{e_rr_type::IPIN, e_rr_type::IPIN}, e_edge_type::PIN_TO_IPIN},
+    {{e_rr_type::OPIN, e_rr_type::IPIN}, e_edge_type::PIN_TO_IPIN},
+    {{e_rr_type::OPIN, e_rr_type::OPIN}, e_edge_type::PIN_TO_OPIN},
+    {{e_rr_type::IPIN, e_rr_type::OPIN}, e_edge_type::PIN_TO_OPIN},
+    // Channel to pin connections
+    {{e_rr_type::OPIN, e_rr_type::CHANX}, e_edge_type::OPIN_TO_CHAN},
+    {{e_rr_type::OPIN, e_rr_type::CHANY}, e_edge_type::OPIN_TO_CHAN},
+    {{e_rr_type::CHANX, e_rr_type::IPIN}, e_edge_type::CHAN_TO_IPIN},
+    {{e_rr_type::CHANY, e_rr_type::IPIN}, e_edge_type::CHAN_TO_IPIN},
+    // Channel to channel connections
+    {{e_rr_type::CHANX, e_rr_type::CHANX}, e_edge_type::CHAN_TO_CHAN},
+    {{e_rr_type::CHANX, e_rr_type::CHANY}, e_edge_type::CHAN_TO_CHAN},
+    {{e_rr_type::CHANY, e_rr_type::CHANY}, e_edge_type::CHAN_TO_CHAN},
+    {{e_rr_type::CHANY, e_rr_type::CHANX}, e_edge_type::CHAN_TO_CHAN},
+};
 
 void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g);
 

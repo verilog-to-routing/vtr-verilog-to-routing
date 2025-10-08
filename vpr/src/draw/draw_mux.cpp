@@ -19,31 +19,32 @@
 //Draws a mux, height/width define the bounding box, scale [0.,1.] controls the slope of the muxes sides
 ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height, float width, float scale, ezgl::renderer* g) {
     std::vector<ezgl::point2d> mux_polygon;
+    mux_polygon.reserve(4);
 
     switch (orientation) {
         case TOP:
-            //Clock-wise from bottom left
+            // Clock-wise from bottom left
             mux_polygon.emplace_back(origin.x - height / 2, origin.y - width / 2);
             mux_polygon.emplace_back(origin.x - (scale * height) / 2, origin.y + width / 2);
             mux_polygon.emplace_back(origin.x + (scale * height) / 2, origin.y + width / 2);
             mux_polygon.emplace_back(origin.x + height / 2, origin.y - width / 2);
             break;
         case BOTTOM:
-            //Clock-wise from bottom left
+            // Clock-wise from bottom left
             mux_polygon.emplace_back(origin.x - (scale * height) / 2, origin.y - width / 2);
             mux_polygon.emplace_back(origin.x - height / 2, origin.y + width / 2);
             mux_polygon.emplace_back(origin.x + height / 2, origin.y + width / 2);
             mux_polygon.emplace_back(origin.x + (scale * height) / 2, origin.y - width / 2);
             break;
         case LEFT:
-            //Clock-wise from bottom left
+            // Clock-wise from bottom left
             mux_polygon.emplace_back(origin.x - width / 2, origin.y - (scale * height) / 2);
             mux_polygon.emplace_back(origin.x - width / 2, origin.y + (scale * height) / 2);
             mux_polygon.emplace_back(origin.x + width / 2, origin.y + height / 2);
             mux_polygon.emplace_back(origin.x + width / 2, origin.y - height / 2);
             break;
         case RIGHT:
-            //Clock-wise from bottom left
+            // Clock-wise from bottom left
             mux_polygon.emplace_back(origin.x - width / 2, origin.y - height / 2);
             mux_polygon.emplace_back(origin.x - width / 2, origin.y + height / 2);
             mux_polygon.emplace_back(origin.x + width / 2, origin.y + (scale * height) / 2);
@@ -57,7 +58,7 @@ ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height,
 
     ezgl::point2d min((float)mux_polygon[0].x, (float)mux_polygon[0].y);
     ezgl::point2d max((float)mux_polygon[0].x, (float)mux_polygon[0].y);
-    for (const auto& point : mux_polygon) {
+    for (const ezgl::point2d& point : mux_polygon) {
         min.x = std::min((float)min.x, (float)point.x);
         min.y = std::min((float)min.y, (float)point.y);
         max.x = std::max((float)max.x, (float)point.x);

@@ -1543,11 +1543,11 @@ enum class e_stat {
 /// @note  If detailed routing is performed, only a uniform (all channels in a given direction are the same width)
 /// distribution is supported.
 struct t_chan {
-    e_stat type;  ///< Distribution type
-    float peak;   ///< Peak value. For a UNIFORM distribution, this is the value for all channels (in a given direction).
-    float width;  ///< Standard deviation (Gaussian)
-    float xpeak;  ///< Peak location (Gaussian)
-    float dc;     ///< DC offset (Gaussian, pulse)
+    e_stat type; ///< Distribution type
+    float peak;  ///< Peak value. For a UNIFORM distribution, this is the value for all channels (in a given direction).
+    float width; ///< Standard deviation (Gaussian)
+    float xpeak; ///< Peak location (Gaussian)
+    float dc;    ///< DC offset (Gaussian, pulse)
 };
 
 /* chan_x_dist: Describes the x-directed channel width distribution.         *
