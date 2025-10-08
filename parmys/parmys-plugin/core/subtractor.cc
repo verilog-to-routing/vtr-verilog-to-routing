@@ -501,7 +501,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 
     if ((flag == 0 || count > 1) && !configuration.adder_cin_global) {
         // connect the a[0] of first adder node to ground, and b[0] of first adder node to vcc
-        connect_nodes(netlist->gnd_node, 0, node[0], 0);
+        connect_nodes(netlist->vcc_node, 0, node[0], 0);
         connect_nodes(netlist->vcc_node, 0, node[0], sizea);
         // hang the first sumout
         node[0]->output_pins[1] = allocate_npin();
@@ -516,14 +516,25 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
 
     // for normal subtraction: if any input pins beside intial cin is NULL, it should connect to unconn
     // for unary subtraction: the first number should has the number of a input pins connected to gnd. The others are as same as normal subtraction
+    int tail = count -1;
     for (int i = 0; i < count; i++) {
         num = node[i]->num_input_pins;
         for (int j = 0; j < num - 1; j++) {
             if (node[i]->input_pins[j] == NULL) {
                 if (nodeo->num_input_port_sizes != 3 && i * sizea + j < a)
                     connect_nodes(netlist->gnd_node, 0, node[i], j);
-                else
-                    connect_nodes(netlist->pad_node, 0, node[i], j);
+                else{
+                    if (i == count - 1){
+                        if (j == 0){
+                            connect_nodes(netlist->gnd_node, 0, node[i], j);
+                        }
+                        else if (j == 1)
+                            connect_nodes(netlist->vcc_node, 0, node[i], j);
+                    }
+                    else{
+                        connect_nodes(netlist->pad_node, 0, node[i], j);
+                    }
+                }
             }
         }
     }
@@ -554,12 +565,15 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
         }
     }
 
+
     if (count > 1 || configuration.adder_cin_global) {
         // remap the output pins of each adder to nodeo
         for (int i = offset; i < count; i++) {
             for (int j = 0; j < node[i]->num_output_pins - 1; j++) {
-                if ((i * sizea + j - offset) < nodeo->num_output_pins)
+                if ((i * sizea + j - offset) < nodeo->num_output_pins){
                     remap_pin_to_new_node(nodeo->output_pins[i * sizea + j - offset], node[i], j + 1);
+                    nodeo->output_pins[i * sizea + j - offset] = NULL;
+                }
                 else {
                     node[i]->output_pins[j + 1] = allocate_npin();
                     // Pad outputs with a unique and descriptive name to avoid collisions.
@@ -573,7 +587,7 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
     node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), 0);
     // connect_nodes(node[count - 1], (node[(count - 1)]->num_output_pins - 1), netlist->gnd_node, 0);
     // }
-
+    
     /* Freeing the old node! */
     cleanup_sub_old_node(nodeo, netlist);
 
@@ -581,7 +595,6 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
     vtr::free(not_node);
     return;
 }
-
 /*-------------------------------------------------------------------------
  * (function: iterate_adders_for_sub)
  *
@@ -628,27 +641,51 @@ void iterate_adders_for_sub(netlist_t *netlist)
 
             if (num >= min_threshold_adder) {
                 // how many subtractors base on a can split
-                if ((a + 1) % sizea == 0)
-                    counta = (a + offset) / sizea;
+                if (num >= min_threshold_adder && num >= min_add) {
+                    // if the first cin in a chain is fed by a global input (offset = 0) the adder width is the
+                    // input width + 1 (to pass the last cout -> sumout) divided by size of the adder input ports
+                    // otherwise (offset = 1) a dummy adder is added to the chain to feed the first cin with gnd
+                    // how many adders a can split
+                    counta = (a + 1) / sizea + offset;
+                    // how many adders b can split
+                    countb = (b + 1) / sizeb + offset;
+                    // how many adders need to be split
+                    if (counta >= countb)
+                        count = counta;
+                    else
+                        count = countb;
+                    subchaintotal++;
+                    split_adder_for_sub(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+                }
+                // Store the node into processed_adder_list if the threshold is bigger than num
                 else
-                    counta = (a + 1) / sizea + 1;
-                // how many subtractors base on b can split
-                if ((b + 1) % sizeb == 0)
-                    countb = (b + offset) / sizeb;
-                else
-                    countb = (b + 1) / sizeb + 1;
-                // how many subtractors need to be split
-                if (counta >= countb)
-                    count = counta;
-                else
-                    count = countb;
-                subchaintotal++;
-
-                split_adder_for_sub(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+                    processed_adder_list = insert_in_vptr_list(processed_adder_list, node);
             }
-            // Store the node into processed_adder_list if the threshold is bigger than num
             else
-                processed_adder_list = insert_in_vptr_list(processed_adder_list, node);
+                    processed_adder_list = insert_in_vptr_list(processed_adder_list, node);
+            // if (num >= min_threshold_adder) {
+            //     // how many subtractors base on a can split
+            //     if ((a + 1) % sizea == 0)
+            //         counta = (a + offset) / sizea;
+            //     else
+            //         counta = (a + 1) / sizea + 1;
+            //     // how many subtractors base on b can split
+            //     if ((b + 1) % sizeb == 0)
+            //         countb = (b + offset) / sizeb;
+            //     else
+            //         countb = (b + 1) / sizeb + 1;
+            //     // how many subtractors need to be split
+            //     if (counta >= countb)
+            //         count = counta;
+            //     else
+            //         count = countb;
+            //     subchaintotal++;
+
+            //     split_adder_for_sub(node, a, b, sizea, sizeb, 1, 1, count, netlist);
+            // }
+            // // Store the node into processed_adder_list if the threshold is bigger than num
+            // else
+            //     processed_adder_list = insert_in_vptr_list(processed_adder_list, node);
         }
     }
 
