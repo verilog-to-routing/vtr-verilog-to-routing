@@ -244,10 +244,10 @@ struct BlifAllocCallback : public blifparse::Callback {
         VTR_ASSERT(ports.size() == nets.size());
 
         LogicalModelId blk_model_id = models_.get_model_by_name(subckt_model);
-        if(!blk_model_id.is_valid()) {
+        if (!blk_model_id.is_valid()) {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
-              "Subckt instantiates model '%s', but no such model exists in the architecture file.",
-              subckt_model.c_str());
+                      "Subckt instantiates model '%s', but no such model exists in the architecture file.",
+                      subckt_model.c_str());
         }
         const t_model& blk_model = models_.get_model(blk_model_id);
 
