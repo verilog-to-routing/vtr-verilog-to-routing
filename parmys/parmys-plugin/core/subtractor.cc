@@ -565,14 +565,6 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
         }
     }
 
-    //if(nodeo->output_pins[nodeo->num_output_pins - 1] == allocate_npin()) {
-        // npin_t* p = allocate_npin();
-        // add_output_pin_to_node(nodeo, p, nodeo->num_output_pins - 1);
-        // nodeo->output_pins[nodeo->num_output_pins - 1] = p;
-    //}
-    // int W = nodeo->num_output_pins - 1;
-    // int sums_mapped = 0;
-
 
     if (count > 1 || configuration.adder_cin_global) {
         // remap the output pins of each adder to nodeo
@@ -589,179 +581,13 @@ void split_adder_for_sub(nnode_t *nodeo, int a, int b, int sizea, int sizeb, int
                 }
             }
         }
-        //remap_pin_to_new_node(nodeo->output_pins[nodeo->num_output_pins - 1], node[count - 1], 1);
     }
     node[count - 1]->output_pins[0] = allocate_npin();
-
-
-    // const int W = nodeo->num_output_pins - 1;   // number of sum bits
-    // // 1) Map sums from all real slices EXCEPT the last slice (tail)
-    // int sums = 0;
-    // for (int i = offset; i < count - 1 && sums < W; ++i) {
-    //     const int sum_pins = node[i]->num_output_pins - 1; // skip pin0=cout
-    //     for (int j = 0; j < sum_pins && sums < W; ++j) {
-    //         int out_idx = /* pack densely or keep your spacing */ sums;
-    //         remap_pin_to_new_node(nodeo->output_pins[out_idx], node[i], /*from pin*/ j + 1);
-    //         nodeo->output_pins[out_idx] = NULL;
-
-    //         // Optional: if remap nulls source slot, pad it to keep iteration safe later
-    //         if (node[i]->output_pins[j + 1] == nullptr) {
-    //             node[i]->output_pins[j + 1] = allocate_npin();
-    //             node[i]->output_pins[j + 1]->name =
-    //                 append_string("", "%s~dummy_sum~%d~%d", node[i]->name, i, j + 1);
-    //         }
-    //         ++sums;
-    //     }
-    // }
-    // if (count > 0) {
-    //     remap_pin_to_new_node(nodeo->output_pins[W], node[count - 1], 1);
-    //     nodeo->output_pins[W] = NULL;
-    // }
-    // node[count - 1]->output_pins[0] = allocate_npin();
-    //printf("Net of tail node: %s\n", node[5]->output_pins[1]->net);
-    //std::cout << "TESTING " << node[5]->output_pins[1]->net->fanout_pins << "\n";
-    //std::cout << "TESTING " << node[3]->output_pins[1]->net->fanout_pins << "\n";
-    //remap_pin_to_new_node(nodeo->output_pins[nodeo->num_output_pins - 1], node[count - 1], 0);
     // Pad outputs with a unique and descriptive name to avoid collisions.
     node[count - 1]->output_pins[0]->name = append_string("", "%s~dummy_output~%d~%d", node[(count - 1)]->name, (count - 1), 0);
     // connect_nodes(node[count - 1], (node[(count - 1)]->num_output_pins - 1), netlist->gnd_node, 0);
     // }
-
-    // for (int k = 0; k < nodeo->num_output_pins; ++k) {
-    //     oassert(nodeo->output_pins[k] == NULL);
-    // }
-
-    // for (int i = 1; i < count; ++i) {
-    //     for (int p = 0; p < node[i]->num_output_pins; ++p) {
-    //         if(i == 5 && p ==0) continue;
-    //         oassert(node[i]->output_pins[p] != NULL);
-    //         oassert(node[i]->output_pins[p]->net != NULL);
-    //         oassert(node[i]->output_pins[p]->type == OUTPUT);
-    //         oassert(node[i]->output_pins[p]->node == node[i]);
-    //         oassert(node[i]->output_pins[p]->pin_node_idx == p);
-    //     }
-    // }
-
-    // for (int i = offset; i < count-1; ++i)
-    //     oassert(node[i]->output_pins[1]->net->num_driver_pins == 1);
-    // oassert(node[count-1]->output_pins[1]->net->num_driver_pins == 1); // MSB via sumout
-
-    // static const char* pin_role(const nnode_t* n, int pidx) {
-    // // adder: pin 0 = cout, 1 = sumout. For other nodes, return an empty tag.
-    //     if (n && n->name && strstr(n->name, "adder")) {
-    //         return pidx == 0 ? "cout" : (pidx == 1 ? "sum" : "?");
-    //     }
-    //     return "";
-    // }
-
-    // int po_count = netlist->num_top_output_nodes;
-
-    // for(int k = 0; k < po_count; k++) { //move through each primary output node
-    //     nnode_t* po = netlist->top_output_nodes[k]; //po is PO[k]
-    //     oassert(po);
-    //     oassert(po->num_input_pins >= 1);
-    //     npin_t* in = po->input_pins[0]; //in is input pin to po
-    //     char tag[64]; snprintf(tag, sizeof(tag), "PO[%d] %s.in0", k, po->name ? po->name : "out");
-
-    //     oassert(in && in->net);
-    //     oassert(in->net->num_driver_pins == 1);
-
-    //     npin_t* d = in->net->driver_pins[0]; //d is the driver pin to in
-    //     oassert(d && d->node);
-    //     char* role;
-    //     if(d->node && d->node->name && strstr(d->node->name, "adder")){
-    //         if(d->pin_node_idx == 0) role = "cout";
-    //         else if(d->pin_node_idx == 1) role = "sum";
-    //         else role = "?";
-    //     }
-    //     fprintf(stderr, "      -> driven by %s pin %d (%s)\n",
-    //             d->node->name ? d->node->name : "(noname)",
-    //             d->pin_node_idx,
-    //             role);
-    // }
-
-    // oassert(netlist->num_top_output_nodes == 5);
-    // for (int k = 0; k < 5; ++k) {
-    //     nnode_t* po = netlist->top_output_nodes[k];
-    //     oassert(po && po->num_input_pins >= 1);
-    //     npin_t* in = po->input_pins[0];
-    //     oassert(in && in->net && in->net->num_driver_pins == 1);
-
-    //     // Optional: ensure the driver is the expected slice pin:
-    //     npin_t* drv = in->net->driver_pins[0];
-    //     oassert(drv && drv->node);
-    //     // k=0..3 → slice [offset+k] pin1 (sumout), k=4 → tail pin1 (sumout)
-    // }
-
-    //Create 1-to-1 identity node between drivers of PO nets and PO nodes to allow ABC to see POs
-    // for (int i = 0; i < netlist->num_top_output_nodes; i++) {
-    //     nnode_t* po_node = netlist->top_output_nodes[i];
-    //     oassert(po_node && po_node->num_input_pins >= 1);
-    //     npin_t* po_in = po_node->input_pins[0];
-    //     oassert(po_in && po_in->net);
-    //     nnet_t* po_net = po_in->net;
-    //     oassert(po_net->num_driver_pins == 1);
-    //     npin_t* po_driver = po_net->driver_pins[0];
-    //     const char* out_name = po_net->name ? po_net->name : "out";
-
-    //     nnet_t* id_net = allocate_nnet();
-    //     id_net->name = append_string("", "%s_id_net", out_name);
-
-    //     remap_pin_to_new_net(po_driver, id_net);
-
-    //     //identity node
-    //     nnode_t* id_node = make_1port_gate(BUF_NODE, 1, 1, po_node, (short)-1);
-    //     id_node->name = append_string("", "%s_abc_anchor", out_name);
-    //     npin_t* id_in = allocate_npin();
-    //     add_input_pin_to_node(id_node, id_in, 0);
-    //     add_fanout_pin_to_net(id_net, id_in);
-    //     npin_t* id_out = allocate_npin();
-    //     add_output_pin_to_node(id_node, id_out, 0);
-    //     add_driver_pin_to_net(po_net, id_out);
-
-    //     oassert(id_net->num_driver_pins == 1);
-    //     oassert(po_net->num_driver_pins == 1);
-    // }
-    // for (int i = 0; i < netlist->num_top_output_nodes; i++) {
-    //     nnode_t* po_node = netlist->top_output_nodes[i];
-    //     oassert(po_node && po_node->num_input_pins >= 1);
-    //     npin_t* po_in = po_node->input_pins[0];
-    //     oassert(po_in && po_in->net);
-    //     nnet_t* po_net = po_in->net;
-    //     oassert(po_net->num_driver_pins == 1);
-    //     npin_t* po_driver = po_net->driver_pins[0];
-    //     const char* out_name = po_net->name ? po_net->name : "out";
-
-    //     nnet_t* id_net = allocate_nnet();
-    //     id_net->name = append_string("", "%s_id_net", out_name);
-
-    //     remap_pin_to_new_net(po_driver, id_net);
-
-    //     //identity NOT nodes
-    //     nnode_t* n1 = make_not_gate(po_node, (short)-1);
-    //     n1->name = append_string("", "%s_abc_anchor_n1", out_name);
-
-    //     nnet_t* id_net2 = allocate_nnet();
-    //     id_net2->name = append_string("", "%s_id_net2", out_name);
-
-    //     npin_t* n1_in  = allocate_npin(); add_input_pin_to_node(n1, n1_in, 0);  add_fanout_pin_to_net(id_net,  n1_in);
-    //     npin_t* n1_out = allocate_npin(); add_output_pin_to_node(n1, n1_out, 0); add_driver_pin_to_net(id_net2, n1_out);
-
-    //     // 3) Second NOT: id_net2 -> n2 -> po_net (n2 becomes the new driver of po_net)
-    //     nnode_t* n2 = make_not_gate(po_node, (short)-1);
-    //     n2->name = append_string("", "%s_abc_anchor_n2", out_name);
-
-    //     npin_t* n2_in  = allocate_npin(); add_input_pin_to_node(n2, n2_in, 0);  add_fanout_pin_to_net(id_net2, n2_in);
-    //     npin_t* n2_out = allocate_npin(); add_output_pin_to_node(n2, n2_out, 0); add_driver_pin_to_net(po_net,  n2_out);
-
-    //     // 4) Sanity
-    //     oassert(id_net->num_driver_pins  == 1);
-    //     oassert(id_net2->num_driver_pins == 1);
-    //     oassert(po_net->num_driver_pins  == 1);
-    //     oassert(po_net->driver_pins[0]->node == n2);
-    // }
-
-
+    
     /* Freeing the old node! */
     cleanup_sub_old_node(nodeo, netlist);
 
