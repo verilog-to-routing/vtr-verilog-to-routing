@@ -79,11 +79,10 @@ ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height,
  */
 void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, int transparency_factor, ezgl::renderer* g) {
     g->set_color(ezgl::YELLOW, transparency_factor);
-    auto bounds = draw_mux(origin, orientation, height, g);
+    ezgl::rectangle bounds = draw_mux(origin, orientation, height, g);
 
     g->set_color(ezgl::BLACK, transparency_factor);
-    g->draw_text(bounds.center(), std::to_string(size), bounds.width(),
-                 bounds.height());
+    g->draw_text(bounds.center(), std::to_string(size), bounds.width(), bounds.height());
 }
 
 #endif

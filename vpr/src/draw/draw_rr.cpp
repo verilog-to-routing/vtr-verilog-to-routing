@@ -51,22 +51,31 @@ void draw_rr(ezgl::renderer* g) {
 
     g->set_line_dash(ezgl::line_dash::none);
 
-    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
+    // Node colors by types
+    // colors for Source, Sink, IPIN, OPIN, CHANX, CHANY, MUX, CHANZ
+    constexpr vtr::array<e_rr_type, ezgl::color, (size_t)e_rr_type::NUM_RR_TYPES> node_colors{DEFAULT_RR_NODE_COLOR,
+                                                                                              DEFAULT_RR_NODE_COLOR,
+                                                                                              ezgl::PURPLE,
+                                                                                              ezgl::PINK,
+                                                                                              DEFAULT_RR_NODE_COLOR,
+                                                                                              DEFAULT_RR_NODE_COLOR,
+                                                                                              DEFAULT_RR_NODE_COLOR,
+                                                                                              DEFAULT_RR_NODE_COLOR};
 
+    // Draw edges first, then nodes, so that nodes (and their muxes) are rendered on top of edges.
+    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
+        draw_rr_edges(inode, g);
+    }
+
+    for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
         e_rr_type node_type = rr_graph.node_type(inode);
         bool inter_cluster_node = is_inter_cluster_node(rr_graph, inode);
         bool node_highlighted = draw_state->draw_rr_node[inode].node_highlighted;
-
-        // Node colors by types
-        // colors for Source, Sink, IPIN, OPIN, CHANX, CHANY, MUX, CHANZ
-        constexpr vtr::array<e_rr_type, ezgl::color, (size_t)e_rr_type::NUM_RR_TYPES> node_colors{DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, ezgl::PURPLE, ezgl::PINK, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR, DEFAULT_RR_NODE_COLOR};
 
         // Apply color to the node if it is not highlighted
         if (!node_highlighted) {
             draw_state->draw_rr_node[inode].color = node_colors.at(node_type);
         }
-
-        draw_rr_edges(inode, g);
 
         if (!node_highlighted) {
             // Draw channel nodes if enabled
