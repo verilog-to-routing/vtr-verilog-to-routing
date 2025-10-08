@@ -56,12 +56,18 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId r
     else {
         if (rr_graph.node_direction(to_node) != Direction::BIDIR) {
             if (rr_graph.node_direction(to_node) == Direction::INC) { // INC wire starts at bottom edge
+                if (rr_graph.node_direction(from_node) == Direction::DEC) {
+                    y2 = to_chan.bottom();
+                    y1 = draw_coords->tile_y[to_ylow] + draw_coords->get_tile_width() / 10;
+                } else {
+                    VTR_ASSERT_SAFE(rr_graph.node_direction(from_node) == Direction::INC);
+                    y2 = to_chan.bottom();
+                    // since no U-turns from_tracks must be INC as well
+                    y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->get_tile_width();
+                }
 
-                y2 = to_chan.bottom();
-                // since no U-turns from_tracks must be INC as well
-                y1 = draw_coords->tile_y[to_ylow - 1]
-                     + draw_coords->get_tile_width();
             } else { // DEC wire starts at top edge
+                VTR_ASSERT_SAFE(rr_graph.node_direction(to_node) == Direction::DEC);
 
                 y2 = to_chan.top();
                 y1 = draw_coords->tile_y[to_yhigh + 1];
@@ -69,11 +75,9 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId r
         } else {
             if (to_ylow < from_ylow) { // Draw from bottom edge of one to other.
                 y1 = from_chan.bottom();
-                y2 = draw_coords->tile_y[from_ylow - 1]
-                     + draw_coords->get_tile_width();
+                y2 = draw_coords->tile_y[from_ylow - 1] + draw_coords->get_tile_height();
             } else if (from_ylow < to_ylow) {
-                y1 = draw_coords->tile_y[to_ylow - 1]
-                     + draw_coords->get_tile_width();
+                y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->get_tile_height();
                 y2 = to_chan.bottom();
             } else if (to_yhigh > from_yhigh) { // Draw from top edge of one to other.
                 y1 = from_chan.top();
@@ -83,7 +87,7 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId r
                 y2 = to_chan.top();
             } else { // Complete overlap: start and end both align. Draw outside the sbox
                 y1 = from_chan.bottom();
-                y2 = from_chan.bottom() + draw_coords->get_tile_width();
+                y2 = from_chan.bottom() + draw_coords->get_tile_height();
             }
         }
     }
