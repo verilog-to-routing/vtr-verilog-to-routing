@@ -376,6 +376,18 @@ static void build_rr_graph(e_graph_type graph_type,
 static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
                                    bool load_rr_graph);
 
+/**
+ * @brief Calculates the routing channel width at each grid location.
+ *
+ * Iterates through all RR nodes and counts how many wires pass through each (x, y) location
+ * for both horizontal (CHANX) and vertical (CHANY) channels.
+ *
+ * @return A pair of 3D matrices:
+ *         - First: CHANX width per [layer][x][y]
+ *         - Second: CHANY width per [layer][x][y]
+ */
+static std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width();
+
 /******************* Subroutine definitions *******************************/
 
 void create_rr_graph(e_graph_type graph_type,
@@ -532,6 +544,8 @@ void create_rr_graph(e_graph_type graph_type,
                            device_ctx.rr_indexed_data,
                            device_ctx.rr_graph.rr_nodes(),
                            is_flat);
+
+    std::tie(mutable_device_ctx.rr_chanx_width, mutable_device_ctx.rr_chany_width) = calculate_channel_width();
 
     print_rr_graph_stats();
 
@@ -1114,6 +1128,41 @@ static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
     }
 
     return delayless_switch;
+}
+
+static std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width() {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    auto chanx_width = vtr::NdMatrix<int, 3>({{device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width(),
+                                               device_ctx.grid.height()}},
+                                             0);
+
+    auto chany_width = vtr::NdMatrix<int, 3>({{device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width(),
+                                               device_ctx.grid.height()}},
+                                             0);
+
+    for (RRNodeId node_id : rr_graph.nodes()) {
+        e_rr_type rr_type = rr_graph.node_type(node_id);
+
+        if (rr_type == e_rr_type::CHANX) {
+            int y = rr_graph.node_ylow(node_id);
+            int layer = rr_graph.node_layer_low(node_id);
+            for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
+                chanx_width[layer][x][y] += rr_graph.node_capacity(node_id);
+            }
+        } else if (rr_type == e_rr_type::CHANY) {
+            int x = rr_graph.node_xlow(node_id);
+            int layer = rr_graph.node_layer_low(node_id);
+            for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
+                chany_width[layer][x][y] += rr_graph.node_capacity(node_id);
+            }
+        }
+    }
+
+    return {chanx_width, chany_width};
 }
 
 void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,

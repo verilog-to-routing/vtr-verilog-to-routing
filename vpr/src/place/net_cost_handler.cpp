@@ -1819,7 +1819,8 @@ std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> NetCostHandler::es
         }
     }
 
-    const auto [chanx_width, chany_width] = calculate_channel_width();
+    const vtr::NdMatrix<int, 3>& chanx_width = device_ctx.rr_chanx_width;
+    const vtr::NdMatrix<int, 3>& chany_width = device_ctx.rr_chany_width;
 
     VTR_ASSERT(chanx_util.size() == chany_util.size());
     VTR_ASSERT(chanx_util.ndims() == chany_util.ndims());
