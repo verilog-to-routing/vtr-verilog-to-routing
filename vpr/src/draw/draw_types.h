@@ -166,6 +166,8 @@ struct t_draw_layer_display {
     int alpha = 255;
 };
 
+struct PartialPlacement;
+
 /**
  * @brief Structure used to store variables related to highlighting/drawing
  * 
@@ -405,6 +407,19 @@ struct t_draw_state {
      * @brief Stores a reference to NoC link bandwidth utilization to be used in the graphics codes.
      */
     std::optional<std::reference_wrapper<const vtr::vector<NocLinkId, double>>> noc_link_bandwidth_usages_ref_;
+
+    /**
+     * @brief Stores a temporary reference to the Analytical Placement partial placement (best placement).
+     * @details This is set by the AP global placer just before drawing and cleared immediately after.
+     *          Only a reference is stored to avoid copying and lifetime issues.
+     */
+    std::optional<std::reference_wrapper<const PartialPlacement>> ap_partial_placement_ref_;
+
+public:
+    // Set/clear/get the AP partial placement reference used during AP drawing
+    void set_ap_partial_placement_ref(const PartialPlacement& p) { ap_partial_placement_ref_ = std::cref(p); }
+    void clear_ap_partial_placement_ref() { ap_partial_placement_ref_.reset(); }
+    const PartialPlacement* get_ap_partial_placement_ref() const { return ap_partial_placement_ref_ ? &ap_partial_placement_ref_->get() : nullptr; }
 };
 
 /* For each cluster type, this structure stores drawing
