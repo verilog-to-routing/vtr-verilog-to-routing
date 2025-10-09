@@ -431,6 +431,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     /* Store a reference to block location variables so that other drawing
@@ -438,9 +439,10 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
      * the global placement state, which is inaccessible during placement.*/
     draw_state->set_graphics_blk_loc_registry_ref(blk_loc_registry);
 
-    if (!draw_state->show_graphics && !draw_state->save_graphics
-        && draw_state->graphics_commands.empty())
-        return; //do not initialize only if --disp off and --save_graphics off
+    // do not initialize only if --disp off and --save_graphics off
+    if (!draw_state->show_graphics && !draw_state->save_graphics && draw_state->graphics_commands.empty()) {
+        return;
+    }
 
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
@@ -461,22 +463,28 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
         }
     }
 
+    std::vector<int> chanx_width_list(grid.height(), 0);
+    std::vector<int> chany_width_list(grid.width(), 0);
+
+    for (t_physical_tile_loc loc : grid.all_locations()) {
+        chanx_width_list[loc.y] = std::max(device_ctx.rr_chanx_width[loc.layer_num][loc.x][loc.y], chanx_width_list[loc.y]);
+        chany_width_list[loc.x] = std::max(device_ctx.rr_chany_width[loc.layer_num][loc.x][loc.y], chany_width_list[loc.x]);
+    }
+
     size_t j = 0;
-    for (size_t i = 0; i < (device_ctx.grid.width() - 1); i++) {
+    for (size_t i = 0; i < grid.width() - 1; i++) {
         draw_coords->tile_x[i] = (i * draw_coords->get_tile_width()) + j;
-        j += device_ctx.chan_width.y_list[i] + 1; /* N wires need N+1 units of space */
+        j += chany_width_list[i] + 1; // N wires need N+1 units of space
     }
-    draw_coords->tile_x[device_ctx.grid.width() - 1] = ((device_ctx.grid.width()
-                                                         - 1)
-                                                        * draw_coords->get_tile_width())
-                                                       + j;
+    draw_coords->tile_x[grid.width() - 1] = (grid.width() - 1) * draw_coords->get_tile_width() + j;
+
     j = 0;
-    for (size_t i = 0; i < (device_ctx.grid.height() - 1); ++i) {
+    for (size_t i = 0; i < device_ctx.grid.height() - 1; ++i) {
         draw_coords->tile_y[i] = (i * draw_coords->get_tile_width()) + j;
-        j += device_ctx.chan_width.x_list[i] + 1;
+        j += chanx_width_list[i] + 1;
     }
-    draw_coords->tile_y[device_ctx.grid.height() - 1] = ((device_ctx.grid.height() - 1) * draw_coords->get_tile_width())
-                                                        + j;
+    draw_coords->tile_y[grid.height() - 1] = (grid.height() - 1) * draw_coords->get_tile_width() + j;
+
     /* Load coordinates of sub-blocks inside the clbs */
     draw_internal_init_blk();
     //Margin beyond edge of the drawn device to extend the visible world
@@ -484,10 +492,8 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     //space around the device edges
     constexpr float VISIBLE_MARGIN = 0.01;
 
-    float draw_width = draw_coords->tile_x[device_ctx.grid.width() - 1]
-                       + draw_coords->get_tile_width();
-    float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1]
-                        + draw_coords->get_tile_width();
+    float draw_width = draw_coords->tile_x[grid.width() - 1] + draw_coords->get_tile_width();
+    float draw_height = draw_coords->tile_y[grid.height() - 1] + draw_coords->get_tile_width();
 
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
