@@ -8,10 +8,10 @@
 #include "globals.h"
 
 void draw_interposer_cuts(ezgl::renderer* g) {
-    t_draw_state* draw_state = get_draw_state_vars();
+    const t_draw_state* draw_state = get_draw_state_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
-    t_draw_coords* draw_coords = get_draw_coords_vars();
+    const t_draw_coords* draw_coords = get_draw_coords_vars();
 
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();
