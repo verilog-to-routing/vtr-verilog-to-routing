@@ -46,7 +46,7 @@ static void load_channel_occupancies(const Netlist<>& net_list,
  * @param occupancy     Matrix of occupancy counts.
  * @param capacity      Channel capacities.
  */
-static void write_channel_occupancy_table( std::string_view filename,
+static void write_channel_occupancy_table(std::string_view filename,
                                           const vtr::NdMatrix<int, 3>& occupancy,
                                           const vtr::NdMatrix<int, 3>& capacity);
 
@@ -189,18 +189,18 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     auto chanx_occ = vtr::NdMatrix<int, 3>({{
-                                          device_ctx.grid.get_num_layers(),
-                                          device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
-                                          device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
-                                      }},
-                                      0);
+                                               device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
+                                               device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
+                                           }},
+                                           0);
 
     auto chany_occ = vtr::NdMatrix<int, 3>({{
-                                          device_ctx.grid.get_num_layers(),
-                                          device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
-                                          device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
-                                      }},
-                                      0);
+                                               device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
+                                               device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
+                                           }},
+                                           0);
 
     load_channel_occupancies(net_list, chanx_occ, chany_occ);
 
@@ -286,12 +286,12 @@ static void write_channel_occupancy_table(std::string_view filename,
         return;
     }
 
-    file << std::setw(w_coord)   << "layer"
-         << std::setw(w_coord)   << "x"
-         << std::setw(w_coord)   << "y"
-         << std::setw(w_value)   << "occupancy"
+    file << std::setw(w_coord) << "layer"
+         << std::setw(w_coord) << "x"
+         << std::setw(w_coord) << "y"
+         << std::setw(w_value) << "occupancy"
          << std::setw(w_percent) << "%"
-         << std::setw(w_value)   << "capacity"
+         << std::setw(w_value) << "capacity"
          << "\n";
 
     for (size_t layer = 0; layer < occupancy.dim_size(0); ++layer) {
@@ -301,12 +301,12 @@ static void write_channel_occupancy_table(std::string_view filename,
                 int cap = capacity[layer][x][y];
                 float percent = (cap > 0) ? static_cast<float>(occ) / cap * 100.0f : 0.0f;
 
-                file << std::setw(w_coord)   << layer
-                     << std::setw(w_coord)   << x
-                     << std::setw(w_coord)   << y
-                     << std::setw(w_value)   << occ
+                file << std::setw(w_coord) << layer
+                     << std::setw(w_coord) << x
+                     << std::setw(w_coord) << y
+                     << std::setw(w_value) << occ
                      << std::setw(w_percent) << std::fixed << std::setprecision(3) << percent
-                     << std::setw(w_value)   << cap
+                     << std::setw(w_value) << cap
                      << "\n";
             }
         }
