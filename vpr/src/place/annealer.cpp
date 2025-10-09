@@ -898,6 +898,11 @@ void PlacementAnnealer::placement_inner_loop() {
         }
     }
 
+#ifdef VPR_USE_SIGACTION
+    // Save the block locations after each inner loop for checkpointing.
+    g_vpr_ctx.mutable_placement().mutable_block_locs() = placer_state_.block_locs();
+#endif
+
     // Calculate the success_rate and std_dev of the costs.
     placer_stats_.calc_iteration_stats(costs_, annealing_state_.move_lim);
 
