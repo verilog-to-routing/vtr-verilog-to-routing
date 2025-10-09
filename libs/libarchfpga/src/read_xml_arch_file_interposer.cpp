@@ -15,6 +15,12 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
     const int x = pugiutil::get_attribute(interposer_cut_tag, "x", loc_data, pugiutil::ReqOpt::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
     const int y = pugiutil::get_attribute(interposer_cut_tag, "y", loc_data, pugiutil::ReqOpt::OPTIONAL).as_int(ARCH_FPGA_UNDEFINED_VAL);
 
+    // Both x and y are specified
+    if (x != ARCH_FPGA_UNDEFINED_VAL && y != ARCH_FPGA_UNDEFINED_VAL) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(interposer_cut_tag),
+                       "Interposer cut tag must specify where the cut is to appear using only one of `x` or `y` attributes.");
+    }
+
     if (x != ARCH_FPGA_UNDEFINED_VAL) {
         interposer.loc = x;
         interposer.dim = e_interposer_cut_type::VERT;
