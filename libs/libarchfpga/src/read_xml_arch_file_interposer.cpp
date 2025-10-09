@@ -45,14 +45,14 @@ t_interposer_cut_inf parse_interposer_cut_tag(pugi::xml_node interposer_cut_tag,
 
         t_interdie_wire_inf interdie_wire;
 
-        interdie_wire.sg_name = pugiutil::get_attribute(interdie_wire_tag, "sg_name", loc_data).as_string(nullptr);
-        interdie_wire.sg_link = pugiutil::get_attribute(interdie_wire_tag, "sg_link", loc_data).as_string(nullptr);
+        interdie_wire.sg_name = pugiutil::get_attribute(interdie_wire_tag, "sg_name", loc_data).as_string();
+        interdie_wire.sg_link = pugiutil::get_attribute(interdie_wire_tag, "sg_link", loc_data).as_string();
 
-        interdie_wire.offset_definition.start_expr = pugiutil::get_attribute(interdie_wire_tag, "offset_start", loc_data).as_string(nullptr);
-        interdie_wire.offset_definition.end_expr = pugiutil::get_attribute(interdie_wire_tag, "offset_end", loc_data).as_string(nullptr);
-        interdie_wire.offset_definition.incr_expr = pugiutil::get_attribute(interdie_wire_tag, "offset_increment", loc_data).as_string(nullptr);
+        interdie_wire.offset_definition.start_expr = pugiutil::get_attribute(interdie_wire_tag, "offset_start", loc_data).as_string();
+        interdie_wire.offset_definition.end_expr = pugiutil::get_attribute(interdie_wire_tag, "offset_end", loc_data).as_string();
+        interdie_wire.offset_definition.incr_expr = pugiutil::get_attribute(interdie_wire_tag, "offset_increment", loc_data).as_string();
 
-        interdie_wire.num = pugiutil::get_attribute(interdie_wire_tag, "num", loc_data).as_int(ARCH_FPGA_UNDEFINED_VAL);
+        interdie_wire.num = pugiutil::get_attribute(interdie_wire_tag, "num", loc_data).as_int();
 
         if (interdie_wire.num <= 0) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(interdie_wire_tag),
