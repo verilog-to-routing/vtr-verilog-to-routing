@@ -466,14 +466,14 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     size_t j = 0;
     for (size_t i = 0; i < grid.width() - 1; i++) {
         draw_coords->tile_x[i] = (i * draw_coords->get_tile_width()) + j;
-        j += device_ctx.rr_chany_list[i] + 1; // N wires need N+1 units of space
+        j += device_ctx.rr_chany_width[i] + 1; // N wires need N+1 units of space
     }
     draw_coords->tile_x[grid.width() - 1] = (grid.width() - 1) * draw_coords->get_tile_width() + j;
 
     j = 0;
     for (size_t i = 0; i < device_ctx.grid.height() - 1; ++i) {
         draw_coords->tile_y[i] = (i * draw_coords->get_tile_width()) + j;
-        j += device_ctx.rr_chanx_list[i] + 1;
+        j += device_ctx.rr_chanx_width[i] + 1;
     }
     draw_coords->tile_y[grid.height() - 1] = (grid.height() - 1) * draw_coords->get_tile_width() + j;
 

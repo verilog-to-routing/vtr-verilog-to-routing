@@ -152,7 +152,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     // This returns the total number of tracks between channels 'low' and 'high',
     // including tracks in these channels.
     acc_chanx_width_ = vtr::PrefixSum1D<int>(grid_height, [&](size_t y) noexcept {
-        int chan_x_width = device_ctx.rr_chanx_list[y];
+        int chan_x_width = device_ctx.rr_chanx_width[y];
 
         // If the number of tracks in a channel is zero, two consecutive elements take the same
         // value. This can lead to a division by zero in get_chanxy_cost_fac_(). To avoid this
@@ -165,7 +165,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     });
 
     acc_chany_width_ = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
-        int chan_y_width = device_ctx.rr_chany_list[x];
+        int chan_y_width = device_ctx.rr_chany_width[x];
 
         // to avoid a division by zero
         if (chan_y_width == 0) {

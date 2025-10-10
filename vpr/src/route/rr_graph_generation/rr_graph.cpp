@@ -1158,8 +1158,8 @@ static void alloc_and_init_channel_width() {
         }
     }
 
-    std::vector<int>& chanx_width_list = mutable_device_ctx.rr_chanx_list;
-    std::vector<int>& chany_width_list = mutable_device_ctx.rr_chany_list;
+    std::vector<int>& chanx_width_list = mutable_device_ctx.rr_chanx_width;
+    std::vector<int>& chany_width_list = mutable_device_ctx.rr_chany_width;
 
     chanx_width_list.resize(grid.height());
     chany_width_list.resize(grid.width());

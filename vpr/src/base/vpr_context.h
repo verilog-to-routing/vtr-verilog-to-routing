@@ -269,9 +269,9 @@ struct DeviceContext : public Context {
     vtr::NdMatrix<int, 3> rr_chany_segment_width;
 
     /// Stores the maximum channel segment width in each horizontal channel
-    std::vector<int> rr_chanx_list;
+    std::vector<int> rr_chanx_width;
     /// Stores the maximum channel segment width in each vertical channel
-    std::vector<int> rr_chany_list;
+    std::vector<int> rr_chany_width;
 
     bool rr_graph_is_flat = false;
 
