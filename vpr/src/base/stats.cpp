@@ -57,7 +57,7 @@ static void write_channel_occupancy_table(std::string_view filename,
 static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
 ///@brief Determines how many tracks are used in each channel.
-static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/);
+static void get_channel_occupancy_stats(const Netlist<>& net_list);
 
 /************************* Subroutine definitions ****************************/
 
@@ -80,7 +80,7 @@ void routing_stats(const Netlist<>& net_list,
 
     length_and_bends_stats(net_list, is_flat);
     print_channel_stats(is_flat);
-    get_channel_occupancy_stats(net_list, is_flat);
+    get_channel_occupancy_stats(net_list);
 
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
@@ -185,7 +185,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     VTR_LOG("Total number of nets absorbed: %d\n", num_absorbed_nets);
 }
 
-static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
+static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     auto chanx_occ = vtr::NdMatrix<int, 3>({{
