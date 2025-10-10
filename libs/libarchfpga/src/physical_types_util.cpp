@@ -609,24 +609,6 @@ bool is_opin(int ipin, t_physical_tile_type_ptr type) {
         return false;
 }
 
-bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from_layer, int to_layer, unsigned num_of_avail_layer) {
-    // if type is empty, there is no pins
-    if (type->is_empty()) {
-        return false;
-    }
-
-    // ipin should be a valid pin in physical type
-    VTR_ASSERT(ipin < type->num_pins);
-    unsigned pin_layer = from_layer + type->pin_layer_offset[ipin];
-    // if pin_offset specifies a layer that doesn't exist in arch file, we do a wrap around
-    pin_layer = (pin_layer < num_of_avail_layer) ? pin_layer : pin_layer % num_of_avail_layer;
-    if (from_layer == to_layer || int(pin_layer) == to_layer) {
-        return true;
-    }
-
-    return false;
-}
-
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat) {
     int max_ptc = get_tile_pin_max_ptc(type, is_flat);
     VTR_ASSERT(pin_physical_num < max_ptc);

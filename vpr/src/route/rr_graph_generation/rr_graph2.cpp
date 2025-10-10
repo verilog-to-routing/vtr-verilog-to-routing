@@ -597,8 +597,7 @@ int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const i
 /* Returns the number of tracks to which clb opin #ipin at (i,j) connects.   *
  * Also stores the nodes to which this pin connects in rr_edges_to_create    */
 int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                               const int opin_layer,
-                               const int track_layer,
+                               const int layer,
                                const int i,
                                const int j,
                                const int ipin,
@@ -607,73 +606,66 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                const t_pin_to_track_lookup& opin_to_track_map,
                                const t_chan_details& chan_details_x,
                                const t_chan_details& chan_details_y) {
-    int num_conn, tr_i, tr_j, chan, seg;
-    int to_switch;
-    int is_connected_track;
-    t_physical_tile_type_ptr type;
-    e_rr_type to_type;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    auto& device_ctx = g_vpr_ctx.device();
+    t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({i, j, layer});
+    int width_offset = device_ctx.grid.get_width_offset({i, j, layer});
+    int height_offset = device_ctx.grid.get_height_offset({i, j, layer});
 
-    type = device_ctx.grid.get_physical_type({i, j, track_layer});
-    int width_offset = device_ctx.grid.get_width_offset({i, j, track_layer});
-    int height_offset = device_ctx.grid.get_height_offset({i, j, track_layer});
+    int num_conn = 0;
 
-    num_conn = 0;
-
-    /* [0..device_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1] */
+    // [0..device_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1]
     for (e_side side : TOTAL_2D_SIDES) {
-        /* Figure out coords of channel segment based on side */
-        tr_i = ((side == LEFT) ? (i - 1) : i);
-        tr_j = ((side == BOTTOM) ? (j - 1) : j);
+        // Figure out coords of channel segment based on side
+        int tr_i = (side == LEFT) ? i - 1 : i;
+        int tr_j = (side == BOTTOM) ? j - 1 : j;
 
-        to_type = ((side == LEFT) || (side == RIGHT)) ? e_rr_type::CHANY : e_rr_type::CHANX;
+        e_rr_type to_type = ((side == LEFT) || (side == RIGHT)) ? e_rr_type::CHANY : e_rr_type::CHANX;
 
-        chan = ((to_type == e_rr_type::CHANX) ? tr_j : tr_i);
-        seg = ((to_type == e_rr_type::CHANX) ? tr_i : tr_j);
+        int chan = (to_type == e_rr_type::CHANX) ? tr_j : tr_i;
+        int seg = (to_type == e_rr_type::CHANX) ? tr_i : tr_j;
 
         bool vert = !((side == TOP) || (side == BOTTOM));
 
-        /* Don't connect where no tracks on fringes */
-        if ((tr_i < 0) || (tr_i > int(device_ctx.grid.width() - 2))) { //-2 for no perimeter channels
+        // Don't connect where no tracks on fringes
+        if (tr_i < 0 || tr_i > int(device_ctx.grid.width() - 2)) { //-2 for no perimeter channels
             continue;
         }
-        if ((tr_j < 0) || (tr_j > int(device_ctx.grid.height() - 2))) { //-2 for no perimeter channels
+        if (tr_j < 0 || tr_j > int(device_ctx.grid.height() - 2)) { //-2 for no perimeter channels
             continue;
         }
-        if ((e_rr_type::CHANX == to_type) && (tr_i < 1)) {
+        if (e_rr_type::CHANX == to_type && tr_i < 1) {
             continue;
         }
-        if ((e_rr_type::CHANY == to_type) && (tr_j < 1)) {
+        if (e_rr_type::CHANY == to_type && tr_j < 1) {
             continue;
         }
         if (opin_to_track_map[type->index].empty()) {
             continue;
         }
 
-        is_connected_track = false;
+        bool is_connected_track = false;
 
         const t_chan_seg_details* seg_details = (vert ? chan_details_y[chan][seg] : chan_details_x[seg][chan]).data();
 
-        /* Iterate of the opin to track connections */
-
-        for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][track_layer][side]) {
+        // Iterate of the opin to track connections
+        for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][side]) {
             /* Skip unconnected connections */
             if (UNDEFINED == to_track || is_connected_track) {
                 is_connected_track = true;
-                VTR_ASSERT(UNDEFINED == opin_to_track_map[type->index][ipin][width_offset][height_offset][track_layer][side][0]);
+                VTR_ASSERT(UNDEFINED == opin_to_track_map[type->index][ipin][width_offset][height_offset][side][0]);
                 continue;
             }
 
-            /* Only connect to wire if there is a CB */
+            // Only connect to wire if there is a CB
             if (is_cblock(chan, seg, to_track, seg_details)) {
-                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(track_layer, tr_i, tr_j, to_type, to_track);
+                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, tr_i, tr_j, to_type, to_track);
 
                 if (!to_node) {
                     continue;
                 }
 
-                to_switch = (track_layer == opin_layer) ? seg_details[to_track].arch_wire_switch() : seg_details[to_track].arch_inter_die_switch();
+                int to_switch = seg_details[to_track].arch_wire_switch();
                 rr_edges_to_create.emplace_back(from_rr_node, to_node, to_switch, false);
 
                 ++num_conn;
@@ -691,8 +683,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
  * routine used in this function.
  */
 int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                                const int opin_layer,
-                                const int track_layer,
+                                const int layer,
                                 const int chan,
                                 const int seg,
                                 int Fc,
@@ -750,19 +741,19 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         int dec_track = dec_muxes[dec_mux];
 
         /* Figure the inodes of those muxes */
-        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(track_layer, x, y, chan_type, inc_track);
-        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(track_layer, x, y, chan_type, dec_track);
+        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(layer, x, y, chan_type, inc_track);
+        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(layer, x, y, chan_type, dec_track);
 
         if (!inc_inode_index || !dec_inode_index) {
             continue;
         }
 
         /* Add to the list. */
-        short to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[inc_track].arch_inter_die_switch();
+        short to_switch = seg_details[inc_track].arch_opin_switch();
         rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch, false);
         ++num_edges;
 
-        to_switch = (opin_layer == track_layer) ? seg_details[dec_track].arch_opin_switch() : seg_details[dec_track].arch_inter_die_switch();
+        to_switch = seg_details[dec_track].arch_opin_switch();
         rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, to_switch, false);
         ++num_edges;
     }
@@ -966,21 +957,18 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                            int max_chan_width,
                            FILE* fp) {
     if (fp) {
-        auto& device_ctx = g_vpr_ctx.device();
         for (unsigned int i = 0; i < types.size(); i++) {
             if (!track_to_pin_map[i].empty()) {
-                for (size_t layer = 0; layer < device_ctx.grid.get_num_layers(); layer++) {
-                    for (int track = 0; track < max_chan_width; ++track) {
-                        for (int width = 0; width < types[i].width; ++width) {
-                            for (int height = 0; height < types[i].height; ++height) {
-                                for (int side = 0; side < 4; ++side) {
-                                    fprintf(fp, "\nTYPE:%s width:%d height:%d layer:%lu\n", types[i].name.c_str(), width, height, layer);
-                                    fprintf(fp, "\nSIDE:%d TRACK:%d \n", side, track);
-                                    for (size_t con = 0; con < track_to_pin_map[i][track][width][height][layer][side].size(); con++) {
-                                        fprintf(fp, "%d ", track_to_pin_map[i][track][width][height][layer][side][con]);
-                                    }
-                                    fprintf(fp, "\n=====================\n");
+                for (int track = 0; track < max_chan_width; ++track) {
+                    for (int width = 0; width < types[i].width; ++width) {
+                        for (int height = 0; height < types[i].height; ++height) {
+                            for (int side = 0; side < 4; ++side) {
+                                fprintf(fp, "\nTYPE:%s width:%d height:%d \n", types[i].name.c_str(), width, height);
+                                fprintf(fp, "\nSIDE:%d TRACK:%d \n", side, track);
+                                for (size_t con = 0; con < track_to_pin_map[i][track][width][height][side].size(); con++) {
+                                    fprintf(fp, "%d ", track_to_pin_map[i][track][width][height][side][con]);
                                 }
+                                fprintf(fp, "\n=====================\n");
                             }
                         }
                     }
@@ -1003,7 +991,6 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       e_rr_type chan_type,
                       int chan_length,
                       int wire_to_ipin_switch,
-                      int wire_to_pin_between_dice_switch,
                       e_directionality directionality) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
@@ -1028,38 +1015,32 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                     side = (0 == pass ? RIGHT : LEFT);
                 }
 
-                for (int layer_index = 0; layer_index < (int)device_ctx.grid.get_num_layers(); layer_index++) {
-                    /* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
-                    t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({x, y, layer_index});
-                    if (type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
-                        continue;
+                /* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
+                t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({x, y, layer});
+                if (type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
+                    continue;
 
-                    /* Move from logical (straight) to physical (twisted) track index
-                     * - algorithm assigns ipin connections to same physical track index
-                     * so that the logical track gets distributed uniformly */
+                /* Move from logical (straight) to physical (twisted) track index
+                 * - algorithm assigns ipin connections to same physical track index
+                 * so that the logical track gets distributed uniformly */
 
-                    int phy_track = vpr_to_phy_track(track, chan, j, seg_details, directionality);
-                    phy_track %= tracks_per_chan;
+                int phy_track = vpr_to_phy_track(track, chan, j, seg_details, directionality);
+                phy_track %= tracks_per_chan;
 
-                    /* We need the type to find the ipin map for this type */
+                /* We need the type to find the ipin map for this type */
 
-                    int width_offset = device_ctx.grid.get_width_offset({x, y, layer_index});
-                    int height_offset = device_ctx.grid.get_height_offset({x, y, layer_index});
+                int width_offset = device_ctx.grid.get_width_offset({x, y, layer});
+                int height_offset = device_ctx.grid.get_height_offset({x, y, layer});
 
-                    const int max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side].size();
-                    for (int iconn = 0; iconn < max_conn; iconn++) {
-                        const int ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side][iconn];
-                        if (!is_pin_conencted_to_layer(type, ipin, layer_index, layer, device_ctx.grid.get_num_layers())) {
-                            continue;
-                        }
+                const int max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side].size();
+                for (int iconn = 0; iconn < max_conn; iconn++) {
+                    const int ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][side][iconn];
 
-                        /* Check there is a connection and Fc map isn't wrong */
-                        RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer_index, x, y, e_rr_type::IPIN, ipin, side);
-                        int switch_type = (layer_index == layer) ? wire_to_ipin_switch : wire_to_pin_between_dice_switch;
-                        if (to_node) {
-                            rr_edges_to_create.emplace_back(from_rr_node, to_node, switch_type, false);
-                            ++num_conn;
-                        }
+                    // Check there is a connection and Fc map isn't wrong
+                    RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::IPIN, ipin, side);
+                    if (to_node) {
+                        rr_edges_to_create.emplace_back(from_rr_node, to_node, wire_to_ipin_switch, false);
+                        ++num_conn;
                     }
                 }
             }
