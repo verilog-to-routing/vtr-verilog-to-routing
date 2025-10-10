@@ -190,15 +190,15 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
 
     auto chanx_occ = vtr::NdMatrix<int, 3>({{
                                                device_ctx.grid.get_num_layers(),
-                                               device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
-                                               device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
+                                               device_ctx.grid.width(),     // Length of each x channel
+                                               device_ctx.grid.height() - 1 // Total number of x channels. There is no CHANX above the top row.
                                            }},
                                            0);
 
     auto chany_occ = vtr::NdMatrix<int, 3>({{
                                                device_ctx.grid.get_num_layers(),
-                                               device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
-                                               device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
+                                               device_ctx.grid.width() - 1, // Total number of y channels. There is no CHANY to the right of the most right column.
+                                               device_ctx.grid.height()     // Length of each y channel.
                                            }},
                                            0);
 
