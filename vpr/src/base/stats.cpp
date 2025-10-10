@@ -56,7 +56,7 @@ static void write_channel_occupancy_table(std::string_view filename,
  */
 static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
-///@brief Determines how many tracks are used in each channel.
+///@brief Determines how many tracks are used in each channel and prints out statistics
 static void get_channel_occupancy_stats(const Netlist<>& net_list);
 
 /************************* Subroutine definitions ****************************/
@@ -71,9 +71,9 @@ void routing_stats(const Netlist<>& net_list,
                    e_directionality directionality,
                    RRSwitchId wire_to_ipin_switch,
                    bool is_flat) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     int num_rr_switch = rr_graph.num_rr_switches();
@@ -222,6 +222,7 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
             float ave_cap = 0.0f;
             int max_occ = -1;
 
+            // It is assumed that there is no CHANX at x=0
             for (size_t x = 1; x < device_ctx.grid.width(); x++) {
                 max_occ = std::max(chanx_occ[layer][x][y], max_occ);
                 ave_occ += chanx_occ[layer][x][y];
@@ -246,6 +247,7 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
             float ave_cap = 0.0;
             int max_occ = -1;
 
+            // It is assumed that there is no CHANY at y=0
             for (size_t y = 1; y < device_ctx.grid.height(); y++) {
                 max_occ = std::max(chany_occ[layer][x][y], max_occ);
                 ave_occ += chany_occ[layer][x][y];
