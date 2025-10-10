@@ -58,13 +58,6 @@ struct t_seg_details {
      */
     short arch_opin_switch = 0;
 
-    /** @brief Index of the switch type that connects output pins (OPINs) *to* this segment
-     *  from *another dice*. Note that this index is in relation to the switches from the
-     *  architecture file, not the expanded list of switches that is built at the end of
-     *  build_rr_graph.
-     */
-    short arch_inter_die_switch = 0;
-
     /** @brief Resistance of a routing track, per unit logic block length. */
     float Rmetal = 0;
 
@@ -137,7 +130,6 @@ class t_chan_seg_details {
 
     short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
     short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
-    short arch_inter_die_switch() const { return seg_detail_->arch_inter_die_switch; }
 
     Direction direction() const { return seg_detail_->direction; }
 

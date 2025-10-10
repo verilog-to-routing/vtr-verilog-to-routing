@@ -1621,14 +1621,6 @@ struct t_segment_inf {
     short arch_opin_switch_dec = ARCH_FPGA_UNDEFINED_VAL;
 
     /**
-     * @brief Index of the switch type that connects output pins (OPINs) to this
-     * segment from another die (layer). Note that this index is in relation to
-     * the switches from the architecture file, not the expanded list of switches
-     * that is built at the end of build_rr_graph.
-     */
-    short arch_inter_die_switch = ARCH_FPGA_UNDEFINED_VAL;
-
-    /**
      * @brief The fraction of logic blocks along its length to which this segment can connect.
      * (i.e. internal population).
      */

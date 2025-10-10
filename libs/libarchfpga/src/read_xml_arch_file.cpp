@@ -3979,19 +3979,6 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
         //Verify only expected sub-tags are found
         expect_only_children(Node, expected_subtags, loc_data);
 
-        //Get the switch name for different dice wire and track connections
-        SubElem = get_single_child(Node, "mux_inter_die", loc_data, ReqOpt::OPTIONAL);
-        tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string("");
-        if (strlen(tmp) != 0) {
-            /* Match names */
-            int switch_idx = find_switch_by_name(switches, tmp);
-            if (switch_idx < 0) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                               vtr::string_fmt("'%s' is not a valid mux name.\n", tmp).c_str());
-            }
-            Segs[i].arch_inter_die_switch = switch_idx;
-        }
-
         /* Get the wire and opin switches, or mux switch if unidir */
         if (UNI_DIRECTIONAL == Segs[i].directionality) {
             //Get the switch name for same die wire and track connections

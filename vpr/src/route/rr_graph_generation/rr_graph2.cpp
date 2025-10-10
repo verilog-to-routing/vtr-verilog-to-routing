@@ -295,7 +295,6 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
         const int arch_opin_switch = segment_inf[i].arch_opin_switch;
         const int arch_wire_switch_dec = segment_inf[i].arch_wire_switch_dec;
         const int arch_opin_switch_dec = segment_inf[i].arch_opin_switch_dec;
-        const int arch_inter_die_switch = segment_inf[i].arch_inter_die_switch;
         VTR_ASSERT((arch_wire_switch == arch_opin_switch && arch_wire_switch_dec == arch_opin_switch_dec) || (directionality != UNI_DIRECTIONAL));
 
         // Set up the tracks of same type
@@ -353,8 +352,6 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
             seg_details[cur_track].Rmetal = segment_inf[i].Rmetal;
             seg_details[cur_track].Cmetal = segment_inf[i].Cmetal;
             //seg_details[cur_track].Cmetal_per_m = segment_inf[i].Cmetal_per_m;
-
-            seg_details[cur_track].arch_inter_die_switch = arch_inter_die_switch;
 
             if (BI_DIRECTIONAL == directionality) {
                 seg_details[cur_track].direction = Direction::BIDIR;
