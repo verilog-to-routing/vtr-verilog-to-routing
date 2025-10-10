@@ -343,7 +343,7 @@ class flat_map {
         return end();
     }
 
-    ///@brief Return the count of occurances of a key
+    ///@brief Return the count of occurrences of a key
     size_type count(const key_type& key) const {
         return (find(key) == end()) ? 0 : 1;
     }
@@ -404,9 +404,9 @@ class flat_map {
 
     iterator convert_to_iterator(const_iterator const_iter) {
         /*
-         * A work around as there is no conversion betweena const_iterator and iterator.
+         * A work around as there is no conversion between const_iterator and iterator.
          *
-         * We intiailize i to the start of the container and then advance it by
+         * We initialize i to the start of the container and then advance it by
          * the distance to const_iter. The resulting i points to the same element
          * as const_iter
          * 

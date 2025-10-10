@@ -33,7 +33,7 @@ void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(root_loc.x <= std::numeric_limits<short>::max() && root_loc.y <= std::numeric_limits<short>::max());
         rr_graph_builder.set_node_coordinates(class_inode, (short)root_loc.x, (short)root_loc.y, (short)(root_loc.x + physical_type->width - 1), (short)(root_loc.y + physical_type->height - 1));
         VTR_ASSERT(root_loc.layer_num <= std::numeric_limits<short>::max());
-        rr_graph_builder.set_node_layer(class_inode, root_loc.layer_num);
+        rr_graph_builder.set_node_layer(class_inode, root_loc.layer_num, root_loc.layer_num);
         float R = 0.;
         float C = 0.;
         rr_graph_builder.set_node_rc_index(class_inode, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
@@ -90,7 +90,7 @@ void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                       root_loc.y + y_offset,
                                                       root_loc.x + x_offset,
                                                       root_loc.y + y_offset);
-                rr_graph_builder.set_node_layer(node_id, root_loc.layer_num);
+                rr_graph_builder.set_node_layer(node_id, root_loc.layer_num, root_loc.layer_num);
                 rr_graph_builder.add_node_side(node_id, pin_side);
             }
         }

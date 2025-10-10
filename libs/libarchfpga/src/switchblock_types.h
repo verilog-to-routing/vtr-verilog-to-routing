@@ -15,6 +15,28 @@ enum e_directionality {
     BI_DIRECTIONAL
 };
 
+/// Defines the type of switch block used in FPGA routing.
+enum class e_switch_block_type {
+    /// If the type is SUBSET, I use a Xilinx-like switch block where track i in one channel always
+    /// connects to track i in other channels.
+    SUBSET,
+
+    /// If type is WILTON, I use a switch block where track i
+    /// does not always connect to track i in other channels.
+    /// See Steve Wilton, PhD Thesis, University of Toronto, 1996.
+    WILTON,
+
+    /// The UNIVERSAL switch block is from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.
+    UNIVERSAL,
+
+    /// The FULL switch block type allows for complete connectivity between tracks.
+    FULL,
+
+    /// A CUSTOM switch block has also been added which allows a user to describe custom permutation functions and connection patterns.
+    /// See comment at top of SRC/route/build_switchblocks.c
+    CUSTOM
+};
+
 /**
  * @brief At the intersection of routing channels, left, right, top and bottom specify the x- and y-directed channels
  * while above and under specify the switch block wires one a layer above or below the current one. above and below
@@ -26,10 +48,7 @@ enum e_side : unsigned char {
     RIGHT = 1,
     BOTTOM = 2,
     LEFT = 3,
-    NUM_2D_SIDES = 4,
-    ABOVE = 5,
-    UNDER = 7,
-    NUM_3D_SIDES = 6,
+    NUM_2D_SIDES = 4
 };
 
 inline const std::unordered_map<char, e_side> CHAR_SIDE_MAP = {
@@ -40,22 +59,12 @@ inline const std::unordered_map<char, e_side> CHAR_SIDE_MAP = {
     {'B', BOTTOM},
     {'b', BOTTOM},
     {'L', LEFT},
-    {'l', LEFT},
-    {'A', ABOVE},
-    {'a', ABOVE},
-    {'U', UNDER},
-    {'u', UNDER}};
+    {'l', LEFT}};
 
 constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     // Set of all side orientations
 constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; // String versions of side orientations
 
-constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         // Set of all side orientations including different layers
-constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; // String versions of side orientations including different layers
-
-/**
- * @brief Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere)
- * 
- */
+/// @brief Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere)
 enum class e_sb_location {
     E_PERIMETER = 0,
     E_CORNER,
@@ -84,7 +93,6 @@ struct t_sb_loc_spec {
 
 /**
  * @brief represents a connection between two sides of a switchblock
- * 
  */
 class SBSideConnection {
   public:
@@ -122,14 +130,13 @@ class SBSideConnection {
     }
 };
 
-enum class SwitchPointOrder {
+enum class e_switch_point_order {
     FIXED,   ///< Switchpoints are ordered as specified in architecture
     SHUFFLED ///< Switchpoints are shuffled (more diversity)
 };
 
 /**
  * @brief A collection of switchpoints associated with a segment
- * 
  */
 struct t_wire_switchpoints {
     std::string segment_name;      ///< The type of segment
@@ -138,15 +145,14 @@ struct t_wire_switchpoints {
 
 /**
  * @brief Used to list information about a set of track segments that should connect through a switchblock
- * 
  */
 struct t_wireconn_inf {
-    std::vector<t_wire_switchpoints> from_switchpoint_set;             ///< The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
-    std::vector<t_wire_switchpoints> to_switchpoint_set;               ///< The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
-    SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; ///< The desired from_switchpoint_set ordering
-    SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   ///< The desired to_switchpoint_set ordering
-    int switch_override_indx = DEFAULT_SWITCH;                         ///< index in switch array of the switch used to override wire_switch of the 'to' set.
-                                                                       ///< DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
+    std::vector<t_wire_switchpoints> from_switchpoint_set;                     ///< The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
+    std::vector<t_wire_switchpoints> to_switchpoint_set;                       ///< The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
+    e_switch_point_order from_switchpoint_order = e_switch_point_order::FIXED; ///< The desired from_switchpoint_set ordering
+    e_switch_point_order to_switchpoint_order = e_switch_point_order::FIXED;   ///< The desired to_switchpoint_set ordering
+    int switch_override_indx = DEFAULT_SWITCH;                                 ///< index in switch array of the switch used to override wire_switch of the 'to' set.
+                                                                               ///< DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
 
     std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
                                     *
@@ -170,6 +176,15 @@ struct t_wireconn_inf {
 /* Use a map to index into the string permutation functions used to connect from one side to another */
 typedef std::map<SBSideConnection, std::vector<std::string>> t_permutation_map;
 
+struct t_specified_loc {
+    int x = -1; ///< The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified
+    int y = -1; ///< The exact y-axis location that this SB is used, meaningful when type is set to E_XY_specified
+
+    // We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file
+    t_sb_loc_spec reg_x;
+    t_sb_loc_spec reg_y;
+};
+
 /**
  * @brief Lists all information about a particular switch block specified in the architecture file
  */
@@ -178,14 +193,9 @@ struct t_switchblock_inf {
     e_sb_location location;          ///< where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere)
     e_directionality directionality; ///< the directionality of this switchblock (unidir/bidir)
 
-    int x = -1; ///< The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified
-    int y = -1; ///< The exact y-axis location that this SB is used, meaningful when type is set to E_XY_specified
-
-    /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
-    t_sb_loc_spec reg_x;
-    t_sb_loc_spec reg_y;
-
     t_permutation_map permutation_map; ///< map holding the permutation functions attributed to this switchblock
+
+    t_specified_loc specified_loc;
 
     std::vector<t_wireconn_inf> wireconns; ///< list of wire types/groups this SB will connect
 };

@@ -2001,16 +2001,16 @@ Wire Segments
 The content within the ``<segmentlist>`` tag consists of a group of ``<segment>`` tags.
 The ``<segment>`` tag and its contents are described below.
 
-.. arch:tag:: <segment axis="{x|y}" name="unique_name" length="int" type="{bidir|unidir}" res_type="{GCLK|GENERAL}" freq="float" Rmetal="float" Cmetal="float">content</segment>
+.. arch:tag:: <segment axis="{x|y|z}" name="unique_name" length="int" type="{bidir|unidir}" res_type="{GCLK|GENERAL}" freq="float" Rmetal="float" Cmetal="float">content</segment>
 
 
     :opt_param axis:
-        Specifies if the given segment applies to either x or y channels only. If this tag is not given, it is assumed that the given segment
-        description applies to both x-directed and y-directed channels.
+        Specifies if the given segment applies to x, y, or z channels only. If this tag is not given, it is assumed that the given segment
+        description applies to both x-directed and y-directed channels (and not to z-directed channels).
 
         .. note:: It is required that both x and y segment axis details are given or that at least one segment within ``segmentlist`` 
             is specified without the ``axis`` tag (i.e. at least one segment applies to both x-directed and y-directed 
-            chanels). 
+            channels). For 3-d architectures, it is required that at least one wire segment with `axis="z"` is defined.
 
     :req_param name:
         A unique alphanumeric name to identify this segment type.
@@ -2670,7 +2670,7 @@ The number of any additional wires or muxes created by scatter-gather specificat
     Overview of how scatter-gather patterns work. First, connections from a switchblock location are selected according to the specification.
     These selected connection are then muxed and passed through the scatter-gather node, which is typically a wire segment. The scatter-gather node then fans out or scatters in another switchblock location.
 
-.. note:: Scatter-Gather patterns are work in progress and experimental. Currently, VPR does not support this specification and using this tag would not result in any modifications to the RR-Graph.
+.. note:: Scatter-Gather patterns are only supported for 3D architectures where the scatter-gather links are unidirectional. They are not currently supported in 2D architectures or with bidirectional sg_links.
 
 When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
 

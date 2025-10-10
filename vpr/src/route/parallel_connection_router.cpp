@@ -332,7 +332,7 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExpl
             // IPIN's of the target block should be contained within it's bounding box
             int to_xlow = this->rr_graph_->node_xlow(to_node);
             int to_ylow = this->rr_graph_->node_ylow(to_node);
-            int to_layer = this->rr_graph_->node_layer(to_node);
+            int to_layer = this->rr_graph_->node_layer_low(to_node);
             int to_xhigh = this->rr_graph_->node_xhigh(to_node);
             int to_yhigh = this->rr_graph_->node_yhigh(to_node);
             if (to_xlow < target_bb.xmin

@@ -419,26 +419,23 @@ void t_rr_graph_storage::init_fan_in() {
     }
 }
 
-size_t t_rr_graph_storage::count_rr_switches(
-    const std::vector<t_arch_switch_inf>& arch_switch_inf,
-    t_arch_switch_fanin& arch_switch_fanins) {
+size_t t_rr_graph_storage::count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
+                                             t_arch_switch_fanin& arch_switch_fanins) {
     VTR_ASSERT(!partitioned_);
     VTR_ASSERT(!remapped_edges_);
 
     edges_read_ = true;
     int num_rr_switches = 0;
 
-    // Sort by destination node to collect per node/per switch fan in
-    // values.
-    //
+    // Sort by destination node to collect per node/per switch fan in values
     // This sort is safe to do because partition_edges() has not been invoked yet.
     std::stable_sort(
         edge_sort_iterator(this, 0),
         edge_sort_iterator(this, edge_dest_node_.size()),
         edge_compare_dest_node());
 
-    //Collect the fan-in per switch type for each node in the graph
-    //Record the unique switch type/fanin combinations
+    // Collect the fan-in per switch type for each node in the graph
+    // Record the unique switch type/fanin combinations
     std::vector<int> arch_switch_counts;
     arch_switch_counts.resize(arch_switch_inf.size(), 0);
     auto first_edge = edge_dest_node_.begin();
@@ -452,7 +449,7 @@ size_t t_rr_graph_storage::count_rr_switches(
         size_t last_edge_offset = last_edge - edge_dest_node_.begin();
 
         std::fill(arch_switch_counts.begin(), arch_switch_counts.end(), 0);
-        for (auto edge_switch : vtr::Range<decltype(edge_switch_)::const_iterator>(
+        for (short edge_switch : vtr::Range<decltype(edge_switch_)::const_iterator>(
                  edge_switch_.begin() + first_edge_offset,
                  edge_switch_.begin() + last_edge_offset)) {
             arch_switch_counts[edge_switch] += 1;
@@ -463,16 +460,17 @@ size_t t_rr_graph_storage::count_rr_switches(
                 continue;
             }
 
-            auto fanin = arch_switch_counts[iswitch];
+            int fanin = arch_switch_counts[iswitch];
             VTR_ASSERT_SAFE(iswitch < arch_switch_inf.size());
 
             if (arch_switch_inf[iswitch].fixed_Tdel()) {
-                //If delay is independent of fanin drop the unique fanin info
+                // If delay is independent of fanin drop the unique fanin info
                 fanin = LIBRRGRAPH_UNDEFINED_VAL;
             }
 
-            if (arch_switch_fanins[iswitch].count(fanin) == 0) {        //New fanin for this switch
-                arch_switch_fanins[iswitch][fanin] = num_rr_switches++; //Assign it a unique index
+            if (arch_switch_fanins[iswitch].count(fanin) == 0) {        // New fanin for this switch
+                arch_switch_fanins[iswitch][fanin] = RRSwitchId(num_rr_switches); // Assign it a unique index
+                num_rr_switches++;
             }
         }
 
@@ -483,10 +481,11 @@ size_t t_rr_graph_storage::count_rr_switches(
     // We assign a rr switch for other arch switches. This is done mainly for flat-routing,
     // to avoid allocating switches again. We assume that internal switches' delay are not
     // dependent on their fan-in
-    for(size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
-        if(arch_switch_fanins[iswitch].empty()){
-            if(arch_switch_inf[iswitch].fixed_Tdel()){
-                arch_switch_fanins[iswitch][LIBRRGRAPH_UNDEFINED_VAL] = num_rr_switches++;
+    for (size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
+        if (arch_switch_fanins[iswitch].empty()){
+            if (arch_switch_inf[iswitch].fixed_Tdel()){
+                arch_switch_fanins[iswitch][LIBRRGRAPH_UNDEFINED_VAL] = RRSwitchId(num_rr_switches);
+                num_rr_switches++;
             }
         }
     }
@@ -500,7 +499,7 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
     VTR_ASSERT(!remapped_edges_);
     for (size_t i = 0; i < edge_src_node_.size(); ++i) {
         RREdgeId edge(i);
-        if(edge_remapped_[edge]) {
+        if (edge_remapped_[edge]) {
             continue;
         }
 
@@ -515,7 +514,7 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
         auto itr = switch_fanin[switch_index].find(fanin);
         VTR_ASSERT(itr != switch_fanin[switch_index].end());
 
-        int rr_switch_index = itr->second;
+        int rr_switch_index = (int)itr->second;
 
         edge_switch_[edge] = rr_switch_index;
         edge_remapped_[edge] = true;
@@ -648,12 +647,12 @@ const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
             return TOTAL_2D_SIDE_STRINGS[side];
         }
     }
-    /* Not found, return an invalid string*/
+    // Not found, return an invalid string
     return TOTAL_2D_SIDE_STRINGS[NUM_2D_SIDES];
 }
 
-void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer) {
-    node_layer_[id] = layer;
+void t_rr_graph_storage::set_node_layer(RRNodeId id, char layer_low, char layer_high) {
+    node_layer_[id] = std::make_pair(layer_low, layer_high);
 }
 
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {

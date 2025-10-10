@@ -269,7 +269,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
             t_physical_tile_loc tile_loc = {
                 rr_graph.node_xlow(rr_node_id),
                 rr_graph.node_ylow(rr_node_id),
-                rr_graph.node_layer(rr_node_id)};
+                rr_graph.node_layer_low(rr_node_id)};
             t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(tile_loc);
             int width_offset = device_ctx.grid.get_width_offset(tile_loc);
             int height_offset = device_ctx.grid.get_height_offset(tile_loc);
