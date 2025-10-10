@@ -43,7 +43,7 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         for (int cut_y : horizontal_cuts[layer]) {
             float y;
             if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
-                y = (draw_coords->tile_y[cut_y + 1] + draw_coords->tile_y[cut_y]) / 2.0f;
+                y = (draw_coords->tile_y[cut_y + 1] + draw_coords->tile_y[cut_y] + draw_coords->get_tile_height()) / 2.0f;
             } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
                 y = draw_coords->tile_y[cut_y + 1] - 0.5f;
             } else {
@@ -56,7 +56,7 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         for (int cut_x : vertical_cuts[layer]) {
             float x;
             if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
-                x = (draw_coords->tile_x[cut_x + 1] + draw_coords->tile_x[cut_x]) / 2.0f;
+                x = (draw_coords->tile_x[cut_x + 1] + draw_coords->tile_x[cut_x] + draw_coords->get_tile_width()) / 2.0f;
             } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
                 x = draw_coords->tile_x[cut_x + 1] - 0.5f;
             } else {
