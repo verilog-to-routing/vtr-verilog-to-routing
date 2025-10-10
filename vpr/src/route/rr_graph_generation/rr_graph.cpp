@@ -2549,10 +2549,6 @@ static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_
     }
 }
 
-/*AA: Will need to modify this perhaps to acount for the type of the segment that we're loading the cb for. 
- * waiting for reply from VB if yes, sides that are perpendicular to the channel don't connect to it. We look
- * at the side we are at and only distribute those connections in the two sides that work.
- */
 static void load_perturbed_connection_block_pattern(vtr::NdMatrix<int, 6>& tracks_connected_to_pin,
                                                     const std::vector<t_pin_loc>& pin_locations,
                                                     const int x_chan_width,
@@ -2697,7 +2693,7 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
                         /* get number of tracks to which this pin connects */
                         int num_tracks = 0;
                         for (int iseg = 0; iseg < num_seg_types; iseg++) {
-                            num_tracks += Fc[pin][seg_inf[iseg].seg_index]; // AA: Fc_in and Fc_out matrices are unified for all segments so need to map index.
+                            num_tracks += Fc[pin][seg_inf[iseg].seg_index]; // Fc_in and Fc_out matrices are unified for all segments so need to map index.
                         }
                         for (int connected_layer : get_layers_pin_is_connected_to(tile_type, type_layer_index, pin)) {
                             if (!pin_to_track_map[pin][width][height][connected_layer][side].empty()) {
@@ -2720,19 +2716,6 @@ static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr
     return track_to_pin_lookup;
 }
 
-/*AA:
- * So I need to update this cause the Fc_xofs and Fc_yofs are size of
- * X and Y segment counts. When going through the side of the logic block,
- * need to consider what segments to build Fc nodes for. More on this: 
- * I may have to update the Fc_out[][][] structure allocator because we have
- * different segments for horizontal and vertical channels. Now we are giving the 
- * fc_specs in the architecture file, which refers to a segment by name and a port
- * for a tile (block type). If we figure out [as done in previous routine 
- * get actual_fc ?] we need distribute them properly with consideration to the 
- * type of the segment they're giving specifications for. So say for uniform, we 
- * distribute them evenly across TOP and BOTTOM for a y-parallel channel and 
- * LEFT and RIGHT for x-parallel channel. 
- */
 static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   const RRGraphView& rr_graph,
                                   const int layer,
@@ -2761,37 +2744,34 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
     int width_offset = grid.get_width_offset({i, j, layer});
     int height_offset = grid.get_height_offset({i, j, layer});
 
-    /* Go through each pin and find its fanout. */
+    // Go through each pin and find its fanout.
     for (int pin_index = 0; pin_index < type->num_pins; ++pin_index) {
-        /* Skip global pins and pins that are not of DRIVER type */
         e_pin_type pin_type = get_pin_type_from_pin_physical_num(type, pin_index);
-        if (pin_type != e_pin_type::DRIVER) {
-            continue;
-        }
-        if (type->is_ignored_pin[pin_index]) {
+
+        // Skip global pins and pins that are not of DRIVER type
+        if (pin_type != e_pin_type::DRIVER || type->is_ignored_pin[pin_index]) {
             continue;
         }
 
         RRNodeId opin_node_index = rr_graph_builder.node_lookup().find_node(layer, i, j, e_rr_type::OPIN, pin_index, side);
-        if (!opin_node_index) continue; //No valid from node
+        if (!opin_node_index) {
+            continue; // No valid from node
+        }
 
         for (int iseg = 0; iseg < num_seg_types; iseg++) {
-            /* get Fc for this segment type */
+            // Fc for this segment type
             int seg_type_Fc = Fc_out[type->index][pin_index][iseg];
             VTR_ASSERT(seg_type_Fc >= 0);
-            if (seg_type_Fc == 0) {
+
+            // Skip if the pin is not at this location or is not connected
+            if (seg_type_Fc == 0 || !type->pinloc[width_offset][height_offset][side][pin_index]) {
                 continue;
             }
 
-            /* Can't do anything if pin isn't at this location */
-            if (0 == type->pinloc[width_offset][height_offset][side][pin_index]) {
-                continue;
-            }
-
-            /* Figure out the chan seg at that side.
-             * side is the side of the logic or io block. */
-            bool vert = ((side == TOP) || (side == BOTTOM));
-            bool pos_dir = ((side == TOP) || (side == RIGHT));
+            // Figure out the chan seg at that side.
+            // side is the side of the logic or io block.
+            bool vert = (side == TOP) || (side == BOTTOM);
+            bool pos_dir = (side == TOP) || (side == RIGHT);
             e_rr_type chan_type = (vert ? e_rr_type::CHANX : e_rr_type::CHANY);
             int chan = (vert ? (j) : (i));
             int seg = (vert ? (i) : (j));
@@ -2800,15 +2780,16 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             int seg_index = get_parallel_seg_index(iseg, seg_index_map, wanted_axis);
 
             // The segment at index iseg doesn't have the proper adjacency so skip building Fc_out connections for it.
-            if (seg_index < 0)
+            if (seg_index < 0) {
                 continue;
+            }
 
             vtr::NdMatrix<int, 3>& Fc_ofs = (vert ? Fc_xofs : Fc_yofs);
             if (false == pos_dir) {
                 --chan;
             }
 
-            /* Skip the location if there is no channel. */
+            // Skip the location if there is no channel.
             if (chan < 0) {
                 continue;
             }
@@ -2824,10 +2805,11 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
 
             const t_chan_seg_details* seg_details = (chan_type == e_rr_type::CHANX ? chan_details_x[seg][chan] : chan_details_y[chan][seg]).data();
 
-            if (seg_details[0].length() == 0)
+            if (seg_details[0].length() == 0) {
                 continue;
+            }
 
-            /* Get the list of opin to mux connections for that chan seg. */
+            // Get the list of opin to mux connections for that chan seg.
             bool clipped;
 
             for (int connected_layer : get_layers_pin_is_connected_to(type, layer, pin_index)) {
@@ -2845,7 +2827,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             }
         }
 
-        /* Add in direct connections */
+        // Add in direct connections
         get_opin_direct_connections(rr_graph_builder, rr_graph, layer, i, j, side, pin_index, opin_node_index, rr_edges_to_create,
                                     directs, clb_to_clb_directs);
     }
