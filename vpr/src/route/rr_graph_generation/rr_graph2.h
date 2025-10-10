@@ -91,6 +91,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 const t_chan_width& nodes_per_chan,
                                 bool* Fc_clipped);
 
+/// Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent blocks along the wire's length
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       int layer,
                       int seg,

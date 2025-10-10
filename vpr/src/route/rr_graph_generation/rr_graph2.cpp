@@ -1005,24 +1005,18 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       int wire_to_ipin_switch,
                       int wire_to_pin_between_dice_switch,
                       e_directionality directionality) {
-    /*
-     * Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent
-     * blocks along the wire's length
-     */
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    int j, pass, iconn, phy_track, end, max_conn, ipin, x, y, num_conn;
+    // End of this wire
+    int end = get_seg_end(seg_details, track, seg, chan, chan_length);
 
-    auto& device_ctx = g_vpr_ctx.device();
+    int num_conn = 0;
 
-    /* End of this wire */
-    end = get_seg_end(seg_details, track, seg, chan, chan_length);
-
-    num_conn = 0;
-
-    for (j = seg; j <= end; j++) {
+    for (int j = seg; j <= end; j++) {
         if (is_cblock(chan, j, track, seg_details)) {
-            for (pass = 0; pass < 2; ++pass) { //pass == 0 => TOP/RIGHT, pass == 1 => BOTTOM/LEFT
+            for (int pass = 0; pass < 2; ++pass) { //pass == 0 => TOP/RIGHT, pass == 1 => BOTTOM/LEFT
                 e_side side;
+                int x, y;
                 if (e_rr_type::CHANX == chan_type) {
                     x = j;
                     y = chan + pass;
@@ -1044,7 +1038,7 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                      * - algorithm assigns ipin connections to same physical track index
                      * so that the logical track gets distributed uniformly */
 
-                    phy_track = vpr_to_phy_track(track, chan, j, seg_details, directionality);
+                    int phy_track = vpr_to_phy_track(track, chan, j, seg_details, directionality);
                     phy_track %= tracks_per_chan;
 
                     /* We need the type to find the ipin map for this type */
@@ -1052,9 +1046,9 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                     int width_offset = device_ctx.grid.get_width_offset({x, y, layer_index});
                     int height_offset = device_ctx.grid.get_height_offset({x, y, layer_index});
 
-                    max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side].size();
-                    for (iconn = 0; iconn < max_conn; iconn++) {
-                        ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side][iconn];
+                    const int max_conn = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side].size();
+                    for (int iconn = 0; iconn < max_conn; iconn++) {
+                        const int ipin = track_to_pin_lookup[type->index][phy_track][width_offset][height_offset][layer][side][iconn];
                         if (!is_pin_conencted_to_layer(type, ipin, layer_index, layer, device_ctx.grid.get_num_layers())) {
                             continue;
                         }
@@ -1071,7 +1065,8 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
             }
         }
     }
-    return (num_conn);
+
+    return num_conn;
 }
 
 /*
