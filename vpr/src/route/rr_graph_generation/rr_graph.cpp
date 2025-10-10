@@ -1131,8 +1131,8 @@ static void alloc_and_init_channel_width() {
     const DeviceGrid& grid = mutable_device_ctx.grid;
     const auto& rr_graph = mutable_device_ctx.rr_graph;
 
-    vtr::NdMatrix<int, 3>& chanx_width = mutable_device_ctx.rr_chanx_width;
-    vtr::NdMatrix<int, 3>& chany_width = mutable_device_ctx.rr_chany_width;
+    vtr::NdMatrix<int, 3>& chanx_width = mutable_device_ctx.rr_chanx_segment_width;
+    vtr::NdMatrix<int, 3>& chany_width = mutable_device_ctx.rr_chany_segment_width;
 
     chanx_width.resize({grid.get_num_layers(), grid.width(), grid.height()});
     chany_width.resize({grid.get_num_layers(), grid.width(), grid.height()});

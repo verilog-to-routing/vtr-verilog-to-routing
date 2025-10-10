@@ -204,8 +204,8 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
 
     load_channel_occupancies(net_list, chanx_occ, chany_occ);
 
-    write_channel_occupancy_table("chanx_occupancy.txt", chanx_occ, device_ctx.rr_chanx_width);
-    write_channel_occupancy_table("chany_occupancy.txt", chany_occ, device_ctx.rr_chany_width);
+    write_channel_occupancy_table("chanx_occupancy.txt", chanx_occ, device_ctx.rr_chanx_segment_width);
+    write_channel_occupancy_table("chany_occupancy.txt", chany_occ, device_ctx.rr_chany_segment_width);
 
     int total_cap_x = 0;
     int total_used_x = 0;
@@ -226,7 +226,7 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
             for (size_t x = 1; x < device_ctx.grid.width(); x++) {
                 max_occ = std::max(chanx_occ[layer][x][y], max_occ);
                 ave_occ += chanx_occ[layer][x][y];
-                ave_cap += device_ctx.rr_chanx_width[layer][x][y];
+                ave_cap += device_ctx.rr_chanx_segment_width[layer][x][y];
 
                 total_cap_x += chanx_occ[layer][x][y];
                 total_used_x += chanx_occ[layer][x][y];
@@ -251,7 +251,7 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
             for (size_t y = 1; y < device_ctx.grid.height(); y++) {
                 max_occ = std::max(chany_occ[layer][x][y], max_occ);
                 ave_occ += chany_occ[layer][x][y];
-                ave_cap += device_ctx.rr_chany_width[layer][x][y];
+                ave_cap += device_ctx.rr_chany_segment_width[layer][x][y];
 
                 total_cap_y += chany_occ[layer][x][y];
                 total_used_y += chany_occ[layer][x][y];
