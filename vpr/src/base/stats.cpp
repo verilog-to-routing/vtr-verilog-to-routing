@@ -213,51 +213,51 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     int total_used_y = 0;
 
     VTR_LOG("\n");
-    VTR_LOG("X - Directed channels: layer   j   max occ   ave occ   ave cap\n");
+    VTR_LOG("X - Directed channels: layer   y   max occ   ave occ   ave cap\n");
     VTR_LOG("                        ----- ---- -------- -------- --------\n");
 
     for (size_t layer = 0; layer < device_ctx.grid.get_num_layers(); ++layer) {
-        for (size_t j = 0; j < device_ctx.grid.height() - 1; ++j) {
+        for (size_t y = 0; y < device_ctx.grid.height() - 1; y++) {
             float ave_occ = 0.0f;
             float ave_cap = 0.0f;
             int max_occ = -1;
 
-            for (size_t i = 1; i < device_ctx.grid.width(); ++i) {
-                max_occ = std::max(chanx_occ[layer][i][j], max_occ);
-                ave_occ += chanx_occ[layer][i][j];
-                ave_cap += device_ctx.rr_chanx_width[layer][i][j];
+            for (size_t x = 1; x < device_ctx.grid.width(); x++) {
+                max_occ = std::max(chanx_occ[layer][x][y], max_occ);
+                ave_occ += chanx_occ[layer][x][y];
+                ave_cap += device_ctx.rr_chanx_width[layer][x][y];
 
-                total_cap_x += chanx_occ[layer][i][j];
-                total_used_x += chanx_occ[layer][i][j];
+                total_cap_x += chanx_occ[layer][x][y];
+                total_used_x += chanx_occ[layer][x][y];
             }
             ave_occ /= device_ctx.grid.width() - 2;
             ave_cap /= device_ctx.grid.width() - 2;
             VTR_LOG("                        %5zu %4zu %8d %8.3f %8.0f\n",
-                    layer, j, max_occ, ave_occ, ave_cap);
+                    layer, y, max_occ, ave_occ, ave_cap);
         }
     }
 
-    VTR_LOG("Y - Directed channels: layer   i   max occ   ave occ   ave cap\n");
+    VTR_LOG("Y - Directed channels: layer   x   max occ   ave occ   ave cap\n");
     VTR_LOG("                        ----- ---- -------- -------- --------\n");
 
     for (size_t layer = 0; layer < device_ctx.grid.get_num_layers(); ++layer) {
-        for (size_t i = 0; i < device_ctx.grid.width() - 1; ++i) {
+        for (size_t x = 0; x < device_ctx.grid.width() - 1; x++) {
             float ave_occ = 0.0;
             float ave_cap = 0.0;
             int max_occ = -1;
 
-            for (size_t j = 1; j < device_ctx.grid.height(); ++j) {
-                max_occ = std::max(chany_occ[layer][i][j], max_occ);
-                ave_occ += chany_occ[layer][i][j];
-                ave_cap += device_ctx.rr_chany_width[layer][i][j];
+            for (size_t y = 1; y < device_ctx.grid.height(); y++) {
+                max_occ = std::max(chany_occ[layer][x][y], max_occ);
+                ave_occ += chany_occ[layer][x][y];
+                ave_cap += device_ctx.rr_chany_width[layer][x][y];
 
-                total_cap_y += chany_occ[layer][i][j];
-                total_used_y += chany_occ[layer][i][j];
+                total_cap_y += chany_occ[layer][x][y];
+                total_used_y += chany_occ[layer][x][y];
             }
             ave_occ /= device_ctx.grid.height() - 2;
             ave_cap /= device_ctx.grid.height() - 2;
             VTR_LOG("                        %5zu %4zu %8d %8.3f %8.0f\n",
-                    layer, i, max_occ, ave_occ, ave_cap);
+                    layer, x, max_occ, ave_occ, ave_cap);
         }
     }
 
