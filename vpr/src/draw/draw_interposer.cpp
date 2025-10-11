@@ -43,8 +43,12 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         for (int cut_y : horizontal_cuts[layer]) {
             float y;
             if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
+                // Draw the interposer line exactly in the middle of routing channel.
                 y = (draw_coords->tile_y[cut_y + 1] + draw_coords->tile_y[cut_y] + draw_coords->get_tile_height()) / 2.0f;
             } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
+                // Draw the interposer above the last track and below the next tile.
+                // The row below the cut owns the channel, so the cut is drawn closer
+                // to the row above the cut to make this ownership explicit.
                 y = draw_coords->tile_y[cut_y + 1] - 0.5f;
             } else {
                 VTR_ASSERT(false);
@@ -56,8 +60,12 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         for (int cut_x : vertical_cuts[layer]) {
             float x;
             if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
+                // Draw the interposer line exactly in the middle of routing channel.
                 x = (draw_coords->tile_x[cut_x + 1] + draw_coords->tile_x[cut_x] + draw_coords->get_tile_width()) / 2.0f;
             } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
+                // Draw the interposer line between the last track and the next column.
+                // The channel belongs to the column on the left of the cut, so the cut is
+                // positioned closer to the column on the right to make this ownership clear.
                 x = draw_coords->tile_x[cut_x + 1] - 0.5f;
             } else {
                 VTR_ASSERT(false);
