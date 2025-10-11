@@ -16,6 +16,8 @@
 #include <cstring>
 #include <cmath>
 #include "draw.h"
+
+#include "draw_interposer.h"
 #include "timing_info.h"
 #include "physical_types.h"
 
@@ -175,11 +177,13 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     g->set_font_size(14);
 
+    draw_interposer_cuts(g);
+
     draw_block_pin_util();
     drawplace(g);
     draw_internal_draw_subblk(g);
 
-    if (draw_state->pic_on_screen == ROUTING) { // ROUTING on screen
+    if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
 
         draw_rr(g);
 
@@ -255,12 +259,12 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->pic_on_screen == PLACEMENT) {
+    if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
         hide_widget("RoutingMenuButton", app);
 
         draw_state->save_graphics_file_base = "vpr_placement";
 
-    } else if (draw_state->pic_on_screen == ROUTING) {
+    } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
         show_widget("RoutingMenuButton", app);
 
         draw_state->save_graphics_file_base = "vpr_routing";
@@ -274,7 +278,10 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
 
 #endif //NO_GRAPHICS
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<const SetupTimingInfo> setup_timing_info) {
+void update_screen(ScreenUpdatePriority priority,
+                   const char* msg,
+                   e_pic_type pic_on_screen_val,
+                   std::shared_ptr<const SetupTimingInfo> setup_timing_info) {
 #ifndef NO_GRAPHICS
 
     /* Updates the screen if the user has requested graphics.  The priority  *
@@ -297,10 +304,9 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
         state_change = true;
 
-        if (draw_state->pic_on_screen == NO_PICTURE) {
+        if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
             // Only add the canvas the first time we open graphics
-            application.add_canvas("MainCanvas", draw_main_canvas,
-                                   initial_world);
+            application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
         }
 
         draw_state->setup_timing_info = setup_timing_info;
@@ -373,8 +379,8 @@ void alloc_draw_structs(const t_arch* arch) {
 
     /* Allocate the structures needed to draw the placement and routing->  Set *
      * up the default colors for blocks and nets.                             */
-    draw_coords->tile_x = new float[device_ctx.grid.width()];
-    draw_coords->tile_y = new float[device_ctx.grid.height()];
+    draw_coords->tile_x.resize(device_ctx.grid.width(), 0.f);
+    draw_coords->tile_y.resize(device_ctx.grid.height(), 0.f);
 
     /* For sub-block drawings inside clbs */
     draw_internal_alloc_blk();
@@ -415,10 +421,8 @@ void free_draw_structs() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     if (draw_coords != nullptr) {
-        delete[] draw_coords->tile_x;
-        draw_coords->tile_x = nullptr;
-        delete[] draw_coords->tile_y;
-        draw_coords->tile_y = nullptr;
+        vtr::release_memory(draw_coords->tile_x);
+        vtr::release_memory(draw_coords->tile_y);
     }
 
 #else
@@ -454,7 +458,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     draw_coords->set_tile_width(clb_width);
     draw_coords->pin_size = 0.3;
     for (const auto& type : device_ctx.physical_tile_types) {
-        auto num_pins = type.num_pins;
+        int num_pins = type.num_pins;
         if (num_pins > 0) {
             draw_coords->pin_size = std::min(draw_coords->pin_size,
                                              (draw_coords->get_tile_width() / (4.0F * num_pins)));

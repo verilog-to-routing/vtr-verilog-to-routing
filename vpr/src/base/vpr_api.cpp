@@ -1062,8 +1062,8 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             print_switch_usage();
         }
 
-        //Update interactive graphics
-        update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
+        // Update interactive graphics
+        update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), e_pic_type::ROUTING, timing_info);
     }
 
     return route_status;

@@ -340,7 +340,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
                 net_list.net_name(net_id).c_str(),
                 size_t(net_id));
         if (f_router_debug) {
-            update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", ROUTING, nullptr);
+            update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", e_pic_type::ROUTING, nullptr);
         }
         router.reset_path_costs();
         out.success = false;
@@ -361,7 +361,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
 
     if (f_router_debug) {
         std::string msg = vtr::string_fmt("Routed Net %zu connection to RR node %d successfully", size_t(net_id), sink_node);
-        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
+        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), e_pic_type::ROUTING, nullptr);
     }
 
     if (new_branch)
@@ -472,7 +472,7 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
                 net_list.net_name(net_id).c_str(),
                 size_t(net_id));
         if (f_router_debug) {
-            update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", ROUTING, nullptr);
+            update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", e_pic_type::ROUTING, nullptr);
         }
         flags.success = false;
         router.reset_path_costs();
@@ -488,7 +488,7 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
 
     if (f_router_debug) {
         std::string msg = vtr::string_fmt("Routed Net %zu connection %d to RR node %d successfully", size_t(net_id), itarget, sink_node);
-        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
+        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), e_pic_type::ROUTING, nullptr);
     }
 
     if (budgeting_inf.if_set() && cheapest.rcv_path_backward_delay != std::numeric_limits<float>::infinity() && cost_params.delay_budget) {

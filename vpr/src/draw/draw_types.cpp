@@ -80,15 +80,13 @@ ezgl::rectangle& t_draw_pb_type_info::get_pb_bbox_ref(const t_pb_graph_node& pb_
 t_draw_coords::t_draw_coords() {
     tile_width = 0;
     pin_size = 0;
-    tile_x = nullptr;
-    tile_y = nullptr;
 }
 
-float t_draw_coords::get_tile_width() {
+float t_draw_coords::get_tile_width() const {
     return tile_width;
 }
 
-float t_draw_coords::get_tile_height() {
+float t_draw_coords::get_tile_height() const {
     //For now, same as width
     return tile_width;
 }

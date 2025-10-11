@@ -40,7 +40,10 @@ extern ezgl::application application;
 
 #endif /* NO_GRAPHICS */
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<const SetupTimingInfo> timing_info);
+void update_screen(ScreenUpdatePriority priority,
+                   const char* msg,
+                   e_pic_type pic_on_screen_val,
+                   std::shared_ptr<const SetupTimingInfo> timing_info);
 
 //FIXME: Currently broken if no rr-graph is loaded
 /**

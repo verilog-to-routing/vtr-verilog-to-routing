@@ -162,7 +162,8 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
     }
 
     auto& grid = g_vpr_ctx.mutable_device().grid;
-    grid = DeviceGrid("test_device_grid", test_grid);
+    std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
+    grid = DeviceGrid("test_device_grid", test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
 
     std::vector<t_compressed_block_grid> compressed_grids = create_compressed_block_grids();
 
