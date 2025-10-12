@@ -11,6 +11,7 @@
 #include <limits>
 #include <memory>
 #include <vector>
+#include "analytical_draw_manager.h"
 #include "PreClusterTimingManager.h"
 #include "analytical_solver.h"
 #include "ap_flow_enums.h"
@@ -356,10 +357,10 @@ PartialPlacement SimPLGlobalPlacer::place() {
     PartialPlacement best_p_placement(ap_netlist_);
     double best_ub_hpwl = std::numeric_limits<double>::max();
 
-#ifndef NO_GRAPHICS
-    get_draw_state_vars()->set_ap_partial_placement_ref(p_placement);
-    update_screen(ScreenUpdatePriority::MAJOR, "AP starts", ANALYTICAL_PLACEMENT, nullptr);
-#endif
+    // Initialize graphics for analytical placement, setting the reference in
+    // the draw state.
+    AnalyticalDrawManager draw_manager(p_placement);
+    
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
         float iter_start_time = runtime_timer.elapsed_sec();
@@ -369,22 +370,18 @@ PartialPlacement SimPLGlobalPlacer::place() {
         solver_->solve(i, p_placement);
         float solver_end_time = runtime_timer.elapsed_sec();
         double lb_hpwl = p_placement.get_hpwl(ap_netlist_);
-#ifndef NO_GRAPHICS
-        // Per iteration analytical solve display
-        std::string iter_msg = vtr::string_fmt("AP Iteration %zu after analytical solve", i);
-        update_screen(ScreenUpdatePriority::MAJOR, iter_msg.c_str(), ANALYTICAL_PLACEMENT, nullptr);
-#endif
+        
+        // Update graphics after analytical solver
+        draw_manager.update_graphics("Iteration " + std::to_string(i) + " After Solver");
 
         // Run the legalizer.
         float legalizer_start_time = runtime_timer.elapsed_sec();
         partial_legalizer_->legalize(p_placement);
         float legalizer_end_time = runtime_timer.elapsed_sec();
         double ub_hpwl = p_placement.get_hpwl(ap_netlist_);
-#ifndef NO_GRAPHICS
-        // Per iteration legalized display
-        iter_msg = vtr::string_fmt("AP Iteration %zu after partial legalization", i);
-        update_screen(ScreenUpdatePriority::MAJOR, iter_msg.c_str(), ANALYTICAL_PLACEMENT, nullptr);
-#endif
+        
+        // Update graphics after legalizer
+        draw_manager.update_graphics("Iteration " + std::to_string(i) + " After Legalizer");
 
         // Perform a timing update
         float timing_update_start_time = runtime_timer.elapsed_sec();
@@ -440,8 +437,6 @@ PartialPlacement SimPLGlobalPlacer::place() {
 
         if (hpwl_relative_gap < target_hpwl_relative_gap_)
             break;
-
-
     }
 
     // Update the setup slacks. This is performed down here (as well as being
@@ -471,6 +466,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
                           pre_cluster_timing_manager_);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     update_screen(ScreenUpdatePriority::MAJOR, "Global Placement Complete", e_pic_type::ANALYTICAL_PLACEMENT, nullptr);
 =======
 
@@ -481,6 +477,9 @@ PartialPlacement SimPLGlobalPlacer::place() {
     get_draw_state_vars()->clear_ap_partial_placement_ref();
 #endif
 >>>>>>> dc6e76ac9 ([draw ap] ap draw working with the rest of the draw)
+=======
+    
+>>>>>>> 5b2a7c445 ([ap draw] drawing manager)
     // Return the placement from the final iteration.
     return best_p_placement;
 }

@@ -335,7 +335,6 @@ void update_screen(ScreenUpdatePriority priority,
         draw_state->pic_on_screen = pic_on_screen_val;
     }
 
-    // What is this? Always true!
     bool should_pause = int(priority) >= draw_state->gr_automode;
 
     //If there was a state change, we must call ezgl::application::run() to update the buttons.

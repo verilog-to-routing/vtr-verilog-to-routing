@@ -205,11 +205,7 @@ void draw_analytical_place(ezgl::renderer* g) {
 
         for (int x = 0; x < (int)device_ctx.grid.width(); ++x) {
             for (int y = 0; y < (int)device_ctx.grid.height(); ++y) {
-                // Only draw at the root of a non-unit tile
-                int w_off = device_ctx.grid.get_width_offset({x, y, layer});
-                int h_off = device_ctx.grid.get_height_offset({x, y, layer});
-                if (w_off > 0 || h_off > 0) continue;
-
+                if (device_ctx.grid.is_root_location({x, y, layer}) == false) continue;
                 t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({x, y, layer});
                 if (type->capacity == 0) continue;
 

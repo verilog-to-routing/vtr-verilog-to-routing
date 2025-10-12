@@ -29,6 +29,9 @@
  * Blocks are drawn in layer order (so that semi-transparent blocks/grids render well)*/
 void drawplace(ezgl::renderer* g);
 
+/** This function draws the analytical placement from the PartialPlacement object, it
+ *  also draws the architecture grid and the blocks from device_ctx.
+ */
 void draw_analytical_place(ezgl::renderer* g);
 
 /** This routine draws the nets on the placement.  The nets have not
