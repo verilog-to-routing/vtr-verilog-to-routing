@@ -3284,12 +3284,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     crr_grp.add_argument(args.sb_maps, "--sb_maps")
         .help("Switch block map file that specifed the switch block template used for each location")
-        .default_value("off")
+        .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
     
     crr_grp.add_argument(args.sb_templates, "--sb_templates")
         .help("Directory containing the switch block templates")
-        .default_value("off")
+        .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     crr_grp.add_argument<int>(args.crr_num_threads, "--crr_num_threads")
