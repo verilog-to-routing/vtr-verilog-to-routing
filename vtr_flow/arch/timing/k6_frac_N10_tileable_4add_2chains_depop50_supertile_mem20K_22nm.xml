@@ -147,7 +147,7 @@
         <input name="datain" num_pins="74"/>
         <output name="dataout" num_pins="74"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-        <pinlocations pattern="spread"/>
+        <pinlocations pattern="perimeter"/>
       </sub_tile>
       <sub_tile name="memory" capacity="2">
         <equivalent_sites>
@@ -161,7 +161,7 @@
         <output name="out" num_pins="40"/>
         <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-        <pinlocations pattern="spread"/>
+        <pinlocations pattern="perimeter"/>
       </sub_tile>
     </tile>
   </tiles>
