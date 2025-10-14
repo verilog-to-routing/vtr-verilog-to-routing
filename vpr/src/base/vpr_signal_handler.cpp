@@ -29,6 +29,13 @@
 void vpr_signal_handler(int signal);
 void checkpoint();
 
+/**
+ * @brief Writes a message directly to stderr with async-signal-safe write() function.
+ *
+ * Uses write() to avoid signal unsafe std::cerr in the signal handler.
+ *
+ * @param msg Message string to write.
+ */
 static inline void safe_write(const char* msg) {
     (void)!write(STDERR_FILENO, msg, strlen(msg));
 }
