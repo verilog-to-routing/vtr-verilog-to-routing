@@ -26,6 +26,8 @@
 #include "tileable_rr_graph_edge_builder.h"
 #include "tileable_rr_graph_builder.h"
 
+#include "crr_graph_edge_builder.h"
+
 #include "globals.h"
 
 /************************************************************************
@@ -275,7 +277,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
         build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, 0,
                                         directs, clb2clb_directs);
     } else {
-        build_crr_graph_edges(device_ctx.rr_graph, device_ctx.rr_graph_builder, crr_opts, directs);
+        build_crr_graph_edges(device_ctx.rr_graph, device_ctx.rr_graph_builder, crr_opts);
     }
 
     // Allocate and load routing resource switches, which are derived from the switches from the architecture file,
