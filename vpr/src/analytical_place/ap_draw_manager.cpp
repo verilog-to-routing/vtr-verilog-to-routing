@@ -43,6 +43,7 @@ void APDrawManager::update_graphics(unsigned int iteration, enum APDrawType draw
     }
     update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ANALYTICAL_PLACEMENT, nullptr);
 #else
-    (void)msg;
+    (void)iteration;
+    (void)draw_type;
 #endif
 }
