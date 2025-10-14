@@ -1,5 +1,13 @@
 #pragma once
 
+/**
+ * @file draw_interposer.h
+ * @brief Declares functions to draw interposer cut lines in the FPGA device.
+ *
+ * Cut lines are drawn at channel centers during placement and slightly offset
+ * during routing for better channel ownership visualization.
+ */
+
 #ifndef NO_GRAPHICS
 
 // forward declaration

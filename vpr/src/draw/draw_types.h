@@ -456,10 +456,10 @@ struct t_draw_coords {
     }
 
     ///@brief returns tile width
-    float get_tile_width();
+    float get_tile_width() const;
 
     ///@brief returns tile width
-    float get_tile_height();
+    float get_tile_height() const;
 
     ///@brief returns bounding box for given pb in given clb
     ezgl::rectangle get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);

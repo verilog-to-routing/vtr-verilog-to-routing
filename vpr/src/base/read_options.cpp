@@ -2323,7 +2323,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "\tequilibrium: Estimates the initial temperature by trying to "
             "predict the equilibrium temperature for the initial placement "
             "(i.e. the temperature that would result in no change in cost).")
-        .default_value("cost_variance")
+        .default_value("equilibrium")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceInitT, "--init_t")

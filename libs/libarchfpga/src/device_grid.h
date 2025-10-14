@@ -197,10 +197,16 @@ class DeviceGrid {
         return &grid_.get(n);
     }
 
+    /// Returns the list of horizontal interposer cut locations for each layer,
+    /// i.e. y value of the tile row just below each cut
+    /// Accessed as [layer][cut_idx]
     inline const std::vector<std::vector<int>>& get_horizontal_interposer_cuts() const {
         return horizontal_interposer_cuts_;
     }
 
+    /// Returns the list of vertical interposer cut locations for each layer,
+    /// i.e. x value of the tile column just to the left each cut
+    /// Accessed as [layer][cut_idx]
     inline const std::vector<std::vector<int>>& get_vertical_interposer_cuts() const {
         return vertical_interposer_cuts_;
     }
@@ -227,6 +233,12 @@ class DeviceGrid {
 
     std::vector<t_logical_block_type_ptr> limiting_resources_;
 
+    /// Horizontal interposer cut locations in each layer,
+    /// i.e. y value of the tile row just below each cut
+    /// Accessed as [layer][cut_idx]
     std::vector<std::vector<int>> horizontal_interposer_cuts_;
+    /// Vertical interposer cut location in each layer,
+    /// i.e. x value of the tile column just to the left each cut
+    /// Accessed as [layer][cut_idx]
     std::vector<std::vector<int>> vertical_interposer_cuts_;
 };

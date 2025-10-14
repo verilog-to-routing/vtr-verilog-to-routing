@@ -82,11 +82,11 @@ t_draw_coords::t_draw_coords() {
     pin_size = 0;
 }
 
-float t_draw_coords::get_tile_width() {
+float t_draw_coords::get_tile_width() const {
     return tile_width;
 }
 
-float t_draw_coords::get_tile_height() {
+float t_draw_coords::get_tile_height() const {
     //For now, same as width
     return tile_width;
 }

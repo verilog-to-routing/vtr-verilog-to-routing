@@ -585,7 +585,7 @@ Grid Layout Example
 .. arch:tag:: <interposer_cut x="int" y="int"/>
 
     :opt_param x: Specifies the x-coordinate of a vertical interposer cut.
-    :opt_param y: Specifies the y-coordinate of a horizontal interposer cut.opt_param
+    :opt_param y: Specifies the y-coordinate of a horizontal interposer cut.
 
     .. note:: Exactly one of the ``x`` or ``y`` attributes must be specified.
 
