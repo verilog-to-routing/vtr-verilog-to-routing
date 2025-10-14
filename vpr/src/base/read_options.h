@@ -284,6 +284,14 @@ struct t_options {
     argparse::ArgValue<std::string> write_timing_summary;
     argparse::ArgValue<bool> skip_sync_clustering_and_routing_results;
     argparse::ArgValue<bool> generate_net_timing_report;
+
+    /* CRR options */
+    argparse::ArgValue<std::string> sb_maps;
+    argparse::ArgValue<std::string> sb_templates;
+    argparse::ArgValue<int> crr_num_threads;
+    argparse::ArgValue<bool> preserve_input_pins;
+    argparse::ArgValue<bool> preserve_output_pins;
+    argparse::ArgValue<bool> annotated_rr_graph;
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);
