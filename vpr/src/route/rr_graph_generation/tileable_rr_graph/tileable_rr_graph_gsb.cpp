@@ -14,6 +14,7 @@
 #include "side_manager.h"
 
 #include "vpr_utils.h"
+#include "physical_types_util.h"
 #include "rr_graph_view_util.h"
 #include "tileable_rr_graph_utils.h"
 #include "rr_graph_builder_utils.h"
@@ -1723,6 +1724,9 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
         /* get every opin in the range */
         for (int opin = min_index; opin <= max_index; ++opin) {
             int offset = opin - min_index;
+            //Capacity location determined by pin number relative to pins per capacity instance
+            auto [z, relative_opin] = get_capacity_location_from_physical_pin(grid_type, opin);
+            VTR_ASSERT(z >= 0 && z < grid_type->capacity);
 
             if ((to_grid_coordinate.x() < grids.width() - 1)
                 && (to_grid_coordinate.y() < grids.height() - 1)) {
@@ -1758,6 +1762,22 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
                 std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x(), to_grid_coordinate.y(), ipin);
                 VTR_ASSERT(1 == ipin_grid_side.size());
+
+                /* directs[i].sub_tile_offset is added to from_capacity(z) to get the target_capacity */
+                int to_subtile_cap = z + directs[i].sub_tile_offset;
+                /* Iterate over all sub_tiles to get the sub_tile which the target_cap belongs to. */
+                const t_sub_tile* to_sub_tile = nullptr;
+                for (const t_sub_tile& sub_tile : to_grid_type->sub_tiles) {
+                    if (sub_tile.capacity.is_in_range(to_subtile_cap)) {
+                        to_sub_tile = &sub_tile;
+                        break;
+                    }
+                }
+                VTR_ASSERT(to_sub_tile != nullptr);
+                if (ipin >= to_sub_tile->num_phy_pins) continue;
+                // If this block has capacity > 1 then the pins of z position > 0 are offset
+                // by the number of pins per capacity instance
+                int ipin = get_physical_pin_from_capacity_location(to_grid_type, ipin, to_subtile_cap);
 
                 RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
                                                                          from_grid_coordinate.x() - from_grid_width_ofs,
