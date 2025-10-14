@@ -240,39 +240,43 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
         *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
     }
 
-    // Build the connections tile by tile:
-    // We classify rr_nodes into a general switch block (GSB) data structure
-    // where we create edges to each rr_nodes in the GSB with respect to
-    // Fc_in and Fc_out, switch block patterns
-    // In addition, we will also handle direct-connections:
-    // Add edges that bridge OPINs and IPINs to the rr_graph
-    // Create edges for a tileable rr_graph
-    build_rr_graph_edges(device_ctx.rr_graph,
-                         device_ctx.rr_graph_builder,
-                         rr_node_driver_switches,
-                         grids, vib_grid, 0,
-                         device_chan_width,
-                         segment_inf, segment_inf_x, segment_inf_y,
-                         Fc_in, Fc_out,
-                         sb_type, Fs, sb_subtype, sub_fs,
-                         perimeter_cb,
-                         opin2all_sides, concat_wire,
-                         wire_opposite_side,
-                         delayless_rr_switch);
+    if (crr_opts.sb_maps.empty()) {
+        // Build the connections tile by tile:
+        // We classify rr_nodes into a general switch block (GSB) data structure
+        // where we create edges to each rr_nodes in the GSB with respect to
+        // Fc_in and Fc_out, switch block patterns
+        // In addition, we will also handle direct-connections:
+        // Add edges that bridge OPINs and IPINs to the rr_graph
+        // Create edges for a tileable rr_graph
+        build_rr_graph_edges(device_ctx.rr_graph,
+                            device_ctx.rr_graph_builder,
+                            rr_node_driver_switches,
+                            grids, vib_grid, 0,
+                            device_chan_width,
+                            segment_inf, segment_inf_x, segment_inf_y,
+                            Fc_in, Fc_out,
+                            sb_type, Fs, sb_subtype, sub_fs,
+                            perimeter_cb,
+                            opin2all_sides, concat_wire,
+                            wire_opposite_side,
+                            delayless_rr_switch);
 
-    // Build direction connection lists
-    // TODO: use tile direct builder
-    // Create data structure of direct-connections
-    std::vector<t_clb_to_clb_directs> clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
-    std::vector<t_clb_to_clb_directs> clb2clb_directs;
-    for (size_t idirect = 0; idirect < directs.size(); ++idirect) {
-        // Sanity checks on rr switch id
-        VTR_ASSERT(device_ctx.rr_graph.valid_switch(RRSwitchId(clb_to_clb_directs[idirect].switch_index)));
-        clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
+        // Build direction connection lists
+        // TODO: use tile direct builder
+        // Create data structure of direct-connections
+        std::vector<t_clb_to_clb_directs> clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
+        std::vector<t_clb_to_clb_directs> clb2clb_directs;
+        for (size_t idirect = 0; idirect < directs.size(); ++idirect) {
+            // Sanity checks on rr switch id
+            VTR_ASSERT(device_ctx.rr_graph.valid_switch(RRSwitchId(clb_to_clb_directs[idirect].switch_index)));
+            clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
+        }
+
+        build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, 0,
+                                        directs, clb2clb_directs);
+    } else {
+        build_crr_graph_edges(device_ctx.rr_graph, device_ctx.rr_graph_builder, crr_opts, directs);
     }
-
-    build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, 0,
-                                      directs, clb2clb_directs);
 
     // Allocate and load routing resource switches, which are derived from the switches from the architecture file,
     // based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches
