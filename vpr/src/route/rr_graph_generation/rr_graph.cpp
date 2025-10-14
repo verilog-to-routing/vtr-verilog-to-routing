@@ -385,6 +385,7 @@ void create_rr_graph(e_graph_type graph_type,
                      t_det_routing_arch& det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
+                     const t_crr_opts& crr_opts,
                      const std::vector<t_direct_inf>& directs,
                      int* Warnings,
                      bool is_flat) {
