@@ -11,7 +11,7 @@
 #include <limits>
 #include <memory>
 #include <vector>
-#include "analytical_draw_manager.h"
+#include "ap_draw_manager.h"
 #include "PreClusterTimingManager.h"
 #include "analytical_solver.h"
 #include "ap_flow_enums.h"
@@ -19,10 +19,6 @@
 #include "ap_netlist_fwd.h"
 #include "atom_netlist.h"
 #include "device_grid.h"
-#include "draw.h"
-#ifndef NO_GRAPHICS
-#include "draw_global.h"
-#endif
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
 #include "globals.h"
@@ -359,7 +355,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
 
     // Initialize graphics for analytical placement, setting the reference in
     // the draw state.
-    AnalyticalDrawManager draw_manager(p_placement);
+    APDrawManager draw_manager(p_placement);
     
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
@@ -372,7 +368,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
         double lb_hpwl = p_placement.get_hpwl(ap_netlist_);
         
         // Update graphics after analytical solver
-        draw_manager.update_graphics("Iteration " + std::to_string(i) + " After Solver");
+        draw_manager.update_graphics(i, APDrawType::Solver);
 
         // Run the legalizer.
         float legalizer_start_time = runtime_timer.elapsed_sec();
@@ -381,7 +377,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
         double ub_hpwl = p_placement.get_hpwl(ap_netlist_);
         
         // Update graphics after legalizer
-        draw_manager.update_graphics("Iteration " + std::to_string(i) + " After Legalizer");
+        draw_manager.update_graphics(i, APDrawType::Legalizer);
 
         // Perform a timing update
         float timing_update_start_time = runtime_timer.elapsed_sec();
