@@ -1730,19 +1730,19 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
             if ((to_grid_coordinate.x() < grids.width() - 1)
                 && (to_grid_coordinate.y() < grids.height() - 1)) {
-                int ipin = UNDEFINED;
+                int relative_ipin = UNDEFINED;
                 if (clb_to_clb_directs[i].to_clb_pin_start_index
                     > clb_to_clb_directs[i].to_clb_pin_end_index) {
                     if (true == swap) {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
+                        relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
                     } else {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
+                        relative_ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
                     }
                 } else {
                     if (true == swap) {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
+                        relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
                     } else {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
+                        relative_ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
                     }
                 }
 
@@ -1760,9 +1760,6 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 std::vector<e_side> opin_grid_side = find_grid_pin_sides(grids, layer, from_grid_coordinate.x(), from_grid_coordinate.y(), opin);
                 VTR_ASSERT(1 == opin_grid_side.size());
 
-                std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x(), to_grid_coordinate.y(), ipin);
-                VTR_ASSERT(1 == ipin_grid_side.size());
-
                 /* directs[i].sub_tile_offset is added to from_capacity(z) to get the target_capacity */
                 int to_subtile_cap = z + directs[i].sub_tile_offset;
                 /* Iterate over all sub_tiles to get the sub_tile which the target_cap belongs to. */
@@ -1774,10 +1771,12 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                     }
                 }
                 VTR_ASSERT(to_sub_tile != nullptr);
-                if (ipin >= to_sub_tile->num_phy_pins) continue;
+                if (relative_ipin >= to_sub_tile->num_phy_pins) continue;
                 // If this block has capacity > 1 then the pins of z position > 0 are offset
                 // by the number of pins per capacity instance
-                int ipin = get_physical_pin_from_capacity_location(to_grid_type, ipin, to_subtile_cap);
+                int ipin = get_physical_pin_from_capacity_location(to_grid_type, relative_ipin, to_subtile_cap);
+                std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x(), to_grid_coordinate.y(), ipin);
+                VTR_ASSERT(1 == ipin_grid_side.size());
 
                 RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
                                                                          from_grid_coordinate.x() - from_grid_width_ofs,
