@@ -147,7 +147,14 @@
         <input name="datain" num_pins="74"/>
         <output name="dataout" num_pins="74"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-        <pinlocations pattern="perimeter"/>
+        <pinlocations pattern="custom">
+          <loc side="top">mult_27.datain[72:74] mult_27.dataout[72:74]</loc>
+          <loc side="right" yoffset="0">mult_27.datain[0:17] mult_27.dataout[0:17]</loc>
+          <loc side="right" yoffset="1">mult_27.datain[18:35] mult_27.dataout[18:35]</loc>
+          <loc side="right" yoffset="2">mult_27.datain[36:53] mult_27.dataout[36:53]</loc>
+          <loc side="right" yoffset="3">mult_27.datain[54:71] mult_27.dataout[54:71]</loc>
+          <loc side="bottom"/>
+        </pinlocations>
       </sub_tile>
       <sub_tile name="memory" capacity="2">
         <equivalent_sites>
@@ -161,7 +168,14 @@
         <output name="out" num_pins="40"/>
         <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-        <pinlocations pattern="perimeter"/>
+        <pinlocations pattern="custom">
+          <loc side="top">memory.clk memory.we1 memory.we2</loc>
+          <loc side="right" offset="0">memory.addr1[0:1] memory.addr2[0:1] memory.data[0:9]   memory.out[0:9]</loc>
+          <loc side="right" offset="1">memory.addr1[2:4] memory.addr2[2:4] memory.data[10:19] memory.out[10:19]</loc>
+          <loc side="right" offset="2">memory.addr1[5:7] memory.addr2[5:7] memory.data[20:29] memory.out[20:29]</loc>
+          <loc side="right" offset="3">memory.addr1[8:10] memory.addr2[8:10] memory.data[30:39] memory.out[30:39]</loc>
+          <loc side="bottom"/>
+        </pinlocations>
       </sub_tile>
     </tile>
   </tiles>
