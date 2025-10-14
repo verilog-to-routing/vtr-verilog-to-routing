@@ -179,7 +179,7 @@ struct t_draw_layer_display {
  */
 struct t_draw_state {
     ///@brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
-    pic_type pic_on_screen = NO_PICTURE;
+    e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
 
     ///@brief Whether to draw nets or not
     bool show_nets = false;
@@ -433,7 +433,7 @@ struct t_draw_coords {
      * to (tile_x[device_ctx.grid.width()-1]+tile_width, tile_y[device_ctx.grid.height()-1]+tile_width) in
      * the upper right corner.
      */
-    float *tile_x, *tile_y;
+    std::vector<float> tile_x, tile_y;
 
     ///@brief Half-width or Half-height of a pin. Set when init_draw_coords is called
     float pin_size;
@@ -456,10 +456,10 @@ struct t_draw_coords {
     }
 
     ///@brief returns tile width
-    float get_tile_width();
+    float get_tile_width() const;
 
     ///@brief returns tile width
-    float get_tile_height();
+    float get_tile_height() const;
 
     ///@brief returns bounding box for given pb in given clb
     ezgl::rectangle get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);
