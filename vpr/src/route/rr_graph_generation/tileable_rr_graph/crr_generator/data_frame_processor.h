@@ -5,8 +5,6 @@
 
 #include "OpenXLSX.hpp"
 
-#include "common.h"
-
 namespace crrgenerator {
 
 constexpr int NUM_EMPTY_ROWS = 5;
@@ -111,7 +109,7 @@ class DataFrame {
                     return *this;
                 }
                 bool operator!=(const RowIterator& other) const {
-                    
+                    return df_ != other.df_ || row_ != other.row_;
                 }
                 RowIterator& operator*() { return *this; }
 

@@ -197,6 +197,7 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
 
     } catch (const std::exception& e) {
         VTR_LOG_ERROR("Error reading Excel file %s: %s", filename.c_str(), e.what());
+        return DataFrame();
     }
 }
 
