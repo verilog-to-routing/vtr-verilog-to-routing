@@ -120,6 +120,7 @@ target_link_libraries(libvpr
                       librrgraph
                       ZLIB::ZLIB
                       OpenXLSX::OpenXLSX
+                      yaml-cpp::yaml-cpp
 )
 
 if(VPR_USE_SERVER)
