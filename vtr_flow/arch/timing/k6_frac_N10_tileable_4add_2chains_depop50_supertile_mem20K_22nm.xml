@@ -148,7 +148,7 @@
         <output name="dataout" num_pins="74"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
         <pinlocations pattern="custom">
-          <loc side="top">mult_27.datain[72:73] mult_27.dataout[40:73]</loc>
+          <loc side="top" yoffset="3">mult_27.datain[72:73] mult_27.dataout[40:73]</loc>
           <loc side="right" yoffset="0">mult_27.datain[0:17] mult_27.dataout[0:9]</loc>
           <loc side="right" yoffset="1">mult_27.datain[18:35] mult_27.dataout[10:19]</loc>
           <loc side="right" yoffset="2">mult_27.datain[36:53] mult_27.dataout[20:29]</loc>
@@ -169,7 +169,7 @@
         <clock name="clk" num_pins="1"/>
         <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
         <pinlocations pattern="custom">
-          <loc side="top">memory.clk memory.we1 memory.we2</loc>
+          <loc side="top" yoffset="3">memory.clk memory.we1 memory.we2</loc>
           <loc side="right" yoffset="0">memory.addr1[0:1] memory.addr2[0:1] memory.data[0:9]   memory.out[0:9]</loc>
           <loc side="right" yoffset="1">memory.addr1[2:4] memory.addr2[2:4] memory.data[10:19] memory.out[10:19]</loc>
           <loc side="right" yoffset="2">memory.addr1[5:7] memory.addr2[5:7] memory.data[20:29] memory.out[20:29]</loc>
