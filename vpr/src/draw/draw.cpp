@@ -313,7 +313,7 @@ void update_screen(ScreenUpdatePriority priority,
         state_change = true;
 
         if (draw_state->show_graphics) {
-            if (pic_on_screen_val == ANALYTICAL_PLACEMENT) {
+            if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
                 set_initial_world_ap();
             } else {
                 set_initial_world();
@@ -672,7 +672,7 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
              * fanins and fanouts are highlighted when you click on a block      *
              * attached to them.                                                 */
 
-            if (get_draw_state_vars()->pic_on_screen == ANALYTICAL_PLACEMENT) {
+            if (get_draw_state_vars()->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
                 // No selection in analytical placement mode yet
                 return;
             }

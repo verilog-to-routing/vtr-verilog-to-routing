@@ -41,7 +41,7 @@ void APDrawManager::update_graphics(unsigned int iteration, enum APDrawType draw
     } else {
         msg = "Analytical Placement";
     }
-    update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ANALYTICAL_PLACEMENT, nullptr);
+    update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), e_pic_type::ANALYTICAL_PLACEMENT, nullptr);
 #else
     (void)iteration;
     (void)draw_type;

@@ -461,21 +461,6 @@ PartialPlacement SimPLGlobalPlacer::place() {
                           *density_manager_,
                           pre_cluster_timing_manager_);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    update_screen(ScreenUpdatePriority::MAJOR, "Global Placement Complete", e_pic_type::ANALYTICAL_PLACEMENT, nullptr);
-=======
-
-#ifndef NO_GRAPHICS
-    // Final display of the last iteration's placement
-    get_draw_state_vars()->set_ap_partial_placement_ref(p_placement);
-    update_screen(ScreenUpdatePriority::MAJOR, "Global Placement Complete", ANALYTICAL_PLACEMENT, nullptr);
-    get_draw_state_vars()->clear_ap_partial_placement_ref();
-#endif
->>>>>>> dc6e76ac9 ([draw ap] ap draw working with the rest of the draw)
-=======
-    
->>>>>>> 5b2a7c445 ([ap draw] drawing manager)
     // Return the placement from the final iteration.
     return best_p_placement;
 }
