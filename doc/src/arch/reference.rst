@@ -582,10 +582,12 @@ Grid Layout Example
     Example FPGA grid
 
 
-.. arch:tag:: <interposer_cut dim=x|y loc="int"/>
+.. arch:tag:: <interposer_cut x="int" y="int"/>
 
-    :req_param dim: Dimension or axis of the cut. 'X' or 'x' means a horizontal cut while 'Y' or 'y' means a vertical cut.
-    :req_param loc: Location of the cut. Cuts are done above or to the right of the tiles at coordinate 'loc'. For example a cut with dim=x and loc=0 would cut the vertical wires above tiles in the 0th row. Currently only integer values are supported.
+    :opt_param x: Specifies the x-coordinate of a vertical interposer cut.
+    :opt_param y: Specifies the y-coordinate of a horizontal interposer cut.
+
+    .. note:: Exactly one of the ``x`` or ``y`` attributes must be specified.
 
     .. note:: Interposers are experimental and are currently not supported by VPR and using the related tags will not actually result in any changes to the flow.
     Defines an interposer cut for modelling 2.5D interposer-based architectures. An interposer cut will cut all connections at location 'loc' along the axis 'dim' Leaving the two sides completely unconnected.
