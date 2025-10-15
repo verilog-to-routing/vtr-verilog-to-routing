@@ -143,33 +143,34 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     const size_t grid_height = device_ctx.grid.height();
     const size_t grid_width = device_ctx.grid.width();
 
-    /* These arrays contain accumulative channel width between channel zero and
-     * the channel specified by the given index. The accumulated channel width
-     * is inclusive, meaning that it includes both channel zero and channel `idx`.
-     * To compute the total channel width between channels 'low' and 'high', use the
-     * following formula:
-     *      acc_chan?_width_[high] - acc_chan?_width_[low - 1]
-     * This returns the total number of tracks between channels 'low' and 'high',
-     * including tracks in these channels.
-     */
+    // These arrays contain accumulative channel width between channel zero and
+    // the channel specified by the given index. The accumulated channel width
+    // is inclusive, meaning that it includes both channel zero and channel `idx`.
+    // To compute the total channel width between channels 'low' and 'high', use the
+    // following formula:
+    //      acc_chan?_width_[high] - acc_chan?_width_[low - 1]
+    // This returns the total number of tracks between channels 'low' and 'high',
+    // including tracks in these channels.
     acc_chanx_width_ = vtr::PrefixSum1D<int>(grid_height, [&](size_t y) noexcept {
-        int chan_x_width = device_ctx.chan_width.x_list[y];
+        int chan_x_width = device_ctx.rr_chanx_width[y];
 
-        /* If the number of tracks in a channel is zero, two consecutive elements take the same
-         * value. This can lead to a division by zero in get_chanxy_cost_fac_(). To avoid this
-         * potential issue, we assume that the channel width is at least 1.
-         */
-        if (chan_x_width == 0)
+        // If the number of tracks in a channel is zero, two consecutive elements take the same
+        // value. This can lead to a division by zero in get_chanxy_cost_fac_(). To avoid this
+        // potential issue, we assume that the channel width is at least 1.
+        if (chan_x_width == 0) {
             return 1;
+        }
 
         return chan_x_width;
     });
+
     acc_chany_width_ = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
-        int chan_y_width = device_ctx.chan_width.y_list[x];
+        int chan_y_width = device_ctx.rr_chany_width[x];
 
         // to avoid a division by zero
-        if (chan_y_width == 0)
+        if (chan_y_width == 0) {
             return 1;
+        }
 
         return chan_y_width;
     });
@@ -1819,8 +1820,8 @@ std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> NetCostHandler::es
         }
     }
 
-    const vtr::NdMatrix<int, 3>& chanx_width = device_ctx.rr_chanx_width;
-    const vtr::NdMatrix<int, 3>& chany_width = device_ctx.rr_chany_width;
+    const vtr::NdMatrix<int, 3>& chanx_width = device_ctx.rr_chanx_segment_width;
+    const vtr::NdMatrix<int, 3>& chany_width = device_ctx.rr_chany_segment_width;
 
     VTR_ASSERT(chanx_util.size() == chany_util.size());
     VTR_ASSERT(chanx_util.ndims() == chany_util.ndims());
