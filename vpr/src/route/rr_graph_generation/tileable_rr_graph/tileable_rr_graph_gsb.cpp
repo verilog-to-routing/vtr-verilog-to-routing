@@ -1748,11 +1748,11 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
                 /* Get the pin index in the rr_graph */
                 t_physical_tile_loc from_tile_loc(from_grid_coordinate.x(), from_grid_coordinate.y(), layer);
-                int from_grid_width_ofs = grids.get_width_offset(from_tile_loc);
-                int from_grid_height_ofs = grids.get_height_offset(from_tile_loc);
+                //int from_grid_width_ofs = grids.get_width_offset(from_tile_loc);
+                //int from_grid_height_ofs = grids.get_height_offset(from_tile_loc);
                 t_physical_tile_loc to_tile_loc(to_grid_coordinate.x(), to_grid_coordinate.y(), layer);
-                int to_grid_width_ofs = grids.get_width_offset(to_tile_loc);
-                int to_grid_height_ofs = grids.get_height_offset(to_tile_loc);
+                //int to_grid_width_ofs = grids.get_width_offset(to_tile_loc);
+                //int to_grid_height_ofs = grids.get_height_offset(to_tile_loc);
 
                 /* Find the side of grid pins, the pin location should be unique!
                  * Pin location is required by searching a node in rr_graph
@@ -1783,12 +1783,12 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 }
 
                 RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
-                                                                         from_grid_coordinate.x() - from_grid_width_ofs,
-                                                                         from_grid_coordinate.y() - from_grid_height_ofs,
+                                                                         from_grid_coordinate.x() + grid_type->pin_width_offset[opin],
+                                                                         from_grid_coordinate.y() + grid_type->pin_height_offset[opin],
                                                                          e_rr_type::OPIN, opin, opin_grid_side[0]);
                 RRNodeId ipin_node_id = rr_graph.node_lookup().find_node(layer,
-                                                                         to_grid_coordinate.x() - to_grid_width_ofs,
-                                                                         to_grid_coordinate.y() - to_grid_height_ofs,
+                                                                         to_grid_coordinate.x() + to_grid_type->pin_width_offset[ipin],
+                                                                         to_grid_coordinate.y() + to_grid_type->pin_height_offset[ipin],
                                                                          e_rr_type::IPIN, ipin, ipin_grid_side[0]);
 
                 /* add edges to the opin_node */
