@@ -957,7 +957,7 @@ static void build_rr_graph(e_graph_type graph_type,
     std::vector<std::pair<RRNodeId, int>> non_3d_sg_nodes = alloc_and_load_non_3d_sg_pattern_rr_node_indices(device_ctx.rr_graph_builder,
                                                                                                              bottleneck_links,
                                                                                                              nodes_per_chan,
-                                                                                                            num_rr_nodes);
+                                                                                                             num_rr_nodes);
     device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
 
     // START IPIN MAP
@@ -2118,7 +2118,7 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
             const t_physical_tile_loc& chan_loc = scatter_wire.chan_loc.location;
             e_rr_type scatter_chan_type = scatter_wire.chan_loc.chan_type;
             const t_chan_details& chan_details = (scatter_chan_type == e_rr_type::CHANX) ? chan_details_x : chan_details_y;
-            RRNodeId scatter_node =  rr_graph_builder.node_lookup().find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, scatter_chan_type, scatter_wire.wire_switchpoint.wire);
+            RRNodeId scatter_node = rr_graph_builder.node_lookup().find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, scatter_chan_type, scatter_wire.wire_switchpoint.wire);
 
             int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
             non_3d_sg_rr_edges_to_create.emplace_back(node_id, scatter_node, switch_index, false);

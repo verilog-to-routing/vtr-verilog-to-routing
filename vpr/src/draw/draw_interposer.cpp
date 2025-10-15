@@ -24,8 +24,7 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         {draw_coords->tile_x.front() - draw_coords->get_tile_width(),
          draw_coords->tile_y.front() - draw_coords->get_tile_height()},
         {draw_coords->tile_x.back() + 2 * draw_coords->get_tile_width(),
-         draw_coords->tile_y.back() + 2 * draw_coords->get_tile_height()}
-    };
+         draw_coords->tile_y.back() + 2 * draw_coords->get_tile_height()}};
 
     const std::vector<std::vector<int>>& horizontal_cuts = grid.get_horizontal_interposer_cuts();
     const std::vector<std::vector<int>>& vertical_cuts = grid.get_vertical_interposer_cuts();

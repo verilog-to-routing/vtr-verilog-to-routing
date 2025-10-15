@@ -379,7 +379,6 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
                                           .sg_link_name = wire_inf.sg_link};
 
                 sg_it->sg_locations.push_back(std::move(sg_location));
-
             }
         }
     }
