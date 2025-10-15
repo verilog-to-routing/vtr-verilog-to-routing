@@ -231,14 +231,14 @@
     <direct name="direct_left_3" from_pin="clb.O[19:15]" to_pin="clb.I3[14:10]" x_offset="-1" y_offset="0" z_offset="0"/>
     <direct name="direct_left_4" from_pin="clb.O[39:35]" to_pin="clb.I4[14:10]" x_offset="-1" y_offset="0" z_offset="0"/>
     <!-- Direct connect from MULT to RAM --> 
-    <direct name="direct_mult2ram0" from_pin="mult_memory.dataout[9:0]" to_pin="mult_memory.data[9:0]" x_offset="0" y_offset="0" z_offset="1"/>
-    <direct name="direct_mult2ram0" from_pin="mult_memory.dataout[19:10]" to_pin="mult_memory.data[19:10]" x_offset="0" y_offset="0" z_offset="1"/>
-    <direct name="direct_mult2ram0" from_pin="mult_memory.dataout[29:20]" to_pin="mult_memory.data[29:20]" x_offset="0" y_offset="0" z_offset="1"/>
-    <direct name="direct_mult2ram0" from_pin="mult_memory.dataout[39:30]" to_pin="mult_memory.data[39:30]" x_offset="0" y_offset="0" z_offset="1"/>
-    <direct name="direct_mult2ram1" from_pin="mult_memory.dataout[9:0]" to_pin="mult_memory.data[9:0]" x_offset="0" y_offset="0" z_offset="2"/>
-    <direct name="direct_mult2ram1" from_pin="mult_memory.dataout[19:10]" to_pin="mult_memory.data[19:10]" x_offset="0" y_offset="0" z_offset="2"/>
-    <direct name="direct_mult2ram1" from_pin="mult_memory.dataout[29:20]" to_pin="mult_memory.data[29:20]" x_offset="0" y_offset="0" z_offset="2"/>
-    <direct name="direct_mult2ram1" from_pin="mult_memory.dataout[39:30]" to_pin="mult_memory.data[39:30]" x_offset="0" y_offset="0" z_offset="2"/>
+    <direct name="direct_mult2ram0_0" from_pin="mult_memory.dataout[9:0]" to_pin="mult_memory.data[9:0]" x_offset="0" y_offset="0" z_offset="1"/>
+    <direct name="direct_mult2ram0_1" from_pin="mult_memory.dataout[19:10]" to_pin="mult_memory.data[19:10]" x_offset="0" y_offset="0" z_offset="1"/>
+    <direct name="direct_mult2ram0_2" from_pin="mult_memory.dataout[29:20]" to_pin="mult_memory.data[29:20]" x_offset="0" y_offset="0" z_offset="1"/>
+    <direct name="direct_mult2ram0_3" from_pin="mult_memory.dataout[39:30]" to_pin="mult_memory.data[39:30]" x_offset="0" y_offset="0" z_offset="1"/>
+    <direct name="direct_mult2ram1_0" from_pin="mult_memory.dataout[9:0]" to_pin="mult_memory.data[9:0]" x_offset="0" y_offset="0" z_offset="2"/>
+    <direct name="direct_mult2ram1_1" from_pin="mult_memory.dataout[19:10]" to_pin="mult_memory.data[19:10]" x_offset="0" y_offset="0" z_offset="2"/>
+    <direct name="direct_mult2ram1_2" from_pin="mult_memory.dataout[29:20]" to_pin="mult_memory.data[29:20]" x_offset="0" y_offset="0" z_offset="2"/>
+    <direct name="direct_mult2ram1_3" from_pin="mult_memory.dataout[39:30]" to_pin="mult_memory.data[39:30]" x_offset="0" y_offset="0" z_offset="2"/>
   </directlist>
   <complexblocklist>
     <!-- Define I/O pads begin -->
