@@ -119,6 +119,7 @@ target_link_libraries(libvpr
                       libpugixml
                       librrgraph
                       ZLIB::ZLIB
+                      OpenXLSX::OpenXLSX
 )
 
 if(VPR_USE_SERVER)
