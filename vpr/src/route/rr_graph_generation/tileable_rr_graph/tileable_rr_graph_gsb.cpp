@@ -1757,8 +1757,10 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 /* Find the side of grid pins, the pin location should be unique!
                  * Pin location is required by searching a node in rr_graph
                  */
-                std::vector<e_side> opin_grid_side = find_grid_pin_sides(grids, layer, from_grid_coordinate.x(), from_grid_coordinate.y(), opin);
-                VTR_ASSERT(1 == opin_grid_side.size());
+                std::vector<e_side> opin_grid_side = find_grid_pin_sides(grids, layer, from_grid_coordinate.x() + grid_type->pin_width_offset[opin], from_grid_coordinate.y() + grid_type->pin_height_offset[opin], opin);
+                if (1 != opin_grid_side.size()) {
+                  VTR_ASSERT(1 == opin_grid_side.size());
+                }
 
                 /* directs[i].sub_tile_offset is added to from_capacity(z) to get the target_capacity */
                 int to_subtile_cap = z + directs[i].sub_tile_offset;
@@ -1775,8 +1777,10 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 // If this block has capacity > 1 then the pins of z position > 0 are offset
                 // by the number of pins per capacity instance
                 int ipin = get_physical_pin_from_capacity_location(to_grid_type, relative_ipin, to_subtile_cap);
-                std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x(), to_grid_coordinate.y(), ipin);
-                VTR_ASSERT(1 == ipin_grid_side.size());
+                std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x() + to_grid_type->pin_width_offset[ipin], to_grid_coordinate.y() + to_grid_type->pin_height_offset[ipin], ipin);
+                if (1 != ipin_grid_side.size()) {
+                  VTR_ASSERT(1 == ipin_grid_side.size());
+                }
 
                 RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
                                                                          from_grid_coordinate.x() - from_grid_width_ofs,
