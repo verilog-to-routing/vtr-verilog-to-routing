@@ -2,16 +2,23 @@
 
 #include <utility>
 
-DeviceGrid::DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid)
-    : name_(std::move(grid_name))
-    , grid_(std::move(grid)) {
+DeviceGrid::DeviceGrid(std::string_view grid_name,
+                       vtr::NdMatrix<t_grid_tile, 3> grid,
+                       std::vector<std::vector<int>>&& horizontal_interposer_cuts,
+                       std::vector<std::vector<int>>&& vertical_interposer_cuts)
+    : name_(grid_name)
+    , grid_(std::move(grid))
+    , horizontal_interposer_cuts_(std::move(horizontal_interposer_cuts))
+    , vertical_interposer_cuts_(std::move(vertical_interposer_cuts)) {
     count_instances();
 }
 
-DeviceGrid::DeviceGrid(std::string grid_name,
+DeviceGrid::DeviceGrid(std::string_view grid_name,
                        vtr::NdMatrix<t_grid_tile, 3> grid,
-                       std::vector<t_logical_block_type_ptr> limiting_res)
-    : DeviceGrid(std::move(grid_name), std::move(grid)) {
+                       std::vector<t_logical_block_type_ptr> limiting_res,
+                       std::vector<std::vector<int>>&& horizontal_interposer_cuts,
+                       std::vector<std::vector<int>>&& vertical_interposer_cuts)
+    : DeviceGrid(grid_name, std::move(grid), std::move(horizontal_interposer_cuts), std::move(vertical_interposer_cuts)) {
     limiting_resources_ = std::move(limiting_res);
 }
 
