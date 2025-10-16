@@ -114,10 +114,16 @@
       <!--Fill with 'clb'-->
       <fill type="clb" priority="10"/>
 
-      <interposer_cut y="5">
-        <interdie_wire sg_name="interposer_sg" sg_link="L_UP" offset_start="0" offset_end="0" offset_increment="1" num="4"/>
+      <interposer_cut y="4">
+        <interdie_wire sg_name="interposer_sg" sg_link="L_UP" offset_start="-1" offset_end="-1" offset_increment="1" num="4"/>
         <interdie_wire sg_name="interposer_sg" sg_link="L_DOWN" offset_start="1" offset_end="1" offset_increment="-1" num="4"/>
       </interposer_cut>
+
+      <interposer_cut x="4">
+        <interdie_wire sg_name="interposer_sg" sg_link="L_RIGHT" offset_start="-1" offset_end="-1" offset_increment="1" num="4"/>
+        <interdie_wire sg_name="interposer_sg" sg_link="L_LEFT" offset_start="1" offset_end="1" offset_increment="-1" num="4"/>
+      </interposer_cut>
+
     </fixed_layout>
   </layout>
   <!-- Chip layout ends -->
@@ -330,20 +336,22 @@
     <clock buffer_size="auto" C_wire="2.5e-10"/>
   </clocks>
 
-    <scatter_gather_list>
+  <scatter_gather_list>
     <sg_pattern name="interposer_sg" type="unidir">
-        <gather>
-            <wireconn num_conns="30" from_type="L4" from_switchpoint="1" side="rltb"/>
-        </gather>
+      <gather>
+        <wireconn num_conns="30" from_type="L4" from_switchpoint="0,1,2,3" side="rlbt"/>
+      </gather>
 
-        <scatter>
-            <wireconn num_conns="30" to_type="L4" to_switchpoint="0" side="rtl"/>
-        </scatter>
-        
-        <sg_link_list>
-          <sg_link name="L_UP" y_offset="2" mux="sw" seg_type="int_wire"/>
-          <sg_link name="L_DOWN" y_offset="-2" mux="sw" seg_type="int_wire"/>
-        </sg_link_list>
+      <scatter>
+        <wireconn num_conns="30" to_type="L4" to_switchpoint="0" side="rlbt"/>
+      </scatter>
+
+      <sg_link_list>
+        <sg_link name="L_UP" y_offset="2" mux="sw" seg_type="int_wire"/>
+        <sg_link name="L_DOWN" y_offset="-2" mux="sw" seg_type="int_wire"/>
+        <sg_link name="L_RIGHT" x_offset="2" mux="sw" seg_type="int_wire"/>
+        <sg_link name="L_LEFT" x_offset="-2" mux="sw" seg_type="int_wire"/>
+      </sg_link_list>
     </sg_pattern>
   </scatter_gather_list>
 </architecture>
