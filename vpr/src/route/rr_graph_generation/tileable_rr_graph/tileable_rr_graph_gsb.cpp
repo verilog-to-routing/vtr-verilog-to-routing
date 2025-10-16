@@ -1775,7 +1775,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 int ipin = get_physical_pin_from_capacity_location(to_grid_type, relative_ipin, to_subtile_cap);
                 std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x() + to_grid_type->pin_width_offset[ipin], to_grid_coordinate.y() + to_grid_type->pin_height_offset[ipin], ipin);
                 if (1 != ipin_grid_side.size()) {
-                  VTR_FATAL_ERROR(VPR_ERROR_ARCH, "[Arch LINE %d] To pin (index=%d) of direct connection '%s' does not exist on any side of the programmable block '%s'.\n", directs[i].line, relative_ipin, directs[i].to_pin.c_str());
+                  VPR_FATAL_ERROR(VPR_ERROR_ARCH, "[Arch LINE %d] To pin (index=%d) of direct connection '%s' does not exist on any side of the programmable block '%s'.\n", directs[i].line, relative_ipin, directs[i].to_pin.c_str());
                 }
 
                 RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
