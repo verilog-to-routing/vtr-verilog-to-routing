@@ -18,12 +18,10 @@
 #include "draw.h"
 
 #include "draw_interposer.h"
-#include "draw_types.h"
 #include "timing_info.h"
 #include "physical_types.h"
 
 #include "move_utils.h"
-#include "vpr_types.h"
 
 #ifndef NO_GRAPHICS
 
@@ -178,71 +176,65 @@ static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     g->set_font_size(14);
-    if (draw_state->pic_on_screen != e_pic_type::ANALYTICAL_PLACEMENT) {
-        draw_block_pin_util();
-        drawplace(g);
-        draw_internal_draw_subblk(g);
 
-        draw_interposer_cuts(g);
+    draw_interposer_cuts(g);
 
-        draw_block_pin_util();
-        drawplace(g);
-        draw_internal_draw_subblk(g);
+    draw_block_pin_util();
+    drawplace(g);
+    draw_internal_draw_subblk(g);
 
-        if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
+    if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
 
-            draw_rr(g);
+        draw_rr(g);
 
-            if (draw_state->show_nets && draw_state->draw_nets == DRAW_ROUTED_NETS) {
-                draw_route(ALL_NETS, g);
+        if (draw_state->show_nets && draw_state->draw_nets == DRAW_ROUTED_NETS) {
+            draw_route(ALL_NETS, g);
 
-                if (draw_state->highlight_fan_in_fan_out) {
-                    draw_route(HIGHLIGHTED, g);
-                }
+            if (draw_state->highlight_fan_in_fan_out) {
+                draw_route(HIGHLIGHTED, g);
             }
-
-            draw_congestion(g);
-
-            draw_routing_costs(g);
-
-            draw_router_expansion_costs(g);
-
-            draw_routing_util(g);
-
-            draw_routing_bb(g);
         }
 
-        draw_placement_macros(g);
+        draw_congestion(g);
+
+        draw_routing_costs(g);
+
+        draw_router_expansion_costs(g);
+
+        draw_routing_util(g);
+
+        draw_routing_bb(g);
+    }
+
+    draw_placement_macros(g);
 
 #ifndef NO_SERVER
-        if (g_vpr_ctx.server().gate_io.is_running()) {
-            const ServerContext& server_ctx = g_vpr_ctx.server(); // shortcut
-            draw_crit_path_elements(server_ctx.crit_paths, server_ctx.crit_path_element_indexes, server_ctx.draw_crit_path_contour, g);
-        } else {
-            draw_crit_path(g);
-        }
-#else
+    if (g_vpr_ctx.server().gate_io.is_running()) {
+        const ServerContext& server_ctx = g_vpr_ctx.server(); // shortcut
+        draw_crit_path_elements(server_ctx.crit_paths, server_ctx.crit_path_element_indexes, server_ctx.draw_crit_path_contour, g);
+    } else {
         draw_crit_path(g);
+    }
+#else
+    draw_crit_path(g);
 #endif /* NO_SERVER */
 
-        draw_logical_connections(g);
+    draw_logical_connections(g);
 
-        draw_selected_pb_flylines(g);
+    draw_selected_pb_flylines(g);
 
-        draw_noc(g);
+    draw_noc(g);
 
-        if (draw_state->draw_partitions) {
-            highlight_all_regions(g);
-            draw_constrained_atoms(g);
-        }
-
-        if (draw_state->color_map) {
-            draw_color_map_legend(*draw_state->color_map, g);
-            draw_state->color_map.reset(); //Free color map in preparation for next redraw
-        }
-    } else {
-        draw_analytical_place(g);
+    if (draw_state->draw_partitions) {
+        highlight_all_regions(g);
+        draw_constrained_atoms(g);
     }
+
+    if (draw_state->color_map) {
+        draw_color_map_legend(*draw_state->color_map, g);
+        draw_state->color_map.reset(); //Free color map in preparation for next redraw
+    }
+
     if (draw_state->auto_proceed) {
         //Automatically exit the event loop, so user's don't need to manually click proceed
 
@@ -298,7 +290,7 @@ void update_screen(ScreenUpdatePriority priority,
      * value controls whether or not the Proceed button must be clicked to   *
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
     t_draw_state* draw_state = get_draw_state_vars();
-    
+
     strcpy(draw_state->default_message, msg);
 
     if (!draw_state->show_graphics)
@@ -314,23 +306,9 @@ void update_screen(ScreenUpdatePriority priority,
 
         state_change = true;
 
-        if (draw_state->show_graphics) {
-            if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
-                set_initial_world_ap();
-            } else {
-                set_initial_world();
-            }
-        }
-
         if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
             // Only add the canvas the first time we open graphics
             application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-        } else {
-            // TODO: will this ever be null?
-            auto canvas = application.get_canvas(application.get_main_canvas_id());
-            if (canvas != nullptr) {
-                canvas->get_camera().set_world(initial_world);
-            }
         }
 
         draw_state->setup_timing_info = setup_timing_info;
@@ -510,18 +488,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     //Margin beyond edge of the drawn device to extend the visible world
     //Setting this to > 0.0 means 'Zoom Fit' leave some fraction of white
     //space around the device edges
-#else
-    (void)clb_width;
-    (void)blk_loc_registry;
-#endif /* NO_GRAPHICS */
-}
-
-#ifndef NO_GRAPHICS
-
-void set_initial_world() {
     constexpr float VISIBLE_MARGIN = 0.01;
-    t_draw_coords* draw_coords = get_draw_coords_vars();
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     float draw_width = draw_coords->tile_x[grid.width() - 1] + draw_coords->get_tile_width();
     float draw_height = draw_coords->tile_y[grid.height() - 1] + draw_coords->get_tile_width();
@@ -529,24 +496,14 @@ void set_initial_world() {
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
         {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN)
-                                                 * draw_height});    
+                                                 * draw_height});
+#else
+    (void)clb_width;
+    (void)blk_loc_registry;
+#endif /* NO_GRAPHICS */
 }
 
-void set_initial_world_ap() {
-    constexpr float VISIBLE_MARGIN = 0.01f;
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-
-    const size_t grid_w = device_ctx.grid.width();
-    const size_t grid_h = device_ctx.grid.height();
-
-
-    float draw_width = static_cast<float>(grid_w);
-    float draw_height = static_cast<float>(grid_h);
-
-    initial_world = ezgl::rectangle(
-        {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
-        {(1.f + VISIBLE_MARGIN) * draw_width, (1.f + VISIBLE_MARGIN) * draw_height});
-}
+#ifndef NO_GRAPHICS
 
 int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {
     /* Returns the track number of this routing resource node.   */
@@ -671,11 +628,6 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
              * removed.  Note that even though global nets are not drawn, their  *
              * fanins and fanouts are highlighted when you click on a block      *
              * attached to them.                                                 */
-
-            if (get_draw_state_vars()->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
-                // No selection in analytical placement mode yet
-                return;
-            }
 
             /* Control + mouse click to select multiple nets. */
             if (!(event->state & GDK_CONTROL_MASK))

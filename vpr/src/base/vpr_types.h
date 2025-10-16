@@ -387,7 +387,6 @@ enum class e_sched_type {
 enum class e_pic_type {
     NO_PICTURE,
     PLACEMENT,
-    ANALYTICAL_PLACEMENT,
     ROUTING
 };
 
