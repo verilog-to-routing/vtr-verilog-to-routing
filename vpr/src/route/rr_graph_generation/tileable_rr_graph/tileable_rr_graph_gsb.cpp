@@ -1748,18 +1748,14 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
                 /* Get the pin index in the rr_graph */
                 t_physical_tile_loc from_tile_loc(from_grid_coordinate.x(), from_grid_coordinate.y(), layer);
-                //int from_grid_width_ofs = grids.get_width_offset(from_tile_loc);
-                //int from_grid_height_ofs = grids.get_height_offset(from_tile_loc);
                 t_physical_tile_loc to_tile_loc(to_grid_coordinate.x(), to_grid_coordinate.y(), layer);
-                //int to_grid_width_ofs = grids.get_width_offset(to_tile_loc);
-                //int to_grid_height_ofs = grids.get_height_offset(to_tile_loc);
 
                 /* Find the side of grid pins, the pin location should be unique!
                  * Pin location is required by searching a node in rr_graph
                  */
                 std::vector<e_side> opin_grid_side = find_grid_pin_sides(grids, layer, from_grid_coordinate.x() + grid_type->pin_width_offset[opin], from_grid_coordinate.y() + grid_type->pin_height_offset[opin], opin);
                 if (1 != opin_grid_side.size()) {
-                  VTR_ASSERT(1 == opin_grid_side.size());
+                  VPR_FATAL_ERROR(VPR_ERROR_ARCH, "[Arch LINE %d] From pin (index=%d) of direct connection '%s' does not exist on any side of the programmable block '%s'.\n", directs[i].line, opin, directs[i].from_pin.c_str());
                 }
 
                 /* directs[i].sub_tile_offset is added to from_capacity(z) to get the target_capacity */
@@ -1779,7 +1775,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 int ipin = get_physical_pin_from_capacity_location(to_grid_type, relative_ipin, to_subtile_cap);
                 std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x() + to_grid_type->pin_width_offset[ipin], to_grid_coordinate.y() + to_grid_type->pin_height_offset[ipin], ipin);
                 if (1 != ipin_grid_side.size()) {
-                  VTR_ASSERT(1 == ipin_grid_side.size());
+                  VTR_FATAL_ERROR(VPR_ERROR_ARCH, "[Arch LINE %d] To pin (index=%d) of direct connection '%s' does not exist on any side of the programmable block '%s'.\n", directs[i].line, relative_ipin, directs[i].to_pin.c_str());
                 }
 
                 RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
