@@ -523,8 +523,8 @@ void set_initial_world() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
-    float draw_width = draw_coords->tile_x[grid.width() - 1] + draw_coords->get_tile_width();
-    float draw_height = draw_coords->tile_y[grid.height() - 1] + draw_coords->get_tile_width();
+    float draw_width = draw_coords->tile_x[device_ctx.grid.width() - 1] + draw_coords->get_tile_width();
+    float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width();
 
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
