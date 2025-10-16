@@ -58,19 +58,23 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId r
             if (rr_graph.node_direction(to_node) == Direction::INC) { // INC wire starts at bottom edge
                 if (rr_graph.node_direction(from_node) == Direction::DEC) {
                     y2 = to_chan.bottom();
-                    y1 = draw_coords->tile_y[to_ylow] + draw_coords->get_tile_width() / 10;
+                    y1 = draw_coords->tile_y[to_ylow] + 0.1 * draw_coords->get_tile_height() ;
                 } else {
                     VTR_ASSERT_SAFE(rr_graph.node_direction(from_node) == Direction::INC);
                     y2 = to_chan.bottom();
                     // since no U-turns from_tracks must be INC as well
-                    y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->get_tile_width();
+                    y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->get_tile_height();
                 }
-
             } else { // DEC wire starts at top edge
                 VTR_ASSERT_SAFE(rr_graph.node_direction(to_node) == Direction::DEC);
-
-                y2 = to_chan.top();
-                y1 = draw_coords->tile_y[to_yhigh + 1];
+                if (rr_graph.node_direction(from_node) == Direction::INC) {
+                    y2 = to_chan.top();
+                    y1 = draw_coords->tile_y[to_yhigh] + 0.9 * draw_coords->get_tile_height();
+                } else {
+                    VTR_ASSERT_SAFE(rr_graph.node_direction(from_node) == Direction::DEC);
+                    y2 = to_chan.top();
+                    y1 = draw_coords->tile_y[to_yhigh + 1];
+                }
             }
         } else {
             if (to_ylow < from_ylow) { // Draw from bottom edge of one to other.
@@ -117,31 +121,40 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId r
     int from_xhigh = rr_graph.node_xhigh(from_node);
     int to_xlow = rr_graph.node_xlow(to_node);
     int to_xhigh = rr_graph.node_xhigh(to_node);
-    if (to_xhigh < from_xlow) { /* From right to left */
+    if (to_xhigh < from_xlow) { // From right to left
         // Could never happen for INC wires, unless U-turn. For DEC wires this handles well
         x1 = from_chan.left();
         x2 = to_chan.right();
-    } else if (to_xlow > from_xhigh) { /* From left to right */
+    } else if (to_xlow > from_xhigh) { // From left to right
         // Could never happen for DEC wires, unless U-turn. For INC wires this handles well
         x1 = from_chan.right();
         x2 = to_chan.left();
     }
-    /* Segments overlap in the channel.  Figure out best way to draw.  Have to  *
-     * make sure the drawing is symmetric in the from rr and to rr so the edges *
-     * will be drawn on top of each other for bidirectional connections.        */
+    // Segments overlap in the channel. Figure out the best way to draw. Have to
+    // make sure the drawing is symmetric in the from rr and to rr so the edges
+    // will be drawn on top of each other for bidirectional connections.
     else {
         if (rr_graph.node_direction(to_node) != Direction::BIDIR) {
             // must connect to to_node's wire beginning at x2
             if (rr_graph.node_direction(to_node) == Direction::INC) { // INC wire starts at leftmost edge
-                VTR_ASSERT(from_xlow < to_xlow);
-                x2 = to_chan.left();
-                // since no U-turns from_tracks must be INC as well
-                x1 = draw_coords->tile_x[to_xlow - 1]
-                     + draw_coords->get_tile_width();
+                if (rr_graph.node_direction(from_node) == Direction::DEC) {
+                    x2 = to_chan.left();
+                    x1 = draw_coords->tile_x[to_xlow] + 0.1 * draw_coords->get_tile_width();
+                } else {
+                    VTR_ASSERT_SAFE(rr_graph.node_direction(from_node) == Direction::INC);
+                    x2 = to_chan.left();
+                    x1 = draw_coords->tile_x[to_xlow - 1] + 0.9 * draw_coords->get_tile_width();
+                }
             } else { // DEC wire starts at rightmost edge
-                VTR_ASSERT(from_xhigh > to_xhigh);
-                x2 = to_chan.right();
-                x1 = draw_coords->tile_x[to_xhigh + 1];
+                VTR_ASSERT_SAFE(rr_graph.node_direction(to_node) == Direction::DEC);
+                if (rr_graph.node_direction(from_node) == Direction::INC) {
+                    x2 = to_chan.right();
+                    x1 = draw_coords->tile_x[to_xhigh] + 0.9 * draw_coords->get_tile_width();
+                } else {
+                    VTR_ASSERT_SAFE(rr_graph.node_direction(from_node) == Direction::DEC);
+                    x2 = to_chan.right();
+                    x1 = draw_coords->tile_x[to_xhigh + 1];
+                }
             }
         } else {
             if (to_xlow < from_xlow) { // Draw from left edge of one to other
