@@ -9,18 +9,20 @@
  *  - SIGHUP  : log, attempt to checkpoint, continue running
  *  - SIGTERM : log, attempt to checkpoint, then exit with INTERRUPTED_EXIT_CODE
  */
-#include "vtr_log.h"
 #include "vtr_time.h"
 
 #include "vpr_signal_handler.h"
-#include "vpr_exit_codes.h"
-#include "vpr_error.h"
 #include "globals.h"
 
 #include "read_place.h"
 #include "read_route.h"
-#include "route_export.h"
-#include <atomic>
+
+// Currenly safe_write uses the POSIX write system call. This could be extended to other platforms in the future.
+#if defined(__unix__)
+#include "unistd.h"
+#endif
+
+#include "string.h"
 
 #ifdef VPR_USE_SIGACTION
 #include <csignal>
