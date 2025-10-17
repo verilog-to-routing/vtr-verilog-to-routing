@@ -192,7 +192,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
         for (const t_sg_location& sg_loc_info : sg_pattern.sg_locations) {
 
             for (const t_physical_tile_loc gather_loc : grid.all_locations()) {
-                if (sb_not_here(grid, inter_cluster_rr, gather_loc, sg_loc_info.type)) {
+                if (sb_not_here(grid, inter_cluster_rr, gather_loc, sg_loc_info.type, sg_loc_info.region)) {
                     continue;
                 }
 
@@ -329,4 +329,57 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
     }
 
     return bottleneck_links;
+}
+
+void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& interposer_inf,
+                                            std::vector<t_scatter_gather_pattern>& sg_patterns) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
+
+    const size_t num_layers = grid.get_num_layers();
+    const size_t grid_width = grid.width();
+    const size_t grid_height = grid.height();
+
+    VTR_ASSERT(interposer_inf.size() == num_layers);
+
+    for (size_t layer = 0; layer < num_layers; layer++) {
+
+        for (const t_interposer_cut_inf& cut_inf : interposer_inf[layer].interposer_cuts) {
+            const int cut_loc = cut_inf.loc;
+            e_interposer_cut_type cut_type = cut_inf.dim;
+
+            for (const t_interdie_wire_inf& wire_inf : cut_inf.interdie_wires) {
+                VTR_ASSERT(wire_inf.offset_definition.repeat_expr.empty());
+
+                const int start = std::stoi(wire_inf.offset_definition.start_expr) + cut_loc;
+                const int end = std::stoi(wire_inf.offset_definition.end_expr) + cut_loc;
+                const int incr = std::stoi(wire_inf.offset_definition.incr_expr);
+
+                auto sg_it = std::ranges::find_if(sg_patterns, [&wire_inf](const t_scatter_gather_pattern& sg) noexcept {
+                    return wire_inf.sg_name == sg.name;
+                });
+
+                VTR_ASSERT(sg_it != sg_patterns.end());
+
+                t_specified_loc region;
+
+                region.reg_x.start = (cut_type == e_interposer_cut_type::VERT) ? start : 0;
+                region.reg_x.end = (cut_type == e_interposer_cut_type::VERT) ? end : grid_width - 1;
+                region.reg_x.incr = (cut_type == e_interposer_cut_type::VERT) ? incr : 1;
+                region.reg_x.repeat = std::numeric_limits<int>::max();
+
+                region.reg_y.start = (cut_type == e_interposer_cut_type::HORZ) ? start : 0;
+                region.reg_y.end = (cut_type == e_interposer_cut_type::HORZ) ? end : grid_height - 1;
+                region.reg_y.incr = (cut_type == e_interposer_cut_type::HORZ) ? incr : 1;
+                region.reg_y.repeat = std::numeric_limits<int>::max();
+
+                t_sg_location sg_location{.type = e_sb_location::E_XY_SPECIFIED,
+                                          .region = region,
+                                          .num = wire_inf.num,
+                                          .sg_link_name = wire_inf.sg_link};
+
+                sg_it->sg_locations.push_back(std::move(sg_location));
+            }
+        }
+    }
 }
