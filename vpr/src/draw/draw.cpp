@@ -301,10 +301,11 @@ void update_screen(ScreenUpdatePriority priority,
     
     strcpy(draw_state->default_message, msg);
 
-    if (!draw_state->show_graphics)
+    if (!draw_state->show_graphics) {
         ezgl::set_disable_event_loop(true);
-    else
+    } else {
         ezgl::set_disable_event_loop(false);
+    }
 
     bool state_change = false;
 
@@ -508,18 +509,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 
     // Load coordinates of sub-blocks inside the clbs
     draw_internal_init_blk();
-    // Margin beyond edge of the drawn device to extend the visible world
-    // Setting this to > 0.0 means 'Zoom Fit' leave some fraction of white
-    // space around the device edges
-    constexpr float VISIBLE_MARGIN = 0.01;
-
-    float draw_width = draw_coords->tile_x[grid.width() - 1] + draw_coords->get_tile_width();
-    float draw_height = draw_coords->tile_y[grid.height() - 1] + draw_coords->get_tile_height();
-
-    initial_world = ezgl::rectangle(
-        {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
-        {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN)
-                                                 * draw_height});
+    
 #else
     (void)clb_width;
     (void)blk_loc_registry;
@@ -529,12 +519,16 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 #ifndef NO_GRAPHICS
 
 void set_initial_world() {
-    constexpr float VISIBLE_MARGIN = 0.01;
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
-    float draw_width = draw_coords->tile_x[device_ctx.grid.width() - 1] + draw_coords->get_tile_width();
-    float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width();
+    // Margin beyond edge of the drawn device to extend the visible world
+    // Setting this to > 0.0 means 'Zoom Fit' leave some fraction of white
+    // space around the device edges
+    constexpr float VISIBLE_MARGIN = 0.01;
+
+    float draw_width = draw_coords->tile_x[grid.width() - 1] + draw_coords->get_tile_width();
+    float draw_height = draw_coords->tile_y[grid.height() - 1] + draw_coords->get_tile_width();
 
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
