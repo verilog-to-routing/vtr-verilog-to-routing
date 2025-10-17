@@ -70,9 +70,7 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color(43, 61, 38)     //olive green
 };
 
-/* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
- * while empty ones are lighter colours and have a dashed border.  */
-void drawplace(ezgl::renderer* g) {
+void draw_place(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -84,96 +82,89 @@ void drawplace(ezgl::renderer* g) {
 
     g->set_line_width(0);
     for (int layer_num = 0; layer_num < total_num_layers; layer_num++) {
-        if (draw_state->draw_layer_display[layer_num].visible) {
-            for (int i = 0; i < (int)grid.width(); i++) {
-                for (int j = 0; j < (int)grid.height(); j++) {
-                    if (!grid.is_root_location({i, j, layer_num})) {
-                        continue;
+        if (!draw_state->draw_layer_display[layer_num].visible) {
+            continue;
+        }
+        // The transparency level for the current layer being drawn (0-255)
+        const int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
+
+        for (int i = 0; i < (int)grid.width(); i++) {
+            for (int j = 0; j < (int)grid.height(); j++) {
+                if (!grid.is_root_location({i, j, layer_num})) {
+                    continue;
+                }
+
+                // Only the first block of a group should control drawing
+                const t_physical_tile_type_ptr type = grid.get_physical_type({i, j, layer_num});
+
+                int num_sub_tiles = type->capacity;
+                // Don't draw if tile capacity is zero. eg-> corners.
+                if (num_sub_tiles == 0) {
+                    continue;
+                }
+
+                for (int k = 0; k < num_sub_tiles; ++k) {
+                    // Look at the tile at start of large block
+                    ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
+                    // Fill background for the clb. Do not fill if "show_blk_internal" is toggled.
+
+                    // Determine the block color and logical type
+                    ezgl::color block_color;
+                    t_logical_block_type_ptr logical_block_type = nullptr;
+                    // flag whether the current location is highlighted with a special color or not
+                    bool current_loc_is_highlighted = false;
+
+                    if (placer_breakpoint_reached()) {
+                        t_pl_loc curr_loc;
+                        curr_loc.x = i;
+                        curr_loc.y = j;
+                        curr_loc.layer = layer_num;
+                        current_loc_is_highlighted = highlight_loc_with_specific_color(curr_loc, block_color);
+                    }
+                    // No color specified at this location; use the block color.
+                    if (!current_loc_is_highlighted) {
+                        if (bnum) {
+                            block_color = draw_state->block_color(bnum);
+                        } else {
+                            block_color = get_block_type_color(type);
+                            block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
+                        }
                     }
 
-                    // Only the first block of a group should control drawing
-                    const t_physical_tile_type_ptr type = grid.get_physical_type({i, j, layer_num});
+                    logical_block_type = pick_logical_type(type);
+                    g->set_color(block_color, transparency_factor);
 
-                    //The transparency level for the current layer being drawn (0-255)
-                    // 0 - opaque, 255 - transparent
-                    int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
+                    // Get coords of current sub_tile
+                    ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(layer_num,
+                                                                                      i,
+                                                                                      j,
+                                                                                      k,
+                                                                                      logical_block_type);
+                    ezgl::point2d center = abs_clb_bbox.center();
 
-                    int num_sub_tiles = type->capacity;
-                    /* Don't draw if tile capacity is zero. eg-> corners. */
-                    if (num_sub_tiles == 0) {
-                        continue;
+                    g->fill_rectangle(abs_clb_bbox);
+
+                    g->set_color(ezgl::BLACK, transparency_factor);
+
+                    g->set_line_dash((bnum == ClusterBlockId::INVALID()) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
+                    if (draw_state->draw_block_outlines) {
+                        g->draw_rectangle(abs_clb_bbox);
                     }
 
-                    for (int k = 0; k < num_sub_tiles; ++k) {
-                        /* Look at the tile at start of large block */
-                        ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
-                        /* Fill background for the clb. Do not fill if "show_blk_internal"
-                         * is toggled.
-                         */
+                    if (draw_state->draw_block_text) {
+                        // Draw text if the space has parts of the netlist
+                        if (bnum) {
+                            std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
 
-                        //Determine the block color and logical type
-                        ezgl::color block_color;
-                        t_logical_block_type_ptr logical_block_type = nullptr;
-
-                        //flag whether the current location is highlighted with a special color or not
-                        bool current_loc_is_highlighted = false;
-
-                        if (placer_breakpoint_reached()) {
-                            t_pl_loc curr_loc;
-                            curr_loc.x = i;
-                            curr_loc.y = j;
-                            curr_loc.layer = layer_num;
-                            current_loc_is_highlighted = highlight_loc_with_specific_color(curr_loc,
-                                                                                           block_color);
-                        }
-                        // No color specified at this location; use the block color.
-                        if (!current_loc_is_highlighted) {
-                            if (bnum) {
-                                block_color = draw_state->block_color(bnum);
-                            } else {
-                                block_color = get_block_type_color(type);
-                                block_color = lighten_color(block_color,
-                                                            EMPTY_BLOCK_LIGHTEN_FACTOR);
-                            }
+                            g->draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
                         }
 
-                        logical_block_type = pick_logical_type(type);
-                        g->set_color(block_color, transparency_factor);
+                        // Draw text for block type so that user knows what block
+                        std::string block_type_loc = type->name;
+                        block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
 
-                        /* Get coords of current sub_tile */
-                        ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(layer_num,
-                                                                                          i,
-                                                                                          j,
-                                                                                          k,
-                                                                                          logical_block_type);
-                        ezgl::point2d center = abs_clb_bbox.center();
-
-                        g->fill_rectangle(abs_clb_bbox);
-
-                        g->set_color(ezgl::BLACK, transparency_factor);
-
-                        g->set_line_dash((bnum == ClusterBlockId::INVALID()) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
-                        if (draw_state->draw_block_outlines) {
-                            g->draw_rectangle(abs_clb_bbox);
-                        }
-
-                        if (draw_state->draw_block_text) {
-                            /* Draw text if the space has parts of the netlist */
-                            if (bnum) {
-                                std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
-
-                                g->draw_text(center, name.c_str(), abs_clb_bbox.width(),
-                                             abs_clb_bbox.height());
-                            }
-                            /* Draw text for block type so that user knows what block */
-                            if (grid.is_root_location({i, j, layer_num})) {
-                                std::string block_type_loc = type->name;
-                                block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
-
-                                g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
-                                             block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
-                            }
-                        }
+                        g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
+                                     block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
                     }
                 }
             }
