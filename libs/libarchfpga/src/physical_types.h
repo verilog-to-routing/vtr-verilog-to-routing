@@ -2070,7 +2070,7 @@ struct t_arch {
     /// Set of potential device layouts
     std::vector<t_grid_def> grid_layouts;
 
-    /// Returns the selected layout
+    /// @brief Returns the grid layout specified by the --device command-line option.
     const t_grid_def& grid_layout() const;
 
     // the layout that is chosen to be used with command line options
