@@ -12,13 +12,7 @@ archs_dir=arch/custom_grid
 circuit_list_add=raygentop.v
 
 # Add architectures to list to sweep
-arch_list_add=column_io.xml
-arch_list_add=multiwidth_blocks.xml
-arch_list_add=non_column.xml
-arch_list_add=non_column_tall_aspect_ratio.xml
-arch_list_add=non_column_wide_aspect_ratio.xml
-arch_list_add=custom_sbloc.xml
-arch_list_add=multiple_io_types.xml
+arch_list_add=fixed_grid.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
@@ -30,4 +24,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params = -start odin
+script_params =--device "25x25"
