@@ -80,15 +80,11 @@ techmap -map +/parmys/aldffe2dff.v
 
 opt -full
 
-write_verilog -noexpr pre_parmys.v
-
 # Separate options for Parmys execution (Verilog or SystemVerilog)
 if {$env(PARSER) == "default" || $env(PARSER) == "slang"} {
     # For Verilog, use -nopass for a simpler, faster flow
     parmys -a QQQ -nopass -c CCC YYY
 } 
-
-write_verilog -noexpr post_parmys.v
 
 opt -full
 
@@ -102,7 +98,5 @@ opt -fast -noff
 stat
 
 hierarchy -check -auto-top -purge_lib
-
-write_verilog -noexpr post_everything.v
 
 write_blif -true + vcc -false + gnd -undef + unconn -blackbox ZZZ
