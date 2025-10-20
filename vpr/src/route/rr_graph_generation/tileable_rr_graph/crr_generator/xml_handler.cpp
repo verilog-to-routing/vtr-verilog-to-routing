@@ -75,7 +75,7 @@ std::unique_ptr<RRGraph> XMLHandler::read_rr_graph(
         lineno++;
     }
 
-    VTR_LOG_ERROR("Failed to parse XML file %s: %s (at byte offset %zu)", filename.c_str(),
+    VTR_LOG_ERROR("Failed to parse XML file %s: %s (at byte offset %zu)\n", filename.c_str(),
                    result.description(), result.offset);
   }
 
@@ -132,7 +132,7 @@ void XMLHandler::write_rr_graph(const std::string& filename,
   out.rdbuf()->pubsetbuf(out_buf.data(), static_cast<std::streamsize>(out_buf.size()));
   out.open(temp_filename, std::ios::out | std::ios::binary);
   if (!out) {
-    VTR_LOG_ERROR("Failed to open output file: %s", temp_filename.c_str());
+    VTR_LOG_ERROR("Failed to open output file: %s\n", temp_filename.c_str());
   }
 
   out << "<?xml version=\"1.0\"?>\n";
@@ -153,7 +153,7 @@ void XMLHandler::write_rr_graph(const std::string& filename,
 
   if (std::rename(temp_filename.c_str(), filename.c_str()) != 0) {
     std::remove(temp_filename.c_str());
-    VTR_LOG_ERROR("Failed to atomically replace XML file: %s", filename.c_str());
+    VTR_LOG_ERROR("Failed to atomically replace XML file: %s\n", filename.c_str());
   }
 
   VTR_LOG("Successfully wrote RR graph to %s\n", filename.c_str());
@@ -585,13 +585,13 @@ void XMLHandler::update_vpr_xml_with_switches(
   pugi::xml_parse_result result = doc.load_file(input_file.c_str());
 
   if (!result) {
-    VTR_LOG_ERROR("Failed to parse VPR XML file %s: %s", input_file.c_str(), result.description());
+    VTR_LOG_ERROR("Failed to parse VPR XML file %s: %s\n", input_file.c_str(), result.description());
   }
 
   // Find switchlist element
   pugi::xml_node switchlist = doc.select_node("//switchlist").node();
   if (!switchlist) {
-    VTR_LOG_ERROR("<switchlist> element not found in VPR XML file");
+    VTR_LOG_ERROR("<switchlist> element not found in VPR XML file\n");
   }
 
   // Find the last default switch ID
@@ -642,7 +642,7 @@ std::string XMLHandler::format_float_value(double value) {
 void XMLHandler::validate_xml_structure(const pugi::xml_document& doc) {
   pugi::xml_node root = doc.child("rr_graph");
   if (!root) {
-    VTR_LOG_ERROR("Root element 'rr_graph' not found");
+    VTR_LOG_ERROR("Root element 'rr_graph' not found\n");
   }
 }
 

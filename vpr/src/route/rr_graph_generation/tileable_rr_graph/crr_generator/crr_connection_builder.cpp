@@ -67,28 +67,28 @@ void CRRConnectionBuilder::initialize(
                    ::tolower);
 
     if (switch_name.find("delayless") != std::string::npos) {
-      VTR_LOG("Adding delayless switch: %s", switch_name.c_str());
+      VTR_LOG("Adding delayless switch: %s\n", switch_name.c_str());
       default_switch_id_["delayless"] = original_switch.get_id();
     } else if (switch_name.find("ipin") != std::string::npos) {
-      VTR_LOG("Adding ipin switch: %s", switch_name.c_str());
+      VTR_LOG("Adding ipin switch: %s\n", switch_name.c_str());
       default_switch_id_["ipin"] = original_switch.get_id();
     } else if (std::regex_match(switch_name, std::regex(R"(l1(_.*)?)"))) {
-      VTR_LOG("Adding l1 switch: %s", switch_name.c_str());
+      VTR_LOG("Adding l1 switch: %s\n", switch_name.c_str());
       default_switch_id_["l1"] = original_switch.get_id();
     } else if (std::regex_match(switch_name, std::regex(R"(l2(_.*)?)"))) {
-      VTR_LOG("Adding l2 switch: %s", switch_name.c_str());
+      VTR_LOG("Adding l2 switch: %s\n", switch_name.c_str());
       default_switch_id_["l2"] = original_switch.get_id();
     } else if (std::regex_match(switch_name, std::regex(R"(l4(_.*)?)"))) {
-      VTR_LOG("Adding l4 switch: %s", switch_name.c_str());
+      VTR_LOG("Adding l4 switch: %s\n", switch_name.c_str());
       default_switch_id_["l4"] = original_switch.get_id();
     } else if (std::regex_match(switch_name, std::regex(R"(l8(_.*)?)"))) {
-      VTR_LOG("Adding l8 switch: %s", switch_name.c_str());
+      VTR_LOG("Adding l8 switch: %s\n", switch_name.c_str());
       default_switch_id_["l8"] = original_switch.get_id();
     } else if (std::regex_match(switch_name, std::regex(R"(l12(_.*)?)"))) {
-      VTR_LOG("Adding l12 switch: %s", switch_name.c_str());
+      VTR_LOG("Adding l12 switch: %s\n", switch_name.c_str());
       default_switch_id_["l12"] = original_switch.get_id();
     } else {
-      VTR_LOG_ERROR("Unknown switch type: %s", switch_name.c_str());
+      VTR_LOG_ERROR("Unknown switch type: %s\n", switch_name.c_str());
     }
   }
 
@@ -104,7 +104,7 @@ void CRRConnectionBuilder::initialize(
                           std::vector<std::vector<Connection>>(static_cast<size_t>(fpga_grid_y_ + 1))
                         );
 
-  VTR_LOG("CRRConnectionBuilder initialized for %d x %d grid (%zu locations)",
+  VTR_LOG("CRRConnectionBuilder initialized for %d x %d grid (%zu locations)\n",
            fpga_grid_x_, fpga_grid_y_, total_locations_);
 }
 
@@ -118,17 +118,17 @@ void CRRConnectionBuilder::build_connections_for_location(Coordinate x,
   tile_connections.clear();
 
   if (pattern.empty()) {
-    VTR_LOG_DEBUG("No pattern found for switch block at (%d, %d)", x, y);
+    VTR_LOG_DEBUG("No pattern found for switch block at (%d, %d)\n", x, y);
     return;
   }
 
   const DataFrame* df = sb_manager_.get_switch_block_dataframe(pattern);
   if (df == nullptr) {
-    VTR_LOG_WARN("No dataframe found for pattern '%s' at (%d, %d)", pattern.c_str(), x, y);
+    VTR_LOG_WARN("No dataframe found for pattern '%s' at (%d, %d)\n", pattern.c_str(), x, y);
     return;
   }
 
-  VTR_LOG("Processing switch block '%s' with pattern '%s' at (%d, %d)",
+  VTR_LOG("Processing switch block '%s' with pattern '%s' at (%d, %d)\n",
                sw_name.c_str(), pattern.c_str(), x, y);
 
   // Get combined nodes for this location
@@ -196,7 +196,7 @@ void CRRConnectionBuilder::build_connections_for_location(Coordinate x,
   tile_connections.erase(std::unique(tile_connections.begin(), tile_connections.end()), tile_connections.end());
   tile_connections.shrink_to_fit();
 
-  VTR_LOG_DEBUG("Generated %zu connections for location (%d, %d)",
+  VTR_LOG_DEBUG("Generated %zu connections for location (%d, %d)\n",
                 tile_connections.size(), x, y);
 }
 
@@ -398,7 +398,7 @@ NodeId CRRConnectionBuilder::process_channel_node(
   if (it != node_lookup.end()) {
     return it->second->get_id();
   } else {
-    VTR_LOG_DEBUG("Node not found: %s [%s] (%d,%d) -> (%d,%d)", seg_type_label.c_str(),
+    VTR_LOG_DEBUG("Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
                   seg_sequence.c_str(), x_low, y_low, x_high, y_high);
     return 0;
   }
@@ -590,7 +590,7 @@ void CRRConnectionBuilder::update_progress() {
       current == total_locations_) {
     double percentage =
         (static_cast<double>(current) / total_locations_) * 100.0;
-    VTR_LOG("Connection building progress: %zu/%zu (%.1f%%)", current,
+    VTR_LOG("Connection building progress: %zu/%zu (%.1f%%)\n", current,
                  total_locations_, percentage);
   }
 }

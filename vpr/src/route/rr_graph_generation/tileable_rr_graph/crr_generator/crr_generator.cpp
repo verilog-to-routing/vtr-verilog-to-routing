@@ -22,7 +22,7 @@ CRRGraphGenerator::CRRGraphGenerator(const t_crr_opts& crr_opts,
 void CRRGraphGenerator::run() {
     auto start_time = std::chrono::steady_clock::now();
 
-    VTR_LOG("Starting RR Graph parsing process");
+    VTR_LOG("Starting RR Graph parsing process\n");
 
     try {
         // Initialize all components
@@ -44,14 +44,14 @@ void CRRGraphGenerator::run() {
         auto duration =
             std::chrono::duration_cast<std::chrono::seconds>(end_time - start_time);
 
-        VTR_LOG("RR Graph parsing completed successfully in %ds", duration.count());
+        VTR_LOG("RR Graph parsing completed successfully in %ds\n", duration.count());
     } catch (const std::exception& e) {
-        VTR_LOG_ERROR("RR Graph parsing failed: %s", e.what());
+        VTR_LOG_ERROR("RR Graph parsing failed: %s\n", e.what());
     }
 }
 
 void CRRGraphGenerator::initialize_components() {
-    VTR_LOG("CRR Graph Generator: Initializing components");
+    VTR_LOG("CRR Graph Generator: Initializing components\n");
 
     // Initialize XML handler
     xml_handler_ = std::make_unique<XMLHandler>();
@@ -62,14 +62,14 @@ void CRRGraphGenerator::initialize_components() {
     // Initialize thread pool if parallel processing is enabled
     VTR_ASSERT(crr_opts_.crr_num_threads > 0);
     thread_pool_ = std::make_unique<CRRThreadPool>(crr_opts_.crr_num_threads);
-    VTR_LOG("CRR Graph Generator: Parallel processing enabled with %lu threads",
+    VTR_LOG("CRR Graph Generator: Parallel processing enabled with %lu threads\n",
                 thread_pool_->get_thread_count());
 
-    VTR_LOG("CRR Graph Generator: All components initialized successfully");
+    VTR_LOG("CRR Graph Generator: All components initialized successfully\n");
 }
 
 void CRRGraphGenerator::build_connections() {
-  VTR_LOG("CRR Graph Generator: Building connections");
+  VTR_LOG("CRR Graph Generator: Building connections\n");
 
   // Initialize connection builder
   const DeviceGrid& grid = g_vpr_ctx.device().grid;
@@ -77,11 +77,11 @@ void CRRGraphGenerator::build_connections() {
                                   grid.height(),
                                   crr_opts_.annotated_rr_graph);
 
-  VTR_LOG("CRR Graph Generator: Connection building completed");
+  VTR_LOG("CRR Graph Generator: Connection building completed\n");
 }
 
 void CRRGraphGenerator::create_output_graph() {
-  VTR_LOG("CRR Graph Generator: Creating output graph");
+  VTR_LOG("CRR Graph Generator: Creating output graph\n");
 
   // Create new graph based on input graph
   output_graph_ = std::make_unique<RRGraph>(input_graph_);
@@ -131,7 +131,7 @@ void CRRGraphGenerator::create_output_graph() {
       crr_opts_.preserve_input_pins,
       crr_opts_.preserve_output_pins);
 
-  VTR_LOG("CRR Graph Generator: Number of preserved edges: %zu", preserved_edges.size());
+  VTR_LOG("CRR Graph Generator: Number of preserved edges: %zu\n", preserved_edges.size());
 
   // Clear existing edges and add new ones
   output_graph_->get_edges().clear();
@@ -147,12 +147,12 @@ void CRRGraphGenerator::create_output_graph() {
   output_graph_->sort_edges();
   output_graph_->shrink_to_fit();
 
-  VTR_LOG("CRR Graph Generator: Output graph created with %zu edges",
+  VTR_LOG("CRR Graph Generator: Output graph created with %zu edges\n",
            output_graph_->get_edge_count());
 }
 
 void CRRGraphGenerator::add_custom_edges() {
-  VTR_LOG("CRR Graph Generator: Adding custom edges");
+  VTR_LOG("CRR Graph Generator: Adding custom edges\n");
 
   // Add new connections
   const DeviceGrid& grid = g_vpr_ctx.device().grid;
@@ -191,36 +191,36 @@ void CRRGraphGenerator::add_custom_edges() {
 
 void CRRGraphGenerator::write_output_files() {
   if (!output_graph_xml_.empty()) {
-    VTR_LOG("CRR Graph Generator: Writing output files");
+    VTR_LOG("CRR Graph Generator: Writing output files\n");
     xml_handler_->write_rr_graph(output_graph_xml_, *output_graph_);
-    VTR_LOG("CRR Graph Generator: Output files written successfully");
+    VTR_LOG("CRR Graph Generator: Output files written successfully\n");
   } else {
-    VTR_LOG("CRR Graph Generator: No output file specified");
+    VTR_LOG("CRR Graph Generator: No output file specified\n");
   }
 }
 
 void CRRGraphGenerator::print_processing_summary() {
-  VTR_LOG("CRR Graph Generator: === Processing Summary ===");
+  VTR_LOG("CRR Graph Generator: === Processing Summary ===\n");
 
-  VTR_LOG("CRR Graph Generator: Input graph:");
-  VTR_LOG("  Nodes: %zu", input_graph_.get_node_count());
-  VTR_LOG("  Edges: %zu", input_graph_.get_edge_count());
-  VTR_LOG("  Switches: %zu", input_graph_.get_switch_count());
+  VTR_LOG("CRR Graph Generator: Input graph:\n");
+  VTR_LOG("  Nodes: %zu\n", input_graph_.get_node_count());
+  VTR_LOG("  Edges: %zu\n", input_graph_.get_edge_count());
+  VTR_LOG("  Switches: %zu\n", input_graph_.get_switch_count());
 
-  VTR_LOG("CRR Graph Generator: Output graph:");
-  VTR_LOG("  Nodes: %zu", output_graph_->get_node_count());
-  VTR_LOG("  Edges: %zu", output_graph_->get_edge_count());
-  VTR_LOG("  Switches: %zu", output_graph_->get_switch_count());
+  VTR_LOG("CRR Graph Generator: Output graph:\n");
+  VTR_LOG("  Nodes: %zu\n", output_graph_->get_node_count());
+  VTR_LOG("  Edges: %zu\n", output_graph_->get_edge_count());
+  VTR_LOG("  Switches: %zu\n", output_graph_->get_switch_count());
 
   int new_edges =
       static_cast<int>(output_graph_->get_edge_count()) -
       static_cast<int>(input_graph_.get_edge_count());
-  VTR_LOG("  New edges added: %d", new_edges);
+  VTR_LOG("  New edges added: %d\n", new_edges);
 
-  VTR_LOG("Switch blocks processed: %zu", sb_manager_.get_all_patterns().size());
-  VTR_LOG("Total connections: %zu", sb_manager_.get_total_connections());
+  VTR_LOG("Switch blocks processed: %zu\n", sb_manager_.get_all_patterns().size());
+  VTR_LOG("Total connections: %zu\n", sb_manager_.get_total_connections());
 
-  VTR_LOG("Grid locations processed: %dx%d", g_vpr_ctx.device().grid.width(), g_vpr_ctx.device().grid.height());
+  VTR_LOG("Grid locations processed: %dx%d\n", g_vpr_ctx.device().grid.width(), g_vpr_ctx.device().grid.height());
 
 }
 
@@ -242,7 +242,7 @@ void CRRGraphGenerator::validate_processing_results() {
     throw RRGeneratorException("Output graph has no switches");
   }
 
-  VTR_LOG("Processing results validation passed");
+  VTR_LOG("Processing results validation passed\n");
 }
 
 }  // namespace crrgenerator

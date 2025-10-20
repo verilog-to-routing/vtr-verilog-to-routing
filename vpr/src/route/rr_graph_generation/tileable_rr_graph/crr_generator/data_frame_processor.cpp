@@ -110,7 +110,7 @@ size_t DataFrame::count_non_empty_in_range(size_t start_row, size_t start_col,
 
 void DataFrame::validate_bounds(size_t row, size_t col) const {
     if (row >= rows_ || col >= cols_) {
-        VTR_LOG_ERROR("DataFrame index out of range: %zu,%zu - max %zu,%zu", row, col, rows_, cols_);
+        VTR_LOG_ERROR("DataFrame index out of range: %zu,%zu - max %zu,%zu\n", row, col, rows_, cols_);
     }
 }
 
@@ -119,7 +119,7 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
 
     validate_excel_file(filename);
 
-    VTR_LOG_DEBUG("Reading Excel file: %s", filename.c_str());
+    VTR_LOG_DEBUG("Reading Excel file: %s\n", filename.c_str());
 
     try {
         // Open the Excel document
@@ -127,44 +127,44 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
         doc.open(filename);
 
         if (!doc.isOpen()) {
-            VTR_LOG_ERROR("Failed to open Excel file: %s", filename.c_str());
+            VTR_LOG_ERROR("Failed to open Excel file: %s\n", filename.c_str());
         }
 
-        VTR_LOG_DEBUG("Document %s opened successfully", filename.c_str());
+        VTR_LOG_DEBUG("Document %s opened successfully\n", filename.c_str());
 
         // Get the first worksheet
         auto workbook = doc.workbook();
         auto worksheet_names = workbook.worksheetNames();
 
         if (worksheet_names.empty()) {
-            VTR_LOG_ERROR("No worksheets found in Excel file: %s", filename.c_str());
+            VTR_LOG_ERROR("No worksheets found in Excel file: %s\n", filename.c_str());
         }
 
         auto worksheet = workbook.worksheet(worksheet_names[0]);
-        VTR_LOG_DEBUG("Got worksheet: '%s'", worksheet_names[0].c_str());
+        VTR_LOG_DEBUG("Got worksheet: '%s'\n", worksheet_names[0].c_str());
 
         // Get the used range - fix for OpenXLSX API
         auto range = worksheet.range();
         size_t last_row = range.numRows();
         size_t last_col = range.numColumns();
 
-        VTR_LOG_DEBUG("Worksheet dimensions: %zux%zu", last_row, last_col);
+        VTR_LOG_DEBUG("Worksheet dimensions: %zux%zu\n", last_row, last_col);
 
         // Safety check
         if (last_row > 10000 || last_col > 1000) {
-        VTR_LOG_ERROR("Excel file too large: %zux%zu (limit: 10000x1000)",
+        VTR_LOG_ERROR("Excel file too large: %zux%zu (limit: 10000x1000)\n",
                         last_row, last_col);
         }
 
         if (last_row == 0 || last_col == 0) {
-            VTR_LOG_ERROR("Excel file appears to be empty: %s", filename.c_str());
+            VTR_LOG_ERROR("Excel file appears to be empty: %s\n", filename.c_str());
         }
 
         DataFrame df(last_row, last_col);
-        VTR_LOG_DEBUG("Created DataFrame with dimensions: %zux%zu", last_row, last_col);
+        VTR_LOG_DEBUG("Created DataFrame with dimensions: %zux%zu\n", last_row, last_col);
 
         // Read all cells
-        VTR_LOG_DEBUG("Reading cell data...");
+        VTR_LOG_DEBUG("Reading cell data...\n");
         size_t cells_read = 0;
 
         for (size_t row = 1; row <= last_row; ++row) {
@@ -176,27 +176,27 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
                     df.at(row - 1, col - 1) = parse_excel_cell(cell_value);
                     cells_read++;
                 } catch (const std::exception& e) {
-                    VTR_LOG_DEBUG("Error reading cell (%zu, %zu): %s", row, col, e.what());
+                    VTR_LOG_DEBUG("Error reading cell (%zu, %zu): %s\n", row, col, e.what());
                     df.at(row - 1, col - 1) = Cell();  // Empty cell
                 }
             }
 
             // Progress logging for large files
             if (row % 100 == 0) {
-                VTR_LOG_DEBUG("Read %zu rows (%zu cells)", row, cells_read);
+                VTR_LOG_DEBUG("Read %zu rows (%zu cells)\n", row, cells_read);
             }
         }
 
         doc.close();
 
         df.source_file = std::filesystem::path(filename).stem().string();
-        VTR_LOG_DEBUG("Successfully read Excel file with dimensions: %zux%zu, %zu cells",
+        VTR_LOG_DEBUG("Successfully read Excel file with dimensions: %zux%zu, %zu cells\n",
                        df.rows(), df.cols(), cells_read);
 
         return df;
 
     } catch (const std::exception& e) {
-        VTR_LOG_ERROR("Error reading Excel file %s: %s", filename.c_str(), e.what());
+        VTR_LOG_ERROR("Error reading Excel file %s: %s\n", filename.c_str(), e.what());
         return DataFrame();
     }
 }
@@ -204,7 +204,7 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
 DataFrame DataFrameProcessor::process_dataframe(DataFrame df,
                                                 int merge_rows_count,
                                                 int merge_cols_count) {
-    VTR_LOG_DEBUG("Processing dataframe with merge_rows=%d, merge_cols=%d",
+    VTR_LOG_DEBUG("Processing dataframe with merge_rows=%d, merge_cols=%d\n",
                     merge_rows_count, merge_cols_count);
 
     // Perform row merging
@@ -221,7 +221,7 @@ DataFrame DataFrameProcessor::process_dataframe(DataFrame df,
                                          df.rows(),
                                          df.cols());
 
-    VTR_LOG_DEBUG("Processed dataframe with %zu connections", df.connections);
+    VTR_LOG_DEBUG("Processed dataframe with %zu connections\n", df.connections);
 
     return df;
 }
@@ -246,7 +246,7 @@ void DataFrameProcessor::update_switch_delays(const DataFrame& df,
         }
     }
 
-    VTR_LOG_DEBUG("Updated switch delays: min=%d, max=%d",
+    VTR_LOG_DEBUG("Updated switch delays: min=%d, max=%d\n",
                   switch_delay_min_ps,
                   switch_delay_max_ps);
 }
@@ -305,7 +305,7 @@ void DataFrameProcessor::merge_columns(DataFrame& df, const std::vector<size_t>&
 
 void DataFrameProcessor::validate_excel_file(const std::string& filename) {
     if (!std::filesystem::exists(filename)) {
-        VTR_LOG_ERROR("Excel file does not exist: %s", filename.c_str());
+        VTR_LOG_ERROR("Excel file does not exist: %s\n", filename.c_str());
     }
 
     // Check file extension
@@ -313,7 +313,7 @@ void DataFrameProcessor::validate_excel_file(const std::string& filename) {
     std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
     if (extension != ".xlsx" && extension != ".xls") {
-        VTR_LOG_ERROR("Unsupported file format: %s. Expected .xlsx or .xls", extension.c_str());
+        VTR_LOG_ERROR("Unsupported file format: %s. Expected .xlsx or .xls\n", extension.c_str());
     }
 }
 

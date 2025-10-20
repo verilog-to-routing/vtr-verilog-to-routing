@@ -19,7 +19,7 @@ CRRThreadPool::CRRThreadPool(size_t num_threads) {
     num_threads = 1;
   }
 
-  VTR_LOG("Creating CRRThreadPool with %zu threads", num_threads);
+  VTR_LOG("Creating CRRThreadPool with %zu threads\n", num_threads);
 
   for (size_t i = 0; i < num_threads; ++i) {
     workers_.emplace_back(&CRRThreadPool::worker_thread, this);
@@ -77,9 +77,9 @@ void CRRThreadPool::worker_thread() {
       try {
         task();
       } catch (const std::exception& e) {
-        VTR_LOG_ERROR("Exception in worker thread: %s", e.what());
+        VTR_LOG_ERROR("Exception in worker thread: %s\n", e.what());
       } catch (...) {
-        VTR_LOG_ERROR("Unknown exception in worker thread");
+        VTR_LOG_ERROR("Unknown exception in worker thread\n");
       }
 
       active_tasks_.fetch_sub(1);
@@ -96,7 +96,7 @@ ProgressTracker::ProgressTracker(size_t total_tasks,
     : total_(total_tasks),
       operation_name_(operation_name),
       start_time_(std::chrono::steady_clock::now()) {
-  VTR_LOG("Starting %s: %zu tasks", operation_name_.c_str(), total_);
+  VTR_LOG("Starting %s: %zu tasks\n", operation_name_.c_str(), total_);
 }
 
 void ProgressTracker::increment(size_t count) {
@@ -130,15 +130,15 @@ void ProgressTracker::log_progress() const {
       auto total_estimated = elapsed * total_ / current_completed;
       auto eta = total_estimated - elapsed;
 
-      VTR_LOG("%s: %zu/%zu (%.1f%%) - Elapsed: %ds, ETA: %ds",
+      VTR_LOG("%s: %zu/%zu (%.1f%%) - Elapsed: %ds, ETA: %ds\n",
                    operation_name_.c_str(), current_completed, total_, percentage,
                    elapsed.count(), eta.count());
     } else {
-      VTR_LOG("%s: %zu/%zu (%.1f%%) - Elapsed: %ds", operation_name_.c_str(),
+      VTR_LOG("%s: %zu/%zu (%.1f%%) - Elapsed: %ds\n", operation_name_.c_str(),
                    current_completed, total_, percentage, elapsed.count());
     }
   } else {
-    VTR_LOG("%s: Complete! %zu/%zu tasks in %ds", operation_name_.c_str(),
+    VTR_LOG("%s: Complete! %zu/%zu tasks in %ds\n", operation_name_.c_str(),
                  current_completed, total_, elapsed.count());
   }
 }

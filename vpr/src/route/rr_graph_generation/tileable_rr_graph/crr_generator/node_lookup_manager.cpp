@@ -91,7 +91,7 @@ bool NodeLookupManager::is_valid_coordinate(Coordinate x, Coordinate y) const {
 }
 
 void NodeLookupManager::print_statistics() const {
-  VTR_LOG("=== Node Lookup Manager Statistics ===");
+  VTR_LOG("=== Node Lookup Manager Statistics ===\n");
   VTR_LOG("Grid dimensions: %d x %d\n", fpga_grid_x_, fpga_grid_y_);
   VTR_LOG("Total nodes indexed: %zu\n", global_lookup_.size());
 
