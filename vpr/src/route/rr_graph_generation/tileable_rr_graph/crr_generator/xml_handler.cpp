@@ -1,5 +1,8 @@
 #include "xml_handler.h"
 
+#include "vtr_log.h"
+#include "vtr_assert.h"
+
 namespace crrgenerator {
 
 inline void xml_escape_and_write(std::ostream& os, const std::string& s) {
@@ -129,7 +132,7 @@ void XMLHandler::write_rr_graph(const std::string& filename,
   out.rdbuf()->pubsetbuf(out_buf.data(), static_cast<std::streamsize>(out_buf.size()));
   out.open(temp_filename, std::ios::out | std::ios::binary);
   if (!out) {
-    throw FileException("Failed to open output file: " + temp_filename);
+    VTR_LOG_ERROR("Failed to open output file: %s", temp_filename.c_str());
   }
 
   out << "<?xml version=\"1.0\"?>\n";
@@ -150,7 +153,7 @@ void XMLHandler::write_rr_graph(const std::string& filename,
 
   if (std::rename(temp_filename.c_str(), filename.c_str()) != 0) {
     std::remove(temp_filename.c_str());
-    throw FileException("Failed to atomically replace XML file: " + filename);
+    VTR_LOG_ERROR("Failed to atomically replace XML file: %s", filename.c_str());
   }
 
   VTR_LOG("Successfully wrote RR graph to %s\n", filename.c_str());
@@ -196,7 +199,7 @@ XYList XMLHandler::parse_xy_list(const pugi::xml_node& xy_list_node) {
   if (std::string(xy_list_node.name()) == "x_list") {
     type = XYList::Type::X_LIST;
   } else {
-    assert(std::string(xy_list_node.name()) == "y_list");
+    VTR_ASSERT(std::string(xy_list_node.name()) == "y_list");
     type = XYList::Type::Y_LIST;
   }
   int index = xy_list_node.attribute("index").as_int();
@@ -582,14 +585,13 @@ void XMLHandler::update_vpr_xml_with_switches(
   pugi::xml_parse_result result = doc.load_file(input_file.c_str());
 
   if (!result) {
-    throw FileException(fmt::format("Failed to parse VPR XML file {}: {}",
-                                    input_file, result.description()));
+    VTR_LOG_ERROR("Failed to parse VPR XML file %s: %s", input_file.c_str(), result.description());
   }
 
   // Find switchlist element
   pugi::xml_node switchlist = doc.select_node("//switchlist").node();
   if (!switchlist) {
-    throw ParseException("<switchlist> element not found in VPR XML file");
+    VTR_LOG_ERROR("<switchlist> element not found in VPR XML file");
   }
 
   // Find the last default switch ID
@@ -607,12 +609,12 @@ void XMLHandler::update_vpr_xml_with_switches(
 
     switch_element.append_attribute("type") = "mux";
     switch_element.append_attribute("name") =
-        fmt::format("sw_{}", switch_id).c_str();
+        ("sw_" + std::to_string(switch_id)).c_str();
     switch_element.append_attribute("R") = "0.";
     switch_element.append_attribute("Cin") = ".77e-15";
     switch_element.append_attribute("Cout") = "0.";
     switch_element.append_attribute("Tdel") =
-        fmt::format("{:.8e}", switch_id * 1e-12).c_str();
+        (std::to_string(switch_id * 1e-12)).c_str();
     switch_element.append_attribute("mux_trans_size") = "2.630740";
     switch_element.append_attribute("buf_size") = "27.645901";
   }
@@ -622,7 +624,7 @@ void XMLHandler::update_vpr_xml_with_switches(
 }
 
 std::string XMLHandler::format_float_value(double value) {
-  std::string result = fmt::format("{}", value);
+  std::string result = std::to_string(value);
 
   // Remove trailing .0 for integer values (C++17 compatible)
   if (result.length() >= 2 && result.substr(result.length() - 2) == ".0") {
@@ -631,7 +633,7 @@ std::string XMLHandler::format_float_value(double value) {
 
   // Format scientific notation
   if (result.find("e-") != std::string::npos) {
-    result = fmt::format("{:.8e}", value);
+    result = std::to_string(value);
   }
 
   return result;
@@ -640,7 +642,7 @@ std::string XMLHandler::format_float_value(double value) {
 void XMLHandler::validate_xml_structure(const pugi::xml_document& doc) {
   pugi::xml_node root = doc.child("rr_graph");
   if (!root) {
-    throw ParseException("Root element 'rr_graph' not found");
+    VTR_LOG_ERROR("Root element 'rr_graph' not found");
   }
 }
 
