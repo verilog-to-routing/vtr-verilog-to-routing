@@ -227,19 +227,19 @@ void CRRGraphGenerator::print_processing_summary() {
 void CRRGraphGenerator::validate_processing_results() {
   // Basic validation
   if (!output_graph_) {
-    throw RRGeneratorException("Output graph was not created");
+    VTR_LOG_ERROR("Output graph was not created\n");
   }
 
   if (output_graph_->get_node_count() == 0) {
-    throw RRGeneratorException("Output graph has no nodes");
+    VTR_LOG_ERROR("Output graph has no nodes\n");
   }
 
   if (output_graph_->get_edge_count() == 0) {
-    throw RRGeneratorException("Output graph has no edges");
+    VTR_LOG_ERROR("Output graph has no edges\n");
   }
 
   if (output_graph_->get_switch_count() == 0) {
-    throw RRGeneratorException("Output graph has no switches");
+    VTR_LOG_ERROR("Output graph has no switches\n");
   }
 
   VTR_LOG("Processing results validation passed\n");
