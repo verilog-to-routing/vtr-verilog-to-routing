@@ -1,5 +1,8 @@
 #include "crr_thread_pool.h"
 
+#include "vtr_log.h"
+#include "vtr_assert.h"
+
 namespace crrgenerator {
 
 // CRRThreadPool implementation
@@ -74,7 +77,7 @@ void CRRThreadPool::worker_thread() {
       try {
         task();
       } catch (const std::exception& e) {
-        VTR_LOG_ERROR("Exception in worker thread: %s", e.what().c_str());
+        VTR_LOG_ERROR("Exception in worker thread: %s", e.what());
       } catch (...) {
         VTR_LOG_ERROR("Unknown exception in worker thread");
       }

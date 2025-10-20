@@ -2,6 +2,9 @@
 
 #include <charconv>
 #include <cmath>
+
+#include "vtr_log.h"
+#include "vtr_assert.h"
 // #include <nlohmann/json.hpp>
 
 // using json = nlohmann::json;
@@ -110,7 +113,7 @@ void CRRConnectionBuilder::build_connections_for_location(Coordinate x,
                                                        std::vector<Connection>& tile_connections) {
 
   // Find matching switch block pattern
-  std::string sw_name = fmt::format("SB_{}__{}_", x, y);
+  std::string sw_name = "SB_" + std::to_string(x) + "__" + std::to_string(y) + "_";
   std::string pattern = sb_manager_.find_matching_pattern(sw_name);
   tile_connections.clear();
 
