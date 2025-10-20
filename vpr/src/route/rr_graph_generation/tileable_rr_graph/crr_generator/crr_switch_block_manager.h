@@ -1,8 +1,10 @@
 #pragma once
 
+#include <unordered_map>
+#include <vector>
+
 #include <yaml-cpp/yaml.h>
 
-#include "common.h"
 #include "data_frame_processor.h"
 
 namespace crrgenerator {
