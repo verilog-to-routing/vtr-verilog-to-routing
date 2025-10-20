@@ -46,7 +46,7 @@ void CRRGraphGenerator::run() {
 
         VTR_LOG("RR Graph parsing completed successfully in %ds", duration.count());
     } catch (const std::exception& e) {
-        VTR_LOG_ERROR("RR Graph parsing failed: %s", e.what().c_str());
+        VTR_LOG_ERROR("RR Graph parsing failed: %s", e.what());
     }
 }
 
@@ -57,15 +57,12 @@ void CRRGraphGenerator::initialize_components() {
     xml_handler_ = std::make_unique<XMLHandler>();
 
     // Initialize connection builder
-    connection_builder_ = std::make_unique<ConnectionBuilder>(input_graph_, node_lookup_, sb_manager_);
-
-    // Initialize switch manager
-    switch_manager_ = std::make_unique<SwitchManager>();
+    connection_builder_ = std::make_unique<CRRConnectionBuilder>(input_graph_, node_lookup_, sb_manager_);
 
     // Initialize thread pool if parallel processing is enabled
     VTR_ASSERT(crr_opts_.crr_num_threads > 0);
-    thread_pool_ = std::make_unique<ThreadPool>(crr_opts_.crr_num_threads);
-    VTR_LOG("CRR Graph Generator: Parallel processing enabled with %d threads",
+    thread_pool_ = std::make_unique<CRRThreadPool>(crr_opts_.crr_num_threads);
+    VTR_LOG("CRR Graph Generator: Parallel processing enabled with %lu threads",
                 thread_pool_->get_thread_count());
 
     VTR_LOG("CRR Graph Generator: All components initialized successfully");
@@ -223,8 +220,7 @@ void CRRGraphGenerator::print_processing_summary() {
   VTR_LOG("Switch blocks processed: %zu", sb_manager_.get_all_patterns().size());
   VTR_LOG("Total connections: %zu", sb_manager_.get_total_connections());
 
-  VTR_LOG("Grid locations processed: %dx%d", config_.get_fpga_grid_x(),
-                config_.get_fpga_grid_y());
+  VTR_LOG("Grid locations processed: %dx%d", g_vpr_ctx.device().grid.width(), g_vpr_ctx.device().grid.height());
 
 }
 

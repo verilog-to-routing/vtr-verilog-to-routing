@@ -8,8 +8,7 @@
 #include "crr_connection_builder.h"
 #include "node_lookup_manager.h"
 #include "custom_rr_graph.h"
-#include "switch_block_manager.h"
-#include "switch_manager.h"
+#include "crr_switch_block_manager.h"
 #include "crr_thread_pool.h"
 #include "xml_handler.h"
 
@@ -43,9 +42,8 @@ private:
     const std::string& output_graph_xml_;
 
     std::unique_ptr<RRGraph> output_graph_;
-    std::unique_ptr<ConnectionBuilder> connection_builder_;
-    std::unique_ptr<SwitchManager> switch_manager_;
-    std::unique_ptr<ThreadPool> thread_pool_;
+    std::unique_ptr<CRRConnectionBuilder> connection_builder_;
+    std::unique_ptr<CRRThreadPool> thread_pool_;
     std::unique_ptr<XMLHandler> xml_handler_;
 
     // Processing methods
