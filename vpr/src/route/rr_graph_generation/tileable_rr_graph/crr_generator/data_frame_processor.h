@@ -5,11 +5,8 @@
 
 #include "OpenXLSX.hpp"
 
+#include "crr_common.h"
 namespace crrgenerator {
-
-constexpr int NUM_EMPTY_ROWS = 5;
-constexpr int NUM_EMPTY_COLS = 4;
-
 
 /**
  * @brief Represents a cell in the dataframe
