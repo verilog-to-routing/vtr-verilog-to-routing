@@ -31,7 +31,7 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
         }
 
         YAML::Node sb_maps = config["SB_MAPS"];
-        VTR_LOGV_DEBUG("Found SB_MAPS section with %zu entries\n", sb_maps.size());
+        VTR_LOG_DEBUG("Found SB_MAPS section with %zu entries\n", sb_maps.size());
 
         // Process each switch block mapping
         std::unordered_set<std::string> unique_files;
@@ -62,12 +62,12 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
         for (const auto& full_path : unique_files) {
             if (std::filesystem::exists(full_path)) {
             try {
-                VTR_LOGV_DEBUG("Attempting to read Excel file: %s\n", full_path.c_str());
+                VTR_LOG_DEBUG("Attempting to read Excel file: %s\n", full_path.c_str());
                 DataFrame df = processor_.read_excel(full_path);
                 df = processor_.process_dataframe(std::move(df), NUM_EMPTY_ROWS,
                                                 NUM_EMPTY_COLS);
                 file_cache_[full_path] = std::move(df);
-                VTR_LOGV_DEBUG("Processed %zu connections in %s file\n",
+                VTR_LOG_DEBUG("Processed %zu connections in %s file\n",
                             file_cache_[full_path].connections,
                             std::filesystem::path(full_path).filename().string());
             } catch (const std::exception& e) {
