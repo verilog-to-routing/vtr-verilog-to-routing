@@ -824,9 +824,6 @@ class t_rr_graph_storage {
     template <typename t_comp_func>
     void sort_edges(t_comp_func comparison_function) {
 
-        // TODO: If you're from the future where VtR is compiled with at least C++23, please rewrite this function to use std::ranges::zip_view instead.
-        // That would make the sorting in-place and much more efficient.
-
         size_t num_edges = edge_src_node_.size();
         std::vector<size_t> edge_indices(num_edges, 0);
 
