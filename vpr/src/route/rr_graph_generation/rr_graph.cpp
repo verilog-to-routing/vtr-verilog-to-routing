@@ -412,7 +412,7 @@ void create_rr_graph(e_graph_type graph_type,
         node_lookup.initialize(*crr_input_graph, grid.width(), grid.height());
         crrgenerator::CRRGraphGenerator parser(crr_opts, *crr_input_graph, node_lookup, sb_manager, det_routing_arch.write_rr_graph_filename);
         parser.run();
-        VTR_LOG("CRR Graph built successfully");
+        VTR_LOG("CRR Graph built successfully\n");
         exit(0);
     }
 
