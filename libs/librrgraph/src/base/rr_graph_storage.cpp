@@ -281,7 +281,7 @@ class edge_compare_src_node_and_configurable_first {
         RRNodeId rhs_dest_node = rr_graph_storage_.edge_sink_node(rhs);
         RRNodeId rhs_src_node = rr_graph_storage_.edge_source_node(rhs);
         RRSwitchId rhs_switch_type = RRSwitchId(rr_graph_storage_.edge_switch(rhs));
-        bool rhs_is_configurable = rr_switch_inf_[RRSwitchId(lhs_switch_type)].configurable();
+        bool rhs_is_configurable = rr_switch_inf_[RRSwitchId(rhs_switch_type)].configurable();
 
         return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs_switch_type) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs_switch_type);
     }
