@@ -143,7 +143,7 @@ class edge_compare_dest_node {
 public:
     edge_compare_dest_node(const t_rr_graph_storage& rr_graph_storage) : rr_graph_storage_(rr_graph_storage) {}
 
-    bool operator()(const size_t& lhs_idx, const size_t& rhs_idx) {
+    bool operator()(size_t lhs_idx, size_t rhs_idx) const {
         RREdgeId lhs = RREdgeId(lhs_idx);
         RREdgeId rhs = RREdgeId(rhs_idx);
 
@@ -269,7 +269,7 @@ class edge_compare_src_node_and_configurable_first {
         : rr_switch_inf_(rr_switch_inf),
           rr_graph_storage_(rr_graph_storage) {}
 
-    bool operator()(const size_t& lhs_idx, const size_t& rhs_idx) {
+    bool operator()(size_t lhs_idx, size_t rhs_idx) const {
         RREdgeId lhs = RREdgeId(lhs_idx);
         RREdgeId rhs = RREdgeId(rhs_idx);
 

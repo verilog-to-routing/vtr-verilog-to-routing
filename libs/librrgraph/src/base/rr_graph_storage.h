@@ -818,7 +818,7 @@ class t_rr_graph_storage {
      * @brief Sorts edges according to comparison_function. This is an expensive method that builds the edge array from scratch
      * and invalidates all the RREdgeIds. This is not an inplace sort, and it is very expensive.
      * You should not be calling this method more than once or twice in the entire program, definitely do not use it in a hot loop.
-     * @tparam t_comp_func callable object with two const size_t& arguments. See 'edge_compare_dest_node' for example.
+     * @tparam t_comp_func callable object with two size_t arguments. See 'edge_compare_dest_node' for example.
      * @param comparison_function Comparison function to order edges with.
      */
     template <typename t_comp_func>
