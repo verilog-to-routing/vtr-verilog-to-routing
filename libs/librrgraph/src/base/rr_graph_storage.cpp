@@ -168,10 +168,6 @@ size_t t_rr_graph_storage::count_rr_switches(const std::vector<t_arch_switch_inf
     // Sort by destination node to collect per node/per switch fan in values
     // This sort is safe to do because partition_edges() has not been invoked yet.
     sort_edges(edge_compare_dest_node(*this));
-    // std::stable_sort(
-    //     edge_sort_iterator(this, 0),
-    //     edge_sort_iterator(this, edge_dest_node_.size()),
-    //     edge_compare_dest_node());
 
     // Collect the fan-in per switch type for each node in the graph
     // Record the unique switch type/fanin combinations
