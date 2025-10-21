@@ -27,7 +27,7 @@ enum class APDrawType {
  * with NO_GRAPHICS conditional compilation directives.
  */
 class APDrawManager {
-public:
+  public:
     /**
      * @brief Constructor initializes the draw manager with a reference to the
      *        current partial placement.

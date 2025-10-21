@@ -56,10 +56,10 @@ void update_screen(ScreenUpdatePriority priority,
 void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry);
 
 /**
-* @brief Set the intial_world ezgl::rectangle for analytical placement
-* 
-* This function sets graphic initial dimensions so there are no gaps between blocks
-*/
+ * @brief Set the intial_world ezgl::rectangle for analytical placement
+ * 
+ * This function sets graphic initial dimensions so there are no gaps between blocks
+ */
 void set_initial_world_ap();
 
 /**

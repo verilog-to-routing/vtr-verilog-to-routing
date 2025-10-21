@@ -825,13 +825,10 @@ class t_rr_graph_storage {
     void sort_edges(t_comp_func comparison_function) {
 
         size_t num_edges = edge_src_node_.size();
-        std::vector<size_t> edge_indices(num_edges, 0);
-
-        std::iota(edge_indices.begin(), edge_indices.end(), 0);
+        vtr::StrongIdRange<RREdgeId> edge_range(RREdgeId(0), RREdgeId(num_edges));
+        std::vector<RREdgeId> edge_indices(edge_range.begin(), edge_range.end());
 
         std::ranges::stable_sort(edge_indices, comparison_function);
-
-
 
         vtr::vector<RREdgeId, RRNodeId> new_edge_src_node_(num_edges, RRNodeId::INVALID());
         vtr::vector<RREdgeId, RRNodeId> new_edge_dest_node_(num_edges, RRNodeId::INVALID());
@@ -839,11 +836,15 @@ class t_rr_graph_storage {
         vtr::vector<RREdgeId, bool> new_edge_remapped_(num_edges, false);
         
         size_t new_index = 0;
-        for (size_t edge_index : edge_indices) {
-            new_edge_src_node_[RREdgeId(new_index)] = edge_src_node_[RREdgeId(edge_index)];
-            new_edge_dest_node_[RREdgeId(new_index)] = edge_dest_node_[RREdgeId(edge_index)];
-            new_edge_switch_[RREdgeId(new_index)] = edge_switch_[RREdgeId(edge_index)];
-            new_edge_remapped_[RREdgeId(new_index)] = edge_remapped_[RREdgeId(edge_index)];
+        for (RREdgeId edge_index : edge_indices) {
+    
+            RREdgeId new_edge_index = RREdgeId(new_index);
+
+            new_edge_src_node_[new_edge_index] = edge_src_node_[edge_index];
+            new_edge_dest_node_[new_edge_index] = edge_dest_node_[edge_index];
+            new_edge_switch_[new_edge_index] = edge_switch_[edge_index];
+            new_edge_remapped_[new_edge_index] = edge_remapped_[edge_index];
+            
             new_index++;
         }
 
@@ -898,9 +899,6 @@ class t_rr_graph_storage {
     }
 
   private:
-    friend class edge_compare_dest_node;
-    friend class edge_compare_src_node_and_configurable_first;
-
     /** @brief
      * Take allocated edges in edge_src_node_/ edge_dest_node_ / edge_switch_
      * sort, and assign the first edge for each

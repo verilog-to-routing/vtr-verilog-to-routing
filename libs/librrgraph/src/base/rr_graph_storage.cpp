@@ -138,15 +138,12 @@ void t_rr_graph_storage::init_fan_in() {
 }
 
 
-// Functor for sorting edges according to destination node's ID.
+/// Functor for sorting edges according to destination node's ID.
 class edge_compare_dest_node {
 public:
     edge_compare_dest_node(const t_rr_graph_storage& rr_graph_storage) : rr_graph_storage_(rr_graph_storage) {}
 
-    bool operator()(size_t lhs_idx, size_t rhs_idx) const {
-        RREdgeId lhs = RREdgeId(lhs_idx);
-        RREdgeId rhs = RREdgeId(rhs_idx);
-
+    bool operator()(RREdgeId lhs, RREdgeId rhs) const {
         RRNodeId lhs_dest_node = rr_graph_storage_.edge_sink_node(lhs);
         RRNodeId rhs_dest_node = rr_graph_storage_.edge_sink_node(rhs);
 
@@ -262,26 +259,24 @@ void t_rr_graph_storage::mark_edges_as_rr_switch_ids() {
     remapped_edges_ = true;
 }
 
-// Functor for sorting edges according to source node, with configurable edges coming first
+/// Functor for sorting edges according to source node, with configurable edges coming first
 class edge_compare_src_node_and_configurable_first {
   public:
     edge_compare_src_node_and_configurable_first(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf, const t_rr_graph_storage& rr_graph_storage)
         : rr_switch_inf_(rr_switch_inf),
           rr_graph_storage_(rr_graph_storage) {}
 
-    bool operator()(size_t lhs_idx, size_t rhs_idx) const {
-        RREdgeId lhs = RREdgeId(lhs_idx);
-        RREdgeId rhs = RREdgeId(rhs_idx);
+    bool operator()(RREdgeId lhs, RREdgeId rhs) const {
 
         RRNodeId lhs_dest_node = rr_graph_storage_.edge_sink_node(lhs);
         RRNodeId lhs_src_node = rr_graph_storage_.edge_source_node(lhs);
         RRSwitchId lhs_switch_type = RRSwitchId(rr_graph_storage_.edge_switch(lhs));
-        bool lhs_is_configurable = rr_switch_inf_[RRSwitchId(lhs_switch_type)].configurable();
+        bool lhs_is_configurable = rr_switch_inf_[lhs_switch_type].configurable();
 
         RRNodeId rhs_dest_node = rr_graph_storage_.edge_sink_node(rhs);
         RRNodeId rhs_src_node = rr_graph_storage_.edge_source_node(rhs);
         RRSwitchId rhs_switch_type = RRSwitchId(rr_graph_storage_.edge_switch(rhs));
-        bool rhs_is_configurable = rr_switch_inf_[RRSwitchId(rhs_switch_type)].configurable();
+        bool rhs_is_configurable = rr_switch_inf_[rhs_switch_type].configurable();
 
         return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs_switch_type) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs_switch_type);
     }
