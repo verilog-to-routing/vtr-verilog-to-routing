@@ -69,7 +69,7 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
                 file_cache_[full_path] = std::move(df);
                 VTR_LOG_DEBUG("Processed %zu connections in %s file\n",
                             file_cache_[full_path].connections,
-                            std::filesystem::path(full_path).filename().string());
+                            std::filesystem::path(full_path).filename().string().c_str());
             } catch (const std::exception& e) {
                 VTR_LOG_ERROR("Failed to read required Excel file '%s': %s\n", full_path.c_str(), e.what());
             }
@@ -153,7 +153,7 @@ void SwitchBlockManager::print_statistics() const {
     // Print file details
     for (const auto& [file, df] : file_cache_) {
         VTR_LOG("  %s: %zu connections (%zux%zu)\n",
-                std::filesystem::path(file).filename().string(),
+                std::filesystem::path(file).filename().string().c_str(),
                 df.connections, df.rows(), df.cols());
     }
 }
