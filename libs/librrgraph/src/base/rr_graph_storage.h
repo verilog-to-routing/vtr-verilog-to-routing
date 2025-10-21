@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <bitset>
 
 #include "librrgraph_types.h"
+#include "vtr_assert.h"
 #include "vtr_vector.h"
 #include "physical_types.h"
 #include "rr_graph_storage_utils.h"
@@ -15,8 +17,10 @@
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
+#include <numeric>
 #include <optional>
 #include <cstdint>
+#include <vector>
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -809,6 +813,56 @@ class t_rr_graph_storage {
     /** @brief Validate that edge data is partitioned correctly.*/
     bool validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     bool validate(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    
+    /**
+     * @brief Sorts edges according to comparison_function. This is an expensive method that builds the edge array from scratch
+     * and invalidates all the RREdgeIds. This is not an inplace sort, and it is very expensive.
+     * You should not be calling this method more than once or twice in the entire program, definitely do not use it in a hot loop.
+     * @tparam t_comp_func callable object with two const size_t& arguments. See 'edge_compare_dest_node' for example.
+     * @param comparison_function Comparison function to order edges with.
+     */
+    template <typename t_comp_func>
+    void sort_edges(t_comp_func comparison_function) {
+
+        // TODO: If you're from the future where VtR is compiled with at least C++23, please rewrite this function to use std::ranges::zip_view instead.
+        // That would make the sorting in-place and much more efficient.
+
+        size_t num_edges = edge_src_node_.size();
+        std::vector<size_t> edge_indices;
+        edge_indices.resize(num_edges);
+
+        std::iota(edge_indices.begin(), edge_indices.end(), 0);
+
+        std::ranges::stable_sort(edge_indices, comparison_function);
+
+
+
+        vtr::vector<RREdgeId, RRNodeId> new_edge_src_node_;
+        vtr::vector<RREdgeId, RRNodeId> new_edge_dest_node_;
+        vtr::vector<RREdgeId, short> new_edge_switch_;
+        vtr::vector<RREdgeId, bool> new_edge_remapped_;
+
+        new_edge_src_node_.resize(num_edges);
+        new_edge_dest_node_.resize(num_edges);
+        new_edge_switch_.resize(num_edges);
+        new_edge_remapped_.resize(num_edges);
+        
+        size_t new_index = 0;
+        for (size_t edge_index : edge_indices) {
+            new_edge_src_node_[RREdgeId(new_index)] = edge_src_node_[RREdgeId(edge_index)];
+            new_edge_dest_node_[RREdgeId(new_index)] = edge_dest_node_[RREdgeId(edge_index)];
+            new_edge_switch_[RREdgeId(new_index)] = new_edge_switch_[RREdgeId(edge_index)];
+            new_edge_remapped_[RREdgeId(new_index)] = new_edge_remapped_[RREdgeId(edge_index)];
+            new_index++;
+        }
+
+        VTR_ASSERT(new_index == num_edges);
+
+        edge_src_node_ = std::move(new_edge_src_node_);
+        edge_dest_node_ = std::move(new_edge_dest_node_);
+        edge_switch_ = std::move(new_edge_switch_);
+        edge_remapped_ = std::move(new_edge_remapped_);
+    }
 
     /******************
      * Fan-in methods *
