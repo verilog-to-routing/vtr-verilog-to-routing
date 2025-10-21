@@ -46,6 +46,11 @@
 #include "rr_types.h"
 #include "rr_node_indices.h"
 
+#include "crr_generator.h"
+#include "xml_handler.h"
+#include "node_lookup_manager.h"
+#include "crr_switch_block_manager.h"
+
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
 
@@ -394,6 +399,22 @@ void create_rr_graph(e_graph_type graph_type,
     bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
     bool load_rr_graph = !det_routing_arch.read_rr_graph_filename.empty();
+
+
+    {
+        // Building CRR Graph
+        crrgenerator::SwitchBlockManager sb_manager;
+        sb_manager.initialize(crr_opts.sb_maps, crr_opts.sb_templates, crr_opts.annotated_rr_graph);
+        std::unique_ptr<crrgenerator::RRGraph> crr_input_graph;
+        crrgenerator::XMLHandler xml_handler;
+        crr_input_graph = xml_handler.read_rr_graph(det_routing_arch.read_rr_graph_filename);
+        crrgenerator::NodeLookupManager node_lookup;
+        node_lookup.initialize(*crr_input_graph, grid.width(), grid.height());
+        crrgenerator::CRRGraphGenerator parser(crr_opts, *crr_input_graph, node_lookup, sb_manager, det_routing_arch.write_rr_graph_filename);
+        parser.run();
+        VTR_LOG("CRR Graph built successfully");
+        exit(0);
+    }
 
     if (device_ctx.chan_width == nodes_per_chan && !device_ctx.rr_graph.empty()) {
         // No change in channel width, so skip re-building RR graph
