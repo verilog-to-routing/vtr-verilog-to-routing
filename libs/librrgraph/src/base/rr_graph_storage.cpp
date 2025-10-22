@@ -235,7 +235,7 @@ class edge_sort_iterator {
         return lhs.swapper_.idx_ <= rhs.swapper_.idx_;
     }
 
-    const t_rr_edge_info operator[] (ssize_t n) const {
+    t_rr_edge_info operator[] (ssize_t n) const {
       edge_sort_iterator ret = *this;
       ret.swapper_.idx_ += n;
       return ret.swapper_;
