@@ -137,7 +137,7 @@ void t_rr_graph_storage::init_fan_in() {
     }
 }
 
-
+namespace {
 /// Functor for sorting edges according to destination node's ID.
 class edge_compare_dest_node {
 public:
@@ -153,6 +153,7 @@ public:
 private:
     const t_rr_graph_storage& rr_graph_storage_;
 };
+} // namespace
 
 size_t t_rr_graph_storage::count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
                                              t_arch_switch_fanin& arch_switch_fanins) {
@@ -259,6 +260,7 @@ void t_rr_graph_storage::mark_edges_as_rr_switch_ids() {
     remapped_edges_ = true;
 }
 
+namespace{
 /// Functor for sorting edges according to source node, with configurable edges coming first
 class edge_compare_src_node_and_configurable_first {
   public:
@@ -285,6 +287,7 @@ class edge_compare_src_node_and_configurable_first {
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
     const t_rr_graph_storage& rr_graph_storage_;
 };
+} // namespace
 
 void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) {
     if (partitioned_) {
