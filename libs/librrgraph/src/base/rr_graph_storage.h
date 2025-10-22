@@ -801,8 +801,15 @@ class t_rr_graph_storage {
     void mark_edges_as_rr_switch_ids();
 
     /** @brief
-     * Sorts edge data such that configurable edges appears before
-     * non-configurable edges.
+     * Sorts all edges based on source node with configurable coming first, or equivalently
+     * partitions the edges based on their source node and configurability. Afterwards, it
+     * builds a list of indices to each RRNodeId's first edge. With this, it can then easily
+     * say which edges belong to which node.
+     * 
+     * @param rr_switches Information of switches, used to figure out if edge is configurable or not.
+     * 
+     * @note Must be called after constructing the RR Graph. You can not use most of the edge accessor
+     * methods before this method is called since the relevant data structures are not set up yet.
      */
     void partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches);
 
@@ -829,31 +836,32 @@ class t_rr_graph_storage {
         std::vector<RREdgeId> edge_indices(edge_range.begin(), edge_range.end());
 
         std::ranges::stable_sort(edge_indices, comparison_function);
-
-        vtr::vector<RREdgeId, RRNodeId> new_edge_src_node_(num_edges, RRNodeId::INVALID());
-        vtr::vector<RREdgeId, RRNodeId> new_edge_dest_node_(num_edges, RRNodeId::INVALID());
-        vtr::vector<RREdgeId, short> new_edge_switch_(num_edges, LIBRRGRAPH_UNDEFINED_VAL);
-        vtr::vector<RREdgeId, bool> new_edge_remapped_(num_edges, false);
         
-        size_t new_index = 0;
-        for (RREdgeId edge_index : edge_indices) {
-    
-            RREdgeId new_edge_index = RREdgeId(new_index);
+        // Generic lambda that allocates a 'vec'-sized new vector with all elements set to default value,
+        // then builds the new vector to have rearranged elements from 'vec' and finaly move the new vector
+        // to replace vec. Essentially does a permutation on vec based on edge_indices.
+        auto array_rearrage = [&edge_indices] (auto& vec, auto default_value) {
 
-            new_edge_src_node_[new_edge_index] = edge_src_node_[edge_index];
-            new_edge_dest_node_[new_edge_index] = edge_dest_node_[edge_index];
-            new_edge_switch_[new_edge_index] = edge_switch_[edge_index];
-            new_edge_remapped_[new_edge_index] = edge_remapped_[edge_index];
-            
-            new_index++;
-        }
+            // Since vec could have any type, we need to figure out it's type to allocate new_vec.
+            // The scary std::remove_reference stuff does exactly that. This does nothing other than building a new 'vec' sized vector.
+            typename std::remove_reference<decltype(vec)>::type new_vec(vec.size(), default_value);
 
-        VTR_ASSERT(new_index == num_edges);
+            size_t new_index = 0;
+            for (RREdgeId edge_index : edge_indices) {
+                RREdgeId new_edge_index = RREdgeId(new_index);
+                new_vec[new_edge_index] = vec[edge_index];
 
-        edge_src_node_ = std::move(new_edge_src_node_);
-        edge_dest_node_ = std::move(new_edge_dest_node_);
-        edge_switch_ = std::move(new_edge_switch_);
-        edge_remapped_ = std::move(new_edge_remapped_);
+                new_index++;
+            }
+            VTR_ASSERT(new_index == vec.size());
+
+            vec = std::move(new_vec);
+        };
+
+        array_rearrage(edge_src_node_, RRNodeId::INVALID());
+        array_rearrage(edge_dest_node_, RRNodeId::INVALID());
+        array_rearrage(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
+        array_rearrage(edge_remapped_, false);
     }
 
     /******************
