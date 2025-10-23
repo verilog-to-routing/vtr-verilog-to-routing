@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-#include "OpenXLSX.hpp"
+#include <xlnt/xlnt.hpp>
 
 #include "crr_common.h"
 namespace crrgenerator {
@@ -195,7 +195,7 @@ class DataFrameProcessor {
 
     private:
         // Excel parsing helpers
-        Cell parse_excel_cell(const OpenXLSX::XLCellValue& cell_value);
+        Cell parse_excel_cell(const xlnt::cell& cell);
         void merge_rows(DataFrame& df, const std::vector<size_t>& merge_row_indices);
         void merge_columns(DataFrame& df, const std::vector<size_t>& merge_col_indices);
 

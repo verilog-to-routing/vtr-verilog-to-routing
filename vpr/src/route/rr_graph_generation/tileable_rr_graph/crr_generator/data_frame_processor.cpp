@@ -3,6 +3,7 @@
 #include "vtr_log.h"
 
 #include <filesystem>
+#include <algorithm>
 
 namespace crrgenerator {
 
@@ -123,36 +124,27 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
 
     try {
         // Open the Excel document
-        OpenXLSX::XLDocument doc;
-        doc.open(filename);
-
-        if (!doc.isOpen()) {
-            VTR_LOG_ERROR("Failed to open Excel file: %s\n", filename.c_str());
-        }
+        xlnt::workbook wb;
+        wb.load(filename);
 
         VTR_LOG_DEBUG("Document %s opened successfully\n", filename.c_str());
 
         // Get the first worksheet
-        auto workbook = doc.workbook();
-        auto worksheet_names = workbook.worksheetNames();
+        auto worksheet = wb.active_sheet();
+        std::string sheet_name = worksheet.title();
+        
+        VTR_LOG_DEBUG("Got worksheet: '%s'\n", sheet_name.c_str());
 
-        if (worksheet_names.empty()) {
-            VTR_LOG_ERROR("No worksheets found in Excel file: %s\n", filename.c_str());
-        }
-
-        auto worksheet = workbook.worksheet(worksheet_names[0]);
-        VTR_LOG_DEBUG("Got worksheet: '%s'\n", worksheet_names[0].c_str());
-
-        // Get the used range - fix for OpenXLSX API
-        auto range = worksheet.range();
-        size_t last_row = range.numRows();
-        size_t last_col = range.numColumns();
+        // Get the used range dimensions
+        auto used_range = worksheet.calculate_dimension();
+        size_t last_row = used_range.bottom_right().row();
+        size_t last_col = used_range.bottom_right().column_index();
 
         VTR_LOG_DEBUG("Worksheet dimensions: %zux%zu\n", last_row, last_col);
 
         // Safety check
         if (last_row > 10000 || last_col > 1000) {
-        VTR_LOG_ERROR("Excel file too large: %zux%zu (limit: 10000x1000)\n",
+            VTR_LOG_ERROR("Excel file too large: %zux%zu (limit: 10000x1000)\n",
                         last_row, last_col);
         }
 
@@ -170,10 +162,9 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
         for (size_t row = 1; row <= last_row; ++row) {
             for (size_t col = 1; col <= last_col; ++col) {
                 try {
-                    auto cell = worksheet.cell(row, col);
-                    // Convert cell.value() to XLCellValue and parse it
-                    OpenXLSX::XLCellValue cell_value = cell.value();
-                    df.at(row - 1, col - 1) = parse_excel_cell(cell_value);
+                    // xlnt uses 1-based indexing like Excel
+                    auto cell = worksheet.cell(col, row);
+                    df.at(row - 1, col - 1) = parse_excel_cell(cell);
                     cells_read++;
                 } catch (const std::exception& e) {
                     VTR_LOG_DEBUG("Error reading cell (%zu, %zu): %s\n", row, col, e.what());
@@ -186,8 +177,6 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
                 VTR_LOG_DEBUG("Read %zu rows (%zu cells)\n", row, cells_read);
             }
         }
-
-        doc.close();
 
         df.source_file = std::filesystem::path(filename).stem().string();
         VTR_LOG_DEBUG("Successfully read Excel file with dimensions: %zux%zu, %zu cells\n",
@@ -251,29 +240,45 @@ void DataFrameProcessor::update_switch_delays(const DataFrame& df,
                   switch_delay_max_ps);
 }
 
-// Fixed parse_excel_cell to work with XLCellValue
-Cell DataFrameProcessor::parse_excel_cell(const OpenXLSX::XLCellValue& cell_value) {
-    // Get the value type
-    auto value_type = cell_value.type();
+// Parse xlnt cell to our Cell type
+Cell DataFrameProcessor::parse_excel_cell(const xlnt::cell& cell) {
+    // Check if cell has a value
+    if (!cell.has_value()) {
+        return Cell();
+    }
 
-    switch (value_type) {
-        case OpenXLSX::XLValueType::Boolean:
-            return Cell(static_cast<int64_t>(cell_value.get<bool>() ? 1 : 0));
+    // Get the data type
+    auto data_type = cell.data_type();
 
-        case OpenXLSX::XLValueType::Integer:
-            return Cell(static_cast<int64_t>(cell_value.get<int64_t>()));
+    switch (data_type) {
+        case xlnt::cell::type::boolean:
+            return Cell(static_cast<int64_t>(cell.value<bool>() ? 1 : 0));
 
-        case OpenXLSX::XLValueType::Float:
-            return Cell(cell_value.get<double>());
+        case xlnt::cell::type::number: {
+            double value = cell.value<double>();
+            // Check if it's actually an integer
+            if (value == std::floor(value) && std::abs(value) < 9007199254740992.0) {
+                return Cell(static_cast<int64_t>(value));
+            }
+            return Cell(value);
+        }
 
-        case OpenXLSX::XLValueType::String: {
-            std::string value = cell_value.get<std::string>();
+        case xlnt::cell::type::shared_string:
+        case xlnt::cell::type::inline_string:
+        case xlnt::cell::type::formula_string: {
+            std::string value = cell.to_string();
             if (value.empty()) {
                 return Cell();
             }
             return Cell(value);
         }
-        case OpenXLSX::XLValueType::Empty:
+
+        case xlnt::cell::type::date: {
+            // Convert date to string representation
+            return Cell(cell.to_string());
+        }
+
+        case xlnt::cell::type::empty:
         default:
             return Cell();
     }
@@ -317,4 +322,4 @@ void DataFrameProcessor::validate_excel_file(const std::string& filename) {
     }
 }
 
-}  // namespace rrgenerator
+}  // namespace crrgenerator
