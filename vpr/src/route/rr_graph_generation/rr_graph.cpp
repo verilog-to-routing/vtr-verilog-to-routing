@@ -378,6 +378,22 @@ static void build_rr_graph(e_graph_type graph_type,
 static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
                                    bool load_rr_graph);
 
+/**
+ * @brief Adds and connects non-3D scatter–gather (SG) links to the RR graph.
+ *
+ * For each bottleneck link, this function creates a corresponding RR node
+ * representing the non-3D SG link, and records edges between the node and
+ * gather and scatter wires. The edges are stored in `non_3d_sg_rr_edges_to_create`
+ * for deferred creation.
+ *
+ * @param rr_graph_builder     Reference to the RR graph builder.
+ * @param sg_links             List of scatter–gather bottleneck links.
+ * @param sg_node_indices      RR node IDs and track numbers for SG links.
+ * @param chan_details_x       Channel details for CHANX segments.
+ * @param chan_details_y       Channel details for CHANY segments.
+ * @param num_seg_types_x      Number of segment types in the X direction.
+ * @param non_3d_sg_rr_edges_to_create  Set collecting RR edges to create later.
+ */
 static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                             const std::vector<t_bottleneck_link>& sg_links,
                                             const std::vector<std::pair<RRNodeId, int>>& sg_node_indices,
@@ -2048,6 +2064,7 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                             const t_chan_details& chan_details_y,
                                             size_t num_seg_types_x,
                                             t_rr_edge_info_set& non_3d_sg_rr_edges_to_create) {
+    // Each SG link should have a corresponding RR node index
     VTR_ASSERT(sg_links.size() == sg_node_indices.size());
     const size_t num_links = sg_links.size();
 
@@ -2060,6 +2077,8 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
         const t_physical_tile_loc& src_loc = link.gather_loc;
         const t_physical_tile_loc& dst_loc = link.scatter_loc;
 
+        // Step 1: Determine the link’s direction and its spatial span.
+        // SG links are confined to one layer (non-3D), but can run in X or Y.
         VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
         const int layer = src_loc.layer_num;
 
@@ -2087,40 +2106,61 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
             VTR_ASSERT(false);
         }
 
+        // Retrieve the node ID and track number allocated earlier
         const RRNodeId node_id = sg_node_indices[i].first;
         const int track_num = sg_node_indices[i].second;
 
+        // Step 2: Assign coordinates
         rr_graph_builder.set_node_layer(node_id, layer, layer);
         rr_graph_builder.set_node_coordinates(node_id, xlow, ylow, xhigh, yhigh);
         rr_graph_builder.set_node_capacity(node_id, 1);
 
+        // Step 3: Set cost index based on segment type and orientation
         const size_t cons_index = link.chan_type == e_rr_type::CHANX ? CHANX_COST_INDEX_START + link.parallel_segment_index
                                                                      : CHANX_COST_INDEX_START + num_seg_types_x + link.parallel_segment_index;
         rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(cons_index));
 
+        // Step 4: Assign electrical characteristics
         float R = 0;
         float C = 0;
         rr_graph_builder.set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C, g_vpr_ctx.mutable_device().rr_rc_data)));
+        // Step 5: Set node type, track number, and direction
         rr_graph_builder.set_node_type(node_id, link.chan_type);
         rr_graph_builder.set_node_track_num(node_id, track_num);
-
         rr_graph_builder.set_node_direction(node_id, direction);
 
+        // Step 6: Add incoming edges from gather (fanin) channel wires
+        // Each gather wire connects to this SG link node using the SG wire switch.
         for (const t_sg_candidate& gather_wire : link.gather_fanin_connections) {
             const t_physical_tile_loc& chan_loc = gather_wire.chan_loc.location;
             e_rr_type gather_chan_type = gather_wire.chan_loc.chan_type;
-            RRNodeId gather_node = rr_graph_builder.node_lookup().find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, gather_chan_type, gather_wire.wire_switchpoint.wire);
 
+            // Locate the source RR node for this gather wire
+            RRNodeId gather_node = rr_graph_builder.node_lookup().find_node(chan_loc.layer_num,
+                                                                            chan_loc.x,
+                                                                            chan_loc.y,
+                                                                            gather_chan_type,
+                                                                            gather_wire.wire_switchpoint.wire);
+            // Record deferred edge creation (gather_node --> sg_node)
             non_3d_sg_rr_edges_to_create.emplace_back(gather_node, node_id, link.arch_wire_switch, false);
         }
 
+        // Step 7: Add outgoing edges to scatter (fanout) channel wires
+        // Each scatter wire connects from this SG link node outward.
         for (const t_sg_candidate& scatter_wire : link.scatter_fanout_connections) {
             const t_physical_tile_loc& chan_loc = scatter_wire.chan_loc.location;
             e_rr_type scatter_chan_type = scatter_wire.chan_loc.chan_type;
             const t_chan_details& chan_details = (scatter_chan_type == e_rr_type::CHANX) ? chan_details_x : chan_details_y;
-            RRNodeId scatter_node = rr_graph_builder.node_lookup().find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, scatter_chan_type, scatter_wire.wire_switchpoint.wire);
 
+            // Locate the destination RR node for this scatter wire
+            RRNodeId scatter_node = rr_graph_builder.node_lookup().find_node(chan_loc.layer_num,
+                                                                             chan_loc.x,
+                                                                             chan_loc.y,
+                                                                             scatter_chan_type,
+                                                                             scatter_wire.wire_switchpoint.wire);
+            // Determine which architecture switch this edge should use
             int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
+            // Record deferred edge creation (sg_node --> scatter_node)
             non_3d_sg_rr_edges_to_create.emplace_back(node_id, scatter_node, switch_index, false);
         }
     }
