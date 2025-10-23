@@ -16,9 +16,6 @@
 [submodule "libs/EXTERNAL/yosys-slang"]
 	path = libs/EXTERNAL/yosys-slang
 	url = https://github.com/povik/yosys-slang.git
-[submodule "libs/EXTERNAL/OpenXLSX"]
-	path = libs/EXTERNAL/OpenXLSX
-	url = https://github.com/troldal/OpenXLSX.git
 [submodule "libs/EXTERNAL/yaml-cpp"]
 	path = libs/EXTERNAL/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
