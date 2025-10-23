@@ -762,8 +762,7 @@ static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts) {
     crr_opts.sb_maps = Options.sb_maps;
     crr_opts.sb_templates = Options.sb_templates;
     crr_opts.crr_num_threads = Options.crr_num_threads;
-    crr_opts.preserve_input_pins = Options.preserve_input_pins;
-    crr_opts.preserve_output_pins = Options.preserve_output_pins;
+    crr_opts.preserve_pin_connections = Options.preserve_pin_connections;
     crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
 }
 

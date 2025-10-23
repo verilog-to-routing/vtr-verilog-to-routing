@@ -191,9 +191,7 @@ std::unordered_set<NodeId> RRGraph::get_opin_nodes() const {
   return result;
 }
 
-std::vector<RREdge> RRGraph::get_preserved_edges(
-    const bool preserve_ipin_connections,
-    const bool preserve_opin_connections) const {
+std::vector<RREdge> RRGraph::get_preserved_edges(const bool preserve_pin_connections) const {
   std::vector<RREdge> result;
   auto source_nodes = get_source_nodes();
   auto sink_nodes = get_sink_nodes();
@@ -208,15 +206,11 @@ std::vector<RREdge> RRGraph::get_preserved_edges(
          ipin_nodes.find(edge_sink_node) != ipin_nodes.end())) {
       result.push_back(edge);
     } else {
-      if (preserve_ipin_connections &&
-          ipin_nodes.find(edge_sink_node) != ipin_nodes.end()) {
-        result.push_back(edge);
-      }
-
-      if (preserve_opin_connections &&
-          opin_nodes.find(edge_src_node) != opin_nodes.end()) {
-        result.push_back(edge);
-      }
+      if (preserve_pin_connections) {
+        if (ipin_nodes.find(edge_sink_node) != ipin_nodes.end() ||
+            opin_nodes.find(edge_src_node) != opin_nodes.end()) {
+          result.push_back(edge);
+        }
     }
   }
 

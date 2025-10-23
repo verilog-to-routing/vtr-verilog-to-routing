@@ -129,9 +129,7 @@ void CRRGraphGenerator::create_output_graph() {
   auto all_connections = connection_builder_->get_all_connections();
 
   auto preserved_edges = input_graph_.get_preserved_edges(
-      crr_opts_.preserve_input_pins,
-      crr_opts_.preserve_output_pins);
-
+      crr_opts_.preserve_pin_connections);
   VTR_LOG("CRR Graph Generator: Number of preserved edges: %zu\n", preserved_edges.size());
 
   // Clear existing edges and add new ones

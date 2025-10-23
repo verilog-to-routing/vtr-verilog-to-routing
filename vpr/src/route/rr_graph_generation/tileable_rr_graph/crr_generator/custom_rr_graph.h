@@ -458,9 +458,7 @@ class RRGraph {
   std::unordered_set<NodeId> get_opin_nodes() const;
 
   // Edge filtering
-  std::vector<RREdge> get_preserved_edges(
-      const bool preserve_ipin_connections,
-      const bool preserve_opin_connections) const;
+  std::vector<RREdge> get_preserved_edges(const bool preserve_pin_connections) const;
 
   // Metadata
   void set_tool_info(const std::string& name, const std::string& version,
