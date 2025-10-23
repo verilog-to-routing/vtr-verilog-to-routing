@@ -370,6 +370,7 @@ std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_i
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
 
+    // Initialize matrices tracking the next free track number (ptc)
     vtr::NdMatrix<int, 3> chanx_ptc({grid.get_num_layers(), grid.width(), grid.height()}, chan_width_inf.x_max);
     vtr::NdMatrix<int, 3> chany_ptc({grid.get_num_layers(), grid.width(), grid.height()}, chan_width_inf.y_max);
 
@@ -385,6 +386,7 @@ std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_i
         VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
         const int layer = src_loc.layer_num;
 
+        // Step 1: Determine the channel type (CHANX/CHANY) and span coordinates
         if (dst_loc.x > src_loc.x) {
             chan_type = e_rr_type::CHANX;
             ylow = yhigh = dst_loc.y;
@@ -409,8 +411,12 @@ std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_i
             VTR_ASSERT(false);
         }
 
+        // Select the appropriate ptc matrix for this channel type
         vtr::NdMatrix<int, 3>& ptc_matrix = (chan_type == e_rr_type::CHANX) ? chanx_ptc : chany_ptc;
 
+        // Step 2: Find the maximum next-free ptc value across all (x,y) cells
+        // spanned by this SG link. We use the max to ensure that the chosen
+        // ptc number is free along the entire length of the node
         int ptc = 0;
         for (int x = xlow; x <= xhigh; x++) {
             for (int y = ylow; y <= yhigh; y++) {
@@ -418,12 +424,16 @@ std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_i
             }
         }
 
+        // Step 3: Sanity check: no existing node should occupy this (layer,x,y,ptc)
         VTR_ASSERT(rr_graph_builder.node_lookup().find_nodes_in_range(layer, xlow, ylow, xhigh, yhigh, chan_type, ptc).empty());
 
+        // Step 4: Allocate a new RR node ID and record its (inode, ptc)
         const RRNodeId inode = RRNodeId(index);
         node_indices.push_back({inode, ptc});
         index++;
 
+        // Step 5: Register this node in the spatial lookup for every (x,y)
+        // location it spans, and update ptc_matrix to mark this track as used.
         for (int x = xlow; x <= xhigh; x++) {
             for (int y = ylow; y <= yhigh; y++) {
                 rr_graph_builder.node_lookup().add_node(inode, layer, x, y, chan_type, ptc);
@@ -432,6 +442,7 @@ std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_i
         }
     }
 
+    // Later, another routine will use this info to add nodes and edges to RR graph
     return node_indices;
 }
 
