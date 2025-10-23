@@ -40,20 +40,6 @@ public:
      */
     void write_rr_graph(const std::string& filename, const RRGraph& graph);
 
-    /**
-     * @brief Update VPR XML file with new switches
-     * @param switches Vector of switches to add
-     * @param input_file Input VPR XML file
-     * @param output_file Output VPR XML file
-     * @param switch_delay_min Minimum switch delay ID
-     * @param switch_delay_max Maximum switch delay ID
-     */
-    void update_vpr_xml_with_switches(const std::vector<Switch>& switches,
-                                    const std::string& input_file,
-                                    const std::string& output_file,
-                                    SwitchId switch_delay_min,
-                                    SwitchId switch_delay_max);
-
  private:
     // Attribute mapping for XML conversion
     std::unordered_map<std::string, std::string> attribute_map_;

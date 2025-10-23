@@ -1,3 +1,6 @@
+#include <sstream>  // for std::ostringstream
+#include <iomanip>  // for std::setprecision and std::scientific
+
 #include "xml_handler.h"
 
 #include "vtr_log.h"
@@ -574,55 +577,6 @@ void XMLHandler::write_edge(std::ostream& out, const RREdge& e) {
   out << "/>\n";
 }
 
-void XMLHandler::update_vpr_xml_with_switches(
-    const std::vector<Switch>& switches, const std::string& input_file,
-    const std::string& output_file, SwitchId switch_delay_min,
-    SwitchId switch_delay_max) {
-  VTR_LOG("Updating VPR XML with new switches: %s -> %s\n", input_file.c_str(),
-           output_file.c_str());
-
-  pugi::xml_document doc;
-  pugi::xml_parse_result result = doc.load_file(input_file.c_str());
-
-  if (!result) {
-    VTR_LOG_ERROR("Failed to parse VPR XML file %s: %s\n", input_file.c_str(), result.description());
-  }
-
-  // Find switchlist element
-  pugi::xml_node switchlist = doc.select_node("//switchlist").node();
-  if (!switchlist) {
-    VTR_LOG_ERROR("<switchlist> element not found in VPR XML file\n");
-  }
-
-  // Find the last default switch ID
-  SwitchId last_default_id = 0;
-  for (const auto& switch_obj : switches) {
-    last_default_id = std::max(last_default_id, switch_obj.get_id());
-  }
-
-  SwitchId first_new_id = std::min(switch_delay_min - 1, last_default_id + 1);
-
-  // Add new switches
-  for (SwitchId switch_id = first_new_id; switch_id <= switch_delay_max + 1;
-       ++switch_id) {
-    pugi::xml_node switch_element = switchlist.append_child("switch");
-
-    switch_element.append_attribute("type") = "mux";
-    switch_element.append_attribute("name") =
-        ("sw_" + std::to_string(switch_id)).c_str();
-    switch_element.append_attribute("R") = "0.";
-    switch_element.append_attribute("Cin") = ".77e-15";
-    switch_element.append_attribute("Cout") = "0.";
-    switch_element.append_attribute("Tdel") =
-        (std::to_string(switch_id * 1e-12)).c_str();
-    switch_element.append_attribute("mux_trans_size") = "2.630740";
-    switch_element.append_attribute("buf_size") = "27.645901";
-  }
-
-  VTR_LOG("Successfully updated VPR XML with %zu new switches\n",
-          (switch_delay_max + 1 - first_new_id + 1));
-}
-
 std::string XMLHandler::format_float_value(double value) {
   std::string result = std::to_string(value);
 
@@ -633,7 +587,9 @@ std::string XMLHandler::format_float_value(double value) {
 
   // Format scientific notation
   if (result.find("e-") != std::string::npos) {
-    result = std::to_string(value);
+    std::ostringstream oss;
+    oss << std::scientific << std::setprecision(8) << value;
+    result = oss.str();
   }
 
   return result;
