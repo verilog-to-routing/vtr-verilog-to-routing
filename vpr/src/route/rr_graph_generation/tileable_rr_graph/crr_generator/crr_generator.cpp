@@ -73,8 +73,8 @@ void CRRGraphGenerator::build_connections() {
 
   // Initialize connection builder
   const DeviceGrid& grid = g_vpr_ctx.device().grid;
-  connection_builder_->initialize(grid.width(),
-                                  grid.height(),
+  connection_builder_->initialize(grid.width()-2,
+                                  grid.height()-2,
                                   crr_opts_.annotated_rr_graph);
 
   VTR_LOG("CRR Graph Generator: Connection building completed\n");
@@ -157,13 +157,13 @@ void CRRGraphGenerator::add_custom_edges() {
   // Add new connections
   const DeviceGrid& grid = g_vpr_ctx.device().grid;
   size_t total_tiles =
-      static_cast<size_t>((grid.width() + 1) * (grid.height() + 1));
+      static_cast<size_t>((grid.width() + 1 - 2) * (grid.height() + 1 - 2));
   ProgressTracker tracker(total_tiles, "Adding new connections");
   std::vector<std::future<void>> futures;
   std::mutex graph_mutex;
 
-  for (Coordinate tile_x = 0; tile_x <= grid.width(); tile_x++) {
-    for (Coordinate tile_y = 0; tile_y <= grid.height(); tile_y++) {
+  for (Coordinate tile_x = 0; tile_x <= grid.width() - 2; tile_x++) {
+    for (Coordinate tile_y = 0; tile_y <= grid.height() - 2; tile_y++) {
       auto fut = thread_pool_->submit([this, tile_x, tile_y, &graph_mutex, &tracker]() {
         std::vector<Connection> tile_connections =
             connection_builder_->get_tile_connections(tile_x, tile_y);
@@ -220,7 +220,7 @@ void CRRGraphGenerator::print_processing_summary() {
   VTR_LOG("Switch blocks processed: %zu\n", sb_manager_.get_all_patterns().size());
   VTR_LOG("Total connections: %zu\n", sb_manager_.get_total_connections());
 
-  VTR_LOG("Grid locations processed: %dx%d\n", g_vpr_ctx.device().grid.width(), g_vpr_ctx.device().grid.height());
+  VTR_LOG("Grid locations processed: %dx%d\n", g_vpr_ctx.device().grid.width() - 2, g_vpr_ctx.device().grid.height() - 2);
 
 }
 
