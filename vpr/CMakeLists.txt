@@ -119,7 +119,7 @@ target_link_libraries(libvpr
                       libpugixml
                       librrgraph
                       ZLIB::ZLIB
-                      OpenXLSX::OpenXLSX
+                      xlnt
                       yaml-cpp::yaml-cpp
 )
 
