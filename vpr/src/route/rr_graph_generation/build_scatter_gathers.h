@@ -67,5 +67,10 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          vtr::RngContainer& rng,
                                                                          vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links);
 
+/**
+ * @brief Converts interposer cut definitions into scatter–gather (SG) specifications.
+ * @param interposer_inf  Interposer cut specifications for each layer.
+ * @param sg_patterns     SG pattern list to update with derived SG specifications.
+ */
 void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& interposer_inf,
                                             std::vector<t_scatter_gather_pattern>& sg_patterns);
