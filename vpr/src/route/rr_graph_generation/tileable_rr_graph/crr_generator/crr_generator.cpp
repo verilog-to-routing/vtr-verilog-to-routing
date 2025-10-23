@@ -120,6 +120,7 @@ void CRRGraphGenerator::create_output_graph() {
           static_cast<SwitchId>(curr_sw_delay_ps),
           "sw_" + std::to_string(curr_sw_delay_ps), default_sw_type,
           Timing(default_timing.Cin, curr_sw_delay_s), default_sizing);
+      VTR_LOG_DEBUG("Adding switch: %s with delay: %e s\n", curr_switch.get_name().c_str(), curr_sw_delay_s);
       output_graph_->add_switch(curr_switch);
     }
   }
