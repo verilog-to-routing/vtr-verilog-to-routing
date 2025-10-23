@@ -578,21 +578,24 @@ void XMLHandler::write_edge(std::ostream& out, const RREdge& e) {
 }
 
 std::string XMLHandler::format_float_value(double value) {
-  std::string result = std::to_string(value);
-
-  // Remove trailing .0 for integer values (C++17 compatible)
-  if (result.length() >= 2 && result.substr(result.length() - 2) == ".0") {
-    result = result.substr(0, result.length() - 2);
-  }
-
-  // Format scientific notation
-  if (result.find("e-") != std::string::npos) {
     std::ostringstream oss;
-    oss << std::scientific << std::setprecision(8) << value;
-    result = oss.str();
-  }
-
-  return result;
+    oss << value;
+    std::string result = oss.str();
+    
+    // Remove trailing .0 for integer values
+    if (result.length() >= 2 && result.ends_with(".0")) {
+        result = result.substr(0, result.length() - 2);
+    }
+    
+    // Format scientific notation
+    if (result.find("e-") != std::string::npos) {
+        oss.str("");
+        oss.clear();
+        oss << std::scientific << std::setprecision(8) << value;
+        result = oss.str();
+    }
+    
+    return result;
 }
 
 void XMLHandler::validate_xml_structure(const pugi::xml_document& doc) {
