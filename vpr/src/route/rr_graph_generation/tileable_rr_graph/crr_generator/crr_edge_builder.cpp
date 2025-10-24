@@ -10,6 +10,6 @@ void build_gsb_track_to_track_map(RRGraphBuilder& rr_graph_builder,
 
     std::vector<crrgenerator::Connection> gsb_connections = connection_builder.get_tile_connections(gsb_x, gsb_y);
     for (const auto& connection : gsb_connections) {
-        rr_graph_builder.create_edclge_in_cache(connection.src_node(), connection.sink_node(), connection.switch_id(), false);
+        rr_graph_builder.create_edge_in_cache(connection.src_node(), connection.sink_node(), connection.switch_id(), false);
     }
 }
