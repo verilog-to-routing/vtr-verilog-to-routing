@@ -1788,7 +1788,12 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                                                          e_rr_type::IPIN, ipin, ipin_grid_side[0]);
 
                 /* add edges to the opin_node */
-                VTR_ASSERT(opin_node_id && ipin_node_id);
+                if (!opin_node_id) {
+                  VTR_ASSERT(opin_node_id);
+                }
+                if (!ipin_node_id) {
+                  VTR_ASSERT(opin_node_id);
+                }
                 rr_graph_builder.create_edge_in_cache(opin_node_id, ipin_node_id, RRSwitchId(clb_to_clb_directs[i].switch_index), false);
             }
         }
