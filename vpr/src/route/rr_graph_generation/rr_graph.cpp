@@ -3012,8 +3012,8 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                         // Add new ipin edge to list of edges
                         std::vector<RRNodeId> inodes;
 
-                        int final_ipin_x = x + directs[i].x_offset + target_type->pin_width_offset[relative_ipin];
-                        int final_ipin_y = y + directs[i].y_offset + target_type->pin_height_offset[relative_ipin];
+                        int final_ipin_x = x - width_offset + directs[i].x_offset + target_type->pin_width_offset[relative_ipin];
+                        int final_ipin_y = y - height_offset + directs[i].y_offset + target_type->pin_height_offset[relative_ipin];
 
                         if (directs[i].to_side != NUM_2D_SIDES) {
                             //Explicit side specified, only create if pin exists on that side
