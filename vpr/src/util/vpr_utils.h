@@ -21,6 +21,14 @@ bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id);
 
 bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
+
+/**
+ * @brief Returns the indices of sub tiles in a given physical type which contains the ports in a specified name. It will return all the sub tiles that contain the required port. Note that the sub tiles may be in different types
+ *
+ * @param type the pointer to the physical tile type descriptor
+ * @param port_name the name of the port as a qualifier to match sub tiles
+ * @return A vector of the indices of qualified sub tiles in the specified physical tile
+ */
 std::vector<int> find_sub_tile_indices_by_port_name(t_physical_tile_type_ptr type, std::string_view port_name);
 
 /**
