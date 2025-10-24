@@ -23,7 +23,7 @@ bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
 /**
- * @brief Returns the indices of sub tiles in a given physical type which contains the ports in a specified name. It will return all the sub tiles that contain the required port. Note that the sub tiles may be in different types
+ * @brief Returns the indices of sub tiles in a given physical type which contain the specified port name. It will return all the sub tiles that contain the required port. Note that the sub tiles may be of different types
  *
  * @param type the pointer to the physical tile type descriptor
  * @param port_name the name of the port as a qualifier to match sub tiles
