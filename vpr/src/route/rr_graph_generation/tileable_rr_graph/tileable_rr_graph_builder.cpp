@@ -248,17 +248,18 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Add edges that bridge OPINs and IPINs to the rr_graph
     // Create edges for a tileable rr_graph
     build_rr_graph_edges(device_ctx.rr_graph,
-                        device_ctx.rr_graph_builder,
-                        rr_node_driver_switches,
-                        grids, vib_grid, 0,
-                        device_chan_width,
-                        segment_inf, segment_inf_x, segment_inf_y,
-                        Fc_in, Fc_out,
-                        sb_type, Fs, sb_subtype, sub_fs,
-                        perimeter_cb,
-                        opin2all_sides, concat_wire,
-                        wire_opposite_side,
-                        delayless_rr_switch);
+                         device_ctx.rr_graph_builder,
+                         rr_node_driver_switches,
+                         crr_opts,
+                         grids, vib_grid, 0,
+                         device_chan_width,
+                         segment_inf, segment_inf_x, segment_inf_y,
+                         Fc_in, Fc_out,
+                         sb_type, Fs, sb_subtype, sub_fs,
+                         perimeter_cb,
+                         opin2all_sides, concat_wire,
+                         wire_opposite_side,
+                         delayless_rr_switch);
 
     // Build direction connection lists
     // TODO: use tile direct builder
@@ -272,7 +273,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     }
 
     build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, 0,
-                                    directs, clb2clb_directs);
+                                      directs, clb2clb_directs);
 
     // Allocate and load routing resource switches, which are derived from the switches from the architecture file,
     // based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches

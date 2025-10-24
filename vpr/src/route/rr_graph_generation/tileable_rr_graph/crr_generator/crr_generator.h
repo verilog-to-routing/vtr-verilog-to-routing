@@ -21,7 +21,7 @@ namespace crrgenerator {
  * process switch block configurations, and generate output graphs.
  */
 class CRRGraphGenerator {
-public:
+  public:
     CRRGraphGenerator(const t_crr_opts& crr_opts,
                       const RRGraph& input_graph,
                       const NodeLookupManager& node_lookup,
@@ -38,7 +38,7 @@ public:
         return connection_builder_.get();
     }
 
-private:
+  private:
     const t_crr_opts& crr_opts_;
     const RRGraph& input_graph_;
     const NodeLookupManager& node_lookup_;
@@ -63,4 +63,4 @@ private:
     void validate_processing_results();
 };
 
-}  // namespace crrgenerator
+} // namespace crrgenerator

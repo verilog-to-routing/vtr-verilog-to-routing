@@ -16,7 +16,7 @@ namespace crrgenerator {
  * containing switch block data, and managing switch block patterns.
  */
 class SwitchBlockManager {
-public:
+  public:
     SwitchBlockManager();
 
     /**
@@ -69,18 +69,18 @@ public:
     size_t get_total_connections() const;
 
     /**
-    * @brief Get the maximum switch delay in picoseconds
-    * @return Maximum switch delay in picoseconds
-    */
+     * @brief Get the maximum switch delay in picoseconds
+     * @return Maximum switch delay in picoseconds
+     */
     int get_max_switch_delay_ps() const { return switch_delay_max_ps_; }
 
     /**
-    * @brief Get the minimum switch delay in picoseconds
-    * @return Minimum switch delay in picoseconds
-    */
+     * @brief Get the minimum switch delay in picoseconds
+     * @return Minimum switch delay in picoseconds
+     */
     int get_min_switch_delay_ps() const { return switch_delay_min_ps_; }
 
-private:
+  private:
     /**
      * @brief Ordered list of switch block patterns
      *
@@ -102,12 +102,12 @@ private:
 
     // File processing
     void load_excel_file(const std::string& pattern,
-                        const std::string& excel_file);
+                         const std::string& excel_file);
 
     /**
-    * @brief Update global switch delay ranges based on all loaded DataFrames
-    * @param is_annotated_excel Whether the switches are annotated in Excel
-    */
+     * @brief Update global switch delay ranges based on all loaded DataFrames
+     * @param is_annotated_excel Whether the switches are annotated in Excel
+     */
     void update_and_set_global_switch_delays(const bool is_annotated_excel);
 
     // Validation
@@ -115,4 +115,4 @@ private:
     void validate_excel_files();
 };
 
-}  // namespace crrgenerator
+} // namespace crrgenerator

@@ -9,7 +9,9 @@ namespace crrgenerator {
 
 // DataFrame implementation
 
-DataFrame::DataFrame(size_t rows, size_t cols) : rows_(rows), cols_(cols) {
+DataFrame::DataFrame(size_t rows, size_t cols)
+    : rows_(rows)
+    , cols_(cols) {
     data_.resize(rows);
     for (auto& row : data_) {
         row.resize(cols);
@@ -95,9 +97,7 @@ size_t DataFrame::count_non_empty() const {
     return count;
 }
 
-size_t DataFrame::count_non_empty_in_range(size_t start_row, size_t start_col,
-                                           size_t end_row,
-                                           size_t end_col) const {
+size_t DataFrame::count_non_empty_in_range(size_t start_row, size_t start_col, size_t end_row, size_t end_col) const {
     size_t count = 0;
     for (size_t row = start_row; row < std::min(end_row, rows_); ++row) {
         for (size_t col = start_col; col < std::min(end_col, cols_); ++col) {
@@ -132,7 +132,7 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
         // Get the first worksheet
         auto worksheet = wb.active_sheet();
         std::string sheet_name = worksheet.title();
-        
+
         VTR_LOG_DEBUG("Got worksheet: '%s'\n", sheet_name.c_str());
 
         // Get the used range dimensions
@@ -145,7 +145,7 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
         // Safety check
         if (last_row > 10000 || last_col > 1000) {
             VTR_LOG_ERROR("Excel file too large: %zux%zu (limit: 10000x1000)\n",
-                        last_row, last_col);
+                          last_row, last_col);
         }
 
         if (last_row == 0 || last_col == 0) {
@@ -168,7 +168,7 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
                     cells_read++;
                 } catch (const std::exception& e) {
                     VTR_LOG_DEBUG("Error reading cell (%zu, %zu): %s\n", row, col, e.what());
-                    df.at(row - 1, col - 1) = Cell();  // Empty cell
+                    df.at(row - 1, col - 1) = Cell(); // Empty cell
                 }
             }
 
@@ -180,7 +180,7 @@ DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
 
         df.source_file = std::filesystem::path(filename).stem().string();
         VTR_LOG_DEBUG("Successfully read Excel file with dimensions: %zux%zu, %zu cells\n",
-                       df.rows(), df.cols(), cells_read);
+                      df.rows(), df.cols(), cells_read);
 
         return df;
 
@@ -194,7 +194,7 @@ DataFrame DataFrameProcessor::process_dataframe(DataFrame df,
                                                 int merge_rows_count,
                                                 int merge_cols_count) {
     VTR_LOG_DEBUG("Processing dataframe with merge_rows=%d, merge_cols=%d\n",
-                    merge_rows_count, merge_cols_count);
+                  merge_rows_count, merge_cols_count);
 
     // Perform row merging
     std::vector<size_t> merged_row_indices = {0, 1};
@@ -206,9 +206,9 @@ DataFrame DataFrameProcessor::process_dataframe(DataFrame df,
 
     // Count connections in the data area
     df.connections = df.count_non_empty_in_range(static_cast<size_t>(merge_rows_count),
-                                       static_cast<size_t>(merge_cols_count),
-                                         df.rows(),
-                                         df.cols());
+                                                 static_cast<size_t>(merge_cols_count),
+                                                 df.rows(),
+                                                 df.cols());
 
     VTR_LOG_DEBUG("Processed dataframe with %zu connections\n", df.connections);
 
@@ -322,4 +322,4 @@ void DataFrameProcessor::validate_excel_file(const std::string& filename) {
     }
 }
 
-}  // namespace crrgenerator
+} // namespace crrgenerator

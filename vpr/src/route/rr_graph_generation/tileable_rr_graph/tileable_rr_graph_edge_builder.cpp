@@ -15,6 +15,8 @@
 #include "tileable_rr_graph_gsb.h"
 #include "tileable_rr_graph_edge_builder.h"
 
+#include "crr_edge_builder.h"
+
 /************************************************************************
  * Build the edges for all the SOURCE and SINKs nodes:
  * 1. create edges between SOURCE and OPINs
@@ -314,12 +316,24 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   const bool& opin2all_sides,
                                   const bool& concat_wire,
                                   const bool& wire_opposite_side) {
+    bool build_crr_edges = crr_opts.sb_templates.empty();
     size_t num_edges_to_create = 0;
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
     build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
     build_rr_graph_edges_for_sink_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
 
     vtr::Point<size_t> gsb_range(grids.width() - 1, grids.height() - 1);
+
+    // Building CRR Graph
+    crrgenerator::SwitchBlockManager sb_manager;
+    sb_manager.initialize(crr_opts.sb_maps, crr_opts.sb_templates, crr_opts.annotated_rr_graph);
+    std::unique_ptr<crrgenerator::RRGraph> crr_input_graph;
+    crrgenerator::XMLHandler xml_handler;
+    crr_input_graph = xml_handler.read_rr_graph(det_routing_arch.read_rr_graph_filename);
+    crrgenerator::NodeLookupManager node_lookup;
+    node_lookup.initialize(*crr_input_graph, grid.width(), grid.height());
+    crrgenerator::CRRGraphGenerator parser(crr_opts, *crr_input_graph, node_lookup, sb_manager, det_routing_arch.write_rr_graph_filename);
+    parser.run();
 
     /* Go Switch Block by Switch Block */
     for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
@@ -332,24 +346,40 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
                                                             layer, gsb_coord, perimeter_cb);
 
-            /* adapt the track_to_ipin_lookup for the GSB nodes */
             t_track2pin_map track2ipin_map; /* [0..track_gsb_side][0..num_tracks][ipin_indices] */
-            track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
-
-            /* adapt the opin_to_track_map for the GSB nodes */
             t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
-            opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
+            if (build_crr_edges && !crr_opts.preserve_pin_connections) {
+                VTR_ASSERT_MSG(false, "Not implemented");
+            } else {
+                /* adapt the track_to_ipin_lookup for the GSB nodes */
+                track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
+
+                /* adapt the opin_to_track_map for the GSB nodes */
+                opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
+            }
 
             /* adapt the switch_block_conn for the GSB nodes */
             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
-            sb_conn = build_gsb_track_to_track_map(rr_graph, rr_gsb,
-                                                   sb_type, Fs, sb_subtype, sub_fs, concat_wire, wire_opposite_side,
-                                                   segment_inf);
+            if (build_crr_edges) {
+                sb_conn = build_gsb_crr_track_to_track_map(rr_graph,
+                                                           rr_gsb,
+                                                           grids,
+                                                           segment_inf,
+                                                           Fc_in,
+                                                           Fc_out);
+            } else {
+                build_gsb_track_to_track_edges(rr_graph_builder, rr_gsb, *parser.get_connection_builder());
+            }
 
             /* Build edges for a GSB */
-            build_edges_for_one_tileable_rr_gsb(rr_graph_builder, rr_gsb,
-                                                track2ipin_map, opin2track_map,
-                                                sb_conn, rr_node_driver_switches, num_edges_to_create);
+            build_edges_for_one_tileable_rr_gsb(rr_graph_builder,
+                                                rr_gsb,
+                                                track2ipin_map,
+                                                opin2track_map,
+                                                sb_conn,
+                                                rr_node_driver_switches,
+                                                num_edges_to_create);
+
             /* Finish this GSB, go to the next*/
             rr_graph_builder.build_edges(true);
         }

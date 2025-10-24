@@ -20,7 +20,7 @@ namespace crrgenerator {
  * with support for attribute mapping and pretty printing.
  */
 class XMLHandler {
-public:
+  public:
     XMLHandler();
 
     /**
@@ -40,7 +40,7 @@ public:
      */
     void write_rr_graph(const std::string& filename, const RRGraph& graph);
 
- private:
+  private:
     // Attribute mapping for XML conversion
     std::unordered_map<std::string, std::string> attribute_map_;
 
@@ -50,7 +50,7 @@ public:
     void parse_switches(const pugi::xml_node& switches_node, RRGraph& graph);
     void parse_segments(const pugi::xml_node& segments_node, RRGraph& graph);
     void parse_block_types(const pugi::xml_node& block_types_node,
-                            RRGraph& graph);
+                           RRGraph& graph);
     void parse_grid(const pugi::xml_node& grids_node, RRGraph& graph);
     void parse_nodes(const pugi::xml_node& nodes_node, RRGraph& graph);
     void parse_edges(const pugi::xml_node& edges_node, RRGraph& graph);
@@ -125,4 +125,4 @@ public:
         const std::vector<std::string>& required_children);
 };
 
-}  // namespace crrgenerator
+} // namespace crrgenerator

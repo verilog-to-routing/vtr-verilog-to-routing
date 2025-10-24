@@ -15,8 +15,8 @@ namespace crrgenerator {
 SwitchBlockManager::SwitchBlockManager() = default;
 
 void SwitchBlockManager::initialize(const std::string& sb_maps_file,
-                                  const std::string& sb_annotated_dir,
-                                  const bool is_annotated_excel) {
+                                    const std::string& sb_annotated_dir,
+                                    const bool is_annotated_excel) {
     VTR_LOG("Initializing SwitchBlockManager with maps file: %s\n", sb_maps_file.c_str());
 
     annotated_dir_ = sb_annotated_dir;
@@ -40,12 +40,12 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
 
             std::string excel_file = item.second.as<std::string>();
             if (item.second.IsNull()) {
-            excel_file = "";
+                excel_file = "";
             }
 
             std::string full_path = std::filesystem::path(annotated_dir_) / excel_file;
             if (excel_file.empty()) {
-            full_path = "";
+                full_path = "";
             }
 
             // Handle escaped asterisks (replace \* with *)
@@ -55,33 +55,33 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
             ordered_switch_block_patterns_.push_back(pattern);
             switch_block_to_file_[pattern] = full_path;
             if (!full_path.empty()) {
-            unique_files.insert(full_path);
+                unique_files.insert(full_path);
             }
         }
 
         for (const auto& full_path : unique_files) {
             if (std::filesystem::exists(full_path)) {
-            try {
-                VTR_LOG_DEBUG("Attempting to read Excel file: %s\n", full_path.c_str());
-                DataFrame df = processor_.read_excel(full_path);
-                df = processor_.process_dataframe(std::move(df), NUM_EMPTY_ROWS,
-                                                NUM_EMPTY_COLS);
-                file_cache_[full_path] = std::move(df);
-                VTR_LOG_DEBUG("Processed %zu connections in %s file\n",
-                            file_cache_[full_path].connections,
-                            std::filesystem::path(full_path).filename().string().c_str());
-            } catch (const std::exception& e) {
-                VTR_LOG_ERROR("Failed to read required Excel file '%s': %s\n", full_path.c_str(), e.what());
-            }
+                try {
+                    VTR_LOG_DEBUG("Attempting to read Excel file: %s\n", full_path.c_str());
+                    DataFrame df = processor_.read_excel(full_path);
+                    df = processor_.process_dataframe(std::move(df), NUM_EMPTY_ROWS,
+                                                      NUM_EMPTY_COLS);
+                    file_cache_[full_path] = std::move(df);
+                    VTR_LOG_DEBUG("Processed %zu connections in %s file\n",
+                                  file_cache_[full_path].connections,
+                                  std::filesystem::path(full_path).filename().string().c_str());
+                } catch (const std::exception& e) {
+                    VTR_LOG_ERROR("Failed to read required Excel file '%s': %s\n", full_path.c_str(), e.what());
+                }
             } else {
-            VTR_LOG_ERROR("Required Excel file not found: %s\n", full_path.c_str());
+                VTR_LOG_ERROR("Required Excel file not found: %s\n", full_path.c_str());
             }
         }
 
         // Map patterns to loaded DataFrames
         for (const auto& [pattern, full_path] : switch_block_to_file_) {
             if (file_cache_.find(full_path) != file_cache_.end()) {
-            dataframes_[pattern] = &file_cache_[full_path];
+                dataframes_[pattern] = &file_cache_[full_path];
             }
         }
 
@@ -180,4 +180,4 @@ void SwitchBlockManager::validate_yaml_structure(const YAML::Node& root) {
     }
 }
 
-}  // namespace crrgenerator
+} // namespace crrgenerator
