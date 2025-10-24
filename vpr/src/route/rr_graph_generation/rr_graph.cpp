@@ -3012,15 +3012,19 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                         // Add new ipin edge to list of edges
                         std::vector<RRNodeId> inodes;
 
+                        int final_ipin_x = x + directs[i].x_offset + target_type->pin_width_offset[relative_ipin];
+                        int final_ipin_y = y + directs[i].y_offset + target_type->pin_height_offset[relative_ipin];
+
                         if (directs[i].to_side != NUM_2D_SIDES) {
                             //Explicit side specified, only create if pin exists on that side
-                            RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x + directs[i].x_offset, y + directs[i].y_offset, e_rr_type::IPIN, ipin, directs[i].to_side);
+                            RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, final_ipin_x, final_ipin_y,
+                                                                                      e_rr_type::IPIN, ipin, directs[i].to_side);
                             if (inode) {
                                 inodes.push_back(inode);
                             }
                         } else {
                             //No side specified, get all candidates
-                            inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(layer, x + directs[i].x_offset, y + directs[i].y_offset, e_rr_type::IPIN, ipin);
+                            inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(layer, final_ipin_x, final_ipin_y, e_rr_type::IPIN, ipin);
                         }
 
                         if (inodes.size() > 0) {
