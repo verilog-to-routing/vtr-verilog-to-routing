@@ -1722,11 +1722,11 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
         }
 
         /* get every opin in the range */
-        for (int opin = min_index; opin <= max_index; ++opin) {
-            int offset = opin - min_index;
+        for (int relative_opin = min_index; relative_opin <= max_index; ++relative_opin) {
+            int offset = relative_opin - min_index;
             //Capacity location determined by pin number relative to pins per capacity instance
-            for (size_t z : clb_to_clb_directs[i].from_sub_tiles) {
-                int opin = get_physical_pin_from_capacity_location(grid_type, opin, z);
+            for (int z : clb_to_clb_directs[i].from_sub_tiles) {
+                int opin = get_physical_pin_from_capacity_location(grid_type, relative_opin, z);
                 VTR_ASSERT(z >= 0 && z < grid_type->capacity);
 
                 if ((to_grid_coordinate.x() < grids.width() - 1)
