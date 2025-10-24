@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rr_graph_fwd.h"
+
 #include "crr_common.h"
 #include "data_frame_processor.h"
 #include "node_lookup_manager.h"
@@ -107,11 +109,11 @@ class CRRConnectionBuilder {
                                         std::vector<Connection>& tile_connections) const;
 
     // Node processing methods
-    std::map<size_t, NodeId> get_vertical_nodes(Coordinate x, Coordinate y, const DataFrame& df,
-                                                const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
-
-    std::map<size_t, NodeId> get_horizontal_nodes(Coordinate x, Coordinate y, const DataFrame& df,
+    std::map<size_t, RRNodeId> get_vertical_nodes(Coordinate x, Coordinate y, const DataFrame& df,
                                                   const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
+
+    std::map<size_t, RRNodeId> get_horizontal_nodes(Coordinate x, Coordinate y, const DataFrame& df,
+                                                    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
 
     // PTC sequence calculation
     std::string get_ptc_sequence(int seg_index, int seg_length, int physical_length, Direction direction, int truncated) const;
@@ -136,13 +138,13 @@ class CRRConnectionBuilder {
 
     SegmentInfo parse_segment_info(const DataFrame& df, size_t row_or_col, bool is_vertical) const;
 
-    NodeId process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y,
-                                  const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
+    RRNodeId process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y,
+                                    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
 
-    NodeId process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y,
-                                const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup,
-                                int& prev_seg_index, Side& prev_side, std::string& prev_seg_type, int& prev_ptc_number,
-                                bool is_vertical) const;
+    RRNodeId process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y,
+                                  const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup,
+                                  int& prev_seg_index, Side& prev_side, std::string& prev_seg_type, int& prev_ptc_number,
+                                  bool is_vertical) const;
 
     // Coordinate and direction calculations
     void calculate_segment_coordinates(const SegmentInfo& info, Coordinate x, Coordinate y,
@@ -155,8 +157,8 @@ class CRRConnectionBuilder {
     // Return the switch id of an edge between two nodes
     SwitchId get_edge_switch_id(const std::string& cell_value,
                                 const std::string& sink_node_type,
-                                NodeId source_node,
-                                NodeId sink_node,
+                                RRNodeId source_node,
+                                RRNodeId sink_node,
                                 int segment_length = -1) const;
 
     // Validation and bounds checking
