@@ -12,7 +12,7 @@ archs_dir=arch/timing
 circuit_list_add=mkSMAdapter4B.v
 
 # Add architectures to list to sweep
-arch_list_add=k6_frac_N10_tileable_4add_2chains_depop50_super_clb_tile_mem20K_22nm.xml
+arch_list_add=k4_frac_N8_tileable_reset_softadder_register_scan_chain_dsp8_mem1K_nonLR_caravel_io_skywater130nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
