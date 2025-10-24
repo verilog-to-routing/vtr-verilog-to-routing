@@ -2939,6 +2939,10 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
     auto [z, relative_opin] = get_capacity_location_from_physical_pin(curr_type, opin);
     VTR_ASSERT(z >= 0 && z < curr_type->capacity);
     const int num_directs = directs.size();
+    
+    // Get the root location of the OPIN, as the base to find target IPIN coordinate
+    int from_x = x - width_offset;
+    int from_y = y - height_offset;
 
     // Iterate through all direct connections
     for (int i = 0; i < num_directs; i++) {
@@ -2947,13 +2951,13 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
             if (directs[i].from_side != NUM_2D_SIDES && directs[i].from_side != side) continue;
 
             // Offset must be in range
-            if (x + directs[i].x_offset < int(device_ctx.grid.width() - 1)
-                && x + directs[i].x_offset > 0
-                && y + directs[i].y_offset < int(device_ctx.grid.height() - 1)
-                && y + directs[i].y_offset > 0) {
+            if (from_x + directs[i].x_offset < int(device_ctx.grid.width() - 1)
+                && from_x + directs[i].x_offset > 0
+                && from_y + directs[i].y_offset < int(device_ctx.grid.height() - 1)
+                && from_y + directs[i].y_offset > 0) {
                 // Only add connections if the target clb type matches the type in the direct specification
-                t_physical_tile_type_ptr target_type = device_ctx.grid.get_physical_type({x + directs[i].x_offset,
-                                                                                          y + directs[i].y_offset,
+                t_physical_tile_type_ptr target_type = device_ctx.grid.get_physical_type({from_x + directs[i].x_offset,
+                                                                                          from_y + directs[i].y_offset,
                                                                                           layer});
 
                 if (clb_to_clb_directs[i].to_clb_type == target_type
@@ -3012,8 +3016,8 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                         // Add new ipin edge to list of edges
                         std::vector<RRNodeId> inodes;
 
-                        int final_ipin_x = x - width_offset + directs[i].x_offset + target_type->pin_width_offset[relative_ipin];
-                        int final_ipin_y = y - height_offset + directs[i].y_offset + target_type->pin_height_offset[relative_ipin];
+                        int final_ipin_x = from_x + directs[i].x_offset + target_type->pin_width_offset[relative_ipin];
+                        int final_ipin_y = from_y + directs[i].y_offset + target_type->pin_height_offset[relative_ipin];
 
                         if (directs[i].to_side != NUM_2D_SIDES) {
                             //Explicit side specified, only create if pin exists on that side
