@@ -3,16 +3,16 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/verilog
+circuits_dir=benchmarks/microbenchmarks
 
 # Path to directory of architectures to use
 archs_dir=arch/timing
 
 # Add circuits to list to sweep
-circuit_list_add=mkSMAdapter4B.v
+circuit_list_add=mult8_ram8.blif
 
 # Add architectures to list to sweep
-arch_list_add=k6_frac_N10_tileable_4add_2chains_depop50_supertile_mem20K_22nm.xml
+arch_list_add=k4_frac_N8_tileable_reset_softadder_register_scan_chain_dsp8_mem1K_nonLR_caravel_io_skywater130nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
