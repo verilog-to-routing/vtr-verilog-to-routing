@@ -2365,6 +2365,8 @@ Direct Inter-block Connections
 The content within the ``<directlist>`` tag consists of a group of ``<direct>`` tags.
 The ``<direct>`` tag and its contents are described below.
 
+.. note:: ``from_pin`` and ``to_pin`` only support big endian! For example, ``clb.out[8:0]``
+
 .. arch:tag:: <direct name="string" from_pin="string" to_pin="string" x_offset="int" y_offset="int" z_offset="int" switch_name="string" from_side="{left|right|top|bottom}" to_side="{left|right|top|bottom}"/>
 
     :req_param name: is a unique alphanumeric string to name the connection.
@@ -2384,12 +2386,87 @@ The ``<direct>`` tag and its contents are described below.
     The ``from_side`` and ``to_side`` options can usually be left unspecified.
     However they can be used to explicitly control how direct connections to physically equivalent pins (which may appear on multiple sides) are handled.
 
-    **Example:**
-    Consider a carry chain where the ``cout`` of each CLB drives the ``cin`` of the CLB immediately below it, using the delay-less switch one would enter the following:
+**Example: Inter-tile connection**
+Consider a carry chain where the ``cout`` of each CLB drives the ``cin`` of the CLB immediately below it, using the delay-less switch one would enter the following:
 
-    .. code-block:: xml
+.. code-block:: xml
 
-        <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+    <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+
+**Example: Inner-tile feedback**
+
+Consider a feedback connection where the ``out`` of each CLB drives the ``in`` of the CLB in the same location, using the connection block switch one would enter the following:
+
+.. code-block:: xml
+
+    <direct name="feedback" from_pin="clb.out" to_pin="clb.in" x_offset="0" y_offset="0" z_offset="0" switch_name="cb_mux"/>
+
+**Example: Cross-sub-tile connection**
+
+In this example, a tile ``cim8_1k`` is defined, under which there are two types of sub-tiles:
+
+- ``mult_8``: the first sub-tile
+- ``memory``: the second, and the third sub-tile
+
+.. code-block:: xml
+
+    <tile name="cim8_1k" height="2" area="396000">
+      <sub_tile name="mult_8" capacity="1">
+        <equivalent_sites>
+          <site pb_type="mult_8" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="a" num_pins="8"/>
+        <input name="b" num_pins="8"/>
+        <output name="out" num_pins="16"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="out" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="left"/>
+          <loc side="top"/>
+          <loc side="right" yoffset="0">mult_8.a[0:2] mult_8.b[0:2] mult_8.out[0:5]</loc>
+          <loc side="right" yoffset="1">mult_8.a[3:5] mult_8.b[3:5] mult_8.out[6:10]</loc>
+          <loc side="bottom">mult_8.a[6:7] mult_8.b[6:7] mult_8.out[11:15]</loc>
+        </pinlocations>
+      </sub_tile>
+      <sub_tile name="memory" capacity="2">
+        <equivalent_sites>
+          <site pb_type="memory"/>
+        </equivalent_sites>
+        <input name="waddr" num_pins="7"/>
+        <input name="raddr" num_pins="7"/>
+        <input name="data_in" num_pins="8"/>
+        <input name="wen" num_pins="1"/>
+        <input name="ren" num_pins="1"/>
+        <output name="data_out" num_pins="8"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="clk" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="data_in" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="left" yoffset="0">memory.clk memory.waddr[0:0] memory.raddr[0:0] memory.data_in[0:0] memory.data_out[0:0]</loc>
+          <loc side="left" yoffset="1">memory.waddr[1:1] memory.raddr[1:1] memory.data_in[1:1] memory.data_out[1:1]</loc>
+          <loc side="top" yoffset="1">memory.waddr[2:2] memory.raddr[2:2] memory.data_in[2:2] memory.data_out[2:2] memory.waddr[3:3] memory.raddr[3:3] memory.data_in[3:3] memory.data_out[3:3]</loc>
+          <loc side="right" yoffset="0">memory.waddr[4:4] memory.raddr[4:4] memory.data_in[4:4] memory.data_out[4:4]</loc>
+          <loc side="right" yoffset="1">memory.waddr[5:5] memory.raddr[5:5] memory.data_in[5:5] memory.data_out[5:5]</loc>
+          <loc side="bottom" yoffset="0">memory.wen memory.waddr[6:6] memory.raddr[6:6] memory.data_in[6:6] memory.data_out[6:6] memory.ren memory.data_in[7:7] memory.data_out[7:7]</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+
+As shown in :numref:`fig_example_subtile_direct_connection`, consider a connection where the ``out`` of a sub tile ``mult_8`` of tile ``cim8_1k`` drives the ``data_in`` of the sub tile ``memory`` of tile ``cim8_1k`` with an offset, using the delayless switch one would enter the following:
+
+.. code-block:: xml
+
+    <direct name="cim_direct0" from_pin="cim8_1k.out[7:0]" to_pin="cim8_1k.data_in[7:0]" x_offset="0" y_offset="0" z_offset="1"/>
+    <direct name="cim_direct1" from_pin="cim8_1k.out[15:8]" to_pin="cim8_1k.data_in[7:0]" x_offset="0" y_offset="0" z_offset="2"/>
+
+.. _fig_example_subtile_direct_connection:
+
+.. figure:: ./fig_example_subtile_direct_connection.png
+   :width: 100%
+   :alt: Example of direct connections across sub-tiles
 
 .. _custom_switch_blocks:
 
