@@ -34,6 +34,10 @@ public:
      */
     void run();
 
+    const CRRConnectionBuilder* get_connection_builder() const {
+        return connection_builder_.get();
+    }
+
 private:
     const t_crr_opts& crr_opts_;
     const RRGraph& input_graph_;
