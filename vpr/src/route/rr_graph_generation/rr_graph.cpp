@@ -2939,7 +2939,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
     auto [z, relative_opin] = get_capacity_location_from_physical_pin(curr_type, opin);
     VTR_ASSERT(z >= 0 && z < curr_type->capacity);
     const int num_directs = directs.size();
-
+    
     // Iterate through all direct connections
     for (int i = 0; i < num_directs; i++) {
         // Find matching direct clb-to-clb connections with the same type as current grid location
@@ -3012,15 +3012,21 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                         // Add new ipin edge to list of edges
                         std::vector<RRNodeId> inodes;
 
+                        int target_width_offset = device_ctx.grid.get_width_offset({x + directs[i].x_offset, y + directs[i].y_offset, layer});
+                        int target_height_offset = device_ctx.grid.get_height_offset({x + directs[i].x_offset, y + directs[i].y_offset, layer});
+                        int final_ipin_x = x + directs[i].x_offset - target_width_offset + target_type->pin_width_offset[ipin];
+                        int final_ipin_y = y + directs[i].y_offset - target_height_offset + target_type->pin_height_offset[ipin];
+
                         if (directs[i].to_side != NUM_2D_SIDES) {
                             //Explicit side specified, only create if pin exists on that side
-                            RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x + directs[i].x_offset, y + directs[i].y_offset, e_rr_type::IPIN, ipin, directs[i].to_side);
+                            RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, final_ipin_x, final_ipin_y,
+                                                                                      e_rr_type::IPIN, ipin, directs[i].to_side);
                             if (inode) {
                                 inodes.push_back(inode);
                             }
                         } else {
                             //No side specified, get all candidates
-                            inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(layer, x + directs[i].x_offset, y + directs[i].y_offset, e_rr_type::IPIN, ipin);
+                            inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(layer, final_ipin_x, final_ipin_y, e_rr_type::IPIN, ipin);
                         }
 
                         if (inodes.size() > 0) {
