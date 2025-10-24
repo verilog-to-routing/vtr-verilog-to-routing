@@ -24,8 +24,7 @@ void draw_interposer_cuts(ezgl::renderer* g) {
         {draw_coords->tile_x.front() - draw_coords->get_tile_width(),
          draw_coords->tile_y.front() - draw_coords->get_tile_height()},
         {draw_coords->tile_x.back() + 2 * draw_coords->get_tile_width(),
-         draw_coords->tile_y.back() + 2 * draw_coords->get_tile_height()}
-    };
+         draw_coords->tile_y.back() + 2 * draw_coords->get_tile_height()}};
 
     g->set_color(ezgl::BLACK, 255);
     g->set_line_dash(ezgl::line_dash::asymmetric_5_3);

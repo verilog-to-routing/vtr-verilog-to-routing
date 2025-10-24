@@ -415,7 +415,7 @@ struct t_draw_state {
      */
     std::optional<std::reference_wrapper<const PartialPlacement>> ap_partial_placement_ref_;
 
-public:
+  public:
     // Set/clear/get the AP partial placement reference used during AP drawing
     void set_ap_partial_placement_ref(const PartialPlacement& p) { ap_partial_placement_ref_ = std::cref(p); }
     void clear_ap_partial_placement_ref() { ap_partial_placement_ref_.reset(); }
