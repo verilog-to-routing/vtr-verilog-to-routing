@@ -91,13 +91,8 @@ class CRRConnectionBuilder {
     const SwitchBlockManager& sb_manager_;
     SwitchId sw_zero_id_;
 
-    std::vector<std::string> storage_sw_names_;
-    std::vector<std::map<size_t, NodeId>> storage_source_nodes_;
-    std::vector<std::map<size_t, NodeId>> storage_sink_nodes_;
-
     // Generated connections
     std::vector<std::vector<std::vector<Connection>>> all_connections_;
-    std::mutex connections_mutex_;
 
     // Processing state
     std::atomic<size_t> processed_locations_{0};
@@ -112,22 +107,14 @@ class CRRConnectionBuilder {
                                         std::vector<Connection>& tile_connections) const;
 
     // Node processing methods
-    std::map<size_t, NodeId> get_vertical_nodes(
-        Coordinate x,
-        Coordinate y,
-        const DataFrame& df,
-        const std::unordered_map<NodeHash, const RRNode*, NodeHasher>&
-            node_lookup);
+    std::map<size_t, NodeId> get_vertical_nodes(Coordinate x, Coordinate y, const DataFrame& df,
+                                                const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
 
-    std::map<size_t, NodeId> get_horizontal_nodes(
-        Coordinate x,
-        Coordinate y,
-        const DataFrame& df,
-        const std::unordered_map<NodeHash, const RRNode*, NodeHasher>&
-            node_lookup);
+    std::map<size_t, NodeId> get_horizontal_nodes(Coordinate x, Coordinate y, const DataFrame& df,
+                                                  const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
 
     // PTC sequence calculation
-    std::string get_ptc_sequence(int seg_index, int seg_length, int physical_length, Direction direction, int truncated);
+    std::string get_ptc_sequence(int seg_index, int seg_length, int physical_length, Direction direction, int truncated) const;
 
     // Segment processing helpers
     struct SegmentInfo {
@@ -147,27 +134,30 @@ class CRRConnectionBuilder {
             , tap(t) {}
     };
 
-    SegmentInfo parse_segment_info(const DataFrame& df, size_t row_or_col, bool is_vertical);
-    NodeId process_opin_ipin_node(
-        const SegmentInfo& info,
-        Coordinate x,
-        Coordinate y,
-        const std::unordered_map<NodeHash, const RRNode*, NodeHasher>&
-            node_lookup);
-    NodeId process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y, const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup, int& prev_seg_index, Side& prev_side, std::string& prev_seg_type, int& prev_ptc_number, bool is_vertical);
+    SegmentInfo parse_segment_info(const DataFrame& df, size_t row_or_col, bool is_vertical) const;
+
+    NodeId process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y,
+                                  const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
+
+    NodeId process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y,
+                                const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup,
+                                int& prev_seg_index, Side& prev_side, std::string& prev_seg_type, int& prev_ptc_number,
+                                bool is_vertical) const;
 
     // Coordinate and direction calculations
-    void calculate_segment_coordinates(const SegmentInfo& info, Coordinate x, Coordinate y, Coordinate& x_low, Coordinate& x_high, Coordinate& y_low, Coordinate& y_high, int& physical_length, int& truncated, bool is_vertical);
+    void calculate_segment_coordinates(const SegmentInfo& info, Coordinate x, Coordinate y,
+                                       Coordinate& x_low, Coordinate& x_high, Coordinate& y_low, Coordinate& y_high,
+                                       int& physical_length, int& truncated, bool is_vertical) const;
 
-    Direction get_direction_for_side(Side side, bool is_vertical);
-    std::string get_segment_type_label(Side side);
+    Direction get_direction_for_side(Side side, bool is_vertical) const;
+    std::string get_segment_type_label(Side side) const;
 
     // Return the switch id of an edge between two nodes
     SwitchId get_edge_switch_id(const std::string& cell_value,
                                 const std::string& sink_node_type,
                                 NodeId source_node,
                                 NodeId sink_node,
-                                int segment_length = -1);
+                                int segment_length = -1) const;
 
     // Validation and bounds checking
     bool is_valid_grid_location(Coordinate x, Coordinate y) const;

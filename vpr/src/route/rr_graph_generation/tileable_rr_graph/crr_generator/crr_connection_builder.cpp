@@ -187,13 +187,6 @@ void CRRConnectionBuilder::build_connections_for_location(Coordinate x,
         }
     }
 
-    {
-        std::lock_guard<std::mutex> lock(connections_mutex_);
-        storage_sw_names_.push_back(sw_name);
-        storage_source_nodes_.push_back(source_nodes);
-        storage_sink_nodes_.push_back(sink_nodes);
-    }
-
     std::sort(tile_connections.begin(), tile_connections.end());
     tile_connections.erase(std::unique(tile_connections.begin(),
                                        tile_connections.end()),
@@ -211,12 +204,8 @@ std::vector<Connection> CRRConnectionBuilder::get_tile_connections(Coordinate ti
     return tile_connections;
 }
 
-std::map<size_t, NodeId> CRRConnectionBuilder::get_vertical_nodes(
-    Coordinate x,
-    Coordinate y,
-    const DataFrame& df,
-    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>&
-        node_lookup) {
+std::map<size_t, NodeId> CRRConnectionBuilder::get_vertical_nodes(Coordinate x, Coordinate y, const DataFrame& df,
+                                                                  const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const {
     std::map<size_t, NodeId> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -246,12 +235,8 @@ std::map<size_t, NodeId> CRRConnectionBuilder::get_vertical_nodes(
     return source_nodes;
 }
 
-std::map<size_t, NodeId> CRRConnectionBuilder::get_horizontal_nodes(
-    Coordinate x,
-    Coordinate y,
-    const DataFrame& df,
-    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>&
-        node_lookup) {
+std::map<size_t, NodeId> CRRConnectionBuilder::get_horizontal_nodes(Coordinate x, Coordinate y, const DataFrame& df,
+                                                                    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const {
     std::map<size_t, NodeId> sink_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -284,10 +269,8 @@ std::map<size_t, NodeId> CRRConnectionBuilder::get_horizontal_nodes(
     return sink_nodes;
 }
 
-CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(
-    const DataFrame& df,
-    size_t row_or_col,
-    bool is_vertical) {
+CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const DataFrame& df, size_t row_or_col,
+                                                                           bool is_vertical) const {
     SegmentInfo info;
 
     if (is_vertical) {
@@ -336,12 +319,8 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(
     return info;
 }
 
-NodeId CRRConnectionBuilder::process_opin_ipin_node(
-    const SegmentInfo& info,
-    Coordinate x,
-    Coordinate y,
-    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>&
-        node_lookup) {
+NodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y,
+                                                    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const {
     assert(info.side == Side::OPIN || info.side == Side::IPIN);
     NodeType node_type =
         (info.side == Side::OPIN) ? NodeType::OPIN : NodeType::IPIN;
@@ -356,16 +335,10 @@ NodeId CRRConnectionBuilder::process_opin_ipin_node(
     return 0;
 }
 
-NodeId CRRConnectionBuilder::process_channel_node(
-    const SegmentInfo& info,
-    Coordinate x,
-    Coordinate y,
-    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup,
-    int& prev_seg_index,
-    Side& prev_side,
-    std::string& prev_seg_type,
-    int& prev_ptc_number,
-    bool is_vertical) {
+NodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y,
+                                                  const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup,
+                                                  int& prev_seg_index, Side& prev_side, std::string& prev_seg_type, int& prev_ptc_number,
+                                                  bool is_vertical) const {
     // Check grid boundaries
     if ((info.side == Side::RIGHT && x == fpga_grid_x_) || (info.side == Side::TOP && y == fpga_grid_y_)) {
         return 0;
@@ -418,17 +391,12 @@ NodeId CRRConnectionBuilder::process_channel_node(
     }
 }
 
-void CRRConnectionBuilder::calculate_segment_coordinates(
-    const SegmentInfo& info,
-    Coordinate x,
-    Coordinate y,
-    Coordinate& x_low,
-    Coordinate& x_high,
-    Coordinate& y_low,
-    Coordinate& y_high,
-    int& physical_length,
-    int& truncated,
-    bool is_vertical) {
+void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info,
+                                                         Coordinate x, Coordinate y,
+                                                         Coordinate& x_low, Coordinate& x_high,
+                                                         Coordinate& y_low, Coordinate& y_high,
+                                                         int& physical_length, int& truncated,
+                                                         bool is_vertical) const {
     int seg_length = std::stoi(info.seg_type.substr(1));
     int tap = info.tap;
 
@@ -512,7 +480,7 @@ void CRRConnectionBuilder::calculate_segment_coordinates(
 }
 
 Direction CRRConnectionBuilder::get_direction_for_side(Side side,
-                                                       bool is_vertical) {
+                                                       bool is_vertical) const {
     if (is_vertical) {
         return (side == Side::RIGHT || side == Side::TOP) ? Direction::DEC_DIR
                                                           : Direction::INC_DIR;
@@ -522,7 +490,7 @@ Direction CRRConnectionBuilder::get_direction_for_side(Side side,
     }
 }
 
-std::string CRRConnectionBuilder::get_segment_type_label(Side side) {
+std::string CRRConnectionBuilder::get_segment_type_label(Side side) const {
     return (side == Side::LEFT || side == Side::RIGHT) ? "CHANX" : "CHANY";
 }
 
@@ -530,7 +498,7 @@ std::string CRRConnectionBuilder::get_ptc_sequence(int seg_index,
                                                    int /*seg_length*/,
                                                    int physical_length,
                                                    Direction direction,
-                                                   int truncated) {
+                                                   int truncated) const {
     std::vector<std::string> sequence;
 
     if (direction == Direction::DEC_DIR) {
@@ -553,12 +521,9 @@ std::string CRRConnectionBuilder::get_ptc_sequence(int seg_index,
     return result;
 }
 
-SwitchId CRRConnectionBuilder::get_edge_switch_id(
-    const std::string& cell_value,
-    const std::string& sink_node_type,
-    NodeId /*source_node*/,
-    NodeId /*sink_node*/,
-    int segment_length) {
+SwitchId CRRConnectionBuilder::get_edge_switch_id(const std::string& cell_value, const std::string& sink_node_type,
+                                                  NodeId /*source_node*/, NodeId /*sink_node*/,
+                                                  int segment_length) const {
     std::string lower_case_sink_node_type = sink_node_type;
     std::transform(lower_case_sink_node_type.begin(),
                    lower_case_sink_node_type.end(),
@@ -587,9 +552,9 @@ SwitchId CRRConnectionBuilder::get_edge_switch_id(
                        capitalized_switch_id_key.begin(), ::toupper);
 
         if (default_switch_id_.find(switch_id_key) != default_switch_id_.end()) {
-            return default_switch_id_[switch_id_key];
+            return default_switch_id_.at(switch_id_key);
         } else if (default_switch_id_.find(capitalized_switch_id_key) != default_switch_id_.end()) {
-            return default_switch_id_[capitalized_switch_id_key];
+            return default_switch_id_.at(capitalized_switch_id_key);
         } else {
             throw std::runtime_error("Default switch id not found for Node Type: " + lower_case_sink_node_type + " and Switch ID Key: " + capitalized_switch_id_key);
         }
