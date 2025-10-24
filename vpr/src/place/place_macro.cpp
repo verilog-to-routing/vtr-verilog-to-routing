@@ -566,7 +566,7 @@ static void mark_direct_of_pins(int start_pin_index,
             if (direct_type_from_blk_pin[itype][iblk_pin] != e_pin_type::OPEN) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n",
-                                line, src_string);
+                                line, src_string.data());
             } else {
                 direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
             }
