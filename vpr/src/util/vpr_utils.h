@@ -21,6 +21,7 @@ bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id);
 
 bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
+std::vector<size_t> find_sub_tile_indices_by_port_name(t_physical_tile_type_ptr type, std::string_view port_name);
 
 /**
  * @brief Returns the corresponding physical type given the location in the grid.
