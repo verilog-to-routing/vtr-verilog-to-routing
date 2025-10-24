@@ -1734,13 +1734,13 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                     int relative_ipin = UNDEFINED;
                     if (clb_to_clb_directs[i].to_clb_pin_start_index
                         > clb_to_clb_directs[i].to_clb_pin_end_index) {
-                        if (true == swap) {
+                        if (swap) {
                             relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
                         } else {
                             relative_ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
                         }
                     } else {
-                        if (true == swap) {
+                        if (swap) {
                             relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
                         } else {
                             relative_ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
