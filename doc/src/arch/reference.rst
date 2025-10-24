@@ -2464,7 +2464,7 @@ As shown in :numref:`fig_example_subtile_direct_connection`, consider a connecti
 
 .. _fig_example_subtile_direct_connection:
 
-.. figure:: ./fig_example_subtile_direct_connection.png
+.. figure:: ./example_subtile_direct_connection.png
    :width: 100%
    :alt: Example of direct connections across sub-tiles
 
