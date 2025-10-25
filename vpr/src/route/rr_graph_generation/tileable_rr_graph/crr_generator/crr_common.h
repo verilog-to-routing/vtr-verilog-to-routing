@@ -46,7 +46,7 @@ class ThreadPool;
 class RRGraphGenerator;
 
 // Type aliases for convenience
-using NodeId = int32_t;
+using NodeId = size_t;
 using SwitchId = int32_t;
 using SegmentId = int32_t;
 using Coordinate = int32_t;
