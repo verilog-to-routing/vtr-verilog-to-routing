@@ -46,25 +46,22 @@ const RRNode* NodeLookupManager::get_node_by_hash(const NodeHash& hash) const {
     return (it != global_lookup_.end()) ? it->second : nullptr;
 }
 
-const std::unordered_map<NodeHash, const RRNode*, NodeHasher>&
-NodeLookupManager::get_column_nodes(Coordinate x) const {
+const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& NodeLookupManager::get_column_nodes(Coordinate x) const {
     if (x <= fpga_grid_x_ && x < static_cast<Coordinate>(column_lookup_.size())) {
         return column_lookup_[static_cast<size_t>(x)];
     }
-    return empty_map_;
+    return std::unordered_map<NodeHash, RRNodeId, NodeHasher>();
 }
 
-const std::unordered_map<NodeHash, const RRNode*, NodeHasher>&
-NodeLookupManager::get_row_nodes(Coordinate y) const {
+const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& NodeLookupManager::get_row_nodes(Coordinate y) const {
     if (y <= fpga_grid_y_ && y < static_cast<Coordinate>(row_lookup_.size())) {
         return row_lookup_[static_cast<size_t>(y)];
     }
-    return empty_map_;
+    return std::unordered_map<NodeHash, RRNodeId, NodeHasher>();
 }
 
-std::unordered_map<NodeHash, const RRNode*, NodeHasher>
-NodeLookupManager::get_combined_nodes(Coordinate x, Coordinate y) const {
-    std::unordered_map<NodeHash, const RRNode*, NodeHasher> combined;
+std::unordered_map<NodeHash, RRNodeId, NodeHasher> NodeLookupManager::get_combined_nodes(Coordinate x, Coordinate y) const {
+    std::unordered_map<NodeHash, RRNodeId, NodeHasher> combined;
 
     // Add column nodes
     const auto& col_nodes = get_column_nodes(x);
@@ -166,12 +163,12 @@ void NodeLookupManager::index_node(const RRNode& node) {
 
     // Add to column lookup (for single-column nodes)
     if (loc.x_low == loc.x_high) {
-        column_lookup_[static_cast<size_t>(loc.x_low)][hash] = node_ptr;
+        column_lookup_[static_cast<size_t>(loc.x_low)][hash] = RRNodeId(node_ptr->get_id());
     }
 
     // Add to row lookup (for single-row nodes)
     if (loc.y_low == loc.y_high) {
-        row_lookup_[static_cast<size_t>(loc.y_low)][hash] = node_ptr;
+        row_lookup_[static_cast<size_t>(loc.y_low)][hash] = RRNodeId(node_ptr->get_id());
     }
 }
 

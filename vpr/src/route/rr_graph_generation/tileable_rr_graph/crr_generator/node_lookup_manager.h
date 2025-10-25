@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rr_graph_fwd.h"
+
 #include "crr_common.h"
 #include "custom_rr_graph.h"
 
@@ -35,16 +37,14 @@ class NodeLookupManager {
      * @param x Column coordinate
      * @return Map of hash to node for nodes in column
      */
-    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>&
-    get_column_nodes(Coordinate x) const;
+    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& get_column_nodes(Coordinate x) const;
 
     /**
      * @brief Get nodes in a specific row
      * @param y Row coordinate
      * @return Map of hash to node for nodes in row
      */
-    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& get_row_nodes(
-        Coordinate y) const;
+    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& get_row_nodes(Coordinate y) const;
 
     /**
      * @brief Get combined nodes for column and row (for switch block processing)
@@ -52,9 +52,7 @@ class NodeLookupManager {
      * @param y Row coordinate
      * @return Combined map of nodes
      */
-    std::unordered_map<NodeHash, const RRNode*, NodeHasher> get_combined_nodes(
-        Coordinate x,
-        Coordinate y) const;
+    std::unordered_map<NodeHash, RRNodeId, NodeHasher> get_combined_nodes(Coordinate x, Coordinate y) const;
 
     /**
      * @brief Get all nodes by type
@@ -91,10 +89,8 @@ class NodeLookupManager {
 
   private:
     // Spatial indexes - SINK and SOURCE nodes are not stored in these two maps
-    std::vector<std::unordered_map<NodeHash, const RRNode*, NodeHasher>>
-        column_lookup_;
-    std::vector<std::unordered_map<NodeHash, const RRNode*, NodeHasher>>
-        row_lookup_;
+    std::vector<std::unordered_map<NodeHash, RRNodeId, NodeHasher>> column_lookup_;
+    std::vector<std::unordered_map<NodeHash, RRNodeId, NodeHasher>> row_lookup_;
 
     // Edge spatial indexes. [x][y] -> std::vector<const RREdge*>
     std::vector<std::vector<std::vector<const RREdge*>>> edge_sink_lookup_;
@@ -109,9 +105,6 @@ class NodeLookupManager {
     // Grid dimensions
     Coordinate fpga_grid_x_;
     Coordinate fpga_grid_y_;
-
-    // Empty map for invalid coordinates
-    std::unordered_map<NodeHash, const RRNode*, NodeHasher> empty_map_;
 
     // Helper methods
     NodeHash build_node_hash(const RRNode& node) const;
