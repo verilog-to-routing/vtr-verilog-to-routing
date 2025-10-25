@@ -1761,6 +1761,10 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 
                     /* directs[i].sub_tile_offset is added to from_capacity(z) to get the target_capacity */
                     int to_subtile_cap = z + directs[i].sub_tile_offset;
+                    /* If the destination subtile is out of range, there is no qualified IPINs */
+                    if (to_subtile_cap < 0 || to_subtile_cap >= to_grid_type->capacity) {
+                      continue;
+                    }
                     /* Iterate over all sub_tiles to get the sub_tile which the target_cap belongs to. */
                     const t_sub_tile* to_sub_tile = nullptr;
                     for (const t_sub_tile& sub_tile : to_grid_type->sub_tiles) {
