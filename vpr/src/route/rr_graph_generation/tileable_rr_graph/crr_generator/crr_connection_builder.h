@@ -110,10 +110,10 @@ class CRRConnectionBuilder {
 
     // Node processing methods
     std::map<size_t, RRNodeId> get_vertical_nodes(Coordinate x, Coordinate y, const DataFrame& df,
-                                                  const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
+                                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
     std::map<size_t, RRNodeId> get_horizontal_nodes(Coordinate x, Coordinate y, const DataFrame& df,
-                                                    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
+                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
     // PTC sequence calculation
     std::string get_ptc_sequence(int seg_index, int seg_length, int physical_length, Direction direction, int truncated) const;
@@ -139,10 +139,10 @@ class CRRConnectionBuilder {
     SegmentInfo parse_segment_info(const DataFrame& df, size_t row_or_col, bool is_vertical) const;
 
     RRNodeId process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y,
-                                    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const;
+                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
     RRNodeId process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y,
-                                  const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup,
+                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
                                   int& prev_seg_index, Side& prev_side, std::string& prev_seg_type, int& prev_ptc_number,
                                   bool is_vertical) const;
 

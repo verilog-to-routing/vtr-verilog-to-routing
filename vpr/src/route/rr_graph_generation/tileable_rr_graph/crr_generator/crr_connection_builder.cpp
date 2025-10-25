@@ -205,7 +205,7 @@ std::vector<Connection> CRRConnectionBuilder::get_tile_connections(Coordinate ti
 }
 
 std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(Coordinate x, Coordinate y, const DataFrame& df,
-                                                                    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const {
+                                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     std::map<size_t, RRNodeId> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -235,7 +235,7 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(Coordinate x
 }
 
 std::map<size_t, RRNodeId> CRRConnectionBuilder::get_horizontal_nodes(Coordinate x, Coordinate y, const DataFrame& df,
-                                                                    const std::unordered_map<NodeHash, const RRNode*, NodeHasher>& node_lookup) const {
+                                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     std::map<size_t, RRNodeId> sink_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -319,7 +319,7 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
 }
 
 RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y,
-                                                    const std::unordered_map<NodeHash, RRNodeID, NodeHasher>& node_lookup) const {
+                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     assert(info.side == Side::OPIN || info.side == Side::IPIN);
     NodeType node_type =
         (info.side == Side::OPIN) ? NodeType::OPIN : NodeType::IPIN;
@@ -335,7 +335,7 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info, C
 }
 
 RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y,
-                                                  const std::unordered_map<NodeHash, RRNodeID, NodeHasher>& node_lookup,
+                                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
                                                   int& prev_seg_index, Side& prev_side, std::string& prev_seg_type, int& prev_ptc_number,
                                                   bool is_vertical) const {
     // Check grid boundaries
@@ -386,7 +386,7 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info, Coo
     } else {
         VTR_LOG_DEBUG("Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
                       seg_sequence.c_str(), x_low, y_low, x_high, y_high);
-        return RRNodeID::INVALID();
+        return RRNodeId::INVALID();
     }
 }
 
