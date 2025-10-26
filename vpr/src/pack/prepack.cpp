@@ -79,8 +79,8 @@ static void print_pack_molecules(const char* fname,
                                  const vtr::vector_map<PackMoleculeId, t_pack_molecule>& pack_molecules,
                                  const AtomNetlist& atom_nlist);
 
-static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
-                                                                          const std::vector<t_logical_block_type>& logical_block_types);
+// static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
+//                                                                           const std::vector<t_logical_block_type>& logical_block_types);
 
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node* curr_pb_graph_node, float* cost);
 
@@ -1281,7 +1281,7 @@ static void print_pack_molecules(const char* fname,
 }
 
 /* Search through all primitives and return the lowest cost primitive that fits this atom block */
-static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
+t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
                                                                           const std::vector<t_logical_block_type>& logical_block_types) {
     float cost, best_cost;
     t_pb_graph_node *current, *best;

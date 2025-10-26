@@ -31,6 +31,8 @@ class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
 struct t_lb_router_data;
 
+bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_type, const AtomBlockId sibling_blk_id);
+
 // A special ID to identify the legalization clusters. This is separate from the
 // ClusterBlockId since this legalizer is not necessarily tied to the Clustered
 // netlist, but is used as a sub-routine to it.
