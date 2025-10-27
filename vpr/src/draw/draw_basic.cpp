@@ -8,7 +8,6 @@
 #include <cmath>
 #include <algorithm>
 #include <sstream>
-#include <array>
 
 #include "physical_types_util.h"
 #include "vtr_assert.h"
@@ -70,15 +69,40 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
     ezgl::color(43, 61, 38)     //olive green
 };
 
+/// @brief Determines the display color for a given block location.
+/// @details If a placer breakpoint highlight applies, uses its color; otherwise,
+/// derives the color from the block assignment or lightens the base tile color
+/// for empty locations.
+static void determine_block_color(const t_pl_loc& loc,
+                                  ClusterBlockId bnum,
+                                  t_physical_tile_type_ptr type,
+                                  t_draw_state* draw_state,
+                                  ezgl::color& block_color) {
+    // Highlight if breakpoint reached
+    if (placer_breakpoint_reached()) {
+        if (highlight_loc_with_specific_color(loc, block_color)) {
+            return;
+        }
+    }
+
+    // Otherwise, use normal block or tile color
+    if (bnum) {
+        block_color = draw_state->block_color(bnum);
+    } else {
+        block_color = lighten_color(get_block_type_color(type),
+                                    EMPTY_BLOCK_LIGHTEN_FACTOR);
+    }
+}
+
 void draw_place(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const DeviceGrid& grid = device_ctx.grid;
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
+    const GridBlock& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
-    int total_num_layers = grid.get_num_layers();
+    const int total_num_layers = grid.get_num_layers();
 
     g->set_line_width(0);
     for (int layer_num = 0; layer_num < total_num_layers; layer_num++) {
@@ -110,28 +134,11 @@ void draw_place(ezgl::renderer* g) {
 
                     // Determine the block color and logical type
                     ezgl::color block_color;
-                    t_logical_block_type_ptr logical_block_type = nullptr;
-                    // flag whether the current location is highlighted with a special color or not
-                    bool current_loc_is_highlighted = false;
+                    t_pl_loc curr_loc{i, j, 0, layer_num};
+                    determine_block_color(curr_loc, bnum, type, draw_state, block_color);
 
-                    if (placer_breakpoint_reached()) {
-                        t_pl_loc curr_loc;
-                        curr_loc.x = i;
-                        curr_loc.y = j;
-                        curr_loc.layer = layer_num;
-                        current_loc_is_highlighted = highlight_loc_with_specific_color(curr_loc, block_color);
-                    }
-                    // No color specified at this location; use the block color.
-                    if (!current_loc_is_highlighted) {
-                        if (bnum) {
-                            block_color = draw_state->block_color(bnum);
-                        } else {
-                            block_color = get_block_type_color(type);
-                            block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
-                        }
-                    }
-
-                    logical_block_type = pick_logical_type(type);
+                    // Determine logical type
+                    t_logical_block_type_ptr logical_block_type = pick_logical_type(type);
                     g->set_color(block_color, transparency_factor);
 
                     // Get coords of current sub_tile

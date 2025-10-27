@@ -11,10 +11,10 @@
 #include "placer_state.h"
 #include "PlacerCriticalities.h"
 
-//f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
+// f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
 // When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
-//Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
-bool f_placer_breakpoint_reached = false;
+// Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
+static bool f_placer_breakpoint_reached = false;
 
 /**
  * @brief Adjust the search range based on how many blocks are in the column.
@@ -34,7 +34,7 @@ static void adjust_search_range(t_logical_block_type_ptr block_type,
                                 const bool is_range_fixed,
                                 t_bb& search_range);
 
-//Accessor for f_placer_breakpoint_reached
+// Accessor for f_placer_breakpoint_reached
 bool placer_breakpoint_reached() {
     return f_placer_breakpoint_reached;
 }
