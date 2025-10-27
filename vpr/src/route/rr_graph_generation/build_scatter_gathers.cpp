@@ -306,6 +306,8 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
 
                     bottleneck_link.chan_type = chan_type;
                     bottleneck_link.parallel_segment_index = std::distance(segment_inf.begin(), seg_it);
+                    bottleneck_link.R_metal = seg_it->Rmetal;
+                    bottleneck_link.C_metal = seg_it->Cmetal;
 
                     if (is_3d_link) {
                         if (sg_link.z_offset < 0 && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL) {

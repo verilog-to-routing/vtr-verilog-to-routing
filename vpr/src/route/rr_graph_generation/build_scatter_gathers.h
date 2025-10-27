@@ -33,6 +33,8 @@ struct t_bottleneck_link {
     t_physical_tile_loc scatter_loc; ///< Destination switchblock location.
     int arch_wire_switch;            ///< The switch (mux) used to drive the bottleneck wire.
     int parallel_segment_index;
+    float R_metal;
+    float C_metal;
     e_rr_type chan_type;
     std::vector<t_sg_candidate> gather_fanin_connections;   ///< Wires driving the bottleneck link at  `gather_loc`
     std::vector<t_sg_candidate> scatter_fanout_connections; ///< Wires driven by the bottleneck link at `scatter_loc`

@@ -2049,7 +2049,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         int length = end - start + 1;
         float R = length * seg_details[track].Rmetal();
         float C = length * seg_details[track].Cmetal();
-        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data));
 
         rr_graph_builder.set_node_type(node, chan_type);
         rr_graph_builder.set_node_track_num(node, track);
@@ -2099,9 +2099,8 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_cost_index(node_id, RRIndexedDataId(cons_index));
 
         // Step 4: Assign electrical characteristics
-        float R = 0;
-        float C = 0;
-        rr_graph_builder.set_node_rc_index(node_id, NodeRCIndex(find_create_rr_rc_data(R, C, g_vpr_ctx.mutable_device().rr_rc_data)));
+        const NodeRCIndex rc_index = find_create_rr_rc_data(link.R_metal, link.C_metal, g_vpr_ctx.mutable_device().rr_rc_data);
+        rr_graph_builder.set_node_rc_index(node_id, rc_index);
         // Step 5: Set node type, track number, and direction
         rr_graph_builder.set_node_type(node_id, link.chan_type);
         rr_graph_builder.set_node_track_num(node_id, track_num);
