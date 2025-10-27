@@ -37,12 +37,9 @@
 #include "route_utilization.h"
 #include "place_macro.h"
 
-/****************************** Define Macros *******************************/
-#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#define OLD_BLK_LOC_COLOR blk_GOLD
-#define NEW_BLK_LOC_COLOR blk_GREEN
-
-constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
+// Constant values used in this file
+static constexpr ezgl::color DEFAULT_RR_NODE_COLOR = ezgl::BLACK;
+static constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
 const std::vector<ezgl::color> kelly_max_contrast_colors = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
