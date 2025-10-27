@@ -5,45 +5,29 @@
 
 namespace crrgenerator {
 
-NodeLookupManager::NodeLookupManager()
-    : fpga_grid_x_(0)
-    , fpga_grid_y_(0) {}
+NodeLookupManager::NodeLookupManager(const RRGraphView& rr_graph, size_t fpga_grid_x, size_t fpga_grid_y)
+    : rr_graph_(rr_graph)
+    , fpga_grid_x_(fpga_grid_x)
+    , fpga_grid_y_(fpga_grid_y) {}
 
-void NodeLookupManager::initialize(const RRGraph& graph, Coordinate fpga_grid_x, Coordinate fpga_grid_y) {
+void NodeLookupManager::initialize() {
     VTR_LOG("Initializing NodeLookupManager for %d x %d grid with %zu nodes\n",
-            fpga_grid_x, fpga_grid_y, static_cast<size_t>(graph.get_node_count()));
-
-    fpga_grid_x_ = fpga_grid_x;
-    fpga_grid_y_ = fpga_grid_y;
+            fpga_grid_x_, fpga_grid_y_, static_cast<size_t>(rr_graph_.num_nodes()));
 
     // Clear existing data
     clear();
 
     // Initialize lookup structures
-    column_lookup_.resize(static_cast<size_t>(fpga_grid_x) + 1);
-    row_lookup_.resize(static_cast<size_t>(fpga_grid_y) + 1);
-    for (int i = 0; i <= fpga_grid_x + 1; i++) {
-        edge_sink_lookup_.push_back(std::vector<std::vector<const RREdge*>>(
-            static_cast<size_t>(fpga_grid_y + 2), std::vector<const RREdge*>()));
-    }
+    column_lookup_.resize(static_cast<size_t>(fpga_grid_x_) + 1);
+    row_lookup_.resize(static_cast<size_t>(fpga_grid_y_) + 1);
 
     // Index all nodes
-    for (const auto& node : graph.get_nodes()) {
-        index_node(node);
-    }
-
-    // Index all edges
-    for (const auto& edge : graph.get_edges()) {
-        index_edge(graph, edge);
+    for (RRNodeId node_id : rr_graph_.nodes()) {
+        index_node(node_id);
     }
 
     VTR_LOG("Node lookup manager initialized successfully\n");
     print_statistics();
-}
-
-const RRNode* NodeLookupManager::get_node_by_hash(const NodeHash& hash) const {
-    auto it = global_lookup_.find(hash);
-    return (it != global_lookup_.end()) ? it->second : nullptr;
 }
 
 const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& NodeLookupManager::get_column_nodes(Coordinate x) const {
@@ -74,16 +58,6 @@ std::unordered_map<NodeHash, RRNodeId, NodeHasher> NodeLookupManager::get_combin
     return combined;
 }
 
-std::vector<const RRNode*> NodeLookupManager::get_nodes_by_type(
-    NodeType type) const {
-    auto it = type_lookup_.find(type);
-    return (it != type_lookup_.end()) ? it->second : std::vector<const RRNode*>{};
-}
-
-const std::vector<const RREdge*> NodeLookupManager::get_sink_edges_at_location(Coordinate x, Coordinate y) const {
-    return edge_sink_lookup_[static_cast<size_t>(x)][static_cast<size_t>(y)];
-}
-
 bool NodeLookupManager::is_valid_coordinate(Coordinate x, Coordinate y) const {
     return x >= 0 && x <= fpga_grid_x_ && y >= 0 && y <= fpga_grid_y_;
 }
@@ -91,12 +65,6 @@ bool NodeLookupManager::is_valid_coordinate(Coordinate x, Coordinate y) const {
 void NodeLookupManager::print_statistics() const {
     VTR_LOG("=== Node Lookup Manager Statistics ===\n");
     VTR_LOG("Grid dimensions: %d x %d\n", fpga_grid_x_, fpga_grid_y_);
-    VTR_LOG("Total nodes indexed: %zu\n", global_lookup_.size());
-
-    // Count nodes by type
-    for (const auto& [type, nodes] : type_lookup_) {
-        VTR_LOG("  %s nodes: %zu\n", to_string(type).c_str(), nodes.size());
-    }
 
     // Count nodes per column
     std::vector<size_t> col_counts;
@@ -129,25 +97,18 @@ void NodeLookupManager::print_statistics() const {
 void NodeLookupManager::clear() {
     column_lookup_.clear();
     row_lookup_.clear();
-    global_lookup_.clear();
-    type_lookup_.clear();
 }
 
-NodeHash NodeLookupManager::build_node_hash(const RRNode& node) const {
-    return std::make_tuple(node.get_type(), node.get_ptc(),
-                           node.get_location().x_low, node.get_location().x_high,
-                           node.get_location().y_low, node.get_location().y_high);
+NodeHash NodeLookupManager::build_node_hash(RRNodeId node_id) const {
+    const std::string& node_ptcs = rr_graph_.rr_nodes().node_ptc_nums_to_string(node_id);
+    return std::make_tuple(rr_graph_.node_type(node_id), node_ptcs,
+                           rr_graph_.node_xlow(node_id), rr_graph_.node_xhigh(node_id),
+                           rr_graph_.node_ylow(node_id), rr_graph_.node_yhigh(node_id));
 }
 
-void NodeLookupManager::index_node(const RRNode& node) {
+void NodeLookupManager::index_node(RRNodeId node_id) {
     NodeHash hash = build_node_hash(node);
     const RRNode* node_ptr = &node;
-
-    // Add to global lookup
-    global_lookup_[hash] = node_ptr;
-
-    // Add to type lookup
-    type_lookup_[node.get_type()].push_back(node_ptr);
 
     const Location& loc = node.get_location();
 
@@ -170,21 +131,6 @@ void NodeLookupManager::index_node(const RRNode& node) {
     if (loc.y_low == loc.y_high) {
         row_lookup_[static_cast<size_t>(loc.y_low)][hash] = RRNodeId(node_ptr->get_id());
     }
-}
-
-void NodeLookupManager::index_edge(const RRGraph& graph, const RREdge& edge) {
-    const RRNode* sink = graph.get_node(edge.get_sink_node());
-
-    VTR_ASSERT(sink->get_location().x_high >= 0);
-    VTR_ASSERT(sink->get_location().y_high >= 0);
-
-    VTR_ASSERT(sink->get_location().x_high <= fpga_grid_x_);
-    VTR_ASSERT(sink->get_location().y_high <= fpga_grid_y_);
-
-    // Add to edge lookup
-    edge_sink_lookup_[static_cast<size_t>(sink->get_location().x_low)]
-                     [static_cast<size_t>(sink->get_location().y_low)]
-                         .push_back(&edge);
 }
 
 } // namespace crrgenerator
