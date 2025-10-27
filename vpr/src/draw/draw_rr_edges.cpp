@@ -60,9 +60,9 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId r
                     y2 = to_chan.bottom();
                     y1 = draw_coords->tile_y[to_ylow] + 0.1 * draw_coords->get_tile_height();
                 } else {
+                    // since no U-turns from_tracks must be INC as well
                     VTR_ASSERT_SAFE(rr_graph.node_direction(from_node) == Direction::INC);
                     y2 = to_chan.bottom();
-                    // since no U-turns from_tracks must be INC as well
                     y1 = draw_coords->tile_y[to_ylow - 1] + draw_coords->get_tile_height();
                 }
             } else { // DEC wire starts at top edge
