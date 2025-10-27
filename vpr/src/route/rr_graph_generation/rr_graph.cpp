@@ -3094,7 +3094,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
     auto [z, relative_opin] = get_capacity_location_from_physical_pin(curr_type, opin);
     VTR_ASSERT(z >= 0 && z < curr_type->capacity);
     const int num_directs = directs.size();
-    
+
     // Iterate through all direct connections
     for (int i = 0; i < num_directs; i++) {
         // Find matching direct clb-to-clb connections with the same type as current grid location

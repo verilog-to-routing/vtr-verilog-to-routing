@@ -509,7 +509,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 
     // Load coordinates of sub-blocks inside the clbs
     draw_internal_init_blk();
-    
+
 #else
     (void)clb_width;
     (void)blk_loc_registry;

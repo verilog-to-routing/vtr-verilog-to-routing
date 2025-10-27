@@ -58,7 +58,7 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId r
             if (rr_graph.node_direction(to_node) == Direction::INC) { // INC wire starts at bottom edge
                 if (rr_graph.node_direction(from_node) == Direction::DEC) {
                     y2 = to_chan.bottom();
-                    y1 = draw_coords->tile_y[to_ylow] + 0.1 * draw_coords->get_tile_height() ;
+                    y1 = draw_coords->tile_y[to_ylow] + 0.1 * draw_coords->get_tile_height();
                 } else {
                     VTR_ASSERT_SAFE(rr_graph.node_direction(from_node) == Direction::INC);
                     y2 = to_chan.bottom();
