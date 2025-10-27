@@ -1,6 +1,6 @@
 #pragma once
 
-#include "rr_graph_fwd.h"
+#include "rr_graph_view.h"
 
 #include "crr_common.h"
 #include "data_frame_processor.h"
@@ -20,7 +20,8 @@ namespace crrgenerator {
  */
 class CRRConnectionBuilder {
   public:
-    CRRConnectionBuilder(const RRGraph& rr_graph,
+    CRRConnectionBuilder(const RRGraphView& rr_graph,
+                         const RRGraph& crr_graph,
                          const NodeLookupManager& node_lookup,
                          const SwitchBlockManager& sb_manager);
 
@@ -88,7 +89,8 @@ class CRRConnectionBuilder {
     bool is_annotated_excel_;
 
     // Dependencies
-    const RRGraph& rr_graph_;
+    const RRGraphView& rr_graph_;
+    const RRGraph& crr_graph_;
     const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
     SwitchId sw_zero_id_;

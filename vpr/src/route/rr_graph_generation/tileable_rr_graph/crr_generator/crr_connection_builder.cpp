@@ -2,9 +2,14 @@
 
 #include <charconv>
 #include <cmath>
+#include <string>
+#include <regex>
+#include <cctype>
+#include <algorithm>
 
 #include "vtr_log.h"
 #include "vtr_assert.h"
+#include "rr_node_types.h"
 // #include <nlohmann/json.hpp>
 
 // using json = nlohmann::json;
@@ -47,10 +52,12 @@ static bool is_integer(const std::string& s) {
 //   file << j.dump(4);  // Pretty print with indent of 4
 // }
 
-CRRConnectionBuilder::CRRConnectionBuilder(const RRGraph& rr_graph,
+CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
+                                           const RRGraph& crr_graph,
                                            const NodeLookupManager& node_lookup,
                                            const SwitchBlockManager& sb_manager)
     : rr_graph_(rr_graph)
+    , crr_graph_(crr_graph)
     , node_lookup_(node_lookup)
     , sb_manager_(sb_manager) {}
 
@@ -63,7 +70,7 @@ void CRRConnectionBuilder::initialize(
     fpga_grid_y_ = fpga_grid_y;
     is_annotated_excel_ = is_annotated_excel;
 
-    for (const auto& original_switch : rr_graph_.get_switches()) {
+    for (const auto& original_switch : crr_graph_.get_switches()) {
         std::string switch_name = original_switch.get_name();
         std::transform(switch_name.begin(), switch_name.end(), switch_name.begin(),
                        ::tolower);
@@ -94,8 +101,8 @@ void CRRConnectionBuilder::initialize(
         }
     }
 
-    assert(default_switch_id_.size() == rr_graph_.get_switches().size());
-    sw_zero_id_ = static_cast<SwitchId>(rr_graph_.get_switches().size());
+    assert(default_switch_id_.size() == crr_graph_.get_switches().size());
+    sw_zero_id_ = static_cast<SwitchId>(crr_graph_.get_switches().size());
 
     // Total locations is the number of locations on the FPGA grid minus the 4
     // corner locations.
@@ -155,27 +162,27 @@ void CRRConnectionBuilder::build_connections_for_location(Coordinate x,
 
                 if (source_it != source_nodes.end() && sink_it != sink_nodes.end()) {
                     RRNodeId source_node = source_it->second;
-                    NodeType source_node_type = rr_graph_.get_node(source_node)->get_type();
+                    e_rr_type source_node_type = rr_graph_.node_type(source_node);
                     RRNodeId sink_node = sink_it->second;
-                    NodeType sink_node_type = rr_graph_.get_node(sink_node)->get_type();
+                    e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
                     // If the source node is an IPIN, then it should be considered as
                     // a sink of the connection.
-                    if (source_node_type == NodeType::IPIN) {
+                    if (source_node_type == e_rr_type::IPIN) {
                         SwitchId switch_id =
                             get_edge_switch_id(cell.as_string(),
-                                               to_string(source_node_type),
+                                               rr_node_typename[source_node_type],
                                                sink_node,
                                                source_node);
 
                         tile_connections.emplace_back(source_node, sink_node, switch_id);
                     } else {
                         int segment_length = -1;
-                        if (sink_node_type == NodeType::CHANX || sink_node_type == NodeType::CHANY) {
-                            segment_length = rr_graph_.get_segment(rr_graph_.get_node(sink_node)->get_segment().segment_id)->get_length();
+                        if (sink_node_type == e_rr_type::CHANX || sink_node_type == e_rr_type::CHANY) {
+                            segment_length = rr_graph_.node_length(sink_node);
                         }
                         SwitchId switch_id =
                             get_edge_switch_id(cell.as_string(),
-                                               to_string(sink_node_type),
+                                               rr_node_typename[sink_node_type],
                                                source_node,
                                                sink_node,
                                                segment_length);
@@ -223,7 +230,7 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(Coordinate x
                                            prev_side, prev_seg_type, prev_ptc_number, true);
         }
 
-        if (node_id > 0) {
+        if (node_id != RRNodeId::INVALID()) {
             source_nodes[row] = node_id;
         }
 
@@ -257,7 +264,7 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_horizontal_nodes(Coordinate
                                            false);
         }
 
-        if (node_id > 0) {
+        if (node_id != RRNodeId::INVALID()) {
             sink_nodes[col] = node_id;
         }
 
@@ -331,7 +338,7 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info, C
         return it->second;
     }
 
-    return 0;
+    return RRNodeId::INVALID();
 }
 
 RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y,
@@ -340,7 +347,7 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info, Coo
                                                   bool is_vertical) const {
     // Check grid boundaries
     if ((info.side == Side::RIGHT && x == fpga_grid_x_) || (info.side == Side::TOP && y == fpga_grid_y_)) {
-        return 0;
+        return RRNodeId::INVALID();
     }
 
     int seg_length = std::stoi(
