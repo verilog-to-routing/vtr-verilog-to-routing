@@ -815,7 +815,7 @@ void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction
     node_storage_[id].dir_side_.direction = new_direction;
 }
 
-void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str) {
+void t_rr_graph_storage::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str) {
     VTR_ASSERT(size_t(node) < node_storage_.size());
     std::vector<std::string> ptc_tokens = vtr::StringToken(ptc_str).split(",");
     VTR_ASSERT(ptc_tokens.size() >= 1);
@@ -829,7 +829,7 @@ void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str) {
     }
 }
 
-void t_rr_graph_storage::add_node_tilable_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id) {
+void t_rr_graph_storage::add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id) {
     VTR_ASSERT(size_t(node) < node_storage_.size());
     VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
     VTR_ASSERT_MSG(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY,
@@ -841,19 +841,18 @@ void t_rr_graph_storage::add_node_tilable_track_num(RRNodeId node, vtr::Point<si
         node_tilable_track_nums_[node].resize(node_length + 1);
     }
 
-    size_t offset = node_offset.x() - node_xlow(node) + node_offset.y() - node_ylow(node);
-    VTR_ASSERT(offset < node_tilable_track_nums_[node].size());
+    VTR_ASSERT(node_offset < node_tilable_track_nums_[node].size());
 
-    node_tilable_track_nums_[node][offset] = track_id;
+    node_tilable_track_nums_[node][node_offset] = track_id;
 }
 
 std::string t_rr_graph_storage::node_ptc_nums_to_string(RRNodeId node) const {
     if (node_tilable_track_nums_.empty()) {
-        return std::to_string(size_t(node_storage_.node_ptc_num(node)));
+        return std::to_string(size_t(node_ptc_num(node)));
     }
     VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
     if (node_tilable_track_nums_[node].empty()) {
-        return std::to_string(size_t(node_storage_.node_ptc_num(node)));
+        return std::to_string(size_t(node_ptc_num(node)));
     }
     std::string ret;
     for (size_t iptc = 0; iptc < node_tilable_track_nums_[node].size(); iptc++) {

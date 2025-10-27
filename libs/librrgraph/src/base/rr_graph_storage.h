@@ -691,7 +691,7 @@ class t_rr_graph_storage {
     void set_node_direction(RRNodeId, Direction new_direction);
 
     void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str);
-    void add_node_tilable_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id);
+    void add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id);
 
     void emplace_back_node_tilable_track_num();
 
