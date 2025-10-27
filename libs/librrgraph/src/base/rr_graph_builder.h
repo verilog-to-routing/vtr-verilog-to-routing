@@ -50,9 +50,6 @@ class RRGraphBuilder {
     
     /** @brief Return a writable object fo the incoming edge storage */
     vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edge_storage();
-    
-    /** @brief Return a writable object of the node ptc storage (for tileable routing resource graph) */
-    vtr::vector<RRNodeId, std::vector<short>>& node_ptc_storage();
 
     /** @brief Return the size for rr_node_metadata */
     inline size_t rr_node_metadata_size() const {
@@ -420,11 +417,6 @@ class RRGraphBuilder {
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
-    /** @brief This function resize node ptc nums. Only used by RR graph I/O reader and writers. */
-    inline void resize_node_ptc_nums(size_t size) {
-        node_tilable_track_nums_.resize(size);
-    }
-
 
     /** @brief This function resize rr_switch to accomidate size RR Switch. */
     inline void resize_switches(size_t size) {
@@ -526,29 +518,6 @@ class RRGraphBuilder {
      * By default, it is empty! Call build_in_edges() to construct it.
      */
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
-
-    /** 
-     * @brief Extra ptc number for each routing resource node. 
-     * @note This is required by tileable routing resource graphs. The first index is the node id, and
-     * the second index is is the relative distance from the starting point of the node.
-     * @details 
-     * In a tileable routing architecture, routing tracks, e.g., CHANX and CHANY, follow a staggered organization.
-     * Hence, a routing track may appear in different routing channels, representing different ptc/track id.
-     * Here is an illustrative example of a X-direction routing track (CHANX) in INC direction, which is organized in staggered way.
-     *    
-     *  Coord(x,y) (1,0)   (2,0)   (3,0)     (4,0)       Another track (node)
-     *  ptc=0     ------>                              ------>
-     *                   \                            /
-     *  ptc=1             ------>                    /
-     *                           \                  /
-     *  ptc=2                     ------>          / 
-     *                                   \        /
-     *  ptc=3                             ------->
-     *           ^                               ^
-     *           |                               |
-     *     starting point                   ending point
-     */
-    vtr::vector<RRNodeId, std::vector<short>> node_tilable_track_nums_;
 
     /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
