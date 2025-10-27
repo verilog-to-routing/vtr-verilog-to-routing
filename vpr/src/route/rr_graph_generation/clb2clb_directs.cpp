@@ -62,6 +62,8 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
         clb_to_clb_directs[i].to_clb_type = physical_tile;
 
         tile_port = find_tile_port_by_name(physical_tile, port_name);
+        // Cache the destination port name as the pin index is not enough to identify if the destination subtile is the one we want!!!
+        clb_to_clb_directs[i].to_port = port_name;
 
         if (start_pin_index == UNDEFINED) {
             VTR_ASSERT(start_pin_index == end_pin_index);
