@@ -27,6 +27,7 @@
 #include <chrono>
 #include <sys/resource.h> // For getrusage on Unix/Linux
 
+#include "rr_graph_fwd.h"
 namespace crrgenerator {
 
 // Forward declarations
@@ -159,12 +160,12 @@ struct Sizing {
  */
 class Connection {
   public:
-    Connection(NodeId sink_node, NodeId src_node, SwitchId switch_id)
+    Connection(RRNodeId sink_node, RRNodeId src_node, SwitchId switch_id)
         : sink_node_(sink_node)
         , src_node_(src_node)
         , switch_id_(switch_id) {}
-    NodeId sink_node() const { return sink_node_; }
-    NodeId src_node() const { return src_node_; }
+    RRNodeId sink_node() const { return sink_node_; }
+    RRNodeId src_node() const { return src_node_; }
     SwitchId switch_id() const { return switch_id_; }
 
     bool operator<(const Connection& other) const {
@@ -176,8 +177,8 @@ class Connection {
     }
 
   private:
-    NodeId sink_node_;
-    NodeId src_node_;
+    RRNodeId sink_node_;
+    RRNodeId src_node_;
     SwitchId switch_id_;
 };
 
