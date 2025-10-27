@@ -356,7 +356,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
     // Initialize graphics for analytical placement, setting the reference in
     // the draw state.
     APDrawManager draw_manager(p_placement);
-    
+
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
         float iter_start_time = runtime_timer.elapsed_sec();
@@ -366,7 +366,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
         solver_->solve(i, p_placement);
         float solver_end_time = runtime_timer.elapsed_sec();
         double lb_hpwl = p_placement.get_hpwl(ap_netlist_);
-        
+
         // Update graphics after analytical solver
         draw_manager.update_graphics(i, APDrawType::Solver);
 
@@ -375,7 +375,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
         partial_legalizer_->legalize(p_placement);
         float legalizer_end_time = runtime_timer.elapsed_sec();
         double ub_hpwl = p_placement.get_hpwl(ap_netlist_);
-        
+
         // Update graphics after legalizer
         draw_manager.update_graphics(i, APDrawType::Legalizer);
 

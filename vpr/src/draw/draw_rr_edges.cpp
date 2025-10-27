@@ -137,33 +137,29 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, RRSwitchId r
         if (rr_graph.node_direction(to_node) != Direction::BIDIR) {
             // must connect to to_node's wire beginning at x2
             if (rr_graph.node_direction(to_node) == Direction::INC) { // INC wire starts at leftmost edge
+                x2 = to_chan.left();
                 if (rr_graph.node_direction(from_node) == Direction::DEC) {
-                    x2 = to_chan.left();
                     x1 = draw_coords->tile_x[to_xlow] + 0.1 * draw_coords->get_tile_width();
                 } else {
                     VTR_ASSERT_SAFE(rr_graph.node_direction(from_node) == Direction::INC);
-                    x2 = to_chan.left();
                     x1 = draw_coords->tile_x[to_xlow - 1] + 0.9 * draw_coords->get_tile_width();
                 }
             } else { // DEC wire starts at rightmost edge
                 VTR_ASSERT_SAFE(rr_graph.node_direction(to_node) == Direction::DEC);
+                x2 = to_chan.right();
                 if (rr_graph.node_direction(from_node) == Direction::INC) {
-                    x2 = to_chan.right();
                     x1 = draw_coords->tile_x[to_xhigh] + 0.9 * draw_coords->get_tile_width();
                 } else {
                     VTR_ASSERT_SAFE(rr_graph.node_direction(from_node) == Direction::DEC);
-                    x2 = to_chan.right();
                     x1 = draw_coords->tile_x[to_xhigh + 1];
                 }
             }
         } else {
             if (to_xlow < from_xlow) { // Draw from left edge of one to other
                 x1 = from_chan.left();
-                x2 = draw_coords->tile_x[from_xlow - 1]
-                     + draw_coords->get_tile_width();
+                x2 = draw_coords->tile_x[from_xlow - 1] + draw_coords->get_tile_width();
             } else if (from_xlow < to_xlow) {
-                x1 = draw_coords->tile_x[to_xlow - 1]
-                     + draw_coords->get_tile_width();
+                x1 = draw_coords->tile_x[to_xlow - 1] + draw_coords->get_tile_width();
                 x2 = to_chan.left();
 
             } // The following then is executed when from_xlow == to_xlow

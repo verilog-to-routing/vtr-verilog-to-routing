@@ -12,7 +12,7 @@ archs_dir=arch/timing
 circuit_list_add=mult8_ram8.blif
 
 # Add architectures to list to sweep
-arch_list_add=k4_frac_N8_tileable_reset_softadder_register_scan_chain_dsp8_mem1K_nonLR_caravel_io_skywater130nm.xml
+arch_list_add=k4_frac_N8_reset_softadder_register_scan_chain_dsp8_mem1K_negz_nonLR_caravel_io_skywater130nm.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt

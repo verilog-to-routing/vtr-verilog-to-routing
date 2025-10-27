@@ -298,7 +298,7 @@ void update_screen(ScreenUpdatePriority priority,
      * value controls whether or not the Proceed button must be clicked to   *
      * continue.  Saves the pic_on_screen_val to allow pan and zoom redraws. */
     t_draw_state* draw_state = get_draw_state_vars();
-    
+
     strcpy(draw_state->default_message, msg);
 
     if (!draw_state->show_graphics) {
@@ -533,7 +533,7 @@ void set_initial_world() {
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
         {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN)
-                                                 * draw_height});    
+                                                 * draw_height});
 }
 
 void set_initial_world_ap() {
@@ -542,7 +542,6 @@ void set_initial_world_ap() {
 
     const size_t grid_w = device_ctx.grid.width();
     const size_t grid_h = device_ctx.grid.height();
-
 
     float draw_width = static_cast<float>(grid_w);
     float draw_height = static_cast<float>(grid_h);

@@ -13,6 +13,7 @@
  */
 struct t_clb_to_clb_directs {
     t_physical_tile_type_ptr from_clb_type;
+    std::vector<int> from_sub_tiles;
     int from_clb_pin_start_index;
     int from_clb_pin_end_index;
     t_physical_tile_type_ptr to_clb_type;
