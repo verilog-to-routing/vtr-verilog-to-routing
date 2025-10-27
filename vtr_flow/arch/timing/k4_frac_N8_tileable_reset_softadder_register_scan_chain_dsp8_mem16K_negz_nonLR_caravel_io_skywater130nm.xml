@@ -389,8 +389,8 @@
     <direct name="carry_chain" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
     <direct name="shift_register" from_pin="clb.reg_out" to_pin="clb.reg_in" x_offset="0" y_offset="-1" z_offset="0"/>
     <direct name="scan_chain" from_pin="clb.sc_out" to_pin="clb.sc_in" x_offset="0" y_offset="-1" z_offset="0"/>
-    <direct name="cim_direct0" from_pin="cim8_16k.out[15:0]" to_pin="cim8_16k.d_in[15:0]" x_offset="0" y_offset="0" z_offset="-1"/>
-    <direct name="cim_direct1" from_pin="cim8_16k.out[15:0]" to_pin="cim8_16k.d_in[31:16]" x_offset="0" y_offset="0" z_offset="-2"/>
+    <direct name="cim_direct0" from_pin="cim8_16k.out[15:0]" to_pin="cim8_16k.d_in[15:0]" x_offset="0" y_offset="0" z_offset="-2"/>
+    <direct name="cim_direct1" from_pin="cim8_16k.out[15:0]" to_pin="cim8_16k.d_in[31:16]" x_offset="0" y_offset="0" z_offset="-1"/>
   </directlist>
   <complexblocklist>
     <!-- Define input pads begin -->
