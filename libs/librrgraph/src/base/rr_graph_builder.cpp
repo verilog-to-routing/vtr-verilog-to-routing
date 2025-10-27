@@ -238,7 +238,8 @@ bool RRGraphBuilder::node_contain_multiple_ptc(RRNodeId node) const {
 }
 
 void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id) {
-    node_storage_.add_node_tilable_track_num(node, node_offset, track_id);
+    size_t node_offset_value = node_offset.x() - node_storage_.node_xlow(node) + node_offset.y() - node_storage_.node_ylow(node);
+    node_storage_.add_node_tilable_track_num(node, node_offset_value, track_id);
 }
 
 void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
