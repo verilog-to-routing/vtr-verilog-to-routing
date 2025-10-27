@@ -158,9 +158,8 @@ void draw_place(ezgl::renderer* g) {
                     if (draw_state->draw_block_text) {
                         // Draw text if the space has parts of the netlist
                         if (bnum) {
-                            std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
-
-                            g->draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+                            const std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
+                            g->draw_text(center, name, abs_clb_bbox.width(), abs_clb_bbox.height());
                         }
 
                         // Draw text for block type so that user knows what block
@@ -168,7 +167,7 @@ void draw_place(ezgl::renderer* g) {
                         block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
 
                         g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
-                                     block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+                                     block_type_loc, abs_clb_bbox.width(), abs_clb_bbox.height());
                     }
                 }
             }
@@ -849,14 +848,12 @@ void draw_routing_util(ezgl::renderer* g) {
                 if (draw_state->show_routing_util
                     == DRAW_ROUTING_UTIL_WITH_VALUE) {
                     g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f", chanx_util).c_str(),
+                                 vtr::string_fmt("%.2f", chanx_util),
                                  bb.width(), bb.height());
                 } else if (draw_state->show_routing_util
                            == DRAW_ROUTING_UTIL_WITH_FORMULA) {
                     g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f = %.0f / %.0f", chanx_util,
-                                                 chanx_usage[x][y], chanx_avail[x][y])
-                                     .c_str(),
+                                 vtr::string_fmt("%.2f = %.0f / %.0f", chanx_util, chanx_usage[x][y], chanx_avail[x][y]),
                                  bb.width(), bb.height());
                 }
 
@@ -883,14 +880,12 @@ void draw_routing_util(ezgl::renderer* g) {
                 if (draw_state->show_routing_util
                     == DRAW_ROUTING_UTIL_WITH_VALUE) {
                     g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f", chany_util).c_str(),
+                                 vtr::string_fmt("%.2f", chany_util),
                                  bb.width(), bb.height());
                 } else if (draw_state->show_routing_util
                            == DRAW_ROUTING_UTIL_WITH_FORMULA) {
                     g->draw_text(bb.center(),
-                                 vtr::string_fmt("%.2f = %.0f / %.0f", chany_util,
-                                                 chany_usage[x][y], chany_avail[x][y])
-                                     .c_str(),
+                                 vtr::string_fmt("%.2f = %.0f / %.0f", chany_util, chany_usage[x][y], chany_avail[x][y]),
                                  bb.width(), bb.height());
                 }
 
@@ -938,7 +933,7 @@ void draw_routing_util(ezgl::renderer* g) {
                 || draw_state->show_routing_util
                        == DRAW_ROUTING_UTIL_WITH_FORMULA) {
                 g->draw_text(bb.center(),
-                             vtr::string_fmt("%.2f", sb_util).c_str(), bb.width(),
+                             vtr::string_fmt("%.2f", sb_util), bb.width(),
                              bb.height());
             }
         }
@@ -1176,7 +1171,7 @@ void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr
                          - 8 * cos(text_angle * (std::numbers::pi / 180));
 
         ezgl::point2d offset_text_bbox(x_offset, y_offset);
-        g->draw_text(offset_text_bbox, incr_delay_str.c_str(),
+        g->draw_text(offset_text_bbox, incr_delay_str,
                      text_bbox.width(), text_bbox.height());
 
         g->set_font_size(14);
@@ -1299,19 +1294,17 @@ void draw_color_map_legend(const vtr::ColorMap& cmap,
     //Min mark
     g->set_color(blk_SKYBLUE); // set to skyblue so its easier to see
     std::string str = vtr::string_fmt("%.3g", cmap.min());
-    g->draw_text({legend.center_x(), legend.top() - TEXT_OFFSET},
-                 str.c_str());
+    g->draw_text({legend.center_x(), legend.top() - TEXT_OFFSET}, str);
 
     //Mid marker
     g->set_color(ezgl::BLACK);
     str = vtr::string_fmt("%.3g", cmap.min() + (cmap.range() / 2.));
-    g->draw_text({legend.center_x(), legend.center_y()}, str.c_str());
+    g->draw_text({legend.center_x(), legend.center_y()}, str);
 
     //Max marker
     g->set_color(ezgl::BLACK);
     str = vtr::string_fmt("%.3g", cmap.max());
-    g->draw_text({legend.center_x(), legend.bottom() + TEXT_OFFSET},
-                 str.c_str());
+    g->draw_text({legend.center_x(), legend.bottom() + TEXT_OFFSET}, str);
 
     g->set_color(ezgl::BLACK);
     g->draw_rectangle(legend);
