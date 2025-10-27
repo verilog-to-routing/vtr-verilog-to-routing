@@ -393,3 +393,40 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
         }
     }
 }
+
+void compute_non_3d_sg_link_geometry(const t_physical_tile_loc& src_loc,
+                                     const t_physical_tile_loc& dst_loc,
+                                     e_rr_type& chan_type,
+                                     int& xlow, int& xhigh,
+                                     int& ylow, int& yhigh,
+                                     Direction& direction) {
+    VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
+
+    if (dst_loc.x > src_loc.x) {
+        chan_type = e_rr_type::CHANX;
+        ylow = yhigh = dst_loc.y;
+        xlow = src_loc.x + 1;
+        xhigh = dst_loc.x;
+        direction = Direction::INC;
+    } else if (dst_loc.x < src_loc.x) {
+        chan_type = e_rr_type::CHANX;
+        ylow = yhigh = dst_loc.y;
+        xlow = dst_loc.x + 1;
+        xhigh = src_loc.x;
+        direction = Direction::DEC;
+    } else if (dst_loc.y > src_loc.y) {
+        chan_type = e_rr_type::CHANY;
+        xlow = xhigh = dst_loc.x;
+        ylow = src_loc.y + 1;
+        yhigh = dst_loc.y;
+        direction = Direction::INC;
+    } else if (dst_loc.y < src_loc.y) {
+        chan_type = e_rr_type::CHANY;
+        xlow = xhigh = dst_loc.x;
+        ylow = dst_loc.y + 1;
+        yhigh = src_loc.y;
+        direction = Direction::DEC;
+    } else {
+        VTR_ASSERT_MSG(false, "Source and destination locations cannot be identical");
+    }
+}

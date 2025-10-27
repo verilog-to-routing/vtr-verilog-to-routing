@@ -380,36 +380,13 @@ std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_i
     for (const t_bottleneck_link& link : bottleneck_links) {
         int xlow, xhigh, ylow, yhigh;
         e_rr_type chan_type;
+        Direction direction;
         const t_physical_tile_loc& src_loc = link.gather_loc;
         const t_physical_tile_loc& dst_loc = link.scatter_loc;
 
-        VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
-        const int layer = src_loc.layer_num;
-
         // Step 1: Determine the channel type (CHANX/CHANY) and span coordinates
-        if (dst_loc.x > src_loc.x) {
-            chan_type = e_rr_type::CHANX;
-            ylow = yhigh = dst_loc.y;
-            xlow = src_loc.x + 1;
-            xhigh = dst_loc.x;
-        } else if (dst_loc.x < src_loc.x) {
-            chan_type = e_rr_type::CHANX;
-            ylow = yhigh = dst_loc.y;
-            xlow = dst_loc.x + 1;
-            xhigh = src_loc.x;
-        } else if (dst_loc.y > src_loc.y) {
-            chan_type = e_rr_type::CHANY;
-            xlow = xhigh = dst_loc.x;
-            ylow = src_loc.y + 1;
-            yhigh = dst_loc.y;
-        } else if (dst_loc.y < src_loc.y) {
-            chan_type = e_rr_type::CHANY;
-            xlow = xhigh = dst_loc.x;
-            ylow = dst_loc.y + 1;
-            yhigh = src_loc.y;
-        } else {
-            VTR_ASSERT(false);
-        }
+        const int layer = src_loc.layer_num;
+        compute_non_3d_sg_link_geometry(src_loc, dst_loc, chan_type, xlow, xhigh, ylow, yhigh,direction);
 
         // Select the appropriate ptc matrix for this channel type
         vtr::NdMatrix<int, 3>& ptc_matrix = (chan_type == e_rr_type::CHANX) ? chanx_ptc : chany_ptc;

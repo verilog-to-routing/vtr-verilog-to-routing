@@ -74,3 +74,14 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
  */
 void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& interposer_inf,
                                             std::vector<t_scatter_gather_pattern>& sg_patterns);
+
+/**
+* @brief Computes the channel type, direction, and coordinate span between two locations
+*        on the same layer. Used by SG link construction routines to determine geometry.
+*/
+void compute_non_3d_sg_link_geometry(const t_physical_tile_loc& src_loc,
+                                     const t_physical_tile_loc& dst_loc,
+                                     e_rr_type& chan_type,
+                                     int& xlow, int& xhigh,
+                                     int& ylow, int& yhigh,
+                                     Direction& direction);
