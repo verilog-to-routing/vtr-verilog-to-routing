@@ -11,6 +11,7 @@
  * externally to the Packer in VPR.
  */
 
+#include <string>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "noc_data_types.h"
@@ -431,6 +432,13 @@ class ClusterLegalizer {
         VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
         const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
         return cluster.pb;
+    }
+
+    /// @brief Gets the name of the given cluster.
+    inline std::string get_cluster_name(LegalizationClusterId cluster_id) const {
+        VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+        const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+        return cluster.pb->name;
     }
 
     /// @brief Gets the logical block type of the given cluster.
