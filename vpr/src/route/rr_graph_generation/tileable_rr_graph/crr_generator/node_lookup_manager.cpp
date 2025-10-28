@@ -106,7 +106,6 @@ void NodeLookupManager::index_node(RRNodeId node_id) {
     short y_low = rr_graph_.node_ylow(node_id);
     short y_high = rr_graph_.node_yhigh(node_id);
 
-
     VTR_ASSERT(static_cast<size_t>(x_low) <= fpga_grid_x_);
     VTR_ASSERT(static_cast<size_t>(x_high) <= fpga_grid_x_);
     VTR_ASSERT(static_cast<size_t>(y_low) <= fpga_grid_y_);

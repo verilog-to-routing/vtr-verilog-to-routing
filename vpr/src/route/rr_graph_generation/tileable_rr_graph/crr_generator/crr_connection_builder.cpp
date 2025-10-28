@@ -209,8 +209,7 @@ std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x
     return tile_connections;
 }
 
-std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(Coordinate x, Coordinate y, const DataFrame& df,
-                                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
+std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(Coordinate x, Coordinate y, const DataFrame& df, const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     std::map<size_t, RRNodeId> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -239,8 +238,7 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(Coordinate x
     return source_nodes;
 }
 
-std::map<size_t, RRNodeId> CRRConnectionBuilder::get_horizontal_nodes(Coordinate x, Coordinate y, const DataFrame& df,
-                                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
+std::map<size_t, RRNodeId> CRRConnectionBuilder::get_horizontal_nodes(Coordinate x, Coordinate y, const DataFrame& df, const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     std::map<size_t, RRNodeId> sink_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -273,7 +271,7 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_horizontal_nodes(Coordinate
     return sink_nodes;
 }
 
-CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const DataFrame& df, 
+CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const DataFrame& df,
                                                                            size_t row_or_col,
                                                                            bool is_vertical) const {
     SegmentInfo info;
@@ -324,8 +322,7 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
     return info;
 }
 
-RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y,
-                                                      const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
+RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y, const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     assert(info.side == Side::OPIN || info.side == Side::IPIN);
     e_rr_type node_type = (info.side == Side::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN;
     NodeHash hash = std::make_tuple(node_type,
@@ -340,10 +337,7 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info, C
     return RRNodeId::INVALID();
 }
 
-RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y,
-                                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
-                                                  int& prev_seg_index, Side& prev_side, std::string& prev_seg_type, int& prev_ptc_number,
-                                                  bool is_vertical) const {
+RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y, const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup, int& prev_seg_index, Side& prev_side, std::string& prev_seg_type, int& prev_ptc_number, bool is_vertical) const {
     // Check grid boundaries
     if ((info.side == Side::RIGHT && x == fpga_grid_x_) || (info.side == Side::TOP && y == fpga_grid_y_)) {
         return RRNodeId::INVALID();
@@ -398,10 +392,14 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info, Coo
 }
 
 void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info,
-                                                         Coordinate x, Coordinate y,
-                                                         Coordinate& x_low, Coordinate& x_high,
-                                                         Coordinate& y_low, Coordinate& y_high,
-                                                         int& physical_length, int& truncated,
+                                                         Coordinate x,
+                                                         Coordinate y,
+                                                         Coordinate& x_low,
+                                                         Coordinate& x_high,
+                                                         Coordinate& y_low,
+                                                         Coordinate& y_high,
+                                                         int& physical_length,
+                                                         int& truncated,
                                                          bool is_vertical) const {
     int seg_length = std::stoi(info.seg_type.substr(1));
     int tap = info.tap;
@@ -527,9 +525,7 @@ std::string CRRConnectionBuilder::get_ptc_sequence(int seg_index,
     return result;
 }
 
-SwitchId CRRConnectionBuilder::get_edge_switch_id(const std::string& cell_value, const std::string& sink_node_type,
-                                                  RRNodeId /*source_node*/, RRNodeId /*sink_node*/,
-                                                  int /*segment_length*/) const {
+SwitchId CRRConnectionBuilder::get_edge_switch_id(const std::string& cell_value, const std::string& sink_node_type, RRNodeId /*source_node*/, RRNodeId /*sink_node*/, int /*segment_length*/) const {
     std::string lower_case_sink_node_type = sink_node_type;
     std::transform(lower_case_sink_node_type.begin(),
                    lower_case_sink_node_type.end(),
