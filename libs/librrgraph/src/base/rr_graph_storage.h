@@ -552,6 +552,9 @@ class t_rr_graph_storage {
 
             node_bend_end_.reserve(node_storage_.capacity());
             node_bend_end_.resize(node_storage_.size());
+
+            node_tilable_track_nums_.reserve(node_storage_.capacity());
+            node_tilable_track_nums_.resize(node_storage_.size());
         }
     }
 
@@ -579,6 +582,7 @@ class t_rr_graph_storage {
         if (is_tileable_) {
             node_bend_start_.resize(size);
             node_bend_end_.resize(size);
+            node_tilable_track_nums_.resize(size);
         }
     }
 
@@ -613,7 +617,6 @@ class t_rr_graph_storage {
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
-        is_tileable_ = false;
     }
 
     /** @brief
@@ -642,7 +645,7 @@ class t_rr_graph_storage {
         node_layer_.shrink_to_fit();
         node_bend_start_.shrink_to_fit();
         node_bend_end_.shrink_to_fit();
-
+        node_tilable_track_nums_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
