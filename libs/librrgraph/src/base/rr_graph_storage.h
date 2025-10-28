@@ -696,7 +696,11 @@ class t_rr_graph_storage {
     void emplace_back_node_tilable_track_num();
 
     bool node_contain_multiple_ptc(RRNodeId node) const {
-        return node_tilable_track_nums_[node].size() > 1;
+        if (node_tilable_track_nums_.empty()) {
+            return false;
+        } else {
+            return node_tilable_track_nums_[node].size() > 1;
+        }
     }
 
     std::string node_ptc_nums_to_string(RRNodeId node) const;
