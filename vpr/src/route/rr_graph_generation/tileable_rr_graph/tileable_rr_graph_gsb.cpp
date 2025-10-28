@@ -1763,7 +1763,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                     int to_subtile_cap = z + directs[i].sub_tile_offset;
                     /* If the destination subtile is out of range, there is no qualified IPINs */
                     if (to_subtile_cap < 0 || to_subtile_cap >= to_grid_type->capacity) {
-                      continue;
+                        continue;
                     }
                     /* Iterate over all sub_tiles to get the sub_tile which the target_cap belongs to. */
                     const t_sub_tile* to_sub_tile = nullptr;
@@ -1774,6 +1774,15 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                         }
                     }
                     VTR_ASSERT(to_sub_tile != nullptr);
+                    // Check if the to port is the one from the subtile, if not, pass as this is not the destination
+                    bool port_match = false;
+                    for (auto to_sub_tile_port : to_sub_tile->ports) {
+                        if (std::string(to_sub_tile_port.name) == clb_to_clb_directs[i].to_port) {
+                            port_match = true;
+                            break;
+                        }
+                    }
+                    if (!port_match) continue;
                     if (relative_ipin >= to_sub_tile->num_phy_pins) continue;
                     // If this block has capacity > 1 then the pins of z position > 0 are offset
                     // by the number of pins per capacity instance
@@ -1792,7 +1801,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                                                              to_grid_coordinate.y() + to_grid_type->pin_height_offset[ipin],
                                                                              e_rr_type::IPIN, ipin, ipin_grid_side[0]);
 
-                    /* add edges to the opin_node */
+                    // add edges to the opin_node */
                     if (!opin_node_id) {
                       VTR_ASSERT(opin_node_id);
                     }
