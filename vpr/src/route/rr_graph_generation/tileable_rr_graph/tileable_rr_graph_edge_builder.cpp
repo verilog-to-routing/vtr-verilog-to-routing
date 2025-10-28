@@ -318,7 +318,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   const bool& opin2all_sides,
                                   const bool& concat_wire,
                                   const bool& wire_opposite_side) {
-    bool build_crr_edges = crr_opts.sb_templates.empty();
+    bool build_crr_edges = !crr_opts.sb_templates.empty();
     size_t num_edges_to_create = 0;
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
     build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
@@ -327,12 +327,16 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     vtr::Point<size_t> gsb_range(grids.width() - 1, grids.height() - 1);
 
     // Building CRR Graph
-    crrgenerator::SwitchBlockManager sb_manager;
-    sb_manager.initialize(crr_opts.sb_maps, crr_opts.sb_templates, crr_opts.annotated_rr_graph);
-    crrgenerator::NodeLookupManager node_lookup(rr_graph, grids.width(), grids.height());
-    node_lookup.initialize();
-    crrgenerator::CRRGraphGenerator parser(crr_opts, rr_graph, node_lookup, sb_manager, "vpr_custom_rr_graph.xml");
-    parser.run();
+    const crrgenerator::CRRConnectionBuilder* crr_connection_builder = nullptr;
+    if (build_crr_edges) {
+        crrgenerator::SwitchBlockManager sb_manager;
+        sb_manager.initialize(crr_opts.sb_maps, crr_opts.sb_templates, crr_opts.annotated_rr_graph);
+        crrgenerator::NodeLookupManager node_lookup(rr_graph, grids.width(), grids.height());
+        node_lookup.initialize();
+        crrgenerator::CRRGraphGenerator parser(crr_opts, rr_graph, node_lookup, sb_manager, "vpr_custom_rr_graph.xml");
+        parser.run();
+        crr_connection_builder = parser.get_connection_builder();
+    }
 
     /* Go Switch Block by Switch Block */
     for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
@@ -360,7 +364,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
             /* adapt the switch_block_conn for the GSB nodes */
             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
             if (build_crr_edges) {
-                build_crr_gsb_track_to_track_edges(rr_graph_builder, rr_gsb, *parser.get_connection_builder());
+                build_crr_gsb_track_to_track_edges(rr_graph_builder, rr_gsb, *crr_connection_builder);
             } else {
                 sb_conn = build_gsb_track_to_track_map(rr_graph,
                                                        rr_gsb,
