@@ -107,29 +107,32 @@ NodeHash NodeLookupManager::build_node_hash(RRNodeId node_id) const {
 }
 
 void NodeLookupManager::index_node(RRNodeId node_id) {
-    NodeHash hash = build_node_hash(node);
-    const RRNode* node_ptr = &node;
+    NodeHash hash = build_node_hash(node_id);
 
-    const Location& loc = node.get_location();
+    short x_low = rr_graph_.node_xlow(node_id);
+    short x_high = rr_graph_.node_xhigh(node_id);
+    short y_low = rr_graph_.node_ylow(node_id);
+    short y_high = rr_graph_.node_yhigh(node_id);
 
-    VTR_ASSERT(loc.x_low <= fpga_grid_x_);
-    VTR_ASSERT(loc.x_high <= fpga_grid_x_);
-    VTR_ASSERT(loc.y_low <= fpga_grid_y_);
-    VTR_ASSERT(loc.y_high <= fpga_grid_y_);
+
+    VTR_ASSERT(x_low <= fpga_grid_x_);
+    VTR_ASSERT(x_high <= fpga_grid_x_);
+    VTR_ASSERT(y_low <= fpga_grid_y_);
+    VTR_ASSERT(y_high <= fpga_grid_y_);
 
     // Skip spatial indexing for source/sink nodes
-    if (node.get_type() == NodeType::SOURCE || node.get_type() == NodeType::SINK) {
+    if (rr_graph_.node_type(node_id) == e_rr_type::SOURCE || rr_graph_.node_type(node_id) == e_rr_type::SINK) {
         return;
     }
 
     // Add to column lookup (for single-column nodes)
-    if (loc.x_low == loc.x_high) {
-        column_lookup_[static_cast<size_t>(loc.x_low)][hash] = RRNodeId(node_ptr->get_id());
+    if (x_low == x_high) {
+        column_lookup_[static_cast<size_t>(x_low)][hash] = node_id;
     }
 
     // Add to row lookup (for single-row nodes)
-    if (loc.y_low == loc.y_high) {
-        row_lookup_[static_cast<size_t>(loc.y_low)][hash] = RRNodeId(node_ptr->get_id());
+    if (y_low == y_high) {
+        row_lookup_[static_cast<size_t>(y_low)][hash] = node_id;
     }
 }
 
