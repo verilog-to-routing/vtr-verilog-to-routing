@@ -161,7 +161,7 @@ struct Sizing {
  */
 class Connection {
   public:
-    Connection(RRNodeId sink_node, RRNodeId src_node, SwitchId switch_id)
+    Connection(RRNodeId sink_node, RRNodeId src_node, SwitchId switch_id) noexcept
         : sink_node_(sink_node)
         , src_node_(src_node)
         , switch_id_(switch_id) {}
@@ -188,7 +188,7 @@ using NodeHash = std::tuple<e_rr_type, std::string, short, short, short, short>;
 
 // Hash function for NodeHash
 struct NodeHasher {
-    std::size_t operator()(const NodeHash& hash) const {
+    std::size_t operator()(const NodeHash& hash) const noexcept {
         auto h1 = std::hash<int>{}(static_cast<int>(std::get<0>(hash)));
         auto h2 = std::hash<std::string>{}(std::get<1>(hash));
         auto h3 = std::hash<short>{}(std::get<2>(hash));
