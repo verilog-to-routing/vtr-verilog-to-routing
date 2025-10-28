@@ -107,10 +107,10 @@ void NodeLookupManager::index_node(RRNodeId node_id) {
     short y_high = rr_graph_.node_yhigh(node_id);
 
 
-    VTR_ASSERT(x_low <= fpga_grid_x_);
-    VTR_ASSERT(x_high <= fpga_grid_x_);
-    VTR_ASSERT(y_low <= fpga_grid_y_);
-    VTR_ASSERT(y_high <= fpga_grid_y_);
+    VTR_ASSERT(static_cast<size_t>(x_low) <= fpga_grid_x_);
+    VTR_ASSERT(static_cast<size_t>(x_high) <= fpga_grid_x_);
+    VTR_ASSERT(static_cast<size_t>(y_low) <= fpga_grid_y_);
+    VTR_ASSERT(static_cast<size_t>(y_high) <= fpga_grid_y_);
 
     // Skip spatial indexing for source/sink nodes
     if (rr_graph_.node_type(node_id) == e_rr_type::SOURCE || rr_graph_.node_type(node_id) == e_rr_type::SINK) {
