@@ -44,17 +44,16 @@
 
 #include "logic_types.h"
 #include "physical_types.h"
-#include "pugixml.hpp"
-#include "pugixml_util.hpp"
+#include "parse_switchblocks.h"
+#include "physical_types_util.h"
 
-#include "read_xml_arch_file_interposer.h"
-#include "read_xml_arch_file_vib.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_digest.h"
 #include "vtr_token.h"
 #include "vtr_bimap.h"
+#include "vtr_expr_eval.h"
 
 #include "arch_check.h"
 #include "arch_error.h"
@@ -63,13 +62,13 @@
 
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
-#include "parse_switchblocks.h"
-
-#include "physical_types_util.h"
-#include "vtr_expr_eval.h"
+#include "pugixml.hpp"
+#include "pugixml_util.hpp"
 
 #include "read_xml_arch_file_noc_tag.h"
 #include "read_xml_arch_file_sg.h"
+#include "read_xml_arch_file_interposer.h"
+#include "read_xml_arch_file_vib.h"
 
 #include "interposer_types.h"
 
@@ -102,8 +101,8 @@ struct t_pin_locs {
   public:
     e_pin_location_distr distribution = e_pin_location_distr::SPREAD;
 
-    /* [0..num_sub_tiles-1][0..width-1][0..height-1][0..num_of_layer-1][0..3][0..num_tokens-1] */
-    vtr::NdMatrix<std::vector<std::string>, 5> assignments;
+    /* [0..num_sub_tiles-1][0..width-1][0..height-1][0..3][0..num_tokens-1] */
+    vtr::NdMatrix<std::vector<std::string>, 4> assignments;
 
     bool is_distribution_set() const {
         return distribution_set;
@@ -585,12 +584,10 @@ static void load_pin_loc(pugi::xml_node Locations,
                          const int num_of_avail_layer) {
     type->pin_width_offset.resize(type->num_pins, 0);
     type->pin_height_offset.resize(type->num_pins, 0);
-    //layer_offset is not used if the distribution is not custom
-    type->pin_layer_offset.resize(type->num_pins, 0);
 
     std::vector<int> physical_pin_counts(type->num_pins, 0);
     if (pin_locs->distribution == e_pin_location_distr::SPREAD) {
-        /* evenly distribute pins starting at bottom left corner */
+        // Evenly distribute pins starting at bottom left corner
 
         int num_sides = 4 * (type->width * type->height);
         int side_index = 0;
@@ -615,7 +612,7 @@ static void load_pin_loc(pugi::xml_node Locations,
         VTR_ASSERT(side_index == num_sides);
         VTR_ASSERT(count == type->num_pins);
     } else if (pin_locs->distribution == e_pin_location_distr::PERIMETER) {
-        //Add one pin at-a-time to perimeter sides in round-robin order
+        // Add one pin at-a-time to perimeter sides in round-robin order
         int ipin = 0;
         while (ipin < type->num_pins) {
             for (int width = 0; width < type->width; ++width) {
@@ -641,11 +638,11 @@ static void load_pin_loc(pugi::xml_node Locations,
         VTR_ASSERT(ipin == type->num_pins);
 
     } else if (pin_locs->distribution == e_pin_location_distr::SPREAD_INPUTS_PERIMETER_OUTPUTS) {
-        //Collect the sets of block input/output pins
+        // Collect the sets of block input/output pins
         std::vector<int> input_pins;
         std::vector<int> output_pins;
         for (int pin_num = 0; pin_num < type->num_pins; ++pin_num) {
-            auto class_type = get_pin_type_from_pin_physical_num(type, pin_num);
+            e_pin_type class_type = get_pin_type_from_pin_physical_num(type, pin_num);
 
             if (class_type == e_pin_type::RECEIVER) {
                 input_pins.push_back(pin_num);
@@ -655,15 +652,14 @@ static void load_pin_loc(pugi::xml_node Locations,
             }
         }
 
-        //Allocate the inputs one pin at-a-time in a round-robin order
-        //to all sides
+        // Allocate the inputs one pin at-a-time in a round-robin order to all sides
         size_t ipin = 0;
         while (ipin < input_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
                     for (e_side side : TOTAL_2D_SIDES) {
                         if (ipin < input_pins.size()) {
-                            //Pins still to allocate
+                            // Pins still to allocate
 
                             int pin_num = input_pins[ipin];
 
@@ -679,7 +675,7 @@ static void load_pin_loc(pugi::xml_node Locations,
         }
         VTR_ASSERT(ipin == input_pins.size());
 
-        //Allocate the outputs one pin at-a-time to perimeter sides in round-robin order
+        // Allocate the outputs one pin at-a-time to perimeter sides in round-robin order
         ipin = 0;
         while (ipin < output_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
@@ -716,7 +712,7 @@ static void load_pin_loc(pugi::xml_node Locations,
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
                         for (e_side side : TOTAL_2D_SIDES) {
-                            for (const std::string& token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                            for (const std::string& token : pin_locs->assignments[sub_tile_index][width][height][side]) {
                                 auto pin_range = process_pin_string<t_sub_tile*>(Locations,
                                                                                  &sub_tile,
                                                                                  token.c_str(),
@@ -747,7 +743,6 @@ static void load_pin_loc(pugi::xml_node Locations,
                                         type->pinloc[width][height][side][physical_pin_index] = true;
                                         type->pin_width_offset[physical_pin_index] += width;
                                         type->pin_height_offset[physical_pin_index] += height;
-                                        type->pin_layer_offset[physical_pin_index] = layer;
                                         physical_pin_counts[physical_pin_index] += 1;
                                     }
                                 }
@@ -767,7 +762,6 @@ static void load_pin_loc(pugi::xml_node Locations,
 
         VTR_ASSERT(type->pin_width_offset[ipin] >= 0 && type->pin_width_offset[ipin] < type->width);
         VTR_ASSERT(type->pin_height_offset[ipin] >= 0 && type->pin_height_offset[ipin] < type->height);
-        VTR_ASSERT(type->pin_layer_offset[ipin] >= 0 && type->pin_layer_offset[ipin] < num_of_avail_layer);
     }
 }
 
@@ -2941,12 +2935,8 @@ static void process_device(pugi::xml_node Node, t_arch* arch, t_default_fc_spec&
 
     //<connection_block> tag
     Cur = get_single_child(Node, "connection_block", loc_data);
-    expect_only_attributes(Cur, {"input_switch_name", "input_inter_die_switch_name"}, loc_data);
-    arch->ipin_cblock_switch_name.emplace_back(get_attribute(Cur, "input_switch_name", loc_data).as_string());
-    std::string inter_die_conn = get_attribute(Cur, "input_inter_die_switch_name", loc_data, ReqOpt::OPTIONAL).as_string("");
-    if (inter_die_conn != "") {
-        arch->ipin_cblock_switch_name.push_back(inter_die_conn);
-    }
+    expect_only_attributes(Cur, {"input_switch_name"}, loc_data);
+    arch->ipin_cblock_switch_name = get_attribute(Cur, "input_switch_name", loc_data).as_string();
 
     //<switch_block> tag
     Cur = get_single_child(Node, "switch_block", loc_data);
@@ -3482,21 +3472,20 @@ static void process_pin_locations(pugi::xml_node Locations,
 
     const int sub_tile_index = SubTile->index;
 
-    /* Load the pin locations */
+    // Load the pin locations
     if (distribution == e_pin_location_distr::CUSTOM) {
         expect_only_children(Locations, {"loc"}, loc_data);
         Cur = Locations.first_child();
-        //check for duplications ([0..3][0..type->width-1][0..type->height-1][0..num_of_avail_layer-1])
-        std::set<std::tuple<e_side, int, int, int>> seen_sides;
+        // check for duplications ([0..3][0..type->width-1][0..type->height-1])
+        std::set<std::tuple<e_side, int, int>> seen_sides;
         while (Cur) {
             check_node(Cur, "loc", loc_data);
 
-            expect_only_attributes(Cur, {"side", "xoffset", "yoffset", "layer_offset"}, loc_data);
+            expect_only_attributes(Cur, {"side", "xoffset", "yoffset"}, loc_data);
 
             /* Get offset (height, width, layer) */
             int x_offset = get_attribute(Cur, "xoffset", loc_data, ReqOpt::OPTIONAL).as_int(0);
             int y_offset = get_attribute(Cur, "yoffset", loc_data, ReqOpt::OPTIONAL).as_int(0);
-            int layer_offset = pugiutil::get_attribute(Cur, "layer_offset", loc_data, ReqOpt::OPTIONAL).as_int(0);
 
             /* Get side */
             e_side side = TOP;
@@ -3527,15 +3516,8 @@ static void process_pin_locations(pugi::xml_node Locations,
                                    .c_str());
             }
 
-            if ((layer_offset < 0) || layer_offset >= num_of_avail_layer) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
-                               vtr::string_fmt("'%d' is an invalid layer offset for type '%s' (must be within [0, num_avail_layer-1]).\n",
-                                               y_offset, PhysicalTileType->name.c_str(), PhysicalTileType->height - 1)
-                                   .c_str());
-            }
-
             //Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
-            auto side_offset = std::make_tuple(side, x_offset, y_offset, layer_offset);
+            std::tuple<e_side, int, int> side_offset = std::make_tuple(side, x_offset, y_offset);
             if (seen_sides.count(side_offset)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                vtr::string_fmt("Duplicate pin location side/offset specification."
@@ -3550,7 +3532,7 @@ static void process_pin_locations(pugi::xml_node Locations,
             if (Count > 0) {
                 for (int pin = 0; pin < Count; ++pin) {
                     /* Store location assignment */
-                    pin_locs->assignments[sub_tile_index][x_offset][y_offset][std::abs(layer_offset)][side].emplace_back(Tokens[pin].c_str());
+                    pin_locs->assignments[sub_tile_index][x_offset][y_offset][side].emplace_back(Tokens[pin].c_str());
                     /* Advance through list of pins in this location */
                 }
             }
@@ -3565,7 +3547,7 @@ static void process_pin_locations(pugi::xml_node Locations,
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
                     for (e_side side : TOTAL_2D_SIDES) {
-                        for (const std::string& token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
+                        for (const std::string& token : pin_locs->assignments[sub_tile_index][w][h][side]) {
                             InstPort inst_port(token);
 
                             //A pin specification should contain only the block name, and not any instance count information
@@ -3666,13 +3648,13 @@ static void process_sub_tiles(pugi::xml_node Node,
     pugi::xml_node CurSubTile;
     pugi::xml_node Cur;
 
-    unsigned long int num_sub_tiles = count_children(Node, "sub_tile", loc_data);
-    unsigned long int width = PhysicalTileType->width;
-    unsigned long int height = PhysicalTileType->height;
-    unsigned long int num_sides = 4;
+    size_t num_sub_tiles = count_children(Node, "sub_tile", loc_data);
+    size_t width = PhysicalTileType->width;
+    size_t height = PhysicalTileType->height;
+    size_t num_sides = 4;
 
     t_pin_locs pin_locs;
-    pin_locs.assignments.resize({num_sub_tiles, width, height, (unsigned long int)num_of_avail_layer, num_sides});
+    pin_locs.assignments.resize({num_sub_tiles, width, height, num_sides});
 
     if (num_sub_tiles == 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),

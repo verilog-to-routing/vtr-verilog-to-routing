@@ -11,10 +11,6 @@
 #include "vtr_memory.h"
 #include "vtr_assert.h"
 
-/// @brief indices to lookup IPIN connection block switch name
-constexpr int ipin_cblock_switch_index_within_die = 0;
-constexpr int ipin_cblock_switch_index_between_dice = 1;
-
 void PrintArchInfo(FILE* Echo, const t_arch* arch);
 static void print_model(FILE* echo, const t_model& model);
 static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, const LogicalModels& models);
@@ -198,15 +194,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             break;
     }
 
-    fprintf(Echo, "\tInput Connect Block Switch Name Within a Same Die: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_within_die].c_str());
-
-    //if there is more than one layer available, print the connection block switch name that is used for connection between two dice
-    for (const t_grid_def& layout : arch->grid_layouts) {
-        int num_layers = (int)layout.layers.size();
-        if (num_layers > 1) {
-            fprintf(Echo, "\tInput Connect Block Switch Name Between Two Dice: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_between_dice].c_str());
-        }
-    }
+    fprintf(Echo, "\tInput Connect Block Switch Name: %s\n", arch->ipin_cblock_switch_name.c_str());
 
     fprintf(Echo, "*************************************************\n\n");
     //Switch list
