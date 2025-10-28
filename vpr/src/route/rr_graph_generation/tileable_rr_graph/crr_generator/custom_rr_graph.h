@@ -366,7 +366,7 @@ class RRGraph {
 
     // Node management
     void add_node(const RRNode& node);
-    void add_node(NodeId id, NodeType type, int capacity, const std::string& direction, const Location& location, const NodeTiming& timing, const NodeSegmentId& segment_id);
+    void add_node(NodeId id, e_rr_type type, int capacity, const std::string& direction, const Location& location, const NodeTiming& timing, const NodeSegmentId& segment_id);
     const RRNode* get_node(NodeId id) const;
     RRNode* get_node(NodeId id);
     const std::vector<RRNode>& get_nodes() const { return nodes_; }

@@ -11,7 +11,7 @@ void RRGraph::add_node(const RRNode& node) {
     update_node_index(node.get_id(), nodes_.size() - 1);
 }
 
-void RRGraph::add_node(NodeId id, NodeType type, int capacity, const std::string& direction, const Location& location, const NodeTiming& timing, const NodeSegmentId& segment_id) {
+void RRGraph::add_node(NodeId id, e_rr_type type, int capacity, const std::string& direction, const Location& location, const NodeTiming& timing, const NodeSegmentId& segment_id) {
     add_node(RRNode(id, type, capacity, direction, location, timing, segment_id));
 }
 
@@ -117,13 +117,13 @@ void RRGraph::print_statistics() const {
     VTR_LOG("Segments: %zu\n", segments_.size());
 
     // Count nodes by type
-    std::map<NodeType, size_t> type_counts;
+    std::map<e_rr_type, size_t> type_counts;
     for (const auto& node : nodes_) {
         type_counts[node.get_type()]++;
     }
 
     for (const auto& [type, count] : type_counts) {
-        VTR_LOG("  %s nodes: %zu\n", to_string(type), count);
+        VTR_LOG("  %s nodes: %zu\n", rr_node_typename[type], count);
     }
 
     VTR_LOG("Tool: %s v%s\n", tool_name_.c_str(), tool_version_.c_str());
@@ -135,7 +135,7 @@ void RRGraph::print_statistics() const {
 std::unordered_set<NodeId> RRGraph::get_source_nodes() const {
     std::unordered_set<NodeId> result;
     for (const auto& node : nodes_) {
-        if (node.get_type() == NodeType::SOURCE) {
+        if (node.get_type() == e_rr_type::SOURCE) {
             result.insert(node.get_id());
         }
     }
@@ -145,7 +145,7 @@ std::unordered_set<NodeId> RRGraph::get_source_nodes() const {
 std::unordered_set<NodeId> RRGraph::get_sink_nodes() const {
     std::unordered_set<NodeId> result;
     for (const auto& node : nodes_) {
-        if (node.get_type() == NodeType::SINK) {
+        if (node.get_type() == e_rr_type::SINK) {
             result.insert(node.get_id());
         }
     }
@@ -155,7 +155,7 @@ std::unordered_set<NodeId> RRGraph::get_sink_nodes() const {
 std::unordered_set<NodeId> RRGraph::get_ipin_nodes() const {
     std::unordered_set<NodeId> result;
     for (const auto& node : nodes_) {
-        if (node.get_type() == NodeType::IPIN) {
+        if (node.get_type() == e_rr_type::IPIN) {
             result.insert(node.get_id());
         }
     }
@@ -165,7 +165,7 @@ std::unordered_set<NodeId> RRGraph::get_ipin_nodes() const {
 std::unordered_set<NodeId> RRGraph::get_opin_nodes() const {
     std::unordered_set<NodeId> result;
     for (const auto& node : nodes_) {
-        if (node.get_type() == NodeType::OPIN) {
+        if (node.get_type() == e_rr_type::OPIN) {
             result.insert(node.get_id());
         }
     }
