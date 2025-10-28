@@ -34,14 +34,14 @@ class NodeLookupManager {
      * @param x Column coordinate
      * @return Map of hash to node for nodes in column
      */
-    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& get_column_nodes(Coordinate x) const;
+    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& get_column_nodes(size_t x) const;
 
     /**
      * @brief Get nodes in a specific row
      * @param y Row coordinate
      * @return Map of hash to node for nodes in row
      */
-    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& get_row_nodes(Coordinate y) const;
+    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& get_row_nodes(size_t y) const;
 
     /**
      * @brief Get combined nodes for column and row (for switch block processing)
@@ -49,15 +49,7 @@ class NodeLookupManager {
      * @param y Row coordinate
      * @return Combined map of nodes
      */
-    std::unordered_map<NodeHash, RRNodeId, NodeHasher> get_combined_nodes(Coordinate x, Coordinate y) const;
-
-    /**
-     * @brief Check if coordinate is valid
-     * @param x X coordinate
-     * @param y Y coordinate
-     * @return true if coordinates are within grid bounds
-     */
-    bool is_valid_coordinate(Coordinate x, Coordinate y) const;
+    std::unordered_map<NodeHash, RRNodeId, NodeHasher> get_combined_nodes(size_t x, size_t y) const;
 
     /**
      * @brief Print lookup statistics
@@ -82,12 +74,11 @@ class NodeLookupManager {
     std::unordered_map<NodeHash, const RRNode*, NodeHasher> global_lookup_;
 
     // Grid dimensions
-    Coordinate fpga_grid_x_;
-    Coordinate fpga_grid_y_;
+    size_t fpga_grid_x_;
+    size_t fpga_grid_y_;
 
     // Helper methods
     NodeHash build_node_hash(RRNodeId node_id) const;
-    void validate_coordinates(Coordinate x, Coordinate y) const;
     void index_node(RRNodeId node_id);
 };
 

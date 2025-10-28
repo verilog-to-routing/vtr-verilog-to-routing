@@ -18,8 +18,8 @@ void NodeLookupManager::initialize() {
     clear();
 
     // Initialize lookup structures
-    column_lookup_.resize(static_cast<size_t>(fpga_grid_x_) + 1);
-    row_lookup_.resize(static_cast<size_t>(fpga_grid_y_) + 1);
+    column_lookup_.resize(fpga_grid_x_ + 1);
+    row_lookup_.resize(fpga_grid_y_ + 1);
 
     // Index all nodes
     for (RRNodeId node_id : rr_graph_.nodes()) {
@@ -30,21 +30,17 @@ void NodeLookupManager::initialize() {
     print_statistics();
 }
 
-const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& NodeLookupManager::get_column_nodes(Coordinate x) const {
-    if (x <= fpga_grid_x_ && x < static_cast<Coordinate>(column_lookup_.size())) {
-        return column_lookup_[static_cast<size_t>(x)];
-    }
-    return std::unordered_map<NodeHash, RRNodeId, NodeHasher>();
+const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& NodeLookupManager::get_column_nodes(size_t x) const {
+    VTR_ASSERT(x <= fpga_grid_x_ && x < column_lookup_.size());
+    return column_lookup_[x];
 }
 
-const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& NodeLookupManager::get_row_nodes(Coordinate y) const {
-    if (y <= fpga_grid_y_ && y < static_cast<Coordinate>(row_lookup_.size())) {
-        return row_lookup_[static_cast<size_t>(y)];
-    }
-    return std::unordered_map<NodeHash, RRNodeId, NodeHasher>();
+const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& NodeLookupManager::get_row_nodes(size_t y) const {
+    VTR_ASSERT(y <= fpga_grid_y_ && y < row_lookup_.size());
+    return row_lookup_[y];
 }
 
-std::unordered_map<NodeHash, RRNodeId, NodeHasher> NodeLookupManager::get_combined_nodes(Coordinate x, Coordinate y) const {
+std::unordered_map<NodeHash, RRNodeId, NodeHasher> NodeLookupManager::get_combined_nodes(size_t x, size_t y) const {
     std::unordered_map<NodeHash, RRNodeId, NodeHasher> combined;
 
     // Add column nodes
@@ -56,10 +52,6 @@ std::unordered_map<NodeHash, RRNodeId, NodeHasher> NodeLookupManager::get_combin
     combined.insert(row_nodes.begin(), row_nodes.end());
 
     return combined;
-}
-
-bool NodeLookupManager::is_valid_coordinate(Coordinate x, Coordinate y) const {
-    return x >= 0 && x <= fpga_grid_x_ && y >= 0 && y <= fpga_grid_y_;
 }
 
 void NodeLookupManager::print_statistics() const {
