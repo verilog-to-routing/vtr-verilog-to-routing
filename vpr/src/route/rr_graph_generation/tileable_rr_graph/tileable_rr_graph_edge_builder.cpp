@@ -15,7 +15,9 @@
 #include "tileable_rr_graph_gsb.h"
 #include "tileable_rr_graph_edge_builder.h"
 
+#include "crr_generator.h"
 #include "crr_edge_builder.h"
+#include "xml_handler.h"
 
 /************************************************************************
  * Build the edges for all the SOURCE and SINKs nodes:
@@ -327,12 +329,9 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     // Building CRR Graph
     crrgenerator::SwitchBlockManager sb_manager;
     sb_manager.initialize(crr_opts.sb_maps, crr_opts.sb_templates, crr_opts.annotated_rr_graph);
-    std::unique_ptr<crrgenerator::RRGraph> crr_input_graph;
-    crrgenerator::XMLHandler xml_handler;
-    crr_input_graph = xml_handler.read_rr_graph(det_routing_arch.read_rr_graph_filename);
-    crrgenerator::NodeLookupManager node_lookup;
-    node_lookup.initialize(*crr_input_graph, grid.width(), grid.height());
-    crrgenerator::CRRGraphGenerator parser(crr_opts, *crr_input_graph, node_lookup, sb_manager, det_routing_arch.write_rr_graph_filename);
+    crrgenerator::NodeLookupManager node_lookup(rr_graph, grids.width(), grids.height());
+    node_lookup.initialize();
+    crrgenerator::CRRGraphGenerator parser(crr_opts, rr_graph, node_lookup, sb_manager, "vpr_custom_rr_graph.xml");
     parser.run();
 
     /* Go Switch Block by Switch Block */
@@ -361,24 +360,26 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
             /* adapt the switch_block_conn for the GSB nodes */
             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
             if (build_crr_edges) {
-                sb_conn = build_gsb_crr_track_to_track_map(rr_graph,
-                                                           rr_gsb,
-                                                           grids,
-                                                           segment_inf,
-                                                           Fc_in,
-                                                           Fc_out);
+                build_crr_gsb_track_to_track_edges(rr_graph_builder, rr_gsb, *parser.get_connection_builder());
             } else {
-                build_gsb_track_to_track_edges(rr_graph_builder, rr_gsb, *parser.get_connection_builder());
+                sb_conn = build_gsb_track_to_track_map(rr_graph,
+                                                       rr_gsb,
+                                                       sb_type,
+                                                       Fs,
+                                                       sb_subtype,
+                                                       sub_fs,
+                                                       concat_wire,
+                                                       wire_opposite_side,
+                                                       segment_inf);
+                /* Build edges for a GSB */
+                build_edges_for_one_tileable_rr_gsb(rr_graph_builder,
+                                                    rr_gsb,
+                                                    track2ipin_map,
+                                                    opin2track_map,
+                                                    sb_conn,
+                                                    rr_node_driver_switches,
+                                                    num_edges_to_create);
             }
-
-            /* Build edges for a GSB */
-            build_edges_for_one_tileable_rr_gsb(rr_graph_builder,
-                                                rr_gsb,
-                                                track2ipin_map,
-                                                opin2track_map,
-                                                sb_conn,
-                                                rr_node_driver_switches,
-                                                num_edges_to_create);
 
             /* Finish this GSB, go to the next*/
             rr_graph_builder.build_edges(true);
