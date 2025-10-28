@@ -361,7 +361,3 @@ class Prepacker {
      */
     vtr::vector<MoleculeChainId, t_chain_info> chain_info_;
 };
-
-/* Search through all primitives and return the lowest cost primitive that fits this atom block */
-t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
-                                                                          const std::vector<t_logical_block_type>& logical_block_types);

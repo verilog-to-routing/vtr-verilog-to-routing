@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "atom_netlist.h"
+#include "cluster_util.h"
 #include "echo_files.h"
 #include "logic_types.h"
 #include "physical_types.h"
@@ -79,8 +80,8 @@ static void print_pack_molecules(const char* fname,
                                  const vtr::vector_map<PackMoleculeId, t_pack_molecule>& pack_molecules,
                                  const AtomNetlist& atom_nlist);
 
-// static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
-//                                                                           const std::vector<t_logical_block_type>& logical_block_types);
+static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
+                                                                          const std::vector<t_logical_block_type>& logical_block_types);
 
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node* curr_pb_graph_node, float* cost);
 
@@ -1281,7 +1282,7 @@ static void print_pack_molecules(const char* fname,
 }
 
 /* Search through all primitives and return the lowest cost primitive that fits this atom block */
-t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
+static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
                                                                           const std::vector<t_logical_block_type>& logical_block_types) {
     float cost, best_cost;
     t_pb_graph_node *current, *best;
@@ -1776,6 +1777,87 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
         // or less).
         VTR_ASSERT(atom_molecules_multimap.count(blk_id) == 1);
         atom_molecule_[blk_id] = atom_molecules_multimap.find(blk_id)->second;
+    }
+
+    // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    VTR_LOG("Traversing molecules for RAM slices (sibling-feasible grouping):\n");
+
+    // Each group: representative atom + pb_type (from its expected primitive)
+    struct RamGroup {
+        AtomBlockId rep_blk;
+        const t_pb_type* rep_pb_type; // primitive type used for the feasibility check
+        std::vector<AtomBlockId> atoms;
+        std::unordered_map<t_logical_block_type_ptr, int> candidate_capacity;
+        int total_memory_slices = 0;
+        int remaining_memory_slices = 0;
+    };
+
+    std::vector<RamGroup> groups;
+
+    for (PackMoleculeId mol_id : molecules()) {
+        const t_pack_molecule& mol = get_molecule(mol_id);
+        AtomBlockId atom_blk_id = mol.atom_block_ids[mol.root];
+        if (!atom_blk_id.is_valid()) continue;
+
+        const t_pb_graph_node* prim = get_expected_lowest_cost_pb_gnode(atom_blk_id);
+        if (!prim || !prim->pb_type || !prim->pb_type->is_primitive()) continue;
+        if (prim->pb_type->class_type != MEMORY_CLASS) continue;
+
+        // Try to place this atom into an existing group by sibling-feasible equivalence
+        bool placed = false;
+        for (auto& g : groups) {
+            // Quick filter: require same model_id, otherwise the function will definitely fail
+            if (g.rep_pb_type->model_id != prim->pb_type->model_id) continue;
+
+            // Key check (as used inside the packer): non-data ports must match bit-for-bit
+            // Call in both directions to be extra safe (should be redundant if model_id matches)
+            bool ok_ab = primitive_memory_sibling_feasible(atom_blk_id, g.rep_pb_type, g.rep_blk);
+            bool ok_ba = primitive_memory_sibling_feasible(g.rep_blk, prim->pb_type, atom_blk_id);
+
+            if (ok_ab && ok_ba) {
+                g.atoms.push_back(atom_blk_id);
+                placed = true;
+                break;
+            }
+        }
+
+        if (!placed) {
+            // Start a new group with this atom as representative
+            RamGroup ng;
+            ng.rep_blk = atom_blk_id;
+            ng.rep_pb_type = prim->pb_type;
+            ng.atoms.push_back(atom_blk_id);
+            groups.push_back(std::move(ng));
+        }
+    }
+
+    vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types = identify_primitive_candidate_block_types();
+
+    // --- Dump groups ---
+    VTR_LOG("\nInferred logical RAM groups (sibling-feasible):\n");
+    for (size_t gid = 0; gid < groups.size(); ++gid) {
+        auto& g = groups[gid];
+        g.total_memory_slices = g.atoms.size();
+        g.remaining_memory_slices = g.total_memory_slices;
+        VTR_LOG("  Group %zu: %zu slice(s)\n", gid, g.atoms.size());
+
+        // Hierarchical name (from representative)
+        const t_pb_graph_node* prim = get_expected_lowest_cost_pb_gnode(g.rep_blk);
+        if (prim) {
+            VTR_LOG("    Hierarchical name: %s\n", prim->hierarchical_type_name().c_str());
+            VTR_LOG("    Blif model: %s\n", prim->pb_type->blif_model ? prim->pb_type->blif_model : "");
+        }
+
+        auto root_model_id = atom_nlist.block_model(g.rep_blk);
+        std::vector<t_logical_block_type_ptr> candidate_types = primitive_candidate_block_types[root_model_id];
+        VTR_LOG("    Candidate types & per-tile capacity for this slice:\n");
+        for (t_logical_block_type_ptr& cand : candidate_types) {
+            /* Search through all primitives and return the lowest cost primitive that fits this atom block */
+            std::vector<t_logical_block_type> candidate_logical_type = {*cand};
+            const t_pb_graph_node* candidate_prim = get_expected_lowest_cost_primitive_for_atom_block(g.rep_blk, candidate_logical_type);
+            g.candidate_capacity[cand] = candidate_prim->total_primitive_count;
+            VTR_LOG("        %s: %d\n", cand->name.c_str(), candidate_prim->total_primitive_count);
+        }
     }
 }
 
