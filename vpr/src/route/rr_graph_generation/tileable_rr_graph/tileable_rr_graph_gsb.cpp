@@ -14,6 +14,7 @@
 #include "side_manager.h"
 
 #include "vpr_utils.h"
+#include "physical_types_util.h"
 #include "rr_graph_view_util.h"
 #include "tileable_rr_graph_utils.h"
 #include "rr_graph_builder_utils.h"
@@ -1721,56 +1722,94 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
         }
 
         /* get every opin in the range */
-        for (int opin = min_index; opin <= max_index; ++opin) {
-            int offset = opin - min_index;
+        for (int relative_opin = min_index; relative_opin <= max_index; ++relative_opin) {
+            int offset = relative_opin - min_index;
+            //Capacity location determined by pin number relative to pins per capacity instance
+            for (int z : clb_to_clb_directs[i].from_sub_tiles) {
+                int opin = get_physical_pin_from_capacity_location(grid_type, relative_opin, z);
+                VTR_ASSERT(z >= 0 && z < grid_type->capacity);
 
-            if ((to_grid_coordinate.x() < grids.width() - 1)
-                && (to_grid_coordinate.y() < grids.height() - 1)) {
-                int ipin = UNDEFINED;
-                if (clb_to_clb_directs[i].to_clb_pin_start_index
-                    > clb_to_clb_directs[i].to_clb_pin_end_index) {
-                    if (true == swap) {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
+                if ((to_grid_coordinate.x() < grids.width() - 1)
+                    && (to_grid_coordinate.y() < grids.height() - 1)) {
+                    int relative_ipin = UNDEFINED;
+                    if (clb_to_clb_directs[i].to_clb_pin_start_index
+                        > clb_to_clb_directs[i].to_clb_pin_end_index) {
+                        if (swap) {
+                            relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
+                        } else {
+                            relative_ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
+                        }
                     } else {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
+                        if (swap) {
+                            relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
+                        } else {
+                            relative_ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
+                        }
                     }
-                } else {
-                    if (true == swap) {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
-                    } else {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
+
+                    /* Get the pin index in the rr_graph */
+                    t_physical_tile_loc from_tile_loc(from_grid_coordinate.x(), from_grid_coordinate.y(), layer);
+                    t_physical_tile_loc to_tile_loc(to_grid_coordinate.x(), to_grid_coordinate.y(), layer);
+
+                    /* Find the side of grid pins, the pin location should be unique!
+                     * Pin location is required by searching a node in rr_graph
+                     */
+                    std::vector<e_side> opin_grid_side = find_grid_pin_sides(grids, layer, from_grid_coordinate.x() + grid_type->pin_width_offset[opin], from_grid_coordinate.y() + grid_type->pin_height_offset[opin], opin);
+                    if (1 != opin_grid_side.size()) {
+                      VPR_FATAL_ERROR(VPR_ERROR_ARCH, "[Arch LINE %d] From pin (index=%d) of direct connection '%s' does not exist on any side of the programmable block '%s'.\n", directs[i].line, opin, directs[i].from_pin.c_str());
                     }
+
+                    /* directs[i].sub_tile_offset is added to from_capacity(z) to get the target_capacity */
+                    int to_subtile_cap = z + directs[i].sub_tile_offset;
+                    /* If the destination subtile is out of range, there is no qualified IPINs */
+                    if (to_subtile_cap < 0 || to_subtile_cap >= to_grid_type->capacity) {
+                        continue;
+                    }
+                    /* Iterate over all sub_tiles to get the sub_tile which the target_cap belongs to. */
+                    const t_sub_tile* to_sub_tile = nullptr;
+                    for (const t_sub_tile& sub_tile : to_grid_type->sub_tiles) {
+                        if (sub_tile.capacity.is_in_range(to_subtile_cap)) {
+                            to_sub_tile = &sub_tile;
+                            break;
+                        }
+                    }
+                    VTR_ASSERT(to_sub_tile != nullptr);
+                    // Check if the to port is the one from the subtile, if not, pass as this is not the destination
+                    bool port_match = false;
+                    for (auto to_sub_tile_port : to_sub_tile->ports) {
+                        if (std::string(to_sub_tile_port.name) == clb_to_clb_directs[i].to_port) {
+                            port_match = true;
+                            break;
+                        }
+                    }
+                    if (!port_match) continue;
+                    if (relative_ipin >= to_sub_tile->num_phy_pins) continue;
+                    // If this block has capacity > 1 then the pins of z position > 0 are offset
+                    // by the number of pins per capacity instance
+                    int ipin = get_physical_pin_from_capacity_location(to_grid_type, relative_ipin, to_subtile_cap);
+                    std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x() + to_grid_type->pin_width_offset[ipin], to_grid_coordinate.y() + to_grid_type->pin_height_offset[ipin], ipin);
+                    if (1 != ipin_grid_side.size()) {
+                      VPR_FATAL_ERROR(VPR_ERROR_ARCH, "[Arch LINE %d] To pin (index=%d) of direct connection '%s' does not exist on any side of the programmable block '%s'.\n", directs[i].line, relative_ipin, directs[i].to_pin.c_str());
+                    }
+
+                    RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
+                                                                             from_grid_coordinate.x() + grid_type->pin_width_offset[opin],
+                                                                             from_grid_coordinate.y() + grid_type->pin_height_offset[opin],
+                                                                             e_rr_type::OPIN, opin, opin_grid_side[0]);
+                    RRNodeId ipin_node_id = rr_graph.node_lookup().find_node(layer,
+                                                                             to_grid_coordinate.x() + to_grid_type->pin_width_offset[ipin],
+                                                                             to_grid_coordinate.y() + to_grid_type->pin_height_offset[ipin],
+                                                                             e_rr_type::IPIN, ipin, ipin_grid_side[0]);
+
+                    // add edges to the opin_node */
+                    if (!opin_node_id) {
+                      VTR_ASSERT(opin_node_id);
+                    }
+                    if (!ipin_node_id) {
+                      VTR_ASSERT(opin_node_id);
+                    }
+                    rr_graph_builder.create_edge_in_cache(opin_node_id, ipin_node_id, RRSwitchId(clb_to_clb_directs[i].switch_index), false);
                 }
-
-                /* Get the pin index in the rr_graph */
-                t_physical_tile_loc from_tile_loc(from_grid_coordinate.x(), from_grid_coordinate.y(), layer);
-                int from_grid_width_ofs = grids.get_width_offset(from_tile_loc);
-                int from_grid_height_ofs = grids.get_height_offset(from_tile_loc);
-                t_physical_tile_loc to_tile_loc(to_grid_coordinate.x(), to_grid_coordinate.y(), layer);
-                int to_grid_width_ofs = grids.get_width_offset(to_tile_loc);
-                int to_grid_height_ofs = grids.get_height_offset(to_tile_loc);
-
-                /* Find the side of grid pins, the pin location should be unique!
-                 * Pin location is required by searching a node in rr_graph
-                 */
-                std::vector<e_side> opin_grid_side = find_grid_pin_sides(grids, layer, from_grid_coordinate.x(), from_grid_coordinate.y(), opin);
-                VTR_ASSERT(1 == opin_grid_side.size());
-
-                std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x(), to_grid_coordinate.y(), ipin);
-                VTR_ASSERT(1 == ipin_grid_side.size());
-
-                RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
-                                                                         from_grid_coordinate.x() - from_grid_width_ofs,
-                                                                         from_grid_coordinate.y() - from_grid_height_ofs,
-                                                                         e_rr_type::OPIN, opin, opin_grid_side[0]);
-                RRNodeId ipin_node_id = rr_graph.node_lookup().find_node(layer,
-                                                                         to_grid_coordinate.x() - to_grid_width_ofs,
-                                                                         to_grid_coordinate.y() - to_grid_height_ofs,
-                                                                         e_rr_type::IPIN, ipin, ipin_grid_side[0]);
-
-                /* add edges to the opin_node */
-                VTR_ASSERT(opin_node_id && ipin_node_id);
-                rr_graph_builder.create_edge_in_cache(opin_node_id, ipin_node_id, RRSwitchId(clb_to_clb_directs[i].switch_index), false);
             }
         }
     }

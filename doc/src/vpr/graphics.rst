@@ -308,6 +308,7 @@ Manual Moves
 
 The manual moves feature allows the user to specify the next move in placement. If the move is legal, blocks are swapped and the new move is shown on the architecture. 
 
+.. _fig-misc-tab:
 .. figure:: ../Images/manual_move.png
     :align: center
     :width: 25%
@@ -335,3 +336,15 @@ If the manual move is legal, the cost summary window will display the delta cost
 
 The user can Accept or Reject the manual move based on the values provided. If accepted the block's new location is shown. 
 
+Pause Button
+------------
+
+The pause button allows the user to temporarily stop the program during placement or routing.
+When clicked during the placement stage, the program will pause at the next temperature update.
+When clicked during the routing stage, it will pause at the next router iteration.
+
+The button can be pressed at any time while the program is running. To enable the feature, click the **Pause** button under the **Misc.** tab (see :ref:`fig-misc-tab`).
+Once the program reaches the next temperature update or router iteration after the button is pressed, it will automatically pause.
+
+After the program has paused, clicking **Next Step** allows the user to resume execution from the point where the program was paused.
+This can be continuing from the current temperature in placement or from the current router iteration in routing.

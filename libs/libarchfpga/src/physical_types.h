@@ -241,7 +241,7 @@ enum e_power_estimation_method_ {
     POWER_METHOD_SPECIFY_SIZES,   /* Transistor-level, user-specified buffers/wires */
     POWER_METHOD_TOGGLE_PINS,     /* Dynamic: Energy per pin toggle, Static: Absolute */
     POWER_METHOD_C_INTERNAL,      /* Dynamic: Equiv. Internal capacitance, Static: Absolute */
-    POWER_METHOD_ABSOLUTE         /* Dynamic: Aboslute, Static: Absolute */
+    POWER_METHOD_ABSOLUTE         /* Dynamic: Absolute, Static: Absolute */
 };
 typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;

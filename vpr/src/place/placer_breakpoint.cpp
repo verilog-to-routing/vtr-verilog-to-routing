@@ -57,7 +57,7 @@ void stop_placement_and_check_breakpoints(t_pl_blocks_to_be_moved& blocks_affect
         msg += vtr::string_fmt(", Delta_cost: %1.6f (bb_delta_cost= %1.5f , timing_delta_c= %6.1e)", delta_c, bb_delta_c, timing_delta_c);
 
         highlight_moved_block_and_its_terminals(blocks_affected);
-        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), PLACEMENT, nullptr);
+        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), e_pic_type::PLACEMENT, nullptr);
     }
 }
 

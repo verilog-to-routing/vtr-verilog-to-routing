@@ -16,10 +16,14 @@
 #include <cstring>
 #include <cmath>
 #include "draw.h"
+
+#include "draw_interposer.h"
+#include "draw_types.h"
 #include "timing_info.h"
 #include "physical_types.h"
 
 #include "move_utils.h"
+#include "vpr_types.h"
 
 #ifndef NO_GRAPHICS
 
@@ -174,63 +178,71 @@ static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     g->set_font_size(14);
+    if (draw_state->pic_on_screen != e_pic_type::ANALYTICAL_PLACEMENT) {
+        draw_block_pin_util();
+        drawplace(g);
+        draw_internal_draw_subblk(g);
 
-    draw_block_pin_util();
-    drawplace(g);
-    draw_internal_draw_subblk(g);
+        draw_interposer_cuts(g);
 
-    if (draw_state->pic_on_screen == ROUTING) { // ROUTING on screen
+        draw_block_pin_util();
+        drawplace(g);
+        draw_internal_draw_subblk(g);
 
-        draw_rr(g);
+        if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
 
-        if (draw_state->show_nets && draw_state->draw_nets == DRAW_ROUTED_NETS) {
-            draw_route(ALL_NETS, g);
+            draw_rr(g);
 
-            if (draw_state->highlight_fan_in_fan_out) {
-                draw_route(HIGHLIGHTED, g);
+            if (draw_state->show_nets && draw_state->draw_nets == DRAW_ROUTED_NETS) {
+                draw_route(ALL_NETS, g);
+
+                if (draw_state->highlight_fan_in_fan_out) {
+                    draw_route(HIGHLIGHTED, g);
+                }
             }
+
+            draw_congestion(g);
+
+            draw_routing_costs(g);
+
+            draw_router_expansion_costs(g);
+
+            draw_routing_util(g);
+
+            draw_routing_bb(g);
         }
 
-        draw_congestion(g);
-
-        draw_routing_costs(g);
-
-        draw_router_expansion_costs(g);
-
-        draw_routing_util(g);
-
-        draw_routing_bb(g);
-    }
-
-    draw_placement_macros(g);
+        draw_placement_macros(g);
 
 #ifndef NO_SERVER
-    if (g_vpr_ctx.server().gate_io.is_running()) {
-        const ServerContext& server_ctx = g_vpr_ctx.server(); // shortcut
-        draw_crit_path_elements(server_ctx.crit_paths, server_ctx.crit_path_element_indexes, server_ctx.draw_crit_path_contour, g);
-    } else {
-        draw_crit_path(g);
-    }
+        if (g_vpr_ctx.server().gate_io.is_running()) {
+            const ServerContext& server_ctx = g_vpr_ctx.server(); // shortcut
+            draw_crit_path_elements(server_ctx.crit_paths, server_ctx.crit_path_element_indexes, server_ctx.draw_crit_path_contour, g);
+        } else {
+            draw_crit_path(g);
+        }
 #else
-    draw_crit_path(g);
+        draw_crit_path(g);
 #endif /* NO_SERVER */
 
-    draw_logical_connections(g);
+        draw_logical_connections(g);
 
-    draw_selected_pb_flylines(g);
+        draw_selected_pb_flylines(g);
 
-    draw_noc(g);
+        draw_noc(g);
 
-    if (draw_state->draw_partitions) {
-        highlight_all_regions(g);
-        draw_constrained_atoms(g);
+        if (draw_state->draw_partitions) {
+            highlight_all_regions(g);
+            draw_constrained_atoms(g);
+        }
+
+        if (draw_state->color_map) {
+            draw_color_map_legend(*draw_state->color_map, g);
+            draw_state->color_map.reset(); //Free color map in preparation for next redraw
+        }
+    } else {
+        draw_analytical_place(g);
     }
-
-    if (draw_state->color_map) {
-        draw_color_map_legend(*draw_state->color_map, g);
-        draw_state->color_map.reset(); //Free color map in preparation for next redraw
-    }
-
     if (draw_state->auto_proceed) {
         //Automatically exit the event loop, so user's don't need to manually click proceed
 
@@ -255,12 +267,12 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->pic_on_screen == PLACEMENT) {
+    if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
         hide_widget("RoutingMenuButton", app);
 
         draw_state->save_graphics_file_base = "vpr_placement";
 
-    } else if (draw_state->pic_on_screen == ROUTING) {
+    } else if (draw_state->pic_on_screen == e_pic_type::ROUTING) {
         show_widget("RoutingMenuButton", app);
 
         draw_state->save_graphics_file_base = "vpr_routing";
@@ -270,11 +282,16 @@ static void on_stage_change_setup(ezgl::application* app, bool is_new_window) {
     hide_crit_path_routing(app);
 
     hide_draw_routing(app);
+
+    app->update_message(draw_state->default_message);
 }
 
 #endif //NO_GRAPHICS
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<const SetupTimingInfo> setup_timing_info) {
+void update_screen(ScreenUpdatePriority priority,
+                   const char* msg,
+                   e_pic_type pic_on_screen_val,
+                   std::shared_ptr<const SetupTimingInfo> setup_timing_info) {
 #ifndef NO_GRAPHICS
 
     /* Updates the screen if the user has requested graphics.  The priority  *
@@ -297,10 +314,23 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 
         state_change = true;
 
-        if (draw_state->pic_on_screen == NO_PICTURE) {
+        if (draw_state->show_graphics) {
+            if (pic_on_screen_val == e_pic_type::ANALYTICAL_PLACEMENT) {
+                set_initial_world_ap();
+            } else {
+                set_initial_world();
+            }
+        }
+
+        if (draw_state->pic_on_screen == e_pic_type::NO_PICTURE) {
             // Only add the canvas the first time we open graphics
-            application.add_canvas("MainCanvas", draw_main_canvas,
-                                   initial_world);
+            application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+        } else {
+            // TODO: will this ever be null?
+            auto canvas = application.get_canvas(application.get_main_canvas_id());
+            if (canvas != nullptr) {
+                canvas->get_camera().set_world(initial_world);
+            }
         }
 
         draw_state->setup_timing_info = setup_timing_info;
@@ -373,8 +403,8 @@ void alloc_draw_structs(const t_arch* arch) {
 
     /* Allocate the structures needed to draw the placement and routing->  Set *
      * up the default colors for blocks and nets.                             */
-    draw_coords->tile_x = new float[device_ctx.grid.width()];
-    draw_coords->tile_y = new float[device_ctx.grid.height()];
+    draw_coords->tile_x.resize(device_ctx.grid.width(), 0.f);
+    draw_coords->tile_y.resize(device_ctx.grid.height(), 0.f);
 
     /* For sub-block drawings inside clbs */
     draw_internal_alloc_blk();
@@ -415,10 +445,8 @@ void free_draw_structs() {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     if (draw_coords != nullptr) {
-        delete[] draw_coords->tile_x;
-        draw_coords->tile_x = nullptr;
-        delete[] draw_coords->tile_y;
-        draw_coords->tile_y = nullptr;
+        vtr::release_memory(draw_coords->tile_x);
+        vtr::release_memory(draw_coords->tile_y);
     }
 
 #else
@@ -431,6 +459,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
     /* Store a reference to block location variables so that other drawing
@@ -438,9 +467,10 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
      * the global placement state, which is inaccessible during placement.*/
     draw_state->set_graphics_blk_loc_registry_ref(blk_loc_registry);
 
-    if (!draw_state->show_graphics && !draw_state->save_graphics
-        && draw_state->graphics_commands.empty())
-        return; //do not initialize only if --disp off and --save_graphics off
+    // do not initialize only if --disp off and --save_graphics off
+    if (!draw_state->show_graphics && !draw_state->save_graphics && draw_state->graphics_commands.empty()) {
+        return;
+    }
 
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
@@ -454,7 +484,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     draw_coords->set_tile_width(clb_width);
     draw_coords->pin_size = 0.3;
     for (const auto& type : device_ctx.physical_tile_types) {
-        auto num_pins = type.num_pins;
+        int num_pins = type.num_pins;
         if (num_pins > 0) {
             draw_coords->pin_size = std::min(draw_coords->pin_size,
                                              (draw_coords->get_tile_width() / (4.0F * num_pins)));
@@ -462,37 +492,24 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     }
 
     size_t j = 0;
-    for (size_t i = 0; i < (device_ctx.grid.width() - 1); i++) {
+    for (size_t i = 0; i < grid.width() - 1; i++) {
         draw_coords->tile_x[i] = (i * draw_coords->get_tile_width()) + j;
-        j += device_ctx.chan_width.y_list[i] + 1; /* N wires need N+1 units of space */
+        j += device_ctx.rr_chany_width[i] + 1; // N wires need N+1 units of space
     }
-    draw_coords->tile_x[device_ctx.grid.width() - 1] = ((device_ctx.grid.width()
-                                                         - 1)
-                                                        * draw_coords->get_tile_width())
-                                                       + j;
+    draw_coords->tile_x[grid.width() - 1] = (grid.width() - 1) * draw_coords->get_tile_width() + j;
+
     j = 0;
-    for (size_t i = 0; i < (device_ctx.grid.height() - 1); ++i) {
+    for (size_t i = 0; i < device_ctx.grid.height() - 1; ++i) {
         draw_coords->tile_y[i] = (i * draw_coords->get_tile_width()) + j;
-        j += device_ctx.chan_width.x_list[i] + 1;
+        j += device_ctx.rr_chanx_width[i] + 1;
     }
-    draw_coords->tile_y[device_ctx.grid.height() - 1] = ((device_ctx.grid.height() - 1) * draw_coords->get_tile_width())
-                                                        + j;
+    draw_coords->tile_y[grid.height() - 1] = (grid.height() - 1) * draw_coords->get_tile_width() + j;
+
     /* Load coordinates of sub-blocks inside the clbs */
     draw_internal_init_blk();
     //Margin beyond edge of the drawn device to extend the visible world
     //Setting this to > 0.0 means 'Zoom Fit' leave some fraction of white
     //space around the device edges
-    constexpr float VISIBLE_MARGIN = 0.01;
-
-    float draw_width = draw_coords->tile_x[device_ctx.grid.width() - 1]
-                       + draw_coords->get_tile_width();
-    float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1]
-                        + draw_coords->get_tile_width();
-
-    initial_world = ezgl::rectangle(
-        {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
-        {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN)
-                                                 * draw_height});
 #else
     (void)clb_width;
     (void)blk_loc_registry;
@@ -500,6 +517,35 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 }
 
 #ifndef NO_GRAPHICS
+
+void set_initial_world() {
+    constexpr float VISIBLE_MARGIN = 0.01;
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    float draw_width = draw_coords->tile_x[device_ctx.grid.width() - 1] + draw_coords->get_tile_width();
+    float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width();
+
+    initial_world = ezgl::rectangle(
+        {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
+        {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN)
+                                                 * draw_height});
+}
+
+void set_initial_world_ap() {
+    constexpr float VISIBLE_MARGIN = 0.01f;
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    const size_t grid_w = device_ctx.grid.width();
+    const size_t grid_h = device_ctx.grid.height();
+
+    float draw_width = static_cast<float>(grid_w);
+    float draw_height = static_cast<float>(grid_h);
+
+    initial_world = ezgl::rectangle(
+        {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
+        {(1.f + VISIBLE_MARGIN) * draw_width, (1.f + VISIBLE_MARGIN) * draw_height});
+}
 
 int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {
     /* Returns the track number of this routing resource node.   */
@@ -624,6 +670,11 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
              * removed.  Note that even though global nets are not drawn, their  *
              * fanins and fanouts are highlighted when you click on a block      *
              * attached to them.                                                 */
+
+            if (get_draw_state_vars()->pic_on_screen == e_pic_type::ANALYTICAL_PLACEMENT) {
+                // No selection in analytical placement mode yet
+                return;
+            }
 
             /* Control + mouse click to select multiple nets. */
             if (!(event->state & GDK_CONTROL_MASK))

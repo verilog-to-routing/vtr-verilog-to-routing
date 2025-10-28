@@ -40,7 +40,10 @@ extern ezgl::application application;
 
 #endif /* NO_GRAPHICS */
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<const SetupTimingInfo> timing_info);
+void update_screen(ScreenUpdatePriority priority,
+                   const char* msg,
+                   e_pic_type pic_on_screen_val,
+                   std::shared_ptr<const SetupTimingInfo> timing_info);
 
 //FIXME: Currently broken if no rr-graph is loaded
 /**
@@ -51,6 +54,20 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
  * @param blk_loc_registry A reference to placement location information.
  */
 void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry);
+
+/**
+ * @brief Set the intial_world ezgl::rectangle for analytical placement
+ * 
+ * This function sets graphic initial dimensions so there are no gaps between blocks
+ */
+void set_initial_world_ap();
+
+/**
+ * @brief Set the intial_world ezgl::rectangle for default
+ *
+ * This function sets graphic initial dimensions so there are gaps between blocks
+ */
+void set_initial_world();
 
 /* Sets the static show_graphics and gr_automode variables to the    *
  * desired values.  They control if graphics are enabled and, if so, *

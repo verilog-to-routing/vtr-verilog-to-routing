@@ -23,6 +23,15 @@ bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
 /**
+ * @brief Returns the indices of sub tiles in a given physical type which contain the specified port name. It will return all the sub tiles that contain the required port. Note that the sub tiles may be of different types
+ *
+ * @param type the pointer to the physical tile type descriptor
+ * @param port_name the name of the port as a qualifier to match sub tiles
+ * @return A vector of the indices of qualified sub tiles in the specified physical tile
+ */
+std::vector<int> find_sub_tile_indices_by_port_name(t_physical_tile_type_ptr type, std::string_view port_name);
+
+/**
  * @brief Returns the corresponding physical type given the location in the grid.
  * @param loc The block location in the grid.
  * @return The physical tile type of the given location.

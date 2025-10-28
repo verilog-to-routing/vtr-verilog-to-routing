@@ -692,7 +692,7 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
     }
     if (hit_bp) {
         breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), false);
-        update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", ROUTING, nullptr);
+        update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", e_pic_type::ROUTING, nullptr);
     }
 }
 #endif

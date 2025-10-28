@@ -383,12 +383,13 @@ enum class e_sched_type {
 };
 /* Annealing schedule */
 
-enum pic_type {
+/// Specifies what is shown on screen
+enum class e_pic_type {
     NO_PICTURE,
     PLACEMENT,
+    ANALYTICAL_PLACEMENT,
     ROUTING
 };
-/* What's on screen? */
 
 enum pfreq {
     PLACE_NEVER,

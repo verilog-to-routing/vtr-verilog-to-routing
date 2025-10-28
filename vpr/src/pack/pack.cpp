@@ -580,22 +580,9 @@ bool try_pack(const t_packer_opts& packer_opts,
 
     VTR_ASSERT(current_packer_state == e_packer_state::SUCCESS);
 
-    /* Packing iterative improvement can be done here */
-    /*       Use the re-cluster API to edit it        */
-    /******************* Start *************************/
-    VTR_LOG("Start the iterative improvement process\n");
-    //iteratively_improve_packing(*packer_opts, clustering_data, 2);
-    VTR_LOG("the iterative improvement process is done\n");
-
-    /*
-     * auto& cluster_ctx = g_vpr_ctx.clustering();
-     * for (auto& blk_id : g_vpr_ctx.clustering().clb_nlist.blocks()) {
-     * free_pb_stats_recursive(cluster_ctx.clb_nlist.block_pb(blk_id));
-     * }
-     */
-    /******************** End **************************/
     g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(false);
     g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_to_pb_bimap(cluster_legalizer.atom_pb_lookup());
+
     //check clustering and output it
     check_and_output_clustering(cluster_legalizer, packer_opts, is_clock, &arch);
 
