@@ -5,6 +5,7 @@
 
 #include "vtr_log.h"
 #include "vtr_assert.h"
+#include "rr_node_types.h"
 
 namespace crrgenerator {
 
@@ -351,7 +352,7 @@ void XMLHandler::parse_nodes(const pugi::xml_node& nodes_node, RRGraph& graph) {
 
 RRNode XMLHandler::parse_node(const pugi::xml_node& node_xml) {
     NodeId id = node_xml.attribute("id").as_int();
-    NodeType type = string_to_node_type(node_xml.attribute("type").as_string());
+    e_rr_type type = string_to_node_type(node_xml.attribute("type").as_string());
     int capacity = node_xml.attribute("capacity").as_int();
     std::string direction = "";
     if (node_xml.attribute("direction")) {
@@ -550,7 +551,7 @@ void XMLHandler::write_nodes(std::ostream& out, const RRGraph& graph) {
 void XMLHandler::write_node(std::ostream& out, const RRNode& n) {
     out << "    <node";
     write_attr(out, "id", n.get_id());
-    write_attr(out, "type", to_string(n.get_type()));
+    write_attr(out, "type", rr_node_typename[n.get_type()]);
     write_attr(out, "capacity", n.get_capacity());
     if (!n.get_direction().empty()) write_attr(out, "direction", n.get_direction());
     out << ">\n";
