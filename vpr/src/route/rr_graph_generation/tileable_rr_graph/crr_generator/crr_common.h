@@ -28,6 +28,7 @@
 #include <sys/resource.h> // For getrusage on Unix/Linux
 
 #include "rr_graph_fwd.h"
+#include "rr_node_types.h"
 namespace crrgenerator {
 
 // Forward declarations
@@ -182,30 +183,18 @@ class Connection {
     SwitchId switch_id_;
 };
 
-// Hash function for Location
-struct LocationHash {
-    std::size_t operator()(const Location& loc) const {
-        auto h1 = std::hash<Coordinate>{}(loc.x_low);
-        auto h2 = std::hash<Coordinate>{}(loc.x_high);
-        auto h3 = std::hash<Coordinate>{}(loc.y_low);
-        auto h4 = std::hash<Coordinate>{}(loc.y_high);
-        auto h5 = std::hash<std::string>{}(loc.ptc);
-        return h1 ^ (h2 << 1) ^ (h3 << 2) ^ (h4 << 3) ^ (h5 << 4);
-    }
-};
-
 // Node hash type for lookups
-using NodeHash = std::tuple<NodeType, std::string, Coordinate, Coordinate, Coordinate, Coordinate>;
+using NodeHash = std::tuple<e_rr_type, std::string, short, short, short, short>;
 
 // Hash function for NodeHash
 struct NodeHasher {
     std::size_t operator()(const NodeHash& hash) const {
         auto h1 = std::hash<int>{}(static_cast<int>(std::get<0>(hash)));
         auto h2 = std::hash<std::string>{}(std::get<1>(hash));
-        auto h3 = std::hash<Coordinate>{}(std::get<2>(hash));
-        auto h4 = std::hash<Coordinate>{}(std::get<3>(hash));
-        auto h5 = std::hash<Coordinate>{}(std::get<4>(hash));
-        auto h6 = std::hash<Coordinate>{}(std::get<5>(hash));
+        auto h3 = std::hash<short>{}(std::get<2>(hash));
+        auto h4 = std::hash<short>{}(std::get<3>(hash));
+        auto h5 = std::hash<short>{}(std::get<4>(hash));
+        auto h6 = std::hash<short>{}(std::get<5>(hash));
 
         // Combine hashes using a better mixing function
         std::size_t result = h1;
@@ -218,9 +207,6 @@ struct NodeHasher {
         return result;
     }
 };
-
-// Edge hash type for lookups
-using EdgeKey = std::tuple<NodeId, NodeId, SwitchId>;
 
 // Utility functions
 inline std::string to_string(NodeType type) {
@@ -242,13 +228,13 @@ inline std::string to_string(NodeType type) {
     }
 }
 
-inline NodeType string_to_node_type(const std::string& str) {
-    if (str == "SOURCE" || str == "source") return NodeType::SOURCE;
-    if (str == "SINK" || str == "sink") return NodeType::SINK;
-    if (str == "IPIN" || str == "ipin") return NodeType::IPIN;
-    if (str == "OPIN" || str == "opin") return NodeType::OPIN;
-    if (str == "CHANX" || str == "chanx") return NodeType::CHANX;
-    if (str == "CHANY" || str == "chany") return NodeType::CHANY;
+inline e_rr_type string_to_node_type(const std::string& str) {
+    if (str == "SOURCE" || str == "source") return e_rr_type::SOURCE;
+    if (str == "SINK" || str == "sink") return e_rr_type::SINK;
+    if (str == "IPIN" || str == "ipin") return e_rr_type::IPIN;
+    if (str == "OPIN" || str == "opin") return e_rr_type::OPIN;
+    if (str == "CHANX" || str == "chanx") return e_rr_type::CHANX;
+    if (str == "CHANY" || str == "chany") return e_rr_type::CHANY;
     throw std::invalid_argument("Unknown node type: " + str);
 }
 
