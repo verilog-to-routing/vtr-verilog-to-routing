@@ -132,16 +132,6 @@ void RRGraph::print_statistics() const {
     }
 }
 
-std::vector<NodeId> RRGraph::get_nodes_by_type(NodeType type) const {
-    std::vector<NodeId> result;
-    for (const auto& node : nodes_) {
-        if (node.get_type() == type) {
-            result.push_back(node.get_id());
-        }
-    }
-    return result;
-}
-
 std::unordered_set<NodeId> RRGraph::get_source_nodes() const {
     std::unordered_set<NodeId> result;
     for (const auto& node : nodes_) {

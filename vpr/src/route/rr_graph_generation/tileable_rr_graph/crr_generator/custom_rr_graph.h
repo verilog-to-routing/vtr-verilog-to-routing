@@ -2,6 +2,7 @@
 
 #include "crr_common.h"
 
+#include "rr_node_types.h"
 namespace crrgenerator {
 
 /**
@@ -10,7 +11,7 @@ namespace crrgenerator {
 class RRNode {
   public:
     RRNode() = default;
-    RRNode(NodeId id, NodeType type, int capacity, const std::string& direction, const Location& location, const NodeTiming& timing, const NodeSegmentId& segment_id)
+    RRNode(NodeId id, e_rr_type type, int capacity, const std::string& direction, const Location& location, const NodeTiming& timing, const NodeSegmentId& segment_id)
         : id_(id)
         , type_(type)
         , capacity_(capacity)
@@ -21,7 +22,7 @@ class RRNode {
 
     // Getters
     NodeId get_id() const { return id_; }
-    NodeType get_type() const { return type_; }
+    e_rr_type get_type() const { return type_; }
     int get_capacity() const { return capacity_; }
     const std::string& get_direction() const { return direction_; }
     const Location& get_location() const { return location_; }
@@ -31,7 +32,7 @@ class RRNode {
 
     // Setters
     void set_id(NodeId id) { id_ = id; }
-    void set_type(NodeType type) { type_ = type; }
+    void set_type(e_rr_type type) { type_ = type; }
     void set_capacity(int capacity) { capacity_ = capacity; }
     void set_direction(const std::string& direction) { direction_ = direction; }
     void set_location(const Location& location) { location_ = location; }
@@ -39,10 +40,10 @@ class RRNode {
     void set_segment(const NodeSegmentId& segment_id) { segment_id_ = segment_id; }
 
     // Utility methods
-    NodeHash get_hash() const {
-        return std::make_tuple(type_, location_.ptc, location_.x_low,
-                               location_.x_high, location_.y_low, location_.y_high);
-    }
+    // NodeHash get_hash() const {
+    //     return std::make_tuple(type_, location_.ptc, location_.x_low,
+    //                            location_.x_high, location_.y_low, location_.y_high);
+    // }
 
     bool is_single_coordinate() const {
         return (location_.x_low == location_.x_high) && (location_.y_low == location_.y_high);
@@ -58,7 +59,7 @@ class RRNode {
 
   private:
     NodeId id_{0};
-    NodeType type_{NodeType::INVALID};
+    e_rr_type type_{e_rr_type::NUM_RR_TYPES};
     int capacity_{-1};
     std::string direction_;
     Location location_;
@@ -455,7 +456,6 @@ class RRGraph {
     void print_statistics() const;
 
     // Node categorization
-    std::vector<NodeId> get_nodes_by_type(NodeType type) const;
     std::unordered_set<NodeId> get_source_nodes() const;
     std::unordered_set<NodeId> get_sink_nodes() const;
     std::unordered_set<NodeId> get_ipin_nodes() const;
