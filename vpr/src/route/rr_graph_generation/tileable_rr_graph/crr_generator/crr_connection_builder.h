@@ -21,7 +21,6 @@ namespace crrgenerator {
 class CRRConnectionBuilder {
   public:
     CRRConnectionBuilder(const RRGraphView& rr_graph,
-                         const RRGraph& crr_graph,
                          const NodeLookupManager& node_lookup,
                          const SwitchBlockManager& sb_manager);
 
@@ -90,7 +89,6 @@ class CRRConnectionBuilder {
 
     // Dependencies
     const RRGraphView& rr_graph_;
-    const RRGraph& crr_graph_;
     const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
     SwitchId sw_zero_id_;

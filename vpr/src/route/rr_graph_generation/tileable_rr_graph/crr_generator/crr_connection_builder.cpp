@@ -53,11 +53,9 @@ static bool is_integer(const std::string& s) {
 // }
 
 CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
-                                           const RRGraph& crr_graph,
                                            const NodeLookupManager& node_lookup,
                                            const SwitchBlockManager& sb_manager)
     : rr_graph_(rr_graph)
-    , crr_graph_(crr_graph)
     , node_lookup_(node_lookup)
     , sb_manager_(sb_manager) {}
 
@@ -70,39 +68,39 @@ void CRRConnectionBuilder::initialize(
     fpga_grid_y_ = fpga_grid_y;
     is_annotated_excel_ = is_annotated_excel;
 
-    for (const auto& original_switch : crr_graph_.get_switches()) {
-        std::string switch_name = original_switch.get_name();
-        std::transform(switch_name.begin(), switch_name.end(), switch_name.begin(),
-                       ::tolower);
+    // for (const auto& original_switch : rr_graph_.rr_switches()) {
+    //     std::string switch_name = original_switch.name;
+    //     std::transform(switch_name.begin(), switch_name.end(), switch_name.begin(),
+    //                    ::tolower);
 
-        if (switch_name.find("delayless") != std::string::npos) {
-            VTR_LOG("Adding delayless switch: %s\n", switch_name.c_str());
-            default_switch_id_["delayless"] = original_switch.get_id();
-        } else if (switch_name.find("ipin") != std::string::npos) {
-            VTR_LOG("Adding ipin switch: %s\n", switch_name.c_str());
-            default_switch_id_["ipin"] = original_switch.get_id();
-        } else if (std::regex_match(switch_name, std::regex(R"(l1(_.*)?)"))) {
-            VTR_LOG("Adding l1 switch: %s\n", switch_name.c_str());
-            default_switch_id_["l1"] = original_switch.get_id();
-        } else if (std::regex_match(switch_name, std::regex(R"(l2(_.*)?)"))) {
-            VTR_LOG("Adding l2 switch: %s\n", switch_name.c_str());
-            default_switch_id_["l2"] = original_switch.get_id();
-        } else if (std::regex_match(switch_name, std::regex(R"(l4(_.*)?)"))) {
-            VTR_LOG("Adding l4 switch: %s\n", switch_name.c_str());
-            default_switch_id_["l4"] = original_switch.get_id();
-        } else if (std::regex_match(switch_name, std::regex(R"(l8(_.*)?)"))) {
-            VTR_LOG("Adding l8 switch: %s\n", switch_name.c_str());
-            default_switch_id_["l8"] = original_switch.get_id();
-        } else if (std::regex_match(switch_name, std::regex(R"(l12(_.*)?)"))) {
-            VTR_LOG("Adding l12 switch: %s\n", switch_name.c_str());
-            default_switch_id_["l12"] = original_switch.get_id();
-        } else {
-            VTR_LOG_ERROR("Unknown switch type: %s\n", switch_name.c_str());
-        }
-    }
+    //     if (switch_name.find("delayless") != std::string::npos) {
+    //         VTR_LOG("Adding delayless switch: %s\n", switch_name.c_str());
+    //         default_switch_id_["delayless"] = original_switch.get_id();
+    //     } else if (switch_name.find("ipin") != std::string::npos) {
+    //         VTR_LOG("Adding ipin switch: %s\n", switch_name.c_str());
+    //         default_switch_id_["ipin"] = original_switch.get_id();
+    //     } else if (std::regex_match(switch_name, std::regex(R"(l1(_.*)?)"))) {
+    //         VTR_LOG("Adding l1 switch: %s\n", switch_name.c_str());
+    //         default_switch_id_["l1"] = original_switch.get_id();
+    //     } else if (std::regex_match(switch_name, std::regex(R"(l2(_.*)?)"))) {
+    //         VTR_LOG("Adding l2 switch: %s\n", switch_name.c_str());
+    //         default_switch_id_["l2"] = original_switch.get_id();
+    //     } else if (std::regex_match(switch_name, std::regex(R"(l4(_.*)?)"))) {
+    //         VTR_LOG("Adding l4 switch: %s\n", switch_name.c_str());
+    //         default_switch_id_["l4"] = original_switch.get_id();
+    //     } else if (std::regex_match(switch_name, std::regex(R"(l8(_.*)?)"))) {
+    //         VTR_LOG("Adding l8 switch: %s\n", switch_name.c_str());
+    //         default_switch_id_["l8"] = original_switch.get_id();
+    //     } else if (std::regex_match(switch_name, std::regex(R"(l12(_.*)?)"))) {
+    //         VTR_LOG("Adding l12 switch: %s\n", switch_name.c_str());
+    //         default_switch_id_["l12"] = original_switch.get_id();
+    //     } else {
+    //         VTR_LOG_ERROR("Unknown switch type: %s\n", switch_name.c_str());
+    //     }
+    // }
 
-    assert(default_switch_id_.size() == crr_graph_.get_switches().size());
-    sw_zero_id_ = static_cast<SwitchId>(crr_graph_.get_switches().size());
+    // assert(default_switch_id_.size() == crr_graph_.get_switches().size());
+    // sw_zero_id_ = static_cast<SwitchId>(crr_graph_.get_switches().size());
 
     // Total locations is the number of locations on the FPGA grid minus the 4
     // corner locations.
@@ -275,7 +273,8 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_horizontal_nodes(Coordinate
     return sink_nodes;
 }
 
-CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const DataFrame& df, size_t row_or_col,
+CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const DataFrame& df, 
+                                                                           size_t row_or_col,
                                                                            bool is_vertical) const {
     SegmentInfo info;
 
@@ -326,12 +325,12 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
 }
 
 RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y,
-                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
+                                                      const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     assert(info.side == Side::OPIN || info.side == Side::IPIN);
-    NodeType node_type =
-        (info.side == Side::OPIN) ? NodeType::OPIN : NodeType::IPIN;
-    NodeHash hash =
-        std::make_tuple(node_type, std::to_string(info.seg_index), x, x, y, y);
+    e_rr_type node_type = (info.side == Side::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN;
+    NodeHash hash = std::make_tuple(node_type,
+                                    std::to_string(info.seg_index),
+                                    x, x, y, y);
 
     auto it = node_lookup.find(hash);
     if (it != node_lookup.end()) {
@@ -385,7 +384,8 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info, Coo
 
     // Create node hash and lookup
     NodeHash hash = std::make_tuple(string_to_node_type(seg_type_label),
-                                    seg_sequence, x_low, x_high, y_low, y_high);
+                                    seg_sequence,
+                                    x_low, x_high, y_low, y_high);
     auto it = node_lookup.find(hash);
 
     if (it != node_lookup.end()) {
@@ -539,31 +539,32 @@ SwitchId CRRConnectionBuilder::get_edge_switch_id(const std::string& cell_value,
         // TODO: This is a temporary solution. We need to have an API call to get
         // the switch id from delay.
         if (cell_value == "0") {
-            return sw_zero_id_;
+            return static_cast<SwitchId>(0);
         }
         int switch_delay_ps = std::stoi(cell_value);
         int switch_id = switch_delay_ps;
         return static_cast<SwitchId>(switch_id);
     } else {
-        std::string switch_id_key = "";
-        if (segment_length > 0) {
-            switch_id_key = "l" + std::to_string(segment_length);
-        } else {
-            switch_id_key = lower_case_sink_node_type;
-        }
+        VTR_LOG_ERROR("Not implemented - get_edge_switch_id\n");
+        // std::string switch_id_key = "";
+        // if (segment_length > 0) {
+        //     switch_id_key = "l" + std::to_string(segment_length);
+        // } else {
+        //     switch_id_key = lower_case_sink_node_type;
+        // }
 
-        std::string capitalized_switch_id_key = switch_id_key;
-        std::transform(capitalized_switch_id_key.begin(),
-                       capitalized_switch_id_key.end(),
-                       capitalized_switch_id_key.begin(), ::toupper);
+        // std::string capitalized_switch_id_key = switch_id_key;
+        // std::transform(capitalized_switch_id_key.begin(),
+        //                capitalized_switch_id_key.end(),
+        //                capitalized_switch_id_key.begin(), ::toupper);
 
-        if (default_switch_id_.find(switch_id_key) != default_switch_id_.end()) {
-            return default_switch_id_.at(switch_id_key);
-        } else if (default_switch_id_.find(capitalized_switch_id_key) != default_switch_id_.end()) {
-            return default_switch_id_.at(capitalized_switch_id_key);
-        } else {
-            throw std::runtime_error("Default switch id not found for Node Type: " + lower_case_sink_node_type + " and Switch ID Key: " + capitalized_switch_id_key);
-        }
+        // if (default_switch_id_.find(switch_id_key) != default_switch_id_.end()) {
+        //     return default_switch_id_.at(switch_id_key);
+        // } else if (default_switch_id_.find(capitalized_switch_id_key) != default_switch_id_.end()) {
+        //     return default_switch_id_.at(capitalized_switch_id_key);
+        // } else {
+        //     throw std::runtime_error("Default switch id not found for Node Type: " + lower_case_sink_node_type + " and Switch ID Key: " + capitalized_switch_id_key);
+        // }
     }
 }
 
