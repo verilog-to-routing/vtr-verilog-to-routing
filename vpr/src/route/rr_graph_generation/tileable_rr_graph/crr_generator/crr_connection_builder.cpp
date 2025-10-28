@@ -114,8 +114,8 @@ void CRRConnectionBuilder::initialize(
             fpga_grid_x_, fpga_grid_y_, total_locations_);
 }
 
-void CRRConnectionBuilder::build_connections_for_location(Coordinate x,
-                                                          Coordinate y,
+void CRRConnectionBuilder::build_connections_for_location(size_t x,
+                                                          size_t y,
                                                           std::vector<Connection>& tile_connections) const {
 
     // Find matching switch block pattern
@@ -124,17 +124,17 @@ void CRRConnectionBuilder::build_connections_for_location(Coordinate x,
     tile_connections.clear();
 
     if (pattern.empty()) {
-        VTR_LOG_DEBUG("No pattern found for switch block at (%d, %d)\n", x, y);
+        VTR_LOG_DEBUG("No pattern found for switch block at (%zu, %zu)\n", x, y);
         return;
     }
 
     const DataFrame* df = sb_manager_.get_switch_block_dataframe(pattern);
     if (df == nullptr) {
-        VTR_LOG_WARN("No dataframe found for pattern '%s' at (%d, %d)\n", pattern.c_str(), x, y);
+        VTR_LOG_WARN("No dataframe found for pattern '%s' at (%zu, %zu)\n", pattern.c_str(), x, y);
         return;
     }
 
-    VTR_LOG("Processing switch block '%s' with pattern '%s' at (%d, %d)\n",
+    VTR_LOG("Processing switch block '%s' with pattern '%s' at (%zu, %zu)\n",
             sw_name.c_str(), pattern.c_str(), x, y);
 
     // Get combined nodes for this location
@@ -198,11 +198,11 @@ void CRRConnectionBuilder::build_connections_for_location(Coordinate x,
                            tile_connections.end());
     tile_connections.shrink_to_fit();
 
-    VTR_LOG_DEBUG("Generated %zu connections for location (%d, %d)\n",
+    VTR_LOG_DEBUG("Generated %zu connections for location (%zu, %zu)\n",
                   tile_connections.size(), x, y);
 }
 
-std::vector<Connection> CRRConnectionBuilder::get_tile_connections(Coordinate tile_x, Coordinate tile_y) const {
+std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x, size_t tile_y) const {
     std::vector<Connection> tile_connections;
     build_connections_for_location(tile_x, tile_y, tile_connections);
 
@@ -529,7 +529,7 @@ std::string CRRConnectionBuilder::get_ptc_sequence(int seg_index,
 
 SwitchId CRRConnectionBuilder::get_edge_switch_id(const std::string& cell_value, const std::string& sink_node_type,
                                                   RRNodeId /*source_node*/, RRNodeId /*sink_node*/,
-                                                  int segment_length) const {
+                                                  int /*segment_length*/) const {
     std::string lower_case_sink_node_type = sink_node_type;
     std::transform(lower_case_sink_node_type.begin(),
                    lower_case_sink_node_type.end(),
@@ -546,6 +546,7 @@ SwitchId CRRConnectionBuilder::get_edge_switch_id(const std::string& cell_value,
         return static_cast<SwitchId>(switch_id);
     } else {
         VTR_LOG_ERROR("Not implemented - get_edge_switch_id\n");
+        return static_cast<SwitchId>(-1);
         // std::string switch_id_key = "";
         // if (segment_length > 0) {
         //     switch_id_key = "l" + std::to_string(segment_length);

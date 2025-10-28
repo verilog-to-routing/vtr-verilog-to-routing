@@ -40,7 +40,7 @@ class CRRConnectionBuilder {
      * @param tile_y Tile y coordinate
      * @return Vector of connections
      */
-    std::vector<Connection> get_tile_connections(Coordinate tile_x, Coordinate tile_y) const;
+    std::vector<Connection> get_tile_connections(size_t tile_x, size_t tile_y) const;
 
     /**
      * @brief Get all generated connections
@@ -104,8 +104,8 @@ class CRRConnectionBuilder {
     std::map<std::string, SwitchId> default_switch_id_;
 
     // Connection building methods
-    void build_connections_for_location(Coordinate x,
-                                        Coordinate y,
+    void build_connections_for_location(size_t x,
+                                        size_t y,
                                         std::vector<Connection>& tile_connections) const;
 
     // Node processing methods
