@@ -1774,7 +1774,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                         }
                     }
                     VTR_ASSERT(to_sub_tile != nullptr);
-                    /* Check if the to port is the one from the subtile, if not, pass as this is not the destination */
+                    // Check if the to port is the one from the subtile, if not, pass as this is not the destination
                     bool port_match = false;
                     for (auto to_sub_tile_port : to_sub_tile->ports) {
                         if (std::string(to_sub_tile_port.name) == clb_to_clb_directs[i].to_port) {
@@ -1801,7 +1801,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                                                                              to_grid_coordinate.y() + to_grid_type->pin_height_offset[ipin],
                                                                              e_rr_type::IPIN, ipin, ipin_grid_side[0]);
 
-                    /* add edges to the opin_node */
+                    // add edges to the opin_node */
                     if (!opin_node_id) {
                       VTR_ASSERT(opin_node_id);
                     }
