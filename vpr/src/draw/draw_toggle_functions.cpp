@@ -310,7 +310,7 @@ void toggle_crit_path_cbk(GtkSwitch*, gboolean state, ezgl::application* app) {
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathFlylines")), state);
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathDelays")), state);
 
-    if (draw_state->setup_timing_info && draw_state->pic_on_screen == ROUTING) {
+    if (draw_state->setup_timing_info && draw_state->pic_on_screen == e_pic_type::ROUTING) {
         gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathRouting")), state);
     }
 
@@ -343,7 +343,7 @@ void toggle_expansion_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
     } else if (strcmp(combo_box_content, "Expected (with edges)") == 0) {
         new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES;
     } else {
-        VPR_THROW(VPR_ERROR_DRAW, "Unrecognzied draw RR cost option");
+        VPR_THROW(VPR_ERROR_DRAW, "Unrecognized draw RR cost option");
     }
 
     g_free(combo_box_content);

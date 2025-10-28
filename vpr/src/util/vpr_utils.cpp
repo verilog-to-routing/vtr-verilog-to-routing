@@ -1540,6 +1540,25 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     return get_class_num_from_pin_physical_num(physical_type, pin_physical_num);
 }
 
+std::vector<int> find_sub_tile_indices_by_port_name(t_physical_tile_type_ptr type, std::string_view port_name) {
+    std::vector<int> ret;
+    for (const t_sub_tile& sub_tile : type->sub_tiles) {
+        bool matched = false;
+        for (const t_physical_tile_port& port : sub_tile.ports) {
+            if (port_name == port.name) {
+                matched = true;
+                break;
+            }
+        }
+        if (matched) {
+            for (int idx = sub_tile.capacity.low; idx <= sub_tile.capacity.high; ++idx) {
+                ret.push_back(idx);
+            }
+        }
+    }
+    return ret;
+}
+
 t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, std::string_view port_name) {
     for (const t_sub_tile& sub_tile : type->sub_tiles) {
         for (const t_physical_tile_port& port : sub_tile.ports) {
