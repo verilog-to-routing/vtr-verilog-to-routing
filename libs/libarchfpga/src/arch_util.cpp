@@ -140,14 +140,14 @@ InstPort::name_index InstPort::parse_name_index(const std::string& str) {
 
 int InstPort::num_instances() const {
     if (instance_high_index() == UNSPECIFIED || instance_low_index() == UNSPECIFIED) {
-        throw ArchFpgaError("Unspecified instance indicies");
+        throw ArchFpgaError("Unspecified instance indices");
     }
     return instance_high_index() - instance_low_index() + 1;
 }
 
 int InstPort::num_pins() const {
     if (port_high_index() == UNSPECIFIED || port_low_index() == UNSPECIFIED) {
-        throw ArchFpgaError("Unspecified port indicies");
+        throw ArchFpgaError("Unspecified port indices");
     }
     return port_high_index() - port_low_index() + 1;
 }
@@ -1011,7 +1011,7 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
         auto eq_sites_set = get_equivalent_sites_set(&physical_tile);
         auto equivalent_sites = std::vector<t_logical_block_type_ptr>(eq_sites_set.begin(), eq_sites_set.end());
 
-        auto criteria = [&physical_tile](const t_logical_block_type* lhs, const t_logical_block_type* rhs) {
+        auto criteria = [&physical_tile](const t_logical_block_type* lhs, const t_logical_block_type* rhs) noexcept {
             int num_pins = physical_tile.num_inst_pins;
 
             int lhs_num_logical_pins = lhs->pb_type->num_pins;
@@ -1048,7 +1048,7 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
         std::unordered_map<int, bool> ignored_pins_check_map;
         std::unordered_map<int, bool> global_pins_check_map;
 
-        auto criteria = [&logical_block](const t_physical_tile_type* lhs, const t_physical_tile_type* rhs) {
+        auto criteria = [&logical_block](const t_physical_tile_type* lhs, const t_physical_tile_type* rhs) noexcept {
             int num_logical_pins = logical_block.pb_type->num_pins;
 
             int lhs_num_pins = lhs->num_inst_pins;
@@ -1063,7 +1063,7 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
         std::ranges::stable_sort(equivalent_tiles, criteria);
 
         for (int pin = 0; pin < logical_block.pb_type->num_pins; pin++) {
-            for (auto& tile : equivalent_tiles) {
+            for (t_physical_tile_type_ptr tile : equivalent_tiles) {
                 auto direct_maps = tile->tile_block_pin_directs_map.at(logical_block.index);
 
                 for (auto& sub_tile : tile->sub_tiles) {

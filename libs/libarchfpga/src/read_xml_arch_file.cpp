@@ -2632,12 +2632,12 @@ static void process_block_type_locs(t_grid_def& grid_def,
                                     const pugiutil::loc_data& loc_data) {
     //Process all the block location specifications
     for (pugi::xml_node loc_spec_tag : layout_block_type_tag.children()) {
-        const char* loc_type = loc_spec_tag.name();
+        std::string_view loc_type = loc_spec_tag.name();
 
         // There are multiple attributes that are shared by every other tag that interposer
         // tags do not have. For this reason we check if loc_spec_tag is an interposer tag
         // and switch code paths if it is.
-        if (loc_type == std::string("interposer_cut")) {
+        if (loc_type == "interposer_cut") {
             if (grid_def.grid_type == e_grid_def_type::AUTO) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag), "Interposers are not currently supported for auto sized devices.");
             }
@@ -2658,7 +2658,7 @@ static void process_block_type_locs(t_grid_def& grid_def,
         int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
         t_metadata_dict meta = process_meta_data(strings, loc_spec_tag, loc_data);
 
-        if (loc_type == std::string("perimeter")) {
+        if (loc_type == "perimeter") {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
             //The edges
@@ -2697,7 +2697,7 @@ static void process_block_type_locs(t_grid_def& grid_def,
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_edge));
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_edge));
 
-        } else if (loc_type == std::string("corners")) {
+        } else if (loc_type == "corners") {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
             //The corners
@@ -2736,7 +2736,7 @@ static void process_block_type_locs(t_grid_def& grid_def,
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_right));
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_right));
 
-        } else if (loc_type == std::string("fill")) {
+        } else if (loc_type == "fill") {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
 
             t_grid_loc_def fill(type_name, priority);
@@ -2750,7 +2750,7 @@ static void process_block_type_locs(t_grid_def& grid_def,
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(fill));
 
-        } else if (loc_type == std::string("single")) {
+        } else if (loc_type == "single") {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "x", "y"}, loc_data);
 
             t_grid_loc_def single(type_name, priority);
@@ -2764,7 +2764,7 @@ static void process_block_type_locs(t_grid_def& grid_def,
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(single));
 
-        } else if (loc_type == std::string("col")) {
+        } else if (loc_type == "col") {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty", "incry"}, loc_data);
 
             t_grid_loc_def col(type_name, priority);
@@ -2794,7 +2794,7 @@ static void process_block_type_locs(t_grid_def& grid_def,
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(col));
 
-        } else if (loc_type == std::string("row")) {
+        } else if (loc_type == "row") {
             expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx", "incrx"}, loc_data);
 
             t_grid_loc_def row(type_name, priority);
@@ -2823,7 +2823,7 @@ static void process_block_type_locs(t_grid_def& grid_def,
             row.meta = row.owned_meta.get();
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(row));
-        } else if (loc_type == std::string("region")) {
+        } else if (loc_type == "region") {
             expect_only_attributes(loc_spec_tag,
                                    {"type", "priority",
                                     "startx", "endx", "repeatx", "incrx",
@@ -4094,12 +4094,12 @@ static void process_bend(pugi::xml_node node, t_segment_inf& segment, const int 
     std::vector<int>& part_len = segment.part_len;
     bool& is_bend = segment.is_bend;
 
-    std::string tmp = std::string(get_attribute(node, "type", loc_data).value());
+    std::string tmp = get_attribute(node, "type", loc_data).value();
     if (tmp == "pattern") {
         int i = 0;
 
-        /* Get the content string */
-        std::string content = std::string(node.child_value());
+        // Get the content string
+        std::string content = node.child_value();
         for (char c : content) {
             switch (c) {
                 case ' ':
