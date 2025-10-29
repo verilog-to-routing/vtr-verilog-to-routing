@@ -409,7 +409,7 @@ void xml_read_arch(const char* arch_file,
     }
 
     //Create a unique identifier for this architecture file based on it's contents
-    arch->architecture_id = vtr::strdup(vtr::secure_digest_file(arch_file).c_str());
+    arch->architecture_id = vtr::secure_digest_file(arch_file);
 
     // Parse the file
     try {

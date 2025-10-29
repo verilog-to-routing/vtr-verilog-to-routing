@@ -1966,7 +1966,7 @@ struct t_arch {
     std::vector<vtr::interned_string> interned_strings;
 
     /// Secure hash digest of the architecture file to uniquely identify this architecture
-    char* architecture_id;
+    std::string architecture_id;
 
     // Options for tileable routing architectures
     // These are used for an alternative, tilable, rr-graph generator that can produce
@@ -2001,12 +2001,12 @@ struct t_arch {
     int sub_fs;
 
     /// Connecting type for pass tracks in each switch block
-    enum e_switch_block_type sb_sub_type;
+    e_switch_block_type sb_sub_type;
 
     // End of tileable architecture options
 
     t_chan_width_dist Chans;
-    enum e_switch_block_type sb_type;
+    e_switch_block_type sb_type;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;

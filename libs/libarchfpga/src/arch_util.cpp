@@ -162,7 +162,7 @@ void free_arch(t_arch* arch) {
 
     vtr::release_memory(arch->directs);
 
-    vtr::free(arch->architecture_id);
+    vtr::release_memory(arch->architecture_id);
 
     delete (arch->noc);
 }

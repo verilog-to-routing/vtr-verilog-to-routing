@@ -2529,7 +2529,7 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
 
     auto device_reader = message_reader.getRoot<DeviceResources::Device>();
 
-    arch->architecture_id = vtr::strdup(vtr::secure_digest_file(FPGAInterchangeDeviceFile).c_str());
+    arch->architecture_id = vtr::secure_digest_file(FPGAInterchangeDeviceFile);
 
     ArchReader reader(arch, device_reader, FPGAInterchangeDeviceFile, PhysicalTileTypes, LogicalBlockTypes);
     reader.read_arch();
