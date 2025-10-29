@@ -823,7 +823,7 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
     int *num_input_pb_graph_node_pins, *num_output_pb_graph_node_pins; /* number of pins in a set [0..num_sets-1] */
     int num_input_pb_graph_node_sets, num_output_pb_graph_node_sets;
     /* Points to pins specified in the port string, later used to insert edges */
-    t_pb_graph_pin ***input_pb_graph_node_pins, ***output_pb_graph_node_pins; /* [0..num_sets_in_port - 1][0..num_ptrs - 1] */
+    /* [0..num_sets_in_port - 1][0..num_ptrs - 1] */
 
     if (load_power_structures) {
         VTR_ASSERT(pb_graph_parent_node->interconnect_pins[mode->index] == nullptr);
@@ -836,15 +836,15 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
 
     for (i = 0; i < mode->num_interconnect; i++) {
         /* determine the interconnect input and output pins */
-        input_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
-                                                                            pb_graph_children_nodes, mode->interconnect[i].input_string,
-                                                                            &num_input_pb_graph_node_pins, &num_input_pb_graph_node_sets,
-                                                                            true, true);
+        t_pb_graph_pin*** input_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
+                                                                                              pb_graph_children_nodes, mode->interconnect[i].input_string,
+                                                                                              &num_input_pb_graph_node_pins, &num_input_pb_graph_node_sets,
+                                                                                              true, true);
 
-        output_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
-                                                                             pb_graph_children_nodes, mode->interconnect[i].output_string,
-                                                                             &num_output_pb_graph_node_pins, &num_output_pb_graph_node_sets,
-                                                                             false, true);
+        t_pb_graph_pin*** output_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
+                                                                                               pb_graph_children_nodes, mode->interconnect[i].output_string,
+                                                                                               &num_output_pb_graph_node_pins, &num_output_pb_graph_node_sets,
+                                                                                               false, true);
 
         if (load_power_structures) {
             alloc_and_load_interconnect_pins(&pb_graph_parent_node->interconnect_pins[mode->index][i],

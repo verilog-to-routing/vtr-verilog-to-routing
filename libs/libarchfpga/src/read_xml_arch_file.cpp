@@ -1850,10 +1850,10 @@ static void process_interconnect(vtr::string_internment& strings,
             mode->interconnect[interconnect_idx].parent_mode = mode;
 
             const char* prop = get_attribute(cur, "input", loc_data).value();
-            mode->interconnect[interconnect_idx].input_string = vtr::strdup(prop);
+            mode->interconnect[interconnect_idx].input_string = prop;
 
             prop = get_attribute(cur, "output", loc_data).value();
-            mode->interconnect[interconnect_idx].output_string = vtr::strdup(prop);
+            mode->interconnect[interconnect_idx].output_string = prop;
 
             prop = get_attribute(cur, "name", loc_data).value();
             mode->interconnect[interconnect_idx].name = vtr::strdup(prop);

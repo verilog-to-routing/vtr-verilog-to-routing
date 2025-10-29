@@ -1216,8 +1216,8 @@ struct ArchReader {
                 ostr = std::string(pb_type->name) + ".in[" + std::to_string(j) + "]";
                 name = istr + "_to_" + ostr;
 
-                ic->input_string = vtr::strdup(istr.c_str());
-                ic->output_string = vtr::strdup(ostr.c_str());
+                ic->input_string = istr;
+                ic->output_string = ostr;
                 ic->name = vtr::strdup(name.c_str());
             }
 
@@ -1231,8 +1231,8 @@ struct ArchReader {
             ostr = std::string(parent->name) + "." + lut_bel.output_pin;
             name = istr + "_to_" + ostr;
 
-            ic->input_string = vtr::strdup(istr.c_str());
-            ic->output_string = vtr::strdup(ostr.c_str());
+            ic->input_string = istr;
+            ic->output_string = ostr;
             ic->name = vtr::strdup(name.c_str());
         }
     }
@@ -1267,14 +1267,12 @@ struct ArchReader {
         mode->interconnect = new t_interconnect[mode->num_interconnect];
         t_interconnect* ic = &mode->interconnect[0];
 
-        std::string istr, ostr, name;
+        std::string istr = std::string(pb_type->name) + ".in";
+        std::string ostr = std::string(pb_type->name) + ".out";
+        std::string name = "passthrough";
 
-        istr = std::string(pb_type->name) + ".in";
-        ostr = std::string(pb_type->name) + ".out";
-        name = "passthrough";
-
-        ic->input_string = vtr::strdup(istr.c_str());
-        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->input_string = istr;
+        ic->output_string = ostr;
         ic->name = vtr::strdup(name.c_str());
 
         ic->type = COMPLETE_INTERC;
@@ -1329,8 +1327,8 @@ struct ArchReader {
         ostr = std::string(lut->name) + ".in";
         name = istr + "_to_" + ostr;
 
-        ic->input_string = vtr::strdup(istr.c_str());
-        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->input_string = istr;
+        ic->output_string = ostr;
         ic->name = vtr::strdup(name.c_str());
 
         // Output
@@ -1343,8 +1341,8 @@ struct ArchReader {
         ostr = std::string(pb_type->name) + ".out";
         name = istr + "_to_" + ostr;
 
-        ic->input_string = vtr::strdup(istr.c_str());
-        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->input_string = istr;
+        ic->output_string = ostr;
         ic->name = vtr::strdup(name.c_str());
     }
 
@@ -1458,15 +1456,15 @@ struct ArchReader {
         o_ic->type = DIRECT_INTERC;
         o_ic->parent_mode_index = 0;
         o_ic->parent_mode = omode;
-        o_ic->input_string = vtr::strdup(opad_istr.c_str());
-        o_ic->output_string = vtr::strdup(opad_ostr.c_str());
+        o_ic->input_string = opad_istr;
+        o_ic->output_string = opad_ostr;
 
         i_ic->name = vtr::strdup(i_ic_name.c_str());
         i_ic->type = DIRECT_INTERC;
         i_ic->parent_mode_index = 0;
         i_ic->parent_mode = imode;
-        i_ic->input_string = vtr::strdup(ipad_istr.c_str());
-        i_ic->output_string = vtr::strdup(ipad_ostr.c_str());
+        i_ic->input_string = ipad_istr.c_str();
+        i_ic->output_string = ipad_ostr.c_str();
 
         omode->interconnect[0] = *o_ic;
         imode->interconnect[0] = *i_ic;
@@ -1611,8 +1609,8 @@ struct ArchReader {
                 ic->type = DIRECT_INTERC;
                 ic->parent_mode_index = idx;
                 ic->parent_mode = mode;
-                ic->input_string = vtr::strdup(istr.c_str());
-                ic->output_string = vtr::strdup(ostr.c_str());
+                ic->input_string = istr;
+                ic->output_string = ostr;
             }
 
             create_ports(leaf, pins, name);
@@ -1667,8 +1665,8 @@ struct ArchReader {
         ic->type = ic_type;
         ic->parent_mode_index = idx;
         ic->parent_mode = mode;
-        ic->input_string = vtr::strdup(istr.c_str());
-        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->input_string = istr;
+        ic->output_string = ostr;
     }
 
     /** @brief Processes all the ports of a given complex block.
@@ -1787,8 +1785,8 @@ struct ArchReader {
 
             VTR_ASSERT(names.insert(ic_name).second);
             ic->name = vtr::strdup(ic_name.c_str());
-            ic->input_string = vtr::strdup(input.c_str());
-            ic->output_string = vtr::strdup(outputs_str.c_str());
+            ic->input_string = input;
+            ic->output_string = outputs_str;
         }
 
         // Checks and, in case, adds all the necessary pack patterns to the marked interconnects
@@ -2144,8 +2142,8 @@ struct ArchReader {
             ic->type = DIRECT_INTERC;
             ic->parent_mode_index = 0;
             ic->parent_mode = mode;
-            ic->input_string = vtr::strdup(istr.c_str());
-            ic->output_string = vtr::strdup(ostr.c_str());
+            ic->input_string = istr;
+            ic->output_string = ostr;
 
             count++;
         }

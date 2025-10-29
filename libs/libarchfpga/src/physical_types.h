@@ -1108,8 +1108,8 @@ struct t_interconnect {
     e_interconnect type;
     char* name;
 
-    char* input_string;
-    char* output_string;
+    std::string input_string;
+    std::string output_string;
 
     std::vector<t_pin_to_pin_annotation> annotations;
     bool infer_annotations;
@@ -1127,8 +1127,6 @@ struct t_interconnect {
     t_interconnect() {
         type = (e_interconnect)0;
         name = nullptr;
-        input_string = nullptr;
-        output_string = nullptr;
         infer_annotations = false;
         line_num = 0;
         parent_mode_index = 0;
