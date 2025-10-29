@@ -76,7 +76,7 @@ jobs:
       #       to v4, need to upgrade the machine to support node20.
     - uses: actions/checkout@v3
       with:
-        submodules: 'true'
+        submodules: 'recursive'
 
     - name: Setup
       run: stdbuf -i0 -i0 -e0 ./.github/scripts/hostsetup.sh

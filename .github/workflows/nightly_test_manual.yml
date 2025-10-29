@@ -41,7 +41,7 @@ jobs:
     # Checkout the VTR repo.
     - uses: actions/checkout@v4
       with:
-        submodules: 'true'
+        submodules: 'recursive'
 
     # Get the extra benchmarks
     - name: 'Get Extra Benchmarks'
@@ -148,7 +148,7 @@ jobs:
 
     - uses: actions/checkout@v4
       with:
-        submodules: 'true'
+        submodules: 'recursive'
 
     - name: Get number of CPU cores
       uses: SimenB/github-actions-cpu-cores@v2
