@@ -8,7 +8,7 @@
 #include <string>
 #include <memory>
 
-// Forward declerations
+// Forward declarations
 
 struct t_metadata_dict;
 
@@ -112,7 +112,6 @@ struct t_grid_loc_def {
      * @brief When 1 metadata tag is split among multiple t_grid_loc_def, one
      * t_grid_loc_def is arbitrarily chosen to own the metadata, and the other
      * t_grid_loc_def point to the owned version.
-     * 
      */
     std::unique_ptr<t_metadata_dict> owned_meta;
 
@@ -125,7 +124,7 @@ struct t_grid_loc_def {
 };
 
 /**
- * @brief Enum for specfying if the architecture grid specification is for an auto sized device (variable size)
+ * @brief Enum for specifying if the architecture grid specification is for an auto sized device (variable size)
  * or a fixed size device.
  */
 enum class e_grid_def_type {

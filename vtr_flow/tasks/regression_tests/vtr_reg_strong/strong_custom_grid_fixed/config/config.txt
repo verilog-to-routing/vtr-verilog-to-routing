@@ -3,16 +3,16 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/microbenchmarks
+circuits_dir=benchmarks/verilog
 
 # Path to directory of architectures to use
-archs_dir=arch/timing
+archs_dir=arch/custom_grid
 
 # Add circuits to list to sweep
-circuit_list_add=reg_4x32.blif
+circuit_list_add=raygentop.v
 
 # Add architectures to list to sweep
-arch_list_add=k4_N8_tileable_reset_softadder_register_scan_chain_nonLR_caravel_io_skywater130nm.xml
+arch_list_add=fixed_grid.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
@@ -24,4 +24,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params_common = -starting_stage vpr --pack --device "32x32"
+script_params =--device "25x25"

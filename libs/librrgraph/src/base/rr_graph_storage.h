@@ -860,7 +860,7 @@ class t_rr_graph_storage {
         vtr::StrongIdRange<RREdgeId> edge_range(RREdgeId(0), RREdgeId(num_edges));
         std::vector<RREdgeId> edge_indices(edge_range.begin(), edge_range.end());
 
-        std::ranges::stable_sort(edge_indices, comparison_function);
+        std::stable_sort(edge_indices.begin(), edge_indices.end(), comparison_function);
         
         // Generic lambda that allocates a 'vec'-sized new vector with all elements set to default value,
         // then builds the new vector to have rearranged elements from 'vec' and finaly move the new vector

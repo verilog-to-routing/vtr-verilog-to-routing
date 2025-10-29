@@ -33,33 +33,23 @@
  * TODO: Fix this for global routing, currently for detailed only.
  */
 ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
-    double left = 0, right = 0, top = 0, bottom = 0;
     t_draw_coords* draw_coords = get_draw_coords_vars();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
+    double left = 0, right = 0, top = 0, bottom = 0;
     switch (rr_graph.node_type(inode)) {
         case e_rr_type::CHANX:
             left = draw_coords->tile_x[rr_graph.node_xlow(inode)];
-            right = draw_coords->tile_x[rr_graph.node_xhigh(inode)]
-                    + draw_coords->get_tile_width();
-            bottom = draw_coords->tile_y[rr_graph.node_ylow(inode)]
-                     + draw_coords->get_tile_width()
-                     + (1. + rr_graph.node_track_num(inode));
-            top = draw_coords->tile_y[rr_graph.node_ylow(inode)]
-                  + draw_coords->get_tile_width()
-                  + (1. + rr_graph.node_track_num(inode));
+            right = draw_coords->tile_x[rr_graph.node_xhigh(inode)] + draw_coords->get_tile_width();
+            bottom = draw_coords->tile_y[rr_graph.node_ylow(inode)] + draw_coords->get_tile_width() + (1. + rr_graph.node_track_num(inode));
+            top = bottom;
             break;
         case e_rr_type::CHANY:
-            left = draw_coords->tile_x[rr_graph.node_xlow(inode)]
-                   + draw_coords->get_tile_width()
-                   + (1. + rr_graph.node_track_num(inode));
-            right = draw_coords->tile_x[rr_graph.node_xlow(inode)]
-                    + draw_coords->get_tile_width()
-                    + (1. + rr_graph.node_track_num(inode));
+            left = draw_coords->tile_x[rr_graph.node_xlow(inode)] + draw_coords->get_tile_width() + (1. + rr_graph.node_track_num(inode));
+            right = left;
             bottom = draw_coords->tile_y[rr_graph.node_ylow(inode)];
-            top = draw_coords->tile_y[rr_graph.node_yhigh(inode)]
-                  + draw_coords->get_tile_width();
+            top = draw_coords->tile_y[rr_graph.node_yhigh(inode)] + draw_coords->get_tile_width();
             break;
         default:
             // a problem. leave at default value (ie. zeros)
