@@ -566,8 +566,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     lut_pb_type->modes[1].num_pb_type_children = 1;
     lut_pb_type->modes[1].mode_power = new t_mode_power();
     lut_pb_type->modes[1].pb_type_children = new t_pb_type[1];
-    alloc_and_load_default_child_for_pb_type(lut_pb_type, default_name,
-                                             lut_pb_type->modes[1].pb_type_children);
+    alloc_and_load_default_child_for_pb_type(lut_pb_type, default_name, lut_pb_type->modes[1].pb_type_children);
     lut_pb_type->annotations.clear();
     lut_pb_type->modes[1].pb_type_children[0].depth = lut_pb_type->depth + 1;
     lut_pb_type->modes[1].pb_type_children[0].parent_mode = &lut_pb_type->modes[1];
@@ -597,7 +596,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
             lut_pb_type->name);
 
     lut_pb_type->modes[1].interconnect[1].type = DIRECT_INTERC;
-    lut_pb_type->modes[1].interconnect[1].input_string = vtr::string_fmt("%s.%s", default_name, out_port->name);
+    lut_pb_type->modes[1].interconnect[1].input_string = vtr::string_fmt("%s.%s", default_name.c_str(), out_port->name);
     lut_pb_type->modes[1].interconnect[1].output_string = vtr::string_fmt("%s.%s", lut_pb_type->name, out_port->name);
     lut_pb_type->modes[1].interconnect[1].infer_annotations = true;
 
@@ -642,8 +641,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
 
     mem_pb_type->modes[0].num_pb_type_children = 1;
     mem_pb_type->modes[0].pb_type_children = new t_pb_type[1];
-    alloc_and_load_default_child_for_pb_type(mem_pb_type, default_name,
-                                             &mem_pb_type->modes[0].pb_type_children[0]);
+    alloc_and_load_default_child_for_pb_type(mem_pb_type, default_name, &mem_pb_type->modes[0].pb_type_children[0]);
     mem_pb_type->modes[0].pb_type_children[0].depth = mem_pb_type->depth + 1;
     mem_pb_type->modes[0].pb_type_children[0].parent_mode = &mem_pb_type->modes[0];
     mem_pb_type->modes[0].pb_type_children[0].num_pb = num_pb;
