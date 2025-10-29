@@ -49,6 +49,16 @@ enum class e_pack_pattern_molecule_type : bool {
     MOLECULE_FORCED_PACK  ///<more than one atom representing a packing pattern forming a large molecule
 };
 
+// Each group: representative atom + pb_type (from its expected primitive)
+struct LogicalRamGroup {
+    AtomBlockId rep_blk;
+    const t_pb_type* rep_pb_type; // primitive type used for the feasibility check
+    std::vector<AtomBlockId> atoms;
+    std::unordered_map<t_logical_block_type_ptr, int> candidate_capacity;
+    int total_memory_slices = 0;
+    int remaining_memory_slices = 0;
+};
+
 /**
  * @brief Represents a grouping of atom blocks that match a pack_pattern,
  *        these groups are intended to be placed as a single unit during packing
@@ -295,6 +305,31 @@ class Prepacker {
         return list_of_pack_patterns;
     }
 
+    // Returns a mutable pointer to the logical RAM group containing `blk`, or nullptr if none.
+    inline LogicalRamGroup* logical_ram_group_of_mut(AtomBlockId blk) const {
+        auto it = atom_to_group_.find(blk);
+        if (it == atom_to_group_.end()) return nullptr;
+        size_t gid = it->second;
+        VTR_ASSERT(gid < logical_ram_groups_.size());
+        return &logical_ram_groups_[gid];
+    }
+
+    inline size_t logical_ram_group_id_of(AtomBlockId blk) const {
+        auto it = atom_to_group_.find(blk);
+        return (it == atom_to_group_.end()) ? SIZE_MAX : it->second;
+    }
+    inline LogicalRamGroup* logical_ram_group_of(AtomBlockId blk) const {
+        size_t gid = logical_ram_group_id_of(blk);
+        return (gid == SIZE_MAX) ? nullptr : &logical_ram_groups_[gid];
+    }
+    
+    inline std::vector<LogicalRamGroup>& get_logical_ram_groups() const { 
+        return logical_ram_groups_;
+    }
+    std::vector<LogicalRamGroup>& get_logical_ram_groups_mutable() const {
+        return logical_ram_groups_;
+    }
+
   private:
     /**
      * Pre-pack atoms in netlist to molecules
@@ -360,4 +395,7 @@ class Prepacker {
      *        that chain.
      */
     vtr::vector<MoleculeChainId, t_chain_info> chain_info_;
+
+    mutable std::vector<LogicalRamGroup> logical_ram_groups_;
+    mutable vtr::flat_map<AtomBlockId, size_t> atom_to_group_; // atom → group index
 };

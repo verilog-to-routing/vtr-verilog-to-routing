@@ -1782,18 +1782,6 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
     // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     VTR_LOG("Traversing molecules for RAM slices (sibling-feasible grouping):\n");
 
-    // Each group: representative atom + pb_type (from its expected primitive)
-    struct RamGroup {
-        AtomBlockId rep_blk;
-        const t_pb_type* rep_pb_type; // primitive type used for the feasibility check
-        std::vector<AtomBlockId> atoms;
-        std::unordered_map<t_logical_block_type_ptr, int> candidate_capacity;
-        int total_memory_slices = 0;
-        int remaining_memory_slices = 0;
-    };
-
-    std::vector<RamGroup> groups;
-
     for (PackMoleculeId mol_id : molecules()) {
         const t_pack_molecule& mol = get_molecule(mol_id);
         AtomBlockId atom_blk_id = mol.atom_block_ids[mol.root];
@@ -1805,7 +1793,7 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
 
         // Try to place this atom into an existing group by sibling-feasible equivalence
         bool placed = false;
-        for (auto& g : groups) {
+        for (auto& g : logical_ram_groups_) {
             // Quick filter: require same model_id, otherwise the function will definitely fail
             if (g.rep_pb_type->model_id != prim->pb_type->model_id) continue;
 
@@ -1823,20 +1811,25 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
 
         if (!placed) {
             // Start a new group with this atom as representative
-            RamGroup ng;
+            LogicalRamGroup ng;
             ng.rep_blk = atom_blk_id;
             ng.rep_pb_type = prim->pb_type;
             ng.atoms.push_back(atom_blk_id);
-            groups.push_back(std::move(ng));
+            logical_ram_groups_.push_back(std::move(ng));
         }
+    }
+
+    // ensure all atoms are mapped to their groups.
+    for (size_t gid = 0; gid < logical_ram_groups_.size(); ++gid) {
+        for (auto blk : logical_ram_groups_[gid].atoms) atom_to_group_[blk] = gid;
     }
 
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
     // --- Dump groups ---
     VTR_LOG("\nInferred logical RAM groups (sibling-feasible):\n");
-    for (size_t gid = 0; gid < groups.size(); ++gid) {
-        auto& g = groups[gid];
+    for (size_t gid = 0; gid < logical_ram_groups_.size(); ++gid) {
+        auto& g = logical_ram_groups_[gid];
         g.total_memory_slices = g.atoms.size();
         g.remaining_memory_slices = g.total_memory_slices;
         VTR_LOG("  Group %zu: %zu slice(s)\n", gid, g.atoms.size());

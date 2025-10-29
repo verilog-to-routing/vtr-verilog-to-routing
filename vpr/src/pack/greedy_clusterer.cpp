@@ -393,6 +393,58 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
                          });
     }
 
+    bool is_memory = false;
+    const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
+    if (prim->pb_type->is_primitive() && prim->pb_type->class_type == MEMORY_CLASS) {
+        is_memory = true;
+        LogicalRamGroup* logical_ram = prepacker.logical_ram_group_of_mut(root_atom);
+        
+        // VTR_LOG("Seed selected from logical ram groups:\n");
+        // VTR_LOG("\tRepresentative atom id: %zu\n", logical_ram->rep_blk);
+        // VTR_LOG("\tTotal memory slices: %d\n", logical_ram->total_memory_slices);
+        // VTR_LOG("\tReamining memory slices: %d\n", logical_ram->remaining_memory_slices);
+        // VTR_LOG("\tCandidate type capacities:\n");
+        // for (t_logical_block_type_ptr& cand : candidate_types) {
+        //     int capacity = logical_ram->candidate_capacity[cand];
+        //     VTR_LOG("\t\t%s: %d\n", cand->name.c_str(), capacity);
+        // }
+
+        std::unordered_map<t_logical_block_type_ptr, float> candidate_costs;
+        for (t_logical_block_type_ptr cand: candidate_types) {
+            int equivalent_num_instances = 0;
+            for (auto type : cand->equivalent_tiles) {
+                equivalent_num_instances += mutable_device_ctx.grid.num_instances(type, -1);
+            }
+            
+            // VTR_LOG("\tCalculating cost for type %s:\n", cand->name.c_str());
+            float inferred_num_instances = std::ceil(vtr::safe_ratio<float>(logical_ram->remaining_memory_slices, logical_ram->candidate_capacity[cand])); // This can be divied by the total number of this type in the device to get a ratio.
+            // VTR_LOG("\t\tInferred num of instances: %f\n", inferred_num_instances);
+            float inferred_num_instances_ratio = vtr::safe_ratio<float>(inferred_num_instances, equivalent_num_instances);
+            // VTR_LOG("\t\tInferred num of instances ratio: %f\n", inferred_num_instances_ratio);
+            
+            float empty_slices_ratio = (logical_ram->remaining_memory_slices < logical_ram->candidate_capacity[cand]) ? (1 - vtr::safe_ratio<float>(logical_ram->remaining_memory_slices, logical_ram->candidate_capacity[cand])) : 0;
+            // VTR_LOG("\t\tEmpty slices ratio: %f\n", empty_slices_ratio);
+            float new_utilization_ratio = vtr::safe_ratio<float>(num_used_type_instances[cand] + 1, equivalent_num_instances); // + 1 on the numerator is to penalize the scarce resources more.
+            // VTR_LOG("\t\tNew utilization ratio: %f\n", new_utilization_ratio);
+            // VTR_LOG("\t\tSum of ratios: %f\n", inferred_num_instances_ratio + empty_slices_ratio + new_utilization_ratio);
+        
+            candidate_costs[cand] = inferred_num_instances_ratio + empty_slices_ratio + new_utilization_ratio;
+        }
+
+        std::stable_sort(candidate_types.begin(), candidate_types.end(),
+                         [&](t_logical_block_type_ptr a, t_logical_block_type_ptr b) {
+                             return candidate_costs.at(a) < candidate_costs.at(b);
+                         });
+
+        // VTR_LOG("\tSorted candidate (least cost first): ");
+        // for (t_logical_block_type_ptr cand: candidate_types) {
+        //     VTR_LOG("%s ", cand->name.c_str());
+        // }
+        // VTR_LOG("\n");
+    }
+
+
+
     if (log_verbosity_ > 2) {
         VTR_LOG("\tSeed: '%s' (%s)", root_atom_name.c_str(), arch_.models.get_model(root_model_id).name);
         VTR_LOGV(seed_mol.pack_pattern, " molecule_type %s molecule_size %zu",
@@ -416,6 +468,14 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             VTR_LOGV(log_verbosity_ > 2, "\tPASSED_SEED: Block Type %s\n", type->name.c_str());
             // If clustering succeeds return the new_cluster_id and type.
             block_type = type;
+
+            if (is_memory) {
+                LogicalRamGroup* logical_ram = prepacker.logical_ram_group_of_mut(root_atom);
+                logical_ram->remaining_memory_slices -= std::min(logical_ram->remaining_memory_slices, logical_ram->candidate_capacity[type]);
+                // VTR_LOG("\tSelected candidate type: %s\n", type->name.c_str());
+                // VTR_LOG("\tAdjusting the remaining slices\n");
+            }
+
             break;
         } else {
             VTR_LOGV(log_verbosity_ > 2, "\tFAILED_SEED: Block Type %s\n", type->name.c_str());
