@@ -401,8 +401,8 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
                         pb_type->modes[i].interconnect[j].output_string);
                 for (const t_pin_to_pin_annotation& annotation : pb_type->modes[i].interconnect[j].annotations) {
                     fprintf(Echo, "%s\t\t\tannotation %s %s %d: %s\n", tabs.c_str(),
-                            annotation.input_pins,
-                            annotation.output_pins,
+                            annotation.input_pins.c_str(),
+                            annotation.output_pins.c_str(),
                             annotation.format,
                             annotation.annotation_entries[0].second.c_str());
                 }
@@ -428,9 +428,9 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
             && pb_type_model_name != LogicalModels::MODEL_OUTPUT) {
             for (const t_pin_to_pin_annotation& annotation : pb_type->annotations) {
                 fprintf(Echo, "%s\t\t\tannotation %s %s %s %d: %s\n", tabs.c_str(),
-                        annotation.clock,
-                        annotation.input_pins,
-                        annotation.output_pins,
+                        annotation.clock.c_str(),
+                        annotation.input_pins.c_str(),
+                        annotation.output_pins.c_str(),
                         annotation.format,
                         annotation.annotation_entries[0].second.c_str());
             }

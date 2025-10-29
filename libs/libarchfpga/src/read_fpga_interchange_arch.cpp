@@ -242,28 +242,28 @@ static t_port get_generic_port(t_arch* arch,
 }
 
 /** @brief Returns true if a given port name exists in the given complex block */
-static bool block_port_exists(t_pb_type* pb_type, std::string port_name) {
+static bool block_port_exists(t_pb_type* pb_type, std::string_view port_name) {
     for (int iport = 0; iport < pb_type->num_ports; iport++) {
         const t_port port = pb_type->ports[iport];
 
-        if (std::string(port.name) == port_name)
+        if (port.name == port_name)
             return true;
     }
 
     return false;
 }
 
-/** @brief Returns a pack pattern given it's name, input and output strings */
-static t_pin_to_pin_annotation get_pack_pattern(std::string pp_name, std::string input, std::string output) {
+/** @brief Returns a pack pattern given its name, input and output strings */
+static t_pin_to_pin_annotation get_pack_pattern(std::string_view pp_name, std::string_view input, std::string_view output) {
     t_pin_to_pin_annotation pp;
 
     pp.type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
     pp.format = E_ANNOT_PIN_TO_PIN_CONSTANT;
-    pp.annotation_entries.push_back({E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME, pp_name});
-    pp.input_pins = vtr::strdup(input.c_str());
-    pp.output_pins = vtr::strdup(output.c_str());
+    pp.annotation_entries.push_back({E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME, pp_name.data()});
+    pp.input_pins = input;
+    pp.output_pins = output;
 
-    pp.clock = nullptr;
+    pp.clock.clear();
 
     return pp;
 }

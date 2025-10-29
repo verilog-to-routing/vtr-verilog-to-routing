@@ -333,7 +333,7 @@ static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
 
 static void process_clock_metal_layers(pugi::xml_node parent,
                                        std::unordered_map<std::string, t_metal_layer>& metal_layers,
-                                       pugiutil::loc_data& loc_data);
+                                       const pugiutil::loc_data& loc_data);
 static void process_clock_networks(pugi::xml_node parent,
                                    std::vector<t_clock_network_arch>& clock_networks,
                                    const std::vector<t_arch_switch_inf>& switches,
@@ -1026,10 +1026,10 @@ static void process_pin_to_pin_annotations(pugi::xml_node Parent,
             i++;
         }
         prop = get_attribute(Parent, "in_port", loc_data).value();
-        annotation->input_pins = vtr::strdup(prop);
+        annotation->input_pins = prop;
 
         prop = get_attribute(Parent, "out_port", loc_data).value();
-        annotation->output_pins = vtr::strdup(prop);
+        annotation->output_pins = prop;
 
     } else if (0 == strcmp(Parent.name(), "delay_matrix")) {
         annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
@@ -1046,10 +1046,10 @@ static void process_pin_to_pin_annotations(pugi::xml_node Parent,
 
         i++;
         prop = get_attribute(Parent, "in_port", loc_data).value();
-        annotation->input_pins = vtr::strdup(prop);
+        annotation->input_pins = prop;
 
         prop = get_attribute(Parent, "out_port", loc_data).value();
-        annotation->output_pins = vtr::strdup(prop);
+        annotation->output_pins = prop;
 
     } else if (0 == strcmp(Parent.name(), "C_constant")) {
         annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
@@ -1059,11 +1059,11 @@ static void process_pin_to_pin_annotations(pugi::xml_node Parent,
         i++;
 
         prop = get_attribute(Parent, "in_port", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-        annotation->input_pins = vtr::strdup(prop);
+        annotation->input_pins = prop;
 
         prop = get_attribute(Parent, "out_port", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-        annotation->output_pins = vtr::strdup(prop);
-        VTR_ASSERT(annotation->output_pins != nullptr || annotation->input_pins != nullptr);
+        annotation->output_pins = prop;
+        VTR_ASSERT(!annotation->output_pins.empty() || !annotation->input_pins.empty());
 
     } else if (0 == strcmp(Parent.name(), "C_matrix")) {
         annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
@@ -1072,11 +1072,11 @@ static void process_pin_to_pin_annotations(pugi::xml_node Parent,
         i++;
 
         prop = get_attribute(Parent, "in_port", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-        annotation->input_pins = vtr::strdup(prop);
+        annotation->input_pins = prop;
 
         prop = get_attribute(Parent, "out_port", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-        annotation->output_pins = vtr::strdup(prop);
-        VTR_ASSERT(annotation->output_pins != nullptr || annotation->input_pins != nullptr);
+        annotation->output_pins = prop;
+        VTR_ASSERT(!annotation->output_pins.empty() || !annotation->input_pins.empty());
 
     } else if (0 == strcmp(Parent.name(), "T_setup")) {
         annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
@@ -1085,10 +1085,10 @@ static void process_pin_to_pin_annotations(pugi::xml_node Parent,
         annotation->annotation_entries[i] = {E_ANNOT_PIN_TO_PIN_DELAY_TSETUP, prop};
         i++;
         prop = get_attribute(Parent, "port", loc_data).value();
-        annotation->input_pins = vtr::strdup(prop);
+        annotation->input_pins = prop;
 
         prop = get_attribute(Parent, "clock", loc_data).value();
-        annotation->clock = vtr::strdup(prop);
+        annotation->clock = prop;
 
         primitives_annotation_clock_match(annotation, parent_pb_type);
 
@@ -1118,10 +1118,10 @@ static void process_pin_to_pin_annotations(pugi::xml_node Parent,
         }
 
         prop = get_attribute(Parent, "port", loc_data).value();
-        annotation->input_pins = vtr::strdup(prop);
+        annotation->input_pins = prop;
 
         prop = get_attribute(Parent, "clock", loc_data).value();
-        annotation->clock = vtr::strdup(prop);
+        annotation->clock = prop;
 
         primitives_annotation_clock_match(annotation, parent_pb_type);
 
@@ -1133,10 +1133,10 @@ static void process_pin_to_pin_annotations(pugi::xml_node Parent,
         i++;
 
         prop = get_attribute(Parent, "port", loc_data).value();
-        annotation->input_pins = vtr::strdup(prop);
+        annotation->input_pins = prop;
 
         prop = get_attribute(Parent, "clock", loc_data).value();
-        annotation->clock = vtr::strdup(prop);
+        annotation->clock = prop;
 
         primitives_annotation_clock_match(annotation, parent_pb_type);
 
@@ -1148,10 +1148,10 @@ static void process_pin_to_pin_annotations(pugi::xml_node Parent,
         i++;
 
         prop = get_attribute(Parent, "in_port", loc_data).value();
-        annotation->input_pins = vtr::strdup(prop);
+        annotation->input_pins = prop;
 
         prop = get_attribute(Parent, "out_port", loc_data).value();
-        annotation->output_pins = vtr::strdup(prop);
+        annotation->output_pins = prop;
 
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
@@ -2490,7 +2490,7 @@ static void process_model_ports(pugi::xml_node port_group, t_model& model, std::
                            vtr::string_fmt("Model port is missing a name").c_str());
         }
 
-        if (port_names.count(model_port->name)) {
+        if (port_names.contains(model_port->name)) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
                            vtr::string_fmt("Duplicate model port named '%s'", model_port->name).c_str());
         }
@@ -3505,7 +3505,7 @@ static void process_pin_locations(pugi::xml_node Locations,
 
             // Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
             auto side_offset = std::make_tuple(side, x_offset, y_offset, layer_offset);
-            if (seen_sides.count(side_offset)) {
+            if (seen_sides.contains(side_offset)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                                vtr::string_fmt("Duplicate pin location side/offset specification."
                                                " Only a single <loc> per side/xoffset/yoffset/layer_offset is permitted.\n")
@@ -3609,7 +3609,7 @@ static void process_pin_locations(pugi::xml_node Locations,
         for (int iinst = sub_tile->capacity.low; iinst < sub_tile->capacity.high; ++iinst) {
             for (const t_physical_tile_port& port : sub_tile->ports) {
                 for (int ipin = 0; ipin < port.num_pins; ++ipin) {
-                    if (!port_pins_with_specified_locations[iinst][port.name].count(ipin)) {
+                    if (!port_pins_with_specified_locations[iinst][port.name].contains(ipin)) {
                         //Missing
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                        vtr::string_fmt("Pin '%s[%d].%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
@@ -3887,7 +3887,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
         tmp = get_attribute(node, "res_type", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
         if (tmp) {
-            auto it = std::find(RES_TYPE_STRING.begin(), RES_TYPE_STRING.end(), tmp);
+            auto it = std::ranges::find(RES_TYPE_STRING, tmp);
             if (it != RES_TYPE_STRING.end()) {
                 segs[i].res_type = static_cast<SegResType>(std::distance(RES_TYPE_STRING.begin(), it));
             } else {
@@ -4644,7 +4644,7 @@ static std::vector<t_direct_inf> process_directs(pugi::xml_node Parent,
 
 static void process_clock_metal_layers(pugi::xml_node parent,
                                        std::unordered_map<std::string, t_metal_layer>& metal_layers,
-                                       pugiutil::loc_data& loc_data) {
+                                       const pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "Rmetal", "Cmetal"};
     std::vector<std::string> expected_children = {"metal_layer"};
 

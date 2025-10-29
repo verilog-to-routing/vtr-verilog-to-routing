@@ -1076,18 +1076,13 @@ struct t_pin_to_pin_annotation {
     e_pin_to_pin_annotation_type type;
     e_pin_to_pin_annotation_format format;
 
-    char* input_pins;
-    char* output_pins;
-    char* clock;
+    std::string input_pins;
+    std::string output_pins;
+    std::string clock;
 
     int line_num; /* used to report what line number this annotation is found in architecture file */
 
     t_pin_to_pin_annotation() noexcept {
-        annotation_entries = std::vector<std::pair<int, std::string>>();
-        input_pins = nullptr;
-        output_pins = nullptr;
-        clock = nullptr;
-
         line_num = 0;
         type = (e_pin_to_pin_annotation_type)0;
         format = (e_pin_to_pin_annotation_format)0;
