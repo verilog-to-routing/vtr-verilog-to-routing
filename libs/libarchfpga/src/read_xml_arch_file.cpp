@@ -779,7 +779,7 @@ static std::pair<int, int> process_instance_string(pugi::xml_node Locations,
     size_t token_index = 0;
     t_token token = tokens[token_index];
 
-    if (token.type != e_token_type::STRING || std::string(token.data) != sub_tile.name) {
+    if (token.type != e_token_type::STRING || token.data != sub_tile.name) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        vtr::string_fmt("Wrong physical type name of the port: %s\n", pin_loc_string).c_str());
     }
@@ -2114,7 +2114,7 @@ static void process_fc(pugi::xml_node node,
 static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
     if (node.name() != std::string("fc_override")) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
-                       vtr::string_fmt("Unexpeted node of type '%s' (expected optional 'fc_override')",
+                       vtr::string_fmt("Unexpected node of type '%s' (expected optional 'fc_override')",
                                        node.name())
                            .c_str());
     }
@@ -3366,12 +3366,11 @@ static void process_equivalent_site_custom_connection(pugi::xml_node Parent,
 
         expect_only_attributes(cur_direct, {"from", "to"}, loc_data);
 
-        std::string from, to;
         // `from` attribute is relative to the physical tile pins
-        from = std::string(get_attribute(cur_direct, "from", loc_data).value());
+        const std::string from = get_attribute(cur_direct, "from", loc_data).value();
 
         // `to` attribute is relative to the logical block pins
-        to = std::string(get_attribute(cur_direct, "to", loc_data).value());
+        const std::string to = get_attribute(cur_direct, "to", loc_data).value();
 
         auto from_pins = process_pin_string<t_sub_tile*>(cur_direct, sub_tile, from.c_str(), loc_data);
         auto to_pins = process_pin_string<t_logical_block_type_ptr>(cur_direct, logical_block_type, to.c_str(), loc_data);
@@ -3820,7 +3819,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
         /* Get segment name */
         tmp = get_attribute(node, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (tmp) {
-            segs[i].name = std::string(tmp);
+            segs[i].name = tmp;
         } else {
             /* if swich block is "custom", then you have to provide a name for segment */
             if (switchblocklist_required) {
@@ -3832,7 +3831,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
             ss << "unnamed_segment_" << i;
             std::string dummy = ss.str();
             tmp = dummy.c_str();
-            segs[i].name = std::string(tmp);
+            segs[i].name = tmp;
         }
 
         /* Get segment length */
@@ -4396,14 +4395,14 @@ static std::vector<t_arch_switch_inf> process_switches(pugi::xml_node Parent,
 
         // Check for switch name collisions
         for (int j = 0; j < i; ++j) {
-            if (0 == strcmp(switches[j].name.c_str(), switch_name)) {
+            if (switches[j].name == switch_name) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                                vtr::string_fmt("Two switches with the same name '%s' were found.\n",
                                                switch_name)
                                    .c_str());
             }
         }
-        arch_switch.name = std::string(switch_name);
+        arch_switch.name = switch_name;
 
         /* Figure out the type of switch */
         /* As noted above, due to their configuration of pass transistors feeding into a buffer,
