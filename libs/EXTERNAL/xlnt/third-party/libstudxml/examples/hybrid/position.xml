@@ -1,0 +1,12 @@
+<objects>
+  <object name="Lion's Head" id="123">
+    <position lat="-33.8569" lon="18.5083"/>
+    <position lat="-33.8568" lon="18.5083"/>
+    <position lat="-33.8568" lon="18.5082"/>
+  </object>
+  <elevated-object name="Table Mountain" id="234">
+    <position lat="-33.9573" lon="18.4031"/>
+    <position lat="-33.9574" lon="18.4031"/>
+    <position lat="-33.9574" lon="18.5082"/>
+  </elevated-object>
+</objects>

@@ -1,0 +1,121 @@
+# file      : libstudxml/buildfile
+# license   : MIT; see accompanying LICENSE file
+
+int_expat = (!$config.libstudxml.external_expat)
+
+intf_libs = # Interface dependencies.
+
+if! $int_expat
+  import intf_libs += libexpat%lib{expat}
+
+lib{studxml}: {hxx ixx txx cxx}{** -version} {hxx}{version} \
+      details/{h}{config*}
+
+# Expat.
+#
+# Note that we treat some of its source files as ad hoc since they are
+# #include'd.
+#
+details/expat/
+{
+  ../../lib{studxml}: h{*}:                       include = $int_expat
+  ../../lib{studxml}: c{xmlparse xmlrole xmltok}: include = $int_expat
+  ../../lib{studxml}: c{xmltok_impl xmltok_ns}:   include = ($int_expat ? adhoc : false)
+  ../../lib{studxml}: doc{COPYING README}
+}
+
+# Genx.
+#
+details/genx/
+{
+  ../../lib{studxml}: h{*} c{*} doc{LICENSE README}
+}
+
+lib{studxml}: $intf_libs
+
+# Include the generated version header into the distribution (so that we don't
+# pick up an installed one) and don't remove it when cleaning in src (so that
+# clean results in a state identical to distributed).
+#
+hxx{version}: in{version} $src_root/manifest
+hxx{version}:
+{
+  dist  = true
+  clean = ($src_root != $out_root)
+}
+
+# Build options.
+#
+if ($c.class == 'gcc')
+{
+  # Disable warnings that pop up with -Wextra (e.g, -fimplicit-fallthrough)
+  # in C implementation details.
+  #
+  details/expat/ c.coptions += -Wno-extra
+  details/genx/  c.coptions += -Wno-extra
+}
+
+# We are a mixed C/C++ library, though C is implementation-only, kind of: we
+# need headers but not symbols.
+#
+cc.poptions =+ "-I$out_root" "-I$src_root"
+
+if! $int_expat
+  cc.poptions += -DLIBSTUDXML_EXTERNAL_EXPAT
+
+obja{*}: cc.poptions += -DLIBSTUDXML_STATIC_BUILD
+objs{*}: cc.poptions += -DLIBSTUDXML_SHARED_BUILD
+
+# Export options.
+#
+lib{studxml}:
+{
+  cxx.export.poptions = "-I$out_root" "-I$src_root"
+  cxx.export.libs = $intf_libs
+}
+
+if! $int_expat
+  lib{studxml}: cxx.export.poptions += -DLIBSTUDXML_EXTERNAL_EXPAT
+
+liba{studxml}: cxx.export.poptions += -DLIBSTUDXML_STATIC
+libs{studxml}: cxx.export.poptions += -DLIBSTUDXML_SHARED
+
+# For pre-releases use the complete version to make sure they cannot be used
+# in place of another pre-release or the final version. See the version module
+# for details on the version.* variable values.
+#
+if $version.pre_release
+  lib{studxml}: bin.lib.version = @"-$version.project_id"
+else
+  lib{studxml}: bin.lib.version = @"-$version.major.$version.minor"
+
+# Install into the libstudxml/ subdirectory of, say, /usr/include/
+# recreating subdirectories.
+#
+{h hxx ixx txx}{*}:
+{
+  install         = include/libstudxml/
+  install.subdirs = true
+}
+
+# Most of the Expat headers are private.
+#
+details/expat/
+{
+  h{*}: install = false
+
+  h{expat}@./ h{expat_external.h}@./:
+  {
+    install = ($int_expat ? include/libstudxml/details/expat/ : false)
+    install.subdirs = false
+  }
+
+  doc{README}@./:  install = false
+  doc{COPYING}@./: install = ($int_expat ? doc/EXPAT-LICENSE : false)
+}
+
+details/genx/
+{
+  doc{README}@./:  install = false
+  doc{LICENSE}@./: install = doc/GENX-LICENSE
+}

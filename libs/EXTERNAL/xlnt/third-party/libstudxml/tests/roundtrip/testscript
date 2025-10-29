@@ -1,0 +1,14 @@
+# file      : tests/roundtrip/testscript
+# license   : MIT; see accompanying LICENSE file
+
+# We are using external files for parsing/matching not to break make-based
+# tests.
+#
+# @@ Use here-documents when (if) we fully move the project to build2.
+#
+
+$* $src_base/attribute.xml  >>>$src_base/attribute.xml  : attribute
+$* $src_base/characters.xml >>>$src_base/characters.xml : characters
+$* $src_base/followup-1.xml >>>$src_base/followup-1.xml : followup-1
+$* $src_base/followup-2.xml >>>$src_base/followup-2.xml : followup-2
+$* $src_base/namespace.xml  >>>$src_base/namespace.xml  : namespace

@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<object xmlns="http://www.example.com/xmlns/position" name="Lion's Head" type="mountain" id="123">
+  <position lat="-33.8569" lon="18.5083"/>
+  <position lat="-33.8568" lon="18.5083"/>
+  <position lat="-33.8568" lon="18.5082"/>
+</object>

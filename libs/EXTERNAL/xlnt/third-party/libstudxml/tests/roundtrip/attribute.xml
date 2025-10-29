@@ -1,0 +1,3 @@
+<root xmlns="foo" xmlns:b="bar" x="x" b:y="y">
+  <nested b:x="x" y="y"/>
+</root>

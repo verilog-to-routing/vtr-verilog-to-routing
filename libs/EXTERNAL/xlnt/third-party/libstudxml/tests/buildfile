@@ -1,0 +1,4 @@
+# file      : tests/buildfile
+# license   : MIT; see accompanying LICENSE file
+
+./: {*/ -build/}

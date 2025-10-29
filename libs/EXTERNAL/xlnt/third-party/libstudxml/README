@@ -1,0 +1,23 @@
+libstudxml is a streaming XML pull parser and streaming XML serializer
+implementation for modern, standard C++. It has an API that we believe
+should have already been in Boost or even in the C++ standard library.
+For more information see:
+
+http://www.codesynthesis.com/projects/libstudxml/
+
+See the NEWS file for the user-visible changes from the previous release.
+
+See the LICENSE file for distribution conditions.
+
+See the INSTALL file for prerequisites and installation instructions.
+
+See the doc/ directory for the API documentation.
+
+See the examples/ directory for examples. See examples/README for an
+overview of the provided examples as well as the README file in each
+example directory for more details on any particular example.
+
+See the tests/ directory for the test suite.
+
+Send questions, bug reports, or any other feedback to the
+studxml-users@codesynthesis.com mailing list.

@@ -1,0 +1,1765 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+
+<head>
+  <title>XML Parsing and Serialization in C++ with libstudxml</title>
+
+  <meta name="copyright" content="&#169; 2013-2020 Code Synthesis Tools CC"/>
+  <meta name="keywords" content="xml,c++,parsing,serialization,api,streaming,persistence"/>
+  <meta name="description" content="XML Parsing and Serialization in C++ with libstudxml"/>
+  <meta name="revision" content="1.0"/>
+  <meta name="version" content="1.1.0"/>
+
+  <link rel="stylesheet" type="text/css" href="default.css" />
+
+<style type="text/css">
+  pre {
+    padding    : 0 0 0 0em;
+    margin     : 0em 0em 0em 0;
+
+    font-size  : 102%
+  }
+
+  body {
+    min-width: 48em;
+  }
+
+  h1 {
+    font-weight: bold;
+    font-size: 200%;
+    line-height: 1.2em;
+  }
+
+  h2 {
+    font-weight : bold;
+    font-size   : 150%;
+
+    padding-top : 0.8em;
+  }
+
+  h3 {
+    font-size   : 140%;
+    padding-top : 0.8em;
+  }
+
+  /* Force page break for both PDF and HTML (when printing). */
+  hr.page-break {
+    height: 0;
+    width: 0;
+    border: 0;
+    visibility: hidden;
+
+    page-break-after: always;
+  }
+
+  /* Adjust indentation for three levels. */
+  #container {
+    max-width: 48em;
+  }
+
+  #content {
+    padding: 0 0.1em 0 4em;
+    /*background-color: red;*/
+  }
+
+  #content h1 {
+    margin-left: -2.06em;
+  }
+
+  #content h2 {
+    margin-left: -1.33em;
+  }
+
+  /* Title page */
+
+  #titlepage {
+    padding: 2em 0 1em 0;
+    border-bottom: 1px solid black;
+  }
+
+  #titlepage .title {
+    font-weight: bold;
+    font-size: 200%;
+    text-align: center;
+    padding: 1em 0 2em 0;
+  }
+
+  #titlepage #first-title {
+    padding: 1em 0 0.4em 0;
+  }
+
+  #titlepage #second-title {
+    padding: 0.4em 0 2em 0;
+  }
+
+  #titlepage p {
+    padding-bottom: 1em;
+  }
+
+  #titlepage #revision {
+    padding-bottom: 0em;
+  }
+
+  /* Lists */
+  ul.list li, ol.list li {
+    padding-top      : 0.3em;
+    padding-bottom   : 0.3em;
+  }
+
+  div.img {
+    text-align: center;
+    padding: 2em 0 2em 0;
+  }
+
+  /*  */
+  dl dt {
+    padding   : 0.8em 0 0 0;
+  }
+
+  /* TOC */
+  table.toc {
+    border-style      : none;
+    border-collapse   : separate;
+    border-spacing    : 0;
+
+    margin            : 0.2em 0 0.2em 0;
+    padding           : 0 0 0 0;
+  }
+
+  table.toc tr {
+    padding           : 0 0 0 0;
+    margin            : 0 0 0 0;
+  }
+
+  table.toc * td, table.toc * th {
+    border-style      : none;
+    margin            : 0 0 0 0;
+    vertical-align    : top;
+  }
+
+  table.toc * th {
+    font-weight       : normal;
+    padding           : 0em 0.1em 0em 0;
+    text-align        : left;
+    white-space       : nowrap;
+  }
+
+  table.toc * table.toc th {
+    padding-left      : 1em;
+  }
+
+  table.toc * td {
+    padding           : 0em 0 0em 0.7em;
+    text-align        : left;
+  }
+
+</style>
+
+
+</head>
+
+<body>
+<div id="container">
+  <div id="content">
+
+  <div class="noprint">
+
+  <div id="titlepage">
+    <div class="title" id="first-title">XML Parsing and Serialization in C++</div>
+    <div class="title" id="second-title">With <code>libstudxml</code></div>
+
+    <p>Copyright &#169; 2013-2020 Code Synthesis Tools CC. Permission is
+       granted to copy, distribute and/or modify this document under the
+       terms of the MIT license.</p>
+
+    <!-- REMEMBER TO CHANGE VERSIONS IN THE META TAGS ABOVE! -->
+    <p id="revision">Revision 1.0, May 2017</p>
+    <p>This revision of the document describes <code>libstudxml</code> 1.1.0.</p>
+  </div>
+
+  <hr class="page-break"/>
+  <h1>Table of Contents</h1>
+
+  <table class="toc">
+    <tr>
+      <th></th><td><a href="#0">About This Document</a></td>
+    </tr>
+    <tr>
+      <th>1</th><td><a href="#1">Terminology</a></td>
+    </tr>
+    <tr>
+      <th>2</th><td><a href="#2">Low-Level API</a></td>
+    </tr>
+    <tr>
+      <th>3</th><td><a href="#3">High-Level API</a></td>
+    </tr>
+    <tr>
+      <th>4</th><td><a href="#4">Object Persistence</a></td>
+    </tr>
+    <tr>
+      <th>5</th><td><a href="#5">Inheritance</a></td>
+    </tr>
+    <tr>
+      <th>6</th><td><a href="#6">Implementation Notes</a></td>
+    </tr>
+  </table>
+  </div>
+
+  <hr class="page-break"/>
+  <h1><a name="0">About This Document</a></h1>
+
+  <p>This document is based on the presentation given by Boris Kolpackov at
+     the C++Now 2014 conference where <code>libstudxml</code> was
+     first made publicly available. Its goal is to introduce a new,
+     modern C++ API for XML by showing how to handle the most common
+     use cases. Compared to the talk, this introduction omits some of
+     the discussion relevant to XML in general and its handling
+     in C++. It also provides more complete code examples that would not
+     fit onto slides during the presentation. If, however, you would
+     like to get a more complete picture of the "state of XML in C++", then
+     you may prefer to first
+     <a href="http://youtu.be/AuamDUrG5ZU?list=UU5e__RG9K3cHrPotPABnrwg">watch
+     the video</a> of the talk.</p>
+
+  <p>While this document uses some C++11 features in the examples, the
+     library itself can be used in C++98 applications as well.</p>
+
+  <h1><a name="1">Terminology</a></h1>
+
+  <p>Before we begin, let's define a few terms to make sure we are on
+     the same page.</p>
+
+  <p>When we say "XML format" that is a bit loose. XML is actually
+     a meta-format that we specialize for our needs. That is, we decide
+     what element and attribute names we will use, which elements will
+     be valid where, what they will mean, and so on. This specialization
+     of XML to a specific format is called an <em>XML Vocabulary</em>.</p>
+
+  <p>Often, but not always, when we parse XML, we store extracted data
+     in the application's memory. Usually, we would create classes
+     specific to our XML vocabulary. For example, if we have an element
+     called <code>person</code> then we may create a C++ class also
+     called <code>person</code>. we will call such classes an
+     <em>Object Model</em>.</p>
+
+  <p>The content of an element in XML can be empty, text, nested
+     elements, or a mixture of the two:</p>
+
+  <pre class="xml">
+&lt;empty name="a" id="1"/>
+
+&lt;simple name="b" id="2">text&lt;simple/>
+
+&lt;complex name="c" id="3">
+  &lt;nested>...&lt;/nested>
+  &lt;nested>...&lt;/nested>
+&lt;complex/>
+
+&lt;mixed name="d" id="4">
+  te&lt;nested>...&lt;/nested>
+  x
+  &lt;nested>...&lt;/nested>t
+&lt;mixed/>
+  </pre>
+
+  <p>These are called the <em>empty</em>, <em>simple</em>,
+     <em>complex</em>, and <em>mixed</em> content models,
+     respectively.</p>
+
+  <h1><a name="2">Low-Level API</a></h1>
+
+  <p><code>libstudxml</code> provides the streaming XML pull parser and
+     streaming XML serializer. The parser is a conforming, non-validating
+     XML 1.0 implementation (see <a href="#6">Implementation Notes</a>
+     for details). The application character encoding (that is, the
+     encoding used in the application's memory) for both parser and
+     serializer is UTF-8. The output encoding of the serializer is
+     UTF-8 as well. The parser supports UTF-8, UTF-16, ISO-8859-1,
+     and US-ASCII input encodings.</p>
+
+  <pre class="c++">
+#include &lt;xml/parser>
+
+namespace xml
+{
+  class parser;
+}
+  </pre>
+
+  <pre class="c++">
+#include &lt;xml/serializer>
+
+namespace xml
+{
+  class serializer;
+}
+  </pre>
+
+  <p>C++ is often used to implement XML converters and filters, especially
+     where speed is a concern. Such applications require the lowest-level
+     API with minimum overhead. So we will start there (see the
+     <code>roundtrip</code> example in the <code>libstudxml</code>
+     distribution).</p>
+
+  <pre class="c++">
+class parser
+{
+  typedef unsigned short feature_type;
+
+  static const feature_type receive_elements;
+  static const feature_type receive_characters;
+  static const feature_type receive_attributes;
+  static const feature_type receive_namespace_decls;
+
+  static const feature_type receive_default =
+    receive_elements |
+    receive_characters |
+    receive_attributes;
+
+  parser (std::istream&amp;,
+          const std::string&amp; input_name,
+          feature_type = receive_default);
+  ...
+};
+  </pre>
+
+  <p>The parser constructor takes three arguments: the stream to parse,
+     input name that is used in diagnostics to identify the document
+     being parsed, and the list of events we want the parser to report.</p>
+
+  <p>As an example of an XML filter, let's write one that removes a
+     specific attribute from the document, say <code>id</code>. The
+     first step in our filter would then be to create the parser
+     instance:</p>
+
+  <pre class="c++">
+int main (int argc, char* argv[])
+{
+  ...
+
+  try
+  {
+    using namespace xml;
+
+    ifstream ifs (argv[1]);
+    parser p (ifs, argv[1]);
+
+    ...
+  }
+  catch (const xml::parsing&amp; e)
+  {
+    cerr &lt;&lt; e.what () &lt;&lt; endl;
+    return 1;
+  }
+}
+  </pre>
+
+  <p>Here we also see how to handle parsing errors. So far so good.
+     Let's see the next piece of the API.</p>
+
+  <pre class="c++">
+class parser
+{
+  enum event_type
+  {
+    start_element,
+    end_element,
+    start_attribute,
+    end_attribute,
+    characters,
+    start_namespace_decl,
+    end_namespace_decl,
+    eof
+  };
+
+  event_type next ();
+};
+  </pre>
+
+  <p>We call the <code>next()</code> function when we are ready to handle
+     the next piece of XML. And now we can implement our filter a bit
+     further:</p>
+
+  <pre class="c++">
+parser p (ifs, argv[1]);
+
+for (parser::event_type e (p.next ());
+     e != parser::eof;
+     e = p.next ())
+{
+  switch (e)
+  {
+  case parser::start_element:
+    ...
+  case parser::end_element:
+    ...
+  case parser::start_attribute:
+    ...
+  case parser::end_attribute:
+    ...
+  case parser::characters:
+    ...
+  }
+}
+  </pre>
+
+  <p>In C++11 we can use the range-based <code>for</code> loop to tidy
+     things up a bit:</p>
+
+  <pre class="c++">
+parser p (ifs, argv[1]);
+
+for (parser::event_type e: p)
+{
+  switch (e)
+  {
+    ...
+  }
+}
+  </pre>
+
+  <p>The next piece of the API puzzle:</p>
+
+  <pre class="c++">
+class parser
+{
+  const std::string&amp; name () const;
+  const std::string&amp; value () const;
+
+  unsigned long long line () const;
+  unsigned long long column () const;
+};
+  </pre>
+
+  <p>The <code>name()</code> accessor returns the name of the current element
+     or attribute. The <code>value()</code> function returns the text of the
+     characters event for an element or attribute. The <code>line()</code> and
+     <code>column()</code> accessors return the current position in the document.
+     Here is how we could print all the element positions for debugging:</p>
+
+  <pre class="c++">
+switch (e)
+{
+case parser::start_element:
+  cerr &lt;&lt; p.line () &lt;&lt; ':' &lt;&lt; p.column () &lt;&lt; ": start "
+       &lt;&lt; p.name () &lt;&lt; endl;
+  break;
+case parser::end_element:
+  cerr &lt;&lt; p.line () &lt;&lt; ':' &lt;&lt; p.column () &lt;&lt; ": end "
+       &lt;&lt; p.name () &lt;&lt; endl;
+  break;
+}
+  </pre>
+
+  <p>We have now seen enough of the parsing side to complete our filter.
+     What's missing is the serialization. So let's switch to that for a
+     moment:</p>
+
+  <pre class="c++">
+class serializer
+{
+  serializer (std::ostream&amp;,
+              const std::string&amp; output_name,
+              unsigned short indentation = 2);
+
+  ...
+};
+  </pre>
+
+  <p>The constructor is pretty similar to the <code>parser</code>'s. The
+     <code>indentation</code> argument specifies the number of indentation
+     spaces that should be used for pretty-printing. We can disable it by
+     passing <code>0</code>.</p>
+
+  <p>Now we can create the serializer instance for our filter:</p>
+
+  <pre class="c++">
+int main (int argc, char* argv[])
+{
+  ...
+
+  try
+  {
+    using namespace xml;
+
+    ifstream ifs (argv[1]);
+    parser p (ifs, argv[1]);
+    serializer s (cout, "output", 0);
+
+    ...
+  }
+  catch (const xml::parsing&amp; e)
+  {
+    cerr &lt;&lt; e.what () &lt;&lt; endl;
+    return 1;
+  }
+  catch (const xml::serialization&amp; e)
+  {
+    cerr &lt;&lt; e.what () &lt;&lt; endl;
+    return 1;
+  }
+}
+  </pre>
+
+  <p>Notice that we have also added an exception handler for the
+     <code>serialization</code> exception. Instead of handling
+     the <code>parsing</code> and <code>serialization</code>
+     exceptions separately, we can catch just
+     <code>xml::exception</code>, which is a common base for the
+     other two:</p>
+
+  <pre class="c++">
+int main (int argc, char* argv[])
+{
+  try
+  {
+    ...
+  }
+  catch (const xml::exception&amp; e)
+  {
+    cerr &lt;&lt; e.what () &lt;&lt; endl;
+    return 1;
+  }
+}
+  </pre>
+
+  <p>The next chunk of the serializer API:</p>
+
+  <pre class="c++">
+class serializer
+{
+  void start_element (const std::string&amp; name);
+  void end_element ();
+
+  void start_attribute (const std::string&amp; name);
+  void end_attribute ();
+
+  void characters (const std::string&amp; value);
+};
+  </pre>
+
+  <p>Everything should be pretty self-explanatory here. And we have
+     now seen enough to finish our filter:</p>
+
+  <pre class="c++">
+parser p (ifs, argv[1]);
+serializer s (cout, "output", 0);
+
+bool skip (false);
+
+for (parser::event_type e: p)
+{
+  switch (e)
+  {
+  case parser::start_element:
+    {
+      s.start_element (p.name ());
+      break;
+    }
+  case parser::end_element:
+    {
+      s.end_element ();
+      break;
+    }
+  case parser::start_attribute:
+    {
+      if (p.name () == "id")
+        skip = true;
+      else
+        s.start_attribute (p.name ());
+      break;
+    }
+  case parser::end_attribute:
+    {
+      if (skip)
+        skip = false;
+      else
+        s.end_attribute ();
+      break;
+    }
+  case parser::characters:
+    {
+      if (!skip)
+        s.characters (p.value ());
+      break;
+    }
+  }
+}
+  </pre>
+
+  <p>Do you see any problems with our filter? Well, one problem is
+     that this implementation doesn't handle XML namespaces. Let's
+     see how we can fix this. The first issue is with the element
+     and attribute names. When namespaces are used, those may be
+     qualified. <code>libstudxml</code> uses the <code>qname</code>
+     class to represent such names:</p>
+
+  <pre class="c++">
+#include &lt;xml/qname>
+
+namespace xml
+{
+  class qname
+  {
+  public:
+    qname ();
+    qname (const std::string&amp; name);
+    qname (const std::string&amp; namespace_,
+           const std::string&amp; name);
+
+    const std::string&amp; namespace_ () const;
+    const std::string&amp; name () const;
+  };
+}
+  </pre>
+
+  <p>The parser, in addition to the <code>name()</code> accessor also
+     has <code>qname()</code> which returns the potentially qualified
+     name. Similarly, the <code>start_element()</code> and
+     <code>start_attribute()</code> functions in the serializer are
+     overloaded to accept <code>qname</code>:</p>
+
+  <pre class="c++">
+class parser
+{
+  const qname&amp; qname () const;
+};
+
+class serializer
+{
+  void start_element (const qname&amp;);
+  void start_attribute (const qname&amp;);
+};
+  </pre>
+
+  <p>The first thing we need to do to make our filter namespace-aware
+     is to use qualified names instead of the local ones. This one is
+     easy:</p>
+
+  <pre class="c++">
+switch (e)
+{
+case parser::start_element:
+  {
+    s.start_element (p.qname ());
+    break;
+  }
+case parser::start_attribute:
+  {
+    if (p.qname () == "id") // Unqualified name.
+      skip = true;
+    else
+      s.start_attribute (p.qname ());
+    break;
+  }
+}
+  </pre>
+
+
+  <p>There is, however, another thing that we have to do. Right now our
+     code does not propagate the namespace-prefix mappings from the input
+     document to the output. At the moment, where the input XML might have
+     meaningful prefixes assigned to namespaces, the output will have
+     automatically generated ones like <code>g1</code>, <code>g2</code>,
+     and so on.</p>
+
+  <p>To fix this, first we need to tell the parser to report to us
+     namespace-prefix mappings, called namespace declarations in XML:</p>
+
+  <pre class="c++">
+parser p (ifs,
+          argv[1]
+          parser::receive_default |
+          parser::receive_namespace_decls);
+  </pre>
+
+  <p>We then also need to propagate this information to the serializer by
+     handling the <code>start_namespace_decl</code> event:</p>
+
+  <pre class="c++">
+for (...)
+{
+  switch (e)
+  {
+    ...
+
+  case parser::start_namespace_decl:
+    s.namespace_decl (p.namespace_ (), p.prefix ());
+    break;
+
+    ...
+  }
+}
+  </pre>
+
+  <p>Well, that wasn't too bad.</p>
+
+  <h1><a name="3">High-Level API</a></h1>
+
+  <p>So that was pretty low level XML work where we didn't care about
+     the semantics of the stored data, or, in fact the XML vocabulary that
+     we dealt with.</p>
+
+  <p>However, this API will quickly become tedious once we try to handle
+     a specific XML vocabulary and do something useful with the stored
+     data. Why is that? There are several areas where we could use some
+     help:</p>
+
+  <ul>
+    <li>Validation and error handling</li>
+    <li>Attribute access</li>
+    <li>Data extraction</li>
+    <li>Content model processing</li>
+    <li>Control flow</li>
+  </ul>
+
+  <p>Let's examine each area using our object position vocabulary as a
+     test case (see the <code>processing</code> example in the
+     <code>libstudxml</code> distribution).</p>
+
+  <pre class="xml">
+&lt;object id="123">
+  &lt;name>Lion's Head&lt;/name>
+  &lt;type>mountain&lt;/type>
+
+  &lt;position lat="-33.8569" lon="18.5083"/>
+  &lt;position lat="-33.8568" lon="18.5083"/>
+  &lt;position lat="-33.8568" lon="18.5082"/>
+&lt;/object>
+  </pre>
+
+  <p>If you cannot assume the XML you are parsing is valid, and you
+     generally shouldn't, then you will quickly realize that the biggest
+     pain in dealing with XML is making sure that what we got is actually
+     valid.</p>
+
+  <p>This stuff is pervasive. What if the root element is spelled
+     wrong? Maybe the <code>id</code> attribute is missing? Or there
+     is some stray text before the <code>name</code> element? Things
+     can be broken in an infinite number of ways.</p>
+
+  <p>To illustrate this point, here is the parsing code of just the
+     root element with proper error handling:</p>
+
+  <pre class="c++">
+parser p (ifs, argv[1]);
+
+if (p.next () != parser::start_element ||
+    p.qname () != "object")
+{
+  // error
+}
+
+...
+
+if (p.next () != parser::end_element) // object
+{
+  // error
+}
+  </pre>
+
+  <p>Not very pretty. To help with this, the parser API provides the
+     <code>next_expect()</code> function:</p>
+
+  <pre class="c++">
+class parser
+{
+  void next_expect (event_type);
+  void next_expect (event_type, const std::string&amp; name);
+};
+  </pre>
+
+  <p>This function gets the next event and makes sure it is what's
+     expected. If not, it throws an appropriate parsing exception.
+     This simplifies our root element parsing quite a bit:</p>
+
+  <pre class="c++">
+parser p (ifs, argv[1]);
+
+p.next_expect (parser::start_element, "object");
+...
+p.next_expect (parser::end_element); // object
+  </pre>
+
+  <p>Let's now take the next step and try to handle the <code>id</code>
+     attribute. According to what we have seen so far, it will look
+     something along these lines:</p>
+
+  <pre class="c++">
+p.next_expect (parser::start_element, "object");
+
+p.next_expect (parser::start_attribute, "id");
+p.next_expect (parser::characters);
+cout &lt;&lt; "id: " &lt;&lt; p.value () &lt;&lt; endl;
+p.next_expect (parser::end_attribute);
+
+...
+
+p.next_expect (parser::end_element); // object
+  </pre>
+
+  <p>Not too bad but there is a bit of a problem. What if our <code>object</code>
+     element had several attributes? The order of attributes in XML
+     is arbitrary so we should be prepared to get them in any order.
+     This fact complicates our attribute parsing code quite a bit:</p>
+
+  <pre class="c++">
+while (p.next () == parser::start_attribute)
+{
+  if (p.qname () == "id")
+  {
+    p.next_expect (parser::characters);
+    cout &lt;&lt; "id: " &lt;&lt; p.value () &lt;&lt; endl;
+  }
+  else if (...)
+  {
+  }
+  else
+  {
+    // error: unknown attribute
+  }
+
+  p.next_expect (parser::end_attribute);
+}
+  </pre>
+
+  <p>There is also a bug in this version. Can you see it? We now
+     don't make sure that the <code>id</code> attribute was actually
+     specified.</p>
+
+  <p>If you think about it, at this level, it is actually not that
+     convenient to receive attributes as events. In fact, a map of
+     attributes would be much more usable.</p>
+
+  <p>Remember we talked about the parser features that specify which
+     events we want to see:</p>
+
+  <pre class="c++">
+class parser
+{
+  static const feature_type receive_elements;
+  static const feature_type receive_characters;
+  static const feature_type receive_attributes;
+
+  ...
+};
+  </pre>
+
+  <p>Well, in reality, there is no <code>receive_attributes</code>. Rather,
+     there are these two options:
+
+  <pre class="c++">
+class parser
+{
+  static const feature_type receive_attributes_map;
+  static const feature_type receive_attributes_event;
+
+  ...
+};
+  </pre>
+
+  <p>That is, we can ask the parser to send us attributes as events or
+     as a map. And the default is to send them as a map.</p>
+
+  <p>In case of a map, we have the following attribute access API to work
+     with:</p>
+
+  <pre class="c++">
+class parser
+{
+  const std::string&amp; attribute (const std::string&amp; name) const;
+
+  std::string attribute (const std::string&amp; name,
+                         const std::string&amp; default_value) const;
+
+  bool attribute_present (const std::string&amp; name) const;
+};
+  </pre>
+
+  <p>If the attribute is not found, then the version without the default
+     value throws an appropriate parsing exception while the version with
+     the default value returns that value. There are also the
+     <code>qname</code> versions of these functions.</p>
+
+  <p>Let's see how this simplifies our code:</p>
+
+  <pre class="c++">
+p.next_expect (parser::start_element, "object");
+
+cout &lt;&lt; "id: " &lt;&lt; p.attribute ("id") &lt;&lt; endl;
+
+...
+
+p.next_expect (parser::end_element); // object
+  </pre>
+
+  <p>Much better.</p>
+
+  <p>If the <code>id</code> attribute is not present, then we get an
+     exception. But what happens if we have a stray attribute in our
+     document? The attribute map is magical in this sense. After
+     the <code>end_element</code> event for the <code>object</code>
+     element the parser will examine the attribute map. If there is
+     an attribute that hasn't been retrieved with one of the attribute
+     access functions, then the parser will throw the unexpected
+     attribute exception.</p>
+
+  <p>Error handling out of the way, the next thing that will annoy us is data
+     extractions. In XML everything is text. While our <code>id</code> value
+     is an integer, XML stores it as text and the low-level API returns it to
+     us as text. To help with this the parser provides the following data
+     extraction functions:</p>
+
+  <pre class="c++">
+class parser
+{
+  template &lt;typename T>
+  T value () const;
+
+  template &lt;typename T>
+  T attribute (const std::string&amp; name) const;
+
+  template &lt;typename T>
+  T attribute (const std::string&amp; name,
+               const T&amp; default_value) const;
+};
+  </pre>
+
+  <p>Now we can get the <code>id</code> as an integer without much fuss:</p>
+
+  <pre class="c++">
+p.next_expect (parser::start_element, "object");
+
+unsigned int id = p.attribute&lt;unsigned int> ("id");
+
+...
+
+p.next_expect (parser::end_element); // object
+  </pre>
+
+  <p>Ok, let's try to parse our vocabulary a bit further:</p>
+
+  <pre class="c++">
+p.next_expect (parser::start_element, "object");
+unsigned int id = p.attribute&lt;unsigned int> ("id");
+
+p.next_expect (parser::start_element, "name");
+
+...
+
+p.next_expect (parser::end_element); // name
+
+p.next_expect (parser::end_element); // object
+  </pre>
+
+  <p>Here is the part of the document that we are parsing:</p>
+
+  <pre class="xml">
+&lt;object id="123">
+  &lt;name>Lion's Head&lt;/name>
+  </pre>
+
+  <p>What do you think, is everything alright with our code? When we
+     try to parse our document, we will get an exception here:</p>
+
+  <pre class="c++">
+p.next_expect (parser::start_element, "name");
+  </pre>
+
+  <p>Any idea why? Let's try to print the event that we get:</p>
+
+  <pre class="c++">
+// p.next_expect (parser::start_element, "name");
+cerr &lt;&lt; p.next () &lt;&lt; endl;
+  </pre>
+
+  <p>We expect <code>start_element</code> but get <code>characters</code>!
+     Wait a minute, but there are characters after <code>object</code> and
+     before <code>name</code>. There is a newline and two spaces that are
+     replaced with hashes for illustration here:</p>
+
+  <pre class="xml">
+&lt;object id="123">#
+##&lt;name>Lion's Head&lt;/name>
+  </pre>
+
+  <p>If you go to a forum or a mailing list for any XML parser, this will
+     be the most common question. Why do I get text when I should clearly
+     get an element!?</p>
+
+  <p>The reason why we get this whitespace text is because the parser has no
+     idea whether it is significant or not. The significance of whitespaces is
+     determined by the XML content model that we talked about earlier. Here is
+     the table:</p>
+
+  <pre class="c++">
+#include &lt;xml/content>
+
+namespace xml
+{
+  enum class content
+  {          //  element   characters  whitespaces
+    empty,   //    no          no        ignored
+    simple,  //    no          yes       preserved
+    complex, //    yes         no        ignored
+    mixed    //    yes         yes       preserved
+  };
+}
+  </pre>
+
+  <p>In empty content neither nested elements nor characters are allowed with
+     whitespaces ignored. Simple content allows no nested elements with
+     whitespaces preserved. Complex content allows nested elements only with
+     whitespaces which are ignored. Finally, the mixed content allows anything
+     in any order with everything preserved.</p>
+
+  <p>If we specify the content model for an element, then the parser
+     will do automatic whitespace processing for us:</p>
+
+  <pre class="c++">
+class parser
+{
+  void content (content);
+};
+  </pre>
+
+  <p>That is, in empty and complex content, whitespaces will be silently
+     ignored. By knowing the content model, the parser also has a chance to do
+     more error handling for us. It will automatically throw appropriate
+     exceptions if there are nested elements in empty or simple content or
+     non-whitespace characters in complex content.</p>
+
+  <p>Ok, let's now see how we can take advantage of this feature in
+     our code:</p>
+
+  <pre class="c++">
+p.next_expect (parser::start_element, "object");
+p.content (content::complex);
+
+unsigned int id = p.attribute&lt;unsigned int> ("id");
+
+p.next_expect (parser::start_element, "name"); // Ok.
+
+...
+
+p.next_expect (parser::end_element); // name
+
+p.next_expect (parser::end_element); // object
+  </pre>
+
+  <p>Now whitespaces are ignored and everything works as we expected.
+     Here is how we can parse the content of the <code>name</code>
+     element:</p>
+
+  <pre class="c++">
+p.next_expect (parser::start_element, "name");
+p.content (content::simple);
+
+p.next_expect (parser::characters);
+string name = p.value ();
+
+p.next_expect (parser::end_element); // name
+  </pre>
+
+  <p>As you can see, parsing a simple content element is quite a bit more
+     involved compared to getting a value of an attribute. Element markup also
+     has a higher overhead in the resulting XML. That's why in our case it would
+     have been wiser to make <code>name</code> and <code>type</code>
+     attributes.</p>
+
+  <p>But if we are stuck with a lot of simple content elements, then
+     the parser provides the following helper functions:</p>
+
+  <pre class="c++">
+class parser
+{
+  std::string element ();
+
+  template &lt;typename T>
+  T element ();
+
+  std::string element (const std::string&amp; name);
+
+  template &lt;typename T>
+  T element (const std::string&amp; name);
+
+  std::string element (const std::string&amp; name,
+                       const std::string&amp; default_value);
+
+  template &lt;typename T>
+  T element (const std::string&amp; name,
+             const T&amp; default_value);
+};
+  </pre>
+
+  <p>The first two assume that you have already handled the
+     <code>start_element</code> event. They should be used if the element also
+     has attributes. The other four parse the complete element. Overloaded
+     <code>qname</code> versions are also provided.</p>
+
+  <p>Here is how we can simplify our parsing code thanks to these
+     functions:</p>
+
+  <pre class="c++">
+p.next_expect (parser::start_element, "object");
+p.content (content::complex);
+
+unsigned int id = p.attribute&lt;unsigned int> ("id");
+string name = p.element ("name");
+
+p.next_expect (parser::end_element); // object
+  </pre>
+
+  <p>For the <code>type</code> element we would like to use this <code>enum
+     class</code>:</p>
+
+  <pre class="c++">
+enum class object_type
+{
+  building,
+  mountain,
+  ...
+};
+  </pre>
+
+  <p>The parsing code is similar to the <code>name</code> element. Now
+     we use the data extracting version of the <code>element()</code>
+     function:</p>
+
+  <pre class="c++">
+object_type type = p.element&lt;object_type> ("type");
+  </pre>
+
+  <p>Except that this won't compile. The parser doesn't know how to
+     convert the text representation to our <code>enum.</code> By
+     default the parser will try to use the <code>iostream</code>
+     extraction operator but we haven't provided any.</p>
+
+  <p>We can provide conversion code specifically for XML by specializing
+     the <code>value_traits</code> class template:</p>
+
+  <pre class="c++">
+namespace xml
+{
+  template &lt;>
+  struct value_traits&lt;object_type>
+  {
+    static object_type
+    parse (std::string, const parser&amp;)
+    {
+      ...
+    }
+
+    static std::string
+    serialize (object_type, const serializer&amp;)
+    {
+      ...
+    }
+  };
+}
+  </pre>
+
+  <p>The last bit that we need to handle is the <code>position</code>
+     elements. The interesting part here is how to stop without going
+     too far since there can be several of them. To help with this task
+     the parser allows us to peek into the next event:</p>
+
+  <pre class="c++">
+p.next_expect (parser::start_element, "object");
+p.content (content::complex);
+...
+
+do
+{
+  p.next_expect (parser::start_element, "position");
+  p.content (content::empty);
+
+  float lat = p.attribute&lt;float> ("lat");
+  float lon = p.attribute&lt;float> ("lon");
+
+  p.next_expect (parser::end_element);
+
+} while (p.peek () == parser::start_element);
+
+p.next_expect (parser::end_element); // object
+  </pre>
+
+  <p>Do you see anything else that we can improve? Actually, there is
+     one thing. Look at the <code>next_expect()</code> calls in the
+     above code. They are both immediately followed by the setting
+     of the content model. We can tidy this up a bit by passing the
+     content model as a third argument to <code>next_expect()</code>.
+     This even reads like prose: "Next we expect the start of an
+     element called <code>position</code> that shall have empty
+     content."</p>
+
+  <p>Here is the complete, production-quality parsing code for our XML
+     vocabulary. 13 lines. With validation and everything:</p>
+
+  <pre class="c++">
+parser p (ifs, argv[1]);
+
+p.next_expect (parser::start_element, "object", content::complex);
+
+unsigned int id = p.attribute&lt;unsigned int> ("id");
+string name = p.element ("name");
+object_type type = p.element&lt;object_type> ("type");
+
+do
+{
+  p.next_expect (parser::start_element, "position", content::empty);
+
+  float lat = p.attribute&lt;float> ("lat");
+  float lon = p.attribute&lt;float> ("lon");
+
+  p.next_expect (parser::end_element); // position
+} while (p.peek () == parser::start_element)
+
+p.next_expect (parser::end_element); // object
+  </pre>
+
+  <p>So that was the high-level parsing API. Let's now catch up with the
+     corresponding additions to the serializer.</p>
+
+  <p>Similar to parsing, calling <code>start_attribute()</code>,
+     <code>characters()</code>, and then <code>end_attribute()</code>
+     might not be convenient. Instead we can add an attribute with
+     a single call:</p>
+
+  <pre class="c++">
+class serializer
+{
+  void attribute (const std::string&amp; name,
+                  const std::string&amp; value);
+
+  void element (const std::string&amp; value);
+
+  void element (const std::string&amp; name,
+                const std::string&amp; value);
+};
+  </pre>
+
+  <p>The same works for elements with simple content. The first version finishes
+     the element that we have started, while the second writes the complete
+     element. There are also the <code>qname</code> versions of these
+     functions that are not shown.</p>
+
+  <p>Instead of strings we can also serialize value types. This uses the
+     same <code>value_traits</code> specialization mechanism that we have
+     used for parsing:</p>
+
+  <pre class="c++">
+class serializer
+{
+  template &lt;typename T>
+  void attribute (const std::string&amp; name,
+                  const T&amp; value);
+
+  template &lt;typename T>
+  void element (const T&amp; value);
+
+  template &lt;typename T>
+  void element (const std::string&amp; name,
+                const T&amp; value);
+
+  template &lt;typename T>
+  void characters (const T&amp; value);
+};
+  </pre>
+
+  <p>Let's now see now how we can serialize a complete sample document for
+     our object position vocabulary using this high-level API:</p>
+
+  <pre class="c++">
+serializer s (cout, "output");
+
+s.start_element ("object");
+
+s.attribute ("id", 123);
+s.element ("name", "Lion's Head");
+s.element ("type", object_type::mountain);
+
+for (...)
+{
+  s.start_element ("position");
+
+  float lat (...), lon (...);
+
+  s.attribute ("lat", lat);
+  s.attribute ("lon", lon);
+
+  s.end_element (); // position
+}
+
+s.end_element (); // object
+  </pre>
+
+  <p>Pretty straightforward stuff.</p>
+
+  <h1><a name="4">Object Persistence</a></h1>
+
+  <p>So far we have used our API to first implement a filter that doesn't
+     really care about the data and then an application that processes the
+     data without creating any kind of object model. Let's now try to handle
+     the other end of the spectrum: objects that know how to persist
+     themselves into XML (see the <code>persistence</code> example in
+     the <code>libstudxml</code> distribution).</p>
+
+  <p>But before we continue, let's fix our XML to be slightly more idiomatic.
+     That is we make <code>name</code> and <code>type</code> to be attributes
+     rather than elements:</p>
+
+  <pre class="xml">
+&lt;object name="Lion's Head" type="mountain" id="123">
+  &lt;position lat="-33.8569" lon="18.5083"/>
+  &lt;position lat="-33.8568" lon="18.5083"/>
+  &lt;position lat="-33.8568" lon="18.5082"/>
+&lt;/object>
+  </pre>
+
+  <p>Generally, the API works best with idiomatic XML and will nudge you
+     gently in that direction with minor inconveniences.</p>
+
+  <p>For this vocabulary, the object model might look like this:</p>
+
+  <pre class="c++">
+enum class object_type {...};
+
+class position
+{
+  ...
+
+  float lat_;
+  float lon_;
+};
+
+class object
+{
+  ...
+
+  std::string name_;
+  object_type type_;
+  unsigned int id_;
+  std::vector&lt;position> positions_;
+};
+  </pre>
+
+  <p>Here I omit sensible constructors, accessors and modifiers that our
+     classes would probably have.</p>
+
+  <p>Let me also mention that what I am going to show next is what I
+     believe is the sensible structure for XML persistence using this
+     API. But that doesn't mean it is the only way. For example, we
+     are going to do parsing in a constructor:</p>
+
+  <pre class="c++">
+class position
+{
+  position (xml::parser&amp;);
+
+  void
+  serialize (xml::serializer&amp;) const;
+
+  ...
+};
+
+class object
+{
+  object (xml::parser&amp;);
+
+  void
+  serialize (xml::serializer&amp;) const;
+
+  ...
+};
+  </pre>
+
+  <p>But you may prefer to first create an instance, say with the default
+     constructor, and then have a separate function do the parsing.
+     There is nothing wrong with this approach.</p>
+
+  <p>Let's start with the <code>position</code> constructor. Here, we are
+     immediately confronted with this choice: do we parse the start and end
+     element events in position or expect our caller to handle them.</p>
+
+  <p>I suggest that we let our caller do this. We may have different elements
+     in our vocabulary that use the same <code>position</code> type. If we
+     assume the element name in the constructor, then we won't be able to use
+     the same class for all these elements. We will see the second advantage
+     of this arrangement in a moment, when we deal with inheritance. But, if
+     you have a simple model with one-to-one mapping between types and
+     elements and no inheritance, then there is nothing wrong with going the
+     other route.</p>
+
+  <pre class="c++">
+position::
+position (parser&amp; p)
+  : lat_ (p.attribute&lt;float> ("lat")),
+    lon_ (p.attribute&lt;float> ("lon"))
+{
+  p.content (content::empty);
+}
+  </pre>
+
+  <p>Ok, nice and clean so far. Let's look at the <code>object</code>
+     constructor:</p>
+
+  <pre class="c++">
+object::
+object (parser&amp; p)
+  : name_ (p.attribute ("name")),
+    type_ (p.attribute&lt;object_type> ("type")),
+    id_ (p.attribute&lt;unsigned int> ("id"))
+{
+  p.content (content::complex);
+
+  do
+  {
+    p.next_expect (parser::start_element, "position");
+    positions_.push_back (position (p));
+    p.next_expect (parser::end_element);
+
+  } while (p.peek () == parser::start_element);
+}
+  </pre>
+
+  <p>The only mildly interesting line here is where we call the position
+     constructor to parse the content of the nested elements.</p>
+
+  <p>Before we look into serialization, let me also mention one other
+     thing. In our vocabulary all the attributes are required but it is
+     quite common to have optional attributes. The API functions with
+     default values make it really convenient to handle such attributes
+     in the initializer lists.</p>
+
+  <p>Let's say the <code>type</code> attribute is optional. Then we
+     could do this:</p>
+
+  <pre class="c++">
+object::
+object (parser&amp; p)
+  : ...
+    type_ (p.attribute ("type", object_type::other))
+    ...
+  </pre>
+
+  <p>We use the same arrangement for serialization, that is, the
+    containing object starts and ends the element allowing us to
+    reuse the same type for different elements:</p>
+
+  <pre class="c++">
+void position::serialize (serializer&amp; s) const
+{
+  s.attribute ("lat", lat_);
+  s.attribute ("lon", lon_);
+}
+
+void object::serialize (serializer&amp; s) const
+{
+  s.attribute ("name", name_);
+  s.attribute ("type", type_);
+  s.attribute ("id", id_);
+
+  for (const auto&amp; p: positions_)
+  {
+    s.start_element ("position");
+    p.serialize (s);
+    s.end_element ();
+  }
+}
+  </pre>
+
+  <p>Ok, also nice and tidy.</p>
+
+  There is one thing, however, that is not so nice: the start of
+  the parser or serializer. Here is the code:</p>
+
+  <pre class="c++">
+parser p (ifs, argv[1]);
+p.next_expect (parser::start_element, "object");
+object o (p);
+p.next_expect (parser::end_element);
+
+serializer s (cout, "output");
+s.start_element ("object");
+o.serialize (s);
+s.end_element ();
+  </pre>
+
+  <p>Remember, we made the caller responsible for handling the start and
+    end of the element. This works beautifully inside the object model but
+    not so much in the client code. What we would like to see instead
+    is this:</p>
+
+  <pre class="c++">
+parser p (ifs, argv[1]);
+object o (p);
+
+serializer s (cout, "output");
+o.serialize (s);
+  </pre>
+
+  <p>The main reason for choosing this structure was the ability to reuse the
+     same type for different elements. The other reason was inheritance which
+     we haven't gotten to yet. If we think about it, it is very unlikely for a
+     class corresponding to the root of our vocabulary to also be used inside
+     as a local element. I can't remember ever seeing a vocabulary like
+     this.</p>
+
+  <p>So what we can do here is make an exception: the root type of our
+     object model handles the top-level element. Here is the parser:</p>
+
+  <pre class="c++">
+object::
+object (parser&amp; p)
+{
+  p.next_expect (
+    parser::start_element, "object", content::complex);
+
+  name_ = p.attribute ("name");
+  type_ = p.attribute&lt;object_type> ("type");
+  id_ = p.attribute&lt;unsigned int> ("id");
+
+  ...
+
+  p.next_expect (parser::end_element);
+}
+  </pre>
+
+  <p>And here is the serializer:</p>
+
+  <pre class="c++">
+void object::
+serialize (serializer&amp; s) const
+{
+  s.start_element ("object");
+
+  ...
+
+  s.end_element ();
+}
+  </pre>
+
+  <p>The only minor drawback of going this route is that we can no longer
+     parse attributes in the initializer list for the root object.</p>
+
+  <h1><a name="5">Inheritance</a></h1>
+
+  <p>So far we have had a smooth sailing with the streaming approach but things get
+     a bit bumpy once we start dealing with inheritance. This is normally
+     where the in-memory approach has its day.</p>
+
+  <p>Say we have <code>elevated-object</code> which adds the
+     <code>units</code> attribute and the <code>elevation</code> elements.
+     Here is the XML:</p>
+
+  <pre class="xml">
+&lt;elevated-object name="Lion's Head" type="mountain"
+                 units="m" id="123">
+  &lt;position lat="-33.8569" lon="18.5083"/>
+  &lt;position lat="-33.8568" lon="18.5083"/>
+  &lt;position lat="-33.8568" lon="18.5082"/>
+
+  &lt;elevation val="668.9"/>
+  &lt;elevation val="669"/>
+  &lt;elevation val="669.1"/>
+&lt;/elevated-object>
+  </pre>
+
+  <p>And here is the object model:</p>
+
+  <pre class="c++">
+enum class units {...};
+
+class elevation {...};
+
+class elevated_object: public object
+{
+  ...
+
+  units units_;
+  std::vector&lt;elevation> elevations_;
+};
+  </pre>
+
+  <p>Streaming assumes linearity. We start an element, add some attributes,
+     add some nested elements, and end the element.  In contrast, with an
+     in-memory approach we can add some attributes, then add some nested
+     elements, then go back and add more attributes. This kind of back and
+     forth is exactly what inheritance often requires. So this is a bit of
+     problem for us.</p>
+
+  <p>Consider the <code>elevated_object</code> constructor:</p>
+
+  <pre class="c++">
+elevated_object::
+elevated_object (parser&amp; p)
+  : object (p),
+    units_ (p.attribute&lt;units> ("units"))
+{
+  do
+  {
+    p.next_expect (parser::start_element, "elevation");
+    elevations_.push_back (elevation (p));
+    p.next_expect (parser::end_element);
+
+  } while (p.peek () == parser::start_element &amp;&amp;
+           p.name () == "elevation")
+}
+  </pre>
+
+  <p>Note that here I assume we went back to our original architecture
+     where the caller handles the start and end of the element (this is
+     the other advantage of this architecture: it allows us to reuse
+     base parsing and serialization code in derived classes).</p>
+
+  <p>So we would like to reuse the parsing code from <code>object</code>
+     so we call the base constructor first.</p>
+
+  <p>Then we parse the derived attribute and elements. Do you see
+     the problem? The <code>object</code> constructor will parse its
+     attributes and then move on to nested elements. When this constructor
+     returns, we need to go back to parsing attributes! This is not
+     something that a streaming approach would normally allow.</p>
+
+  <p>To resolve this, the lifetime of the attribute map was extended until
+     after the <code>end_element</code> event. That is, we can access
+     attributes any time we are at the element's level. As a result,
+     the above code just works.</p>
+
+  <p>We have the same problem in serialization. Let's say we write
+     the straightforward code like this:</p>
+
+  <pre class="c++">
+void elevated_object::
+serialize (serializer&amp; s) const
+{
+  object::serialize (s);
+
+  s.attribute ("units", units_);
+
+  for (const auto&amp; e: elevations_)
+  {
+    s.start_element ("elevation");
+    e.serialize (s);
+    s.end_element ();
+  }
+}
+  </pre>
+
+  <p>This is not going to work since we will try to add the <code>units</code>
+     attribute after the nested <code>position</code> elements have already
+     been written.</p>
+
+  <p>To handle inheritance in serialization we have to split the
+     <code>serialize()</code> function into two. One serializes
+     the attributes while the other &mdash; content:</p>
+
+  <pre class="c++">
+void object::
+serialize_attributes (serializer&amp; s) const
+{
+  s.attribute ("name", name_);
+  s.attribute ("type", type_);
+  s.attribute ("id", id_);
+}
+
+void object::
+serialize_content (serializer&amp; s) const
+{
+  for (const auto&amp; p: positions_)
+  {
+    s.start_element ("position");
+    p.serialize (s);
+    s.end_element ();
+  }
+}
+  </pre>
+
+  <p>The <code>serialize()</code> function then simply calls these two
+     in the correct order.</p>
+
+  <pre class="c++">
+void object::
+serialize (serializer&amp; s) const
+{
+  serialize_attributes (s);
+  serialize_content (s);
+}
+  </pre>
+
+  <p>I bet you can guess what the <code>elevated_object</code>'s
+     implementation looks like:</p>
+
+  <pre class="c++">
+void elevated_object::
+serialize_attributes (serializer&amp; s) const
+{
+  object::serialize_attributes (s);
+  s.attribute ("units", units_);
+}
+
+void elevated_object::
+serialize_content (serializer&amp; s) const
+{
+  object::serialize_content (s);
+
+  for (const auto&amp; e: elevations_)
+  {
+    s.start_element ("elevation");
+    e.serialize (s);
+    s.end_element ();
+  }
+}
+  </pre>
+
+  <p>The <code>serialize()</code> function for <code>elevated_object</code>
+     is exactly the same:</p>
+
+  <pre class="c++">
+void elevated_object::
+serialize (serializer&amp; s) const
+{
+  serialize_attributes (s);
+  serialize_content (s);
+}
+  </pre>
+
+  <h1><a name="6">Implementation Notes</a></h1>
+
+  <p><code>libstudxml</code>is an open source (MIT license), portable
+     (autotools and VC++ projects provided), and external dependency-free
+     implementation.</p>
+
+  <p>It provides a conforming, non-validating XML 1.0 parser by using
+     the mature and tested Expat XML parser. <code>libstudxml</code>
+     includes the Expat source code (also distributed under the MIT
+     license) as an implementation detail. However, you can link to
+     an external Expat library if you prefer.</p>
+
+  <p>If you are familiar with Expat, you are probably wondering how
+     the push interface provided by Expat was adapted to the pull
+     API shown earlier. Expat allows us to suspend and resume parsing
+     after every event and that's exactly what this implementation
+     does. The performance cost of this constant suspension and
+     resumption is about 35% of Expat's performance, which is not
+     negligible but not the end of the world either.</p>
+
+  <p>All in, with all the name splitting and string constructions,
+     parsing throughput on a 2010 Intel Core i7 laptop is about
+     37 MByte/sec, which should be sufficient for most applications.</p>
+
+  <p>While it is much easier to implement a conforming serializer
+     from scratch, <code>libstudxml</code> reuses an existing and
+     tested implementation in this case as well. It includes source
+     code of a small C library for XML serialization called Genx
+     (also MIT licensed) that was initially created by Tim Bray
+     and significantly improved and extended over the past years
+     as part of the XSD/e project.</p>
+
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,2 @@
+This example shows how to define a simple C++-embedded domain-specific
+language (EDSL) for a particular XML vocabulary, XHTML5 in this case.

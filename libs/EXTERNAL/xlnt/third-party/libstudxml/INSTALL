@@ -1,0 +1,6 @@
+The easiest way to build this package is with the bpkg package manager:
+
+$ bpkg build libstudxml
+
+But if you don't want to use the package manager, then you can also build it
+manually using the standard build2 build system.

@@ -1,0 +1,3 @@
+This example shows how to implement XML persistence for C++ classes that use
+inheritance. For the simple case without inheritance see the 'persistence'
+example.

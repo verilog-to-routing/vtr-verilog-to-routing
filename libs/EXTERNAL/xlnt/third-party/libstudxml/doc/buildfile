@@ -1,0 +1,12 @@
+# file      : doc/buildfile
+# license   : MIT; see accompanying LICENSE file
+
+define css: file
+
+css{*}:
+{
+  extension = css
+  install = doc/
+}
+
+./: doc{intro.xhtml} css{default}
