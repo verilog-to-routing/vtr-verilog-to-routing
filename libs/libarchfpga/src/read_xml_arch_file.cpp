@@ -401,7 +401,7 @@ void xml_read_arch(const char* ArchFile,
                    t_arch* arch,
                    std::vector<t_physical_tile_type>& PhysicalTileTypes,
                    std::vector<t_logical_block_type>& LogicalBlockTypes) {
-    pugi::xml_node Next;
+    pugi::xml_node next;
     ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
     if (!vtr::check_file_name_extension(ArchFile, ".xml")) {
@@ -437,79 +437,79 @@ void xml_read_arch(const char* ArchFile,
         }
 #endif
 
-        /* Process models */
-        Next = get_single_child(architecture, "models", loc_data);
-        process_models(Next, arch, loc_data);
+        // Process models
+        next = get_single_child(architecture, "models", loc_data);
+        process_models(next, arch, loc_data);
 
-        /* Process layout */
+        // Process layout
         int num_of_avail_layers = 0;
-        Next = get_single_child(architecture, "layout", loc_data);
-        process_layout(Next, arch, loc_data, num_of_avail_layers);
+        next = get_single_child(architecture, "layout", loc_data);
+        process_layout(next, arch, loc_data, num_of_avail_layers);
 
         // Precess vib_layout
-        Next = get_single_child(architecture, "vib_layout", loc_data, ReqOpt::OPTIONAL);
-        if (Next) {
-            process_vib_layout(Next, arch, loc_data);
+        next = get_single_child(architecture, "vib_layout", loc_data, ReqOpt::OPTIONAL);
+        if (next) {
+            process_vib_layout(next, arch, loc_data);
         }
 
-        /* Process device */
-        Next = get_single_child(architecture, "device", loc_data);
-        process_device(Next, arch, arch_def_fc, loc_data);
+        // Process device
+        next = get_single_child(architecture, "device", loc_data);
+        process_device(next, arch, arch_def_fc, loc_data);
 
-        /* Process switches */
-        Next = get_single_child(architecture, "switchlist", loc_data);
-        arch->switches = process_switches(Next, timing_enabled, loc_data);
+        // Process switches
+        next = get_single_child(architecture, "switchlist", loc_data);
+        arch->switches = process_switches(next, timing_enabled, loc_data);
 
         // Process switchblocks. This depends on switches
         bool switchblocklist_required = (arch->sb_type == e_switch_block_type::CUSTOM); // require this section only if custom switchblocks are used
         SWITCHBLOCKLIST_REQD = BoolToReqOpt(switchblocklist_required);
 
-        /* Process segments. This depends on switches */
-        Next = get_single_child(architecture, "segmentlist", loc_data);
-        arch->Segments = process_segments(Next, arch->switches, num_of_avail_layers, timing_enabled, switchblocklist_required, loc_data);
+        // Process segments. This depends on switches
+        next = get_single_child(architecture, "segmentlist", loc_data);
+        arch->Segments = process_segments(next, arch->switches, num_of_avail_layers, timing_enabled, switchblocklist_required, loc_data);
 
-        Next = get_single_child(architecture, "switchblocklist", loc_data, SWITCHBLOCKLIST_REQD);
-        if (Next) {
-            process_switch_blocks(Next, arch, loc_data);
+        next = get_single_child(architecture, "switchblocklist", loc_data, SWITCHBLOCKLIST_REQD);
+        if (next) {
+            process_switch_blocks(next, arch, loc_data);
         }
 
-        /* Process logical block types */
-        Next = get_single_child(architecture, "complexblocklist", loc_data);
-        process_complex_blocks(Next, LogicalBlockTypes, *arch, timing_enabled, loc_data);
+        // Process logical block types
+        next = get_single_child(architecture, "complexblocklist", loc_data);
+        process_complex_blocks(next, LogicalBlockTypes, *arch, timing_enabled, loc_data);
 
-        /* Process logical block types */
-        Next = get_single_child(architecture, "tiles", loc_data);
-        process_tiles(Next, PhysicalTileTypes, LogicalBlockTypes, arch_def_fc, *arch, loc_data, num_of_avail_layers);
+        // Process logical block types
+        next = get_single_child(architecture, "tiles", loc_data);
+        process_tiles(next, PhysicalTileTypes, LogicalBlockTypes, arch_def_fc, *arch, loc_data, num_of_avail_layers);
 
-        /* Link Physical Tiles with Logical Blocks */
+        // Link Physical Tiles with Logical Blocks
         link_physical_logical_types(PhysicalTileTypes, LogicalBlockTypes);
 
-        /* Process directs */
-        Next = get_single_child(architecture, "directlist", loc_data, ReqOpt::OPTIONAL);
-        if (Next) {
-            arch->directs = process_directs(Next, arch->switches, loc_data);
+        // Process directs
+        next = get_single_child(architecture, "directlist", loc_data, ReqOpt::OPTIONAL);
+        if (next) {
+            arch->directs = process_directs(next, arch->switches, loc_data);
         }
 
         // Process vib_arch
-        Next = get_single_child(architecture, "vib_arch", loc_data, ReqOpt::OPTIONAL);
-        if (Next) {
-            process_vib_arch(Next, arch, loc_data);
+        next = get_single_child(architecture, "vib_arch", loc_data, ReqOpt::OPTIONAL);
+        if (next) {
+            process_vib_arch(next, arch, loc_data);
         }
 
         // Process Clock Networks
-        Next = get_single_child(architecture, "clocknetworks", loc_data, ReqOpt::OPTIONAL);
-        if (Next) {
+        next = get_single_child(architecture, "clocknetworks", loc_data, ReqOpt::OPTIONAL);
+        if (next) {
             std::vector<std::string> expected_children = {"metal_layers", "clock_network", "clock_routing"};
-            expect_only_children(Next, expected_children, loc_data);
+            expect_only_children(next, expected_children, loc_data);
 
-            process_clock_metal_layers(Next, arch->clock_arch.clock_metal_layers, loc_data);
+            process_clock_metal_layers(next, arch->clock_arch.clock_metal_layers, loc_data);
 
-            process_clock_networks(Next,
+            process_clock_networks(next,
                                    arch->clock_arch.clock_networks_arch,
                                    arch->switches,
                                    loc_data);
 
-            process_clock_routing(Next,
+            process_clock_routing(next,
                                   arch->clock_arch.clock_connections_arch,
                                   arch->switches,
                                   loc_data);
@@ -525,40 +525,40 @@ void xml_read_arch(const char* ArchFile,
             POWER_REQD = ReqOpt::OPTIONAL;
         }
 
-        Next = get_single_child(architecture, "power", loc_data, POWER_REQD);
-        if (Next) {
+        next = get_single_child(architecture, "power", loc_data, POWER_REQD);
+        if (next) {
             if (arch->power) {
-                process_power(Next, arch->power, loc_data);
+                process_power(next, arch->power, loc_data);
             } else {
                 // This information still needs to be read, even if it is just thrown away.
                 t_power_arch* power_arch_fake = new t_power_arch();
-                process_power(Next, power_arch_fake, loc_data);
+                process_power(next, power_arch_fake, loc_data);
                 delete power_arch_fake;
             }
         }
 
         // Process Clocks
-        Next = get_single_child(architecture, "clocks", loc_data, POWER_REQD);
-        if (Next) {
+        next = get_single_child(architecture, "clocks", loc_data, POWER_REQD);
+        if (next) {
             if (arch->clocks) {
-                process_clocks(Next, *arch->clocks, loc_data);
+                process_clocks(next, *arch->clocks, loc_data);
             } else {
                 // This information still needs to be read, even if it is just thrown away.
                 std::vector<t_clock_network> clocks_fake;
-                process_clocks(Next, clocks_fake, loc_data);
+                process_clocks(next, clocks_fake, loc_data);
             }
         }
 
         // process NoC (optional)
-        Next = get_single_child(architecture, "noc", loc_data, pugiutil::OPTIONAL);
-        if (Next) {
-            process_noc_tag(Next, arch, loc_data);
+        next = get_single_child(architecture, "noc", loc_data, pugiutil::OPTIONAL);
+        if (next) {
+            process_noc_tag(next, arch, loc_data);
         }
 
         // Process scatter-gather patterns (optional)
-        Next = get_single_child(architecture, "scatter_gather_list", loc_data, pugiutil::OPTIONAL);
-        if (Next) {
-            process_sg_tag(Next, arch, loc_data, arch->switches);
+        next = get_single_child(architecture, "scatter_gather_list", loc_data, pugiutil::OPTIONAL);
+        if (next) {
+            process_sg_tag(next, arch, loc_data, arch->switches);
         }
 
         SyncModelsPbTypes(arch, LogicalBlockTypes);
