@@ -262,13 +262,25 @@ static void process_mode(pugi::xml_node Parent,
                          int& parent_pb_idx);
 
 static void process_fc_values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Processes the <fc> XML node for a given sub-tile and initializes
+ *        the Fc specifications for its pins.
+ *
+ * This function parses default Fc values and any <fc_override> tags defined
+ * within the XML node, then applies them to all port/segment combinations
+ * of the specified sub-tile. If no <fc> node is present, it falls back to
+ * the architecture-wide default Fc specification. The resulting Fc settings
+ * are stored in the given physical tile type.
+ */
 static void process_fc(pugi::xml_node Node,
                        t_physical_tile_type* PhysicalTileType,
-                       t_sub_tile* SubTile,
+                       const t_sub_tile& sub_tile,
                        t_pin_counts pin_counts,
-                       std::vector<t_segment_inf>& segments,
+                       const std::vector<t_segment_inf>& segments,
                        const t_default_fc_spec& arch_def_fc,
                        const pugiutil::loc_data& loc_data);
+
 static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 
 /**
@@ -287,7 +299,8 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                                            const t_arch& arch,
                                            const pugiutil::loc_data& loc_data);
 
-static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
+static e_fc_value_type string_to_fc_value_type(std::string_view str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
+
 static void process_chan_width_distr(pugi::xml_node Node,
                                      t_arch* arch,
                                      const pugiutil::loc_data& loc_data);
@@ -1996,14 +2009,14 @@ static void process_mode(pugi::xml_node Parent,
 static void process_fc_values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data) {
     spec.specified = true;
 
-    /* Load the default fc_in */
+    // Load the default fc_in
     auto default_fc_in_attrib = get_attribute(Node, "in_type", loc_data);
     spec.in_value_type = string_to_fc_value_type(default_fc_in_attrib.value(), Node, loc_data);
 
     auto in_val_attrib = get_attribute(Node, "in_val", loc_data);
     spec.in_value = vtr::atof(in_val_attrib.value());
 
-    /* Load the default fc_out */
+    // Load the default fc_out
     auto default_fc_out_attrib = get_attribute(Node, "out_type", loc_data);
     spec.out_value_type = string_to_fc_value_type(default_fc_out_attrib.value(), Node, loc_data);
 
@@ -2011,27 +2024,25 @@ static void process_fc_values(pugi::xml_node Node, t_default_fc_spec& spec, cons
     spec.out_value = vtr::atof(out_val_attrib.value());
 }
 
-/* Takes in the node ptr for the 'fc' elements and initializes
- * the appropriate fields of type. */
 static void process_fc(pugi::xml_node Node,
                        t_physical_tile_type* PhysicalTileType,
-                       t_sub_tile* SubTile,
+                       const t_sub_tile& sub_tile,
                        t_pin_counts pin_counts,
-                       std::vector<t_segment_inf>& segments,
+                       const std::vector<t_segment_inf>& segments,
                        const t_default_fc_spec& arch_def_fc,
                        const pugiutil::loc_data& loc_data) {
     std::vector<t_fc_override> fc_overrides;
     t_default_fc_spec def_fc_spec;
     if (Node) {
-        /* Load the default Fc values from the node */
+        // Load the default Fc values from the node
         process_fc_values(Node, def_fc_spec, loc_data);
-        /* Load any <fc_override/> tags */
+        // Load any <fc_override/> tags
         for (auto child_node : Node.children()) {
             t_fc_override fc_override = process_fc_override(child_node, loc_data);
             fc_overrides.push_back(fc_override);
         }
     } else {
-        /* Use the default value, if available */
+        // Use the default value, if available
         if (!arch_def_fc.specified) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                            vtr::string_fmt("<sub_tile> is missing child <fc>, and no <default_fc> specified in architecture\n").c_str());
@@ -2042,12 +2053,12 @@ static void process_fc(pugi::xml_node Node,
     /* Go through all the port/segment combinations and create the (potentially
      * overriden) pin/seg Fc specifications */
     for (size_t iseg = 0; iseg < segments.size(); ++iseg) {
-        for (int icapacity = 0; icapacity < SubTile->capacity.total(); ++icapacity) {
+        for (int icapacity = 0; icapacity < sub_tile.capacity.total(); ++icapacity) {
             //If capacity > 0, we need t offset the block index by the number of pins per instance
             //this ensures that all pins have an Fc specification
             int iblk_pin = icapacity * pin_counts.total();
 
-            for (const auto& port : SubTile->ports) {
+            for (const t_physical_tile_port& port : sub_tile.ports) {
                 t_fc_specification fc_spec;
 
                 fc_spec.seg_index = iseg;
@@ -2110,7 +2121,7 @@ static void process_fc(pugi::xml_node Node,
                 for (int iport_pin = 0; iport_pin < port.num_pins; ++iport_pin) {
                     //XXX: this assumes that iterating through the tile ports
                     //     in order yields the block pin order
-                    int true_physical_blk_pin = SubTile->sub_tile_to_tile_pin_indices[iblk_pin];
+                    int true_physical_blk_pin = sub_tile.sub_tile_to_tile_pin_indices[iblk_pin];
                     fc_spec.pins.push_back(true_physical_blk_pin);
                     ++iblk_pin;
                 }
@@ -2124,7 +2135,7 @@ static void process_fc(pugi::xml_node Node,
 static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data) {
     if (node.name() != std::string("fc_override")) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
-                       vtr::string_fmt("Unexpeted node of type '%s' (expected optional 'fc_override')",
+                       vtr::string_fmt("Unexpected node of type '%s' (expected optional 'fc_override')",
                                        node.name())
                            .c_str());
     }
@@ -2137,21 +2148,22 @@ static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::lo
     bool seen_fc_value = false;
     bool seen_port_or_seg = false;
     for (auto attrib : node.attributes()) {
-        if (attrib.name() == std::string("port_name")) {
+        std::string_view attribute_name = attrib.name();
+        if (attribute_name == "port_name") {
             fc_override.port_name = attrib.value();
             seen_port_or_seg |= true;
-        } else if (attrib.name() == std::string("segment_name")) {
+        } else if (attribute_name == "segment_name") {
             fc_override.seg_name = attrib.value();
             seen_port_or_seg |= true;
-        } else if (attrib.name() == std::string("fc_type")) {
+        } else if (attribute_name == "fc_type") {
             fc_override.fc_value_type = string_to_fc_value_type(attrib.value(), node, loc_data);
             seen_fc_type = true;
-        } else if (attrib.name() == std::string("fc_val")) {
+        } else if (attribute_name == "fc_val") {
             fc_override.fc_value = vtr::atof(attrib.value());
             seen_fc_value = true;
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
-                           vtr::string_fmt("Unexpected attribute '%s'", attrib.name()).c_str());
+                           vtr::string_fmt("Unexpected attribute '%s'", attribute_name).c_str());
         }
     }
 
@@ -2173,7 +2185,7 @@ static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::lo
     return fc_override;
 }
 
-static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+static e_fc_value_type string_to_fc_value_type(std::string_view str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
     e_fc_value_type fc_value_type = e_fc_value_type::FRACTIONAL;
 
     if (str == "frac") {
@@ -2182,9 +2194,7 @@ static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml
         fc_value_type = e_fc_value_type::ABSOLUTE;
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
-                       vtr::string_fmt("Invalid fc_type '%s'. Must be 'abs' or 'frac'.\n",
-                                       str.c_str())
-                           .c_str());
+                       vtr::string_fmt("Invalid fc_type '%s'. Must be 'abs' or 'frac'.\n", str).c_str());
     }
 
     return fc_value_type;
@@ -3726,7 +3736,7 @@ static void process_sub_tiles(pugi::xml_node Node,
 
         /* Load Fc */
         Cur = get_single_child(CurSubTile, "fc", loc_data, ReqOpt::OPTIONAL);
-        process_fc(Cur, PhysicalTileType, &SubTile, pin_counts, segments, arch_def_fc, loc_data);
+        process_fc(Cur, PhysicalTileType, SubTile, pin_counts, segments, arch_def_fc, loc_data);
 
         //Load equivalent sites information
         Cur = get_single_child(CurSubTile, "equivalent_sites", loc_data, ReqOpt::REQUIRED);
