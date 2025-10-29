@@ -14,17 +14,20 @@ enum class e_scatter_gather_type {
 };
 
 /**
- * @brief Struct containing information of an <sg_location> tag. An <sg_location> tag instantiates the scatter-gather pattern in some switchblock locations around the device.
+ * @brief Struct containing information of an <sg_location> tag.
+ * An <sg_location> tag instantiates the scatter-gather pattern in some switchblock locations within the device.
+ * `region` is only valid if type == e_sb_location::E_XY_SPECIFIED.
  */
 struct t_sg_location {
     e_sb_location type;       ///< Type of locations that the pattern is instantiated at.
+    t_specified_loc region;   ///< Specification of the region where gather is applied
     int num;                  ///< Number of scatter-gather pattern instantiations per location.
     std::string sg_link_name; ///< Name of scatter-gather link to be used.
 };
 
 /**
- * @brief Struct containing information of a <sg_link> tag. This tag describes how and where the scatter (fanout) happens relative to the gather (fanin).
- * 
+ * @brief Struct containing information of a <sg_link> tag.
+ * This tag describes how and where the scatter (fanout) happens relative to the gather (fanin).
  */
 struct t_sg_link {
     std::string name;     ///< Name of the sg_link.

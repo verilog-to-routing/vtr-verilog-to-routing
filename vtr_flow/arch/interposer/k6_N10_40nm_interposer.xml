@@ -114,10 +114,16 @@
       <!--Fill with 'clb'-->
       <fill type="clb" priority="10"/>
 
-      <interposer_cut y="5">
-        <interdie_wire sg_name="interposer_sg" sg_link="L_UP" offset_start="0" offset_end="0" offset_increment="0" num="30"/>
-        <interdie_wire sg_name="interposer_sg" sg_link="L_DOWN" offset_start="0" offset_end="0" offset_increment="0" num="30"/>
+      <interposer_cut y="4">
+        <interdie_wire sg_name="interposer_sg" sg_link="L_UP" offset_start="-1" offset_end="-1" offset_increment="1" num="4"/>
+        <interdie_wire sg_name="interposer_sg" sg_link="L_DOWN" offset_start="1" offset_end="1" offset_increment="-1" num="4"/>
       </interposer_cut>
+
+      <interposer_cut x="4">
+        <interdie_wire sg_name="interposer_sg" sg_link="L_RIGHT" offset_start="-1" offset_end="-1" offset_increment="1" num="4"/>
+        <interdie_wire sg_name="interposer_sg" sg_link="L_LEFT" offset_start="1" offset_end="1" offset_increment="-1" num="4"/>
+      </interposer_cut>
+
     </fixed_layout>
   </layout>
   <!-- Chip layout ends -->
@@ -148,6 +154,7 @@
 	       We assume the first stage of the buffer is 3x min drive strength to be reasonable given the large 
 	       mux transistors, and this gives a reasonable stage ratio of a bit over 5x to the second stage. 
 	       -->
+    <switch type="mux" name="1" R="551" Cin=".77e-15" Cout="4e-15" Tdel="158e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
     <switch type="mux" name="0" R="551" Cin=".77e-15" Cout="4e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
     <!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
     <switch type="mux" name="ipin_cblock" R="2231.5" Cout="0." Cin="1.47e-15" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
@@ -168,10 +175,14 @@
          and changing the number of 1's (or 0's) in the <sb type and <cb type lines to
          match the number of switch blocks and connection blocks a wire of that length
          would span. -->
-    <segment freq="1.000000" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+    <segment name="L4" freq="1.000000" length="4" type="unidir" Rmetal="101" Cmetal="22.5e-15">
       <mux name="0"/>
       <sb type="pattern">1 1 1 1 1</sb>
       <cb type="pattern">1 1 1 1</cb>
+    </segment>
+
+    <segment name="int_wire" freq="0" length="2" type="unidir" Rmetal="101" Cmetal="22.5e-15">
+      <mux name="1"/>
     </segment>
   </segmentlist>
   <!-- Electrical and inter-cluster routing description ends -->
@@ -325,20 +336,22 @@
     <clock buffer_size="auto" C_wire="2.5e-10"/>
   </clocks>
 
-    <scatter_gather_list>
+  <scatter_gather_list>
     <sg_pattern name="interposer_sg" type="unidir">
-        <gather>
-            <wireconn num_conns="30" from_type="wire" from_switchpoint="1" side="rltb"/>
-        </gather>
+      <gather>
+        <wireconn num_conns="30" from_type="L4" from_switchpoint="0,1,2,3" side="rlbt"/>
+      </gather>
 
-        <scatter>
-            <wireconn num_conns="30" to_type="wire" to_switchpoint="0" side="rtl"/>
-        </scatter>
-        
-        <sg_link_list>
-          <sg_link name="L_UP" y_offset="1" mux="sw" seg_type="wire"/>
-          <sg_link name="L_DOWN" y_offset="-1" mux="sw" seg_type="wire"/>
-        </sg_link_list>
+      <scatter>
+        <wireconn num_conns="30" to_type="L4" to_switchpoint="0" side="rlbt"/>
+      </scatter>
+
+      <sg_link_list>
+        <sg_link name="L_UP" y_offset="2" mux="sw" seg_type="int_wire"/>
+        <sg_link name="L_DOWN" y_offset="-2" mux="sw" seg_type="int_wire"/>
+        <sg_link name="L_RIGHT" x_offset="2" mux="sw" seg_type="int_wire"/>
+        <sg_link name="L_LEFT" x_offset="-2" mux="sw" seg_type="int_wire"/>
+      </sg_link_list>
     </sg_pattern>
   </scatter_gather_list>
 </architecture>

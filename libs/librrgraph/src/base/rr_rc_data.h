@@ -10,4 +10,4 @@
  *
  * The returned indicies index into DeviceContext.rr_rc_data.
  */
-short find_create_rr_rc_data(const float R, const float C, std::vector<t_rr_rc_data>& rr_rc_data);
+NodeRCIndex find_create_rr_rc_data(const float R, const float C, std::vector<t_rr_rc_data>& rr_rc_data);

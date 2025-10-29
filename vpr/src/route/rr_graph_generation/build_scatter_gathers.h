@@ -33,6 +33,8 @@ struct t_bottleneck_link {
     t_physical_tile_loc scatter_loc; ///< Destination switchblock location.
     int arch_wire_switch;            ///< The switch (mux) used to drive the bottleneck wire.
     int parallel_segment_index;
+    float R_metal;
+    float C_metal;
     e_rr_type chan_type;
     std::vector<t_sg_candidate> gather_fanin_connections;   ///< Wires driving the bottleneck link at  `gather_loc`
     std::vector<t_sg_candidate> scatter_fanout_connections; ///< Wires driven by the bottleneck link at `scatter_loc`
@@ -66,3 +68,22 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          const t_chan_width& nodes_per_chan,
                                                                          vtr::RngContainer& rng,
                                                                          vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links);
+
+/**
+ * @brief Converts interposer cut definitions into scatter–gather (SG) specifications.
+ * @param interposer_inf  Interposer cut specifications for each layer.
+ * @param sg_patterns     SG pattern list to update with derived SG specifications.
+ */
+void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& interposer_inf,
+                                            std::vector<t_scatter_gather_pattern>& sg_patterns);
+
+/**
+* @brief Computes the channel type, direction, and coordinate span between two locations
+*        on the same layer. Used by SG link construction routines to determine geometry.
+*/
+void compute_non_3d_sg_link_geometry(const t_physical_tile_loc& src_loc,
+                                     const t_physical_tile_loc& dst_loc,
+                                     e_rr_type& chan_type,
+                                     int& xlow, int& xhigh,
+                                     int& ylow, int& yhigh,
+                                     Direction& direction);

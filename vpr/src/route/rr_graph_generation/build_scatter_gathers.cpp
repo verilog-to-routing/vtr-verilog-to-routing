@@ -192,7 +192,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
         for (const t_sg_location& sg_loc_info : sg_pattern.sg_locations) {
 
             for (const t_physical_tile_loc gather_loc : grid.all_locations()) {
-                if (sb_not_here(grid, inter_cluster_rr, gather_loc, sg_loc_info.type)) {
+                if (sb_not_here(grid, inter_cluster_rr, gather_loc, sg_loc_info.type, sg_loc_info.region)) {
                     continue;
                 }
 
@@ -306,6 +306,8 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
 
                     bottleneck_link.chan_type = chan_type;
                     bottleneck_link.parallel_segment_index = std::distance(segment_inf.begin(), seg_it);
+                    bottleneck_link.R_metal = seg_it->Rmetal;
+                    bottleneck_link.C_metal = seg_it->Cmetal;
 
                     if (is_3d_link) {
                         if (sg_link.z_offset < 0 && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL) {
@@ -329,4 +331,104 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
     }
 
     return bottleneck_links;
+}
+
+void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& interposer_inf,
+                                            std::vector<t_scatter_gather_pattern>& sg_patterns) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
+
+    const size_t num_layers = grid.get_num_layers();
+    const size_t grid_width = grid.width();
+    const size_t grid_height = grid.height();
+
+    VTR_ASSERT(interposer_inf.size() == num_layers);
+
+    // Step 1: Iterate over all layers in the device grid
+    for (size_t layer = 0; layer < num_layers; layer++) {
+
+        // Step 2: Process each interposer cut (vertical or horizontal) on this layer
+        for (const t_interposer_cut_inf& cut_inf : interposer_inf[layer].interposer_cuts) {
+            const int cut_loc = cut_inf.loc;
+            e_interposer_cut_type cut_type = cut_inf.dim;
+
+            // Step 3: For each inter-die wire defined at this cut, compute its SG region
+            for (const t_interdie_wire_inf& wire_inf : cut_inf.interdie_wires) {
+                VTR_ASSERT(wire_inf.offset_definition.repeat_expr.empty());
+
+                // Parse offset expressions and compute absolute start/end positions of the region
+                const int start = std::stoi(wire_inf.offset_definition.start_expr) + cut_loc;
+                const int end = std::stoi(wire_inf.offset_definition.end_expr) + cut_loc;
+                const int incr = std::stoi(wire_inf.offset_definition.incr_expr);
+
+                // Step 4: Find the corresponding SG pattern by name
+                auto sg_it = std::ranges::find_if(sg_patterns, [&wire_inf](const t_scatter_gather_pattern& sg) noexcept {
+                    return wire_inf.sg_name == sg.name;
+                });
+                // Must exist; SG pattern names must match between interposer XML and SG patterns
+                VTR_ASSERT(sg_it != sg_patterns.end());
+
+                // Step 5: Define the spatial region (X/Y span) for this SG link
+                t_specified_loc region;
+
+                // For vertical cuts, X varies along the cut; Y covers full height
+                region.reg_x.start = (cut_type == e_interposer_cut_type::VERT) ? start : 0;
+                region.reg_x.end = (cut_type == e_interposer_cut_type::VERT) ? end : grid_width - 1;
+                region.reg_x.incr = (cut_type == e_interposer_cut_type::VERT) ? incr : 1;
+                region.reg_x.repeat = std::numeric_limits<int>::max();
+
+                // For horizontal cuts, Y varies along the cut; X covers full width
+                region.reg_y.start = (cut_type == e_interposer_cut_type::HORZ) ? start : 0;
+                region.reg_y.end = (cut_type == e_interposer_cut_type::HORZ) ? end : grid_height - 1;
+                region.reg_y.incr = (cut_type == e_interposer_cut_type::HORZ) ? incr : 1;
+                region.reg_y.repeat = std::numeric_limits<int>::max();
+
+                // Step 6: Build an SG location entry describing where to instantiate links
+                t_sg_location sg_location{.type = e_sb_location::E_XY_SPECIFIED,
+                                          .region = region,
+                                          .num = wire_inf.num,
+                                          .sg_link_name = wire_inf.sg_link};
+
+                // Step 7: Append this region definition to the matched SG pattern
+                sg_it->sg_locations.push_back(std::move(sg_location));
+            }
+        }
+    }
+}
+
+void compute_non_3d_sg_link_geometry(const t_physical_tile_loc& src_loc,
+                                     const t_physical_tile_loc& dst_loc,
+                                     e_rr_type& chan_type,
+                                     int& xlow, int& xhigh,
+                                     int& ylow, int& yhigh,
+                                     Direction& direction) {
+    VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
+
+    if (dst_loc.x > src_loc.x) {
+        chan_type = e_rr_type::CHANX;
+        ylow = yhigh = dst_loc.y;
+        xlow = src_loc.x + 1;
+        xhigh = dst_loc.x;
+        direction = Direction::INC;
+    } else if (dst_loc.x < src_loc.x) {
+        chan_type = e_rr_type::CHANX;
+        ylow = yhigh = dst_loc.y;
+        xlow = dst_loc.x + 1;
+        xhigh = src_loc.x;
+        direction = Direction::DEC;
+    } else if (dst_loc.y > src_loc.y) {
+        chan_type = e_rr_type::CHANY;
+        xlow = xhigh = dst_loc.x;
+        ylow = src_loc.y + 1;
+        yhigh = dst_loc.y;
+        direction = Direction::INC;
+    } else if (dst_loc.y < src_loc.y) {
+        chan_type = e_rr_type::CHANY;
+        xlow = xhigh = dst_loc.x;
+        ylow = dst_loc.y + 1;
+        yhigh = src_loc.y;
+        direction = Direction::DEC;
+    } else {
+        VTR_ASSERT_MSG(false, "Source and destination locations cannot be identical");
+    }
 }

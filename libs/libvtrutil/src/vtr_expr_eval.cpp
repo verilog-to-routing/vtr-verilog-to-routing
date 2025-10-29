@@ -8,7 +8,8 @@
 
 /** global variables **/
 
-/** bp_state_globals is a variable that holds a member of type BreakpointState. This member is altered by the breakpoint class, the placer, and router and holds the most updated values for variables that can trigger breakpoints (e.g move_num, temp_num etc.) **/
+/// Holds a member of type BreakpointState.
+/// This member is altered by the breakpoint class, the placer, and router and holds the most updated values for variables that can trigger breakpoints (e.g move_num, temp_num etc.) **/
 BreakpointStateGlobals bp_state_globals;
 
 namespace vtr {

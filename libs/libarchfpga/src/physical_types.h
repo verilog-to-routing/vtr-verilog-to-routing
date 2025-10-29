@@ -2055,7 +2055,11 @@ struct t_arch {
     // The name of the switch used for the input connection block (i.e. to connect routing tracks to block pins).
     std::string ipin_cblock_switch_name;
 
-    std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+    /// Set of potential device layouts
+    std::vector<t_grid_def> grid_layouts;
+
+    /// @brief Returns the grid layout specified by the --device command-line option.
+    const t_grid_def& grid_layout() const;
 
     // the layout that is chosen to be used with command line options
     // It is used to generate custom SB for a specific locations within the device

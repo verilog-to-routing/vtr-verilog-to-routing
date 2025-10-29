@@ -556,7 +556,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     float C = rr_graph.node_C(rr_node);
     float R = rr_graph.node_R(rr_node);
 
-    if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
+    if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::CHANZ) {
         if (C < 0. || R < 0.) {
             VPR_ERROR(VPR_ERROR_ROUTE,
                       "in check_rr_node: node %d of type %d has R = %g and C = %g.\n", inode, rr_type, R, C);
