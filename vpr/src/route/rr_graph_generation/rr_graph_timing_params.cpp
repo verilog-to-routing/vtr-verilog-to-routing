@@ -174,7 +174,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
     Couts_to_add = new float[rr_graph.num_nodes()];
     for (size_t i = 0; i < rr_graph.num_nodes(); i++)
         Couts_to_add[i] = 0;
-    for (const RRNodeId& inode : rr_graph.nodes()) {
+    for (const RRNodeId inode : rr_graph.nodes()) {
         for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); iedge++) {
             switch_index = rr_graph.edge_switch(inode, iedge);
             to_node = size_t(rr_graph.edge_sink_node(inode, iedge));
@@ -187,13 +187,13 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
             }
         }
     }
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
         rr_node_C[(size_t)rr_id] += Couts_to_add[(size_t)rr_id];
     }
 
-    //Create the final flywieghted t_rr_rc_data
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id], mutable_device_ctx.rr_rc_data)));
+    // Create the final flywieghted t_rr_rc_data
+    for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
+        mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, find_create_rr_rc_data(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id], mutable_device_ctx.rr_rc_data));
     }
 
     delete[] Couts_to_add;

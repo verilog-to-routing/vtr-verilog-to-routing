@@ -66,9 +66,9 @@
 #include "draw_rr.h"
 /****************************** Define Macros *******************************/
 
-#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#define OLD_BLK_LOC_COLOR blk_GOLD
-#define NEW_BLK_LOC_COLOR blk_GREEN
+static constexpr ezgl::color DEFAULT_RR_NODE_COLOR = ezgl::BLACK;
+static constexpr ezgl::color OLD_BLK_LOC_COLOR = blk_GOLD;
+static constexpr ezgl::color NEW_BLK_LOC_COLOR = blk_GREEN;
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name);
@@ -180,13 +180,13 @@ static void draw_main_canvas(ezgl::renderer* g) {
     g->set_font_size(14);
     if (draw_state->pic_on_screen != e_pic_type::ANALYTICAL_PLACEMENT) {
         draw_block_pin_util();
-        drawplace(g);
+        draw_place(g);
         draw_internal_draw_subblk(g);
 
         draw_interposer_cuts(g);
 
         draw_block_pin_util();
-        drawplace(g);
+        draw_place(g);
         draw_internal_draw_subblk(g);
 
         if (draw_state->pic_on_screen == e_pic_type::ROUTING) { // ROUTING on screen
@@ -301,10 +301,11 @@ void update_screen(ScreenUpdatePriority priority,
 
     strcpy(draw_state->default_message, msg);
 
-    if (!draw_state->show_graphics)
+    if (!draw_state->show_graphics) {
         ezgl::set_disable_event_loop(true);
-    else
+    } else {
         ezgl::set_disable_event_loop(false);
+    }
 
     bool state_change = false;
 
@@ -462,9 +463,9 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     const DeviceGrid& grid = device_ctx.grid;
     const RRGraphView& rr_graph = device_ctx.rr_graph;
 
-    /* Store a reference to block location variables so that other drawing
-     * functions can access block location information without accessing
-     * the global placement state, which is inaccessible during placement.*/
+    // Store a reference to block location variables so that other drawing
+    // functions can access block location information without accessing
+    // the global placement state, which is inaccessible during placement.
     draw_state->set_graphics_blk_loc_registry_ref(blk_loc_registry);
 
     // do not initialize only if --disp off and --save_graphics off
@@ -472,8 +473,8 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
         return;
     }
 
-    /* Each time routing is on screen, need to reallocate the color of each *
-     * rr_node, as the number of rr_nodes may change.						*/
+    // Each time routing is on screen, need to reallocate the color of each
+    // rr_node, as the number of rr_nodes may change.
     if (rr_graph.num_nodes() != 0) {
         draw_state->draw_rr_node.resize(rr_graph.num_nodes());
         for (RRNodeId inode : rr_graph.nodes()) {
@@ -481,35 +482,34 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
             draw_state->draw_rr_node[inode].node_highlighted = false;
         }
     }
+
     draw_coords->set_tile_width(clb_width);
     draw_coords->pin_size = 0.3;
-    for (const auto& type : device_ctx.physical_tile_types) {
+    for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
         int num_pins = type.num_pins;
         if (num_pins > 0) {
             draw_coords->pin_size = std::min(draw_coords->pin_size,
-                                             (draw_coords->get_tile_width() / (4.0F * num_pins)));
+                                             draw_coords->get_tile_width() / (4.0F * num_pins));
         }
     }
 
     size_t j = 0;
     for (size_t i = 0; i < grid.width() - 1; i++) {
-        draw_coords->tile_x[i] = (i * draw_coords->get_tile_width()) + j;
+        draw_coords->tile_x[i] = i * draw_coords->get_tile_width() + j;
         j += device_ctx.rr_chany_width[i] + 1; // N wires need N+1 units of space
     }
     draw_coords->tile_x[grid.width() - 1] = (grid.width() - 1) * draw_coords->get_tile_width() + j;
 
     j = 0;
-    for (size_t i = 0; i < device_ctx.grid.height() - 1; ++i) {
-        draw_coords->tile_y[i] = (i * draw_coords->get_tile_width()) + j;
+    for (size_t i = 0; i < grid.height() - 1; ++i) {
+        draw_coords->tile_y[i] = i * draw_coords->get_tile_width() + j;
         j += device_ctx.rr_chanx_width[i] + 1;
     }
     draw_coords->tile_y[grid.height() - 1] = (grid.height() - 1) * draw_coords->get_tile_width() + j;
 
-    /* Load coordinates of sub-blocks inside the clbs */
+    // Load coordinates of sub-blocks inside the clbs
     draw_internal_init_blk();
-    //Margin beyond edge of the drawn device to extend the visible world
-    //Setting this to > 0.0 means 'Zoom Fit' leave some fraction of white
-    //space around the device edges
+
 #else
     (void)clb_width;
     (void)blk_loc_registry;
@@ -519,12 +519,16 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 #ifndef NO_GRAPHICS
 
 void set_initial_world() {
-    constexpr float VISIBLE_MARGIN = 0.01;
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
-    float draw_width = draw_coords->tile_x[device_ctx.grid.width() - 1] + draw_coords->get_tile_width();
-    float draw_height = draw_coords->tile_y[device_ctx.grid.height() - 1] + draw_coords->get_tile_width();
+    // Margin beyond edge of the drawn device to extend the visible world
+    // Setting this to > 0.0 means 'Zoom Fit' leave some fraction of white
+    // space around the device edges
+    constexpr float VISIBLE_MARGIN = 0.01;
+
+    float draw_width = draw_coords->tile_x[grid.width() - 1] + draw_coords->get_tile_width();
+    float draw_height = draw_coords->tile_y[grid.height() - 1] + draw_coords->get_tile_width();
 
     initial_world = ezgl::rectangle(
         {-VISIBLE_MARGIN * draw_width, -VISIBLE_MARGIN * draw_height},
@@ -549,8 +553,6 @@ void set_initial_world_ap() {
 
 int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vtr::OffsetMatrix<int>& chany_track) {
     /* Returns the track number of this routing resource node.   */
-
-    int i, j;
     e_rr_type rr_type;
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
@@ -562,8 +564,8 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
     /* GLOBAL route stuff below. */
 
     rr_type = rr_graph.node_type(rr_node);
-    i = rr_graph.node_xlow(rr_node); /* NB: Global rr graphs must have only unit */
-    j = rr_graph.node_ylow(rr_node); /* length channel segments.                 */
+    int i = rr_graph.node_xlow(rr_node); // Global rr graphs must have only unit
+    int j = rr_graph.node_ylow(rr_node); // length channel segments.
 
     switch (rr_type) {
         case e_rr_type::CHANX:
@@ -1155,7 +1157,7 @@ static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointe
 }
 
 static void run_graphics_commands(const std::string& commands) {
-    //A very simmple command interpreter for scripting graphics
+    // A very simple command interpreter for scripting graphics
     t_draw_state* draw_state = get_draw_state_vars();
 
     t_draw_state backup_draw_state = *draw_state;
@@ -1250,7 +1252,7 @@ static void run_graphics_commands(const std::string& commands) {
         }
     }
 
-    *draw_state = backup_draw_state; //Restor original draw state
+    *draw_state = backup_draw_state; // Restore original draw state
 
     //Advance the sequence number
     ++draw_state->sequence_number;
