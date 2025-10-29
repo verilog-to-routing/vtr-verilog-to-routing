@@ -886,8 +886,8 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), mode->interconnect[i].line_num,
                           "Unknown interconnect %d for mode %s in pb_type %s, input %s, output %s\n",
                           mode->interconnect[i].type, mode->name,
-                          pb_graph_parent_node->pb_type->name, mode->interconnect[i].input_string,
-                          mode->interconnect[i].output_string);
+                          pb_graph_parent_node->pb_type->name, mode->interconnect[i].input_string.c_str(),
+                          mode->interconnect[i].output_string.c_str());
         }
         for (j = 0; j < num_input_pb_graph_node_sets; j++) {
             delete[] input_pb_graph_node_pins[j];
