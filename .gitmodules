@@ -19,6 +19,3 @@
 [submodule "libs/EXTERNAL/yaml-cpp"]
 	path = libs/EXTERNAL/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
-[submodule "libs/EXTERNAL/xlnt"]
-	path = libs/EXTERNAL/xlnt
-	url = https://github.com/tfussell/xlnt.git
