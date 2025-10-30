@@ -568,7 +568,7 @@ static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, std::string_view c
         }
     }
 
-    if (clock_pin != nullptr) {
+    if (clock_pin == nullptr) {
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                   "Failed to find associated clock pin");
     }

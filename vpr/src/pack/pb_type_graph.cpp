@@ -967,13 +967,13 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
         if (tokens[i].type == e_token_type::OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "{ inside { in port %s\n", port_string);
+                          "{ inside { in port %s\n", port_string.data());
             }
             in_squig_bracket = true;
         } else if (tokens[i].type == e_token_type::CLOSE_SQUIG_BRACKET) {
             if (!in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "No matching '{' for '}' in port %s\n", port_string);
+                          "No matching '{' for '}' in port %s\n", port_string.data());
             }
             (*num_sets)++;
             in_squig_bracket = false;
@@ -987,7 +987,7 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
     if (in_squig_bracket) {
         (*num_sets)++;
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                  "No matching '{' for '}' in port %s\n", port_string);
+                  "No matching '{' for '}' in port %s\n", port_string.data());
     }
 
     t_pb_graph_pin*** pb_graph_pins = new t_pb_graph_pin**[*num_sets];
@@ -1003,17 +1003,17 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
         if (tokens[i].type == e_token_type::OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "{ inside { in port %s\n", port_string);
+                          "{ inside { in port %s\n", port_string.data());
             }
             in_squig_bracket = true;
         } else if (tokens[i].type == e_token_type::CLOSE_SQUIG_BRACKET) {
             if ((*num_ptrs)[curr_set] == 0) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "No data contained in {} in port %s\n", port_string);
+                          "No data contained in {} in port %s\n", port_string.data());
             }
             if (!in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "No matching '{' for '}' in port %s\n", port_string);
+                          "No matching '{' for '}' in port %s\n", port_string.data());
             }
             curr_set++;
             in_squig_bracket = false;
@@ -1026,7 +1026,7 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                                     &((*num_ptrs)[curr_set]), &pb_graph_pins[curr_set]);
             } catch (VprError& e) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "Syntax error processing port string '%s' (%s)\n", port_string, e.what());
+                          "Syntax error processing port string '%s' (%s)\n", port_string.data(), e.what());
             }
             VTR_ASSERT(success);
 

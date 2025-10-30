@@ -65,7 +65,7 @@ std::string string_fmt(const char* fmt, ...) {
     // Initialize variable argument list
     va_start(va_args, fmt);
 
-    //Format string
+    // Format string
     std::string str = vstring_fmt(fmt, va_args);
 
     // Reset variable argument list

@@ -51,8 +51,7 @@ InstPort::InstPort(const std::string& str) {
         instance_ = parse_name_index(inst_port[0]);
         port_ = parse_name_index(inst_port[1]);
     } else {
-        std::string msg = vtr::string_fmt("Failed to parse instance port specification '%s'",
-                                          str.c_str());
+        std::string msg = vtr::string_fmt("Failed to parse instance port specification '%s'", str.c_str());
         throw ArchFpgaError(msg);
     }
 }
@@ -534,7 +533,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     lut_pb_type->modes[0].interconnect[0].name = (char*)vtr::calloc(strlen(lut_pb_type->name) + 10, sizeof(char));
     sprintf(lut_pb_type->modes[0].interconnect[0].name, "complete:%s", lut_pb_type->name);
     lut_pb_type->modes[0].interconnect[0].type = COMPLETE_INTERC;
-    lut_pb_type->modes[0].interconnect[0].input_string = vtr::string_fmt("%s.%s", lut_pb_type->name,  in_port->name);
+    lut_pb_type->modes[0].interconnect[0].input_string = vtr::string_fmt("%s.%s", lut_pb_type->name, in_port->name);
     lut_pb_type->modes[0].interconnect[0].output_string = vtr::string_fmt("%s.%s", lut_pb_type->name, out_port->name);
 
     lut_pb_type->modes[0].interconnect[0].parent_mode_index = 0;
@@ -578,7 +577,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     lut_pb_type->modes[1].interconnect[0].name = (char*)vtr::calloc(strlen(lut_pb_type->name) + 10, sizeof(char));
     sprintf(lut_pb_type->modes[1].interconnect[0].name, "direct:%s", lut_pb_type->name);
     lut_pb_type->modes[1].interconnect[0].type = DIRECT_INTERC;
-    lut_pb_type->modes[1].interconnect[0].input_string = vtr::string_fmt(lut_pb_type->name, in_port->name);
+    lut_pb_type->modes[1].interconnect[0].input_string = vtr::string_fmt("%s.%s", lut_pb_type->name, in_port->name);
     lut_pb_type->modes[1].interconnect[0].output_string = default_name + '.' + in_port->name;
     lut_pb_type->modes[1].interconnect[0].infer_annotations = true;
 
@@ -686,14 +685,14 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
                 mem_pb_type->modes[0].pb_type_children[0].ports[i].num_pins = 1;
                 mem_pb_type->modes[0].pb_type_children[0].num_input_pins -= (mem_pb_type->ports[i].num_pins - 1);
 
-                mem_pb_type->modes[0].interconnect[i_inter].input_string = vtr::string_fmt("%s.%s", input_name, input_port_name);
-                mem_pb_type->modes[0].interconnect[i_inter].output_string = vtr::string_fmt("%s[%d:0].%s", output_name, num_pb - 1, output_port_name);
+                mem_pb_type->modes[0].interconnect[i_inter].input_string = vtr::string_fmt("%s.%s", input_name.data(), input_port_name);
+                mem_pb_type->modes[0].interconnect[i_inter].output_string = vtr::string_fmt("%s[%d:0].%s", output_name.data(), num_pb - 1, output_port_name);
             } else {
                 /* force data pins to be one bit wide and update stats */
                 mem_pb_type->modes[0].pb_type_children[0].ports[i].num_pins = 1;
                 mem_pb_type->modes[0].pb_type_children[0].num_output_pins -= (mem_pb_type->ports[i].num_pins - 1);
-                mem_pb_type->modes[0].interconnect[i_inter].input_string = vtr::string_fmt("%s[%d:0].%s", input_name, num_pb - 1, input_port_name);
-                mem_pb_type->modes[0].interconnect[i_inter].output_string = vtr::string_fmt("%s.%s", output_name, output_port_name);
+                mem_pb_type->modes[0].interconnect[i_inter].input_string = vtr::string_fmt("%s[%d:0].%s", input_name.data(), num_pb - 1, input_port_name);
+                mem_pb_type->modes[0].interconnect[i_inter].output_string = vtr::string_fmt("%s.%s", output_name.data(), output_port_name);
             }
 
             /* Allocate interconnect power structures */
@@ -710,12 +709,12 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
 
                 if (mem_pb_type->ports[i].type == IN_PORT) {
                     mem_pb_type->modes[0].interconnect[i_inter].type = DIRECT_INTERC;
-                    mem_pb_type->modes[0].interconnect[i_inter].input_string = vtr::string_fmt("%s.%s", input_name, input_port_name);
-                    mem_pb_type->modes[0].interconnect[i_inter].output_string = vtr::string_fmt("%s[%d:%d].%s", output_name, j, j, output_port_name);
+                    mem_pb_type->modes[0].interconnect[i_inter].input_string = vtr::string_fmt("%s.%s", input_name.data(), input_port_name);
+                    mem_pb_type->modes[0].interconnect[i_inter].output_string = vtr::string_fmt("%s[%d:%d].%s", output_name.data(), j, j, output_port_name);
                 } else {
                     mem_pb_type->modes[0].interconnect[i_inter].type = DIRECT_INTERC;
-                    mem_pb_type->modes[0].interconnect[i_inter].input_string = vtr::string_fmt("%s[%d:%d].%s", input_name, j, j, input_port_name);
-                    mem_pb_type->modes[0].interconnect[i_inter].output_string = vtr::string_fmt("%s.%s", output_name, output_port_name);
+                    mem_pb_type->modes[0].interconnect[i_inter].input_string = vtr::string_fmt("%s[%d:%d].%s", input_name.data(), j, j, input_port_name);
+                    mem_pb_type->modes[0].interconnect[i_inter].output_string = vtr::string_fmt("%s.%s", output_name.data(), output_port_name);
                 }
 
                 /* Allocate interconnect power structures */

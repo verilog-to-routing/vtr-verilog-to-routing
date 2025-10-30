@@ -395,8 +395,7 @@ static void process_bend(pugi::xml_node node, t_segment_inf& segment, const int 
  *
  */
 
-/* Loads the given architecture file. */
-void xml_read_arch(const char* arch_file,
+void xml_read_arch(std::string_view arch_file,
                    const bool timing_enabled,
                    t_arch* arch,
                    std::vector<t_physical_tile_type>& physical_tile_types,
@@ -408,7 +407,7 @@ void xml_read_arch(const char* arch_file,
             arch_file);
     }
 
-    //Create a unique identifier for this architecture file based on it's contents
+    // Create a unique identifier for this architecture file based on it's contents
     arch->architecture_id = vtr::secure_digest_file(arch_file);
 
     // Parse the file
@@ -418,11 +417,11 @@ void xml_read_arch(const char* arch_file,
         t_default_fc_spec arch_def_fc;
         pugi::xml_document doc;
         pugi::xml_node next;
-        pugiutil::loc_data loc_data = pugiutil::load_xml(doc, arch_file);
+        pugiutil::loc_data loc_data = pugiutil::load_xml(doc, arch_file.data());
 
-        set_arch_file_name(arch_file);
+        set_arch_file_name(arch_file.data());
 
-        /* Root node should be architecture */
+        // Root node should be architecture
         auto architecture = get_single_child(doc, "architecture", loc_data);
 
         /* TODO: do version processing properly with string delimiting on the . */
@@ -565,7 +564,7 @@ void xml_read_arch(const char* arch_file,
 
         mark_IO_types(physical_tile_types);
     } catch (pugiutil::XmlError& e) {
-        archfpga_throw(arch_file, e.line(), e.what());
+        archfpga_throw(arch_file.data(), e.line(), e.what());
     }
 }
 
