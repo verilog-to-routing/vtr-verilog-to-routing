@@ -1319,7 +1319,7 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
             } else {
                 // General case indicating that this pin connects to general-purpose routing
 
-                //Calculate how many connections there should be across all the pins in this fc_spec
+                // Calculate how many connections there should be across all the pins in this fc_spec
                 int total_connections = 0;
                 if (fc_spec.fc_value_type == e_fc_value_type::FRACTIONAL) {
                     float conns_per_pin = fac * sets_per_seg_type[iseg] * fc_spec.fc_value;
@@ -1328,14 +1328,14 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
                 } else {
                     VTR_ASSERT(fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE);
 
-                    if (std::fmod(fc_spec.fc_value, fac) != 0.) {
+                    if (std::fmod(fc_spec.fc_value, fac) != 0. && segment_inf[iseg].parallel_axis != e_parallel_axis::Z_AXIS) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Absolute Fc value must be a multiple of %d (was %f) between block pin '%s' and wire segment '%s'",
                                         fac, fc_spec.fc_value,
                                         block_type_pin_index_to_name(&type, fc_spec.pins[0], is_flat).c_str(),
                                         segment_inf[iseg].name.c_str());
                     }
 
-                    if (fc_spec.fc_value < fac) {
+                    if (fc_spec.fc_value < fac && segment_inf[iseg].parallel_axis != e_parallel_axis::Z_AXIS) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Absolute Fc value must be at least %d (was %f) between block pin '%s' to wire segment %s",
                                         fac, fc_spec.fc_value,
                                         block_type_pin_index_to_name(&type, fc_spec.pins[0], is_flat).c_str(),
