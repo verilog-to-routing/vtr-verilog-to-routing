@@ -69,7 +69,7 @@ t_logical_block_type get_empty_logical_type(const char* name = EMPTY_BLOCK_NAME)
 std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical_tile_type_ptr type);
 
 void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
-                                              char* new_name,
+                                              std::string_view new_name,
                                               t_pb_type* copy);
 
 void ProcessLutClass(t_pb_type* lut_pb_type);
