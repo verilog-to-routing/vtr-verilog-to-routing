@@ -1516,7 +1516,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                         }
                     }
 
-                    //Create the actual OPIN->CHANX/CHANY edges
+                    // Create the actual OPIN->CHANX/CHANY edges
                     uniquify_edges(rr_edges_to_create);
                     alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
                     num_edges += rr_edges_to_create.size();

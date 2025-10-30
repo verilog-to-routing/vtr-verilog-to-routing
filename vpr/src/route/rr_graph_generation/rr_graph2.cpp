@@ -130,6 +130,17 @@ static int vpr_to_phy_track(const int itrack,
                             const t_chan_seg_details* seg_details,
                             const enum e_directionality directionality);
 
+
+/**
+ * @brief Identifies and labels all mux endpoints at a given channel segment coordinate.
+ *
+ * This routine scans all routing tracks within a channel segment (specified by
+ * 'chan_num' and 'seg_num') and collects the track indices corresponding to
+ * valid mux endpoints that can be driven by OPINs in that channel segment.
+ * The resulting list of eligible tracks is returned in natural (increasing) track order.
+ *
+ * @details If @p seg_type_index is UNDEFINED, all segment types are considered.
+ */
 static void label_wire_muxes(const int chan_num,
                              const int seg_num,
                              const t_chan_seg_details* seg_details,
@@ -673,7 +684,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     return num_conn;
 }
 
-/* AA: Actually builds the edges from the OPIN nodes already allocated to their correct tracks for segment seg_Inf[seg_type_index]. 
+/* Actually builds the edges from the OPIN nodes already allocated to their correct tracks for segment seg_Inf[seg_type_index].
  * Note that this seg_inf vector is NOT the segment_info vectored as stored in the device variable. This index is w.r.t to seg_inf_x
  * or seg_inf_y for x-adjacent and y-adjacent segments respectively. This index is assigned in get_seg_details earlier 
  * in the rr_graph_builder routine. This t_seg_detail is then used to build t_chan_seg_details which is passed in to label_wire mux
@@ -696,21 +707,20 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     /* Gets a linked list of Fc nodes of specified seg_type_index to connect
      * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
 
-    int num_inc_muxes, num_dec_muxes;
-
     *Fc_clipped = false;
 
-    /* Fc is assigned in pairs so check it is even. */
+    // Fc is assigned in pairs so check it is even.
     VTR_ASSERT(Fc % 2 == 0);
 
-    /* get_rr_node_indices needs x and y coords. */
-    int x = ((e_rr_type::CHANX == chan_type) ? seg : chan);
-    int y = ((e_rr_type::CHANX == chan_type) ? chan : seg);
+    // get_rr_node_indices needs x and y coords.
+    int x = (e_rr_type::CHANX == chan_type) ? seg : chan;
+    int y = (e_rr_type::CHANX == chan_type) ? chan : seg;
 
-    /* Get the lists of possible muxes. */
+    // Get the lists of possible muxes.
     int dummy;
     std::vector<int> inc_muxes;
     std::vector<int> dec_muxes;
+    int num_inc_muxes, num_dec_muxes;
     // Determine the channel width instead of using max channels to not create hanging nodes
     int max_chan_width = (e_rr_type::CHANX == chan_type) ? nodes_per_chan.x_list[y] : nodes_per_chan.y_list[x];
 
@@ -719,25 +729,25 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
                      Direction::DEC, max_chan_width, true, dec_muxes, &num_dec_muxes, &dummy);
 
-    /* Clip Fc to the number of muxes. */
+    // Clip Fc to the number of muxes.
     if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
         *Fc_clipped = true;
         Fc = 2 * std::min(num_inc_muxes, num_dec_muxes);
     }
 
-    /* Assign tracks to meet Fc demand */
+    // Assign tracks to meet Fc demand
     int num_edges = 0;
     for (int iconn = 0; iconn < (Fc / 2); ++iconn) {
-        /* Figure of the next mux to use for the 'inc' and 'dec' connections */
+        // Figure of the next mux to use for the 'inc' and 'dec' connections
         int inc_mux = Fc_ofs[chan][seg][seg_type_index] % num_inc_muxes;
         int dec_mux = Fc_ofs[chan][seg][seg_type_index] % num_dec_muxes;
         ++Fc_ofs[chan][seg][seg_type_index];
 
-        /* Figure out the track it corresponds to. */
+        // Figure out the track it corresponds to.
         int inc_track = inc_muxes[inc_mux];
         int dec_track = dec_muxes[dec_mux];
 
-        /* Figure the inodes of those muxes */
+        // Figure the inodes of those muxes
         RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(layer, x, y, chan_type, inc_track);
         RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(layer, x, y, chan_type, dec_track);
 
@@ -745,7 +755,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
             continue;
         }
 
-        /* Add to the list. */
+        // Add to the list.
         short to_switch = seg_details[inc_track].arch_opin_switch();
         rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch, false);
         ++num_edges;
@@ -1962,11 +1972,6 @@ void load_sblock_pattern_lookup(const int i,
     }
 }
 
-/* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
- * maps a label to the actual track #: array[0] = <the track number of the first/lowest mux>
- * This routine orders wire muxes by their natural order, i.e. track #
- * If seg_type_index == UNDEFINED, all segments in the channel are considered. Otherwise this routine
- * only looks at segments that belong to the specified segment type. */
 static void label_wire_muxes(const int chan_num,
                              const int seg_num,
                              const t_chan_seg_details* seg_details,
@@ -1985,7 +1990,7 @@ static void label_wire_muxes(const int chan_num,
         /* Alloc the list on LOAD pass */
         if (pass > 0) {
             labels.resize(num_labels);
-            std::fill(labels.begin(), labels.end(), 0);
+            std::ranges::fill(labels, 0);
             num_labels = 0;
         }
 

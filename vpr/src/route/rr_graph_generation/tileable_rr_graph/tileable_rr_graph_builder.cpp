@@ -223,7 +223,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     bool Fc_clipped = false;
     // [0..num_types-1][0..num_pins-1]
     std::vector<vtr::Matrix<int>> Fc_in;
-    Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*)&chan_width,
+    Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, &chan_width,
                                      e_fc_type::IN, UNI_DIRECTIONAL, &Fc_clipped, false);
     if (Fc_clipped) {
         *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -232,7 +232,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     Fc_clipped = false;
     // [0..num_types-1][0..num_pins-1]
     std::vector<vtr::Matrix<int>> Fc_out;
-    Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*)&chan_width,
+    Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, &chan_width,
                                       e_fc_type::OUT, UNI_DIRECTIONAL, &Fc_clipped, false);
 
     if (Fc_clipped) {
