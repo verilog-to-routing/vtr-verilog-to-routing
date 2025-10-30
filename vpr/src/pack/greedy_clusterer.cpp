@@ -417,18 +417,26 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             }
             
             // VTR_LOG("\tCalculating cost for type %s:\n", cand->name.c_str());
-            float inferred_num_instances = std::ceil(vtr::safe_ratio<float>(logical_ram->remaining_memory_slices, logical_ram->candidate_capacity[cand])); // This can be divied by the total number of this type in the device to get a ratio.
+            // float inferred_num_instances = std::ceil(vtr::safe_ratio<float>(logical_ram->remaining_memory_slices, logical_ram->candidate_capacity[cand])); // This can be divied by the total number of this type in the device to get a ratio.
             // VTR_LOG("\t\tInferred num of instances: %f\n", inferred_num_instances);
-            float inferred_num_instances_ratio = vtr::safe_ratio<float>(inferred_num_instances, equivalent_num_instances);
+            // float inferred_num_instances_ratio = vtr::safe_ratio<float>(inferred_num_instances, equivalent_num_instances);
             // VTR_LOG("\t\tInferred num of instances ratio: %f\n", inferred_num_instances_ratio);
-            
+            int remaining_slices = std::max(logical_ram->remaining_memory_slices - logical_ram->candidate_capacity[cand], 0);
+            float remaining_slices_ratio = vtr::safe_ratio<float>(remaining_slices, logical_ram->remaining_memory_slices);
+            // VTR_LOG("\t\tRemaining slices ratio: %f\n", remaining_slices_ratio);
             float empty_slices_ratio = (logical_ram->remaining_memory_slices < logical_ram->candidate_capacity[cand]) ? (1 - vtr::safe_ratio<float>(logical_ram->remaining_memory_slices, logical_ram->candidate_capacity[cand])) : 0;
             // VTR_LOG("\t\tEmpty slices ratio: %f\n", empty_slices_ratio);
             float new_utilization_ratio = vtr::safe_ratio<float>(num_used_type_instances[cand] + 1, equivalent_num_instances); // + 1 on the numerator is to penalize the scarce resources more.
             // VTR_LOG("\t\tNew utilization ratio: %f\n", new_utilization_ratio);
-            // VTR_LOG("\t\tSum of ratios: %f\n", inferred_num_instances_ratio + empty_slices_ratio + new_utilization_ratio);
+            // VTR_LOG("\t\tSum of ratios: %f\n", remaining_slices_ratio + empty_slices_ratio + new_utilization_ratio);
+
+            float cost = 1.0 * remaining_slices_ratio 
+                       + 1.0 * empty_slices_ratio
+                       + 1.0 * new_utilization_ratio;
+            candidate_costs[cand] = cost;
+            // VTR_LOG("\t\tCost: %f\n", cost);
         
-            candidate_costs[cand] = inferred_num_instances_ratio + empty_slices_ratio + new_utilization_ratio;
+
         }
 
         std::stable_sort(candidate_types.begin(), candidate_types.end(),
