@@ -485,6 +485,7 @@ void remap_pin_to_new_net(npin_t *pin, nnet_t *new_net)
  *-----------------------------------------------------------------------*/
 void remap_pin_to_new_node(npin_t *pin, nnode_t *new_node, int pin_idx)
 {
+    oassert(pin != NULL);
     if (pin->type == INPUT) {
         /* clean out the entry in the old net */
         pin->node->input_pins[pin->pin_node_idx] = NULL;
