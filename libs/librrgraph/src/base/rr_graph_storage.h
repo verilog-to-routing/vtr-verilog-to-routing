@@ -1,8 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <bitset>
 
 #include "librrgraph_types.h"
+#include "vtr_assert.h"
 #include "vtr_vector.h"
 #include "physical_types.h"
 #include "rr_graph_storage_utils.h"
@@ -15,8 +17,10 @@
 #include "vtr_memory.h"
 #include "vtr_strong_id_range.h"
 #include "vtr_array_view.h"
+#include <numeric>
 #include <optional>
 #include <cstdint>
+#include <vector>
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -797,8 +801,15 @@ class t_rr_graph_storage {
     void mark_edges_as_rr_switch_ids();
 
     /** @brief
-     * Sorts edge data such that configurable edges appears before
-     * non-configurable edges.
+     * Sorts all edges based on source node with configurable coming first, or equivalently
+     * partitions the edges based on their source node and configurability. Afterwards, it
+     * builds a list of indices to each RRNodeId's first edge. With this, it can then easily
+     * say which edges belong to which node.
+     * 
+     * @param rr_switches Information of switches, used to figure out if edge is configurable or not.
+     * 
+     * @note Must be called after constructing the RR Graph. You can not use most of the edge accessor
+     * methods before this method is called since the relevant data structures are not set up yet.
      */
     void partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches);
 
@@ -809,6 +820,49 @@ class t_rr_graph_storage {
     /** @brief Validate that edge data is partitioned correctly.*/
     bool validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     bool validate(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    
+    /**
+     * @brief Sorts edges according to comparison_function. This is an expensive method that builds the edge array from scratch
+     * and invalidates all the RREdgeIds. This is not an inplace sort, and it is very expensive.
+     * You should not be calling this method more than once or twice in the entire program, definitely do not use it in a hot loop.
+     * @tparam t_comp_func callable object with two size_t arguments. See 'edge_compare_dest_node' for example.
+     * @param comparison_function Comparison function to order edges with.
+     */
+    template <typename t_comp_func>
+    void sort_edges(t_comp_func comparison_function) {
+
+        size_t num_edges = edge_src_node_.size();
+        vtr::StrongIdRange<RREdgeId> edge_range(RREdgeId(0), RREdgeId(num_edges));
+        std::vector<RREdgeId> edge_indices(edge_range.begin(), edge_range.end());
+
+        std::stable_sort(edge_indices.begin(), edge_indices.end(), comparison_function);
+        
+        // Generic lambda that allocates a 'vec'-sized new vector with all elements set to default value,
+        // then builds the new vector to have rearranged elements from 'vec' and finaly move the new vector
+        // to replace vec. Essentially does a permutation on vec based on edge_indices.
+        auto array_rearrage = [&edge_indices] (auto& vec, auto default_value) {
+
+            // Since vec could have any type, we need to figure out it's type to allocate new_vec.
+            // The scary std::remove_reference stuff does exactly that. This does nothing other than building a new 'vec' sized vector.
+            typename std::remove_reference<decltype(vec)>::type new_vec(vec.size(), default_value);
+
+            size_t new_index = 0;
+            for (RREdgeId edge_index : edge_indices) {
+                RREdgeId new_edge_index = RREdgeId(new_index);
+                new_vec[new_edge_index] = vec[edge_index];
+
+                new_index++;
+            }
+            VTR_ASSERT(new_index == vec.size());
+
+            vec = std::move(new_vec);
+        };
+
+        array_rearrage(edge_src_node_, RRNodeId::INVALID());
+        array_rearrage(edge_dest_node_, RRNodeId::INVALID());
+        array_rearrage(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
+        array_rearrage(edge_remapped_, false);
+    }
 
     /******************
      * Fan-in methods *
@@ -853,11 +907,6 @@ class t_rr_graph_storage {
     }
 
   private:
-    friend struct edge_swapper;
-    friend class edge_sort_iterator;
-    friend class edge_compare_dest_node;
-    friend class edge_compare_src_node_and_configurable_first;
-
     /** @brief
      * Take allocated edges in edge_src_node_/ edge_dest_node_ / edge_switch_
      * sort, and assign the first edge for each

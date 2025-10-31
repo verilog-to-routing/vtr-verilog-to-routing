@@ -850,7 +850,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
    * ``cost_variance``: Estimates the initial temperature using the variance of cost after a set of trial swaps. The initial temperature is set to a value proportional to the variance.
    * ``equilibrium``: Estimates the initial temperature by trying to predict the equilibrium temperature for the initial placement (i.e. the temperature that would result in no change in cost).
 
-    **Default** ``cost_variance``
+    **Default** ``equilibrium``
 
 .. option:: --init_t <float>
 

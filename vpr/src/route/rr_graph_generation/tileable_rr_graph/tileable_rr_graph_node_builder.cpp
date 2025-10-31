@@ -487,7 +487,7 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_node_driver_switches[node] = delayless_switch;
 
                     // RC data
-                    rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+                    rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
 
                 } // End of loading OPIN rr_nodes
             } // End of side enumeration
@@ -540,7 +540,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_node_driver_switches[node] = wire_to_ipin_switch;
 
                     // RC data
-                    rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+                    rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
 
                 } // End of loading IPIN rr_nodes
             } // End of side enumeration
@@ -589,7 +589,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
         rr_node_driver_switches[node] = delayless_switch;
 
         // RC data
-        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
 
     } // End of class enumeration
 }
@@ -637,7 +637,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
         rr_node_driver_switches[node] = delayless_switch;
 
         // RC data
-        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
 
     } // End of class enumeration
 }
@@ -672,7 +672,7 @@ static void load_one_grid_mux_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
         rr_node_driver_switches[node] = RRSwitchId(vib->get_switch_idx());
 
         // RC data
-        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
     }
 }
 
@@ -900,7 +900,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
             float node_R = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Rmetal;
             float node_C = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Cmetal;
-            rr_graph_builder.set_node_rc_index(rr_node_id, NodeRCIndex(find_create_rr_rc_data(node_R, node_C, rr_rc_data)));
+            rr_graph_builder.set_node_rc_index(rr_node_id, find_create_rr_rc_data(node_R, node_C, rr_rc_data));
 
             if (chan_details.is_track_start(itrack)) {
                 rr_graph_builder.set_node_bend_start(rr_node_id, chan_details.get_track_bend_start(itrack));

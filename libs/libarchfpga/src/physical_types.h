@@ -241,7 +241,7 @@ enum e_power_estimation_method_ {
     POWER_METHOD_SPECIFY_SIZES,   /* Transistor-level, user-specified buffers/wires */
     POWER_METHOD_TOGGLE_PINS,     /* Dynamic: Energy per pin toggle, Static: Absolute */
     POWER_METHOD_C_INTERNAL,      /* Dynamic: Equiv. Internal capacitance, Static: Absolute */
-    POWER_METHOD_ABSOLUTE         /* Dynamic: Aboslute, Static: Absolute */
+    POWER_METHOD_ABSOLUTE         /* Dynamic: Absolute, Static: Absolute */
 };
 typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
@@ -1076,18 +1076,13 @@ struct t_pin_to_pin_annotation {
     e_pin_to_pin_annotation_type type;
     e_pin_to_pin_annotation_format format;
 
-    char* input_pins;
-    char* output_pins;
-    char* clock;
+    std::string input_pins;
+    std::string output_pins;
+    std::string clock;
 
     int line_num; /* used to report what line number this annotation is found in architecture file */
 
     t_pin_to_pin_annotation() noexcept {
-        annotation_entries = std::vector<std::pair<int, std::string>>();
-        input_pins = nullptr;
-        output_pins = nullptr;
-        clock = nullptr;
-
         line_num = 0;
         type = (e_pin_to_pin_annotation_type)0;
         format = (e_pin_to_pin_annotation_format)0;
@@ -1113,8 +1108,8 @@ struct t_interconnect {
     e_interconnect type;
     char* name;
 
-    char* input_string;
-    char* output_string;
+    std::string input_string;
+    std::string output_string;
 
     std::vector<t_pin_to_pin_annotation> annotations;
     bool infer_annotations;
@@ -1132,8 +1127,6 @@ struct t_interconnect {
     t_interconnect() {
         type = (e_interconnect)0;
         name = nullptr;
-        input_string = nullptr;
-        output_string = nullptr;
         infer_annotations = false;
         line_num = 0;
         parent_mode_index = 0;
@@ -1971,7 +1964,7 @@ struct t_arch {
     std::vector<vtr::interned_string> interned_strings;
 
     /// Secure hash digest of the architecture file to uniquely identify this architecture
-    char* architecture_id;
+    std::string architecture_id;
 
     // Options for tileable routing architectures
     // These are used for an alternative, tilable, rr-graph generator that can produce
@@ -2006,12 +1999,12 @@ struct t_arch {
     int sub_fs;
 
     /// Connecting type for pass tracks in each switch block
-    enum e_switch_block_type sb_sub_type;
+    e_switch_block_type sb_sub_type;
 
     // End of tileable architecture options
 
     t_chan_width_dist Chans;
-    enum e_switch_block_type sb_type;
+    e_switch_block_type sb_type;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;
@@ -2067,7 +2060,11 @@ struct t_arch {
     // types of connections requires a different switch, all names should correspond to a switch in Switches.
     std::vector<std::string> ipin_cblock_switch_name;
 
-    std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+    /// Set of potential device layouts
+    std::vector<t_grid_def> grid_layouts;
+
+    /// @brief Returns the grid layout specified by the --device command-line option.
+    const t_grid_def& grid_layout() const;
 
     // the layout that is chosen to be used with command line options
     // It is used to generate custom SB for a specific locations within the device

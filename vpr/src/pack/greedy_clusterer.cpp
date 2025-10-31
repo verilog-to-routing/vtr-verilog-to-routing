@@ -443,7 +443,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
 
     VTR_LOGV(log_verbosity_ > 2,
              "Complex block %zu: '%s' (%s) ", size_t(new_cluster_id),
-             cluster_legalizer.get_cluster_pb(new_cluster_id)->name,
+             cluster_legalizer.get_cluster_name(new_cluster_id).c_str(),
              cluster_legalizer.get_cluster_type(new_cluster_id)->name.c_str());
     VTR_LOGV(log_verbosity_ > 2, ".");
     //Progress dot for seed-block
