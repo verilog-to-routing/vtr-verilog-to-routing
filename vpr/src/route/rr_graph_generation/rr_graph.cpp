@@ -87,22 +87,14 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
                                                                           const std::vector<t_segment_inf>& seg_inf,
                                                                           const std::vector<int>& sets_per_seg_type);
 
-static void add_edges_opin_chanz(RRGraphBuilder& rr_graph_builder,
-                                 const RRGraphView& rr_graph,
-                                 int layer, int x, int y,
-                                 const std::vector<vtr::Matrix<int>>& Fc_out,
-                                 const t_unified_to_parallel_seg_index& seg_index_map,
-                                 int num_seg_types,
-                                 t_rr_edge_info_set& rr_edges_to_create,
-                                 const std::vector<t_bottleneck_link>& interdie_3d_links);
 /**
  * @brief This routine calculates pin connections to tracks for a specific type and a specific segment based on the Fc value 
  * defined for each pin in the architecture file. This routine is called twice for each combination of block type and segment 
  * type: 1) connecting tracks to input pins 2) connecting output pins to tracks.  
  * 
  *   @param pin_type Specifies whether the routine should connect tracks to *INPUT* pins or connect *OUTPUT* pins to tracks.
- *   @param Fc Actual Fc value described in the architecture file for all pins of the specific phyiscal type ([0..number_of_pins-1][0..number_of_segments_types-1]).
- *   @param seg_type_tracks Number of tracks that is avaliable for the specific segment type.
+ *   @param Fc Actual Fc value described in the architecture file for all pins of the specific physical type ([0..number_of_pins-1][0..number_of_segments_types-1]).
+ *   @param seg_type_tracks Number of tracks that is available for the specific segment type.
  *   @param seg_index The index of the segment type to which the function tries to connect pins.
  *   @param max_Fc Used to allocate max possible space for simplicity.
  *   @param tile_type Physical type information, such as total number of pins, block width, block height, and etc.
@@ -110,7 +102,6 @@ static void add_edges_opin_chanz(RRGraphBuilder& rr_graph_builder,
  *   @param directionality Segment directionality, should be either *UNI-DIRECTIONAL* or *BI-DIRECTIONAL* 
  * 
  * @return an 5D matrix which keeps the track indices connected to each pin ([0..num_pins-1][0..width-1][0..height-1][0..layer-1][0..sides-1][0..Fc_to_curr_seg_type-1]).
- * 
  */
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
                                                             const vtr::Matrix<int>& Fc,
@@ -791,13 +782,13 @@ static void build_rr_graph(e_graph_type graph_type,
         Fc_out = std::vector<vtr::Matrix<int>>(types.size(), ones);
     } else {
         bool Fc_clipped = false;
-        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, &nodes_per_chan,
+        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type,
                                          e_fc_type::IN, directionality, &Fc_clipped, is_flat);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
         Fc_clipped = false;
-        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, &nodes_per_chan,
+        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type,
                                           e_fc_type::OUT, directionality, &Fc_clipped, is_flat);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -1218,7 +1209,7 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
                                                                    const std::vector<int>& sets_per_seg_type,
                                                                    const std::vector<vtr::Matrix<int>>& Fc_in,
                                                                    const std::vector<vtr::Matrix<int>>& Fc_out,
-                                                                   const enum e_directionality directionality) {
+                                                                   const e_directionality directionality) {
     std::vector<std::vector<bool>> result(L_num_types);
     for (std::vector<bool>& seg_type_bools : result) {
         seg_type_bools.resize(num_seg_types, false);
@@ -1293,7 +1284,6 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
                                                        const int max_pins,
                                                        const std::vector<t_segment_inf>& segment_inf,
                                                        const std::vector<int>& sets_per_seg_type,
-                                                       const t_chan_width* nodes_per_chan,
                                                        const e_fc_type fc_type,
                                                        const e_directionality directionality,
                                                        bool* Fc_clipped,
@@ -1531,8 +1521,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                     }
                 }
 
-                add_edges_opin_chanz(rr_graph_builder, rr_graph,
-                                 layer, i, j,
+                add_edges_opin_chanz(rr_graph,
+                    layer, i, j,
                                  Fc_out,
                                  seg_index_map,
                                  num_seg_types,
@@ -2820,57 +2810,6 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
     }
 
     return track_to_pin_lookup;
-}
-
-static void add_edges_opin_chanz(RRGraphBuilder& rr_graph_builder,
-                                 const RRGraphView& rr_graph,
-                                 int layer, int x, int y,
-                                 const std::vector<vtr::Matrix<int>>& Fc_out,
-                                 const t_unified_to_parallel_seg_index& seg_index_map,
-                                 int num_seg_types,
-                                 t_rr_edge_info_set& rr_edges_to_create,
-                                 const std::vector<t_bottleneck_link>& interdie_3d_links) {
-    const RRSpatialLookup& node_lookup = rr_graph.node_lookup();
-    const DeviceGrid& grid = g_vpr_ctx.device().grid;
-
-    t_physical_tile_type_ptr type = grid.get_physical_type({x, y, layer});
-
-    std::vector<RRNodeId> opin_nodes = node_lookup.find_grid_nodes_at_all_sides(layer, x, y, e_rr_type::OPIN);
-    std::ranges::stable_sort(opin_nodes, std::less<>{}, [](RRNodeId id) noexcept { return size_t(id); });
-    // Remove adjacent duplicates
-    auto [unique_end, _] = std::ranges::unique(opin_nodes);
-    opin_nodes.erase(unique_end, opin_nodes.end());
-
-    std::vector<std::pair<RRNodeId, short>> selected_chanz_nodes;
-
-    for (int iseg = 0; iseg < num_seg_types; iseg++) {
-        int seg_index = get_parallel_seg_index(iseg, seg_index_map, e_parallel_axis::Z_AXIS);
-        if (seg_index < 0) {
-            continue;
-        }
-
-        selected_chanz_nodes.clear();
-        for (size_t track_num = 0; track_num < interdie_3d_links.size(); track_num++) {
-            const t_bottleneck_link& bottleneck_link = interdie_3d_links[track_num];
-            if (bottleneck_link.parallel_segment_index == seg_index && bottleneck_link.gather_loc.layer_num == layer) {
-                RRNodeId node_id = node_lookup.find_node(layer, x, y, e_rr_type::CHANZ, track_num);
-                selected_chanz_nodes.push_back({node_id, bottleneck_link.arch_wire_switch});
-            }
-        }
-
-        int chanz_idx = 0;
-        for (RRNodeId opin_node_id : opin_nodes) {
-            int pin_number = rr_graph.node_pin_num(opin_node_id);
-            int fc = Fc_out[type->index][pin_number][iseg];
-
-            for (int i = 0; i < fc; i++) {
-                RRNodeId chanz_node_id = selected_chanz_nodes[chanz_idx % selected_chanz_nodes.size()].first;
-                short switch_id = selected_chanz_nodes[chanz_idx % selected_chanz_nodes.size()].second;
-                chanz_idx++;
-                rr_edges_to_create.emplace_back(opin_node_id, chanz_node_id, switch_id, false);
-            }
-        }
-    }
 }
 
 static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,

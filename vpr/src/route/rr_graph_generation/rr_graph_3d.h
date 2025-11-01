@@ -4,8 +4,10 @@
 #include <vector>
 #include "rr_types.h"
 #include "rr_edge.h"
+#include "rr_graph_type.h"
 
 class RRGraphBuilder;
+class RRGraphView;
 struct t_bottleneck_link;
 
 /**
@@ -28,3 +30,12 @@ void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
                             const t_chan_details& chan_details_y,
                             const std::vector<t_bottleneck_link>& interdie_3d_links,
                             t_rr_edge_info_set& interdie_3d_rr_edges_to_create);
+
+
+void add_edges_opin_chanz(const RRGraphView& rr_graph,
+                          int layer, int x, int y,
+                          const std::vector<vtr::Matrix<int>>& Fc_out,
+                          const t_unified_to_parallel_seg_index& seg_index_map,
+                          int num_seg_types,
+                          t_rr_edge_info_set& rr_edges_to_create,
+                          const std::vector<t_bottleneck_link>& interdie_3d_links);

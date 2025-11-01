@@ -52,7 +52,6 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
                                                        const int max_pins,
                                                        const std::vector<t_segment_inf>& segment_inf,
                                                        const std::vector<int>& sets_per_seg_type,
-                                                       const t_chan_width* nodes_per_chan,
                                                        const e_fc_type fc_type,
                                                        const e_directionality directionality,
                                                        bool* Fc_clipped,
