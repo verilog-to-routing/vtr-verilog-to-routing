@@ -33,7 +33,7 @@
 #include "rr_graph_sbox.h"
 #include "rr_graph_intra_cluster.h"
 #include "rr_graph_tile_nodes.h"
-#include "rr_graph_3d.h"
+#include "rr_graph_sg.h"
 #include "rr_graph_timing_params.h"
 #include "check_rr_graph.h"
 #include "echo_files.h"
@@ -3245,65 +3245,6 @@ t_non_configurable_rr_sets identify_non_configurable_rr_sets() {
     create_edge_groups(&groups);
 
     return groups.output_sets();
-}
-
-bool pins_connected(t_block_loc cluster_loc,
-                    t_physical_tile_type_ptr physical_type,
-                    t_logical_block_type_ptr logical_block,
-                    int from_pin_logical_num,
-                    int to_pin_logical_num) {
-    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-    const auto& rr_spatial_look_up = rr_graph.node_lookup();
-
-    t_physical_tile_loc loc;
-    loc.x = cluster_loc.loc.x;
-    loc.y = cluster_loc.loc.y;
-    loc.layer_num = cluster_loc.loc.layer;
-    int abs_cap = cluster_loc.loc.sub_tile;
-    const t_sub_tile* sub_tile = nullptr;
-
-    for (const t_sub_tile& sub_tile_ : physical_type->sub_tiles) {
-        if (sub_tile_.capacity.is_in_range(abs_cap)) {
-            sub_tile = &sub_tile_;
-            break;
-        }
-    }
-    VTR_ASSERT(sub_tile != nullptr);
-    int rel_cap = abs_cap - sub_tile->capacity.low;
-    VTR_ASSERT(rel_cap >= 0);
-
-    auto from_pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(from_pin_logical_num);
-    int from_pin_physical_num = get_pb_pin_physical_num(physical_type,
-                                                        sub_tile,
-                                                        logical_block,
-                                                        rel_cap,
-                                                        from_pb_pin);
-    VTR_ASSERT(from_pin_physical_num != UNDEFINED);
-
-    auto to_pb_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(to_pin_logical_num);
-    int to_pin_physical_num = get_pb_pin_physical_num(physical_type,
-                                                      sub_tile,
-                                                      logical_block,
-                                                      rel_cap,
-                                                      to_pb_pin);
-
-    VTR_ASSERT(to_pin_physical_num != UNDEFINED);
-
-    RRNodeId from_node = get_pin_rr_node_id(rr_spatial_look_up, physical_type, loc, from_pin_physical_num);
-    VTR_ASSERT(from_node != RRNodeId::INVALID());
-
-    RRNodeId to_node = get_pin_rr_node_id(rr_spatial_look_up, physical_type, loc, to_pin_physical_num);
-    VTR_ASSERT(to_node != RRNodeId::INVALID());
-
-    int num_edges = rr_graph.num_edges(from_node);
-
-    for (int iedge = 0; iedge < num_edges; iedge++) {
-        RRNodeId sink_node = rr_graph.edge_sink_node(from_node, iedge);
-        if (sink_node == to_node) {
-            return true;
-        }
-    }
-    return false;
 }
 
 static void process_non_config_sets() {

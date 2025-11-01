@@ -58,9 +58,3 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
                                                        bool is_flat);
 
 t_non_configurable_rr_sets identify_non_configurable_rr_sets();
-
-bool pins_connected(t_block_loc cluster_loc,
-                    t_physical_tile_type_ptr physical_type,
-                    t_logical_block_type_ptr logical_block,
-                    int from_pin_logical_num,
-                    int to_pin_logical_num);
