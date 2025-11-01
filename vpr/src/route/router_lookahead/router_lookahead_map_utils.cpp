@@ -1017,7 +1017,7 @@ static void dijkstra_flood_to_wires(int itile,
 
         e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
         int curr_layer_num = rr_graph.node_layer_low(curr.node);
-        if (curr_rr_type == e_rr_type::CHANX || curr_rr_type == e_rr_type::CHANY || curr_rr_type == e_rr_type::SINK) {
+        if (curr_rr_type == e_rr_type::CHANX || curr_rr_type == e_rr_type::CHANY || curr_rr_type == e_rr_type::CHANZ || curr_rr_type == e_rr_type::SINK) {
             //We stop expansion at any CHANX/CHANY/SINK
             int seg_index;
             if (curr_rr_type != e_rr_type::SINK) {
