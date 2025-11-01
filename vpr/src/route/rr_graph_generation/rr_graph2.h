@@ -140,10 +140,6 @@ void load_sblock_pattern_lookup(const int i,
                                 const enum e_switch_block_type switch_block_type,
                                 t_sblock_pattern& sblock_pattern);
 
-int get_parallel_seg_index(const int abs,
-                           const t_unified_to_parallel_seg_index& index_map,
-                           const e_parallel_axis parallel_axis);
-
 /**
  * @brief Assigns routing tracks to each segment type based on their frequencies and lengths.
  *

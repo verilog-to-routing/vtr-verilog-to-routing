@@ -21,3 +21,7 @@ std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& s
                                              t_unified_to_parallel_seg_index& seg_index_map,
                                              e_parallel_axis parallel_axis,
                                              bool keep_original_index = false);
+
+int get_parallel_seg_index(const int abs,
+                           const t_unified_to_parallel_seg_index& index_map,
+                           const e_parallel_axis parallel_axis);

@@ -235,21 +235,6 @@ std::vector<int> get_seg_track_counts(int num_sets,
     return result;
 }
 
-int get_parallel_seg_index(const int abs_index,
-                           const t_unified_to_parallel_seg_index& index_map,
-                           const e_parallel_axis parallel_axis) {
-    int index = -1;
-    auto itr_pair = index_map.equal_range(abs_index);
-
-    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
-        if (itr->second.second == parallel_axis) {
-            index = itr->second.first;
-        }
-    }
-
-    return index;
-}
-
 std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const int max_len,
                                                       const std::vector<t_segment_inf>& segment_inf,
