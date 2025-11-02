@@ -395,6 +395,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
 
     bool is_memory = false;
     const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
+    const LogicalRamStats logica_ram_stats = prepacker.get_overall_logical_ram_stats();
     if (prim->pb_type->is_primitive() && prim->pb_type->class_type == MEMORY_CLASS) {
         is_memory = true;
         LogicalRamGroup* logical_ram = prepacker.logical_ram_group_of_mut(root_atom);
@@ -408,6 +409,19 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
         //     int capacity = logical_ram->candidate_capacity[cand];
         //     VTR_LOG("\t\t%s: %d\n", cand->name.c_str(), capacity);
         // }
+
+        int M9K_cap = 0;
+        int M144K_cap = 0;
+        for (t_logical_block_type_ptr& cand : candidate_types) {
+            if (cand->name == "M9K") 
+                M9K_cap = logical_ram->candidate_capacity[cand];
+            if (cand->name == "M144K")
+                M144K_cap = logical_ram->candidate_capacity[cand];
+        }
+
+        float current_capacity_ratio = vtr::safe_ratio<float>(M9K_cap, M144K_cap);
+        // VTR_LOG("\tCandidate capacity ratio (M9K / M144K): %f\n", current_capacity_ratio);
+        // VTR_LOG("\tMin-Max candidate capacity ratios (M9K / M144K): (%f,%f)\n", logica_ram_stats.min_capacity_ratio, logica_ram_stats.max_capacity_ratio);
 
         std::unordered_map<t_logical_block_type_ptr, float> candidate_costs;
         for (t_logical_block_type_ptr cand: candidate_types) {
@@ -430,9 +444,22 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             // VTR_LOG("\t\tNew utilization ratio: %f\n", new_utilization_ratio);
             // VTR_LOG("\t\tSum of ratios: %f\n", remaining_slices_ratio + empty_slices_ratio + new_utilization_ratio);
 
+            // The capacity ratio cost calculation.
+            float capacity_cost = 0;
+            if (cand->name == "M144K") {
+                capacity_cost = vtr::safe_ratio<float>(current_capacity_ratio - logica_ram_stats.min_capacity_ratio, logica_ram_stats.max_capacity_ratio - logica_ram_stats.min_capacity_ratio);
+            }
+            if (cand->name == "M9K") {
+                // capacity_cost = vtr::safe_ratio<float>(logica_ram_stats.max_capacity_ratio - current_capacity_ratio, logica_ram_stats.max_capacity_ratio - logica_ram_stats.min_capacity_ratio);
+                // Leaving it as zero for now. We will just be adding this cost for the M144K to see the results.
+            }
+            // VTR_LOG("\t\tCapacity ratio cost: %f\n", capacity_cost);
+            
+            
             float cost = 1.0 * remaining_slices_ratio 
                        + 1.0 * empty_slices_ratio
-                       + 1.0 * new_utilization_ratio;
+                       + 1.0 * new_utilization_ratio
+                       + 1.0 * capacity_cost;
             candidate_costs[cand] = cost;
             // VTR_LOG("\t\tCost: %f\n", cost);
         

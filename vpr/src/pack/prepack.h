@@ -59,6 +59,14 @@ struct LogicalRamGroup {
     int remaining_memory_slices = 0;
 };
 
+// This is implemented only for 2 physical RAM type for now to try the usage of
+// this idea. It can be extended to a general case if it works.
+// Currently it is always defined to be M9K_cap / M144K_cap.
+struct LogicalRamStats {
+    float max_capacity_ratio = 0;
+    float min_capacity_ratio = std::numeric_limits<float>::max();
+};
+
 /**
  * @brief Represents a grouping of atom blocks that match a pack_pattern,
  *        these groups are intended to be placed as a single unit during packing
@@ -314,6 +322,10 @@ class Prepacker {
         return &logical_ram_groups_[gid];
     }
 
+    inline LogicalRamStats get_overall_logical_ram_stats () const {
+        return logical_ram_stats_;
+    }
+
     inline size_t logical_ram_group_id_of(AtomBlockId blk) const {
         auto it = atom_to_group_.find(blk);
         return (it == atom_to_group_.end()) ? SIZE_MAX : it->second;
@@ -398,4 +410,5 @@ class Prepacker {
 
     mutable std::vector<LogicalRamGroup> logical_ram_groups_;
     mutable vtr::flat_map<AtomBlockId, size_t> atom_to_group_; // atom → group index
+    LogicalRamStats logical_ram_stats_;
 };

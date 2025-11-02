@@ -32,6 +32,7 @@
 #include "vtr_time.h"
 #include "vtr_util.h"
 #include "vtr_vector.h"
+#include "vtr_math.h"
 
 /*****************************************/
 /*Local Function Declaration			 */
@@ -1851,7 +1852,31 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
             g.candidate_capacity[cand] = candidate_prim->total_primitive_count;
             VTR_LOG("        %s: %d\n", cand->name.c_str(), candidate_prim->total_primitive_count);
         }
+
+        // Update the logical ram stats. Currently only for 2 types of physical RAMs.
+        if (candidate_types.size() != 2) {
+            continue;
+        }
+
+        int M9K_cap = 0;
+        int M144K_cap = 0;
+        for (t_logical_block_type_ptr& cand : candidate_types) {
+            if (cand->name == "M9K") 
+                M9K_cap = g.candidate_capacity[cand];
+            if (cand->name == "M144K")
+                M144K_cap = g.candidate_capacity[cand];
+        }
+
+        float current_ratio = vtr::safe_ratio<float>(M9K_cap, M144K_cap);
+        VTR_LOG("    Candidate ratios (M9K / M144K): %f\n", current_ratio);
+        if (current_ratio > logical_ram_stats_.max_capacity_ratio) {
+            logical_ram_stats_.max_capacity_ratio = current_ratio;
+        }
+        if (current_ratio < logical_ram_stats_.min_capacity_ratio) {
+            logical_ram_stats_.min_capacity_ratio = current_ratio;
+        }
     }
+    VTR_LOG("Min-Max M9K/M144K ratios: (%f, %f)\n", logical_ram_stats_.min_capacity_ratio, logical_ram_stats_.max_capacity_ratio);
 }
 
 // TODO: Since this is constant per molecule, it may make sense to precompute
