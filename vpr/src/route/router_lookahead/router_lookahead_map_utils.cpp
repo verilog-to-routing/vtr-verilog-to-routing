@@ -11,6 +11,7 @@
  * To access the utility functions, the util namespace needs to be used. */
 
 #include <fstream>
+#include <ranges>
 #include "globals.h"
 #include "physical_types_util.h"
 #include "vpr_context.h"
@@ -372,8 +373,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
 
     int num_layers = device_ctx.grid.get_num_layers();
 
-    t_src_opin_delays src_opin_delays;
-    src_opin_delays.resize(num_layers);
+    t_src_opin_delays src_opin_delays(num_layers);
     std::vector<int> tile_max_ptc(device_ctx.physical_tile_types.size(), UNDEFINED);
 
     // Get the maximum OPIN ptc for each tile type to reserve src_opin_delays
@@ -392,8 +392,8 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
         }
     }
 
-    //We assume that the routing connectivity of each instance of a physical tile is the same,
-    //and so only measure one instance of each type
+    // We assume that the routing connectivity of each instance of a physical tile is the same,
+    // and so only measure one instance of each type
     for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
             if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], from_layer_num) == 0) {
@@ -430,11 +430,9 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat,
 
                         VTR_ASSERT(ptc < int(src_opin_delays[from_layer_num][itile].size()));
 
-                        //Find the wire types which are reachable from inode and record them and
-                        //the cost to reach them
-                        dijkstra_flood_to_wires(itile,
-                                                node_id,
-                                                src_opin_delays);
+                        // Find the wire types which are reachable from inode and record them and
+                        // the cost to reach them
+                        dijkstra_flood_to_wires(itile, node_id, src_opin_delays);
 
                         bool reachable_wire_found = false;
                         for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
@@ -876,7 +874,7 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
         //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
         //and then add the estimates from those wire types for the distance of interest.
         //If there are multiple options we use the minimum value.
-        for (const auto& [_, reachable_wire_inf] : src_opin_delay_map) {
+        for (const util::t_reachable_wire_inf& reachable_wire_inf : src_opin_delay_map | std::views::values) {
 
             util::Cost_Entry wire_cost_entry;
             if (reachable_wire_inf.wire_rr_type == e_rr_type::SINK) {
@@ -967,7 +965,7 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
 static void dijkstra_flood_to_wires(int itile,
                                     RRNodeId node,
                                     util::t_src_opin_delays& src_opin_delays) {
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     struct t_pq_entry {
@@ -1018,21 +1016,25 @@ static void dijkstra_flood_to_wires(int itile,
         e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
         int curr_layer_num = rr_graph.node_layer_low(curr.node);
         if (curr_rr_type == e_rr_type::CHANX || curr_rr_type == e_rr_type::CHANY || curr_rr_type == e_rr_type::CHANZ || curr_rr_type == e_rr_type::SINK) {
-            //We stop expansion at any CHANX/CHANY/SINK
+            // We stop expansion at any CHANX/CHANY/SINK
             int seg_index;
             if (curr_rr_type != e_rr_type::SINK) {
                 //It's a wire, figure out its type
-                auto cost_index = rr_graph.node_cost_index(curr.node);
+                RRIndexedDataId cost_index = rr_graph.node_cost_index(curr.node);
                 seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
             } else {
-                //This is a direct-connect path between an IPIN and OPIN,
-                //which terminated at a SINK.
+                // This is a direct-connect path between an IPIN and OPIN,
+                // which terminated at a SINK.
                 //
-                //We treat this as a 'special' wire type.
-                //When the src_opin_delays data structure is queried and a SINK rr_type
-                //is found, the lookahead is not accessed to get the cost entries
-                //as this is a special case of direct connections between OPIN and IPIN.
+                // We treat this as a 'special' wire type.
+                // When the src_opin_delays data structure is queried and a SINK rr_type
+                // is found, the lookahead is not accessed to get the cost entries
+                // as this is a special case of direct connections between OPIN and IPIN.
                 seg_index = DIRECT_CONNECT_SPECIAL_SEG_TYPE;
+            }
+
+            if (curr_rr_type == e_rr_type::CHANZ) {
+                curr_layer_num = (root_layer_num + 1) % 2;
             }
 
             //Keep costs of the best path to reach each wire type
@@ -1047,7 +1049,7 @@ static void dijkstra_flood_to_wires(int itile,
 
         } else if (curr_rr_type == e_rr_type::SOURCE || curr_rr_type == e_rr_type::OPIN || curr_rr_type == e_rr_type::IPIN || curr_rr_type == e_rr_type::MUX) {
             //We allow expansion through SOURCE/OPIN/IPIN types
-            auto cost_index = rr_graph.node_cost_index(curr.node);
+            RRIndexedDataId cost_index = rr_graph.node_cost_index(curr.node);
             float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
@@ -1201,8 +1203,6 @@ static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_
     //Very simple for now, just pick the fist matching tile found
     t_physical_tile_loc loc(UNDEFINED, UNDEFINED, UNDEFINED);
 
-    //VTR_LOG("Prev: %d,%d\n", prev.x, prev.y);
-
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
@@ -1234,8 +1234,6 @@ static t_physical_tile_loc pick_sample_tile(int layer_num, t_physical_tile_type_
             y_init = 0; //Prepare to search next column
         }
     }
-
-    //VTR_LOG("Next: %d,%d\n", loc.x, loc.y);
 
     return loc;
 }
