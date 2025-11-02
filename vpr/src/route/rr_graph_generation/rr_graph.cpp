@@ -1498,12 +1498,12 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 }
 
                 add_edges_opin_chanz(rr_graph,
-                    layer, i, j,
-                                 Fc_out,
-                                 seg_index_map,
-                                 num_seg_types,
-                                 rr_edges_to_create,
-                                 interdie_3d_links[i][j]);
+                                     layer, i, j,
+                                     Fc_out,
+                                     seg_index_map,
+                                     num_seg_types,
+                                     rr_edges_to_create,
+                                     interdie_3d_links[i][j]);
 
                 // Create the actual OPIN->CHANX/CHANY edges
                 uniquify_edges(rr_edges_to_create);
@@ -1993,10 +1993,10 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
     // allocate 'result' matrix and initialize entries to UNDEFINED. also allocate and initialize matrix which will be used
     // to index into the correct entries when loading up 'result'
     auto result = vtr::NdMatrix<std::vector<int>, 4>({
-        size_t(tile_type->num_pins),   //[0..num_pins-1]
-        size_t(tile_type->width),      //[0..width-1]
-        size_t(tile_type->height),     //[0..height-1]
-        4,                             //[0..sides-1]
+        size_t(tile_type->num_pins), //[0..num_pins-1]
+        size_t(tile_type->width),    //[0..width-1]
+        size_t(tile_type->height),   //[0..height-1]
+        4,                           //[0..sides-1]
     });
 
     // multiplier for unidirectional vs bidirectional architectures
@@ -2074,11 +2074,11 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     }
 
     auto tracks_connected_to_pin = vtr::NdMatrix<int, 5>({
-                                                             size_t(tile_type->num_pins),   // [0..num_pins-1]
-                                                             size_t(tile_type->width),      // [0..width-1]
-                                                             size_t(tile_type->height),     // [0..height-1]
-                                                             NUM_2D_SIDES,                  // [0..NUM_2D_SIDES-1]
-                                                             size_t(max_Fc)                 // [0..Fc-1]
+                                                             size_t(tile_type->num_pins), // [0..num_pins-1]
+                                                             size_t(tile_type->width),    // [0..width-1]
+                                                             size_t(tile_type->height),   // [0..height-1]
+                                                             NUM_2D_SIDES,                // [0..NUM_2D_SIDES-1]
+                                                             size_t(max_Fc)               // [0..Fc-1]
                                                          },
                                                          UNDEFINED); // Unconnected
 
@@ -2087,9 +2087,9 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     // Type->num_pins) if a logical pin has multiple specified physical
     // pinlocations (i.e. appears on multiple sides of the block)
     auto num_dir = vtr::NdMatrix<int, 3>({
-                                             size_t(tile_type->width),      // [0..width-1]
-                                             size_t(tile_type->height),     // [0..height-1]
-                                             NUM_2D_SIDES                   // [0..NUM_2D_SIDES-1]
+                                             size_t(tile_type->width),  // [0..width-1]
+                                             size_t(tile_type->height), // [0..height-1]
+                                             NUM_2D_SIDES               // [0..NUM_2D_SIDES-1]
                                          },
                                          0);
 
@@ -2099,18 +2099,18 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     //
     // Max possible space allocated for simplicity
     auto dir_list = vtr::NdMatrix<int, 4>({
-                                              size_t(tile_type->width),     // [0..width-1]
-                                              size_t(tile_type->height),    // [0..height-1]
-                                              NUM_2D_SIDES,                 // [0..NUM_2D_SIDES-1]
-                                              size_t(tile_type->num_pins)   // [0..num_pins * num_layers-1]
+                                              size_t(tile_type->width),   // [0..width-1]
+                                              size_t(tile_type->height),  // [0..height-1]
+                                              NUM_2D_SIDES,               // [0..NUM_2D_SIDES-1]
+                                              size_t(tile_type->num_pins) // [0..num_pins * num_layers-1]
                                           },
                                           -1); // Defensive coding: Initialize to invalid
 
     // Number of currently assigned physical pins
     auto num_done_per_dir = vtr::NdMatrix<int, 3>({
-                                                      size_t(tile_type->width),      // [0..width-1]
-                                                      size_t(tile_type->height),     // [0..height-1]
-                                                      NUM_2D_SIDES                   // [0..NUM_2D_SIDES-1]
+                                                      size_t(tile_type->width),  // [0..width-1]
+                                                      size_t(tile_type->height), // [0..height-1]
+                                                      NUM_2D_SIDES               // [0..NUM_2D_SIDES-1]
                                                   },
                                                   0);
 
@@ -2123,7 +2123,6 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
         // Pins connecting only to global resources get no switches -> keeps area model accurate.
         if (tile_type->is_ignored_pin[pin])
             continue;
-
 
         for (int width = 0; width < tile_type->width; ++width) {
             for (int height = 0; height < tile_type->height; ++height) {
@@ -2194,7 +2193,6 @@ static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin
     }
 
     VTR_ASSERT(pin == num_phys_pins);
-
 
     if (perturb_switch_pattern) {
         load_perturbed_connection_block_pattern(tracks_connected_to_pin,

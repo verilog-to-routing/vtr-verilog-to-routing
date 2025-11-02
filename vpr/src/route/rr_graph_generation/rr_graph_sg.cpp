@@ -101,7 +101,9 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
 }
 
 void add_edges_opin_chanz(const RRGraphView& rr_graph,
-                          int layer, int x, int y,
+                          int layer,
+                          int x,
+                          int y,
                           const std::vector<vtr::Matrix<int>>& Fc_out,
                           const t_unified_to_parallel_seg_index& seg_index_map,
                           int num_seg_types,
@@ -175,7 +177,7 @@ void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
         // SG links are confined to one layer (non-3D), but can run in X or Y.
         VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
         const int layer = src_loc.layer_num;
-        compute_non_3d_sg_link_geometry(src_loc, dst_loc, chan_type, xlow, xhigh, ylow, yhigh,direction);
+        compute_non_3d_sg_link_geometry(src_loc, dst_loc, chan_type, xlow, xhigh, ylow, yhigh, direction);
 
         // Retrieve the node ID and track number allocated earlier
         const RRNodeId node_id = sg_node_indices[i].first;

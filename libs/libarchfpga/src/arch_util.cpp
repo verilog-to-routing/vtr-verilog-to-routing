@@ -545,7 +545,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     for (size_t i = 0; i < num_annotations; i++) {
         lut_pb_type->modes[0].interconnect[0].annotations[i].clock = lut_pb_type->annotations[i].clock;
         lut_pb_type->modes[0].interconnect[0].annotations[i].input_pins = lut_pb_type->annotations[i].input_pins;
-        lut_pb_type->modes[0].interconnect[0].annotations[i].output_pins =lut_pb_type->annotations[i].output_pins;
+        lut_pb_type->modes[0].interconnect[0].annotations[i].output_pins = lut_pb_type->annotations[i].output_pins;
         lut_pb_type->modes[0].interconnect[0].annotations[i].line_num = lut_pb_type->annotations[i].line_num;
         lut_pb_type->modes[0].interconnect[0].annotations[i].format = lut_pb_type->annotations[i].format;
         lut_pb_type->modes[0].interconnect[0].annotations[i].type = lut_pb_type->annotations[i].type;

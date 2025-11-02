@@ -3489,7 +3489,8 @@ static void process_pin_locations(pugi::xml_node Locations,
             if ((y_offset < 0) || (y_offset >= physical_tile_type->height)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                                vtr::string_fmt("'%d' is an invalid vertical offset for type '%s' (must be within [0, %d]).\n",
-                                               y_offset, physical_tile_type->name.c_str(), physical_tile_type->height - 1).c_str());
+                                               y_offset, physical_tile_type->name.c_str(), physical_tile_type->height - 1)
+                                   .c_str());
             }
 
             // Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
@@ -3635,7 +3636,8 @@ static void process_sub_tiles(pugi::xml_node node,
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                        vtr::string_fmt("No sub tile found for the Physical Tile %s.\n"
                                        "At least one sub tile is needed to correctly describe the Physical Tile.\n",
-                                       physical_tile_type->name.c_str()).c_str());
+                                       physical_tile_type->name.c_str())
+                           .c_str());
     }
 
     // used to find duplicate subtile names

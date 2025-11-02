@@ -43,10 +43,9 @@ static void CheckSwitches(const t_arch& Arch) {
             }
         }
 
-
         // find the ipin cblock switch index, if it exists
         if (Arch.switches[i].name == Arch.ipin_cblock_switch_name) {
-                ipin_cblock_switch_index = i;
+            ipin_cblock_switch_index = i;
         }
     }
 
