@@ -18,6 +18,7 @@
 
 #include "atom_lookup.h"
 #include "atom_pb_bimap.h"
+#include "clustered_netlist_fwd.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "pugixml.hpp"
@@ -26,6 +27,7 @@
 
 #include "vpr_context.h"
 #include "vtr_assert.h"
+#include "vtr_time.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
 #include "vtr_digest.h"
@@ -42,24 +44,24 @@
 
 static const char* netlist_file_name = nullptr;
 
-static void processPorts(pugi::xml_node Parent,
-                         t_pb* pb,
-                         t_pb_routes& pb_route,
-                         const pugiutil::loc_data& loc_data);
+static void process_ports(pugi::xml_node Parent,
+                          t_pb* pb,
+                          t_pb_routes& pb_route,
+                          const pugiutil::loc_data& loc_data);
 
-static void processPb(pugi::xml_node Parent,
-                      const ClusterBlockId index,
-                      t_pb* pb,
-                      t_pb_routes& pb_route,
-                      int& num_primitives,
-                      const pugiutil::loc_data& loc_data);
+static void process_pb(pugi::xml_node Parent,
+                       const ClusterBlockId index,
+                       t_pb* pb,
+                       t_pb_routes& pb_route,
+                       int& num_primitives,
+                       const pugiutil::loc_data& loc_data);
 
-static void processComplexBlock(pugi::xml_node Parent,
-                                const ClusterBlockId index,
-                                int& num_primitives,
-                                const pugiutil::loc_data& loc_data,
-                                const std::unordered_map<std::string, int>& logical_block_type_name_to_index,
-                                ClusteredNetlist& clb_nlist);
+static void process_complex_block(pugi::xml_node Parent,
+                                  const ClusterBlockId index,
+                                  int& num_primitives,
+                                  const pugiutil::loc_data& loc_data,
+                                  const std::unordered_map<std::string, int>& logical_block_type_name_to_index,
+                                  ClusteredNetlist& clb_nlist);
 
 static void sync_clustered_and_atom_netlists(ClusteredNetlist& clb_nlist,
                                              AtomNetlist& atom_netlist,
@@ -90,10 +92,9 @@ ClusteredNetlist read_netlist(const char* net_file,
     AtomLookup& atom_lookup = g_vpr_ctx.mutable_atom().mutable_lookup();
     const auto& logical_block_types = g_vpr_ctx.device().logical_block_types;
 
-    clock_t begin = clock();
+    vtr::ScopedStartFinishTimer read_netlist_timer("Loading packed FPGA netlist file.");
 
     /* Parse the file */
-    VTR_LOG("Begin loading packed FPGA netlist file.\n");
 
     // Prepare a lookup between the logical block type name and the block type's index.
     // This is used when parsing the blocks for their type.
@@ -120,14 +121,14 @@ ClusteredNetlist read_netlist(const char* net_file,
         netlist_file_name = net_file;
 
         /* Root node should be block */
-        auto top = doc.child("block");
+        pugi::xml_node top = doc.child("block");
         if (!top) {
             vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top),
                       "Root element must be 'block'.\n");
         }
 
         /* Check top-level netlist attributes */
-        auto top_name = top.attribute("name");
+        pugi::xml_attribute top_name = top.attribute("name");
         if (!top_name) {
             vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top),
                       "Root element must have a 'name' attribute.\n");
@@ -136,7 +137,7 @@ ClusteredNetlist read_netlist(const char* net_file,
         VTR_LOG("Netlist generated from file '%s'.\n", top_name.value());
 
         //Verify top level attributes
-        auto top_instance = pugiutil::get_attribute(top, "instance", loc_data);
+        pugi::xml_attribute top_instance = pugiutil::get_attribute(top, "instance", loc_data);
 
         if (strcmp(top_instance.value(), "FPGA_packed_netlist[0]") != 0) {
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top),
@@ -144,7 +145,7 @@ ClusteredNetlist read_netlist(const char* net_file,
                       top_instance.value());
         }
 
-        auto architecture_id = top.attribute("architecture_id");
+        pugi::xml_attribute architecture_id = top.attribute("architecture_id");
         if (architecture_id) {
             //Netlist file has an architecture id, make sure it is
             //consistent with the loaded architecture file.
@@ -153,7 +154,7 @@ ClusteredNetlist read_netlist(const char* net_file,
             //to remain compatible with old .net files
             std::string arch_id = architecture_id.value();
             if (arch_id != arch->architecture_id) {
-                auto msg = vtr::string_fmt(
+                std::string msg = vtr::string_fmt(
                     "Netlist was generated from a different architecture file"
                     " (loaded architecture ID: %s, netlist file architecture ID: %s)",
                     arch->architecture_id.c_str(), arch_id.c_str());
@@ -165,7 +166,7 @@ ClusteredNetlist read_netlist(const char* net_file,
             }
         }
 
-        auto atom_netlist_id = top.attribute("atom_netlist_id");
+        pugi::xml_attribute atom_netlist_id = top.attribute("atom_netlist_id");
         if (atom_netlist_id) {
             //Netlist file has an_atom netlist_id, make sure it is
             //consistent with the loaded atom netlist.
@@ -174,7 +175,7 @@ ClusteredNetlist read_netlist(const char* net_file,
             //to remain compatible with old .net files
             std::string atom_nl_id = atom_netlist_id.value();
             if (atom_nl_id != atom_netlist.netlist_id()) {
-                auto msg = vtr::string_fmt(
+                std::string msg = vtr::string_fmt(
                     "Netlist was generated from a different atom netlist file"
                     " (loaded atom netlist ID: %s, packed netlist atom netlist ID: %s)",
                     atom_nl_id.c_str(), atom_netlist.netlist_id().c_str());
@@ -187,13 +188,13 @@ ClusteredNetlist read_netlist(const char* net_file,
         }
 
         //Collect top level I/Os
-        auto top_inputs = pugiutil::get_single_child(top, "inputs", loc_data);
+        pugi::xml_node top_inputs = pugiutil::get_single_child(top, "inputs", loc_data);
         auto circuit_inputs = vtr::StringToken(top_inputs.text().get()).split(" \t\n");
 
-        auto top_outputs = pugiutil::get_single_child(top, "outputs", loc_data);
+        pugi::xml_node top_outputs = pugiutil::get_single_child(top, "outputs", loc_data);
         auto circuit_outputs = vtr::StringToken(top_outputs.text().get()).split(" \t\n");
 
-        auto top_clocks = pugiutil::get_single_child(top, "clocks", loc_data);
+        pugi::xml_node top_clocks = pugiutil::get_single_child(top, "clocks", loc_data);
         auto circuit_clocks = vtr::StringToken(top_clocks.text().get()).split(" \t\n");
 
         /* Parse all CLB blocks and all nets*/
@@ -209,13 +210,13 @@ ClusteredNetlist read_netlist(const char* net_file,
         /* Process netlist */
         unsigned i = 0;
         int num_primitives = 0;
-        for (auto curr_block = top.child("block"); curr_block; curr_block = curr_block.next_sibling("block")) {
-            processComplexBlock(curr_block,
-                                ClusterBlockId(i),
-                                num_primitives,
-                                loc_data,
-                                logical_block_type_name_to_index,
-                                clb_nlist);
+        for (pugi::xml_node curr_block = top.child("block"); curr_block; curr_block = curr_block.next_sibling("block")) {
+            process_complex_block(curr_block,
+                                  ClusterBlockId(i),
+                                  num_primitives,
+                                  loc_data,
+                                  logical_block_type_name_to_index,
+                                  clb_nlist);
             i++;
         }
         VTR_ASSERT(bcount == i);
@@ -224,7 +225,7 @@ ClusteredNetlist read_netlist(const char* net_file,
         VTR_ASSERT(static_cast<size_t>(num_primitives) == atom_netlist.blocks().size());
 
         /* Error check */
-        for (auto blk_id : atom_netlist.blocks()) {
+        for (AtomBlockId blk_id : atom_netlist.blocks()) {
             if (atom_lookup.atom_pb_bimap().atom_pb(blk_id) == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_NET_F,
                                 ".blif file and .net file do not match, .net file missing atom %s.\n",
@@ -247,22 +248,23 @@ ClusteredNetlist read_netlist(const char* net_file,
     /* TODO: create this function later
      * check_top_IO_matches_IO_blocks(circuit_inputs, circuit_outputs, circuit_clocks, blist, bcount); */
 
-    clock_t end = clock();
-
-    VTR_LOG("Finished loading packed FPGA netlist file (took %g seconds).\n", (float)(end - begin) / CLOCKS_PER_SEC);
-
     return clb_nlist;
 }
 
+/**
+ * @brief After the clustered netlist has been created, many of the atom
+ *        netlist datastructures will become out of date. Need to sync the
+ *        clustered netlist with the atom netlist.
+ */
 static void sync_clustered_and_atom_netlists(ClusteredNetlist& clb_nlist,
                                              AtomNetlist& atom_netlist,
                                              AtomLookup& atom_lookup) {
-    /* load mapping between external nets and all nets */
+    // Load mapping between external nets and all nets.
     for (AtomNetId net_id : atom_netlist.nets()) {
         atom_lookup.remove_atom_net(net_id);
     }
 
-    //Save the mapping between clb and atom nets
+    // Save the mapping between clb and atom nets
     for (ClusterNetId clb_net_id : clb_nlist.nets()) {
         AtomNetId net_id = atom_netlist.find_net(clb_nlist.net_name(clb_net_id));
         VTR_ASSERT(net_id);
@@ -270,9 +272,8 @@ static void sync_clustered_and_atom_netlists(ClusteredNetlist& clb_nlist,
     }
 
     // Mark ignored and global atom nets
-    /* We have to make set the following variables after the mapping between cluster nets and atom nets
-     * is created
-     */
+    // We have to make set the following variables after the mapping between cluster nets and atom nets
+    // is created
     for (ClusterNetId clb_net : clb_nlist.nets()) {
         AtomNetId atom_net = atom_lookup.atom_net(clb_net);
         VTR_ASSERT(atom_net != AtomNetId::INVALID());
@@ -284,7 +285,7 @@ static void sync_clustered_and_atom_netlists(ClusteredNetlist& clb_nlist,
         }
     }
 
-    /* load mapping between atom pins and pb_graph_pins */
+    // Load mapping between atom pins and pb_graph_pins
     load_atom_pin_mapping(clb_nlist);
 }
 
@@ -295,7 +296,7 @@ static void sync_clustered_and_atom_netlists(ClusteredNetlist& clb_nlist,
  *   @param index      index of the CLB to allocate and load information into
  *   @param loc_data   xml location info for error reporting
  */
-static void processComplexBlock(pugi::xml_node clb_block,
+static void process_complex_block(pugi::xml_node clb_block,
                                 const ClusterBlockId index,
                                 int& num_primitives,
                                 const pugiutil::loc_data& loc_data,
@@ -304,8 +305,8 @@ static void processComplexBlock(pugi::xml_node clb_block,
     const auto& logical_block_types = g_vpr_ctx.device().logical_block_types;
 
     //Parse cb attributes
-    auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
-    auto block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
+    pugi::xml_attribute block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
+    pugi::xml_attribute block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
     const Tokens tokens(block_inst.value());
     if (tokens.size() != 4 || tokens[0].type != e_token_type::STRING
         || tokens[1].type != e_token_type::OPEN_SQUARE_BRACKET
@@ -336,7 +337,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
     pb->pb_graph_node = complex_block_type.pb_graph_head;
 
     // Set the mode of the physical block.
-    auto clb_mode = pugiutil::get_attribute(clb_block, "mode", loc_data);
+    pugi::xml_attribute clb_mode = pugiutil::get_attribute(clb_block, "mode", loc_data);
     t_pb_type* complex_block_pb_type = complex_block_type.pb_type;
     bool found = false;
     for (int i = 0; i < complex_block_type.pb_type->num_modes; i++) {
@@ -381,12 +382,12 @@ static void processComplexBlock(pugi::xml_node clb_block,
     VTR_ASSERT(clb_nlist.block_ports(index).size() == (unsigned)complex_block_pb_type->num_ports);
 
     // Process the rest of the contents of the cluster block and the pb.
-    processPb(clb_block,
-              index,
-              pb,
-              pb->pb_route,
-              num_primitives,
-              loc_data);
+    process_pb(clb_block,
+               index,
+               pb,
+               pb->pb_route,
+               num_primitives,
+               loc_data);
 
     load_internal_to_block_net_nums(&complex_block_type, pb->pb_route);
 }
@@ -398,10 +399,10 @@ static void processComplexBlock(pugi::xml_node clb_block,
  * `<attributes><attribute name="attrName">attrValue</attribute> ... </attributes>`
  */
 template<typename T>
-void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_net_range, const pugiutil::loc_data& loc_data) {
+void process_attrs_params(pugi::xml_node Parent, const char* child_name, T& atom_net_range, const pugiutil::loc_data& loc_data) {
     std::map<std::string, std::string> kvs;
     if (Parent) {
-        for (auto Cur = pugiutil::get_first_child(Parent, child_name, loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling(child_name)) {
+        for (pugi::xml_node Cur = pugiutil::get_first_child(Parent, child_name, loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling(child_name)) {
             std::string cname = pugiutil::get_attribute(Cur, "name", loc_data).value();
             std::string cval = Cur.text().get();
             bool found = false;
@@ -441,25 +442,25 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
  *   @param pb         physical block to use
  *   @param loc_data   xml location info for error reporting
  */
-static void processPb(pugi::xml_node Parent,
-                      const ClusterBlockId index,
-                      t_pb* pb,
-                      t_pb_routes& pb_route,
-                      int& num_primitives,
-                      const pugiutil::loc_data& loc_data) {
+static void process_pb(pugi::xml_node Parent,
+                       const ClusterBlockId index,
+                       t_pb* pb,
+                       t_pb_routes& pb_route,
+                       int& num_primitives,
+                       const pugiutil::loc_data& loc_data) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
     AtomLookup& atom_lookup = g_vpr_ctx.mutable_atom().mutable_lookup();
     AtomPBBimap& atom_pb_bimap = atom_lookup.mutable_atom_pb_bimap();
 
     // Process the ports.
-    auto inputs = pugiutil::get_single_child(Parent, "inputs", loc_data);
-    processPorts(inputs, pb, pb_route, loc_data);
+    pugi::xml_node inputs = pugiutil::get_single_child(Parent, "inputs", loc_data);
+    process_ports(inputs, pb, pb_route, loc_data);
 
-    auto outputs = pugiutil::get_single_child(Parent, "outputs", loc_data);
-    processPorts(outputs, pb, pb_route, loc_data);
+    pugi::xml_node outputs = pugiutil::get_single_child(Parent, "outputs", loc_data);
+    process_ports(outputs, pb, pb_route, loc_data);
 
-    auto clocks = pugiutil::get_single_child(Parent, "clocks", loc_data);
-    processPorts(clocks, pb, pb_route, loc_data);
+    pugi::xml_node clocks = pugiutil::get_single_child(Parent, "clocks", loc_data);
+    process_ports(clocks, pb, pb_route, loc_data);
 
     // Base-case: This is a primitive.
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
@@ -479,10 +480,10 @@ static void processPb(pugi::xml_node Parent,
         // Process the attributes and params.
         auto atom_attrs = atom_netlist.block_attrs(blk_id);
         auto atom_params = atom_netlist.block_params(blk_id);
-        auto attrs = pugiutil::get_single_child(Parent, "attributes", loc_data, pugiutil::OPTIONAL);
-        auto params = pugiutil::get_single_child(Parent, "parameters", loc_data, pugiutil::OPTIONAL);
-        processAttrsParams(attrs, "attribute", atom_attrs, loc_data);
-        processAttrsParams(params, "parameter", atom_params, loc_data);
+        pugi::xml_node attrs = pugiutil::get_single_child(Parent, "attributes", loc_data, pugiutil::OPTIONAL);
+        pugi::xml_node params = pugiutil::get_single_child(Parent, "parameters", loc_data, pugiutil::OPTIONAL);
+        process_attrs_params(attrs, "attribute", atom_attrs, loc_data);
+        process_attrs_params(params, "parameter", atom_params, loc_data);
 
         num_primitives++;
         return;
@@ -500,10 +501,10 @@ static void processPb(pugi::xml_node Parent,
     }
 
     // Populate info for each physical block.
-    for (auto child = Parent.child("block"); child; child = child.next_sibling("block")) {
+    for (pugi::xml_node child = Parent.child("block"); child; child = child.next_sibling("block")) {
         VTR_ASSERT(strcmp(child.name(), "block") == 0);
 
-        auto instance_type = pugiutil::get_attribute(child, "instance", loc_data);
+        pugi::xml_attribute instance_type = pugiutil::get_attribute(child, "instance", loc_data);
         const Tokens tokens(instance_type.value());
         if (tokens.size() != 4 || tokens[0].type != e_token_type::STRING
             || tokens[1].type != e_token_type::OPEN_SQUARE_BRACKET
@@ -552,14 +553,14 @@ static void processPb(pugi::xml_node Parent,
 
         // Set the name of the new pb.
         pugi::xml_attribute mode;
-        auto name = pugiutil::get_attribute(child, "name", loc_data);
+        pugi::xml_attribute name = pugiutil::get_attribute(child, "name", loc_data);
         if (0 != strcmp(name.value(), "open")) {
             new_child_pb->name = vtr::strdup(name.value());
             mode = child.attribute("mode");
         } else {
             // hysical block has no used primitives but it may have used routing.
             new_child_pb->name = nullptr;
-            auto lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);
+            pugi::xml_node lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);
             if (!lookahead1) {
                 // If not used for routing, skip recursing into the pb.
                 continue;
@@ -586,20 +587,23 @@ static void processPb(pugi::xml_node Parent,
                       new_child_pb->name, pb_index);
         }
 
-        processPb(child, index, new_child_pb, pb_route, num_primitives, loc_data);
+        process_pb(child, index, new_child_pb, pb_route, num_primitives, loc_data);
     }
 }
 
-static void processPorts(pugi::xml_node Parent,
-                         t_pb* pb,
-                         t_pb_routes& pb_route,
-                         const pugiutil::loc_data& loc_data) {
+/**
+ * @brief XML parser to populate the routing represented on the ports of the pb.
+ */
+static void process_ports(pugi::xml_node Parent,
+                          t_pb* pb,
+                          t_pb_routes& pb_route,
+                          const pugiutil::loc_data& loc_data) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
-    for (auto Cur = pugiutil::get_first_child(Parent, "port", loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling("port")) {
-        auto port_name = pugiutil::get_attribute(Cur, "name", loc_data);
+    for (pugi::xml_node Cur = pugiutil::get_first_child(Parent, "port", loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling("port")) {
+        pugi::xml_attribute port_name = pugiutil::get_attribute(Cur, "name", loc_data);
 
         //Determine the port index on the pb
         //
@@ -828,10 +832,10 @@ static void processPorts(pugi::xml_node Parent,
     }
 
     //Record any port rotation mappings
-    for (auto pin_rot_map = pugiutil::get_first_child(Parent, "port_rotation_map", loc_data, pugiutil::OPTIONAL);
+    for (pugi::xml_node pin_rot_map = pugiutil::get_first_child(Parent, "port_rotation_map", loc_data, pugiutil::OPTIONAL);
          pin_rot_map;
          pin_rot_map = pin_rot_map.next_sibling("port_rotation_map")) {
-        auto port_name = pugiutil::get_attribute(pin_rot_map, "name", loc_data).value();
+        const char* port_name = pugiutil::get_attribute(pin_rot_map, "name", loc_data).value();
 
         const t_port* pb_gport = find_pb_graph_port(pb->pb_graph_node, port_name);
 
@@ -974,7 +978,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
     vtr::vector<ClusterNetId, int> count(clb_nlist.nets().size(), 0);
     for (ClusterBlockId blk_id : clb_nlist.blocks()) {
         t_logical_block_type_ptr block_type = clb_nlist.block_type(blk_id);
-        auto tile_type = pick_physical_type(block_type);
+        t_physical_tile_type_ptr tile_type = pick_physical_type(block_type);
         for (int j = 0; j < block_type->pb_type->num_pins; j++) {
             int physical_pin = get_physical_pin(tile_type, block_type, j);
 
@@ -1023,11 +1027,11 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
     // set, minus the "open" nets.
     int num_unique_net_names = seen_net_names.size() - 1;
     VTR_ASSERT(static_cast<int>(clb_nlist.nets().size()) == num_unique_net_names);
-    for (auto net_id : clb_nlist.nets()) {
-        for (auto pin_id : clb_nlist.net_sinks(net_id)) {
+    for (ClusterNetId net_id : clb_nlist.nets()) {
+        for (ClusterPinId pin_id : clb_nlist.net_sinks(net_id)) {
             bool is_ignored_net = clb_nlist.net_is_ignored(net_id);
             t_logical_block_type_ptr block_type = clb_nlist.block_type(clb_nlist.pin_block(pin_id));
-            auto tile_type = pick_physical_type(block_type);
+            t_physical_tile_type_ptr tile_type = pick_physical_type(block_type);
             int logical_pin = clb_nlist.pin_logical_index(pin_id);
             int physical_pin = get_physical_pin(tile_type, block_type, logical_pin);
 
@@ -1040,9 +1044,13 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist,
     }
 }
 
+/**
+ * @brief Counts the number of constant generators in the design and displays
+ *        this information to the log files.
+ */
 static void mark_constant_generators(const ClusteredNetlist& clb_nlist, int verbosity) {
     size_t const_gen_count = 0;
-    for (auto blk_id : clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : clb_nlist.blocks()) {
         const_gen_count += mark_constant_generators_rec(clb_nlist.block_pb(blk_id), clb_nlist.block_pb(blk_id)->pb_route, verbosity);
     }
 
