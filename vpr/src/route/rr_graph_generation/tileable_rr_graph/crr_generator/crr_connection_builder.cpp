@@ -166,26 +166,24 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
                     // If the source node is an IPIN, then it should be considered as
                     // a sink of the connection.
                     if (source_node_type == e_rr_type::IPIN) {
-                        SwitchId switch_id =
-                            get_edge_switch_id(cell.as_string(),
-                                               rr_node_typename[source_node_type],
-                                               sink_node,
-                                               source_node);
+                        int delay_ps = get_connection_delay_ps(cell.as_string(),
+                                                               rr_node_typename[source_node_type],
+                                                               sink_node,
+                                                               source_node);
 
-                        tile_connections.emplace_back(source_node, sink_node, switch_id);
+                        tile_connections.emplace_back(source_node, sink_node, delay_ps);
                     } else {
                         int segment_length = -1;
                         if (sink_node_type == e_rr_type::CHANX || sink_node_type == e_rr_type::CHANY) {
                             segment_length = rr_graph_.node_length(sink_node);
                         }
-                        SwitchId switch_id =
-                            get_edge_switch_id(cell.as_string(),
-                                               rr_node_typename[sink_node_type],
-                                               source_node,
-                                               sink_node,
-                                               segment_length);
+                        int delay_ps = get_connection_delay_ps(cell.as_string(),
+                                                               rr_node_typename[sink_node_type],
+                                                               source_node,
+                                                               sink_node,
+                                                               segment_length);
 
-                        tile_connections.emplace_back(sink_node, source_node, switch_id);
+                        tile_connections.emplace_back(sink_node, source_node, delay_ps);
                     }
                 }
             }
@@ -525,7 +523,11 @@ std::string CRRConnectionBuilder::get_ptc_sequence(int seg_index,
     return result;
 }
 
-SwitchId CRRConnectionBuilder::get_edge_switch_id(const std::string& cell_value, const std::string& sink_node_type, RRNodeId /*source_node*/, RRNodeId /*sink_node*/, int /*segment_length*/) const {
+int CRRConnectionBuilder::get_connection_delay_ps(const std::string& cell_value,
+                                                  const std::string& sink_node_type,
+                                                  RRNodeId /*source_node*/,
+                                                  RRNodeId /*sink_node*/,
+                                                  int /*segment_length*/) const {
     std::string lower_case_sink_node_type = sink_node_type;
     std::transform(lower_case_sink_node_type.begin(),
                    lower_case_sink_node_type.end(),
@@ -535,13 +537,12 @@ SwitchId CRRConnectionBuilder::get_edge_switch_id(const std::string& cell_value,
         // TODO: This is a temporary solution. We need to have an API call to get
         // the switch id from delay.
         if (cell_value == "0") {
-            return static_cast<SwitchId>(0);
+            return 0;
         }
         int switch_delay_ps = std::stoi(cell_value);
-        int switch_id = switch_delay_ps;
-        return static_cast<SwitchId>(switch_id);
+        return switch_delay_ps;
     } else {
-        VTR_LOG_ERROR("Not implemented - get_edge_switch_id\n");
+        VTR_LOG_ERROR("Not implemented - get_connection_delay_ps\n");
         return static_cast<SwitchId>(-1);
         // std::string switch_id_key = "";
         // if (segment_length > 0) {

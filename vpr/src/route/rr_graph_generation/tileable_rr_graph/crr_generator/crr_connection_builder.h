@@ -147,7 +147,7 @@ class CRRConnectionBuilder {
     std::string get_segment_type_label(Side side) const;
 
     // Return the switch id of an edge between two nodes
-    SwitchId get_edge_switch_id(const std::string& cell_value,
+    int get_connection_delay_ps(const std::string& cell_value,
                                 const std::string& sink_node_type,
                                 RRNodeId source_node,
                                 RRNodeId sink_node,
