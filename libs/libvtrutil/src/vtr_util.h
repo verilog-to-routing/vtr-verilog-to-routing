@@ -115,34 +115,34 @@ char* getline(char*& _lineptr, FILE* _stream);
 /**
  * @brief Legacy c-style function replacements.
  *
- * Typically these add extra error checking
+ * Typically, these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-int atoi(const std::string& value);
+int atoi(std::string_view value);
 
 /**
  * @brief Legacy c-style function replacements.
  *
- * Typically these add extra error checking
+ * Typically, these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-unsigned atou(const std::string& value);
+unsigned atou(std::string_view value);
 
 /**
  * @brief Legacy c-style function replacements.
  *
- * Typically these add extra error checking
+ * Typically, these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-float atof(const std::string& value);
+float atof(std::string_view value);
 
 /**
  * @brief Legacy c-style function replacements.
  *
- * Typically these add extra error checking
+ * Typically, these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-double atod(const std::string& value);
+double atod(std::string_view value);
 
 /**
  * @brief File utilities

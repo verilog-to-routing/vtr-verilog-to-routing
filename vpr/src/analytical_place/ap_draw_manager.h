@@ -10,7 +10,7 @@
 #include <string>
 
 // Forward declarations
-class PartialPlacement;
+struct PartialPlacement;
 
 // Types to indicate the type of drawing operation
 enum class APDrawType {

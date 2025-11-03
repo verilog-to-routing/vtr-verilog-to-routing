@@ -823,7 +823,7 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
     int *num_input_pb_graph_node_pins, *num_output_pb_graph_node_pins; /* number of pins in a set [0..num_sets-1] */
     int num_input_pb_graph_node_sets, num_output_pb_graph_node_sets;
     /* Points to pins specified in the port string, later used to insert edges */
-    t_pb_graph_pin ***input_pb_graph_node_pins, ***output_pb_graph_node_pins; /* [0..num_sets_in_port - 1][0..num_ptrs - 1] */
+    /* [0..num_sets_in_port - 1][0..num_ptrs - 1] */
 
     if (load_power_structures) {
         VTR_ASSERT(pb_graph_parent_node->interconnect_pins[mode->index] == nullptr);
@@ -836,15 +836,15 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
 
     for (i = 0; i < mode->num_interconnect; i++) {
         /* determine the interconnect input and output pins */
-        input_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
-                                                                            pb_graph_children_nodes, mode->interconnect[i].input_string,
-                                                                            &num_input_pb_graph_node_pins, &num_input_pb_graph_node_sets,
-                                                                            true, true);
+        t_pb_graph_pin*** input_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
+                                                                                              pb_graph_children_nodes, mode->interconnect[i].input_string,
+                                                                                              &num_input_pb_graph_node_pins, &num_input_pb_graph_node_sets,
+                                                                                              true, true);
 
-        output_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
-                                                                             pb_graph_children_nodes, mode->interconnect[i].output_string,
-                                                                             &num_output_pb_graph_node_pins, &num_output_pb_graph_node_sets,
-                                                                             false, true);
+        t_pb_graph_pin*** output_pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(mode->interconnect[i].line_num, pb_graph_parent_node,
+                                                                                               pb_graph_children_nodes, mode->interconnect[i].output_string,
+                                                                                               &num_output_pb_graph_node_pins, &num_output_pb_graph_node_sets,
+                                                                                               false, true);
 
         if (load_power_structures) {
             alloc_and_load_interconnect_pins(&pb_graph_parent_node->interconnect_pins[mode->index][i],
@@ -886,8 +886,8 @@ static void alloc_and_load_mode_interconnect(t_pb_graph_node* pb_graph_parent_no
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), mode->interconnect[i].line_num,
                           "Unknown interconnect %d for mode %s in pb_type %s, input %s, output %s\n",
                           mode->interconnect[i].type, mode->name,
-                          pb_graph_parent_node->pb_type->name, mode->interconnect[i].input_string,
-                          mode->interconnect[i].output_string);
+                          pb_graph_parent_node->pb_type->name, mode->interconnect[i].input_string.c_str(),
+                          mode->interconnect[i].output_string.c_str());
         }
         for (j = 0; j < num_input_pb_graph_node_sets; j++) {
             delete[] input_pb_graph_node_pins[j];
@@ -952,7 +952,7 @@ static void store_pin_sinks_edge_id(t_pb_graph_node* pb_graph_node) {
 t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                            const t_pb_graph_node* pb_graph_parent_node,
                                                            t_pb_graph_node** pb_graph_children_nodes,
-                                                           const char* port_string,
+                                                           std::string_view port_string,
                                                            int** num_ptrs,
                                                            int* num_sets,
                                                            const bool is_input_to_interc,
@@ -967,13 +967,13 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
         if (tokens[i].type == e_token_type::OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "{ inside { in port %s\n", port_string);
+                          "{ inside { in port %s\n", port_string.data());
             }
             in_squig_bracket = true;
         } else if (tokens[i].type == e_token_type::CLOSE_SQUIG_BRACKET) {
             if (!in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "No matching '{' for '}' in port %s\n", port_string);
+                          "No matching '{' for '}' in port %s\n", port_string.data());
             }
             (*num_sets)++;
             in_squig_bracket = false;
@@ -987,7 +987,7 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
     if (in_squig_bracket) {
         (*num_sets)++;
         vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                  "No matching '{' for '}' in port %s\n", port_string);
+                  "No matching '{' for '}' in port %s\n", port_string.data());
     }
 
     t_pb_graph_pin*** pb_graph_pins = new t_pb_graph_pin**[*num_sets];
@@ -1003,17 +1003,17 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
         if (tokens[i].type == e_token_type::OPEN_SQUIG_BRACKET) {
             if (in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "{ inside { in port %s\n", port_string);
+                          "{ inside { in port %s\n", port_string.data());
             }
             in_squig_bracket = true;
         } else if (tokens[i].type == e_token_type::CLOSE_SQUIG_BRACKET) {
             if ((*num_ptrs)[curr_set] == 0) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "No data contained in {} in port %s\n", port_string);
+                          "No data contained in {} in port %s\n", port_string.data());
             }
             if (!in_squig_bracket) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "No matching '{' for '}' in port %s\n", port_string);
+                          "No matching '{' for '}' in port %s\n", port_string.data());
             }
             curr_set++;
             in_squig_bracket = false;
@@ -1026,7 +1026,7 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                                     &((*num_ptrs)[curr_set]), &pb_graph_pins[curr_set]);
             } catch (VprError& e) {
                 vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "Syntax error processing port string '%s' (%s)\n", port_string, e.what());
+                          "Syntax error processing port string '%s' (%s)\n", port_string.data(), e.what());
             }
             VTR_ASSERT(success);
 

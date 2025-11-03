@@ -134,7 +134,7 @@ ClusteredNetlist read_netlist(const char* net_file,
                 auto msg = vtr::string_fmt(
                     "Netlist was generated from a different architecture file"
                     " (loaded architecture ID: %s, netlist file architecture ID: %s)",
-                    arch->architecture_id, arch_id.c_str());
+                    arch->architecture_id.c_str(), arch_id.c_str());
                 if (verify_file_digests) {
                     vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top), msg.c_str());
                 } else {

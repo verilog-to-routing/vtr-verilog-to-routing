@@ -14,10 +14,10 @@
 
 namespace vtr {
 
-std::string secure_digest_file(const std::string& filepath) {
-    std::ifstream is(filepath);
+std::string secure_digest_file(std::string_view filepath) {
+    std::ifstream is(filepath.data());
     if (!is) {
-        throw VtrError("Failed to open file", filepath);
+        throw VtrError("Failed to open file", filepath.data());
     }
     return secure_digest_stream(is);
 }
