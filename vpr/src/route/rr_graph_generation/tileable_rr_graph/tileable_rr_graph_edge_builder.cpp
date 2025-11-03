@@ -300,7 +300,7 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
 
 void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   RRGraphBuilder& rr_graph_builder,
-                                  vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                  const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                   const t_crr_opts& crr_opts,
                                   const DeviceGrid& grids,
                                   const size_t& layer,
