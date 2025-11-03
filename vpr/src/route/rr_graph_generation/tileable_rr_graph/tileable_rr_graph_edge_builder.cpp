@@ -351,13 +351,14 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
 
             t_track2pin_map track2ipin_map; /* [0..track_gsb_side][0..num_tracks][ipin_indices] */
             t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
-            if (build_crr_edges && !crr_opts.preserve_pin_connections) {
-                VTR_ASSERT_MSG(false, "Not implemented");
-            } else {
-                /* adapt the track_to_ipin_lookup for the GSB nodes */
+            
+            /* adapt the track_to_ipin_lookup for the GSB nodes */
+            if (!(build_crr_edges && crr_opts.preserve_input_pin_connections)) {
                 track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
+            }
 
-                /* adapt the opin_to_track_map for the GSB nodes */
+            /* adapt the opin_to_track_map for the GSB nodes */
+            if (!(build_crr_edges && crr_opts.preserve_output_pin_connections)) {
                 opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
             }
 
