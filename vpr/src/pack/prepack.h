@@ -57,6 +57,7 @@ struct LogicalRamGroup {
     std::unordered_map<t_logical_block_type_ptr, int> candidate_capacity;
     int total_memory_slices = 0;
     int remaining_memory_slices = 0;
+    t_logical_block_type_ptr last_selected_type = nullptr;
 };
 
 // This is implemented only for 2 physical RAM type for now to try the usage of

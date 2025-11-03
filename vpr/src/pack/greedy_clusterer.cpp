@@ -442,7 +442,6 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             // VTR_LOG("\t\tEmpty slices ratio: %f\n", empty_slices_ratio);
             float new_utilization_ratio = vtr::safe_ratio<float>(num_used_type_instances[cand] + 1, equivalent_num_instances); // + 1 on the numerator is to penalize the scarce resources more.
             // VTR_LOG("\t\tNew utilization ratio: %f\n", new_utilization_ratio);
-            // VTR_LOG("\t\tSum of ratios: %f\n", remaining_slices_ratio + empty_slices_ratio + new_utilization_ratio);
 
             // The capacity ratio cost calculation.
             float capacity_cost = 0;
@@ -454,12 +453,22 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
                 // Leaving it as zero for now. We will just be adding this cost for the M144K to see the results.
             }
             // VTR_LOG("\t\tCapacity ratio cost: %f\n", capacity_cost);
+
+            float differnet_type_cost = 0.0;
+            if (logical_ram->last_selected_type != nullptr && logical_ram->last_selected_type != cand) {
+                differnet_type_cost = 1.0;
+            }
+            // VTR_LOG("\t\tDifferent type cost: %f\n", differnet_type_cost);
+
+
+
             
-            
+            // VTR_LOG("\t\tSum of ratios: %f\n", remaining_slices_ratio + empty_slices_ratio + new_utilization_ratio + capacity_cost + differnet_type_cost);
             float cost = 1.0 * remaining_slices_ratio 
                        + 1.0 * empty_slices_ratio
                        + 1.0 * new_utilization_ratio
-                       + 1.0 * capacity_cost;
+                       + 1.0 * capacity_cost
+                       + 1.0 * differnet_type_cost;
             candidate_costs[cand] = cost;
             // VTR_LOG("\t\tCost: %f\n", cost);
         
@@ -507,6 +516,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             if (is_memory) {
                 LogicalRamGroup* logical_ram = prepacker.logical_ram_group_of_mut(root_atom);
                 logical_ram->remaining_memory_slices -= std::min(logical_ram->remaining_memory_slices, logical_ram->candidate_capacity[type]);
+                logical_ram->last_selected_type = type;
                 // VTR_LOG("\tSelected candidate type: %s\n", type->name.c_str());
                 // VTR_LOG("\tAdjusting the remaining slices\n");
             }
