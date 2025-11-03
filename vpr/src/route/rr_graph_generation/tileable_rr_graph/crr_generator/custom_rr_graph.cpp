@@ -172,32 +172,6 @@ std::unordered_set<NodeId> RRGraph::get_opin_nodes() const {
     return result;
 }
 
-std::vector<RREdge> RRGraph::get_preserved_edges(const bool preserve_pin_connections) const {
-    std::vector<RREdge> result;
-    auto source_nodes = get_source_nodes();
-    auto sink_nodes = get_sink_nodes();
-    auto ipin_nodes = get_ipin_nodes();
-    auto opin_nodes = get_opin_nodes();
-    for (const auto& edge : edges_) {
-        auto edge_src_node = edge.get_src_node();
-        auto edge_sink_node = edge.get_sink_node();
-        if (source_nodes.find(edge_src_node) != source_nodes.end() || sink_nodes.find(edge_sink_node) != sink_nodes.end() || (opin_nodes.find(edge_src_node) != opin_nodes.end() && ipin_nodes.find(edge_sink_node) != ipin_nodes.end())) {
-            result.push_back(edge);
-        } else {
-            if (preserve_pin_connections) {
-                if (ipin_nodes.find(edge_sink_node) != ipin_nodes.end() || opin_nodes.find(edge_src_node) != opin_nodes.end()) {
-                    result.push_back(edge);
-                }
-            }
-        }
-    }
-
-    // Remove duplicate edges
-    std::sort(result.begin(), result.end());
-    result.erase(std::unique(result.begin(), result.end()), result.end());
-    return result;
-}
-
 void RRGraph::set_tool_info(const std::string& name, const std::string& version, const std::string& comment) {
     tool_name_ = name;
     tool_version_ = version;
