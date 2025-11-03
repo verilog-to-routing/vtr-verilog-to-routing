@@ -375,15 +375,16 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                                        concat_wire,
                                                        wire_opposite_side,
                                                        segment_inf);
-                /* Build edges for a GSB */
-                build_edges_for_one_tileable_rr_gsb(rr_graph_builder,
-                                                    rr_gsb,
-                                                    track2ipin_map,
-                                                    opin2track_map,
-                                                    sb_conn,
-                                                    rr_node_driver_switches,
-                                                    num_edges_to_create);
             }
+
+            /* Build edges for a GSB */
+            build_edges_for_one_tileable_rr_gsb(rr_graph_builder,
+                                                rr_gsb,
+                                                track2ipin_map,
+                                                opin2track_map,
+                                                sb_conn,
+                                                rr_node_driver_switches,
+                                                num_edges_to_create);
 
             /* Finish this GSB, go to the next*/
             rr_graph_builder.build_edges(true);
