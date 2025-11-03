@@ -1190,15 +1190,17 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         enum e_side gsb_side = side_manager.get_side();
 
         /* Find OPINs */
-        for (size_t inode = 0; inode < rr_gsb.get_num_opin_nodes(gsb_side); ++inode) {
-            const RRNodeId& opin_node = rr_gsb.get_opin_node(gsb_side, inode);
+        if (opin2track_map.size() > 0) {
+            for (size_t inode = 0; inode < rr_gsb.get_num_opin_nodes(gsb_side); ++inode) {
+                const RRNodeId& opin_node = rr_gsb.get_opin_node(gsb_side, inode);
 
-            for (size_t to_side = 0; to_side < opin2track_map[gsb_side][inode].size(); ++to_side) {
-                /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
-                /* add edges to the opin_node */
-                for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side]) {
-                    rr_graph_builder.create_edge_in_cache(opin_node, track_node, rr_node_driver_switches[track_node], false);
-                    edge_count++;
+                for (size_t to_side = 0; to_side < opin2track_map[gsb_side][inode].size(); ++to_side) {
+                    /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
+                    /* add edges to the opin_node */
+                    for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side]) {
+                        rr_graph_builder.create_edge_in_cache(opin_node, track_node, rr_node_driver_switches[track_node], false);
+                        edge_count++;
+                    }
                 }
             }
         }
@@ -1207,14 +1209,16 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         /* For TRACKs to IPINs, we only care LEFT and TOP sides
          * Skip RIGHT and BOTTOM for the ipin2track_map since they should be handled in other GSBs
          */
-        if ((side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANX))
-            || (side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANY))) {
-            /* 2. create edges between CHANX|CHANY and IPINs, using ipin2track_map */
-            for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
-                const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
-                for (const RRNodeId& ipin_node : track2ipin_map[gsb_side][inode]) {
-                    rr_graph_builder.create_edge_in_cache(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
-                    edge_count++;
+        if (track2ipin_map.size() > 0) {
+            if ((side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANX))
+                || (side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANY))) {
+                /* 2. create edges between CHANX|CHANY and IPINs, using ipin2track_map */
+                for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
+                    const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
+                    for (const RRNodeId& ipin_node : track2ipin_map[gsb_side][inode]) {
+                        rr_graph_builder.create_edge_in_cache(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
+                        edge_count++;
+                    }
                 }
             }
         }
