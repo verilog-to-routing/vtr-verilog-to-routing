@@ -139,6 +139,13 @@ class RRSpatialLookup {
                                                        int y,
                                                        e_rr_type rr_type) const;
 
+
+    std::vector<RRNodeId> find_pin_nodes_at_side(int layer,
+                                                 int x,
+                                                 int y,
+                                                 e_rr_type pin_type,
+                                                 e_side side) const;
+
     /* -- Mutators -- */
   public:
     /** @brief Reserve the memory for a list of nodes at (layer, x, y) location with given type and side */
