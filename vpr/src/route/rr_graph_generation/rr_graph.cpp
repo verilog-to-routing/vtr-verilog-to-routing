@@ -1471,6 +1471,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     vtr::NdMatrix<int, 3> Fc_xofs({grid.height() - 1, grid.width() - 1, num_seg_types_x}, 0);
     vtr::NdMatrix<int, 3> Fc_yofs({grid.width() - 1, grid.height() - 1, num_seg_types_y}, 0);
 
+    vtr::NdMatrix<int, 3> Fc_zofs({grid.width(), grid.height(), num_seg_types_y}, 0);
+
     // Build opins
     int rr_edges_before_directs = 0;
     for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
@@ -1495,15 +1497,17 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                             *Fc_clipped = true;
                         }
                     }
-                }
 
-                add_edges_opin_chanz(rr_graph,
-                                     layer, i, j,
-                                     Fc_out,
-                                     seg_index_map,
-                                     num_seg_types,
-                                     rr_edges_to_create,
-                                     interdie_3d_links[i][j]);
+                    add_edges_opin_chanz_per_side(rr_graph,
+                                                  layer, i, j,
+                                                  side,
+                                                  Fc_out,
+                                                  seg_index_map,
+                                                  num_seg_types,
+                                                  Fc_zofs,
+                                                  rr_edges_to_create,
+                                                  interdie_3d_links);
+                }
 
                 // Create the actual OPIN->CHANX/CHANY edges
                 uniquify_edges(rr_edges_to_create);
@@ -1512,6 +1516,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 rr_edges_to_create.clear();
             }
         }
+
+        Fc_zofs.fill(0);
     }
 
     VTR_LOGV(route_verbosity > 1, "OPIN->CHANX/CHANY edge count before creating direct connections: %d\n", rr_edges_before_directs);

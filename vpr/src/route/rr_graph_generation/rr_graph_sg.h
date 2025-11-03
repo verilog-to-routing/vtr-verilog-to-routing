@@ -31,15 +31,27 @@ void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
                             const std::vector<t_bottleneck_link>& interdie_3d_links,
                             t_rr_edge_info_set& interdie_3d_rr_edges_to_create);
 
-void add_edges_opin_chanz(const RRGraphView& rr_graph,
-                          int layer,
-                          int x,
-                          int y,
-                          const std::vector<vtr::Matrix<int>>& Fc_out,
-                          const t_unified_to_parallel_seg_index& seg_index_map,
-                          int num_seg_types,
-                          t_rr_edge_info_set& rr_edges_to_create,
-                          const std::vector<t_bottleneck_link>& interdie_3d_links);
+void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
+                                   int layer,
+                                   int x,
+                                   int y,
+                                   e_side side,
+                                   const std::vector<vtr::Matrix<int>>& Fc_out,
+                                   const t_unified_to_parallel_seg_index& seg_index_map,
+                                   int num_seg_types,
+                                   vtr::NdMatrix<int, 3>& Fc_zofs,
+                                   t_rr_edge_info_set& rr_edges_to_create,
+                                   const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links);
+
+void add_edges_opin_chanz_per_block(const RRGraphView& rr_graph,
+                                    int layer,
+                                    int x,
+                                    int y,
+                                    const std::vector<vtr::Matrix<int>>& Fc_out,
+                                    const t_unified_to_parallel_seg_index& seg_index_map,
+                                    int num_seg_types,
+                                    t_rr_edge_info_set& rr_edges_to_create,
+                                    const std::vector<t_bottleneck_link>& interdie_3d_links);
 
 /**
  * @brief Adds and connects non-3D scatter–gather (SG) links to the RR graph.
