@@ -289,7 +289,8 @@ struct t_options {
     argparse::ArgValue<std::string> sb_maps;
     argparse::ArgValue<std::string> sb_templates;
     argparse::ArgValue<int> crr_num_threads;
-    argparse::ArgValue<bool> preserve_pin_connections;
+    argparse::ArgValue<bool> preserve_input_pin_connections;
+    argparse::ArgValue<bool> preserve_output_pin_connections;
     argparse::ArgValue<bool> annotated_rr_graph;
 };
 
