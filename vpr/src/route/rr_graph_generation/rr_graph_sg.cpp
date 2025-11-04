@@ -132,12 +132,12 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
 
         case RIGHT:
             sb_loc0 = {x, y, layer};
-            sb_loc1 = {x , y - 1, layer};
+            sb_loc1 = {x, y - 1, layer};
             break;
 
         case LEFT:
             sb_loc0 = {x - 1, y, layer};
-            sb_loc1 = {x - 1 , y - 1, layer};
+            sb_loc1 = {x - 1, y - 1, layer};
             break;
 
         default:
@@ -204,7 +204,6 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
             }
         }
     }
-
 }
 
 void add_edges_opin_chanz_per_block(const RRGraphView& rr_graph,

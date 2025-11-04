@@ -44,7 +44,7 @@
 class SetupHoldTimingInfo;
 class PostClusterDelayCalculator;
 
-#endif /* NO_SERVER */
+#endif // NO_SERVER
 
 struct t_rr_node_route_inf;
 
