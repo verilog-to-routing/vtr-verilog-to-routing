@@ -963,8 +963,7 @@ static void build_rr_graph(e_graph_type graph_type,
     //   alloc_and_load_rr_switch_inf()
     device_ctx.rr_graph_builder.reserve_switches(device_ctx.all_sw_inf.size());
     // Create the switches
-    for (const auto& sw_pair : device_ctx.all_sw_inf) {
-        const t_arch_switch_inf& arch_sw = sw_pair.second;
+    for (const t_arch_switch_inf& arch_sw : device_ctx.all_sw_inf | std::views::values) {
         t_rr_switch_inf rr_switch = create_rr_switch_from_arch_switch(arch_sw,
                                                                       R_minW_nmos,
                                                                       R_minW_pmos);
@@ -1278,7 +1277,7 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
         for (const t_fc_specification& fc_spec : type.fc_specs) {
             if (fc_type != fc_spec.fc_type) continue;
 
-            VTR_ASSERT(fc_spec.pins.size() > 0);
+            VTR_ASSERT(!fc_spec.pins.empty());
 
             int iseg = fc_spec.seg_index;
 
@@ -2941,7 +2940,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                             inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(layer, final_ipin_x, final_ipin_y, e_rr_type::IPIN, ipin);
                         }
 
-                        if (inodes.size() > 0) {
+                        if (!inodes.empty()) {
                             // There may be multiple physical pins corresponding to the logical
                             // target ipin. We only need to connect to one of them (since the physical pins
                             // are logically equivalent). This also ensures the graphics look reasonable and map
@@ -2963,16 +2962,13 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
                                                       const vtr::Matrix<int>& Fc_out,
                                                       const int max_chan_width,
                                                       const std::vector<t_segment_inf>& segment_inf) {
-    int i, Fc_max, iclass, num_wire_types;
-    int num, max_primes, factor, num_factors;
-    int* prime_factors;
+    int num_wire_types;
     float step_size = 0;
     float n = 0;
     float threshold = 0.07;
 
     std::vector<bool> perturb_opins(segment_inf.size(), false);
 
-    i = Fc_max = iclass = 0;
     if (segment_inf.size() > 1) {
         /* Segments of one length are grouped together in the channel.	*
          *  In the future we can determine if any of these segments will	*
@@ -2987,8 +2983,9 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
         num_wire_types = segment_inf[0].length;
     }
 
-    /* get Fc_max */
-    for (i = 0; i < type->num_pins; ++i) {
+    // get Fc_max
+    int Fc_max = 0;
+    for (int i = 0; i < type->num_pins; ++i) {
         auto pin_type = get_pin_type_from_pin_physical_num(type, i);
         if (Fc_out[i][0] > Fc_max && pin_type == e_pin_type::DRIVER) {
             Fc_max = Fc_out[i][0];
@@ -3005,19 +3002,19 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
      *  will always skip some wires. Thus, we perturb pins if we detect this	*
      *  case.								*/
 
-    /* get an upper bound on the number of prime factors of num_wire_types	*/
-    max_primes = (int)floor(log((float)num_wire_types) / log(2.0));
+    // get an upper bound on the number of prime factors of num_wire_types
+    int max_primes = (int)floor(log((float)num_wire_types) / log(2.0));
     max_primes = std::max(max_primes, 1); //Minimum of 1 to ensure we allocate space for at least one prime_factor
 
-    prime_factors = new int[max_primes];
-    for (i = 0; i < max_primes; i++) {
+    int* prime_factors = new int[max_primes];
+    for (int i = 0; i < max_primes; i++) {
         prime_factors[i] = 0;
     }
 
-    /* Find the prime factors of num_wire_types */
-    num = num_wire_types;
-    factor = 2;
-    num_factors = 0;
+    // Find the prime factors of num_wire_types
+    int num = num_wire_types;
+    int factor = 2;
+    int num_factors = 0;
     while (pow((float)factor, 2) <= num) {
         if (num % factor == 0) {
             num /= factor;
@@ -3036,7 +3033,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
     /* Now see if step size is an approximate multiple of one of the factors. A 	*
      *  threshold is used because step size may not be an integer.			*/
     step_size = (float)max_chan_width / Fc_max;
-    for (i = 0; i < num_factors; i++) {
+    for (int i = 0; i < num_factors; i++) {
         if (vtr::nint(step_size) < prime_factors[i]) {
             perturb_opins[0] = false;
             break;

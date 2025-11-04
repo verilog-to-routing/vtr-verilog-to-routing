@@ -128,7 +128,7 @@ static int vpr_to_phy_track(const int itrack,
                             const int chan_num,
                             const int seg_num,
                             const t_chan_seg_details* seg_details,
-                            const enum e_directionality directionality);
+                            const e_directionality directionality);
 
 /**
  * @brief Identifies and labels all mux endpoints at a given channel segment coordinate.
@@ -189,9 +189,9 @@ std::vector<int> get_seg_track_counts(int num_sets,
     // Scale factor so we can divide by any length and still use integers
     double scale = 1;
     int freq_sum = 0;
-    for (size_t i = 0; i < segment_inf.size(); ++i) {
-        scale *= segment_inf[i].length;
-        freq_sum += segment_inf[i].frequency;
+    for (const t_segment_inf& seg_inf : segment_inf) {
+        scale *= seg_inf.length;
+        freq_sum += seg_inf.frequency;
     }
     const double reduce = scale * freq_sum;
 
@@ -1082,10 +1082,10 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const t_sb_connection_map* sb_conn_map) {
     int to_chan, to_sb;
     std::vector<int> conn_tracks;
-    bool from_is_sblock, is_behind, Fs_clipped;
+    bool Fs_clipped;
     e_side to_side;
 
-    /* check whether a custom switch block will be used */
+    // check whether a custom switch block will be used
     bool custom_switch_block = false;
     if (sb_conn_map != nullptr) {
         custom_switch_block = true;
@@ -1134,9 +1134,9 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
             continue;
         }
 
-        /* Figure out if we are at a sblock */
-        from_is_sblock = is_sblock(from_chan, from_seg, sb_seg, from_track,
-                                   from_seg_details, directionality);
+        // Figure out if we are at a sblock
+        bool from_is_sblock = is_sblock(from_chan, from_seg, sb_seg, from_track,
+                                        from_seg_details, directionality);
         if (sb_seg == end_sb_seg || sb_seg == start_sb_seg) {
             /* end of wire must be an sblock */
             from_is_sblock = true;
@@ -1173,9 +1173,9 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         if (to_seg_details[0].length() == 0)
             continue;
 
-        /* Figure out whether the switch block at the current sb_seg coordinate is *behind*
-         * the target channel segment (with respect to VPR coordinate system) */
-        is_behind = false;
+        // Figure out whether the switch block at the current sb_seg coordinate is *behind*
+        // the target channel segment (with respect to VPR coordinate system)
+        bool is_behind = false;
         if (to_type == from_type) {
             if (sb_seg == start) {
                 is_behind = true;
@@ -1296,12 +1296,10 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        const enum e_directionality directionality,
                                        RRNodeId from_rr_node,
                                        t_rr_edge_info_set& rr_edges_to_create) {
-    unsigned iconn;
-    int to_track, to_switch, num_conn, to_x, to_y, i;
-    bool to_is_sblock;
+    int to_x, to_y;
     short switch_types[2];
 
-    /* x, y coords for get_rr_node lookups */
+    // x, y coords for get_rr_node lookups
     if (e_rr_type::CHANX == to_type) {
         to_x = to_seg;
         to_y = to_chan;
@@ -1311,10 +1309,9 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
         to_y = to_seg;
     }
 
-    /* Go through the list of tracks we can connect to */
-    num_conn = 0;
-    for (iconn = 0; iconn < conn_tracks.size(); ++iconn) {
-        to_track = conn_tracks[iconn];
+    // Go through the list of tracks we can connect to
+    int num_conn = 0;
+    for (int to_track : conn_tracks) {
         RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, to_x, to_y, to_type, to_track);
 
         if (!to_node) {
@@ -1322,16 +1319,15 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Get the switches for any edges between the two tracks */
-        to_switch = seg_details[to_track].arch_wire_switch();
+        int to_switch = seg_details[to_track].arch_wire_switch();
 
-        to_is_sblock = is_sblock(to_chan, to_seg, to_sb, to_track, seg_details,
-                                 directionality);
+        bool to_is_sblock = is_sblock(to_chan, to_seg, to_sb, to_track, seg_details, directionality);
         get_switch_type(from_is_sblock, to_is_sblock, from_switch, to_switch,
                         switch_override,
                         switch_types);
 
-        /* There are up to two switch edges allowed from track to track */
-        for (i = 0; i < 2; ++i) {
+        // There are up to two switch edges allowed from track to track
+        for (int i = 0; i < 2; ++i) {
             /* If the switch_type entry is empty, skip it */
             if (UNDEFINED == switch_types[i]) {
                 continue;
@@ -1365,7 +1361,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
 
     // Coordinate to index into the SB map
     SwitchblockLookupKey sb_coord(tile_x, tile_y, layer, from_side, to_side);
-    if (sb_conn_map.count(sb_coord) > 0) {
+    if (sb_conn_map.contains(sb_coord)) {
         // Reference to the connections vector which lists all destination wires for a given source wire
         // at a specific coordinate sb_coord
         const std::vector<t_switchblock_edge>& sb_edges = sb_conn_map.at(sb_coord);
@@ -1549,24 +1545,22 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
 }
 
 bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track, const t_chan_seg_details* seg_details, const enum e_directionality directionality) {
-    int length, ofs, fac;
-
-    fac = 1;
+    int fac = 1;
     if (UNI_DIRECTIONAL == directionality) {
         fac = 2;
     }
 
-    length = seg_details[track].length();
+    int length = seg_details[track].length();
 
-    /* Make sure they gave us correct start */
+    // Make sure they gave us correct start
     wire_seg = get_seg_start(seg_details, track, chan, wire_seg);
 
-    ofs = sb_seg - wire_seg + 1; /* Offset 0 is behind us, so add 1 */
+    int ofs = sb_seg - wire_seg + 1; // Offset 0 is behind us, so add 1
 
     VTR_ASSERT(ofs >= 0);
     VTR_ASSERT(ofs < (length + 1));
 
-    /* If unidir segment that is going backwards, we need to flip the ofs */
+    // If unidir segment that is going backwards, we need to flip the ofs
     if ((ofs % fac) > 0) {
         ofs = length - ofs;
     }
@@ -1661,28 +1655,21 @@ static int vpr_to_phy_track(const int itrack,
                             const int chan_num,
                             const int seg_num,
                             const t_chan_seg_details* seg_details,
-                            const enum e_directionality directionality) {
-    int group_start, group_size;
-    int vpr_offset_for_first_phy_track;
-    int vpr_offset, phy_offset;
-    int phy_track;
-    int fac;
+                            const e_directionality directionality) {
 
-    /* Assign in pairs if unidir. */
-    fac = 1;
+    // Assign in pairs if unidir.
+    int fac = 1;
     if (UNI_DIRECTIONAL == directionality) {
         fac = 2;
     }
 
-    group_start = seg_details[itrack].group_start();
-    group_size = seg_details[itrack].group_size();
+    int group_start = seg_details[itrack].group_start();
+    int group_size = seg_details[itrack].group_size();
 
-    vpr_offset_for_first_phy_track = (chan_num + seg_num - 1)
-                                     % (group_size / fac);
-    vpr_offset = (itrack - group_start) / fac;
-    phy_offset = (vpr_offset_for_first_phy_track + vpr_offset)
-                 % (group_size / fac);
-    phy_track = group_start + (fac * phy_offset) + (itrack - group_start) % fac;
+    int vpr_offset_for_first_phy_track = (chan_num + seg_num - 1) % (group_size / fac);
+    int vpr_offset = (itrack - group_start) / fac;
+    int phy_offset = (vpr_offset_for_first_phy_track + vpr_offset) % (group_size / fac);
+    int phy_track = group_start + (fac * phy_offset) + (itrack - group_start) % fac;
 
     return phy_track;
 }
@@ -2047,7 +2034,7 @@ static void label_incoming_wires(const int chan_num,
 
     /* Alloc the list of labels for the tracks */
     labels.resize(max_chan_width);
-    std::fill(labels.begin(), labels.end(), UN_SET);
+    std::ranges::fill(labels, UN_SET);
 
     int num_ending = 0;
     int num_passing = 0;
@@ -2134,12 +2121,12 @@ static int should_create_switchblock(const DeviceGrid& grid, int layer_num, int 
         x_coord = from_chan_coord;
     }
 
-    auto blk_type = grid.get_physical_type({x_coord, y_coord, layer_num});
+    t_physical_tile_type_ptr blk_type = grid.get_physical_type({x_coord, y_coord, layer_num});
     int width_offset = grid.get_width_offset({x_coord, y_coord, layer_num});
     int height_offset = grid.get_height_offset({x_coord, y_coord, layer_num});
 
     e_sb_type sb_type = blk_type->switchblock_locations[width_offset][height_offset];
-    auto switch_override = blk_type->switchblock_switch_overrides[width_offset][height_offset];
+    int switch_override = blk_type->switchblock_switch_overrides[width_offset][height_offset];
 
     if (sb_type == e_sb_type::FULL) {
         return switch_override;

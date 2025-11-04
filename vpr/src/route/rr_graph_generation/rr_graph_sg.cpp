@@ -167,7 +167,7 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
             const t_bottleneck_link& bottleneck_link = interdie_3d_links[sb_loc0.x][sb_loc0.y][track_num];
             if (bottleneck_link.parallel_segment_index == seg_index && bottleneck_link.gather_loc.layer_num == layer) {
                 RRNodeId node_id = node_lookup.find_node(sb_loc0.layer_num, sb_loc0.x, sb_loc0.y, e_rr_type::CHANZ, track_num);
-                selected_chanz_nodes0.push_back({node_id, bottleneck_link.arch_wire_switch});
+                selected_chanz_nodes0.emplace_back(node_id, bottleneck_link.arch_wire_switch);
             }
         }
 
@@ -176,7 +176,7 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
             const t_bottleneck_link& bottleneck_link = interdie_3d_links[sb_loc1.x][sb_loc1.y][track_num];
             if (bottleneck_link.parallel_segment_index == seg_index && bottleneck_link.gather_loc.layer_num == layer) {
                 RRNodeId node_id = node_lookup.find_node(sb_loc1.layer_num, sb_loc1.x, sb_loc1.y, e_rr_type::CHANZ, track_num);
-                selected_chanz_nodes1.push_back({node_id, bottleneck_link.arch_wire_switch});
+                selected_chanz_nodes1.emplace_back(node_id, bottleneck_link.arch_wire_switch);
             }
         }
 
@@ -239,7 +239,7 @@ void add_edges_opin_chanz_per_block(const RRGraphView& rr_graph,
             const t_bottleneck_link& bottleneck_link = interdie_3d_links[track_num];
             if (bottleneck_link.parallel_segment_index == seg_index && bottleneck_link.gather_loc.layer_num == layer) {
                 RRNodeId node_id = node_lookup.find_node(layer, x, y, e_rr_type::CHANZ, track_num);
-                selected_chanz_nodes.push_back({node_id, bottleneck_link.arch_wire_switch});
+                selected_chanz_nodes.emplace_back(node_id, bottleneck_link.arch_wire_switch);
             }
         }
 
