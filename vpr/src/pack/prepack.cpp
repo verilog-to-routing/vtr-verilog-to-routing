@@ -1144,6 +1144,8 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
     for (const auto& sink_pin_id : net_sinks) {
         auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
+        // If the sink block has a clock, it is considered stateful (e.g., a latch or flip-flop).
+        // Mark this so we can later decide whether to drop the block based on the net’s fanout.
         if (!atom_nlist.block_is_combinational(sink_block_id)) {
             connected_to_latch = true;
         }
