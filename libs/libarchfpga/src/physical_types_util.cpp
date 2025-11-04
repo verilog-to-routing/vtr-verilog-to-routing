@@ -155,7 +155,7 @@ static std::tuple<int, int, int, int, int> get_pin_index_for_inst(t_physical_til
         logical_block_idx = -1;
         pb_type_idx = 0;
     } else {
-        auto logical_block = get_logical_block_from_pin_physical_num(type, pin_physical_num);
+        t_logical_block_type_ptr logical_block = get_logical_block_from_pin_physical_num(type, pin_physical_num);
         auto pb_type = get_pb_pin_from_pin_physical_num(type, pin_physical_num)->parent_node->pb_type;
         VTR_ASSERT(logical_block != nullptr);
         logical_block_idx = logical_block->index;
@@ -682,7 +682,7 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
         pin_info.push_back(block_type_pin_index_to_pin_inst(type, pin_physical_num, is_flat));
     }
 
-    auto cmp = [](const t_pin_inst_port& lhs, const t_pin_inst_port& rhs) {
+    auto cmp = [](const t_pin_inst_port& lhs, const t_pin_inst_port& rhs) noexcept {
         return lhs.pin_physical_num < rhs.pin_physical_num;
     };
 
@@ -691,7 +691,7 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
 
     // Determine ranges for each capacity instance and port pair
     std::map<std::tuple<int, int, int, int, int>, std::array<int, 4>> pin_ranges;
-    for (const auto& pin_inf : pin_info) {
+    for (const t_pin_inst_port& pin_inf : pin_info) {
         auto key = std::make_tuple(pin_inf.sub_tile_index, pin_inf.capacity_instance, pin_inf.logical_block_index, pin_inf.pb_type_idx, pin_inf.port_index);
         if (!pin_ranges.contains(key)) {
             pin_ranges[key][0] = pin_inf.pin_index_in_port;
@@ -778,7 +778,7 @@ std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physic
     int num_seen_class = (is_on_tile) ? 0 : (int)physical_tile->class_inf.size();
     int class_num_offset = num_seen_class;
 
-    for (auto& sub_tile : physical_tile->sub_tiles) {
+    for (const t_sub_tile& sub_tile : physical_tile->sub_tiles) {
         int sub_tile_num_class = is_on_tile ? sub_tile.class_range.total_num() : get_sub_tile_num_internal_classes(&sub_tile);
         num_seen_class += sub_tile_num_class;
 
@@ -796,8 +796,8 @@ std::tuple<const t_sub_tile*, int> get_sub_tile_from_class_physical_num(t_physic
 
 t_logical_block_type_ptr get_logical_block_from_class_physical_num(t_physical_tile_type_ptr physical_tile,
                                                                    int class_physical_num) {
-    auto pin_list = get_pin_list_from_class_physical_num(physical_tile, class_physical_num);
-    VTR_ASSERT((int)pin_list.size() != 0);
+    std::vector<int> pin_list = get_pin_list_from_class_physical_num(physical_tile, class_physical_num);
+    VTR_ASSERT(!pin_list.empty());
     return get_logical_block_from_pin_physical_num(physical_tile, pin_list[0]);
 }
 
@@ -890,7 +890,7 @@ std::tuple<const t_sub_tile*, int> get_sub_tile_from_pin_physical_num(t_physical
     int total_pin_counts = pin_on_tile ? 0 : physical_tile->num_pins;
     int pin_offset = total_pin_counts;
 
-    for (auto& sub_tile : physical_tile->sub_tiles) {
+    for (const t_sub_tile& sub_tile : physical_tile->sub_tiles) {
         int sub_tile_num_pins = pin_on_tile ? sub_tile.num_phy_pins : sub_tile.total_num_internal_pins();
         total_pin_counts += sub_tile_num_pins;
 
@@ -1264,9 +1264,7 @@ bool intra_tile_nodes_connected(t_physical_tile_type_ptr physical_type,
     } else {
         const t_pb_graph_pin* from_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_type, pin_physical_num);
 
-        auto res = from_pb_graph_pin->connected_sinks_ptc.find(sink_physical_num);
-
-        if (res == from_pb_graph_pin->connected_sinks_ptc.end()) {
+        if (!from_pb_graph_pin->connected_sinks_ptc.contains(sink_physical_num)) {
             return false;
         } else {
             return true;
@@ -1300,7 +1298,6 @@ float get_pin_primitive_comb_delay(t_physical_tile_type_ptr physical_type,
     VTR_ASSERT(pb_pin->is_primitive_pin());
 
     auto it = std::ranges::max_element(pb_pin->pin_timing_del_max);
-
     if (it == pb_pin->pin_timing_del_max.end()) {
         return 0.;
     } else {
