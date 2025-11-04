@@ -1323,8 +1323,6 @@ class t_pb_graph_node {
 
     int total_pb_pins; /* only valid for top-level */
 
-    void* temp_scratch_pad; /* temporary data, useful for keeping track of things when traversing data structure */
-
     int* input_pin_class_size;  /* Stores the number of pins that belong to a particular input pin class */
     int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
     int* output_pin_class_size; /* Stores the number of pins that belong to a particular output pin class */
