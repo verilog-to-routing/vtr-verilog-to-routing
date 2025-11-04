@@ -2,6 +2,7 @@
 #include <regex>
 #include <algorithm>
 #include <sstream>
+#include <ranges>
 
 #include "pack_types.h"
 #include "vpr_types.h"
@@ -415,7 +416,7 @@ int get_sub_tile_index(ClusterBlockId blk,
 
     for (const auto& sub_tile : type->sub_tiles) {
         if (sub_tile.capacity.is_in_range(sub_tile_coordinate)) {
-            auto result = std::find(sub_tile.equivalent_sites.begin(), sub_tile.equivalent_sites.end(), logical_block);
+            auto result = std::ranges::find(sub_tile.equivalent_sites, logical_block);
             if (result == sub_tile.equivalent_sites.end()) {
                 VPR_THROW(VPR_ERROR_PLACE, "The Block Id %d has been placed in an incompatible sub tile location.\n", blk);
             }
@@ -596,7 +597,7 @@ t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
             rhs_num_instances += grid.num_instances(type, -1);
         return lhs_num_instances > rhs_num_instances;
     };
-    std::stable_sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
+    std::ranges::stable_sort(logic_block_candidates, by_desc_grid_count);
 
     if (!logic_block_candidates.empty()) {
         return logic_block_candidates.front();
@@ -1061,7 +1062,7 @@ vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     vtr::vector<ClusterBlockId, t_pb**> pin_id_to_pb_mapping(cluster_ctx.clb_nlist.blocks().size());
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         pin_id_to_pb_mapping[blk_id] = new t_pb*[cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins];
         for (int j = 0; j < cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins; j++) {
             pin_id_to_pb_mapping[blk_id][j] = nullptr;
@@ -1248,7 +1249,7 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
     //Look through the output nets for any duplicates of the input nets
     for (auto pin_id : atom_ctx.netlist().block_output_pins(blk_id)) {
         auto net_id = atom_ctx.netlist().pin_net(pin_id);
-        if (input_nets.count(net_id)) {
+        if (input_nets.contains(net_id)) {
             --ext_inps;
         }
     }
@@ -1273,10 +1274,7 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
         return;
     }
 
-    const t_pb_type* pb_type;
-    int i, j, mode;
-
-    pb_type = pb->pb_graph_node->pb_type;
+    const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
     if (pb->name) {
         free(pb->name);
@@ -1284,9 +1282,9 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
     }
 
     if (pb_type->blif_model == nullptr) {
-        mode = pb->mode;
-        for (i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
-            for (j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
+        int mode = pb->mode;
+        for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
+            for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
                 if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
                     free_pb(&pb->child_pbs[i][j], atom_pb_bimap);
                 }
@@ -1354,7 +1352,7 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
 
         std::string source_string{src_string};
         // replace '.' characters with space
-        std::replace(source_string.begin(), source_string.end(), '.', ' ');
+        std::ranges::replace(source_string, '.', ' ');
 
         std::istringstream source_iss(source_string);
         std::string pb_type_name, port_name;
@@ -1374,8 +1372,7 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         std::string source_string{src_string};
 
         // Replace '.' and '[' characters with ' '
-        std::replace_if(
-            source_string.begin(), source_string.end(),
+        std::ranges::replace_if(source_string,
             [](char c) { return c == '.' || c == '[' || c == ':' || c == ']'; },
             ' ');
 
@@ -1479,7 +1476,7 @@ void print_switch_usage() {
             // Assumption: suppose for a L4 wire (bi-directional): ----+----+----+----, it can be driven from any point (0, 1, 2, 3).
             //             physically, the switch driving from point 1 & 3 should be the same. But we will assign then different switch
             //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
-            if (inward_switch_inf[to_node_index].count(switch_index) == 0)
+            if (!inward_switch_inf[to_node_index].contains(switch_index))
                 inward_switch_inf[to_node_index][switch_index] = 0;
             //VTR_ASSERT(from_node.type != OPIN);
             inward_switch_inf[to_node_index][switch_index]++;
@@ -1487,10 +1484,10 @@ void print_switch_usage() {
     }
 
     for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
-        for (const auto [rr_switch_id, node_switch_fanin] : inward_switch_inf[rr_id]) {
+        for (const RRSwitchId rr_switch_id : inward_switch_inf[rr_id] | std::views::keys) {
             float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
             const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
-            if (switch_fanin_count[arch_switch_id].count(fanin) == 0) {
+            if (!switch_fanin_count[arch_switch_id].contains(fanin)) {
                 switch_fanin_count[arch_switch_id][fanin] = 0;
             }
             switch_fanin_count[arch_switch_id][fanin]++;

@@ -390,7 +390,7 @@ static void compute_wire_connections(const t_physical_tile_loc& sb_loc,
     }
 
     // Check that the permutation map has an entry for this side combination
-    if (sb.permutation_map.count(side_conn) == 0) {
+    if (!sb.permutation_map.contains(side_conn)) {
         // The specified switchblock does not have any permutation funcs for `from_side` to `to_side` connection
         return;
     }
