@@ -37,7 +37,6 @@ void add_opin_chan_edges(RRGraphBuilder& rr_graph_builder,
                          const std::vector<t_direct_inf>& directs,
                          const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                          e_directionality directionality,
-                         t_rr_edge_info_set& rr_edges_to_create,
                          int& num_edges,
                          int& rr_edges_before_directs,
                          bool* Fc_clipped);

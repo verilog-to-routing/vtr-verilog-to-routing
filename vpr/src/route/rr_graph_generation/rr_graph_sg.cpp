@@ -264,10 +264,13 @@ void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                      const t_chan_details& chan_details_x,
                                      const t_chan_details& chan_details_y,
                                      size_t num_seg_types_x,
-                                     t_rr_edge_info_set& non_3d_sg_rr_edges_to_create) {
+                                     int& num_edges) {
     // Each SG link should have a corresponding RR node index
     VTR_ASSERT(sg_links.size() == sg_node_indices.size());
     const size_t num_links = sg_links.size();
+
+    t_rr_edge_info_set rr_edges_to_create;
+    num_edges = 0;
 
     for (size_t i = 0; i < num_links; i++) {
 
@@ -320,7 +323,7 @@ void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                                                             gather_chan_type,
                                                                             gather_wire.wire_switchpoint.wire);
             // Record deferred edge creation (gather_node --> sg_node)
-            non_3d_sg_rr_edges_to_create.emplace_back(gather_node, node_id, link.arch_wire_switch, false);
+            rr_edges_to_create.emplace_back(gather_node, node_id, link.arch_wire_switch, false);
         }
 
         // Step 7: Add outgoing edges to scatter (fanout) channel wires
@@ -339,7 +342,11 @@ void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
             // Determine which architecture switch this edge should use
             int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
             // Record deferred edge creation (sg_node --> scatter_node)
-            non_3d_sg_rr_edges_to_create.emplace_back(node_id, scatter_node, switch_index, false);
+            rr_edges_to_create.emplace_back(node_id, scatter_node, switch_index, false);
         }
     }
+
+    uniquify_edges(rr_edges_to_create);
+    rr_graph_builder.alloc_and_load_edges(&rr_edges_to_create);
+    num_edges += rr_edges_to_create.size();
 }

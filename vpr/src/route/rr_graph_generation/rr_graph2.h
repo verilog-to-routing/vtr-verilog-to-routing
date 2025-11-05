@@ -45,6 +45,7 @@ int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
                   const int chan_num,
                   const int seg_num);
+
 int get_seg_end(const t_chan_seg_details* seg_details,
                 const int itrack,
                 const int istart,
@@ -62,44 +63,6 @@ bool is_sblock(const int chan,
                const int track,
                const t_chan_seg_details* seg_details,
                const enum e_directionality directionality);
-
-/// Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent blocks along the wire's length
-int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
-                      int layer,
-                      int seg,
-                      int chan,
-                      int track,
-                      int tracks_per_chan,
-                      RRNodeId from_rr_node,
-                      t_rr_edge_info_set& rr_edges_to_create,
-                      const t_track_to_pin_lookup& track_to_pin_lookup,
-                      const t_chan_seg_details* seg_details,
-                      e_rr_type chan_type,
-                      int chan_length,
-                      int wire_to_ipin_switch,
-                      e_directionality directionality);
-
-int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
-                        const int layer,
-                        const int from_chan,
-                        const int from_seg,
-                        const int from_track,
-                        const e_rr_type from_type,
-                        const int to_seg,
-                        const e_rr_type to_type,
-                        const int chan_len,
-                        const int max_chan_width,
-                        const DeviceGrid& grid,
-                        const int Fs_per_side,
-                        t_sblock_pattern& sblock_pattern,
-                        RRNodeId from_rr_node,
-                        t_rr_edge_info_set& rr_edges_to_create,
-                        const t_chan_seg_details* from_seg_details,
-                        const t_chan_seg_details* to_seg_details,
-                        const t_chan_details& to_chan_details,
-                        const e_directionality directionality,
-                        const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                        const t_sb_connection_map* sb_conn_map);
 
 /**
  * @brief Identifies and labels all mux endpoints at a given channel segment coordinate.

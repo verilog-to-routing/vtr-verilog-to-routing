@@ -67,7 +67,7 @@ void add_edges_opin_chanz_per_block(const RRGraphView& rr_graph,
  * @param chan_details_x       Channel details for CHANX segments.
  * @param chan_details_y       Channel details for CHANY segments.
  * @param num_seg_types_x      Number of segment types in the X direction.
- * @param non_3d_sg_rr_edges_to_create  Set collecting RR edges to create later.
+ * @param num_edges            Total number of edges added to RR graph.
  */
 void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                      const std::vector<t_bottleneck_link>& sg_links,
@@ -75,4 +75,4 @@ void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                      const t_chan_details& chan_details_x,
                                      const t_chan_details& chan_details_y,
                                      size_t num_seg_types_x,
-                                     t_rr_edge_info_set& non_3d_sg_rr_edges_to_create);
+                                     int& num_edges);
