@@ -63,32 +63,6 @@ bool is_sblock(const int chan,
                const t_chan_seg_details* seg_details,
                const enum e_directionality directionality);
 
-int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                               const int layer,
-                               const int i,
-                               const int j,
-                               const int ipin,
-                               RRNodeId from_rr_node,
-                               t_rr_edge_info_set& rr_edges_to_create,
-                               const t_pin_to_track_lookup& opin_to_track_map,
-                               const t_chan_details& chan_details_x,
-                               const t_chan_details& chan_details_y);
-
-int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                                const int layer,
-                                const int chan,
-                                const int seg,
-                                int Fc,
-                                const int seg_type_index,
-                                const e_rr_type chan_type,
-                                const t_chan_seg_details* seg_details,
-                                RRNodeId from_rr_node,
-                                t_rr_edge_info_set& rr_edges_to_create,
-                                vtr::NdMatrix<int, 3>& Fc_ofs,
-                                const int max_len,
-                                const t_chan_width& nodes_per_chan,
-                                bool* Fc_clipped);
-
 /// Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent blocks along the wire's length
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       int layer,
@@ -126,6 +100,28 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const e_directionality directionality,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                         const t_sb_connection_map* sb_conn_map);
+
+/**
+ * @brief Identifies and labels all mux endpoints at a given channel segment coordinate.
+ *
+ * This routine scans all routing tracks within a channel segment (specified by
+ * 'chan_num' and 'seg_num') and collects the track indices corresponding to
+ * valid mux endpoints that can be driven by OPINs in that channel segment.
+ * The resulting list of eligible tracks is returned in natural (increasing) track order.
+ *
+ * @details If @p seg_type_index is UNDEFINED, all segment types are considered.
+ */
+void label_wire_muxes(const int chan_num,
+                             const int seg_num,
+                             const t_chan_seg_details* seg_details,
+                             const int seg_type_index,
+                             const int max_len,
+                             const enum Direction dir,
+                             const int max_chan_width,
+                             const bool check_cb,
+                             std::vector<int>& labels,
+                             int* num_wire_muxes,
+                             int* num_wire_muxes_cb_restricted);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
                                              const t_chan_width& nodes_per_chan);

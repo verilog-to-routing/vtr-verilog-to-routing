@@ -130,28 +130,6 @@ static int vpr_to_phy_track(const int itrack,
                             const t_chan_seg_details* seg_details,
                             const e_directionality directionality);
 
-/**
- * @brief Identifies and labels all mux endpoints at a given channel segment coordinate.
- *
- * This routine scans all routing tracks within a channel segment (specified by
- * 'chan_num' and 'seg_num') and collects the track indices corresponding to
- * valid mux endpoints that can be driven by OPINs in that channel segment.
- * The resulting list of eligible tracks is returned in natural (increasing) track order.
- *
- * @details If @p seg_type_index is UNDEFINED, all segment types are considered.
- */
-static void label_wire_muxes(const int chan_num,
-                             const int seg_num,
-                             const t_chan_seg_details* seg_details,
-                             const int seg_type_index,
-                             const int max_len,
-                             const enum Direction dir,
-                             const int max_chan_width,
-                             const bool check_cb,
-                             std::vector<int>& labels,
-                             int* num_wire_muxes,
-                             int* num_wire_muxes_cb_restricted);
-
 static void label_incoming_wires(const int chan_num,
                                  const int seg_num,
                                  const int sb_seg,
@@ -584,172 +562,6 @@ int get_seg_end(const t_chan_seg_details* seg_details, const int itrack, const i
     }
 
     return seg_end;
-}
-
-/* Returns the number of tracks to which clb opin #ipin at (i,j) connects.   *
- * Also stores the nodes to which this pin connects in rr_edges_to_create    */
-int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                               const int layer,
-                               const int i,
-                               const int j,
-                               const int ipin,
-                               RRNodeId from_rr_node,
-                               t_rr_edge_info_set& rr_edges_to_create,
-                               const t_pin_to_track_lookup& opin_to_track_map,
-                               const t_chan_details& chan_details_x,
-                               const t_chan_details& chan_details_y) {
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-
-    t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({i, j, layer});
-    int width_offset = device_ctx.grid.get_width_offset({i, j, layer});
-    int height_offset = device_ctx.grid.get_height_offset({i, j, layer});
-
-    int num_conn = 0;
-
-    // [0..device_ctx.num_block_types-1][0..num_pins-1][0..width][0..height][0..3][0..Fc-1]
-    for (e_side side : TOTAL_2D_SIDES) {
-        // Figure out coords of channel segment based on side
-        int tr_i = (side == LEFT) ? i - 1 : i;
-        int tr_j = (side == BOTTOM) ? j - 1 : j;
-
-        e_rr_type to_type = ((side == LEFT) || (side == RIGHT)) ? e_rr_type::CHANY : e_rr_type::CHANX;
-
-        int chan = (to_type == e_rr_type::CHANX) ? tr_j : tr_i;
-        int seg = (to_type == e_rr_type::CHANX) ? tr_i : tr_j;
-
-        bool vert = !((side == TOP) || (side == BOTTOM));
-
-        // Don't connect where no tracks on fringes
-        if (tr_i < 0 || tr_i > int(device_ctx.grid.width() - 2)) { //-2 for no perimeter channels
-            continue;
-        }
-        if (tr_j < 0 || tr_j > int(device_ctx.grid.height() - 2)) { //-2 for no perimeter channels
-            continue;
-        }
-        if (e_rr_type::CHANX == to_type && tr_i < 1) {
-            continue;
-        }
-        if (e_rr_type::CHANY == to_type && tr_j < 1) {
-            continue;
-        }
-        if (opin_to_track_map[type->index].empty()) {
-            continue;
-        }
-
-        bool is_connected_track = false;
-
-        const t_chan_seg_details* seg_details = (vert ? chan_details_y[chan][seg] : chan_details_x[seg][chan]).data();
-
-        // Iterate of the opin to track connections
-        for (int to_track : opin_to_track_map[type->index][ipin][width_offset][height_offset][side]) {
-            /* Skip unconnected connections */
-            if (UNDEFINED == to_track || is_connected_track) {
-                is_connected_track = true;
-                VTR_ASSERT(UNDEFINED == opin_to_track_map[type->index][ipin][width_offset][height_offset][side][0]);
-                continue;
-            }
-
-            // Only connect to wire if there is a CB
-            if (is_cblock(chan, seg, to_track, seg_details)) {
-                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, tr_i, tr_j, to_type, to_track);
-
-                if (!to_node) {
-                    continue;
-                }
-
-                int to_switch = seg_details[to_track].arch_wire_switch();
-                rr_edges_to_create.emplace_back(from_rr_node, to_node, to_switch, false);
-
-                ++num_conn;
-            }
-        }
-    }
-
-    return num_conn;
-}
-
-/* Actually builds the edges from the OPIN nodes already allocated to their correct tracks for segment seg_Inf[seg_type_index].
- * Note that this seg_inf vector is NOT the segment_info vectored as stored in the device variable. This index is w.r.t to seg_inf_x
- * or seg_inf_y for x-adjacent and y-adjacent segments respectively. This index is assigned in get_seg_details earlier 
- * in the rr_graph_builder routine. This t_seg_detail is then used to build t_chan_seg_details which is passed in to label_wire mux
- * routine used in this function.
- */
-int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                                const int layer,
-                                const int chan,
-                                const int seg,
-                                int Fc,
-                                const int seg_type_index,
-                                const e_rr_type chan_type,
-                                const t_chan_seg_details* seg_details,
-                                RRNodeId from_rr_node,
-                                t_rr_edge_info_set& rr_edges_to_create,
-                                vtr::NdMatrix<int, 3>& Fc_ofs,
-                                const int max_len,
-                                const t_chan_width& nodes_per_chan,
-                                bool* Fc_clipped) {
-    /* Gets a linked list of Fc nodes of specified seg_type_index to connect
-     * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
-
-    *Fc_clipped = false;
-
-    // Fc is assigned in pairs so check it is even.
-    VTR_ASSERT(Fc % 2 == 0);
-
-    // get_rr_node_indices needs x and y coords.
-    int x = (e_rr_type::CHANX == chan_type) ? seg : chan;
-    int y = (e_rr_type::CHANX == chan_type) ? chan : seg;
-
-    // Get the lists of possible muxes.
-    int dummy;
-    std::vector<int> inc_muxes;
-    std::vector<int> dec_muxes;
-    int num_inc_muxes, num_dec_muxes;
-    // Determine the channel width instead of using max channels to not create hanging nodes
-    int max_chan_width = (e_rr_type::CHANX == chan_type) ? nodes_per_chan.x_list[y] : nodes_per_chan.y_list[x];
-
-    label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
-                     Direction::INC, max_chan_width, true, inc_muxes, &num_inc_muxes, &dummy);
-    label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
-                     Direction::DEC, max_chan_width, true, dec_muxes, &num_dec_muxes, &dummy);
-
-    // Clip Fc to the number of muxes.
-    if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
-        *Fc_clipped = true;
-        Fc = 2 * std::min(num_inc_muxes, num_dec_muxes);
-    }
-
-    // Assign tracks to meet Fc demand
-    int num_edges = 0;
-    for (int iconn = 0; iconn < (Fc / 2); ++iconn) {
-        // Figure of the next mux to use for the 'inc' and 'dec' connections
-        int inc_mux = Fc_ofs[chan][seg][seg_type_index] % num_inc_muxes;
-        int dec_mux = Fc_ofs[chan][seg][seg_type_index] % num_dec_muxes;
-        ++Fc_ofs[chan][seg][seg_type_index];
-
-        // Figure out the track it corresponds to.
-        int inc_track = inc_muxes[inc_mux];
-        int dec_track = dec_muxes[dec_mux];
-
-        // Figure the inodes of those muxes
-        RRNodeId inc_inode_index = rr_graph_builder.node_lookup().find_node(layer, x, y, chan_type, inc_track);
-        RRNodeId dec_inode_index = rr_graph_builder.node_lookup().find_node(layer, x, y, chan_type, dec_track);
-
-        if (!inc_inode_index || !dec_inode_index) {
-            continue;
-        }
-
-        // Add to the list.
-        short to_switch = seg_details[inc_track].arch_opin_switch();
-        rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch, false);
-        ++num_edges;
-
-        to_switch = seg_details[dec_track].arch_opin_switch();
-        rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, to_switch, false);
-        ++num_edges;
-    }
-
-    return num_edges;
 }
 
 bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_details* seg_details) {
@@ -1943,7 +1755,7 @@ void load_sblock_pattern_lookup(const int i,
     }
 }
 
-static void label_wire_muxes(const int chan_num,
+void label_wire_muxes(const int chan_num,
                              const int seg_num,
                              const t_chan_seg_details* seg_details,
                              const int seg_type_index,
@@ -1954,55 +1766,53 @@ static void label_wire_muxes(const int chan_num,
                              std::vector<int>& labels,
                              int* num_wire_muxes,
                              int* num_wire_muxes_cb_restricted) {
-    /* COUNT pass then a LOAD pass */
+    // COUNT pass then a LOAD pass
     int num_labels = 0;
     int num_labels_restricted = 0;
     for (int pass = 0; pass < 2; ++pass) {
-        /* Alloc the list on LOAD pass */
+        // Alloc the list on LOAD pass
         if (pass > 0) {
             labels.resize(num_labels);
             std::ranges::fill(labels, 0);
             num_labels = 0;
         }
 
-        /* Find the tracks that are starting. */
+        // Find the tracks that are starting.
         for (int itrack = 0; itrack < max_chan_width; ++itrack) {
             int start = get_seg_start(seg_details, itrack, chan_num, seg_num);
             int end = get_seg_end(seg_details, itrack, start, chan_num, max_len);
 
-            /* Skip tracks that are undefined */
+            // Skip tracks that are undefined
             if (seg_details[itrack].length() == 0) {
                 continue;
             }
 
-            /* Skip tracks going the wrong way */
+            // Skip tracks going the wrong way
             if (seg_details[itrack].direction() != dir) {
                 continue;
             }
 
             if (seg_type_index != UNDEFINED) {
-                /* skip tracks that don't belong to the specified segment type */
+                // skip tracks that don't belong to the specified segment type
                 if (seg_details[itrack].index() != seg_type_index) {
                     continue;
                 }
             }
 
-            /* Determine if we are a wire startpoint */
+            // Determine if we are a wire startpoint
             bool is_endpoint = (seg_num == start);
             if (Direction::DEC == seg_details[itrack].direction()) {
                 is_endpoint = (seg_num == end);
             }
 
-            /* Count the labels and load if LOAD pass */
+            // Count the labels and load if LOAD pass
             if (is_endpoint) {
-                /*
-                 * not all wire endpoints can be driven by OPIN (depending on the <cb> pattern in the arch file)
-                 * the check_cb is targeting this arch specification:
-                 * if this function is called by get_unidir_opin_connections(),
-                 * then we need to check if mux connections can be added to this type of wire,
-                 * otherwise, this function should not consider <cb> specification.
-                 */
-                if ((!check_cb) || (seg_details[itrack].cb(0) == true)) {
+                // not all wire endpoints can be driven by OPIN (depending on the <cb> pattern in the arch file)
+                // the check_cb is targeting this arch specification:
+                // if this function is called by get_unidir_opin_connections(),
+                // then we need to check if mux connections can be added to this type of wire,
+                // otherwise, this function should not consider <cb> specification.
+                if (!check_cb || seg_details[itrack].cb(0) == true) {
                     if (pass > 0) {
                         labels[num_labels] = itrack;
                     }
