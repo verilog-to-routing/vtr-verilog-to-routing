@@ -960,7 +960,7 @@ std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_
     }
 
     // Sort classes so the largest pin class is first
-    auto cmp_class = [&](int lhs, int rhs) {
+    auto cmp_class = [&](int lhs, int rhs) noexcept {
         return type->class_inf[lhs].num_pins > type->class_inf[rhs].num_pins;
     };
 
