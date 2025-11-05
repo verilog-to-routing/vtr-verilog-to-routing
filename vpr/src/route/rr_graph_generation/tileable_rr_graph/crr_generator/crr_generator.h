@@ -54,13 +54,6 @@ class CRRGraphGenerator {
     void initialize_components();
     void process_switch_blocks();
     void build_connections();
-    // void create_output_graph();
-    // void add_custom_edges();
-    void write_output_files();
-
-    // Utility methods
-    void print_processing_summary();
-    void validate_processing_results();
 };
 
 } // namespace crrgenerator
