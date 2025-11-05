@@ -76,6 +76,8 @@ void load_pin_classes_in_pb_graph_head(t_pb_graph_node* pb_graph_node) {
     depth = get_max_depth_of_pb_graph_node(pb_graph_node);
     for (i = 0; i < depth; i++) {
         input_count = output_count = 0;
+        // The following function marks pins based on the pin count. This is
+        // used when traversing the pb heirarchy.
         std::unordered_map<t_pb_graph_pin*, int> pin_marker;
         load_pin_class_by_depth(pb_graph_node, i, &input_count, &output_count, pin_marker);
     }
@@ -167,7 +169,6 @@ static void load_pin_class_by_depth(t_pb_graph_node* pb_graph_node,
                                     std::unordered_map<t_pb_graph_pin*, int>& pin_marker) {
     int i, j, k;
 
-
     if (pb_graph_node->is_primitive()) {
         if (pb_graph_node->pb_type->depth > depth) {
             /* At primitive, determine which pin class each of its pins belong to */
@@ -258,6 +259,8 @@ static void load_pin_class_by_depth(t_pb_graph_node* pb_graph_node,
 static void load_list_of_connectable_input_pin_ptrs(t_pb_graph_node* pb_graph_node) {
     int i, j, k;
 
+    // We keep track of the pins we have already seen when expanding the pb
+    // graph.
     std::unordered_set<t_pb_graph_pin*> seen_pins;
 
     if (pb_graph_node->is_primitive()) {
