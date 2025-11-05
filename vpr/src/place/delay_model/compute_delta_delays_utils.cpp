@@ -215,7 +215,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
 
                     if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                         // check if the tile type is among the allowed types
-                        if (!allowed_types.empty() && allowed_types.find(type->name) == allowed_types.end()) {
+                        if (!allowed_types.empty() && !allowed_types.contains(type->name)) {
                             continue;
                         }
                         src_type = type;
@@ -250,7 +250,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
 
                     if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                         // check if the tile type is among the allowed types
-                        if (!allowed_types.empty() && allowed_types.find(type->name) == allowed_types.end()) {
+                        if (!allowed_types.empty() && !allowed_types.contains(type->name)) {
                             continue;
                         }
                         src_type = type;
@@ -441,7 +441,7 @@ static void generic_compute_matrix_iterative_astar(RouterDelayProfiler& route_pr
             bool src_or_target_empty = (src_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE
                                         || sink_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE);
 
-            bool is_allowed_type = allowed_types.empty() || allowed_types.find(src_type->name) != allowed_types.end();
+            bool is_allowed_type = allowed_types.empty() || allowed_types.contains(src_type->name);
 
             if (src_or_target_empty || !is_allowed_type) {
                 if (matrix[delta_x][delta_y].empty()) {
@@ -503,7 +503,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
     const auto& device_ctx = g_vpr_ctx.device();
 
     t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type({source_x, source_y, from_layer_num});
-    bool is_allowed_type = allowed_types.empty() || allowed_types.find(src_type->name) != allowed_types.end();
+    bool is_allowed_type = allowed_types.empty() || allowed_types.contains(src_type->name);
     if (src_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE || !is_allowed_type) {
         for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
             for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
@@ -703,13 +703,13 @@ static float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
     float delay;
 
     if (reducer == e_reducer::MIN) {
-        auto itr = std::min_element(delays.begin(), delays.end());
+        auto itr = std::ranges::min_element(delays);
         delay = *itr;
     } else if (reducer == e_reducer::MAX) {
-        auto itr = std::max_element(delays.begin(), delays.end());
+        auto itr = std::ranges::max_element(delays);
         delay = *itr;
     } else if (reducer == e_reducer::MEDIAN) {
-        std::sort(delays.begin(), delays.end());
+        std::ranges::sort(delays);
         delay = vtr::median_presorted<float>(delays.begin(), delays.end());
     } else if (reducer == e_reducer::ARITHMEAN) {
         delay = vtr::arithmean(delays.begin(), delays.end());
@@ -945,7 +945,7 @@ std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_
                 int pin = type->class_inf[i].pinlist[ipin];
                 //If the pin isn't ignored, and has a non-zero Fc to some general
                 //routing the class is suitable for delay profiling
-                if (!type->is_ignored_pin[pin] && non_zero_fc_pins.count(pin)) {
+                if (!type->is_ignored_pin[pin] && non_zero_fc_pins.contains(pin)) {
                     any_pins_connect_to_general_routing = true;
                     break;
                 }
@@ -964,7 +964,7 @@ std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_
         return type->class_inf[lhs].num_pins > type->class_inf[rhs].num_pins;
     };
 
-    std::stable_sort(best_classes.begin(), best_classes.end(), cmp_class);
+    std::ranges::stable_sort(best_classes, cmp_class);
 
     return best_classes;
 }
