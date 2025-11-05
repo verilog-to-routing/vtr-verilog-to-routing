@@ -5,13 +5,23 @@
 #include "rr_graph_type.h"
 #include "rr_edge.h"
 
-
 class RRGraphBuilder;
 class RRGraphView;
 struct t_chan_width;
 struct t_bottleneck_link;
 struct t_clb_to_clb_directs;
 
+/**
+ * @brief Builds all OPIN-->CHAN edges in the RR graph.
+ *
+ * For each grid tile (all layers and sides), connects OPIN nodes to adjacent
+ * CHANX/CHANY wires based on architecture directionality:
+ * - **BI_DIRECTIONAL**: uses pin-to-track lookups.
+ * - **UNI_DIRECTIONAL**: distributes Fc connections using staggered offsets.
+ *
+ * Also adds direct CLB-to-CLB pin connections and inter-die (3D) links.
+ * Duplicates are removed before committing edges to the RR graph.
+ */
 void add_opin_chan_edges(RRGraphBuilder& rr_graph_builder,
                          const RRGraphView& rr_graph,
                          size_t num_seg_types,
