@@ -682,12 +682,10 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
         pin_info.push_back(block_type_pin_index_to_pin_inst(type, pin_physical_num, is_flat));
     }
 
-    auto cmp = [](const t_pin_inst_port& lhs, const t_pin_inst_port& rhs) noexcept {
-        return lhs.pin_physical_num < rhs.pin_physical_num;
-    };
-
     // Ensure all the pins are in order
-    std::ranges::sort(pin_info, cmp);
+    std::ranges::sort(pin_info, [](const t_pin_inst_port& lhs, const t_pin_inst_port& rhs) noexcept {
+        return lhs.pin_physical_num < rhs.pin_physical_num;
+    });
 
     // Determine ranges for each capacity instance and port pair
     std::map<std::tuple<int, int, int, int, int>, std::array<int, 4>> pin_ranges;
