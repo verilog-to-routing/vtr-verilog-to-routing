@@ -1388,8 +1388,6 @@ class t_pb_graph_pin {
     t_pb_graph_node* parent_node = nullptr;
     int pin_count_in_cluster = 0;
 
-    int scratch_pad = 0; /* temporary data structure useful to store traversal info */
-
     enum e_pb_graph_pin_type type = PB_PIN_NORMAL; /* The type of this pin (sequential, i/o etc.) */
 
     /* sequential timing information */
