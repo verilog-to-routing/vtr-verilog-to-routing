@@ -112,16 +112,16 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
  * @details If @p seg_type_index is UNDEFINED, all segment types are considered.
  */
 void label_wire_muxes(const int chan_num,
-                             const int seg_num,
-                             const t_chan_seg_details* seg_details,
-                             const int seg_type_index,
-                             const int max_len,
-                             const enum Direction dir,
-                             const int max_chan_width,
-                             const bool check_cb,
-                             std::vector<int>& labels,
-                             int* num_wire_muxes,
-                             int* num_wire_muxes_cb_restricted);
+                      const int seg_num,
+                      const t_chan_seg_details* seg_details,
+                      const int seg_type_index,
+                      const int max_len,
+                      const enum Direction dir,
+                      const int max_chan_width,
+                      const bool check_cb,
+                      std::vector<int>& labels,
+                      int* num_wire_muxes,
+                      int* num_wire_muxes_cb_restricted);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
                                              const t_chan_width& nodes_per_chan);

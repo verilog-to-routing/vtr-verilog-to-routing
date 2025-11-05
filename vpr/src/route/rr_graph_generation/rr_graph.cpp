@@ -1608,8 +1608,6 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
     rr_graph_builder.rr_nodes().shrink_to_fit();
 }
 
-
-
 void free_rr_graph() {
     // Frees all the routing graph data structures, if they have been allocated.
     // I use rr_mem_chunk_list_head as a flag to indicate whether or not the graph has been allocated -- if it is not NULL,
