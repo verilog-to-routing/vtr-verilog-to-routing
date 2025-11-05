@@ -176,59 +176,16 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     });
 
     if (is_multi_layer_) {
-        alloc_and_load_for_fast_vertical_cost_update_();
+        // Calculate prefix sum of the inter-die connectivity up to and including the channel at (x, y).
+        acc_tile_num_inter_die_conn_ = vtr::PrefixSum2D<int>(grid_width,
+                                                             grid_height,
+                                                             [&](size_t x, size_t y) {
+                                                                 return device_ctx.rr_chanz_segment_width[x][y];
+                                                             });
     }
 }
 
-void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    const size_t grid_height = device_ctx.grid.height();
-    const size_t grid_width = device_ctx.grid.width();
-
-    vtr::NdMatrix<float, 2> tile_num_inter_die_conn({grid_width, grid_height}, 0.);
-
-    /*
-     * Step 1: iterate over the rr-graph, recording how many edges go between layers at each (x,y) location
-     * in the device. We count all these edges, regardless of which layers they connect. Then we divide by
-     * the number of layers - 1 to get the average cross-layer edge count per (x,y) location -- this mirrors
-     * what we do for the horizontal and vertical channels where we assume the channel width doesn't change
-     * along the length of the channel. It lets us be more memory-efficient for 3D devices, and could be revisited
-     * if someday we have architectures with widely varying connectivity between different layers in a stack.
-     */
-
-    /* To calculate the accumulative number of inter-die connections we first need to get the number of
-     * inter-die connection per location. To be able to work for the cases that RR Graph is read instead
-     * of being made from the architecture file, we calculate this number by iterating over the RR graph. Once
-     * tile_num_inter_die_conn is populated, we can start populating acc_tile_num_inter_die_conn_.
-     */
-
-    for (const RRNodeId node : rr_graph.nodes()) {
-        if (rr_graph.node_type(node) == e_rr_type::CHANZ) {
-            int x = rr_graph.node_xlow(node);
-            int y = rr_graph.node_ylow(node);
-            VTR_ASSERT_SAFE(x == rr_graph.node_xhigh(node) && y == rr_graph.node_yhigh(node));
-            tile_num_inter_die_conn[x][y]++;
-        }
-    }
-
-    int num_layers = device_ctx.grid.get_num_layers();
-    for (size_t x = 0; x < device_ctx.grid.width(); x++) {
-        for (size_t y = 0; y < device_ctx.grid.height(); y++) {
-            tile_num_inter_die_conn[x][y] /= (num_layers - 1);
-        }
-    }
-
-    // Step 2: Calculate prefix sum of the inter-die connectivity up to and including the channel at (x, y).
-    acc_tile_num_inter_die_conn_ = vtr::PrefixSum2D<int>(grid_width,
-                                                         grid_height,
-                                                         [&](size_t x, size_t y) {
-                                                             return (int)tile_num_inter_die_conn[x][y];
-                                                         });
-}
-
-std::pair<double, double> NetCostHandler::comp_bb_cost(e_cost_methods method) {
+std::pair<double, double> NetCostHandler::comp_bb_cost(e_cost_methods method) const {
     return comp_bb_cost_functor_(method);
 }
 
