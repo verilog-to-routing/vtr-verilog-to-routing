@@ -50,7 +50,13 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                   int num_seg_types,
                                   int& edge_count);
-
+/**
+ * @brief Builds bidirectional OPIN-->CHAN edges for a given CLB output pin.
+ *
+ * Finds all routing tracks that the OPIN at (i, j, layer, ipin) connects to
+ * based on the pin-to-track mapping and channel details, and appends the
+ * corresponding RR edges to @p rr_edges_to_create.
+ */
 static int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                       int layer,
                                       int i,
@@ -62,6 +68,12 @@ static int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                       const t_chan_details& chan_details_x,
                                       const t_chan_details& chan_details_y);
 
+/**
+ * @brief Creates unidirectional OPIN-->CHAN edges for a given segment type.
+ *
+ * Connects an OPIN node to nearby routing tracks (INC/DEC muxes) based on Fc.
+ * Uses @p Fc_ofs to stagger connections and may clip Fc if not enough muxes exist
+ */
 static int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                        int layer,
                                        int chan,
@@ -77,6 +89,13 @@ static int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                        const t_chan_width& nodes_per_chan,
                                        bool* Fc_clipped);
 
+/**
+ * @brief Adds direct CLB-to-CLB OPIN-->IPIN connections for a given OPIN.
+ *
+ * Finds and creates all direct pin-to-pin edges (bypassing routing channels)
+ * from the OPIN at (layer, x, y, side) to corresponding IPINs defined by
+ * architecture-specified direct connections.
+ */
 static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        const RRGraphView& rr_graph,
                                        int layer,
@@ -270,8 +289,6 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-/* Returns the number of tracks to which clb opin #ipin at (i,j) connects.   *
- * Also stores the nodes to which this pin connects in rr_edges_to_create    */
 int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                int layer,
                                int i,
@@ -352,12 +369,6 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     return num_conn;
 }
 
-/* Actually builds the edges from the OPIN nodes already allocated to their correct tracks for segment seg_Inf[seg_type_index].
- * Note that this seg_inf vector is NOT the segment_info vectored as stored in the device variable. This index is w.r.t to seg_inf_x
- * or seg_inf_y for x-adjacent and y-adjacent segments respectively. This index is assigned in get_seg_details earlier
- * in the rr_graph_builder routine. This t_seg_detail is then used to build t_chan_seg_details which is passed in to label_wire mux
- * routine used in this function.
- */
 int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 int layer,
                                 int chan,
@@ -372,9 +383,6 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 int max_len,
                                 const t_chan_width& nodes_per_chan,
                                 bool* Fc_clipped) {
-    /* Gets a linked list of Fc nodes of specified seg_type_index to connect
-     * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
-
     *Fc_clipped = false;
 
     // Fc is assigned in pairs so check it is even.
@@ -398,7 +406,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                      Direction::DEC, max_chan_width, true, dec_muxes, &num_dec_muxes, &dummy);
 
     // Clip Fc to the number of muxes.
-    if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
+    if ((Fc / 2 > num_inc_muxes) || (Fc / 2 > num_dec_muxes)) {
         *Fc_clipped = true;
         Fc = 2 * std::min(num_inc_muxes, num_dec_muxes);
     }
@@ -436,10 +444,6 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     return num_edges;
 }
 
-/* Add all direct clb-pin-to-clb-pin edges to given opin
- *
- * The current opin is located at (layer,x,y) along the specified side
- */
 static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        const RRGraphView& rr_graph,
                                        int layer,
@@ -451,7 +455,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        t_rr_edge_info_set& rr_edges_to_create,
                                        const std::vector<t_direct_inf>& directs,
                                        const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     t_physical_tile_type_ptr curr_type = device_ctx.grid.get_physical_type({x, y, layer});
 
@@ -463,7 +467,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
         return num_pins; //No source pin on this side
     }
 
-    //Capacity location determined by pin number relative to pins per capacity instance
+    // Capacity location determined by pin number relative to pins per capacity instance
     auto [z, relative_opin] = get_capacity_location_from_physical_pin(curr_type, opin);
     VTR_ASSERT(z >= 0 && z < curr_type->capacity);
     const int num_directs = directs.size();
@@ -546,14 +550,14 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                         int final_ipin_y = y + directs[i].y_offset - target_height_offset + target_type->pin_height_offset[ipin];
 
                         if (directs[i].to_side != NUM_2D_SIDES) {
-                            //Explicit side specified, only create if pin exists on that side
+                            // Explicit side specified, only create if pin exists on that side
                             RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, final_ipin_x, final_ipin_y,
                                                                                       e_rr_type::IPIN, ipin, directs[i].to_side);
                             if (inode) {
                                 inodes.push_back(inode);
                             }
                         } else {
-                            //No side specified, get all candidates
+                            // No side specified, get all candidates
                             inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(layer, final_ipin_x, final_ipin_y, e_rr_type::IPIN, ipin);
                         }
 
@@ -578,14 +582,14 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_graph,
                                                         RRNodeId from_rr,
                                                         const std::vector<RRNodeId>& candidate_rr_nodes) {
-    //With physically equivalent pins there may be multiple candidate rr nodes (which are equivalent)
-    //to connect the direct edge to.
-    //As a result it does not matter (from a correctness standpoint) which is picked.
+    // With physically equivalent pins there may be multiple candidate rr nodes (which are equivalent)
+    // to connect the direct edge to.
+    // As a result it does not matter (from a correctness standpoint) which is picked.
     //
-    //However intuitively we would expect (e.g. when visualizing the drawn RR graph) that the 'closest'
-    //candidate would be picked (i.e. to minimize the drawn edge length).
+    // However intuitively we would expect (e.g. when visualizing the drawn RR graph) that the 'closest'
+    // candidate would be picked (i.e. to minimize the drawn edge length).
     //
-    //This function attempts to pick the 'best/closest' of the candidates.
+    // This function attempts to pick the 'best/closest' of the candidates.
     VTR_ASSERT(rr_graph.node_type(from_rr) == e_rr_type::OPIN);
 
     float best_dist = std::numeric_limits<float>::infinity();
@@ -603,26 +607,26 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
                             + std::abs(rr_graph.node_ylow(from_rr) - rr_graph.node_ylow(to_rr));
 
             for (const e_side& to_side : TOTAL_2D_SIDES) {
-                /* Bypass those side where the node does not appear */
+                // Bypass those side where the node does not appear
                 if (!rr_graph.is_node_on_specific_side(to_rr, to_side)) {
                     continue;
                 }
 
-                //Include a partial unit of distance based on side alignment to ensure
-                //we prefer facing sides
+                // Include a partial unit of distance based on side alignment to ensure
+                // we prefer facing sides
                 if ((from_side == RIGHT && to_side == LEFT)
                     || (from_side == LEFT && to_side == RIGHT)
                     || (from_side == TOP && to_side == BOTTOM)
                     || (from_side == BOTTOM && to_side == TOP)) {
-                    //Facing sides
+                    // Facing sides
                     to_dist += 0.25;
                 } else if (((from_side == RIGHT || from_side == LEFT) && (to_side == TOP || to_side == BOTTOM))
                            || ((from_side == TOP || from_side == BOTTOM) && (to_side == RIGHT || to_side == LEFT))) {
-                    //Perpendicular sides
+                    // Perpendicular sides
                     to_dist += 0.5;
 
                 } else {
-                    //Opposite sides
+                    // Opposite sides
                     to_dist += 0.75;
                 }
 
