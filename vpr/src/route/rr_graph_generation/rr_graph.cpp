@@ -1017,12 +1017,18 @@ static void alloc_and_init_channel_width() {
 
     vtr::NdMatrix<int, 3>& chanx_width = mutable_device_ctx.rr_chanx_segment_width;
     vtr::NdMatrix<int, 3>& chany_width = mutable_device_ctx.rr_chany_segment_width;
+    vtr::NdMatrix<int, 2>& chanz_width = mutable_device_ctx.rr_chanz_segment_width;
 
     chanx_width.resize({grid.get_num_layers(), grid.width(), grid.height()});
     chany_width.resize({grid.get_num_layers(), grid.width(), grid.height()});
 
     chanx_width.fill(0);
     chany_width.fill(0);
+
+    if (grid.get_num_layers() > 1) {
+        chanz_width.resize({grid.width(), grid.height()});
+        chanz_width.fill(0);
+    }
 
     for (RRNodeId node_id : rr_graph.nodes()) {
         e_rr_type rr_type = rr_graph.node_type(node_id);
@@ -1039,6 +1045,10 @@ static void alloc_and_init_channel_width() {
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
                 chany_width[layer][x][y] += rr_graph.node_capacity(node_id);
             }
+        } else if (rr_type == e_rr_type::CHANZ) {
+            int x = rr_graph.node_xlow(node_id);
+            int y = rr_graph.node_ylow(node_id);
+            chanz_width[x][y]++;
         }
     }
 
