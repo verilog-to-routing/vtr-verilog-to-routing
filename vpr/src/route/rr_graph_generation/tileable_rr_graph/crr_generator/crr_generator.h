@@ -47,7 +47,6 @@ class CRRGraphGenerator {
 
     std::unique_ptr<RRGraph> output_graph_;
     std::unique_ptr<CRRConnectionBuilder> connection_builder_;
-    std::unique_ptr<CRRThreadPool> thread_pool_;
     std::unique_ptr<XMLHandler> xml_handler_;
 
     // Processing methods

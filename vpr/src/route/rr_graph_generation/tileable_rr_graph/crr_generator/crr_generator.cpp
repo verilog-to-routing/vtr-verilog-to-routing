@@ -52,12 +52,6 @@ void CRRGraphGenerator::initialize_components() {
                                                                  node_lookup_,
                                                                  sb_manager_);
 
-    // Initialize thread pool if parallel processing is enabled
-    VTR_ASSERT(crr_opts_.crr_num_threads > 0);
-    thread_pool_ = std::make_unique<CRRThreadPool>(crr_opts_.crr_num_threads);
-    VTR_LOG("CRR Graph Generator: Parallel processing enabled with %lu threads\n",
-            thread_pool_->get_thread_count());
-
     VTR_LOG("CRR Graph Generator: All components initialized successfully\n");
 }
 
