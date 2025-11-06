@@ -457,7 +457,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                 continue;
             } else {
                 // get the ptc_number of the sinks in the group
-                std::for_each(sink_grp.begin(), sink_grp.end(), [&rr_graph](int& sink_rr_num) {
+                std::ranges::for_each(sink_grp, [&rr_graph](int& sink_rr_num) {
                     sink_rr_num = rr_graph.node_ptc_num(RRNodeId(sink_rr_num));
                 });
 
@@ -495,8 +495,8 @@ void try_graph(int width_fac,
                const t_router_opts& router_opts,
                const t_crr_opts& crr_opts,
                t_det_routing_arch& det_routing_arch,
-               std::vector<t_segment_inf>& segment_inf,
-               t_chan_width_dist chan_width_dist,
+               const std::vector<t_segment_inf>& segment_inf,
+               const t_chan_width_dist& chan_width_dist,
                const std::vector<t_direct_inf>& directs,
                bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -682,12 +682,12 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
         // Between net id iters, check only net id and expression breakpoints
         get_bp_state_globals()->get_glob_breakpoint_state()->route_net_id = net_id;
         t_draw_state* draw_state = get_draw_state_vars();
-        for (size_t i = 0; i < draw_state->list_of_breakpoints.size(); i++) {
-            if (draw_state->list_of_breakpoints[i].type == BT_ROUTE_NET_ID && draw_state->list_of_breakpoints[i].active) {
-                hit_bp = check_for_route_net_id_iter_breakpoints(draw_state->list_of_breakpoints[i].bt_route_net_id);
+        for (const Breakpoint& breakpoint : draw_state->list_of_breakpoints) {
+            if (breakpoint.type == BT_ROUTE_NET_ID && breakpoint.active) {
+                hit_bp = check_for_route_net_id_iter_breakpoints(breakpoint.bt_route_net_id);
                 break;
-            } else if (draw_state->list_of_breakpoints[i].type == BT_EXPRESSION && draw_state->list_of_breakpoints[i].active) {
-                hit_bp = check_for_expression_breakpoints(draw_state->list_of_breakpoints[i].bt_expression, false);
+            } else if (breakpoint.type == BT_EXPRESSION && breakpoint.active) {
+                hit_bp = check_for_expression_breakpoints(breakpoint.bt_expression, false);
                 break;
             }
         }

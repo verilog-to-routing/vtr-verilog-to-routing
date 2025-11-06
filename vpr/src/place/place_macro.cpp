@@ -351,10 +351,10 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
 
     // Step 1) find the staring point of the matching
     auto new_macro_it = new_macro_blocks.begin();
-    auto old_macro_it = std::find(old_macro_blocks.begin(), old_macro_blocks.end(), *new_macro_it);
+    auto old_macro_it = std::ranges::find(old_macro_blocks, *new_macro_it);
     if (old_macro_it == old_macro_blocks.end()) {
         old_macro_it = old_macro_blocks.begin();
-        new_macro_it = std::find(new_macro_blocks.begin(), new_macro_blocks.end(), *old_macro_it);
+        new_macro_it = std::ranges::find(new_macro_blocks, *old_macro_it);
         // if matching is from the middle of the two macros, then combining macros is not possible
         if (new_macro_it == new_macro_blocks.end()) {
             return false;
@@ -596,7 +596,7 @@ void PlaceMacros::alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>
 void PlaceMacros::write_place_macros_(std::string filename,
                                       const std::vector<t_pl_macro>& macros,
                                       const std::vector<t_physical_tile_type>& physical_tile_types,
-                                      const ClusteredNetlist& clb_nlist) {
+                                      const ClusteredNetlist& clb_nlist) const {
     FILE* f = vtr::fopen(filename.c_str(), "w");
 
     fprintf(f, "#Identified Placement macros\n");

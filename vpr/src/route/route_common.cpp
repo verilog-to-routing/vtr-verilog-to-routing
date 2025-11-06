@@ -12,6 +12,8 @@
 #include "vpr_utils.h"
 #include "route_utilization.h"
 
+#include <ranges>
+
 #if defined(VPR_USE_TBB)
 #include <tbb/parallel_for_each.h>
 #include <tbb/combinable.h>
@@ -106,7 +108,7 @@ void save_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routi
 
 /* Empties route_ctx.route_trees and copies over best_routing onto it.
  * Also restores the locally used opin data. */
-void restore_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
+void restore_routing(const vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
                      t_clb_opins_used& clb_opins_used_locally,
                      const t_clb_opins_used& saved_clb_opins_used_locally) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -281,7 +283,7 @@ void init_route_structs(const Netlist<>& net_list,
 
     // Allocate and clear a new route_trees
     route_ctx.route_trees.resize(net_list.nets().size());
-    std::fill(route_ctx.route_trees.begin(), route_ctx.route_trees.end(), vtr::nullopt);
+    std::ranges::fill(route_ctx.route_trees, vtr::nullopt);
 
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_graph,
@@ -412,7 +414,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 void free_route_structs() {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (route_ctx.route_bb.size() != 0) {
+    if (!route_ctx.route_bb.empty()) {
         route_ctx.route_bb.clear();
         route_ctx.route_bb.shrink_to_fit();
     }
@@ -430,8 +432,8 @@ void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts) {
 
     reset_rr_node_route_structs(router_opts);
 
-    for (auto i : device_ctx.rr_node_to_non_config_node_set) {
-        route_ctx.non_configurable_bitset.set(i.first, true);
+    for (const RRNodeId node_id : device_ctx.rr_node_to_non_config_node_set | std::views::keys) {
+        route_ctx.non_configurable_bitset.set(node_id, true);
     }
 }
 
@@ -518,8 +520,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
         for (auto pin_id : net_list.net_pins(net_id)) {
             auto block_id = net_list.pin_block(pin_id);
 
-            t_block_loc blk_loc;
-            blk_loc = get_block_loc(block_id, is_flat);
+            t_block_loc blk_loc = get_block_loc(block_id, is_flat);
             int iclass = get_block_pin_class_num(block_id, pin_id, is_flat);
             RRNodeId inode;
             if (pin_count == 0) { /* First pin is driver */
@@ -640,8 +641,7 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
         rr_blk_source[blk_id].resize(num_tile_class);
         for (int iclass = 0; iclass < num_tile_class; iclass++) {
             if (iclass >= class_range.low && iclass <= class_range.high) {
-                t_block_loc blk_loc;
-                blk_loc = get_block_loc(blk_id, is_flat);
+                t_block_loc blk_loc = get_block_loc(blk_id, is_flat);
                 auto class_type = get_class_type_from_class_physical_num(type, iclass);
                 if (class_type == e_pin_type::DRIVER) {
                     rr_type = e_rr_type::SOURCE;
@@ -677,10 +677,10 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
         std::size_t net_id_num = std::size_t(net_id);
         if (is_flat) {
             AtomNetId atom_net_id = AtomNetId(net_id_num);
-            is_clock_net[net_id] = clock_nets.find(atom_net_id) != clock_nets.end();
+            is_clock_net[net_id] = clock_nets.contains(atom_net_id);
         } else {
             ClusterNetId cluster_net_id = ClusterNetId(net_id_num);
-            is_clock_net[net_id] = clock_nets.find(atom_ctx.lookup().atom_net(cluster_net_id)) != clock_nets.end();
+            is_clock_net[net_id] = clock_nets.contains(atom_ctx.lookup().atom_net(cluster_net_id));
         }
     }
 
@@ -846,9 +846,8 @@ void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf
 // this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
 void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat) {
     VTR_ASSERT(is_flat == false);
-    int num_local_opin, iconn, num_edges;
+    int num_local_opin;
     int iclass, ipin;
-    float cost;
     HeapNode heap_head_node;
     t_physical_tile_type_ptr type;
 
@@ -899,14 +898,14 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
             RRNodeId from_node = route_ctx.rr_blk_source[(const ParentBlockId&)blk_id][iclass];
-            num_edges = rr_graph.num_edges(RRNodeId(from_node));
-            for (iconn = 0; iconn < num_edges; iconn++) {
+            int num_edges = rr_graph.num_edges(RRNodeId(from_node));
+            for (int iconn = 0; iconn < num_edges; iconn++) {
                 RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iconn);
 
                 VTR_ASSERT(rr_graph.node_type(RRNodeId(to_node)) == e_rr_type::OPIN);
 
                 //Add the OPIN to the heap according to it's congestion cost
-                cost = get_rr_cong_cost(to_node, pres_fac);
+                float cost = get_rr_cong_cost(to_node, pres_fac);
                 if (cost < route_ctx.rr_node_route_inf[to_node].path_cost) {
                     heap->add_to_heap({cost, to_node});
                 }
@@ -968,9 +967,8 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
     }
 
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
-        int node_x, node_y;
-        node_x = rr_graph.node_xlow(inode);
-        node_y = rr_graph.node_ylow(inode);
+        int node_x = rr_graph.node_xlow(inode);
+        int node_y = rr_graph.node_ylow(inode);
 
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int cap = rr_graph.node_capacity(inode);
@@ -982,9 +980,8 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
                 auto net_id = itr->second;
                 VTR_LOG("    Used by net %s (%zu)\n", net_list.net_name(net_id).c_str(), size_t(net_id));
                 for (auto pin : net_list.net_pins(net_id)) {
-                    t_block_loc blk_loc;
                     auto blk = net_list.pin_block(pin);
-                    blk_loc = get_block_loc(blk, is_flat);
+                    t_block_loc blk_loc = get_block_loc(blk, is_flat);
                     if (blk_loc.loc.x == node_x && blk_loc.loc.y == node_y) {
                         VTR_LOG("      Is in the same cluster: %s \n", describe_rr_node(rr_graph, device_ctx.grid,
                                                                                         device_ctx.rr_indexed_data, itr->first, is_flat)

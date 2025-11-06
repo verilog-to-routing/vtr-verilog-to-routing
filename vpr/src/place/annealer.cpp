@@ -76,9 +76,9 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
         proposed_setup_slacks.push_back(setup_slacks->setup_slack(net_id, ipin));
     }
 
-    //Sort in ascending order, from the worse slack value to the best
-    std::stable_sort(original_setup_slacks.begin(), original_setup_slacks.end());
-    std::stable_sort(proposed_setup_slacks.begin(), proposed_setup_slacks.end());
+    // Sort in ascending order, from the worse slack value to the best
+    std::ranges::stable_sort(original_setup_slacks);
+    std::ranges::stable_sort(proposed_setup_slacks);
 
     //Check the first pair of slack values that are different
     //If found, return their difference

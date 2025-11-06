@@ -26,7 +26,6 @@ static bool f_placer_breakpoint_reached = false;
  * @param to_layer_num The layer that the block is moving to
  * @param is_range_fixed Whether the search range is fixed (e.g., in case of placement constraints)
  * @param search_range The search range to adjust
- * 
  */
 static void adjust_search_range(t_logical_block_type_ptr block_type,
                                 const int compressed_column_num,
@@ -405,7 +404,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
         int imacro_to = place_macros.get_imacro_from_iblk(blk_to);
 
         if (imacro_to != -1) {
-            auto itr = std::find(macros.begin(), macros.end(), imacro_to);
+            auto itr = std::ranges::find(macros, imacro_to);
             if (itr == macros.end()) {
                 macros.push_back(imacro_to);
                 outcome = identify_macro_self_swap_affected_macros(macros, imacro_to, swap_offset, blk_loc_registry, place_macros, move_abortion_logger);
@@ -432,7 +431,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     }
 
     //Remove any duplicate macros
-    affected_macros.resize(std::distance(affected_macros.begin(), std::unique(affected_macros.begin(), affected_macros.end())));
+    affected_macros.resize(std::distance(affected_macros.begin(), std::ranges::unique(affected_macros).begin()));
 
     std::vector<ClusterBlockId> displaced_blocks;
 
@@ -448,14 +447,14 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     auto is_non_macro_block = [&](ClusterBlockId blk) {
         int imacro_blk = place_macros.get_imacro_from_iblk(blk);
 
-        if (std::find(affected_macros.begin(), affected_macros.end(), imacro_blk) != affected_macros.end()) {
+        if (std::ranges::find(affected_macros, imacro_blk) != affected_macros.end()) {
             return false;
         }
         return true;
     };
 
     std::vector<ClusterBlockId> non_macro_displaced_blocks;
-    std::copy_if(displaced_blocks.begin(), displaced_blocks.end(), std::back_inserter(non_macro_displaced_blocks), is_non_macro_block);
+    std::ranges::copy_if(displaced_blocks, std::back_inserter(non_macro_displaced_blocks), is_non_macro_block);
 
     //Based on the currently queued block moves, find the empty 'holes' left behind
     auto empty_locs = blocks_affected.determine_locations_emptied_by_move();
@@ -863,7 +862,6 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     }
 
     //Determine the valid compressed grid location ranges
-    int delta_cx;
     t_bb search_range;
 
     // If we are early in the anneal and the range limit still big enough --> search around the center location that the move proposed
@@ -878,7 +876,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                                 compressed_loc_on_layer,
                                                                 std::min<float>(range_limiters.original_rlim, range_limiters.dm_rlim));
     }
-    delta_cx = search_range.xmax - search_range.xmin;
+    int delta_cx = search_range.xmax - search_range.xmin;
 
     bool block_constrained = is_cluster_constrained(b_from);
 
@@ -1141,7 +1139,6 @@ t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& com
                                               const t_physical_tile_loc& from_compressed_loc,
                                               const t_physical_tile_loc& target_compressed_loc,
                                               float rlim) {
-    t_bb search_range;
 
     int min_cx, max_cx, min_cy, max_cy;
 
@@ -1174,7 +1171,7 @@ t_bb get_compressed_grid_bounded_search_range(const t_compressed_block_grid& com
         max_cy = std::min<int>(compressed_block_grid.get_num_rows(layer_num) - 1, cy_from + rlim_y_max_range);
     }
 
-    search_range = t_bb(min_cx, max_cx, min_cy, max_cy, layer_num, layer_num);
+    t_bb search_range = t_bb(min_cx, max_cx, min_cy, max_cy, layer_num, layer_num);
 
     return search_range;
 }
