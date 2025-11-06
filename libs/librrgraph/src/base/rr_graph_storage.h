@@ -400,6 +400,11 @@ class t_rr_graph_storage {
         return vtr::StrongIdRange<RREdgeId>(first_edge(id), last_edge(id));
     }
 
+
+    inline vtr::StrongIdRange<RREdgeId> all_edges() const {
+        return vtr::StrongIdRange<RREdgeId>(RREdgeId(0), RREdgeId(edge_src_node_.size()));
+    }
+
     /** @brief Retrieve the RREdgeId for iedge'th edge in RRNodeId.
      *
      * This method should generally not be used, and instead first_edge and
@@ -775,6 +780,8 @@ class t_rr_graph_storage {
 
     /** @brief Adds a batch of edges.*/
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
+
+    void remove_edges(std::vector<RREdgeId>& rr_edges_to_remove);
 
     /* Edge finalization methods */
 

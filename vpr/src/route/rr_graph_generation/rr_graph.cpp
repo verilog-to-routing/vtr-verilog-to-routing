@@ -8,6 +8,7 @@
 #include "get_parallel_segs.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
+#include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
 #include "rr_rc_data.h"
 #include "switchblock_types.h"
@@ -45,6 +46,8 @@
 
 #include "rr_types.h"
 #include "rr_node_indices.h"
+
+#include "interposer_cut.h"
 
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
@@ -1667,6 +1670,12 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
     }
 
+    std::vector<RREdgeId> interposer_edges = mark_interposer_cut_edges_for_removal(rr_graph, grid);
+    rr_graph_builder.remove_edges(interposer_edges);
+
+    update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(rr_graph, grid, rr_graph_builder, sg_node_indices);
+
+
     add_and_connect_non_3d_sg_links(rr_graph_builder, sg_links, sg_node_indices, chan_details_x, chan_details_y, num_seg_types_x, rr_edges_to_create);
     uniquify_edges(rr_edges_to_create);
     alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
@@ -2118,6 +2127,7 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                                                             chan_loc.y,
                                                                             gather_chan_type,
                                                                             gather_wire.wire_switchpoint.wire);
+            VTR_ASSERT(gather_node.is_valid());
             // Record deferred edge creation (gather_node --> sg_node)
             non_3d_sg_rr_edges_to_create.emplace_back(gather_node, node_id, link.arch_wire_switch, false);
         }
@@ -2135,6 +2145,8 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                                                              chan_loc.y,
                                                                              scatter_chan_type,
                                                                              scatter_wire.wire_switchpoint.wire);
+
+            VTR_ASSERT(scatter_node.is_valid());
             // Determine which architecture switch this edge should use
             int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
             // Record deferred edge creation (sg_node --> scatter_node)
