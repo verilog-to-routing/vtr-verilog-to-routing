@@ -55,9 +55,13 @@ struct LogicalRamGroup {
     const t_pb_type* rep_pb_type; // primitive type used for the feasibility check
     std::vector<AtomBlockId> atoms;
     std::unordered_map<t_logical_block_type_ptr, int> candidate_capacity;
+    float candidate_capacity_ratio;
+    std::vector<t_logical_block_type_ptr> candidate_types;
     int total_memory_slices = 0;
     int remaining_memory_slices = 0;
+    t_logical_block_type_ptr pre_assigned_type = nullptr;
     t_logical_block_type_ptr last_selected_type = nullptr;
+
 };
 
 // This is implemented only for 2 physical RAM type for now to try the usage of
@@ -314,33 +318,23 @@ class Prepacker {
         return list_of_pack_patterns;
     }
 
-    // Returns a mutable pointer to the logical RAM group containing `blk`, or nullptr if none.
-    inline LogicalRamGroup* logical_ram_group_of_mut(AtomBlockId blk) const {
-        auto it = atom_to_group_.find(blk);
-        if (it == atom_to_group_.end()) return nullptr;
-        size_t gid = it->second;
+    inline size_t group_id_of(AtomBlockId blk) const {
+        if (!blk) return SIZE_MAX;
+        if (size_t(blk) >= atom_to_group_.size()) return SIZE_MAX;
+        return atom_to_group_[blk];
+    }
+
+    inline LogicalRamGroup& group_by_id_mut(size_t gid) const {
         VTR_ASSERT(gid < logical_ram_groups_.size());
-        return &logical_ram_groups_[gid];
+        return logical_ram_groups_[gid];
+    }
+    inline const LogicalRamGroup& group_by_id(size_t gid) const {
+        VTR_ASSERT(gid < logical_ram_groups_.size());
+        return logical_ram_groups_[gid];
     }
 
     inline LogicalRamStats get_overall_logical_ram_stats () const {
         return logical_ram_stats_;
-    }
-
-    inline size_t logical_ram_group_id_of(AtomBlockId blk) const {
-        auto it = atom_to_group_.find(blk);
-        return (it == atom_to_group_.end()) ? SIZE_MAX : it->second;
-    }
-    inline LogicalRamGroup* logical_ram_group_of(AtomBlockId blk) const {
-        size_t gid = logical_ram_group_id_of(blk);
-        return (gid == SIZE_MAX) ? nullptr : &logical_ram_groups_[gid];
-    }
-    
-    inline std::vector<LogicalRamGroup>& get_logical_ram_groups() const { 
-        return logical_ram_groups_;
-    }
-    std::vector<LogicalRamGroup>& get_logical_ram_groups_mutable() const {
-        return logical_ram_groups_;
     }
 
   private:
@@ -410,6 +404,6 @@ class Prepacker {
     vtr::vector<MoleculeChainId, t_chain_info> chain_info_;
 
     mutable std::vector<LogicalRamGroup> logical_ram_groups_;
-    mutable vtr::flat_map<AtomBlockId, size_t> atom_to_group_; // atom → group index
+    vtr::vector<AtomBlockId, size_t> atom_to_group_;
     LogicalRamStats logical_ram_stats_;
 };

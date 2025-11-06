@@ -395,96 +395,41 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
 
     bool is_memory = false;
     const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
-    const LogicalRamStats logica_ram_stats = prepacker.get_overall_logical_ram_stats();
+    // const LogicalRamStats logica_ram_stats = prepacker.get_overall_logical_ram_stats();
     if (prim->pb_type->is_primitive() && prim->pb_type->class_type == MEMORY_CLASS) {
         is_memory = true;
-        LogicalRamGroup* logical_ram = prepacker.logical_ram_group_of_mut(root_atom);
+        const size_t gid = prepacker.group_id_of(root_atom);
+        VTR_ASSERT_MSG(gid != SIZE_MAX, "root_atom not mapped to any LogicalRamGroup");
+        auto& logical_ram = prepacker.group_by_id_mut(gid);
         
-        // VTR_LOG("Seed selected from logical ram groups:\n");
-        // VTR_LOG("\tRepresentative atom id: %zu\n", logical_ram->rep_blk);
-        // VTR_LOG("\tTotal memory slices: %d\n", logical_ram->total_memory_slices);
-        // VTR_LOG("\tReamining memory slices: %d\n", logical_ram->remaining_memory_slices);
+        // VTR_LOG("Seed selected from logical ram groups (selected atom %zu):\n", root_atom);
+        // VTR_LOG("\tRepresentative atom id: %zu\n", logical_ram.rep_blk);
+        // VTR_LOG("\tTotal memory slices: %d\n", logical_ram.total_memory_slices);
+        // VTR_LOG("\tReamining memory slices: %d\n", logical_ram.remaining_memory_slices);
         // VTR_LOG("\tCandidate type capacities:\n");
         // for (t_logical_block_type_ptr& cand : candidate_types) {
-        //     int capacity = logical_ram->candidate_capacity[cand];
+        //     int capacity = logical_ram.candidate_capacity[cand];
         //     VTR_LOG("\t\t%s: %d\n", cand->name.c_str(), capacity);
         // }
 
-        int M9K_cap = 0;
-        int M144K_cap = 0;
-        for (t_logical_block_type_ptr& cand : candidate_types) {
-            if (cand->name == "M9K") 
-                M9K_cap = logical_ram->candidate_capacity[cand];
-            if (cand->name == "M144K")
-                M144K_cap = logical_ram->candidate_capacity[cand];
-        }
-
-        float current_capacity_ratio = vtr::safe_ratio<float>(M9K_cap, M144K_cap);
-        // VTR_LOG("\tCandidate capacity ratio (M9K / M144K): %f\n", current_capacity_ratio);
-        // VTR_LOG("\tMin-Max candidate capacity ratios (M9K / M144K): (%f,%f)\n", logica_ram_stats.min_capacity_ratio, logica_ram_stats.max_capacity_ratio);
-
-        std::unordered_map<t_logical_block_type_ptr, float> candidate_costs;
-        for (t_logical_block_type_ptr cand: candidate_types) {
-            int equivalent_num_instances = 0;
-            for (auto type : cand->equivalent_tiles) {
-                equivalent_num_instances += mutable_device_ctx.grid.num_instances(type, -1);
-            }
+        // Check if the current atom in the retrieved logical ram.
+        auto it = std::find(logical_ram.atoms.begin(), logical_ram.atoms.end(), root_atom);
+        VTR_ASSERT_MSG(it != logical_ram.atoms.end(), "Could not find root atom in the retrieved logical ram atoms");
             
-            // VTR_LOG("\tCalculating cost for type %s:\n", cand->name.c_str());
-            // float inferred_num_instances = std::ceil(vtr::safe_ratio<float>(logical_ram->remaining_memory_slices, logical_ram->candidate_capacity[cand])); // This can be divied by the total number of this type in the device to get a ratio.
-            // VTR_LOG("\t\tInferred num of instances: %f\n", inferred_num_instances);
-            // float inferred_num_instances_ratio = vtr::safe_ratio<float>(inferred_num_instances, equivalent_num_instances);
-            // VTR_LOG("\t\tInferred num of instances ratio: %f\n", inferred_num_instances_ratio);
-            int remaining_slices = std::max(logical_ram->remaining_memory_slices - logical_ram->candidate_capacity[cand], 0);
-            float remaining_slices_ratio = vtr::safe_ratio<float>(remaining_slices, logical_ram->remaining_memory_slices);
-            // VTR_LOG("\t\tRemaining slices ratio: %f\n", remaining_slices_ratio);
-            float empty_slices_ratio = (logical_ram->remaining_memory_slices < logical_ram->candidate_capacity[cand]) ? (1 - vtr::safe_ratio<float>(logical_ram->remaining_memory_slices, logical_ram->candidate_capacity[cand])) : 0;
-            // VTR_LOG("\t\tEmpty slices ratio: %f\n", empty_slices_ratio);
-            float new_utilization_ratio = vtr::safe_ratio<float>(num_used_type_instances[cand] + 1, equivalent_num_instances); // + 1 on the numerator is to penalize the scarce resources more.
-            // VTR_LOG("\t\tNew utilization ratio: %f\n", new_utilization_ratio);
 
-            // The capacity ratio cost calculation.
-            float capacity_cost = 0;
-            if (cand->name == "M144K") {
-                capacity_cost = vtr::safe_ratio<float>(current_capacity_ratio - logica_ram_stats.min_capacity_ratio, logica_ram_stats.max_capacity_ratio - logica_ram_stats.min_capacity_ratio);
-            }
-            if (cand->name == "M9K") {
-                // capacity_cost = vtr::safe_ratio<float>(logica_ram_stats.max_capacity_ratio - current_capacity_ratio, logica_ram_stats.max_capacity_ratio - logica_ram_stats.min_capacity_ratio);
-                // Leaving it as zero for now. We will just be adding this cost for the M144K to see the results.
-            }
-            // VTR_LOG("\t\tCapacity ratio cost: %f\n", capacity_cost);
+        VTR_ASSERT_MSG(candidate_types == logical_ram.candidate_types, "Logical ram and clustering candidate types are mismatching.");
 
-            float differnet_type_cost = 0.0;
-            if (logical_ram->last_selected_type != nullptr && logical_ram->last_selected_type != cand) {
-                differnet_type_cost = 1.0;
-            }
-            // VTR_LOG("\t\tDifferent type cost: %f\n", differnet_type_cost);
-
-
-
-            
-            // VTR_LOG("\t\tSum of ratios: %f\n", remaining_slices_ratio + empty_slices_ratio + new_utilization_ratio + capacity_cost + differnet_type_cost);
-            float cost = 1.0 * remaining_slices_ratio 
-                       + 1.0 * empty_slices_ratio
-                       + 1.0 * new_utilization_ratio
-                       + 1.0 * capacity_cost
-                       + 1.0 * differnet_type_cost;
-            candidate_costs[cand] = cost;
-            // VTR_LOG("\t\tCost: %f\n", cost);
-        
-
+        if (logical_ram.pre_assigned_type) {
+            // VTR_LOG("\tPre-assigned type: %s\n", logical_ram.pre_assigned_type->name.c_str());
+            auto* pre = logical_ram.pre_assigned_type;
+            std::stable_partition(candidate_types.begin(), candidate_types.end(),
+                                [&](t_logical_block_type_ptr p) { return p == pre; });
+            // candidate_types = {logical_ram.pre_assigned_type}; // hard constraint
+        } else {
+            VTR_LOG_WARN(
+                "No pre-assigned type found for logical RAM group of atom %s\n",
+                atom_netlist_.block_name(root_atom).c_str());
         }
-
-        std::stable_sort(candidate_types.begin(), candidate_types.end(),
-                         [&](t_logical_block_type_ptr a, t_logical_block_type_ptr b) {
-                             return candidate_costs.at(a) < candidate_costs.at(b);
-                         });
-
-        // VTR_LOG("\tSorted candidate (least cost first): ");
-        // for (t_logical_block_type_ptr cand: candidate_types) {
-        //     VTR_LOG("%s ", cand->name.c_str());
-        // }
-        // VTR_LOG("\n");
     }
 
 
@@ -514,9 +459,11 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             block_type = type;
 
             if (is_memory) {
-                LogicalRamGroup* logical_ram = prepacker.logical_ram_group_of_mut(root_atom);
-                logical_ram->remaining_memory_slices -= std::min(logical_ram->remaining_memory_slices, logical_ram->candidate_capacity[type]);
-                logical_ram->last_selected_type = type;
+                const size_t gid = prepacker.group_id_of(root_atom);
+                VTR_ASSERT_MSG(gid != SIZE_MAX, "root_atom not mapped to any LogicalRamGroup");
+                auto& logical_ram = prepacker.group_by_id_mut(gid);
+                logical_ram.remaining_memory_slices -= std::min(logical_ram.remaining_memory_slices, logical_ram.candidate_capacity[type]);
+                logical_ram.last_selected_type = type;
                 // VTR_LOG("\tSelected candidate type: %s\n", type->name.c_str());
                 // VTR_LOG("\tAdjusting the remaining slices\n");
             }
