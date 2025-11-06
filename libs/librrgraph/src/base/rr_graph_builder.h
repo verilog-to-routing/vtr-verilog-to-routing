@@ -352,6 +352,10 @@ class RRGraphBuilder {
         node_storage_.alloc_and_load_edges(rr_edges_to_create);
     }
 
+    inline void remove_edges(std::vector<RREdgeId>& rr_edges_to_remove) {
+        node_storage_.remove_edges(rr_edges_to_remove);
+    }
+
     /** @brief Overrides the associated switch for a given edge by
      *         updating the edge to use the passed in switch. */
     inline void override_edge_switch(RREdgeId edge_id, RRSwitchId switch_id) {

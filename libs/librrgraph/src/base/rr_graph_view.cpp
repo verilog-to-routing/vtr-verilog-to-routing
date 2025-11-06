@@ -129,5 +129,3 @@ bool RRGraphView::validate_in_edges() const {
     }
     return true;
 }
-
-
