@@ -25,7 +25,7 @@ void t_placer_costs::update_norm_factors() {
     }
 }
 
-double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
+double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) const {
     double total_cost = 0.0;
 
     if (placer_opts.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE) {

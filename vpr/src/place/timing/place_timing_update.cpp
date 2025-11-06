@@ -15,12 +15,12 @@
 /* Routines local to place_timing_update.cpp */
 static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities& place_crit,
-                                      PlacerState& placer_state,
+                                      const PlacerState& placer_state,
                                       ClusterNetId net,
                                       int ipin);
 
 static double sum_td_net_cost(ClusterNetId net,
-                              PlacerState& placer_state);
+                              const PlacerState& placer_state);
 
 static double sum_td_costs(const PlacerState& placer_state);
 
@@ -353,7 +353,7 @@ void comp_td_costs(const PlaceDelayModel* delay_model,
  */
 static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities& place_crit,
-                                      PlacerState& placer_state,
+                                      const PlacerState& placer_state,
                                       ClusterNetId net,
                                       int ipin) {
     const auto& p_timing_ctx = placer_state.timing();
@@ -377,7 +377,7 @@ static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
 
 ///@brief Returns the timing cost of the specified 'net' based on the values in connection_timing_cost.
 static double sum_td_net_cost(ClusterNetId net,
-                              PlacerState& placer_state) {
+                              const PlacerState& placer_state) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& p_timing_ctx = placer_state.timing();
     auto& connection_timing_cost = p_timing_ctx.connection_timing_cost;

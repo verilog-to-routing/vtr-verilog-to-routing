@@ -68,7 +68,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::pair<double, double> comp_bb_cost(e_cost_methods method);
+    std::pair<double, double> comp_bb_cost(e_cost_methods method) const;
 
     /**
      * @brief Find all the nets and pins affected by this swap and update costs.
