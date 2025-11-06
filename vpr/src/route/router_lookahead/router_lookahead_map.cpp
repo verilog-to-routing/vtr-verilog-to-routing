@@ -319,10 +319,10 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
     e_rr_type from_type = rr_graph.node_type(from_node);
     if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {
-        //When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
-        //cost to reach them) in src_opin_delays. Once we know what wire types are
-        //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
-        //delay to reach the sink.
+        // When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
+        // cost to reach them) in src_opin_delays. Once we know what wire types are
+        // reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
+        // delay to reach the sink.
 
         t_physical_tile_type_ptr from_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
                                                                                      rr_graph.node_ylow(from_node),
@@ -335,7 +335,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         // get_cost_from_src_opin iterates over all routing segments passed to it (the first argument) and returns
         // the minimum cost among them. In the following for loop, we iterate over each layer and pass it the
         // routing segments on that layer reachable from the OPIN/SOURCE to segments on that layer. This for loop then calculates and returns
-        //  the minimum cost from the given OPIN/SOURCE to the specified SINK considering routing options across all layers.
+        // the minimum cost from the given OPIN/SOURCE to the specified SINK considering routing options across all layers.
         for (size_t layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
             const auto [this_delay_cost, this_cong_cost] = util::get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc][layer_num],
                                                                                         delta_x,
@@ -389,6 +389,9 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                                           delta_y,
                                                           to_layer_num);
 
+        expected_delay_cost = cost_entry.delay * params.criticality;
+        expected_cong_cost = cost_entry.congestion * (1 - params.criticality);
+
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
                                             rr_node_arch_name(from_node, is_flat_).c_str(),
@@ -399,8 +402,6 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                                              is_flat_)
                                                 .c_str())
                                 .c_str());
-        expected_delay_cost = cost_entry.delay * params.criticality;
-        expected_cong_cost = cost_entry.congestion * (1 - params.criticality);
     } else if (from_type == e_rr_type::IPIN) { // Change if you're allowing route-throughs
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { // Change this if you want to investigate route-throughs
