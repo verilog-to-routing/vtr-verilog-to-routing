@@ -6,7 +6,8 @@
 #include "globals.h"
 #include "pathhelper.h"
 #include "telegramoptions.h"
-#include "gtkcomboboxhelper.h"
+#include <gtk/gtk.h>
+
 
 #include <ezgl/application.hpp>
 
@@ -134,14 +135,24 @@ void TaskResolver::process_draw_critical_path_task(ezgl::application* app, const
         server_ctx.crit_path_element_indexes = std::move(path_elements);
         server_ctx.draw_crit_path_contour = draw_path_contour;
 
-        // update gtk UI
-        GtkComboBox* toggle_crit_path = GTK_COMBO_BOX(app->get_object("ToggleCritPath"));
-        gint high_light_mode_index = get_item_index_by_text(toggle_crit_path, high_light_mode.c_str());
-        if (high_light_mode_index != -1) {
-            gtk_combo_box_set_active(toggle_crit_path, high_light_mode_index);
+        // get GTK widgets
+        GtkSwitch* crit_path_switch = GTK_SWITCH(app->get_object("ToggleCritPath"));
+        GtkToggleButton* crit_path_flylines_button = GTK_TOGGLE_BUTTON(app->get_object("ToggleCritPathFlylines"));
+        GtkToggleButton* crit_path_routing_button = GTK_TOGGLE_BUTTON(app->get_object("ToggleCritPathRouting"));
+        GtkToggleButton* crit_path_delays_button = GTK_TOGGLE_BUTTON(app->get_object("ToggleCritPathDelays"));
+
+        if (crit_path_switch && crit_path_flylines_button && crit_path_routing_button && crit_path_delays_button) {
+            bool draw_flylines = (high_light_mode.find("flylines") != std::string::npos);
+            bool draw_routing = (high_light_mode.find("routing") != std::string::npos);
+            bool draw_delays = (high_light_mode.find("delays") != std::string::npos);
+
+            gtk_switch_set_active(crit_path_switch, TRUE);
+            gtk_toggle_button_set_active(crit_path_flylines_button, draw_flylines);
+            gtk_toggle_button_set_active(crit_path_routing_button, draw_routing);
+            gtk_toggle_button_set_active(crit_path_delays_button, draw_delays);
             task->set_success();
         } else {
-            std::string msg{"cannot find ToggleCritPath qcombobox index for item " + high_light_mode};
+            std::string msg{"Cannot find critical path widgets. Was the UI layout changed?"};
             VTR_LOG_ERROR(msg.c_str());
             task->set_fail(msg);
         }
