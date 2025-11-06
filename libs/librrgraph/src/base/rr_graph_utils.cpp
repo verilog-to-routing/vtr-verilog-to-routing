@@ -180,7 +180,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
 
         // See if we have encountered this tile type/ptc combo before, and used saved offset if so
         vtr::Point<int> new_loc(-1, -1);
-        if ((physical_type_offsets.find(tile_type) != physical_type_offsets.end()) && (physical_type_offsets[tile_type].find(node_ptc) != physical_type_offsets[tile_type].end())) {
+        if (physical_type_offsets.contains(tile_type) && physical_type_offsets[tile_type].contains(node_ptc)) {
             new_loc = tile_bb.bottom_left() + physical_type_offsets[tile_type].at(node_ptc);
         } else { /* We have not seen this tile type/ptc combo before */
             // The IPINs of the current SINK node
@@ -197,7 +197,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
             std::vector<float> y_coords;
 
             // Add coordinates of each "cluster-edge" pin to vectors
-            for (const auto& pin : sink_ipins) {
+            for (const RRNodeId pin : sink_ipins) {
                 int pin_x = rr_graph.node_xlow(pin);
                 int pin_y = rr_graph.node_ylow(pin);
 
@@ -212,7 +212,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
                        (int)round(std::accumulate(y_coords.begin(), y_coords.end(), 0.f) / (double)y_coords.size())};
 
             // Save offset for this tile/ptc combo
-            if (physical_type_offsets.find(tile_type) == physical_type_offsets.end())
+            if (!physical_type_offsets.contains(tile_type))
                 physical_type_offsets[tile_type] = {};
 
             physical_type_offsets[tile_type].insert({node_ptc, new_loc - tile_bb.bottom_left()});

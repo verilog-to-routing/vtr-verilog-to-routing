@@ -251,8 +251,7 @@ static void check_source(const Netlist<>& net_list,
     /* First node_block for net is the source */
     ParentBlockId blk_id = net_list.net_driver_block(net_id);
 
-    t_block_loc blk_loc;
-    blk_loc = get_block_loc(blk_id, is_flat);
+    t_block_loc blk_loc = get_block_loc(blk_id, is_flat);
     if (blk_loc.loc.x != i || blk_loc.loc.y != j) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
@@ -531,7 +530,6 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          bool is_flat) {
     /* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
      * legal routing if subblocks connect to OPINs directly.                    */
-    e_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -550,7 +548,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 
                 /* Now check that node is an OPIN of the right type. */
 
-                rr_type = rr_graph.node_type(RRNodeId(inode));
+                e_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
                 if (rr_type != e_rr_type::OPIN) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "in check_locally_used_opins: block #%lu (%s)\n"
@@ -741,15 +739,15 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
             //It is OK if there is an unused reverse/forward edge provided the
             //forward/reverse edge is used.
             std::vector<t_node_edge> dedupped_difference;
-            std::copy_if(difference.begin(), difference.end(),
+            std::ranges::copy_if(difference,
                          std::back_inserter(dedupped_difference),
                          [&](t_node_edge forward_edge) {
-                             VTR_ASSERT_MSG(!routing_edges.count(forward_edge), "Difference should not contain used routing edges");
+                             VTR_ASSERT_MSG(!routing_edges.contains(forward_edge), "Difference should not contain used routing edges");
 
                              t_node_edge reverse_edge = {forward_edge.to_node, forward_edge.from_node};
 
                              //Check whether the reverse edge was used
-                             if (rr_edges.count(reverse_edge) && routing_edges.count(reverse_edge)) {
+                             if (rr_edges.contains(reverse_edge) && routing_edges.contains(reverse_edge)) {
                                  //The reverse edge exists in the set of rr_edges, and was used
                                  //by the routing.
                                  //

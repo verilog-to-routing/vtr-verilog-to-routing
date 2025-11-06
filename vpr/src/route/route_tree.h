@@ -272,10 +272,10 @@ class RouteTreeNode {
     constexpr bool is_leaf(void) const { return _is_leaf; }
 
     /** Equality operator. For now, just compare the addresses */
-    friend bool operator==(const RouteTreeNode& lhs, const RouteTreeNode& rhs) {
+    friend bool operator==(const RouteTreeNode& lhs, const RouteTreeNode& rhs) noexcept {
         return &lhs == &rhs;
     }
-    friend bool operator!=(const RouteTreeNode& lhs, const RouteTreeNode& rhs) {
+    friend bool operator!=(const RouteTreeNode& lhs, const RouteTreeNode& rhs) noexcept {
         return !(lhs == rhs);
     }
 
