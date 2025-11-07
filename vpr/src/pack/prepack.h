@@ -56,6 +56,7 @@ struct LogicalRamGroup {
     std::vector<AtomBlockId> atoms;
     std::unordered_map<t_logical_block_type_ptr, int> candidate_capacity;
     float candidate_capacity_ratio;
+    float candidate_area_ratio;
     std::vector<t_logical_block_type_ptr> candidate_types;
     int total_memory_slices = 0;
     int remaining_memory_slices = 0;

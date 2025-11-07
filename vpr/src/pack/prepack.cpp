@@ -1876,22 +1876,32 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
 
         int M9K_cap = 0;
         int M144K_cap = 0;
+        int M9K_area = 0.0;
+        int M144K_area = 0.0;
         for (t_logical_block_type_ptr& cand : g.candidate_types) {
-            if (cand->name == "M9K") 
+            if (cand->name == "M9K") {
                 M9K_cap = g.candidate_capacity[cand];
-            if (cand->name == "M144K")
+                M9K_area = cand->equivalent_tiles[0]->width * cand->equivalent_tiles[0]->height;
+            }
+            if (cand->name == "M144K") {
                 M144K_cap = g.candidate_capacity[cand];
+                M144K_area = cand->equivalent_tiles[0]->width * cand->equivalent_tiles[0]->height;
+            }
         }
 
         float current_ratio = vtr::safe_ratio<float>(M9K_cap, M144K_cap);
         g.candidate_capacity_ratio = current_ratio;
-        VTR_LOG("    Candidate ratios (M9K / M144K): %f\n", current_ratio);
+        VTR_LOG("    Candidate capacity ratios (M9K / M144K): %f\n", current_ratio);
         if (current_ratio > logical_ram_stats_.max_capacity_ratio) {
             logical_ram_stats_.max_capacity_ratio = current_ratio;
         }
         if (current_ratio < logical_ram_stats_.min_capacity_ratio) {
             logical_ram_stats_.min_capacity_ratio = current_ratio;
         }
+
+        float current_area_ratio = vtr::safe_ratio<float>(M9K_area, M144K_area);
+        g.candidate_area_ratio = current_area_ratio;
+        VTR_LOG("    Candidate area ratio (M9K / M144K): (%d / %d) = %f\n", M9K_area, M144K_area, current_area_ratio);
     }
     VTR_LOG("Min-Max M9K/M144K ratios: (%f, %f)\n", logical_ram_stats_.min_capacity_ratio, logical_ram_stats_.max_capacity_ratio);
 
@@ -1983,6 +1993,7 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
             new_utilization_ratios[cand] = new_utilization_ratio;
         }
         VTR_LOG("  Capacity Ratio (min/max): %f\n", g.candidate_capacity_ratio);
+        VTR_LOG("  Area ratio (M9K / M144K): %f\n", g.candidate_area_ratio);
 
         VTR_LOG("  Atom ids: ");
         for (AtomBlockId atom_id: g.atoms) {
@@ -2010,37 +2021,60 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
 
         auto prefer_a_over_b = [&](t_logical_block_type_ptr a, t_logical_block_type_ptr b) -> bool {
             // Fetch values (with safe fallbacks)
-            const int inf_a = inferred_numbers.count(a) ? inferred_numbers.at(a) : std::numeric_limits<int>::max();
-            const int inf_b = inferred_numbers.count(b) ? inferred_numbers.at(b) : std::numeric_limits<int>::max();
+            const int   inf_a  = inferred_numbers.count(a) ? inferred_numbers.at(a) : std::numeric_limits<int>::max();
+            const int   inf_b  = inferred_numbers.count(b) ? inferred_numbers.at(b) : std::numeric_limits<int>::max();
 
-            const int cap_a = g.candidate_capacity.count(a) ? g.candidate_capacity.at(a) : std::numeric_limits<int>::max();
-            const int cap_b = g.candidate_capacity.count(b) ? g.candidate_capacity.at(b) : std::numeric_limits<int>::max();
+            const int   cap_a  = g.candidate_capacity.count(a) ? g.candidate_capacity.at(a) : std::numeric_limits<int>::max();
+            const int   cap_b  = g.candidate_capacity.count(b) ? g.candidate_capacity.at(b) : std::numeric_limits<int>::max();
 
             const float util_a = new_utilization_ratios.count(a) ? new_utilization_ratios.at(a) : std::numeric_limits<float>::infinity();
             const float util_b = new_utilization_ratios.count(b) ? new_utilization_ratios.at(b) : std::numeric_limits<float>::infinity();
 
-            const bool a_over = util_a > target_utilization;
-            const bool b_over = util_b > target_utilization;
+            const bool  a_over = util_a > target_utilization;
+            const bool  b_over = util_b > target_utilization;
 
-            // 4) Utilization guard first (acts as a constraint/override)
-            if (a_over != b_over) {
-                // Only one is over -> pick the one that is NOT over
-                return !a_over; // true if a is within limit
+            const float cap_ratio  = g.candidate_capacity_ratio; // M9K/M144K
+            const float area_ratio = g.candidate_area_ratio;     // M9K/M144K
+            const bool  ratios_ok  = std::isfinite(cap_ratio) && std::isfinite(area_ratio);
+
+            // 1) If inferred numbers are the same -> choose smaller capacity
+            if (inf_a == inf_b && cap_a != cap_b) {
+                return cap_a < cap_b; // smaller capacity wins
             }
+
+            // 2) Ratio inequality: if cap_ratio <= area_ratio choose bigger capacity; else smaller capacity
+            if (ratios_ok && cap_a != cap_b) {
+                const bool prefer_a = (cap_ratio <= area_ratio) ? (cap_a > cap_b)  // bigger capacity
+                                                                : (cap_a < cap_b); // smaller capacity
+
+                // 3) Utilization guard applied to the selected one
+                if (prefer_a) {
+                    if (a_over && !b_over) return false;                // chosen over -> pick other
+                    if (!a_over && b_over) return true;                 // other over -> keep chosen
+                    if (a_over && b_over) {                             // both over -> least utilized
+                        if (util_a != util_b) return util_a < util_b;
+                    }
+                    return true;                                        // neither over (or equal utils)
+                } else {
+                    if (a_over && !b_over) return false;                // prefer b, a over -> still b
+                    if (!a_over && b_over) return true;                 // prefer b, b over -> flip to a
+                    if (a_over && b_over) {
+                        if (util_a != util_b) return util_a < util_b;   // least utilized wins
+                    }
+                    return false;                                       // keep b
+                }
+            }
+
+            // 4) Fall back to original logic (generic utilization guard, then usual ties)
+            if (a_over != b_over) return !a_over;                       // only one over -> pick not-over
             if (a_over && b_over) {
-                // Both over -> pick smaller new utilization
-                if (util_a != util_b) return util_a < util_b;
-                // fall through to tie-breaks if equal
+                if (util_a != util_b) return util_a < util_b;           // both over -> least utilized
+                // fall through on exact tie
             }
 
-            // 3) Fewer inferred instances first
-            if (inf_a != inf_b) return inf_a < inf_b;
-
-            // 2) If inferred equal -> smaller capacity first
-            if (cap_a != cap_b) return cap_a < cap_b;
-
-            // Deterministic tie-break: name
-            return std::string(a->name) < std::string(b->name);
+            if (inf_a != inf_b) return inf_a < inf_b;                   // fewer inferred first
+            if (cap_a != cap_b) return cap_a < cap_b;                   // then smaller capacity
+            return std::string(a->name) < std::string(b->name);         // deterministic tie-break
         };
 
         if (g.candidate_types.empty()) {
