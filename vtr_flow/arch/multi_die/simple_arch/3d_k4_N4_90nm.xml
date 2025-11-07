@@ -26,10 +26,10 @@
         <clock name="clock" num_pins="1"/>
         <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1"/>
         <pinlocations pattern="custom">
-          <loc side="left" layer_offset="1">io.outpad io.inpad io.clock</loc>
-          <loc side="top" layer_offset="1">io.outpad io.inpad io.clock</loc>
-          <loc side="right" layer_offset="1">io.outpad io.inpad io.clock</loc>
-          <loc side="bottom" layer_offset="1">io.outpad io.inpad io.clock</loc>
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
         </pinlocations>
       </sub_tile>
     </tile>
@@ -41,9 +41,11 @@
         <input name="I" num_pins="10" equivalent="full"/>
         <output name="O" num_pins="4" equivalent="instance"/>
         <clock name="clk" num_pins="1"/>
-        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.25"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.25">
+          <fc_override fc_type="abs" fc_val="1" segment_name="LZ" port_name="O"/>
+        </fc>
         <pinlocations pattern="custom">
-          <loc side="left" layer_offset="1">clb.I clb.clk</loc>
+          <loc side="left">clb.I clb.clk</loc>
           <!-- layer_offset specifies which layers (in case of multi-die FPGAs) this pin can connect to
                Examples: This arch file has 2 different dice, and clb is located at both dice
                   1) For clbs that are located at layer 0: their pins can be connected to the layer 0 itself, and
@@ -51,7 +53,7 @@
                   2) For clbs that are located at layer 1: their pins can be connected to layer 1 itself, and layer
                      0 ((layer + layer_offset) % num_of_avail_layers ((1 + 1) % 2 = 0))
                -->
-          <loc side="bottom" layer_offset="1">clb.O</loc>
+          <loc side="bottom">clb.O</loc>
         </pinlocations>
       </sub_tile>
     </tile>
@@ -91,7 +93,6 @@
   </device>
   <switchlist>
     <switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="6.244000e-11" mux_trans_size="1.835460" buf_size="10.498600"/>
-    <switch type="mux" name="inter_die_seg_driver" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="6.244000e-11" mux_trans_size="1.835460" buf_size="10.498600"/>
     <!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
     <switch type="mux" name="ipin_cblock" R="1055.232544" Cout="0." Cin="0.000000e+00" Tdel="8.045000e-11" mux_trans_size="0.983352" buf_size="auto"/>
     <!--switch type for connecting two dices-->
@@ -99,9 +100,8 @@
     <switch type="mux" name="segz_driver" R="450" Cin="0.60e-15" Cout="4.82e-15" Tdel="59e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
   </switchlist>
   <segmentlist>
-    <segment freq="1.000000" length="1" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
+    <segment name="L1" freq="1.000000" length="1" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
       <mux name="0"/>
-      <mux_inter_die name="inter_die_seg_driver"/>
       <sb type="pattern">1 1</sb>
       <cb type="pattern">1</cb>
     </segment>
@@ -221,4 +221,25 @@
     </pb_type>
     <!-- Define general purpose logic block (CLB) ends -->
   </complexblocklist>
+  <scatter_gather_list>
+    <sg_pattern name="name" type="unidir">
+      <gather>
+        <!-- Gather 30 connections from the end of L4 wires at all four sides of a switchblock location -->
+        <wireconn num_conns="0" from_type="L1" from_switchpoint="1" side="rltb"/>
+      </gather>
+      <scatter>
+        <!-- Scatter 30 connections to the start of L4 wires at all four sides of a switchblock location -->
+        <wireconn num_conns="30" to_type="L1" to_switchpoint="0" side="rtlb"/>
+      </scatter>
+      <sg_link_list>
+        <!-- Link going up one layer, using the 'seg4_inter_die_driver' multiplexer to gather connections from the bottom layer and using the LZ node/wire to move up one layer -->
+        <sg_link name="L_UP" z_offset="1" x_offset="0" y_offset="0" mux="segz_driver" seg_type="LZ"/>
+        <!-- Link going down one layer, using the 'seg4_inter_die_driver' multiplexer to gather connections from the top layer and using the LZ node/wire to down up one layer -->
+        <sg_link name="L_DOWN" z_offset="-1" mux="segz_driver" seg_type="LZ"/>
+      </sg_link_list>
+      <!-- Instantiate 6 'L_UP' and 6 'L_DOWN' sg_links per switchblock location everywhere on the device -->
+      <sg_location type="EVERYWHERE" num="60" sg_link_name="L_UP"/>
+      <sg_location type="EVERYWHERE" num="60" sg_link_name="L_DOWN"/>
+    </sg_pattern>
+  </scatter_gather_list>
 </architecture>
