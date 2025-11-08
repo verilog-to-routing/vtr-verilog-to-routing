@@ -1941,12 +1941,37 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
         if (a.candidate_types.size() != b.candidate_types.size())
             return a.candidate_types.size() < b.candidate_types.size();
 
-        // 2) Smaller capacity ratio first
+        // 2) If inferred number is same, select the smaller capacity one.
+        bool a_inferred_numbers_same = true;
+        int inferred_number_a = -1;
+        for (const auto& [cand, capacity] : a.candidate_capacity) {
+            int inferred_number_current_a = std::ceil(vtr::safe_ratio<float>(a.total_memory_slices, capacity));
+            if (inferred_number_a != -1 && inferred_number_a != inferred_number_current_a) {
+                a_inferred_numbers_same = false;
+                break;
+            }
+            inferred_number_a = inferred_number_current_a;
+        }
+        bool b_inferred_numbers_same = true;
+        int inferred_number_b = -1;
+        for (const auto& [cand, capacity] : b.candidate_capacity) {
+            int inferred_number_current_b = std::ceil(vtr::safe_ratio<float>(b.total_memory_slices, capacity));
+            if (inferred_number_b != -1 && inferred_number_b != inferred_number_current_b) {
+                b_inferred_numbers_same = false;
+                break;
+            }
+            inferred_number_b = inferred_number_current_b;
+        }
+
+        if (a_inferred_numbers_same != b_inferred_numbers_same)
+            return a_inferred_numbers_same;
+
+        // 3) Smaller capacity ratio first
         const double EPS = 1e-9;
         if (std::fabs(a.candidate_capacity_ratio - b.candidate_capacity_ratio) > EPS)
             return a.candidate_capacity_ratio < b.candidate_capacity_ratio;
 
-        // 3) Larger total memory slices first
+        // 4) Larger total memory slices first
         if (a.total_memory_slices != b.total_memory_slices)
             return a.total_memory_slices > b.total_memory_slices;
 
@@ -1955,7 +1980,7 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
     });
 
     VTR_LOG("\nSorted Logical RAM Groups:\n");
-    float target_utilization = 0.8;
+    float target_utilization = 1.0;
     std::unordered_map<t_logical_block_type_ptr, int> used_instances;
     for (size_t i = 0; i < logical_ram_groups_.size(); ++i) {
         auto& g = logical_ram_groups_[i];
