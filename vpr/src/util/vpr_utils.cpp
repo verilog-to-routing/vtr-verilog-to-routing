@@ -1919,7 +1919,7 @@ std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
     bool found_sub_tile = false;
 
     // Iterate over all the sub-tiles to find the sub-tile instance that the cluster block is mapped to.
-    for (const auto& tmp_sub_tile: physical_tile->sub_tiles) {
+    for (const t_sub_tile& tmp_sub_tile: physical_tile->sub_tiles) {
         if (tmp_sub_tile.capacity.is_in_range(abs_cap)) {
             // This sub-tile type is the one that the cluster block is mapped to.
             found_sub_tile = true;
@@ -1947,7 +1947,7 @@ std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
     std::iota(pin_num_vec.begin(), pin_num_vec.end(), seen_sub_tiles_num_cluser_pins);
 
     // Add the intra-cluster-level pins to the list.
-    auto internal_pins = get_cluster_internal_pins(cluster_blk_id);
+    std::vector<int> internal_pins = get_cluster_internal_pins(cluster_blk_id);
     pin_num_vec.insert(pin_num_vec.end(), internal_pins.begin(), internal_pins.end());
 
     return pin_num_vec;
