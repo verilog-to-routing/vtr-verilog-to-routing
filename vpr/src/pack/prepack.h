@@ -63,6 +63,13 @@ struct LogicalRamGroup {
     t_logical_block_type_ptr pre_assigned_type = nullptr;
     t_logical_block_type_ptr last_selected_type = nullptr;
 
+
+    // "Power-efficient RAM Mapping Algorithms for FPGA Embedded Memory Blocks" inspired elements
+    t_logical_block_type_ptr type_init = nullptr;
+    int area_init = 0;
+    std::unordered_map<t_logical_block_type_ptr, int> area_type;
+    int area_mem = 0;
+
 };
 
 // This is implemented only for 2 physical RAM type for now to try the usage of

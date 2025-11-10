@@ -1788,6 +1788,7 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
 
     auto& device_ctx = g_vpr_ctx.device();
 
+    std::unordered_map<t_logical_block_type_ptr, int> candidate_usages;
 
     for (AtomBlockId atom_blk_id: atom_nlist.blocks()) {
         // const t_pack_molecule& mol = get_molecule(mol_id);
@@ -1827,22 +1828,22 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
             ng.atoms.push_back(atom_blk_id);
             ng.candidate_types = candidate_types;
             logical_ram_groups_.push_back(std::move(ng));
+
+            // Add current types if they not exist in the mapping.
+            for (t_logical_block_type_ptr candidate_type: candidate_types) {
+                if (candidate_usages.find(candidate_type) == candidate_usages.end()) {
+                    candidate_usages[candidate_type] = 0;
+                }
+            }
         }
     }
     
-    // --- Dump groups ---
+    // Dump groups/
     VTR_LOG("\nInferred logical RAM groups (sibling-feasible):\n");
-    atom_to_group_.resize(atom_nlist.blocks().size());
     for (size_t gid = 0; gid < logical_ram_groups_.size(); ++gid) {
-        auto& g = logical_ram_groups_[gid];
+        LogicalRamGroup& g = logical_ram_groups_[gid];
         g.total_memory_slices = g.atoms.size();
         g.remaining_memory_slices = g.total_memory_slices;
-
-        for (AtomBlockId atom_id: g.atoms) {
-            atom_to_group_[atom_id] = gid;
-        }
-
-
 
         VTR_LOG("  Group %zu: %zu slice(s)\n", gid, g.atoms.size());
 
@@ -1869,298 +1870,140 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
             VTR_LOG("        %s: %d (Total Instances: %d)\n", cand->name.c_str(), candidate_prim->total_primitive_count, equivalent_num_instances);
         }
 
-        // Update the logical ram stats. Currently only for 2 types of physical RAMs.
-        if (g.candidate_types.size() != 2) {
-            continue;
-        }
-
-        int M9K_cap = 0;
-        int M144K_cap = 0;
-        int M9K_area = 0.0;
-        int M144K_area = 0.0;
-        for (t_logical_block_type_ptr& cand : g.candidate_types) {
-            if (cand->name == "M9K") {
-                M9K_cap = g.candidate_capacity[cand];
-                M9K_area = cand->equivalent_tiles[0]->width * cand->equivalent_tiles[0]->height;
-            }
-            if (cand->name == "M144K") {
-                M144K_cap = g.candidate_capacity[cand];
-                M144K_area = cand->equivalent_tiles[0]->width * cand->equivalent_tiles[0]->height;
-            }
-        }
-
-        float current_ratio = vtr::safe_ratio<float>(M9K_cap, M144K_cap);
-        g.candidate_capacity_ratio = current_ratio;
-        VTR_LOG("    Candidate capacity ratios (M9K / M144K): %f\n", current_ratio);
-        if (current_ratio > logical_ram_stats_.max_capacity_ratio) {
-            logical_ram_stats_.max_capacity_ratio = current_ratio;
-        }
-        if (current_ratio < logical_ram_stats_.min_capacity_ratio) {
-            logical_ram_stats_.min_capacity_ratio = current_ratio;
-        }
-
-        float current_area_ratio = vtr::safe_ratio<float>(M9K_area, M144K_area);
-        g.candidate_area_ratio = current_area_ratio;
-        VTR_LOG("    Candidate area ratio (M9K / M144K): (%d / %d) = %f\n", M9K_area, M144K_area, current_area_ratio);
-    }
-    VTR_LOG("Min-Max M9K/M144K ratios: (%f, %f)\n", logical_ram_stats_.min_capacity_ratio, logical_ram_stats_.max_capacity_ratio);
-
-
-    int all_with_M9K_count = 0, M9K_physical_instances = 0;
-    int all_with_M144K_count = 0, M144K_physical_instances = 0;
-    for (LogicalRamGroup logica_ram: logical_ram_groups_) {
-        for (t_logical_block_type_ptr& cand : logica_ram.candidate_types) {
-            if (cand->name == "M9K") {
-                all_with_M9K_count += std::ceil(logica_ram.total_memory_slices/(float)logica_ram.candidate_capacity[cand]);
-                if (M9K_physical_instances) 
-                    continue;
-                for (auto type : cand->equivalent_tiles) {
-                    M9K_physical_instances += device_ctx.grid.num_instances(type, -1);
-                }
-            }
-            if (cand->name == "M144K") {
-                all_with_M144K_count += std::ceil(logica_ram.total_memory_slices/(float)logica_ram.candidate_capacity[cand]);
-                if (M144K_physical_instances) 
-                    continue;
-                for (auto type : cand->equivalent_tiles) {
-                    M144K_physical_instances += device_ctx.grid.num_instances(type, -1);
-                }
-            }
-        }
+        // Assign the first candidate in the arch as a greedy initial assignment. 
+        // This will give an initial assignment using the first type in the architecture as packer
+        // chooses types for other blocks.
+        t_logical_block_type_ptr first_candidate = g.candidate_types[0];
+        g.pre_assigned_type = first_candidate;
+        g.type_init = first_candidate;
+        
+        // Assign the initial cost (only area for now)
+        int inferred_instance_num = std::ceil(vtr::safe_ratio<float>(g.total_memory_slices, g.candidate_capacity[first_candidate]));
+        int instance_area = first_candidate->equivalent_tiles[0]->height * first_candidate->equivalent_tiles[0]->width;
+        g.area_init = inferred_instance_num * instance_area;
+        VTR_LOG("    Initial assignment: (Type: %s) (Inferred instances: %d) (Initial area: %d)\n", first_candidate->name.c_str(), inferred_instance_num, g.area_init);
+        candidate_usages[first_candidate] += inferred_instance_num;
     }
 
-    float all_with_M9K_util = vtr::safe_ratio<float>(all_with_M9K_count, M9K_physical_instances);
-    float all_with_M144K_util = vtr::safe_ratio<float>(all_with_M144K_count, M144K_physical_instances);
-    VTR_LOG("All with M9K and M144K implemented inferred block numbers: (%d,%d)\n", all_with_M9K_count, all_with_M144K_count);
-    VTR_LOG("All with M9K and M144K implemented inferred utilizations:  (%f,%f)\n", all_with_M9K_util, all_with_M144K_util);
+    // Verify the initial mappings are feasible (utilization check).
+    VTR_LOG("Initial mappings device utilizations:\n");
+    for (auto usage: candidate_usages) {
+        t_logical_block_type_ptr type = usage.first;
+        int used_ins_number = usage.second;
+        int total_ins_number = 0;
+        for (auto physical_type : type->equivalent_tiles)
+            total_ins_number += device_ctx.grid.num_instances(physical_type, -1);
+        float utilization = vtr::safe_ratio<float>(used_ins_number, total_ins_number);
+        VTR_LOG("  %s: %f\n", type->name.c_str(), utilization);
 
-    VTR_LOG("Sorting the logical rams\n");
-    std::stable_sort(logical_ram_groups_.begin(), logical_ram_groups_.end(),
+        VTR_ASSERT_MSG(utilization <= 1.0, "At least one RAM type is over utilized after initial placement. Ideally, this assertion should be removed and reassigning should be tried");
+    }
+
+    // Calculate cost of eahc possible implementation for each logical ram and store for later evaluation.
+    VTR_LOG("Calculating each possible implementation costs for each logical RAM.");
+    for (size_t gid = 0; gid < logical_ram_groups_.size(); ++gid) {
+        LogicalRamGroup& g = logical_ram_groups_[gid];
+        VTR_LOG("  Group %zu: %zu slice(s)\n", gid, g.atoms.size());
+        for (t_logical_block_type_ptr candidate_type: g.candidate_types) {
+            int inferred_instance_num = std::ceil(vtr::safe_ratio<float>(g.total_memory_slices, g.candidate_capacity[candidate_type]));
+            int instance_area = candidate_type->equivalent_tiles[0]->height * candidate_type->equivalent_tiles[0]->width;
+            int type_area = inferred_instance_num * instance_area;
+            g.area_type[candidate_type] = type_area;
+            VTR_LOG("    %s Cost(Area): %d\n", candidate_type->name.c_str(), type_area);
+        }
+
+        // Sort the candidate types by their cost (area)
+        std::sort(g.candidate_types.begin(),
+                g.candidate_types.end(),
+                [&](const t_logical_block_type_ptr& a,
+                    const t_logical_block_type_ptr& b) {
+                    // area must have been filled above
+                    const int area_a = g.area_type.at(a);
+                    const int area_b = g.area_type.at(b);
+                    if (area_a != area_b) return area_a < area_b;
+
+                    // tie-break 1: prefer the bigger type (if areas are equal like 8 M9K and 1 M144K, using M144K might be a perfect fit there)
+                    // Also experimentally this inclusion lead to better results in a different setup.
+                    const int cap_a = g.candidate_capacity.count(a) ? g.candidate_capacity.at(a) : 0;
+                    const int cap_b = g.candidate_capacity.count(b) ? g.candidate_capacity.at(b) : 0;
+                    if (cap_a != cap_b) return cap_a > cap_b; // higher capacity first.
+
+                    // tie-break 2: deterministic by name
+                    return std::string(a->name) < std::string(b->name);
+                });
+
+        // Set the Cost of memory to the minimum Cost type.
+        t_logical_block_type_ptr min_cost_type = g.candidate_types[0];
+        g.area_mem = g.area_type[min_cost_type];
+        VTR_LOG("    Min Cost Type %s with Cost (Area) of %d\n", min_cost_type->name.c_str(), g.area_mem);
+    }
+
+    // Sort the logical RAM blocks by Cost_init - Cost_mem.
+    VTR_LOG("Sorting the logical RAM blocks by Cost_init - Cost_mem.\n");
+    // Stable sort to preserve original order for equal differences
+    std::stable_sort(logical_ram_groups_.begin(),
+                    logical_ram_groups_.end(),
                     [](const LogicalRamGroup& a, const LogicalRamGroup& b) {
-        // 1) Fewer candidate types first
-        if (a.candidate_types.size() != b.candidate_types.size())
-            return a.candidate_types.size() < b.candidate_types.size();
+                        int diff_a = a.area_init - a.area_mem;
+                        int diff_b = b.area_init - b.area_mem;
+                        // Larger improvement (higher diff) comes first
+                        return diff_a > diff_b;
+                    });
 
-        // 2) If inferred number is same, select the smaller capacity one.
-        bool a_inferred_numbers_same = true;
-        int inferred_number_a = -1;
-        for (const auto& [cand, capacity] : a.candidate_capacity) {
-            int inferred_number_current_a = std::ceil(vtr::safe_ratio<float>(a.total_memory_slices, capacity));
-            if (inferred_number_a != -1 && inferred_number_a != inferred_number_current_a) {
-                a_inferred_numbers_same = false;
+    // Log the sorted order
+    // for (size_t i = 0; i < logical_ram_groups_.size(); ++i) {
+    //     const LogicalRamGroup& g = logical_ram_groups_[i];
+    //     int diff = g.area_init - g.area_mem;
+    //     VTR_LOG("  Rank %zu: ΔCost = %d  (Init = %d, Mem = %d, Slices = %d)\n",
+    //             i, diff, g.area_init, g.area_mem, g.total_memory_slices);
+    // }
+
+    // After sorting based on cost gain, select the memory type that has lowest Cost_type
+    // and feasible.
+    VTR_LOG("Selecting the lowest cost & feasible type for eahc logical RAM.\n");
+    for (size_t gid = 0; gid < logical_ram_groups_.size(); ++gid) {
+        LogicalRamGroup& g = logical_ram_groups_[gid];
+        for (t_logical_block_type_ptr candidate_type: g.candidate_types) {
+            int inferred_instance_num = std::ceil(vtr::safe_ratio<float>(g.total_memory_slices, g.candidate_capacity[candidate_type]));
+            int total_ins_number = 0;
+            for (auto physical_type : candidate_type->equivalent_tiles)
+                total_ins_number += device_ctx.grid.num_instances(physical_type, -1);
+            float new_utilization = vtr::safe_ratio<float>(candidate_usages[candidate_type] + inferred_instance_num, total_ins_number);
+
+            if (new_utilization <= 1.0) {
+                // Accept the change and update stats, logical RAM preference.
+                candidate_usages[candidate_type] += inferred_instance_num;
+
+                // Decrease the old type numbers from its usage.
+                int old_type_instance_num = std::ceil(vtr::safe_ratio<float>(g.total_memory_slices, g.candidate_capacity[g.pre_assigned_type]));
+                candidate_usages[g.pre_assigned_type] -= old_type_instance_num;
+
+                // Assign new type.
+                g.pre_assigned_type = candidate_type;
                 break;
             }
-            inferred_number_a = inferred_number_current_a;
         }
-        bool b_inferred_numbers_same = true;
-        int inferred_number_b = -1;
-        for (const auto& [cand, capacity] : b.candidate_capacity) {
-            int inferred_number_current_b = std::ceil(vtr::safe_ratio<float>(b.total_memory_slices, capacity));
-            if (inferred_number_b != -1 && inferred_number_b != inferred_number_current_b) {
-                b_inferred_numbers_same = false;
-                break;
-            }
-            inferred_number_b = inferred_number_current_b;
-        }
-
-        if (a_inferred_numbers_same != b_inferred_numbers_same)
-            return a_inferred_numbers_same;
-
-        // 3) Smaller capacity ratio first
-        const double EPS = 1e-9;
-        if (std::fabs(a.candidate_capacity_ratio - b.candidate_capacity_ratio) > EPS)
-            return a.candidate_capacity_ratio < b.candidate_capacity_ratio;
-
-        // 4) Larger total memory slices first
-        if (a.total_memory_slices != b.total_memory_slices)
-            return a.total_memory_slices > b.total_memory_slices;
-
-        // tie -> keep original order (stable_sort preserves it)
-        return false;
-    });
-
-    VTR_LOG("\nSorted Logical RAM Groups:\n");
-    float target_utilization = 1.0;
-    std::unordered_map<t_logical_block_type_ptr, int> used_instances;
-    for (size_t i = 0; i < logical_ram_groups_.size(); ++i) {
-        auto& g = logical_ram_groups_[i];
-
-        VTR_LOG("Group %zu:\n", i);
-        VTR_LOG("  Representative Atom Block ID: %d\n", g.rep_blk);
-
-        VTR_LOG("  Total Memory Slices: %d\n", g.total_memory_slices);
-        VTR_LOG("  Remaining Memory Slices: %d\n", g.remaining_memory_slices);
-
-        VTR_LOG("  Candidate Types and Capacities:\n");
-        std::unordered_map<t_logical_block_type_ptr, int> inferred_numbers;
-        std::unordered_map<t_logical_block_type_ptr, float> new_utilization_ratios;
-        for (auto cand : g.candidate_types) {
-            auto it = g.candidate_capacity.find(cand);
-            if (it == g.candidate_capacity.end()) {
-                continue;
-            }
-            VTR_LOG("    %s: %d\n", cand->name.c_str(), it->second);
-            int equivalent_num_instances = 0;
-            for (auto type : cand->equivalent_tiles) {
-                equivalent_num_instances += device_ctx.grid.num_instances(type, -1);
-            }
-            int inferred_number = std::ceil(g.total_memory_slices/(float)it->second);
-            VTR_LOG("    Inferred number of blocks for this type: %d\n", inferred_number);
-            inferred_numbers[cand] = inferred_number;
-            float new_utilization_ratio = 0.0;
-            if (used_instances.find(cand) == used_instances.end()) {
-                new_utilization_ratio = vtr::safe_ratio<float>(inferred_number, equivalent_num_instances);
-                used_instances[cand] = 0;
-            } else {
-                new_utilization_ratio = vtr::safe_ratio<float>(inferred_number + used_instances[cand], equivalent_num_instances);
-            }
-            VTR_LOG("    New utilization ratio: %f\n", new_utilization_ratio);
-            new_utilization_ratios[cand] = new_utilization_ratio;
-        }
-        VTR_LOG("  Capacity Ratio (min/max): %f\n", g.candidate_capacity_ratio);
-        VTR_LOG("  Area ratio (M9K / M144K): %f\n", g.candidate_area_ratio);
-
-        VTR_LOG("  Atom ids: ");
-        for (AtomBlockId atom_id: g.atoms) {
-            VTR_LOG("%zu ", atom_id);
-        }
-        VTR_LOG("\n");
-
-        // Choose exactly one candidate for this group 'g' according to the rules:
-        //
-        // 1) If there is only one candidate -> select it.
-        // 2) If inferred numbers are the same -> choose smaller capacity.
-        // 3) Otherwise -> choose smaller inferred number.
-        // 4) Utilization guard:
-        //      - If one candidate's new_utilization > target_utilization, choose the other.
-        //      - If both exceed, choose the smaller new_utilization.
-        //
-        // Assumes:
-        //   - inferred_numbers[cand]     (int) already filled above
-        //   - new_utilization_ratios[cand] (float) already filled above
-        //   - g.candidate_capacity[cand] (int) present
-        //   - target_utilization (float) defined outside
-        //   - used_instances (map) defined outside (and will be updated here)
-
-        t_logical_block_type_ptr choose_best = nullptr;
-
-        auto prefer_a_over_b = [&](t_logical_block_type_ptr a, t_logical_block_type_ptr b) -> bool {
-            // Fetch values (with safe fallbacks)
-            const int   inf_a  = inferred_numbers.count(a) ? inferred_numbers.at(a) : std::numeric_limits<int>::max();
-            const int   inf_b  = inferred_numbers.count(b) ? inferred_numbers.at(b) : std::numeric_limits<int>::max();
-
-            const int   cap_a  = g.candidate_capacity.count(a) ? g.candidate_capacity.at(a) : std::numeric_limits<int>::max();
-            const int   cap_b  = g.candidate_capacity.count(b) ? g.candidate_capacity.at(b) : std::numeric_limits<int>::max();
-
-            const float util_a = new_utilization_ratios.count(a) ? new_utilization_ratios.at(a) : std::numeric_limits<float>::infinity();
-            const float util_b = new_utilization_ratios.count(b) ? new_utilization_ratios.at(b) : std::numeric_limits<float>::infinity();
-
-            const bool  a_over = util_a > target_utilization;
-            const bool  b_over = util_b > target_utilization;
-
-            const float cap_ratio  = g.candidate_capacity_ratio; // M9K/M144K
-            const float area_ratio = g.candidate_area_ratio;     // M9K/M144K
-            const bool  ratios_ok  = std::isfinite(cap_ratio) && std::isfinite(area_ratio);
-
-            // 1) If inferred numbers are the same -> choose smaller capacity
-            if (inf_a == inf_b && cap_a != cap_b) {
-                return cap_a < cap_b; // smaller capacity wins
-            }
-
-            // 2) Ratio inequality: if cap_ratio <= area_ratio choose bigger capacity; else smaller capacity
-            if (ratios_ok && cap_a != cap_b) {
-                const bool prefer_a = (cap_ratio <= area_ratio) ? (cap_a > cap_b)  // bigger capacity
-                                                                : (cap_a < cap_b); // smaller capacity
-
-                // 3) Utilization guard applied to the selected one
-                if (prefer_a) {
-                    if (a_over && !b_over) return false;                // chosen over -> pick other
-                    if (!a_over && b_over) return true;                 // other over -> keep chosen
-                    if (a_over && b_over) {                             // both over -> least utilized
-                        if (util_a != util_b) return util_a < util_b;
-                    }
-                    return true;                                        // neither over (or equal utils)
-                } else {
-                    if (a_over && !b_over) return false;                // prefer b, a over -> still b
-                    if (!a_over && b_over) return true;                 // prefer b, b over -> flip to a
-                    if (a_over && b_over) {
-                        if (util_a != util_b) return util_a < util_b;   // least utilized wins
-                    }
-                    return false;                                       // keep b
-                }
-            }
-
-            // 4) Fall back to original logic (generic utilization guard, then usual ties)
-            if (a_over != b_over) return !a_over;                       // only one over -> pick not-over
-            if (a_over && b_over) {
-                if (util_a != util_b) return util_a < util_b;           // both over -> least utilized
-                // fall through on exact tie
-            }
-
-            if (inf_a != inf_b) return inf_a < inf_b;                   // fewer inferred first
-            if (cap_a != cap_b) return cap_a < cap_b;                   // then smaller capacity
-            return std::string(a->name) < std::string(b->name);         // deterministic tie-break
-        };
-
-        if (g.candidate_types.empty()) {
-            VTR_LOG("  No candidate types for this group; skipping selection.\n\n");
-        } else if (g.candidate_types.size() == 1) {
-            choose_best = g.candidate_types.front();
-        } else {
-            // Reduce pairwise according to prefer_a_over_b
-            choose_best = g.candidate_types.front();
-            for (size_t k = 1; k < g.candidate_types.size(); ++k) {
-                t_logical_block_type_ptr cand = g.candidate_types[k];
-                if (prefer_a_over_b(cand, choose_best)) {
-                    choose_best = cand;
-                }
-            }
-        }
-
-        // Apply and log the decision
-        if (choose_best) {
-            const int chosen_inf  = inferred_numbers.count(choose_best) ? inferred_numbers.at(choose_best) : -1;
-            const int chosen_cap  = g.candidate_capacity.count(choose_best) ? g.candidate_capacity.at(choose_best) : -1;
-            const float chosen_util = new_utilization_ratios.count(choose_best) ? new_utilization_ratios.at(choose_best) : std::numeric_limits<float>::quiet_NaN();
-
-            // Record selection (if you keep it in the struct)
-            g.last_selected_type = choose_best;
-
-            VTR_LOG("  >>> Selected: %s  (inferred=%d, cap=%d, new_util=%.3f, target=%.3f)\n",
-                    choose_best->name.c_str(), chosen_inf, chosen_cap, chosen_util, target_utilization);
-
-            // Update global usage so subsequent groups see the increased load
-            used_instances[choose_best] += std::max(0, chosen_inf);
-
-            g.pre_assigned_type = choose_best;
-
-        } else {
-            VTR_LOG("  >>> No selection made for this group.\n");
-        }
-
-        VTR_LOG("\n");
     }
 
-    VTR_LOG("\nFinal Utilization per Physical RAM Type:\n");
-    for (const auto& entry : used_instances) {
-        t_logical_block_type_ptr type = entry.first;
-        int used = entry.second;
+    // Verify the initial mappings are feasible (utilization check).
+    VTR_LOG("Final mappings device utilizations:\n");
+    for (auto usage: candidate_usages) {
+        t_logical_block_type_ptr type = usage.first;
+        int used_ins_number = usage.second;
+        int total_ins_number = 0;
+        for (auto physical_type : type->equivalent_tiles)
+            total_ins_number += device_ctx.grid.num_instances(physical_type, -1);
+        float utilization = vtr::safe_ratio<float>(used_ins_number, total_ins_number);
+        VTR_LOG("  %s: %f\n", type->name.c_str(), utilization);
 
-        // Compute total equivalent physical instances of this type
-        int total_instances = 0;
-        for (auto* ptile : type->equivalent_tiles) {
-            total_instances += device_ctx.grid.num_instances(ptile, -1); // all layers
-        }
-
-        float util = vtr::safe_ratio<float>(used, total_instances);
-
-        VTR_LOG("  %s: used %d / total %d  =>  utilization = %.3f\n",
-                type->name.c_str(), used, total_instances, util);
+        VTR_ASSERT_MSG(utilization <= 1.0, "At least one RAM type is over utilized after final placement. Ideally, this assertion should be removed and reassigning should be tried");
     }
-    VTR_LOG("\n");
 
 
     // Crosscheck and validate the atoms are assigned to correct groups.
+    // This should be at the end of logical ram assignemts after any sorting since
+    // helper methods use the order in this data structure afterwards.
+    atom_to_group_.resize(atom_nlist.blocks().size());
     for (size_t gid = 0; gid < logical_ram_groups_.size(); ++gid) {
         auto& g = logical_ram_groups_[gid];
         for (AtomBlockId atom_id: g.atoms) {
