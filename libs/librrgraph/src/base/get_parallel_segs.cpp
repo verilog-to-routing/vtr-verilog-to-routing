@@ -32,6 +32,7 @@ int get_parallel_seg_index(int abs_index,
     for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
         if (itr->second.second == parallel_axis) {
             index = itr->second.first;
+            break;
         }
     }
 

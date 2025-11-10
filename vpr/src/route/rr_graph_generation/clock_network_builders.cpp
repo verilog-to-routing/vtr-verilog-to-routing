@@ -119,7 +119,7 @@ void ClockRib::set_initial_wire_location(int start_x, int end_x, int y) {
 
 void ClockRib::set_wire_repeat(int repeat_x, int repeat_y) {
     if (repeat_x <= 0 || repeat_y <= 0) {
-        // Avoid an infinte loop when creating ribs
+        // Avoid an infinite loop when creating ribs
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
                         repeat_x, repeat_y);
     }
@@ -399,9 +399,16 @@ void ClockRib::record_tap_locations(unsigned x_start,
 void ClockRib::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
     // We have horizontal segments in clock-ribs so we search for X_AXIS
 
-    drive_seg_idx = get_parallel_seg_index(drive_seg_idx, indices_map, e_parallel_axis::X_AXIS);
-    left_seg_idx = get_parallel_seg_index(left_seg_idx, indices_map, e_parallel_axis::X_AXIS);
-    right_seg_idx = get_parallel_seg_index(right_seg_idx, indices_map, e_parallel_axis::X_AXIS);
+    int seg_idx;
+
+    seg_idx = get_parallel_seg_index(drive_seg_idx, indices_map, e_parallel_axis::X_AXIS);
+    drive_seg_idx = (seg_idx >= 0) ? seg_idx : drive_seg_idx;
+
+    seg_idx = get_parallel_seg_index(left_seg_idx, indices_map, e_parallel_axis::X_AXIS);
+    left_seg_idx = (seg_idx >= 0) ? seg_idx : left_seg_idx;
+
+    seg_idx = get_parallel_seg_index(right_seg_idx, indices_map, e_parallel_axis::X_AXIS);
+    right_seg_idx = (seg_idx >= 0) ? seg_idx : right_seg_idx;
 }
 
 /*********************************************************************************
@@ -446,7 +453,7 @@ void ClockSpine::set_initial_wire_location(int start_y, int end_y, int x) {
 
 void ClockSpine::set_wire_repeat(int repeat_x, int repeat_y) {
     if (repeat_x <= 0 || repeat_y <= 0) {
-        // Avoid an infinte loop when creating spines
+        // Avoid an infinite loop when creating spines
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Clock Network wire repeat (%d,%d) must be greater than zero\n",
                         repeat_x, repeat_y);
     }
@@ -727,9 +734,16 @@ void ClockSpine::record_tap_locations(unsigned y_start,
 void ClockSpine::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
     // We have vertical segments in clock-spines so we search for Y_AXIS
 
-    drive_seg_idx = get_parallel_seg_index(drive_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
-    left_seg_idx = get_parallel_seg_index(left_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
-    right_seg_idx = get_parallel_seg_index(right_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
+    int seg_idx;
+
+    seg_idx = get_parallel_seg_index(drive_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
+    drive_seg_idx = (seg_idx >= 0) ? seg_idx : drive_seg_idx;
+
+    seg_idx = get_parallel_seg_index(left_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
+    left_seg_idx = (seg_idx >= 0) ? seg_idx : left_seg_idx;
+
+    seg_idx = get_parallel_seg_index(right_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
+    right_seg_idx = (seg_idx >= 0) ? seg_idx : right_seg_idx;
 }
 
 /*********************************************************************************
