@@ -23,9 +23,9 @@ std::vector<t_segment_inf> get_parallel_segs(const std::vector<t_segment_inf>& s
     return result;
 }
 
-int get_parallel_seg_index(const int abs_index,
+int get_parallel_seg_index(int abs_index,
                            const t_unified_to_parallel_seg_index& index_map,
-                           const e_parallel_axis parallel_axis) {
+                           e_parallel_axis parallel_axis) {
     int index = -1;
     auto itr_pair = index_map.equal_range(abs_index);
 

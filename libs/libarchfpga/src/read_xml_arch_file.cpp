@@ -101,7 +101,7 @@ struct t_pin_locs {
   public:
     e_pin_location_distr distribution = e_pin_location_distr::SPREAD;
 
-    /* [0..num_sub_tiles-1][0..width-1][0..height-1][0..3][0..num_tokens-1] */
+    // [0..num_sub_tiles-1][0..width-1][0..height-1][0..3][0..num_tokens-1]
     vtr::NdMatrix<std::vector<std::string>, 4> assignments;
 
     bool is_distribution_set() const {

@@ -2,6 +2,7 @@
 
 #include "globals.h"
 
+#include "get_parallel_segs.h"
 #include "rr_rc_data.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -394,26 +395,13 @@ void ClockRib::record_tap_locations(unsigned x_start,
     }
 }
 
-static void get_parallel_seg_index(int& unified_seg_index, e_parallel_axis axis, const t_unified_to_parallel_seg_index& indices_map) {
-    auto itr_pair = indices_map.equal_range(unified_seg_index);
-
-    for (auto itr = itr_pair.first; itr != itr_pair.second; ++itr) {
-        if (itr->second.second == axis) {
-            unified_seg_index = itr->second.first;
-            return;
-        }
-    }
-}
-
 /* AA: Map drive_seg_idx, left_seg_idx, and right_seg_idx to equivalent index in segment_inf_x as produced in rr_graph.cpp:build_rr_graph */
 void ClockRib::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
-    /*We have horizontal segments in clock-ribs so we search for X_AXIS*/
+    // We have horizontal segments in clock-ribs so we search for X_AXIS
 
-    get_parallel_seg_index(drive_seg_idx, e_parallel_axis::X_AXIS, indices_map);
-
-    get_parallel_seg_index(left_seg_idx, e_parallel_axis::X_AXIS, indices_map);
-
-    get_parallel_seg_index(right_seg_idx, e_parallel_axis::X_AXIS, indices_map);
+    drive_seg_idx = get_parallel_seg_index(drive_seg_idx, indices_map, e_parallel_axis::X_AXIS);
+    left_seg_idx = get_parallel_seg_index(left_seg_idx, indices_map, e_parallel_axis::X_AXIS);
+    right_seg_idx = get_parallel_seg_index(right_seg_idx, indices_map, e_parallel_axis::X_AXIS);
 }
 
 /*********************************************************************************
@@ -737,13 +725,11 @@ void ClockSpine::record_tap_locations(unsigned y_start,
 
 /* AA: Map drive_seg_idx, left_seg_idx, and right_seg_idx to equivalent index in segment_inf_y as produced in rr_graph.cpp:build_rr_graph */
 void ClockSpine::map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map) {
-    /*We have vertical segments in clock-spines so we search for Y_AXIS*/
+    // We have vertical segments in clock-spines so we search for Y_AXIS
 
-    get_parallel_seg_index(drive_seg_idx, e_parallel_axis::Y_AXIS, indices_map);
-
-    get_parallel_seg_index(left_seg_idx, e_parallel_axis::Y_AXIS, indices_map);
-
-    get_parallel_seg_index(right_seg_idx, e_parallel_axis::Y_AXIS, indices_map);
+    drive_seg_idx = get_parallel_seg_index(drive_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
+    left_seg_idx = get_parallel_seg_index(left_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
+    right_seg_idx = get_parallel_seg_index(right_seg_idx, indices_map, e_parallel_axis::Y_AXIS);
 }
 
 /*********************************************************************************
