@@ -328,15 +328,6 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type);
-/**
- * @brief Returns the list of pins (both cluster-level and intra-cluster-level) of the given cluster block.
- * @param physical_tile The physical tile type that the cluster block is mapped to.
- * @param cluster_blk_id The cluster block ID.
- * @param abs_cap The absolute capacity number of the sub-tile that the cluster block is mapped to.
- */
-std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
-                                        ClusterBlockId cluster_blk_id,
-                                        int abs_cap);
 
 t_arch_switch_inf create_internal_arch_sw(float delay);
 
