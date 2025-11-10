@@ -595,6 +595,11 @@ bool route(const Netlist<>& net_list,
         }
     }
 
+    // Calculates the routing struggle ratio.
+    // This ratio is defined as the number of iterations with high heap ops
+    // (i.e., iterations having more heap operations than the maximum of the previous three iterations
+    // divided by the total number of iterations.
+    // For more details, see TODO: routing struggle paper is not published yet.
     float routing_struggle_ratio = 0.0;
     if (per_iter_heap_ops_count.size() > 4) {
         routing_struggle_ratio = static_cast<float>(num_high_heap_ops_iters) / static_cast<float>(per_iter_heap_ops_count.size() - 3);
