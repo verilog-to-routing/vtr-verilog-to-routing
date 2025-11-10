@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <rr_graph_fwd.h>
 #include <vector>
 #include "netlist.h"
 #include "rr_graph_type.h"
@@ -14,26 +15,14 @@ class DeviceGrid;
  */
 void routing_stats(const Netlist<>& net_list,
                    bool full_stats,
-                   enum e_route_type route_type,
+                   e_route_type route_type,
                    std::vector<t_segment_inf>& segment_inf,
                    float R_minW_nmos,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
-                   enum e_directionality directionality,
-                   int wire_to_ipin_switch,
+                   e_directionality directionality,
+                   RRSwitchId wire_to_ipin_switch,
                    bool is_flat);
-
-/**
- * @brief Calculates the routing channel width at each grid location.
- *
- * Iterates through all RR nodes and counts how many wires pass through each (x, y) location
- * for both horizontal (CHANX) and vertical (CHANY) channels.
- *
- * @return A pair of 3D matrices:
- *         - First: CHANX width per [layer][x][y]
- *         - Second: CHANY width per [layer][x][y]
- */
-std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width();
 
 void print_wirelen_prob_dist(bool is_flat);
 

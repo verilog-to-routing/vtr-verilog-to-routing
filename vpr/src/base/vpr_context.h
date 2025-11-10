@@ -44,7 +44,7 @@
 class SetupHoldTimingInfo;
 class PostClusterDelayCalculator;
 
-#endif /* NO_SERVER */
+#endif // NO_SERVER
 
 struct t_rr_node_route_inf;
 
@@ -143,21 +143,9 @@ struct TimingContext : public Context {
 
     t_timing_analysis_profile_info stats;
 
-    /* Represents whether or not VPR should fail if timing constraints aren't met. */
+    /// Represents whether VPR should fail if timing constraints aren't met.
     bool terminate_if_timing_fails = false;
 };
-
-namespace std {
-template<>
-struct hash<std::tuple<int, int, short>> {
-    std::size_t operator()(const std::tuple<int, int, short>& ok) const noexcept {
-        std::size_t seed = std::hash<int>{}(std::get<0>(ok));
-        vtr::hash_combine(seed, std::get<1>(ok));
-        vtr::hash_combine(seed, std::get<2>(ok));
-        return seed;
-    }
-};
-} // namespace std
 
 /**
  * @brief State relating the device
@@ -200,11 +188,9 @@ struct DeviceContext : public Context {
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
 
-    /*
-     * Keep which layer in multi-die FPGA require inter-cluster programmable routing resources [0..number_of_layers-1]
-     * If a layer doesn't require inter-cluster programmable routing resources,
-     * RRGraph generation will ignore building SBs and CBs for that specific layer.
-     */
+    /// Keep which layer in multi-die FPGA require inter-cluster programmable routing resources [0..number_of_layers-1]
+    /// If a layer doesn't require inter-cluster programmable routing resources,
+    /// RRGraph generation will ignore building SBs and CBs for that specific layer.
     std::vector<bool> inter_cluster_prog_routing_resources;
 
     /**
@@ -263,6 +249,16 @@ struct DeviceContext : public Context {
 
     int delayless_switch_idx = UNDEFINED;
 
+    /// Stores the number of CHANX wire segments in each routing channel segment at [layer][x][y]
+    vtr::NdMatrix<int, 3> rr_chanx_segment_width;
+    /// Stores the number of CHANY wire segments in each routing channel segment at [layer][x][y]
+    vtr::NdMatrix<int, 3> rr_chany_segment_width;
+
+    /// Stores the maximum channel segment width in each horizontal channel
+    std::vector<int> rr_chanx_width;
+    /// Stores the maximum channel segment width in each vertical channel
+    std::vector<int> rr_chany_width;
+
     bool rr_graph_is_flat = false;
 
     /*
@@ -280,7 +276,7 @@ struct DeviceContext : public Context {
      * map key: num of all possible fanin of that type of switch on chip
      * map value: remapped switch index (index in rr_switch_inf)
      */
-    std::vector<std::map<int, int>> switch_fanin_remap;
+    t_arch_switch_fanin switch_fanin_remap;
 
     /*******************************************************************
      * Architecture
@@ -363,7 +359,7 @@ struct ClusteringContext : public Context {
 /**
  * @brief State relating to packing multithreading
  *
- * This contain data structures to synchronize multithreading of packing iterative improvement.
+ * This contains data structures to synchronize multithreading of packing iterative improvement.
  */
 struct PackingMultithreadingContext : public Context {
     vtr::vector<ClusterBlockId, bool> clb_in_flight;
@@ -760,7 +756,7 @@ struct ServerContext : public Context {
      */
     std::shared_ptr<PostClusterDelayCalculator> routing_delay_calc;
 };
-#endif /* NO_SERVER */
+#endif // NO_SERVER
 
 /**
  * @brief This object encapsulates VPR's state.
@@ -845,7 +841,7 @@ class VprContext : public Context {
 #ifndef NO_SERVER
     const ServerContext& server() const { return server_; }
     ServerContext& mutable_server() { return server_; }
-#endif /* NO_SERVER */
+#endif // NO_SERVER
 
   private:
     DeviceContext device_;
@@ -863,7 +859,7 @@ class VprContext : public Context {
 
 #ifndef NO_SERVER
     ServerContext server_;
-#endif /* NO_SERVER */
+#endif // NO_SERVER
 
     PackingMultithreadingContext packing_multithreading_;
 };

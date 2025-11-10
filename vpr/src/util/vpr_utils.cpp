@@ -2,6 +2,7 @@
 #include <regex>
 #include <algorithm>
 #include <sstream>
+#include <ranges>
 
 #include "pack_types.h"
 #include "vpr_types.h"
@@ -62,15 +63,15 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat) {
     std::string rr_node_arch_name;
     if (rr_graph.node_type(inode) == e_rr_type::OPIN || rr_graph.node_type(inode) == e_rr_type::IPIN) {
         //Pin names
-        auto type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
-                                                       rr_graph.node_ylow(rr_node),
-                                                       rr_graph.node_layer(rr_node)});
+        t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                                           rr_graph.node_ylow(rr_node),
+                                                                           rr_graph.node_layer_low(rr_node)});
         rr_node_arch_name += block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node), is_flat);
     } else if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK) {
         //Set of pins associated with SOURCE/SINK
-        auto type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
-                                                       rr_graph.node_ylow(rr_node),
-                                                       rr_graph.node_layer(rr_node)});
+        t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
+                                                                           rr_graph.node_ylow(rr_node),
+                                                                           rr_graph.node_layer_low(rr_node)});
         auto pin_names = block_type_class_index_to_pin_names(type, rr_graph.node_class_num(rr_node), is_flat);
         if (pin_names.size() > 1) {
             rr_node_arch_name += rr_graph.node_type_string(inode);
@@ -84,7 +85,7 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat) {
     } else {
         VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::CHANX || rr_graph.node_type(inode) == e_rr_type::CHANY);
         //Wire segment name
-        auto cost_index = rr_graph.node_cost_index(inode);
+        RRIndexedDataId cost_index = rr_graph.node_cost_index(inode);
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
         rr_node_arch_name += rr_graph.rr_segments(RRSegmentId(seg_index)).name;
@@ -415,7 +416,7 @@ int get_sub_tile_index(ClusterBlockId blk,
 
     for (const auto& sub_tile : type->sub_tiles) {
         if (sub_tile.capacity.is_in_range(sub_tile_coordinate)) {
-            auto result = std::find(sub_tile.equivalent_sites.begin(), sub_tile.equivalent_sites.end(), logical_block);
+            auto result = std::ranges::find(sub_tile.equivalent_sites, logical_block);
             if (result == sub_tile.equivalent_sites.end()) {
                 VPR_THROW(VPR_ERROR_PLACE, "The Block Id %d has been placed in an incompatible sub tile location.\n", blk);
             }
@@ -596,7 +597,7 @@ t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
             rhs_num_instances += grid.num_instances(type, -1);
         return lhs_num_instances > rhs_num_instances;
     };
-    std::stable_sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
+    std::ranges::stable_sort(logic_block_candidates, by_desc_grid_count);
 
     if (!logic_block_candidates.empty()) {
         return logic_block_candidates.front();
@@ -1061,7 +1062,7 @@ vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     vtr::vector<ClusterBlockId, t_pb**> pin_id_to_pb_mapping(cluster_ctx.clb_nlist.blocks().size());
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         pin_id_to_pb_mapping[blk_id] = new t_pb*[cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins];
         for (int j = 0; j < cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins; j++) {
             pin_id_to_pb_mapping[blk_id][j] = nullptr;
@@ -1248,7 +1249,7 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
     //Look through the output nets for any duplicates of the input nets
     for (auto pin_id : atom_ctx.netlist().block_output_pins(blk_id)) {
         auto net_id = atom_ctx.netlist().pin_net(pin_id);
-        if (input_nets.count(net_id)) {
+        if (input_nets.contains(net_id)) {
             --ext_inps;
         }
     }
@@ -1273,10 +1274,7 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
         return;
     }
 
-    const t_pb_type* pb_type;
-    int i, j, mode;
-
-    pb_type = pb->pb_graph_node->pb_type;
+    const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
     if (pb->name) {
         free(pb->name);
@@ -1284,9 +1282,9 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
     }
 
     if (pb_type->blif_model == nullptr) {
-        mode = pb->mode;
-        for (i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
-            for (j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
+        int mode = pb->mode;
+        for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
+            for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
                 if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
                     free_pb(&pb->child_pbs[i][j], atom_pb_bimap);
                 }
@@ -1354,7 +1352,7 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
 
         std::string source_string{src_string};
         // replace '.' characters with space
-        std::replace(source_string.begin(), source_string.end(), '.', ' ');
+        std::ranges::replace(source_string, '.', ' ');
 
         std::istringstream source_iss(source_string);
         std::string pb_type_name, port_name;
@@ -1374,9 +1372,8 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         std::string source_string{src_string};
 
         // Replace '.' and '[' characters with ' '
-        std::replace_if(
-            source_string.begin(), source_string.end(),
-            [](char c) { return c == '.' || c == '[' || c == ':' || c == ']'; },
+        std::ranges::replace_if(source_string,
+            [](char c) noexcept { return c == '.' || c == '[' || c == ':' || c == ']'; },
             ' ');
 
         std::istringstream source_iss(source_string);
@@ -1420,25 +1417,20 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
  * but for switch usage analysis, we need to convert the index back to the
  * type / fanin combination
  */
-static int convert_switch_index(int* switch_index, int* fanin) {
-    if (*switch_index == -1)
-        return 1;
-
-    auto& device_ctx = g_vpr_ctx.device();
+static std::pair<int, int> convert_switch_index(RRSwitchId rr_switch_id) {
+    VTR_ASSERT(rr_switch_id.is_valid());
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     for (int iswitch = 0; iswitch < (int)device_ctx.arch_switch_inf.size(); iswitch++) {
         for (auto itr = device_ctx.switch_fanin_remap[iswitch].begin(); itr != device_ctx.switch_fanin_remap[iswitch].end(); itr++) {
-            if (itr->second == *switch_index) {
-                *switch_index = iswitch;
-                *fanin = itr->first;
-                return 0;
+            if (itr->second == rr_switch_id) {
+                return {iswitch, itr->first};
             }
         }
     }
-    *switch_index = -1;
-    *fanin = -1;
-    VTR_LOG("\n\nerror converting switch index ! \n\n");
-    return -1;
+
+    VTR_LOG_ERROR("\n\nerror converting switch index ! \n\n");
+    return {-1, -1};
 }
 
 /*
@@ -1469,47 +1461,40 @@ void print_switch_usage() {
         VTR_LOG_WARN("Cannot print switch usage stats: device_ctx.switch_fanin_remap is empty\n");
         return;
     }
-    std::map<int, int>* switch_fanin_count;
-    std::map<int, float>* switch_fanin_delay;
-    switch_fanin_count = new std::map<int, int>[device_ctx.all_sw_inf.size()];
-    switch_fanin_delay = new std::map<int, float>[device_ctx.all_sw_inf.size()];
+
+    std::vector<std::map<int, int>> switch_fanin_count(device_ctx.all_sw_inf.size());
+    std::vector<std::map<int, float>> switch_fanin_delay(device_ctx.all_sw_inf.size());
     // a node can have multiple inward switches, so
     // map key: switch index; map value: count (fanin)
-    std::map<int, int>* inward_switch_inf = new std::map<int, int>[rr_graph.num_nodes()];
-    for (const RRNodeId& inode : rr_graph.nodes()) {
+    vtr::vector<RRNodeId, std::map<RRSwitchId, int>> inward_switch_inf(rr_graph.num_nodes());
+
+    for (const RRNodeId inode : rr_graph.nodes()) {
         int num_edges = rr_graph.num_edges(inode);
         for (int iedge = 0; iedge < num_edges; iedge++) {
-            int switch_index = rr_graph.edge_switch(inode, iedge);
-            int to_node_index = size_t(rr_graph.edge_sink_node(inode, iedge));
+            RRSwitchId switch_index = (RRSwitchId)rr_graph.edge_switch(inode, iedge);
+            RRNodeId to_node_index = rr_graph.edge_sink_node(inode, iedge);
             // Assumption: suppose for a L4 wire (bi-directional): ----+----+----+----, it can be driven from any point (0, 1, 2, 3).
             //             physically, the switch driving from point 1 & 3 should be the same. But we will assign then different switch
             //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
-            if (inward_switch_inf[to_node_index].count(switch_index) == 0)
+            if (!inward_switch_inf[to_node_index].contains(switch_index))
                 inward_switch_inf[to_node_index][switch_index] = 0;
             //VTR_ASSERT(from_node.type != OPIN);
             inward_switch_inf[to_node_index][switch_index]++;
         }
     }
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        std::map<int, int>::iterator itr;
-        for (itr = inward_switch_inf[(size_t)rr_id].begin(); itr != inward_switch_inf[(size_t)rr_id].end(); itr++) {
-            int switch_index = itr->first;
-            int fanin = itr->second;
-            float Tdel = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Tdel;
-            int status = convert_switch_index(&switch_index, &fanin);
-            if (status == -1) {
-                delete[] switch_fanin_count;
-                delete[] switch_fanin_delay;
-                delete[] inward_switch_inf;
-                return;
+
+    for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
+        for (const RRSwitchId rr_switch_id : inward_switch_inf[rr_id] | std::views::keys) {
+            float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
+            const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
+            if (!switch_fanin_count[arch_switch_id].contains(fanin)) {
+                switch_fanin_count[arch_switch_id][fanin] = 0;
             }
-            if (switch_fanin_count[switch_index].count(fanin) == 0) {
-                switch_fanin_count[switch_index][fanin] = 0;
-            }
-            switch_fanin_count[switch_index][fanin]++;
-            switch_fanin_delay[switch_index][fanin] = Tdel;
+            switch_fanin_count[arch_switch_id][fanin]++;
+            switch_fanin_delay[arch_switch_id][fanin] = Tdel;
         }
     }
+
     VTR_LOG("\n=============== switch usage stats ===============\n");
     for (int iswitch = 0; iswitch < (int)device_ctx.all_sw_inf.size(); iswitch++) {
         std::string s_name = device_ctx.all_sw_inf.at(iswitch).name;
@@ -1524,9 +1509,6 @@ void print_switch_usage() {
         }
     }
     VTR_LOG("\n==================================================\n\n");
-    delete[] switch_fanin_count;
-    delete[] switch_fanin_delay;
-    delete[] inward_switch_inf;
 }
 
 int max_pins_per_grid_tile() {
@@ -1553,6 +1535,25 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
 
     return get_class_num_from_pin_physical_num(physical_type, pin_physical_num);
+}
+
+std::vector<int> find_sub_tile_indices_by_port_name(t_physical_tile_type_ptr type, std::string_view port_name) {
+    std::vector<int> ret;
+    for (const t_sub_tile& sub_tile : type->sub_tiles) {
+        bool matched = false;
+        for (const t_physical_tile_port& port : sub_tile.ports) {
+            if (port_name == port.name) {
+                matched = true;
+                break;
+            }
+        }
+        if (matched) {
+            for (int idx = sub_tile.capacity.low; idx <= sub_tile.capacity.high; ++idx) {
+                ret.push_back(idx);
+            }
+        }
+    }
+    return ret;
 }
 
 t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, std::string_view port_name) {
@@ -1633,32 +1634,32 @@ bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
     e_rr_type node_type = rr_graph_view.node_type(node_id);
     if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::CHANZ || node_type == e_rr_type::MUX) {
         return true;
+    }
+
+    int x_low = rr_graph_view.node_xlow(node_id);
+    int y_low = rr_graph_view.node_ylow(node_id);
+    int layer = rr_graph_view.node_layer_low(node_id);
+    int node_ptc = rr_graph_view.node_ptc_num(node_id);
+    const t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid.get_physical_type({x_low, y_low, layer});
+    if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
+        return is_pin_on_tile(physical_tile, node_ptc);
     } else {
-        int x_low = rr_graph_view.node_xlow(node_id);
-        int y_low = rr_graph_view.node_ylow(node_id);
-        int layer = rr_graph_view.node_layer(node_id);
-        int node_ptc = rr_graph_view.node_ptc_num(node_id);
-        const t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid.get_physical_type({x_low, y_low, layer});
-        if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
-            return is_pin_on_tile(physical_tile, node_ptc);
-        } else {
-            VTR_ASSERT_DEBUG(node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
-            return is_class_on_tile(physical_tile, node_ptc);
-        }
+        VTR_ASSERT_DEBUG(node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
+        return is_class_on_tile(physical_tile, node_ptc);
     }
 }
 
 int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
                         RRNodeId node_id,
                         bool is_flat) {
-    auto node_type = rr_graph_view.node_type(node_id);
+    e_rr_type node_type = rr_graph_view.node_type(node_id);
 
     VTR_ASSERT(node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN || node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    auto physical_type = device_ctx.grid.get_physical_type({rr_graph_view.node_xlow(node_id),
-                                                            rr_graph_view.node_ylow(node_id),
-                                                            rr_graph_view.node_layer(node_id)});
+    t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph_view.node_xlow(node_id),
+                                                                                rr_graph_view.node_ylow(node_id),
+                                                                                rr_graph_view.node_layer_low(node_id)});
 
     if (node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE) {
         return get_tile_class_max_ptc(physical_type, is_flat);
@@ -1746,7 +1747,7 @@ std::pair<ClusterBlockId, t_pb_graph_pin*> get_rr_node_cluster_blk_id_pb_graph_p
     int pin_physical_num = device_ctx.rr_graph.node_ptc_num(rr_node_id);
     int x = device_ctx.rr_graph.node_xlow(rr_node_id);
     int y = device_ctx.rr_graph.node_ylow(rr_node_id);
-    int layer = device_ctx.rr_graph.node_layer(rr_node_id);
+    int layer = device_ctx.rr_graph.node_layer_low(rr_node_id);
 
     t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({x, y, layer});
 
@@ -1777,19 +1778,19 @@ AtomPinId get_rr_node_atom_pin_id(RRNodeId rr_node_id) {
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto firse_rr_type = rr_graph.node_type(node_first);
-    auto second_rr_type = rr_graph.node_type(node_second);
+    e_rr_type first_rr_type = rr_graph.node_type(node_first);
+    e_rr_type second_rr_type = rr_graph.node_type(node_second);
 
     // If one of the given node's type is CHANX/Y nodes are definitely not in the same physical tile
-    if (firse_rr_type == e_rr_type::CHANX || firse_rr_type == e_rr_type::CHANY || second_rr_type == e_rr_type::CHANX || second_rr_type == e_rr_type::CHANY) {
+    if (first_rr_type == e_rr_type::CHANX || first_rr_type == e_rr_type::CHANY || second_rr_type == e_rr_type::CHANX || second_rr_type == e_rr_type::CHANY) {
         return false;
     } else {
-        VTR_ASSERT(firse_rr_type == e_rr_type::IPIN || firse_rr_type == e_rr_type::OPIN || firse_rr_type == e_rr_type::SINK || firse_rr_type == e_rr_type::SOURCE);
+        VTR_ASSERT(first_rr_type == e_rr_type::IPIN || first_rr_type == e_rr_type::OPIN || first_rr_type == e_rr_type::SINK || first_rr_type == e_rr_type::SOURCE);
         VTR_ASSERT(second_rr_type == e_rr_type::IPIN || second_rr_type == e_rr_type::OPIN || second_rr_type == e_rr_type::SINK || second_rr_type == e_rr_type::SOURCE);
-        int first_layer = rr_graph.node_layer(node_first);
+        int first_layer = rr_graph.node_layer_low(node_first);
         int first_x = rr_graph.node_xlow(node_first);
         int first_y = rr_graph.node_ylow(node_first);
-        int sec_layer = rr_graph.node_layer(node_second);
+        int sec_layer = rr_graph.node_layer_low(node_second);
         int sec_x = rr_graph.node_xlow(node_second);
         int sec_y = rr_graph.node_ylow(node_second);
 
@@ -1924,7 +1925,7 @@ std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
 
 t_arch_switch_inf create_internal_arch_sw(float delay) {
     t_arch_switch_inf arch_switch_inf;
-    arch_switch_inf.set_type(SwitchType::MUX);
+    arch_switch_inf.set_type(e_switch_type::MUX);
     std::ostringstream stream_obj;
     stream_obj << delay << std::scientific;
     arch_switch_inf.name = (std::string(VPR_INTERNAL_SWITCH_NAME) + "/" + stream_obj.str());
@@ -1934,7 +1935,7 @@ t_arch_switch_inf create_internal_arch_sw(float delay) {
     arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay);
     arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
     arch_switch_inf.mux_trans_size = 0.;
-    arch_switch_inf.buf_size_type = BufferSize::ABSOLUTE;
+    arch_switch_inf.buf_size_type = e_buffer_size::ABSOLUTE;
     arch_switch_inf.buf_size = 0.;
     arch_switch_inf.intra_tile = true;
 
@@ -1986,10 +1987,11 @@ float get_min_cross_layer_delay() {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     float min_delay = std::numeric_limits<float>::max();
 
-    for (const auto& driver_node : rr_graph.nodes()) {
+    for (const RRNodeId driver_node : rr_graph.nodes()) {
         for (size_t edge_id = 0; edge_id < rr_graph.num_edges(driver_node); edge_id++) {
-            const auto& sink_node = rr_graph.edge_sink_node(driver_node, edge_id);
-            if (rr_graph.node_layer(driver_node) != rr_graph.node_layer(sink_node)) {
+            const RRNodeId sink_node = rr_graph.edge_sink_node(driver_node, edge_id);
+
+            if (rr_graph.node_type(sink_node) == e_rr_type::CHANZ) {
                 int i_switch = rr_graph.edge_switch(driver_node, edge_id);
                 float edge_delay = rr_graph.rr_switch_inf(RRSwitchId(i_switch)).Tdel;
                 min_delay = std::min(min_delay, edge_delay);

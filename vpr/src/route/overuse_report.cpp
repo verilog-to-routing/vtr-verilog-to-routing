@@ -17,10 +17,16 @@
  */
 static void generate_node_to_net_lookup(const Netlist<>& net_list,
                                         std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
+
+///@brief Print out information specific to IPIN/OPIN type rr nodes
 static void report_overused_ipin_opin(std::ostream& os,
                                       RRNodeId node_id,
                                       const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
+
+///@brief Print out information specific to CHANX/CHANY type rr nodes
 static void report_overused_chanx_chany(std::ostream& os, RRNodeId node_id);
+
+///@brief Print out information specific to SOURCE/SINK type rr nodes
 static void report_overused_source_sink(std::ostream& os, RRNodeId node_id);
 static void report_congested_nets(const Netlist<>& net_list,
                                   const AtomLookup& atom_lookup,
@@ -112,7 +118,7 @@ void report_overused_nodes(const Netlist<>& net_list,
     size_t inode = 0;
     for (const auto& lookup_pair : over_used_nodes_to_nets_lookup) {
         const RRNodeId node_id = lookup_pair.first;
-        const auto& congested_nets = lookup_pair.second;
+        const std::set<ParentNetId>& congested_nets = lookup_pair.second;
 
         os << "************************************************\n\n"; //Separation line
 
@@ -123,12 +129,13 @@ void report_overused_nodes(const Netlist<>& net_list,
         os << "Capacity = " << rr_graph.node_capacity(node_id) << "\n\n";
 
         /* Report selective info based on the rr node type */
-        auto node_type = rr_graph.node_type(node_id);
+        e_rr_type node_type = rr_graph.node_type(node_id);
         os << "Node type = " << rr_graph.node_type_string(node_id) << '\n';
         bool report_sinks = false;
         int x = rr_graph.node_xlow(node_id);
         int y = rr_graph.node_ylow(node_id);
-        int layer_num = rr_graph.node_layer(node_id);
+        int layer_num = rr_graph.node_layer_low(node_id);
+
         switch (node_type) {
             case e_rr_type::IPIN:
             case e_rr_type::OPIN:
@@ -139,10 +146,13 @@ void report_overused_nodes(const Netlist<>& net_list,
                 x -= g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num})->width;
                 y -= g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num})->width;
                 break;
+
             case e_rr_type::CHANX:
             case e_rr_type::CHANY:
+            case e_rr_type::CHANZ:
                 report_overused_chanx_chany(os, node_id);
                 break;
+
             case e_rr_type::SOURCE:
             case e_rr_type::SINK:
                 report_overused_source_sink(os, node_id);
@@ -219,7 +229,6 @@ static void generate_node_to_net_lookup(const Netlist<>& net_list,
     }
 }
 
-///@brief Print out information specific to IPIN/OPIN type rr nodes
 static void report_overused_ipin_opin(std::ostream& os,
                                       RRNodeId node_id,
                                       const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
@@ -230,7 +239,7 @@ static void report_overused_ipin_opin(std::ostream& os,
     t_physical_tile_loc grid_loc;
     grid_loc.x = rr_graph.node_xlow(node_id);
     grid_loc.y = rr_graph.node_ylow(node_id);
-    grid_loc.layer_num = rr_graph.node_layer(node_id);
+    grid_loc.layer_num = rr_graph.node_layer_low(node_id);
     const t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type(grid_loc);
 
     VTR_ASSERT_MSG(grid_loc.x == rr_graph.node_xhigh(node_id) && grid_loc.y == rr_graph.node_yhigh(node_id),
@@ -241,7 +250,7 @@ static void report_overused_ipin_opin(std::ostream& os,
         os << "On Tile Pin"
            << "\n";
     } else {
-        const char* pb_type_name = get_pb_graph_node_from_pin_physical_num(physical_type, rr_graph.node_ptc_num(node_id)) ->pb_type->name;
+        const char* pb_type_name = get_pb_graph_node_from_pin_physical_num(physical_type, rr_graph.node_ptc_num(node_id))->pb_type->name;
         const t_pb_graph_pin* pb_pin = get_pb_pin_from_pin_physical_num(physical_type, rr_graph.node_ptc_num(node_id));
         os << "Intra-Tile Pin - Port : " << pb_pin->port->name << " - PB Type : " << std::string(pb_type_name) << "\n";
     }
@@ -276,7 +285,6 @@ static void report_overused_ipin_opin(std::ostream& os,
     }
 }
 
-///@brief Print out information specific to CHANX/CHANY type rr nodes
 static void report_overused_chanx_chany(std::ostream& os, RRNodeId node_id) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -290,7 +298,6 @@ static void report_overused_chanx_chany(std::ostream& os, RRNodeId node_id) {
     os << rr_graph.node_coordinate_to_string(node_id) << '\n';
 }
 
-///@brief Print out information specific to SOURCE/SINK type rr nodes
 static void report_overused_source_sink(std::ostream& os, RRNodeId node_id) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -391,11 +398,11 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     const auto& route_ctx = g_vpr_ctx.routing();
     int x = rr_graph.node_xlow(node_id);
     int y = rr_graph.node_ylow(node_id);
-    int layer_num = rr_graph.node_layer(node_id);
-    auto physical_blk = device_ctx.grid.get_physical_type({x, y, layer_num});
+    int layer_num = rr_graph.node_layer_low(node_id);
+    t_physical_tile_type_ptr physical_blk = device_ctx.grid.get_physical_type({x, y, layer_num});
 
     //Determines if direction or side is available for printing
-    auto node_type = rr_graph.node_type(node_id);
+    e_rr_type node_type = rr_graph.node_type(node_id);
 
     //Overuse #
     VTR_LOG("%6d", overuse_index);

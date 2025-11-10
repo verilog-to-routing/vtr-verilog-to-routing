@@ -4,21 +4,25 @@
  *        (ctrl-C from terminal) on POSIX systems. It is only active if
  *        VPR_USE_SIGACTION is defined.
  *
- * If a SIGINT occur the handler sets the 'forced_pause' flag of the VPR
- * context.  If 'forced_pause' is still true when another SIGINT occurs an
- * exception is thrown (typically ending the program).
+ * Behavior:
+ *  - SIGINT  : log, attempt to checkpoint, then exit with INTERRUPTED_EXIT_CODE
+ *  - SIGHUP  : log, attempt to checkpoint, continue running
+ *  - SIGTERM : log, attempt to checkpoint, then exit with INTERRUPTED_EXIT_CODE
  */
-#include "vtr_log.h"
 #include "vtr_time.h"
 
 #include "vpr_signal_handler.h"
-#include "vpr_exit_codes.h"
-#include "vpr_error.h"
 #include "globals.h"
 
 #include "read_place.h"
-#include "route_export.h"
-#include <atomic>
+#include "read_route.h"
+
+// Currenly safe_write uses the POSIX write system call. This could be extended to other platforms in the future.
+#if defined(__unix__)
+#include "unistd.h"
+#endif
+
+#include "string.h"
 
 #ifdef VPR_USE_SIGACTION
 #include <csignal>
@@ -27,7 +31,16 @@
 void vpr_signal_handler(int signal);
 void checkpoint();
 
-std::atomic<int> uncleared_sigint_count(0);
+/**
+ * @brief Writes a message directly to stderr with async-signal-safe write() function.
+ *
+ * Uses write() to avoid signal unsafe std::cerr in the signal handler.
+ *
+ * @param msg Message string to write.
+ */
+static inline void safe_write(const char* msg) {
+    (void)!write(STDERR_FILENO, msg, strlen(msg));
+}
 
 #ifdef VPR_USE_SIGACTION
 
@@ -44,28 +57,14 @@ void vpr_install_signal_handler() {
 
 void vpr_signal_handler(int signal) {
     if (signal == SIGINT) {
-        if (g_vpr_ctx.forced_pause()) {
-            uncleared_sigint_count++; //Previous SIGINT uncleared
-        } else {
-            uncleared_sigint_count.store(1); //Only this SIGINT outstanding
-        }
-
-        if (uncleared_sigint_count == 1) {
-            VTR_LOG("Recieved SIGINT: try again to really exit...\n");
-        } else if (uncleared_sigint_count == 2) {
-            VTR_LOG("Recieved two uncleared SIGINTs: Attempting to checkpoint and exit...\n");
-            checkpoint();
-            std::quick_exit(INTERRUPTED_EXIT_CODE);
-        } else if (uncleared_sigint_count == 3) {
-            //Really exit (e.g. SIGINT while checkpointing)
-            VTR_LOG("Recieved three uncleared SIGINTs: Exiting...\n");
-            std::quick_exit(INTERRUPTED_EXIT_CODE);
-        }
+        safe_write("Received SIGINT: Attempting to checkpoint then exit...\n");
+        checkpoint();
+        std::quick_exit(INTERRUPTED_EXIT_CODE);
     } else if (signal == SIGHUP) {
-        VTR_LOG("Recieved SIGHUP: Attempting to checkpoint...\n");
+        safe_write("Received SIGHUP: Attempting to checkpoint...\n");
         checkpoint();
     } else if (signal == SIGTERM) {
-        VTR_LOG("Recieved SIGTERM: Attempting to checkpoint then exit...\n");
+        safe_write("Received SIGTERM: Attempting to checkpoint then exit...\n");
         checkpoint();
         std::quick_exit(INTERRUPTED_EXIT_CODE);
     }
@@ -88,11 +87,12 @@ void checkpoint() {
     //Dump the current placement and routing state
     vtr::ScopedStartFinishTimer timer("Checkpointing");
 
-    std::string placer_checkpoint_file = "placer_checkpoint.place";
-    VTR_LOG("Attempting to checkpoint current placement to file: %s\n", placer_checkpoint_file.c_str());
-    print_place(nullptr, nullptr, placer_checkpoint_file.c_str(), g_vpr_ctx.placement().block_locs());
+    safe_write("Attempting to checkpoint current placement to file: placer_checkpoint.place\n");
+    print_place(nullptr, nullptr, "placer_checkpoint.place", g_vpr_ctx.placement().block_locs());
 
-    std::string router_checkpoint_file = "router_checkpoint.route";
-    VTR_LOG("Attempting to checkpoint current routing to file: %s\n", router_checkpoint_file.c_str());
-    //print_route(nullptr, router_checkpoint_file.c_str());
+    bool is_flat = g_vpr_ctx.routing().is_flat;
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+
+    safe_write("Attempting to checkpoint current routing to file: router_checkpoint.route\n");
+    print_route(router_net_list, nullptr, "router_checkpoint.route", is_flat);
 }

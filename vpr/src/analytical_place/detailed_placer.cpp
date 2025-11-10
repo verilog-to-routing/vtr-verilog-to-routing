@@ -75,19 +75,6 @@ AnnealerDetailedPlacer::AnnealerDetailedPlacer(const BlkLocRegistry& curr_cluste
         }
     }
 
-    // The solution produced by the AP flow is significantly better than the
-    // initial placement solution produced by the initial placer in the default
-    // flow. Even though the annealer auto-selects its initial temperature based
-    // on the quality of the placement, we found that the initial temperatute was
-    // still too high and it was hurting quality. This scales down the initial
-    // temperature auto-selected by the annealer to prevent this and improve
-    // runtime.
-    // Here we still scale by whatever the user passed in to scale the initial
-    // temperature by, but we also scale it down further. This allows AP to scale
-    // the initial temperature down by default, while still allowing the user
-    // some control.
-    float anneal_auto_init_t_scale = vpr_setup.PlacerOpts.place_auto_init_t_scale * 0.5f;
-
     placer_ = std::make_unique<Placer>((const Netlist<>&)clustered_netlist,
                                        curr_clustered_placement,
                                        vpr_setup.PlacerOpts,
@@ -97,7 +84,7 @@ AnnealerDetailedPlacer::AnnealerDetailedPlacer(const BlkLocRegistry& curr_cluste
                                        netlist_pin_lookup_,
                                        FlatPlacementInfo(),
                                        place_delay_model,
-                                       anneal_auto_init_t_scale,
+                                       vpr_setup.PlacerOpts.place_auto_init_t_scale,
                                        g_vpr_ctx.placement().cube_bb,
                                        false /*is_flat*/,
                                        false /*quiet*/);

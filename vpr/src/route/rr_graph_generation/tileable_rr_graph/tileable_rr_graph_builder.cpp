@@ -15,7 +15,7 @@
 #include "vpr_error.h"
 #include "vpr_utils.h"
 
-#include "rr_graph.h"
+#include "rr_graph_switch_utils.h"
 #include "check_rr_graph.h"
 #include "get_parallel_segs.h"
 #include "device_grid_annotation.h"
@@ -80,9 +80,9 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const int& wire_to_arch_ipin_switch,
                                     const float R_minW_nmos,
                                     const float R_minW_pmos,
-                                    const enum e_base_cost_type& base_cost_type,
+                                    const e_base_cost_type& base_cost_type,
                                     const std::vector<t_direct_inf>& directs,
-                                    int* wire_to_rr_ipin_switch,
+                                    RRSwitchId& wire_to_rr_ipin_switch,
                                     const bool& shrink_boundary,
                                     const bool& perimeter_cb,
                                     const bool& through_channel,
@@ -156,6 +156,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     t_unified_to_parallel_seg_index segment_index_map;
     std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, e_parallel_axis::X_AXIS, true);
     std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, e_parallel_axis::Y_AXIS, true);
+    std::vector<t_segment_inf> segment_inf_z = get_parallel_segs(segment_inf, segment_index_map, e_parallel_axis::Z_AXIS, true);
 
     // Get vib grid
     const auto& vib_grid = device_ctx.vib_grid;
@@ -261,11 +262,11 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Build direction connection lists
     // TODO: use tile direct builder
     // Create data structure of direct-connections
-    auto clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
+    std::vector<t_clb_to_clb_directs> clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
     std::vector<t_clb_to_clb_directs> clb2clb_directs;
     for (size_t idirect = 0; idirect < directs.size(); ++idirect) {
-        /* Sanity checks on rr switch id */
-        VTR_ASSERT(true == device_ctx.rr_graph.valid_switch(RRSwitchId(clb_to_clb_directs[idirect].switch_index)));
+        // Sanity checks on rr switch id
+        VTR_ASSERT(device_ctx.rr_graph.valid_switch(RRSwitchId(clb_to_clb_directs[idirect].switch_index)));
         clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
     }
 
@@ -290,12 +291,11 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Allocate external data structures
     //  a. cost_index
     //  b. RC tree
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y,
-                       *wire_to_rr_ipin_switch, base_cost_type);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, wire_to_rr_ipin_switch, base_cost_type);
 
     // Sanitizer for the rr_graph, check connectivities of rr_nodes
     // Essential check for rr_graph, build look-up and
-    if (false == device_ctx.rr_graph_builder.validate()) {
+    if (!device_ctx.rr_graph_builder.validate()) {
         // Error out if built-in validator of rr_graph fails
         vpr_throw(VPR_ERROR_ROUTE,
                   __FILE__,

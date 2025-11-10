@@ -30,25 +30,25 @@
  *        channel segments in the FPGA.
  */
 static void load_channel_occupancies(const Netlist<>& net_list,
-                                     vtr::Matrix<int>& chanx_occ,
-                                     vtr::Matrix<int>& chany_occ);
+                                     vtr::NdMatrix<int, 3>& chanx_occ,
+                                     vtr::NdMatrix<int, 3>& chany_occ);
 
 /**
  * @brief Writes channel occupancy data to a file.
  *
  * Each row contains:
- *   - (x, y) coordinate
+ *   - (layer, x, y) coordinate
  *   - Occupancy count
  *   - Occupancy percentage (occupancy / capacity)
  *   - Channel capacity
  *
  * @param filename      Output file path.
  * @param occupancy     Matrix of occupancy counts.
- * @param capacity_list List of channel capacities (per y for chanx, per x for chany).
+ * @param capacity      Channel capacities.
  */
-static void write_channel_occupancy_table(const std::string_view filename,
-                                          const vtr::Matrix<int>& occupancy,
-                                          const std::vector<int>& capacity_list);
+static void write_channel_occupancy_table(std::string_view filename,
+                                          const vtr::NdMatrix<int, 3>& occupancy,
+                                          const vtr::NdMatrix<int, 3>& capacity);
 
 /**
  * @brief Figures out maximum, minimum and average number of bends
@@ -56,31 +56,31 @@ static void write_channel_occupancy_table(const std::string_view filename,
  */
 static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
-///@brief Determines how many tracks are used in each channel.
-static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/);
+///@brief Determines how many tracks are used in each channel and prints out statistics
+static void get_channel_occupancy_stats(const Netlist<>& net_list);
 
 /************************* Subroutine definitions ****************************/
 
 void routing_stats(const Netlist<>& net_list,
                    bool full_stats,
-                   enum e_route_type route_type,
+                   e_route_type route_type,
                    std::vector<t_segment_inf>& segment_inf,
                    float R_minW_nmos,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
-                   enum e_directionality directionality,
-                   int wire_to_ipin_switch,
+                   e_directionality directionality,
+                   RRSwitchId wire_to_ipin_switch,
                    bool is_flat) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     int num_rr_switch = rr_graph.num_rr_switches();
 
     length_and_bends_stats(net_list, is_flat);
     print_channel_stats(is_flat);
-    get_channel_occupancy_stats(net_list, is_flat);
+    get_channel_occupancy_stats(net_list);
 
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");
 
@@ -124,41 +124,6 @@ void routing_stats(const Netlist<>& net_list,
     if (full_stats) {
         print_wirelen_prob_dist(is_flat);
     }
-}
-
-std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width() {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    auto chanx_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
-                                               device_ctx.grid.width(),
-                                               device_ctx.grid.height()}},
-                                             0);
-
-    auto chany_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
-                                               device_ctx.grid.width(),
-                                               device_ctx.grid.height()}},
-                                             0);
-
-    for (RRNodeId node_id : rr_graph.nodes()) {
-        e_rr_type rr_type = rr_graph.node_type(node_id);
-
-        if (rr_type == e_rr_type::CHANX) {
-            int y = rr_graph.node_ylow(node_id);
-            int layer = rr_graph.node_layer(node_id);
-            for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
-                chanx_width[layer][x][y] += rr_graph.node_capacity(node_id);
-            }
-        } else if (rr_type == e_rr_type::CHANY) {
-            int x = rr_graph.node_xlow(node_id);
-            int layer = rr_graph.node_layer(node_id);
-            for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
-                chany_width[layer][x][y] += rr_graph.node_capacity(node_id);
-            }
-        }
-    }
-
-    return {chanx_width, chany_width};
 }
 
 void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
@@ -220,69 +185,99 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     VTR_LOG("Total number of nets absorbed: %d\n", num_absorbed_nets);
 }
 
-static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
+static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_occ = vtr::Matrix<int>({{
-                                          device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
-                                          device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
-                                      }},
-                                      0);
+    auto chanx_occ = vtr::NdMatrix<int, 3>({{
+                                               device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width(),     // Length of each x channel
+                                               device_ctx.grid.height() - 1 // Total number of x channels. There is no CHANX above the top row.
+                                           }},
+                                           0);
 
-    auto chany_occ = vtr::Matrix<int>({{
-                                          device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
-                                          device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
-                                      }},
-                                      0);
+    auto chany_occ = vtr::NdMatrix<int, 3>({{
+                                               device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width() - 1, // Total number of y channels. There is no CHANY to the right of the most right column.
+                                               device_ctx.grid.height()     // Length of each y channel.
+                                           }},
+                                           0);
 
     load_channel_occupancies(net_list, chanx_occ, chany_occ);
 
-    write_channel_occupancy_table("chanx_occupancy.txt", chanx_occ, device_ctx.chan_width.x_list);
-    write_channel_occupancy_table("chany_occupancy.txt", chany_occ, device_ctx.chan_width.y_list);
+    write_channel_occupancy_table("chanx_occupancy.txt", chanx_occ, device_ctx.rr_chanx_segment_width);
+    write_channel_occupancy_table("chany_occupancy.txt", chany_occ, device_ctx.rr_chany_segment_width);
+
+    int total_cap_x = 0;
+    int total_used_x = 0;
+    int total_cap_y = 0;
+    int total_used_y = 0;
 
     VTR_LOG("\n");
-    VTR_LOG("X - Directed channels:   j max occ ave occ capacity\n");
-    VTR_LOG("                      ---- ------- ------- --------\n");
+    VTR_LOG("X - Directed channels: layer   y   max occ   ave occ   ave cap\n");
+    VTR_LOG("                        ----- ---- -------- -------- --------\n");
 
-    int total_x = 0;
-    for (size_t j = 0; j < device_ctx.grid.height() - 1; ++j) {
-        total_x += device_ctx.chan_width.x_list[j];
-        float ave_occ = 0.0;
-        int max_occ = -1;
+    for (size_t layer = 0; layer < device_ctx.grid.get_num_layers(); ++layer) {
+        for (size_t y = 0; y < device_ctx.grid.height() - 1; y++) {
+            float ave_occ = 0.0f;
+            float ave_cap = 0.0f;
+            int max_occ = -1;
 
-        for (size_t i = 1; i < device_ctx.grid.width(); ++i) {
-            max_occ = std::max(chanx_occ[i][j], max_occ);
-            ave_occ += chanx_occ[i][j];
+            // It is assumed that there is no CHANX at x=0
+            for (size_t x = 1; x < device_ctx.grid.width(); x++) {
+                max_occ = std::max(chanx_occ[layer][x][y], max_occ);
+                ave_occ += chanx_occ[layer][x][y];
+                ave_cap += device_ctx.rr_chanx_segment_width[layer][x][y];
+
+                total_cap_x += chanx_occ[layer][x][y];
+                total_used_x += chanx_occ[layer][x][y];
+            }
+            ave_occ /= device_ctx.grid.width() - 2;
+            ave_cap /= device_ctx.grid.width() - 2;
+            VTR_LOG("                        %5zu %4zu %8d %8.3f %8.0f\n",
+                    layer, y, max_occ, ave_occ, ave_cap);
         }
-        ave_occ /= device_ctx.grid.width();
-        VTR_LOG("                      %4d %7d %7.3f %8d\n", j, max_occ, ave_occ, device_ctx.chan_width.x_list[j]);
     }
 
-    VTR_LOG("Y - Directed channels:   i max occ ave occ capacity\n");
-    VTR_LOG("                      ---- ------- ------- --------\n");
+    VTR_LOG("Y - Directed channels: layer   x   max occ   ave occ   ave cap\n");
+    VTR_LOG("                        ----- ---- -------- -------- --------\n");
 
-    int total_y = 0;
-    for (size_t i = 0; i < device_ctx.grid.width() - 1; ++i) {
-        total_y += device_ctx.chan_width.y_list[i];
-        float ave_occ = 0.0;
-        int max_occ = -1;
+    for (size_t layer = 0; layer < device_ctx.grid.get_num_layers(); ++layer) {
+        for (size_t x = 0; x < device_ctx.grid.width() - 1; x++) {
+            float ave_occ = 0.0;
+            float ave_cap = 0.0;
+            int max_occ = -1;
 
-        for (size_t j = 1; j < device_ctx.grid.height(); ++j) {
-            max_occ = std::max(chany_occ[i][j], max_occ);
-            ave_occ += chany_occ[i][j];
+            // It is assumed that there is no CHANY at y=0
+            for (size_t y = 1; y < device_ctx.grid.height(); y++) {
+                max_occ = std::max(chany_occ[layer][x][y], max_occ);
+                ave_occ += chany_occ[layer][x][y];
+                ave_cap += device_ctx.rr_chany_segment_width[layer][x][y];
+
+                total_cap_y += chany_occ[layer][x][y];
+                total_used_y += chany_occ[layer][x][y];
+            }
+            ave_occ /= device_ctx.grid.height() - 2;
+            ave_cap /= device_ctx.grid.height() - 2;
+            VTR_LOG("                        %5zu %4zu %8d %8.3f %8.0f\n",
+                    layer, x, max_occ, ave_occ, ave_cap);
         }
-        ave_occ /= device_ctx.grid.height();
-        VTR_LOG("                      %4d %7d %7.3f %8d\n", i, max_occ, ave_occ, device_ctx.chan_width.y_list[i]);
     }
 
     VTR_LOG("\n");
-    VTR_LOG("Total tracks in x-direction: %d, in y-direction: %d\n", total_x, total_y);
+
+    VTR_LOG("Total existing wires segments: CHANX %d, CHANY %d, ALL %d\n",
+            total_cap_x, total_cap_y, total_cap_x + total_cap_y);
+    VTR_LOG("Total used wires segments:     CHANX %d, CHANY %d, ALL %d\n",
+            total_used_x, total_used_y, total_used_x + total_used_y);
+    VTR_LOG("Usage percentage:               CHANX %d%%, CHANY %d%%, ALL %d%%\n",
+            (float)total_used_x / total_cap_x, (float)total_used_y / total_cap_y, (float)(total_used_x + total_used_y) / (total_cap_x + total_cap_y));
+
     VTR_LOG("\n");
 }
 
-static void write_channel_occupancy_table(const std::string_view filename,
-                                          const vtr::Matrix<int>& occupancy,
-                                          const std::vector<int>& capacity_list) {
+static void write_channel_occupancy_table(std::string_view filename,
+                                          const vtr::NdMatrix<int, 3>& occupancy,
+                                          const vtr::NdMatrix<int, 3>& capacity) {
     constexpr int w_coord = 6;
     constexpr int w_value = 12;
     constexpr int w_percent = 12;
@@ -293,25 +288,29 @@ static void write_channel_occupancy_table(const std::string_view filename,
         return;
     }
 
-    file << std::setw(w_coord) << "x"
+    file << std::setw(w_coord) << "layer"
+         << std::setw(w_coord) << "x"
          << std::setw(w_coord) << "y"
          << std::setw(w_value) << "occupancy"
          << std::setw(w_percent) << "%"
          << std::setw(w_value) << "capacity"
          << "\n";
 
-    for (size_t y = 0; y < occupancy.dim_size(1); ++y) {
-        int capacity = capacity_list[y];
-        for (size_t x = 0; x < occupancy.dim_size(0); ++x) {
-            int occ = occupancy[x][y];
-            float percent = capacity > 0 ? static_cast<float>(occ) / capacity * 100.0f : 0.0f;
+    for (size_t layer = 0; layer < occupancy.dim_size(0); ++layer) {
+        for (size_t x = 0; x < occupancy.dim_size(1); ++x) {
+            for (size_t y = 0; y < occupancy.dim_size(2); ++y) {
+                int occ = occupancy[layer][x][y];
+                int cap = capacity[layer][x][y];
+                float percent = (cap > 0) ? static_cast<float>(occ) / cap * 100.0f : 0.0f;
 
-            file << std::setw(w_coord) << x
-                 << std::setw(w_coord) << y
-                 << std::setw(w_value) << occ
-                 << std::setw(w_percent) << std::fixed << std::setprecision(3) << percent
-                 << std::setw(w_value) << capacity
-                 << "\n";
+                file << std::setw(w_coord) << layer
+                     << std::setw(w_coord) << x
+                     << std::setw(w_coord) << y
+                     << std::setw(w_value) << occ
+                     << std::setw(w_percent) << std::fixed << std::setprecision(3) << percent
+                     << std::setw(w_value) << cap
+                     << "\n";
+            }
         }
     }
 
@@ -319,25 +318,27 @@ static void write_channel_occupancy_table(const std::string_view filename,
 }
 
 static void load_channel_occupancies(const Netlist<>& net_list,
-                                     vtr::Matrix<int>& chanx_occ,
-                                     vtr::Matrix<int>& chany_occ) {
-    const auto& device_ctx = g_vpr_ctx.device();
+                                     vtr::NdMatrix<int, 3>& chanx_occ,
+                                     vtr::NdMatrix<int, 3>& chany_occ) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    const auto& route_ctx = g_vpr_ctx.routing();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
-    /* First set the occupancy of everything to zero. */
+    // First set the occupancy of everything to zero.
     chanx_occ.fill(0);
     chany_occ.fill(0);
 
-    /* Now go through each net and count the tracks and pins used everywhere */
-    for (auto net_id : net_list.nets()) {
-        /* Skip global and empty nets. */
-        if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0)
+    // Now go through each net and count the tracks and pins used everywhere
+    for (ParentNetId net_id : net_list.nets()) {
+        // Skip global and empty nets.
+        if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) {
             continue;
+        }
 
-        auto& tree = route_ctx.route_trees[net_id];
-        if (!tree)
+        const vtr::optional<RouteTree>& tree = route_ctx.route_trees[net_id];
+        if (!tree) {
             continue;
+        }
 
         for (const RouteTreeNode& rt_node : tree.value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
@@ -345,12 +346,14 @@ static void load_channel_occupancies(const Netlist<>& net_list,
 
             if (rr_type == e_rr_type::CHANX) {
                 int j = rr_graph.node_ylow(inode);
+                int layer = rr_graph.node_layer_low(inode);
                 for (int i = rr_graph.node_xlow(inode); i <= rr_graph.node_xhigh(inode); i++)
-                    chanx_occ[i][j]++;
+                    chanx_occ[layer][i][j]++;
             } else if (rr_type == e_rr_type::CHANY) {
                 int i = rr_graph.node_xlow(inode);
+                int layer = rr_graph.node_layer_low(inode);
                 for (int j = rr_graph.node_ylow(inode); j <= rr_graph.node_yhigh(inode); j++)
-                    chany_occ[i][j]++;
+                    chany_occ[layer][i][j]++;
             }
         }
     }

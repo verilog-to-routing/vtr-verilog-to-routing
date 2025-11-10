@@ -10,9 +10,7 @@
 #ifndef NO_GRAPHICS
 
 #include <cstdio>
-#include <cfloat>
 #include <cstring>
-#include <cmath>
 
 #include "draw_types.h"
 #include "netlist_fwd.h"
@@ -24,10 +22,18 @@
 #include "ezgl/point.hpp"
 #include "ezgl/graphics.hpp"
 
-/* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
- * while empty ones are lighter colours and have a dashed border. *
- * Blocks are drawn in layer order (so that semi-transparent blocks/grids render well)*/
-void drawplace(ezgl::renderer* g);
+/**
+ * @brief Draws all placed blocks on the device grid across visible layers.
+ *
+ * Occupied blocks are darker colours while empty ones are lighter colours and have a dashed border.
+ * Blocks are drawn in layer order (so that semi-transparent blocks/grids render well)
+ */
+void draw_place(ezgl::renderer* g);
+
+/** This function draws the analytical placement from the PartialPlacement object, it
+ *  also draws the architecture grid and the blocks from device_ctx.
+ */
+void draw_analytical_place(ezgl::renderer* g);
 
 /** This routine draws the nets on the placement.  The nets have not
  * yet been routed, so we just draw a chain showing a possible path
@@ -69,11 +75,6 @@ int get_timing_path_node_layer_num(tatum::NodeId node);
  * @brief Returns true if both the current_node and prev_node are on the same layer and it is visible,
  *        or they're on different layers that are both visible and cross-layer connections are visible.
  *        Otherwise returns false.
- *
- *  @param current_node
- *  @param prev_node
- *
- *  @return
  */
 bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node);
 

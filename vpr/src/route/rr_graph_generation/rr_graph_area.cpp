@@ -24,17 +24,17 @@ static const e_trans_area_eq trans_area_eq = AREA_IMPROVED_NMOS_ONLY;
 
 /************************ Subroutines local to this module *******************/
 
-static void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit);
+static void count_bidir_routing_transistors(int num_switch, RRSwitchId wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit);
 
 static void count_unidir_routing_transistors(std::vector<t_segment_inf>& segment_inf,
-                                             int wire_to_ipin_switch,
+                                             RRSwitchId wire_to_ipin_switch,
                                              float R_minW_nmos,
                                              float R_minW_pmos,
                                              const float trans_sram_bit,
                                              bool is_flat);
 
 static float get_cblock_trans(vtr::vector<RRNodeId, int>& num_inputs_to_cblock,
-                              int wire_to_ipin_switch,
+                              RRSwitchId wire_to_ipin_switch,
                               int max_inputs_to_cblock,
                               float trans_sram_bit);
 
@@ -54,7 +54,7 @@ static float trans_per_R(float Rtrans, float R_minW_trans);
 
 void count_routing_transistors(enum e_directionality directionality,
                                int num_switch,
-                               int wire_to_ipin_switch,
+                               RRSwitchId wire_to_ipin_switch,
                                std::vector<t_segment_inf>& segment_inf,
                                float R_minW_nmos,
                                float R_minW_pmos,
@@ -87,7 +87,7 @@ void count_routing_transistors(enum e_directionality directionality,
     }
 }
 
-void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit) {
+static void count_bidir_routing_transistors(int num_switch, RRSwitchId wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit) {
     /* Tri-state buffers are designed as a buffer followed by a pass transistor. *
      * I make Rbuffer = Rpass_transitor = 1/2 Rtri-state_buffer.                 *
      * I make the pull-up and pull-down sides of the buffer the same strength -- *
@@ -300,12 +300,12 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
     VTR_LOG("\n");
 }
 
-void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*/,
-                                      int wire_to_ipin_switch,
-                                      float R_minW_nmos,
-                                      float R_minW_pmos,
-                                      const float trans_sram_bit,
-                                      bool is_flat) {
+static void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*/,
+                                             RRSwitchId wire_to_ipin_switch,
+                                             float R_minW_nmos,
+                                             float R_minW_pmos,
+                                             const float trans_sram_bit,
+                                             bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -385,11 +385,11 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                         case e_rr_type::CHANZ:
                             if (!chan_node_switch_done[size_t(to_node)]) {
                                 int switch_index = rr_graph.edge_switch(RRNodeId(from_node), iedge);
-                                SwitchType switch_type = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type();
+                                e_switch_type switch_type = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type();
 
                                 int fan_in = rr_graph.node_fan_in(to_node);
 
-                                if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::MUX) {
+                                if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == e_switch_type::MUX) {
                                     /* Each wire segment begins with a multipexer followed by a driver for unidirectional */
                                     /* Each multiplexer contains all the fan-in to that routing node */
                                     /* Add up area of multiplexer */
@@ -400,9 +400,9 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                                     /* The buffer size should already have been auto-sized (if required) when
                                      * the rr switches were created from the arch switches */
                                     ntrans += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buf_size;
-                                } else if (switch_type == SwitchType::SHORT) {
+                                } else if (switch_type == e_switch_type::SHORT) {
                                     ntrans += 0.; //Electrical shorts contribute no transistor area
-                                } else if (switch_type == SwitchType::BUFFER) {
+                                } else if (switch_type == e_switch_type::BUFFER) {
                                     if (fan_in != 1) {
                                         std::string msg = vtr::string_fmt(
                                             "Uni-directional RR node driven by non-configurable "
@@ -484,7 +484,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 }
 
 static float get_cblock_trans(vtr::vector<RRNodeId, int>& num_inputs_to_cblock,
-                              int wire_to_ipin_switch,
+                              RRSwitchId wire_to_ipin_switch,
                               int max_inputs_to_cblock,
                               float trans_sram_bit) {
     /* Computes the transistors in the input connection block multiplexers and   *
@@ -508,8 +508,8 @@ static float get_cblock_trans(vtr::vector<RRNodeId, int>& num_inputs_to_cblock,
 
     for (int i = 1; i <= max_inputs_to_cblock; i++) {
         trans_per_cblock[i] = trans_per_mux(i, trans_sram_bit,
-                                            rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).mux_trans_size);
-        trans_per_cblock[i] += rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).buf_size;
+                                            rr_graph.rr_switch_inf(wire_to_ipin_switch).mux_trans_size);
+        trans_per_cblock[i] += rr_graph.rr_switch_inf(wire_to_ipin_switch).buf_size;
     }
 
     trans_count = 0.;
@@ -538,7 +538,7 @@ alloc_and_load_unsharable_switch_trans(int num_switch, float trans_sram_bit, flo
     unsharable_switch_trans = new float[num_switch];
 
     for (i = 0; i < num_switch; i++) {
-        if (rr_graph.rr_switch_inf(RRSwitchId(i)).type() == SwitchType::SHORT) {
+        if (rr_graph.rr_switch_inf(RRSwitchId(i)).type() == e_switch_type::SHORT) {
             //Electrical shorts do not use any transistors
             unsharable_switch_trans[i] = 0.;
         } else {

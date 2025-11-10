@@ -20,7 +20,7 @@ class LinearModel {
         return (y_value - y_intercept_) / slope_;
     }
 
-    float get_slope() {
+    float get_slope() const {
         return slope_;
     }
 
@@ -37,12 +37,12 @@ class LinearModel {
 template<typename T>
 float variance(std::vector<float> values, float avg);
 
-float covariance(std::vector<size_t> x_values, std::vector<float> y_values, float x_avg, float y_avg);
+float covariance(const std::vector<size_t>& x_values, const std::vector<float>& y_values, float x_avg, float y_avg);
 LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<float> y_values);
-LinearModel fit_model(std::vector<size_t> iterations, std::vector<size_t> overuse, float history_factor);
+LinearModel fit_model(const std::vector<size_t>& iterations, const std::vector<size_t>& overuse, float history_factor);
 
 template<typename T>
-float variance(std::vector<T> values, float avg) {
+float variance(const std::vector<T>& values, float avg) {
     float var = 0;
     for (float val : values) {
         var += (val - avg) * (val - avg);
@@ -51,7 +51,7 @@ float variance(std::vector<T> values, float avg) {
     return var;
 }
 
-float covariance(std::vector<size_t> x_values, std::vector<float> y_values, float x_avg, float y_avg) {
+float covariance(const std::vector<size_t>& x_values, const std::vector<float>& y_values, float x_avg, float y_avg) {
     VTR_ASSERT(x_values.size() == y_values.size());
 
     float cov = 0;
@@ -80,7 +80,7 @@ LinearModel simple_linear_regression(std::vector<size_t> x_values, std::vector<f
     return LinearModel(beta, alpha);
 }
 
-LinearModel fit_model(std::vector<size_t> iterations, std::vector<size_t> overuse, float history_factor) {
+LinearModel fit_model(const std::vector<size_t>& iterations, const std::vector<size_t>& overuse, float history_factor) {
     //For pathfinder-based routing overuse tends to follow a negative-exponential:
     //
     //    ^

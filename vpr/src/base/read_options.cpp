@@ -6,6 +6,7 @@
 #include "argparse.hpp"
 
 #include "ap_flow_enums.h"
+#include "vpr_types.h"
 #include "vtr_log.h"
 #include "vtr_path.h"
 #include "vtr_util.h"
@@ -687,6 +688,44 @@ struct ParsePlaceAgentSpace {
 
     std::vector<std::string> default_choices() {
         return {"move_type", "move_block_type"};
+    }
+};
+
+struct ParsePlaceInitTEstimator {
+    ConvertedValue<e_anneal_init_t_estimator> from_str(const std::string& str) {
+        ConvertedValue<e_anneal_init_t_estimator> conv_value;
+        if (str == "cost_variance")
+            conv_value.set_value(e_anneal_init_t_estimator::COST_VARIANCE);
+        else if (str == "equilibrium")
+            conv_value.set_value(e_anneal_init_t_estimator::EQUILIBRIUM);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_anneal_init_t_estimator (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_anneal_init_t_estimator val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_anneal_init_t_estimator::COST_VARIANCE:
+                conv_value.set_value("cost_variance");
+                break;
+            case e_anneal_init_t_estimator::EQUILIBRIUM:
+                conv_value.set_value("equilibrium");
+                break;
+            default: {
+                std::stringstream msg;
+                msg << "Unknown e_anneal_init_t_estimator type.";
+                conv_value.set_error(msg.str());
+            }
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"cost_variance", "equilibrium"};
     }
 };
 
@@ -2273,6 +2312,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<e_anneal_init_t_estimator, ParsePlaceInitTEstimator>(args.place_init_t_estimator, "--anneal_auto_init_t_estimator")
+        .help(
+            "Controls which estimation method is used when selecting the starting temperature "
+            "for the automatic annealing schedule.\n"
+            "\n"
+            "The options for estimators are:\n"
+            "\tcost_variance: Estimates the initial temperature using the variance "
+            "of cost after a set of trial swaps.\n"
+            "\tequilibrium: Estimates the initial temperature by trying to "
+            "predict the equilibrium temperature for the initial placement "
+            "(i.e. the temperature that would result in no change in cost).")
+        .default_value("equilibrium")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.PlaceInitT, "--init_t")
         .help("Initial temperature for manual annealing schedule")
         .default_value("100.0")
@@ -2793,12 +2846,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     route_grp.add_argument<int>(args.route_verbosity, "--route_verbosity")
         .help("Controls the verbosity of routing's output. Higher values produce more output (useful for debugging routing problems)")
-        .default_value("1")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-    route_grp.add_argument(args.custom_3d_sb_fanin_fanout, "--custom_3d_sb_fanin_fanout")
-        .help(
-            "Specifies the number of tracks that can drive a 3D switch block connection"
-            "and the number of tracks that can be driven by a 3D switch block connection")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

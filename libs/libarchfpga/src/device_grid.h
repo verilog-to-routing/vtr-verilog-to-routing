@@ -26,8 +26,16 @@ struct t_grid_tile {
 class DeviceGrid {
   public:
     DeviceGrid() = default;
-    DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid);
-    DeviceGrid(std::string grid_name, vtr::NdMatrix<t_grid_tile, 3> grid, std::vector<t_logical_block_type_ptr> limiting_res);
+    DeviceGrid(std::string_view grid_name,
+               vtr::NdMatrix<t_grid_tile, 3> grid,
+               std::vector<std::vector<int>>&& horizontal_interposer_cuts,
+               std::vector<std::vector<int>>&& vertical_interposer_cuts);
+
+    DeviceGrid(std::string_view grid_name,
+               vtr::NdMatrix<t_grid_tile, 3> grid,
+               std::vector<t_logical_block_type_ptr> limiting_res,
+               std::vector<std::vector<int>>&& horizontal_interposer_cuts,
+               std::vector<std::vector<int>>&& vertical_interposer_cuts);
 
     const std::string& name() const { return name_; }
 
@@ -63,7 +71,7 @@ class DeviceGrid {
      * @brief Returns the block types which limits the device size (may be empty if
      *        resource limits were not considered when selecting the device).
      */
-    std::vector<t_logical_block_type_ptr> limiting_resources() const { return limiting_resources_; }
+    const std::vector<t_logical_block_type_ptr>& limiting_resources() const { return limiting_resources_; }
 
     ///@brief Return the t_physical_tile_type_ptr at the specified location
     inline t_physical_tile_type_ptr get_physical_type(const t_physical_tile_loc& tile_loc) const {
@@ -189,15 +197,31 @@ class DeviceGrid {
         return &grid_.get(n);
     }
 
+    /// Returns the list of horizontal interposer cut locations for each layer,
+    /// i.e. y value of the tile row just below each cut
+    /// Accessed as [layer][cut_idx]
+    inline const std::vector<std::vector<int>>& get_horizontal_interposer_cuts() const {
+        return horizontal_interposer_cuts_;
+    }
+
+    /// Returns the list of vertical interposer cut locations for each layer,
+    /// i.e. x value of the tile column just to the left each cut
+    /// Accessed as [layer][cut_idx]
+    inline const std::vector<std::vector<int>>& get_vertical_interposer_cuts() const {
+        return vertical_interposer_cuts_;
+    }
+
   private:
-    ///@brief count_instances() counts the number of each tile type on each layer and store it in instance_counts_. It is called in the constructor.
+    /// @brief Counts the number of each tile type on each layer and store it in instance_counts_.
+    /// It is called in the constructor.
     void count_instances();
 
     std::string name_;
 
     /**
      * @brief grid_ is a 3D matrix that represents the grid of the FPGA chip.
-     * @note The first dimension is the layer number (grid_[0] corresponds to the bottom layer), the second dimension is the x coordinate, and the third dimension is the y coordinate.
+     * @note The first dimension is the layer number (grid_[0] corresponds to the bottom layer),
+     *       the second dimension is the x coordinate, and the third dimension is the y coordinate.
      * @note Note that vtr::Matrix operator[] returns and intermediate type
      * @note which can be used for indexing in the second dimension, allowing
      * @note traditional 2-d indexing to be used
@@ -208,4 +232,13 @@ class DeviceGrid {
     std::vector<std::map<t_physical_tile_type_ptr, size_t>> instance_counts_; /* [layer_num][physical_tile_type_ptr] */
 
     std::vector<t_logical_block_type_ptr> limiting_resources_;
+
+    /// Horizontal interposer cut locations in each layer,
+    /// i.e. y value of the tile row just below each cut
+    /// Accessed as [layer][cut_idx]
+    std::vector<std::vector<int>> horizontal_interposer_cuts_;
+    /// Vertical interposer cut location in each layer,
+    /// i.e. x value of the tile column just to the left each cut
+    /// Accessed as [layer][cut_idx]
+    std::vector<std::vector<int>> vertical_interposer_cuts_;
 };

@@ -59,6 +59,9 @@
 
 #include "setup_grid.h"
 #include "stats.h"
+#ifndef NO_GRAPHICS
+#include "draw_global.h"
+#endif
 
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
@@ -489,7 +492,7 @@ FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
         if (cluster_legalizer.is_mol_clustered(molecule_id))
             continue;
 
-        // Get 8-neighbouring tile locations of the current molecule in the same layer and same type.
+        // Get 8-neighbouring tile locations of the current molecule in the same layer.
         std::vector<t_physical_tile_loc> neighbor_tile_locs;
         neighbor_tile_locs.reserve(8);
         auto [layers, width, height] = device_grid_.dim_sizes();
@@ -498,8 +501,6 @@ FlatRecon::neighbor_clustering(ClusterLegalizer& cluster_legalizer,
                 if (dx == 0 && dy == 0) continue;
                 int neighbor_x = loc.x + dx, neighbor_y = loc.y + dy;
                 if (neighbor_x < 0 || neighbor_x >= (int)width || neighbor_y < 0 || neighbor_y >= (int)height)
-                    continue;
-                if (device_grid_.get_physical_type(loc) != device_grid_.get_physical_type({neighbor_x, neighbor_y, loc.layer_num}))
                     continue;
                 neighbor_tile_locs.push_back({neighbor_x, neighbor_y, loc.layer_num});
             }
@@ -1003,6 +1004,7 @@ void FlatRecon::legalize(const PartialPlacement& p_placement) {
 
     // Perform the initial placement on created clusters.
     place_clusters(p_placement);
+    update_drawing_data_structures();
 }
 
 void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
@@ -1219,6 +1221,7 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     //       made part of the placement and verify placement should check for
     //       it.
     post_place_sync();
+    update_drawing_data_structures();
 }
 
 void APPack::legalize(const PartialPlacement& p_placement) {
@@ -1304,4 +1307,14 @@ void APPack::legalize(const PartialPlacement& p_placement) {
 
     // Synchronize the pins in the clusters after placement.
     post_place_sync();
+    update_drawing_data_structures();
+}
+
+void FullLegalizer::update_drawing_data_structures() {
+#ifndef NO_GRAPHICS
+    // update graphic resources incase of clustering changes
+    if (get_draw_state_vars()) {
+        get_draw_state_vars()->refresh_graphic_resources_after_cluster_change();
+    }
+#endif
 }

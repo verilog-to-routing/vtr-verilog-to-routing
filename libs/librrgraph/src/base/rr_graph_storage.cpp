@@ -1,11 +1,12 @@
 #include <climits>
-#include "arch_types.h"
 #include "rr_graph_storage.h"
 #include "physical_types.h"
+#include "rr_graph_fwd.h"
 #include "vtr_error.h"
 #include "librrgraph_types.h"
 
 #include <algorithm>
+#include <cstddef>
 
 void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_src_node_.reserve(num_edges);
@@ -55,289 +56,6 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
             new_edge.remapped);
     }
 }
-
-/* edge_swapper / edge_sort_iterator / edge_compare_src_node_and_configurable_first
- * are used to sort the edge data arrays
- * edge_src_node_ / edge_dest_node_ / edge_switch_.
- *
- * edge_sort_iterator is a random access iterator for the edge data arrays.
- *
- * edge_swapper is a reference for the src/dest/switch tuple, and can convert
- * to and from t_rr_edge_info, the value_type for edge_sort_iterator.
- *
- * edge_compare_src_node_and_configurable_first is a comparision operator
- * that first partitions the edge data by source rr node, and then by
- * configurable switches first.  Sorting by this comparision operator means that
- * the edge data is directly usable for each node by simply slicing the arrays.
- *
- * */
-struct edge_swapper {
-    edge_swapper(t_rr_graph_storage* storage, size_t idx)
-        : storage_(storage)
-        , idx_(idx) {}
-    t_rr_graph_storage* storage_;
-    size_t idx_;
-
-    edge_swapper(const edge_swapper&) = delete;
-    edge_swapper& operator=(const edge_swapper& other) {
-        VTR_ASSERT(idx_ < storage_->edge_src_node_.size());
-        VTR_ASSERT(other.idx_ < storage_->edge_src_node_.size());
-
-        RREdgeId edge(idx_);
-        RREdgeId other_edge(other.idx_);
-        storage_->edge_src_node_[edge] = storage_->edge_src_node_[other_edge];
-        storage_->edge_dest_node_[edge] = storage_->edge_dest_node_[other_edge];
-        storage_->edge_switch_[edge] = storage_->edge_switch_[other_edge];
-        storage_->edge_remapped_[edge] = storage_->edge_remapped_[other_edge];
-        return *this;
-    }
-
-    edge_swapper& operator=(const t_rr_edge_info& edge) {
-        VTR_ASSERT(idx_ < storage_->edge_src_node_.size());
-
-        storage_->edge_src_node_[RREdgeId(idx_)] = RRNodeId(edge.from_node);
-        storage_->edge_dest_node_[RREdgeId(idx_)] = RRNodeId(edge.to_node);
-        storage_->edge_switch_[RREdgeId(idx_)] = edge.switch_type;
-        storage_->edge_remapped_[RREdgeId(idx_)] = edge.remapped;
-        return *this;
-    }
-
-    operator t_rr_edge_info() const {
-        VTR_ASSERT(idx_ < storage_->edge_src_node_.size());
-        t_rr_edge_info info(
-            storage_->edge_src_node_[RREdgeId(idx_)],
-            storage_->edge_dest_node_[RREdgeId(idx_)],
-            storage_->edge_switch_[RREdgeId(idx_)],
-            storage_->edge_remapped_[RREdgeId(idx_)]);
-
-        return info;
-    }
-
-    friend class edge_compare;
-
-    static void swap(edge_swapper& a, edge_swapper& b) {
-        VTR_ASSERT(a.idx_ < a.storage_->edge_src_node_.size());
-        VTR_ASSERT(b.idx_ < a.storage_->edge_src_node_.size());
-        RREdgeId a_edge(a.idx_);
-        RREdgeId b_edge(b.idx_);
-
-        std::swap(a.storage_->edge_src_node_[a_edge], a.storage_->edge_src_node_[b_edge]);
-        std::swap(a.storage_->edge_dest_node_[a_edge], a.storage_->edge_dest_node_[b_edge]);
-        std::swap(a.storage_->edge_switch_[a_edge], a.storage_->edge_switch_[b_edge]);
-        std::vector<bool>::swap(a.storage_->edge_remapped_[a_edge], a.storage_->edge_remapped_[b_edge]);
-    }
-
-    friend void swap(edge_swapper& a, edge_swapper& b) {
-        edge_swapper::swap(a, b);
-    }
-};
-
-class edge_sort_iterator {
-  public:
-    edge_sort_iterator()
-        : swapper_(nullptr, 0) {}
-    edge_sort_iterator(t_rr_graph_storage* storage, size_t idx)
-        : swapper_(storage, idx) {}
-
-    edge_sort_iterator(const edge_sort_iterator& other)
-        : swapper_(
-              other.swapper_.storage_,
-              other.swapper_.idx_) {
-    }
-
-    edge_sort_iterator& operator=(const edge_sort_iterator& other) {
-        swapper_.storage_ = other.swapper_.storage_;
-        swapper_.idx_ = other.swapper_.idx_;
-
-        return *this;
-    }
-
-    using iterator_category = std::random_access_iterator_tag;
-    using value_type = t_rr_edge_info;
-    using reference = edge_swapper&;
-    using pointer = edge_swapper*;
-    using difference_type = ssize_t;
-
-    // In order for this class to be used as an iterator within the std library,
-    // it needs to "act" like a pointer. One thing that it should do is that a
-    // const variable of this type should be de-referenceable. Therefore, this
-    // method should be const method; however, this requires modifying the class
-    // and may yield worst performance. For now the std::stable_sort allows this
-    // but in the future it may not. If this breaks, this is why.
-    // See issue #2517 and PR #2522
-    edge_swapper& operator*() {
-        return this->swapper_;
-    }
-
-    edge_swapper* operator->() {
-        return &this->swapper_;
-    }
-
-    edge_sort_iterator& operator+=(ssize_t n) {
-        swapper_.idx_ += n;
-        return *this;
-    }
-
-    edge_sort_iterator& operator-=(ssize_t n) {
-        swapper_.idx_ -= n;
-        return *this;
-    }
-
-    edge_sort_iterator& operator++() {
-        ++swapper_.idx_;
-        return *this;
-    }
-
-    edge_sort_iterator& operator--() {
-        --swapper_.idx_;
-        return *this;
-    }
-
-    friend edge_sort_iterator operator+(const edge_sort_iterator& lhs, ssize_t n) {
-        edge_sort_iterator ret = lhs;
-        ret.swapper_.idx_ += n;
-        return ret;
-    }
-
-    friend edge_sort_iterator operator-(const edge_sort_iterator& lhs, ssize_t n) {
-        edge_sort_iterator ret = lhs;
-        ret.swapper_.idx_ -= n;
-        return ret;
-    }
-
-    friend ssize_t operator-(const edge_sort_iterator& lhs, const edge_sort_iterator& rhs) {
-        ssize_t diff = lhs.swapper_.idx_;
-        diff -= rhs.swapper_.idx_;
-        return diff;
-    }
-
-    friend bool operator==(const edge_sort_iterator& lhs, const edge_sort_iterator& rhs) {
-        return lhs.swapper_.idx_ == rhs.swapper_.idx_;
-    }
-
-    friend bool operator!=(const edge_sort_iterator& lhs, const edge_sort_iterator& rhs) {
-        return lhs.swapper_.idx_ != rhs.swapper_.idx_;
-    }
-
-    friend bool operator<(const edge_sort_iterator& lhs, const edge_sort_iterator& rhs) {
-        return lhs.swapper_.idx_ < rhs.swapper_.idx_;
-    }
-
-    friend bool operator>(const edge_sort_iterator& lhs, const edge_sort_iterator& rhs) {
-        return lhs.swapper_.idx_ > rhs.swapper_.idx_;
-    }
-
-    friend bool operator>=(const edge_sort_iterator& lhs, const edge_sort_iterator& rhs) {
-        return lhs.swapper_.idx_ >= rhs.swapper_.idx_;
-    }
-
-    friend bool operator<=(const edge_sort_iterator& lhs, const edge_sort_iterator& rhs) {
-        return lhs.swapper_.idx_ <= rhs.swapper_.idx_;
-    }
-
-    RREdgeId edge() const {
-        return RREdgeId(swapper_.idx_);
-    }
-
-  private:
-    edge_swapper swapper_;
-};
-
-class edge_compare_src_node_and_configurable_first {
-  public:
-    edge_compare_src_node_and_configurable_first(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf)
-        : rr_switch_inf_(rr_switch_inf) {}
-
-    bool operator()(const t_rr_edge_info& lhs, const edge_swapper& rhs) {
-        auto lhs_src_node = RRNodeId(lhs.from_node);
-        auto lhs_dest_node = RRNodeId(lhs.to_node);
-        auto lhs_is_configurable = rr_switch_inf_[RRSwitchId(lhs.switch_type)].configurable();
-
-        auto rhs_edge = RREdgeId(rhs.idx_);
-        auto rhs_src_node = rhs.storage_->edge_src_node_[rhs_edge];
-        auto rhs_dest_node = rhs.storage_->edge_dest_node_[rhs_edge];
-        auto rhs_is_configurable = rr_switch_inf_[RRSwitchId(rhs.storage_->edge_switch_[rhs_edge])].configurable();
-
-        return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.switch_type) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.storage_->edge_switch_[rhs_edge]);
-    }
-
-    bool operator()(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
-        auto lhs_src_node = lhs.from_node;
-        auto lhs_dest_node = lhs.to_node;
-        auto lhs_is_configurable = rr_switch_inf_[RRSwitchId(lhs.switch_type)].configurable();
-
-        auto rhs_src_node = rhs.from_node;
-        auto rhs_dest_node = rhs.to_node;
-        auto rhs_is_configurable = rr_switch_inf_[RRSwitchId(rhs.switch_type)].configurable();
-
-        return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.switch_type) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.switch_type);
-    }
-    bool operator()(const edge_swapper& lhs, const t_rr_edge_info& rhs) {
-        auto lhs_edge = RREdgeId(lhs.idx_);
-        auto lhs_src_node = lhs.storage_->edge_src_node_[lhs_edge];
-        auto lhs_dest_node = lhs.storage_->edge_dest_node_[lhs_edge];
-        auto lhs_is_configurable = rr_switch_inf_[RRSwitchId(lhs.storage_->edge_switch_[lhs_edge])].configurable();
-
-        auto rhs_src_node = RRNodeId(rhs.from_node);
-        auto rhs_dest_node = RRNodeId(rhs.to_node);
-        auto rhs_is_configurable = rr_switch_inf_[RRSwitchId(rhs.switch_type)].configurable();
-
-        return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.storage_->edge_switch_[lhs_edge]) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.switch_type);
-    }
-    bool operator()(const edge_swapper& lhs, const edge_swapper& rhs) {
-        auto lhs_edge = RREdgeId(lhs.idx_);
-        auto lhs_src_node = lhs.storage_->edge_src_node_[lhs_edge];
-        auto lhs_dest_node = lhs.storage_->edge_dest_node_[lhs_edge];
-        auto lhs_is_configurable = rr_switch_inf_[RRSwitchId(lhs.storage_->edge_switch_[lhs_edge])].configurable();
-
-        auto rhs_edge = RREdgeId(rhs.idx_);
-        auto rhs_src_node = rhs.storage_->edge_src_node_[rhs_edge];
-        auto rhs_dest_node = rhs.storage_->edge_dest_node_[rhs_edge];
-        auto rhs_is_configurable = rr_switch_inf_[RRSwitchId(rhs.storage_->edge_switch_[rhs_edge])].configurable();
-
-        return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.storage_->edge_switch_[lhs_edge]) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.storage_->edge_switch_[rhs_edge]);
-    }
-
-  private:
-    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
-};
-
-class edge_compare_dest_node {
-  public:
-    bool operator()(const t_rr_edge_info& lhs, const edge_swapper& rhs) {
-        auto lhs_dest_node = RRNodeId(lhs.to_node);
-
-        auto rhs_edge = RREdgeId(rhs.idx_);
-        auto rhs_dest_node = rhs.storage_->edge_dest_node_[rhs_edge];
-
-        return lhs_dest_node < rhs_dest_node;
-    }
-
-    bool operator()(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
-        auto lhs_dest_node = lhs.to_node;
-
-        auto rhs_dest_node = rhs.to_node;
-
-        return lhs_dest_node < rhs_dest_node;
-    }
-    bool operator()(const edge_swapper& lhs, const t_rr_edge_info& rhs) {
-        auto lhs_edge = RREdgeId(lhs.idx_);
-        auto lhs_dest_node = lhs.storage_->edge_dest_node_[lhs_edge];
-
-        auto rhs_dest_node = RRNodeId(rhs.to_node);
-
-        return lhs_dest_node < rhs_dest_node;
-    }
-    bool operator()(const edge_swapper& lhs, const edge_swapper& rhs) {
-        auto lhs_edge = RREdgeId(lhs.idx_);
-        auto lhs_dest_node = lhs.storage_->edge_dest_node_[lhs_edge];
-
-        auto rhs_edge = RREdgeId(rhs.idx_);
-        auto rhs_dest_node = rhs.storage_->edge_dest_node_[rhs_edge];
-
-        return lhs_dest_node < rhs_dest_node;
-    }
-};
 
 void t_rr_graph_storage::assign_first_edges() {
     VTR_ASSERT(node_first_edge_.empty());
@@ -419,26 +137,38 @@ void t_rr_graph_storage::init_fan_in() {
     }
 }
 
-size_t t_rr_graph_storage::count_rr_switches(
-    const std::vector<t_arch_switch_inf>& arch_switch_inf,
-    t_arch_switch_fanin& arch_switch_fanins) {
+namespace {
+/// Functor for sorting edges according to destination node's ID.
+class edge_compare_dest_node {
+public:
+    edge_compare_dest_node(const t_rr_graph_storage& rr_graph_storage) : rr_graph_storage_(rr_graph_storage) {}
+
+    bool operator()(RREdgeId lhs, RREdgeId rhs) const {
+        RRNodeId lhs_dest_node = rr_graph_storage_.edge_sink_node(lhs);
+        RRNodeId rhs_dest_node = rr_graph_storage_.edge_sink_node(rhs);
+
+        return lhs_dest_node < rhs_dest_node;
+    }
+
+private:
+    const t_rr_graph_storage& rr_graph_storage_;
+};
+} // namespace
+
+size_t t_rr_graph_storage::count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
+                                             t_arch_switch_fanin& arch_switch_fanins) {
     VTR_ASSERT(!partitioned_);
     VTR_ASSERT(!remapped_edges_);
 
     edges_read_ = true;
     int num_rr_switches = 0;
 
-    // Sort by destination node to collect per node/per switch fan in
-    // values.
-    //
+    // Sort by destination node to collect per node/per switch fan in values
     // This sort is safe to do because partition_edges() has not been invoked yet.
-    std::stable_sort(
-        edge_sort_iterator(this, 0),
-        edge_sort_iterator(this, edge_dest_node_.size()),
-        edge_compare_dest_node());
+    sort_edges(edge_compare_dest_node(*this));
 
-    //Collect the fan-in per switch type for each node in the graph
-    //Record the unique switch type/fanin combinations
+    // Collect the fan-in per switch type for each node in the graph
+    // Record the unique switch type/fanin combinations
     std::vector<int> arch_switch_counts;
     arch_switch_counts.resize(arch_switch_inf.size(), 0);
     auto first_edge = edge_dest_node_.begin();
@@ -452,7 +182,7 @@ size_t t_rr_graph_storage::count_rr_switches(
         size_t last_edge_offset = last_edge - edge_dest_node_.begin();
 
         std::fill(arch_switch_counts.begin(), arch_switch_counts.end(), 0);
-        for (auto edge_switch : vtr::Range<decltype(edge_switch_)::const_iterator>(
+        for (short edge_switch : vtr::Range<decltype(edge_switch_)::const_iterator>(
                  edge_switch_.begin() + first_edge_offset,
                  edge_switch_.begin() + last_edge_offset)) {
             arch_switch_counts[edge_switch] += 1;
@@ -463,16 +193,17 @@ size_t t_rr_graph_storage::count_rr_switches(
                 continue;
             }
 
-            auto fanin = arch_switch_counts[iswitch];
+            int fanin = arch_switch_counts[iswitch];
             VTR_ASSERT_SAFE(iswitch < arch_switch_inf.size());
 
             if (arch_switch_inf[iswitch].fixed_Tdel()) {
-                //If delay is independent of fanin drop the unique fanin info
+                // If delay is independent of fanin drop the unique fanin info
                 fanin = LIBRRGRAPH_UNDEFINED_VAL;
             }
 
-            if (arch_switch_fanins[iswitch].count(fanin) == 0) {        //New fanin for this switch
-                arch_switch_fanins[iswitch][fanin] = num_rr_switches++; //Assign it a unique index
+            if (arch_switch_fanins[iswitch].count(fanin) == 0) {        // New fanin for this switch
+                arch_switch_fanins[iswitch][fanin] = RRSwitchId(num_rr_switches); // Assign it a unique index
+                num_rr_switches++;
             }
         }
 
@@ -483,10 +214,11 @@ size_t t_rr_graph_storage::count_rr_switches(
     // We assign a rr switch for other arch switches. This is done mainly for flat-routing,
     // to avoid allocating switches again. We assume that internal switches' delay are not
     // dependent on their fan-in
-    for(size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
-        if(arch_switch_fanins[iswitch].empty()){
-            if(arch_switch_inf[iswitch].fixed_Tdel()){
-                arch_switch_fanins[iswitch][LIBRRGRAPH_UNDEFINED_VAL] = num_rr_switches++;
+    for (size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
+        if (arch_switch_fanins[iswitch].empty()){
+            if (arch_switch_inf[iswitch].fixed_Tdel()){
+                arch_switch_fanins[iswitch][LIBRRGRAPH_UNDEFINED_VAL] = RRSwitchId(num_rr_switches);
+                num_rr_switches++;
             }
         }
     }
@@ -500,7 +232,7 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
     VTR_ASSERT(!remapped_edges_);
     for (size_t i = 0; i < edge_src_node_.size(); ++i) {
         RREdgeId edge(i);
-        if(edge_remapped_[edge]) {
+        if (edge_remapped_[edge]) {
             continue;
         }
 
@@ -515,7 +247,7 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
         auto itr = switch_fanin[switch_index].find(fanin);
         VTR_ASSERT(itr != switch_fanin[switch_index].end());
 
-        int rr_switch_index = itr->second;
+        int rr_switch_index = (int)itr->second;
 
         edge_switch_[edge] = rr_switch_index;
         edge_remapped_[edge] = true;
@@ -527,6 +259,35 @@ void t_rr_graph_storage::mark_edges_as_rr_switch_ids() {
     edges_read_ = true;
     remapped_edges_ = true;
 }
+
+namespace{
+/// Functor for sorting edges according to source node, with configurable edges coming first
+class edge_compare_src_node_and_configurable_first {
+  public:
+    edge_compare_src_node_and_configurable_first(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf, const t_rr_graph_storage& rr_graph_storage)
+        : rr_switch_inf_(rr_switch_inf),
+          rr_graph_storage_(rr_graph_storage) {}
+
+    bool operator()(RREdgeId lhs, RREdgeId rhs) const {
+
+        RRNodeId lhs_dest_node = rr_graph_storage_.edge_sink_node(lhs);
+        RRNodeId lhs_src_node = rr_graph_storage_.edge_source_node(lhs);
+        RRSwitchId lhs_switch_type = RRSwitchId(rr_graph_storage_.edge_switch(lhs));
+        bool lhs_is_configurable = rr_switch_inf_[lhs_switch_type].configurable();
+
+        RRNodeId rhs_dest_node = rr_graph_storage_.edge_sink_node(rhs);
+        RRNodeId rhs_src_node = rr_graph_storage_.edge_source_node(rhs);
+        RRSwitchId rhs_switch_type = RRSwitchId(rr_graph_storage_.edge_switch(rhs));
+        bool rhs_is_configurable = rr_switch_inf_[rhs_switch_type].configurable();
+
+        return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs_switch_type) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs_switch_type);
+    }
+
+  private:
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
+    const t_rr_graph_storage& rr_graph_storage_;
+};
+} // namespace
 
 void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) {
     if (partitioned_) {
@@ -540,9 +301,7 @@ void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_swit
     //    by assign_first_edges()
     //  - Edges within a source node have the configurable edges before the
     //    non-configurable edges.
-    std::stable_sort(edge_sort_iterator(this, 0),
-                     edge_sort_iterator(this, edge_src_node_.size()),
-                     edge_compare_src_node_and_configurable_first(rr_switches));
+    sort_edges(edge_compare_src_node_and_configurable_first(rr_switches, *this));
 
     partitioned_ = true;
 
@@ -648,12 +407,12 @@ const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
             return TOTAL_2D_SIDE_STRINGS[side];
         }
     }
-    /* Not found, return an invalid string*/
+    // Not found, return an invalid string
     return TOTAL_2D_SIDE_STRINGS[NUM_2D_SIDES];
 }
 
-void t_rr_graph_storage::set_node_layer(RRNodeId id, short layer) {
-    node_layer_[id] = layer;
+void t_rr_graph_storage::set_node_layer(RRNodeId id, char layer_low, char layer_high) {
+    node_layer_[id] = std::make_pair(layer_low, layer_high);
 }
 
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {

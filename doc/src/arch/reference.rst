@@ -581,6 +581,34 @@ Grid Layout Example
 
     Example FPGA grid
 
+
+.. arch:tag:: <interposer_cut x="int" y="int"/>
+
+    :opt_param x: Specifies the x-coordinate of a vertical interposer cut.
+    :opt_param y: Specifies the y-coordinate of a horizontal interposer cut.
+
+    .. note:: Exactly one of the ``x`` or ``y`` attributes must be specified.
+
+    .. note:: Interposers are experimental and are currently not supported by VPR and using the related tags will not actually result in any changes to the flow.
+    Defines an interposer cut for modelling 2.5D interposer-based architectures. An interposer cut will cut all connections at location 'loc' along the axis 'dim' Leaving the two sides completely unconnected.
+    To reconnect the two sides, this tag can have multiple <interdie_wire> tags as children to specify the connection between the two sides.
+
+.. arch:tag:: <interdie_wire sg_name="string" sg_link="string" offset_start="expr" offset_end="expr" offset_increment="expr" num="int"/>
+
+    :req_param sg_name: Name of the scatter-gather pattern to be used for the interdie connection.
+    :req_param sg_link: Name of the scatter-gather link to be used for the interdie connection.
+    :req_param offset_start: Starting point of scatter-gather instantiations.
+    :req_param offset_end: Ending point of scatter-gather instantiations
+    :req_param offset_increment: Increment/distance between scatter-gather instantiations.
+    :req_param num: Number of scatter-gather instantiations per switchblock location.
+
+    Defines the interdie wiring between the two sides of the cut. Connectivity is defined using scatter-gather patterns. Starting at 'offset_start' from location of the cut and moving by 'offset_increment' until we reach the location of 'offset_end' away from the cut, 'num' scatter-gather patterns defined by 'sg_name' and 'sg_link' will be instantiated.
+    Note that these offset points always define the starting point of the scatter-gather pattern's sg_link. offset_start, offset_end and offset_increment can be integer values or expressions involving W and H (device width and height.)
+
+    .. figure:: scatter_gather_images/interposer_diagram.png
+        
+        An example of how specifying interposers in VTR works. Connections between the two sides of a cut are first severed after which the two sides are reconnected using scatter_gather patterns. In this example the length of the sg_link wire used is 3. Note that there are 'num' of each pattern at each switchblock location.
+
 .. _arch_device_info:
 
 FPGA Device Information
@@ -1975,16 +2003,16 @@ Wire Segments
 The content within the ``<segmentlist>`` tag consists of a group of ``<segment>`` tags.
 The ``<segment>`` tag and its contents are described below.
 
-.. arch:tag:: <segment axis="{x|y}" name="unique_name" length="int" type="{bidir|unidir}" res_type="{GCLK|GENERAL}" freq="float" Rmetal="float" Cmetal="float">content</segment>
+.. arch:tag:: <segment axis="{x|y|z}" name="unique_name" length="int" type="{bidir|unidir}" res_type="{GCLK|GENERAL}" freq="float" Rmetal="float" Cmetal="float">content</segment>
 
 
     :opt_param axis:
-        Specifies if the given segment applies to either x or y channels only. If this tag is not given, it is assumed that the given segment
-        description applies to both x-directed and y-directed channels.
+        Specifies if the given segment applies to x, y, or z channels only. If this tag is not given, it is assumed that the given segment
+        description applies to both x-directed and y-directed channels (and not to z-directed channels).
 
         .. note:: It is required that both x and y segment axis details are given or that at least one segment within ``segmentlist`` 
             is specified without the ``axis`` tag (i.e. at least one segment applies to both x-directed and y-directed 
-            chanels). 
+            channels). For 3-d architectures, it is required that at least one wire segment with `axis="z"` is defined.
 
     :req_param name:
         A unique alphanumeric name to identify this segment type.
@@ -2337,6 +2365,8 @@ Direct Inter-block Connections
 The content within the ``<directlist>`` tag consists of a group of ``<direct>`` tags.
 The ``<direct>`` tag and its contents are described below.
 
+.. note:: ``from_pin`` and ``to_pin`` only support big endian! For example, ``clb.out[8:0]``
+
 .. arch:tag:: <direct name="string" from_pin="string" to_pin="string" x_offset="int" y_offset="int" z_offset="int" switch_name="string" from_side="{left|right|top|bottom}" to_side="{left|right|top|bottom}"/>
 
     :req_param name: is a unique alphanumeric string to name the connection.
@@ -2356,12 +2386,89 @@ The ``<direct>`` tag and its contents are described below.
     The ``from_side`` and ``to_side`` options can usually be left unspecified.
     However they can be used to explicitly control how direct connections to physically equivalent pins (which may appear on multiple sides) are handled.
 
-    **Example:**
-    Consider a carry chain where the ``cout`` of each CLB drives the ``cin`` of the CLB immediately below it, using the delay-less switch one would enter the following:
+**Example: Inter-tile connection**
+Consider a carry chain where the ``cout`` of each CLB drives the ``cin`` of the CLB immediately below it, using the delay-less switch one would enter the following:
 
-    .. code-block:: xml
+.. code-block:: xml
 
-        <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+    <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+
+**Example: Inner-tile feedback**
+
+Consider a feedback connection where the ``out`` of each CLB drives the ``in`` of the CLB in the same location, using the connection block switch one would enter the following:
+
+.. code-block:: xml
+
+    <direct name="feedback" from_pin="clb.out" to_pin="clb.in" x_offset="0" y_offset="0" z_offset="0" switch_name="cb_mux"/>
+
+**Example: Cross-sub-tile connection**
+
+In this example, a tile ``cim8_1k`` is defined, under which there are two types of sub-tiles:
+
+- ``mult_8``: the first sub-tile
+- ``memory``: the second, and the third sub-tile
+
+.. code-block:: xml
+
+    <tile name="cim8_1k" height="2" area="396000">
+      <sub_tile name="mult_8" capacity="1">
+        <equivalent_sites>
+          <site pb_type="mult_8" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="a" num_pins="8"/>
+        <input name="b" num_pins="8"/>
+        <output name="out" num_pins="16"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="out" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="left"/>
+          <loc side="top"/>
+          <loc side="right" yoffset="0">mult_8.a[0:2] mult_8.b[0:2] mult_8.out[0:5]</loc>
+          <loc side="right" yoffset="1">mult_8.a[3:5] mult_8.b[3:5] mult_8.out[6:10]</loc>
+          <loc side="bottom">mult_8.a[6:7] mult_8.b[6:7] mult_8.out[11:15]</loc>
+        </pinlocations>
+      </sub_tile>
+      <sub_tile name="memory" capacity="2">
+        <equivalent_sites>
+          <site pb_type="memory"/>
+        </equivalent_sites>
+        <input name="waddr" num_pins="7"/>
+        <input name="raddr" num_pins="7"/>
+        <input name="data_in" num_pins="8"/>
+        <input name="wen" num_pins="1"/>
+        <input name="ren" num_pins="1"/>
+        <output name="data_out" num_pins="8"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="clk" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="data_in" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="left" yoffset="0">memory.clk memory.waddr[0:0] memory.raddr[0:0] memory.data_in[0:0] memory.data_out[0:0]</loc>
+          <loc side="left" yoffset="1">memory.waddr[1:1] memory.raddr[1:1] memory.data_in[1:1] memory.data_out[1:1]</loc>
+          <loc side="top" yoffset="1">memory.waddr[2:2] memory.raddr[2:2] memory.data_in[2:2] memory.data_out[2:2] memory.waddr[3:3] memory.raddr[3:3] memory.data_in[3:3] memory.data_out[3:3]</loc>
+          <loc side="right" yoffset="0">memory.waddr[4:4] memory.raddr[4:4] memory.data_in[4:4] memory.data_out[4:4]</loc>
+          <loc side="right" yoffset="1">memory.waddr[5:5] memory.raddr[5:5] memory.data_in[5:5] memory.data_out[5:5]</loc>
+          <loc side="bottom" yoffset="0">memory.wen memory.waddr[6:6] memory.raddr[6:6] memory.data_in[6:6] memory.data_out[6:6] memory.ren memory.data_in[7:7] memory.data_out[7:7]</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+
+As shown in :numref:`fig_example_subtile_direct_connection`, consider a connection where the ``out`` of a sub tile ``mult_8`` of tile ``cim8_1k`` drives the ``data_in`` of the sub tile ``memory`` of tile ``cim8_1k`` with an offset, using the delayless switch one would enter the following:
+
+.. code-block:: xml
+
+    <direct name="cim_direct0" from_pin="cim8_1k.out[7:0]" to_pin="cim8_1k.data_in[7:0]" x_offset="0" y_offset="0" z_offset="1"/>
+    <direct name="cim_direct1" from_pin="cim8_1k.out[15:8]" to_pin="cim8_1k.data_in[7:0]" x_offset="0" y_offset="0" z_offset="2"/>
+
+.. _fig_example_subtile_direct_connection:
+
+.. figure:: ./example_subtile_direct_connection.png
+   :width: 60%
+   :alt: Example of direct connections across sub-tiles
+
+   Example of direct connections across sub-tiles
 
 .. _custom_switch_blocks:
 
@@ -2644,7 +2751,7 @@ The number of any additional wires or muxes created by scatter-gather specificat
     Overview of how scatter-gather patterns work. First, connections from a switchblock location are selected according to the specification.
     These selected connection are then muxed and passed through the scatter-gather node, which is typically a wire segment. The scatter-gather node then fans out or scatters in another switchblock location.
 
-.. note:: Scatter-Gather patterns are work in progress and experimental. Currently, VPR does not support this specification and using this tag would not result in any modifications to the RR-Graph.
+.. note:: Scatter-Gather patterns are only supported for 3D architectures where the scatter-gather links are unidirectional. They are not currently supported in 2D architectures or with bidirectional sg_links.
 
 When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
 

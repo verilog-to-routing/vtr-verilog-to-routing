@@ -244,9 +244,14 @@ struct BlifAllocCallback : public blifparse::Callback {
         VTR_ASSERT(ports.size() == nets.size());
 
         LogicalModelId blk_model_id = models_.get_model_by_name(subckt_model);
+        if (!blk_model_id.is_valid()) {
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
+                      "Subckt instantiates model '%s', but no such model exists in the architecture file.",
+                      subckt_model.c_str());
+        }
         const t_model& blk_model = models_.get_model(blk_model_id);
 
-        //We name the subckt based on the net it's first output pin drives
+        //We name the subckt based on the net its first output pin drives
         std::string subckt_name;
         for (size_t i = 0; i < ports.size(); ++i) {
             const t_model_ports* model_port = find_model_port(blk_model, ports[i]);
@@ -269,8 +274,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
 
         //The name for every block should be unique, check that there is no name conflict
-        AtomBlockId blk_id = curr_model().find_block(subckt_name);
-        if (blk_id) {
+        if (AtomBlockId blk_id = curr_model().find_block(subckt_name)) {
             LogicalModelId conflicting_model = curr_model().block_model(blk_id);
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
                       "Duplicate blocks named '%s' found in netlist."
@@ -279,7 +283,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
 
         //Create the block
-        blk_id = curr_model().create_block(subckt_name, blk_model_id);
+        AtomBlockId blk_id = curr_model().create_block(subckt_name, blk_model_id);
         set_curr_block(blk_id);
 
         for (size_t i = 0; i < ports.size(); ++i) {

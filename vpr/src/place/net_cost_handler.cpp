@@ -143,33 +143,34 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     const size_t grid_height = device_ctx.grid.height();
     const size_t grid_width = device_ctx.grid.width();
 
-    /* These arrays contain accumulative channel width between channel zero and
-     * the channel specified by the given index. The accumulated channel width
-     * is inclusive, meaning that it includes both channel zero and channel `idx`.
-     * To compute the total channel width between channels 'low' and 'high', use the
-     * following formula:
-     *      acc_chan?_width_[high] - acc_chan?_width_[low - 1]
-     * This returns the total number of tracks between channels 'low' and 'high',
-     * including tracks in these channels.
-     */
+    // These arrays contain accumulative channel width between channel zero and
+    // the channel specified by the given index. The accumulated channel width
+    // is inclusive, meaning that it includes both channel zero and channel `idx`.
+    // To compute the total channel width between channels 'low' and 'high', use the
+    // following formula:
+    //      acc_chan?_width_[high] - acc_chan?_width_[low - 1]
+    // This returns the total number of tracks between channels 'low' and 'high',
+    // including tracks in these channels.
     acc_chanx_width_ = vtr::PrefixSum1D<int>(grid_height, [&](size_t y) noexcept {
-        int chan_x_width = device_ctx.chan_width.x_list[y];
+        int chan_x_width = device_ctx.rr_chanx_width[y];
 
-        /* If the number of tracks in a channel is zero, two consecutive elements take the same
-         * value. This can lead to a division by zero in get_chanxy_cost_fac_(). To avoid this
-         * potential issue, we assume that the channel width is at least 1.
-         */
-        if (chan_x_width == 0)
+        // If the number of tracks in a channel is zero, two consecutive elements take the same
+        // value. This can lead to a division by zero in get_chanxy_cost_fac_(). To avoid this
+        // potential issue, we assume that the channel width is at least 1.
+        if (chan_x_width == 0) {
             return 1;
+        }
 
         return chan_x_width;
     });
+
     acc_chany_width_ = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
-        int chan_y_width = device_ctx.chan_width.y_list[x];
+        int chan_y_width = device_ctx.rr_chany_width[x];
 
         // to avoid a division by zero
-        if (chan_y_width == 0)
+        if (chan_y_width == 0) {
             return 1;
+        }
 
         return chan_y_width;
     });
@@ -197,28 +198,18 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
      * if someday we have architectures with widely varying connectivity between different layers in a stack.
      */
 
-    /*
-     * To calculate the accumulative number of inter-die connections we first need to get the number of
+    /* To calculate the accumulative number of inter-die connections we first need to get the number of
      * inter-die connection per location. To be able to work for the cases that RR Graph is read instead
      * of being made from the architecture file, we calculate this number by iterating over the RR graph. Once
-     * tile_num_inter_die_conn is populated, we can start populating acc_tile_num_inter_die_conn_. First,
-     * we populate the first row and column. Then, we iterate over the rest of blocks and get the number of
-     * inter-die connections by adding up the number of inter-die block at that location + the accumulation
-     * for the  block below and  left to it. Then, since the accumulated number of inter-die connection to
-     * the block on the lower left connection of the block is added twice, that part needs to be removed.
+     * tile_num_inter_die_conn is populated, we can start populating acc_tile_num_inter_die_conn_.
      */
-    for (const RRNodeId src_rr_node : rr_graph.nodes()) {
-        for (const t_edge_size rr_edge_idx : rr_graph.edges(src_rr_node)) {
-            const RRNodeId sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
-            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
-                // We assume that the nodes driving the inter-layer connection or being driven by it
-                // are not stretched across multiple tiles
-                int src_x = rr_graph.node_xhigh(src_rr_node);
-                int src_y = rr_graph.node_yhigh(src_rr_node);
-                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
 
-                tile_num_inter_die_conn[src_x][src_y]++;
-            }
+    for (const RRNodeId node : rr_graph.nodes()) {
+        if (rr_graph.node_type(node) == e_rr_type::CHANZ) {
+            int x = rr_graph.node_xlow(node);
+            int y = rr_graph.node_ylow(node);
+            VTR_ASSERT_SAFE(x == rr_graph.node_xhigh(node) && y == rr_graph.node_yhigh(node));
+            tile_num_inter_die_conn[x][y]++;
         }
     }
 
@@ -237,7 +228,7 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
                                                          });
 }
 
-std::pair<double, double> NetCostHandler::comp_bb_cost(e_cost_methods method) {
+std::pair<double, double> NetCostHandler::comp_bb_cost(e_cost_methods method) const {
     return comp_bb_cost_functor_(method);
 }
 
@@ -1829,7 +1820,8 @@ std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> NetCostHandler::es
         }
     }
 
-    const auto [chanx_width, chany_width] = calculate_channel_width();
+    const vtr::NdMatrix<int, 3>& chanx_width = device_ctx.rr_chanx_segment_width;
+    const vtr::NdMatrix<int, 3>& chany_width = device_ctx.rr_chany_segment_width;
 
     VTR_ASSERT(chanx_util.size() == chany_util.size());
     VTR_ASSERT(chanx_util.ndims() == chany_util.ndims());

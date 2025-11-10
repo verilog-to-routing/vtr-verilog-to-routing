@@ -1,6 +1,7 @@
 
 #include "rr_node_indices.h"
 
+#include "build_scatter_gathers.h"
 #include "describe_rr_node.h"
 #include "globals.h"
 #include "physical_types.h"
@@ -323,8 +324,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 }
 
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const DeviceGrid& grid,
-                                              const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
+                                              const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
                                               int* index) {
     // In case of multi-die FPGAs, we add extra nodes of type CHANZ to
     // support inter-die communication coming from switch blocks (connection between two tracks in different layers)
@@ -332,38 +332,95 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     // 1) type = CHANZ
     // 2) xhigh == xlow, yhigh == ylow
     // 3) ptc = [0:number_of_connection-1]
-    // 4) direction = NONE
-    const auto& device_ctx = g_vpr_ctx.device();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
 
-    for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
-        // Skip the current die if architecture file specifies that it doesn't have global resource routing
-        if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
-            continue;
-        }
+    for (size_t x = 0; x < grid.width(); x++) {
+        for (size_t y = 0; y < grid.height(); y++) {
+            const int num_chanz_nodes = interdie_3d_links[x][y].size();
 
-        for (size_t y = 0; y < grid.height() - 1; ++y) {
-            for (size_t x = 1; x < grid.width() - 1; ++x) {
-                // how many track-to-track connection go from current layer to other layers
-                int conn_count = extra_nodes_per_switchblock[x][y];
+            // reserve extra nodes for inter-die track-to-track connection
+            for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANZ, num_chanz_nodes);
+            }
 
-                // skip if no connection is required
-                if (conn_count == 0) {
-                    continue;
-                }
-
-                // reserve extra nodes for inter-die track-to-track connection
-                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANZ, conn_count);
-                for (int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++) {
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANZ, rr_node_offset);
+            for (int track_num = 0; track_num < num_chanz_nodes; track_num++) {
+                bool incremnet_index = false;
+                for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANZ, track_num);
                     if (!inode) {
                         inode = RRNodeId(*index);
-                        ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANZ, rr_node_offset);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANZ, track_num);
+                        incremnet_index = true;
                     }
+                }
+
+                if (incremnet_index) {
+                    ++(*index);
                 }
             }
         }
     }
+}
+
+std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                                                                       const std::vector<t_bottleneck_link>& bottleneck_links,
+                                                                                       const t_chan_width& chan_width_inf,
+                                                                                       int& index) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const DeviceGrid& grid = device_ctx.grid;
+
+    // Initialize matrices tracking the next free track number (ptc)
+    vtr::NdMatrix<int, 3> chanx_ptc({grid.get_num_layers(), grid.width(), grid.height()}, chan_width_inf.x_max);
+    vtr::NdMatrix<int, 3> chany_ptc({grid.get_num_layers(), grid.width(), grid.height()}, chan_width_inf.y_max);
+
+    std::vector<std::pair<RRNodeId, int>> node_indices;
+    node_indices.reserve(bottleneck_links.size());
+
+    for (const t_bottleneck_link& link : bottleneck_links) {
+        int xlow, xhigh, ylow, yhigh;
+        e_rr_type chan_type;
+        Direction direction;
+        const t_physical_tile_loc& src_loc = link.gather_loc;
+        const t_physical_tile_loc& dst_loc = link.scatter_loc;
+
+        // Step 1: Determine the channel type (CHANX/CHANY) and span coordinates
+        const int layer = src_loc.layer_num;
+        compute_non_3d_sg_link_geometry(src_loc, dst_loc, chan_type, xlow, xhigh, ylow, yhigh, direction);
+
+        // Select the appropriate ptc matrix for this channel type
+        vtr::NdMatrix<int, 3>& ptc_matrix = (chan_type == e_rr_type::CHANX) ? chanx_ptc : chany_ptc;
+
+        // Step 2: Find the maximum next-free ptc value across all (x,y) cells
+        // spanned by this SG link. We use the max to ensure that the chosen
+        // ptc number is free along the entire length of the node
+        int ptc = 0;
+        for (int x = xlow; x <= xhigh; x++) {
+            for (int y = ylow; y <= yhigh; y++) {
+                ptc = std::max(ptc, ptc_matrix[layer][x][y]);
+            }
+        }
+
+        // Step 3: Sanity check: no existing node should occupy this (layer,x,y,ptc)
+        VTR_ASSERT(rr_graph_builder.node_lookup().find_nodes_in_range(layer, xlow, ylow, xhigh, yhigh, chan_type, ptc).empty());
+
+        // Step 4: Allocate a new RR node ID and record its (inode, ptc)
+        const RRNodeId inode = RRNodeId(index);
+        node_indices.push_back({inode, ptc});
+        index++;
+
+        // Step 5: Register this node in the spatial lookup for every (x,y)
+        // location it spans, and update ptc_matrix to mark this track as used.
+        for (int x = xlow; x <= xhigh; x++) {
+            for (int y = ylow; y <= yhigh; y++) {
+                rr_graph_builder.node_lookup().add_node(inode, layer, x, y, chan_type, ptc);
+                ptc_matrix[layer][x][y] = ptc + 1;
+            }
+        }
+    }
+
+    // Later, another routine will use this info to add nodes and edges to RR graph
+    return node_indices;
 }
 
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
@@ -466,7 +523,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                       describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                         }
 
-                        if (rr_graph.node_layer(inode) != l) {
+                        if (l < rr_graph.node_layer_low(inode) && l > rr_graph.node_layer_high(inode)) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node layer does not match between rr_nodes and rr_node_indices (%s/%s): %s",
                                       rr_node_typename[rr_graph.node_type(inode)],
                                       rr_node_typename[rr_type],

@@ -450,7 +450,7 @@ inline bool is_close_to_cutline(RRNodeId inode, Axis cutline_axis, int cutline_p
 
     vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(inode),
                                                           rr_graph.node_ylow(inode),
-                                                          rr_graph.node_layer(inode)});
+                                                          rr_graph.node_layer_low(inode)});
 
     /* Cutlines are considered to be at x + 0.5, set a thickness of +1 here by checking for equality */
     if (cutline_axis == Axis::X) {
@@ -467,7 +467,7 @@ inline bool is_close_to_bb(RRNodeId inode, const t_bb& bb, int thickness) {
 
     vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(inode),
                                                           rr_graph.node_ylow(inode),
-                                                          rr_graph.node_layer(inode)});
+                                                          rr_graph.node_layer_low(inode)});
 
     int xlow = tile_bb.xmin() - thickness;
     int ylow = tile_bb.ymin() - thickness;

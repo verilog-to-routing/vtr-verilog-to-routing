@@ -41,23 +41,12 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 void free_rr_graph();
 
-t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_sw_inf,
-                                                  const float R_minW_nmos,
-                                                  const float R_minW_pmos);
-
-void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
-                                  std::vector<std::map<int, int>>& switch_fanin_remap,
-                                  const std::map<int, t_arch_switch_inf>& arch_sw_inf,
-                                  const float R_minW_nmos,
-                                  const float R_minW_pmos,
-                                  const int wire_to_arch_ipin_switch,
-                                  int* wire_to_rr_ipin_switch);
-
 void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         const std::vector<t_segment_inf>& segment_inf_x,
                         const std::vector<t_segment_inf>& segment_inf_y,
-                        int wire_to_rr_ipin_switch,
-                        enum e_base_cost_type base_cost_type);
+                        const std::vector<t_segment_inf>& segment_inf_z,
+                        RRSwitchId wire_to_rr_ipin_switch,
+                        e_base_cost_type base_cost_type);
 
 std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                        const int max_pins,
@@ -65,18 +54,9 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
                                                        const std::vector<int>& sets_per_seg_type,
                                                        const t_chan_width* nodes_per_chan,
                                                        const e_fc_type fc_type,
-                                                       const enum e_directionality directionality,
+                                                       const e_directionality directionality,
                                                        bool* Fc_clipped,
                                                        bool is_flat);
-
-// Sets the spec for the rr_switch based on the arch switch
-void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
-                                     const std::map<int, t_arch_switch_inf>& arch_sw_inf,
-                                     int arch_switch_idx,
-                                     int rr_switch_idx,
-                                     int fanin,
-                                     const float R_minW_nmos,
-                                     const float R_minW_pmos);
 
 t_non_configurable_rr_sets identify_non_configurable_rr_sets();
 

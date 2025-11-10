@@ -690,7 +690,7 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     gtk_widget_set_margin_left(ri_info, 5);
 #endif
     gtk_widget_set_halign(ri_info, GTK_ALIGN_START);
-    std::string net_id = "rouet_net_id: " + std::to_string(draw_breakpoint_state.route_net_id);
+    std::string net_id = "route_net_id: " + std::to_string(draw_breakpoint_state.route_net_id);
     GtkWidget* net_info = gtk_label_new(net_id.c_str());
 #if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(net_info, 5);
@@ -764,6 +764,17 @@ bool valid_expression(std::string exp) {
             return false;
         else if (j % 2 != 0 && ops[j] == COMP_OP)
             return false;
+    }
+
+    //use the formula parser for checking the validity of the formula.
+    //we ignore the actual result here, since we only care about whether parsing succeeds without a VtrError.
+    vtr::FormulaParser fp;
+    vtr::t_formula_data dummy;
+    try {
+        int result = fp.parse_formula(exp, dummy, true);
+        (void)result;
+    } catch (const vtr::VtrError& e) {
+        return false;
     }
 
     return true;

@@ -133,6 +133,7 @@ struct t_options {
     argparse::ArgValue<bool> ShowPlaceTiming;
     argparse::ArgValue<float> PlaceInnerNum;
     argparse::ArgValue<float> place_auto_init_t_scale;
+    argparse::ArgValue<e_anneal_init_t_estimator> place_init_t_estimator;
     argparse::ArgValue<float> PlaceInitT;
     argparse::ArgValue<float> PlaceExitT;
     argparse::ArgValue<float> PlaceAlphaT;
@@ -232,7 +233,6 @@ struct t_options {
     argparse::ArgValue<bool> flat_routing;
     argparse::ArgValue<bool> router_opt_choke_points;
     argparse::ArgValue<int> route_verbosity;
-    argparse::ArgValue<int> custom_3d_sb_fanin_fanout;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
