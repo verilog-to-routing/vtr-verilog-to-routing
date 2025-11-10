@@ -1909,17 +1909,47 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
 std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
                                         ClusterBlockId cluster_blk_id,
                                         int abs_cap) {
-    int max_num_pin = get_tile_total_num_pin(physical_tile) / physical_tile->capacity;
-    int num_tile_pin_per_inst = physical_tile->num_pins / physical_tile->capacity;
-    std::vector<int> pin_num_vec(num_tile_pin_per_inst);
-    std::iota(pin_num_vec.begin(), pin_num_vec.end(), abs_cap * num_tile_pin_per_inst);
+    // To get the list of pins, we first add the pins on the tile-level, then add the pins on the intra-tile-level.
 
-    pin_num_vec.reserve(max_num_pin);
+    // A counter to keep track of number of tile-level pins for the sub-tiles before the current sub-tile.
+    int seen_sub_tiles_num_cluser_pins = 0;
+    // The number of tile-level pins for the sub-tile instance that the cluster block is mapped to.
+    int cluster_sub_tile_isnt_num_pins;
+    // A flag to check if the sub-tile instance that the cluster block is mapped to has been found.
+    bool found_sub_tile = false;
 
+    // Iterate over all the sub-tiles to find the sub-tile instance that the cluster block is mapped to.
+    for (const auto& tmp_sub_tile: physical_tile->sub_tiles) {
+        if (tmp_sub_tile.capacity.is_in_range(abs_cap)) {
+            // This sub-tile type is the one that the cluster block is mapped to.
+            found_sub_tile = true;
+            // The number of tile-level pins for all isntances of the same sub-tile type is the same. Thus,
+            // we can the the number of tile-level pins for the sub-tile instance by dividing the total number of pins
+            // for the given sub-tile type by the number of instances.
+            cluster_sub_tile_isnt_num_pins = (tmp_sub_tile.num_phy_pins / tmp_sub_tile.capacity.total());
+            int rel_cap = abs_cap - tmp_sub_tile.capacity.low;
+            // Add the number of tile-level pins for the instances before the current sub-tile instance to the counter.
+            seen_sub_tiles_num_cluser_pins += rel_cap * cluster_sub_tile_isnt_num_pins;
+            break;
+        } else {
+            // This sub-tile type is not the one that the cluster block is mapped to.
+            // Add the number of tile-level pins for this sub-tile type to the counter
+            // and continue to the next sub-tile type.
+            seen_sub_tiles_num_cluser_pins += tmp_sub_tile.num_phy_pins;
+        }
+    }
+
+    VTR_ASSERT(found_sub_tile);
+    std::vector<int> pin_num_vec(cluster_sub_tile_isnt_num_pins);
+    // Pin numbers are assigned such that each instance’s tile-level pins
+    // occupy a continuous range equal to the total number of tile-level pins for that instance.
+    // Since we know the starting index, we use std::iota to generate that range.
+    std::iota(pin_num_vec.begin(), pin_num_vec.end(), seen_sub_tiles_num_cluser_pins);
+
+    // Add the intra-cluster-level pins to the list.
     auto internal_pins = get_cluster_internal_pins(cluster_blk_id);
     pin_num_vec.insert(pin_num_vec.end(), internal_pins.begin(), internal_pins.end());
 
-    pin_num_vec.shrink_to_fit();
     return pin_num_vec;
 }
 
