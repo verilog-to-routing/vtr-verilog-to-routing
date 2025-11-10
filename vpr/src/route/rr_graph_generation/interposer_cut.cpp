@@ -14,19 +14,7 @@
 
 #include "interposer_cut.h"
 
-static bool should_cut_edge(int src_start_loc, int sink_start_loc, int cut_loc) {
-    int src_delta = src_start_loc - cut_loc;
-    int sink_delta = sink_start_loc - cut_loc;
-
-    // Same sign means that both sink and source are on the same side of this cut
-    if ((src_delta < 0 && sink_delta < 0) || (src_delta >= 0 && sink_delta >= 0)) {
-        return false;
-    } else {
-        return true;
-    }
-}
-
-static bool should_cut_node(int src_start_loc, int sink_start_loc, int cut_loc) {
+static bool should_cut(int src_start_loc, int sink_start_loc, int cut_loc) {
     int src_delta = src_start_loc - cut_loc;
     int sink_delta = sink_start_loc - cut_loc;
 
@@ -127,7 +115,7 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
             int src_start_loc_y = node_ystart(rr_graph, src_node);
             int sink_start_loc_y = node_ystart(rr_graph, sink_node);
 
-            if (should_cut_edge(src_start_loc_y, sink_start_loc_y, cut_loc_y)) {
+            if (should_cut(src_start_loc_y, sink_start_loc_y, cut_loc_y)) {
                 edges_to_be_removed.push_back(edge_id);
             }
         }
@@ -136,7 +124,7 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
             int src_start_loc_x = node_xstart(rr_graph, src_node);
             int sink_start_loc_x = node_xstart(rr_graph, sink_node);
 
-            if (should_cut_edge(src_start_loc_x, sink_start_loc_x, cut_loc_x)) {
+            if (should_cut(src_start_loc_x, sink_start_loc_x, cut_loc_x)) {
                 edges_to_be_removed.push_back(edge_id);
             }
         }
@@ -177,7 +165,7 @@ void update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(con
                         continue;
                     }
 
-                    if (!should_cut_node(y_low, y_high, cut_loc_y)) {
+                    if (!should_cut(y_low, y_high, cut_loc_y)) {
                         continue;
                     }
 
