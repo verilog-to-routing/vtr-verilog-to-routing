@@ -5,6 +5,7 @@
 #include "place_and_route.h"
 #include "read_route.h"
 #include "route.h"
+#include <cstddef>
 #include "route_common.h"
 #include "route_debug.h"
 #include "route_profiling.h"
@@ -251,6 +252,8 @@ bool route(const Netlist<>& net_list,
 
     int rcv_finished_count = RCV_FINISH_EARLY_COUNTDOWN;
 
+    std::vector<size_t> per_iter_heap_ops_count;
+
     print_route_status_header();
 #ifndef NO_GRAPHICS
     // Reset router iteration in the current route attempt.
@@ -286,6 +289,7 @@ bool route(const Netlist<>& net_list,
 
         /* Route each net */
         RouteIterResults iter_results = netlist_router->route_netlist(itry, pres_fac, worst_negative_slack);
+        per_iter_heap_ops_count.push_back(iter_results.stats.heap_pushes + iter_results.stats.heap_pops);
 
         if (!iter_results.is_routable) { /* Disconnected RRG */
             return false;
@@ -578,6 +582,24 @@ bool route(const Netlist<>& net_list,
         // profiling::time_on_criticality_analysis();
     }
 
+    int num_high_heap_ops_iters = 0;
+    if (per_iter_heap_ops_count.size() > 4) {
+        for (int i = 3; i < static_cast<int>(per_iter_heap_ops_count.size()); i++) {
+            size_t max_heap_ops = 0;
+            for (int j = i - 3; j < i; j++) {
+                max_heap_ops = std::max(max_heap_ops, per_iter_heap_ops_count[j]);
+            }
+            if (per_iter_heap_ops_count[i] >= max_heap_ops) {
+                num_high_heap_ops_iters++;
+            }
+        }
+    }
+
+    float routing_struggle_ratio = 0.0;
+    if (per_iter_heap_ops_count.size() > 4) {
+        routing_struggle_ratio = static_cast<float>(num_high_heap_ops_iters) / static_cast<float>(per_iter_heap_ops_count.size() - 3);
+    }
+
     /* Write out partition tree logs (no-op if debug option not set) */
     PartitionTreeDebug::write("partition_tree.log");
 
@@ -624,8 +646,8 @@ bool route(const Netlist<>& net_list,
     VTR_ASSERT(router_stats.heap_pushes >= router_stats.intra_cluster_node_pushes);
     VTR_ASSERT(router_stats.heap_pops >= router_stats.intra_cluster_node_pops);
     VTR_LOG(
-        "Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu ",
-        router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops);
+        "Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu routing_struggle_ratio: %.2f ",
+        router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops, routing_struggle_ratio);
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
         VTR_LOG(
             "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
