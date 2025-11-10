@@ -582,6 +582,8 @@ bool route(const Netlist<>& net_list,
         // profiling::time_on_criticality_analysis();
     }
 
+    // Calculates the number of iterations with high heap ops.
+    // This is defined as an iteration that has more heap operations than the maximum of the previous three iterations.
     int num_high_heap_ops_iters = 0;
     if (per_iter_heap_ops_count.size() > 4) {
         for (int i = 3; i < static_cast<int>(per_iter_heap_ops_count.size()); i++) {
