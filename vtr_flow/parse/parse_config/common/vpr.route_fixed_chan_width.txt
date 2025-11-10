@@ -7,7 +7,8 @@ avg_routed_wiresegment;vpr.out;\s.*average wire segments per net: (.*)
 total_nets_routed;vpr.out;Router Stats: total_nets_routed: (\d+) .*
 total_connections_routed;vpr.out;Router Stats: .*total_connections_routed: (\d+) .*
 total_heap_pushes;vpr.out;Router Stats: .*total_heap_pushes: (\d+) .*
-total_heap_pops;vpr.out;Router Stats: .*total_heap_pops: (\d+)
+total_heap_pops;vpr.out;Router Stats: .*total_heap_pops: (\d+) .*
+routing_struggle;vpr.out;Router Stats: .*routing_struggle_ratio: (.*)
 
 #Area Metrics
 logic_block_area_total;vpr.out;\s*Total logic block area .*: (.*)
