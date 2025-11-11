@@ -2127,7 +2127,11 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                                                             chan_loc.y,
                                                                             gather_chan_type,
                                                                             gather_wire.wire_switchpoint.wire);
-            VTR_ASSERT(gather_node.is_valid());
+            // TODO: Some of the nodes that the scatter-gather patterns want to connect to have been cut because they were crossing the die
+            // For now we're ignoring those, but a proper fix should be investigated.
+            if (gather_node == RRNodeId::INVALID()) {
+                continue;
+            }
             // Record deferred edge creation (gather_node --> sg_node)
             non_3d_sg_rr_edges_to_create.emplace_back(gather_node, node_id, link.arch_wire_switch, false);
         }
@@ -2146,7 +2150,11 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                                                              scatter_chan_type,
                                                                              scatter_wire.wire_switchpoint.wire);
 
-            VTR_ASSERT(scatter_node.is_valid());
+            // TODO: Some of the nodes that the scatter-gather patterns want to connect to have been cut because they were crossing the die
+            // For now we're ignoring those, but a proper fix should be investigated.
+            if (scatter_node == RRNodeId::INVALID()) {
+                continue;
+            }
             // Determine which architecture switch this edge should use
             int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
             // Record deferred edge creation (sg_node --> scatter_node)
