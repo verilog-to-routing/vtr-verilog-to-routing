@@ -329,10 +329,6 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type);
 
-std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
-                                        ClusterBlockId cluster_blk_id,
-                                        int abs_cap);
-
 t_arch_switch_inf create_internal_arch_sw(float delay);
 
 void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb);
