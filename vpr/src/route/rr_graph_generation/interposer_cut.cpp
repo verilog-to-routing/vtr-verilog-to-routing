@@ -133,59 +133,113 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
     return edges_to_be_removed;
 }
 
+static void cut_chan_y_node(RRNodeId node, int cut_loc_y, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
+    bool is_sg_node = std::ranges::binary_search(std::views::keys(sg_node_indices), node, [](RRNodeId l, RRNodeId r) {return size_t(l) < size_t(r);});
+    if (is_sg_node) {
+        return;
+    }
+
+    int x_high = rr_graph.node_xhigh(node);
+    int x_low = rr_graph.node_xlow(node);
+
+    int y_high = rr_graph.node_yhigh(node);
+    int y_low = rr_graph.node_ylow(node);
+
+    int layer = rr_graph.node_layer_low(node);
+
+    int ptc_num = rr_graph.node_ptc_num(node);
+
+    // No need to cut 1-length wires
+    if (y_high == y_low) {
+        return;
+    }
+
+    if (!should_cut(y_low, y_high, cut_loc_y)) {
+        return;
+    }
+
+    if (rr_graph.node_direction(node) == Direction::INC) {
+        // Anything above cut_loc_y shouldn't exist
+        rr_graph_builder.set_node_coordinates(node, x_low, y_low, x_high, cut_loc_y);
+
+        // Do a loop from cut_loc_y to y_high and remove node from spatial lookup
+        for (int y_loc = cut_loc_y + 1; y_loc <= y_high; y_loc++) {
+            spatial_lookup.remove_node(node, layer, x_low, y_loc, e_rr_type::CHANY, ptc_num);
+        }
+    } else if (rr_graph.node_direction(node) == Direction::DEC) {
+        // Anything below cut_loc_y shouldn't exist
+        rr_graph_builder.set_node_coordinates(node, x_low, cut_loc_y + 1, x_high, y_high);
+
+        // Do a loop from y_low to cut_loc_y and remove node from spatial lookup
+        for (int y_loc = y_low; y_loc <= cut_loc_y; y_loc++) {
+            spatial_lookup.remove_node(node, layer, x_low, y_loc, e_rr_type::CHANY, ptc_num);
+        }
+    }
+}
+
+static void cut_chan_x_node(RRNodeId node, int cut_loc_x, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
+    bool is_sg_node = std::ranges::binary_search(std::views::keys(sg_node_indices), node, [](RRNodeId l, RRNodeId r) {return size_t(l) < size_t(r);});
+    if (is_sg_node) {
+        return;
+    }
+
+    int x_high = rr_graph.node_xhigh(node);
+    int x_low = rr_graph.node_xlow(node);
+
+    int y_high = rr_graph.node_yhigh(node);
+    int y_low = rr_graph.node_ylow(node);
+
+    int layer = rr_graph.node_layer_low(node);
+
+    int ptc_num = rr_graph.node_ptc_num(node);
+
+    // No need to cut 1-length wires
+    if (x_high == x_low) {
+        return;
+    }
+
+    if (!should_cut(x_low, x_high, cut_loc_x)) {
+        return;
+    }
+
+    if (rr_graph.node_direction(node) == Direction::INC) {
+        // Anything to the right of cut_loc_x shouldn't exist
+        rr_graph_builder.set_node_coordinates(node, x_low, y_low, cut_loc_x, y_high);
+
+        // Do a loop from cut_loc_x to x_high and remove node from spatial lookup
+        for (int x_loc = cut_loc_x + 1; x_loc <= x_high; x_loc++) {
+            spatial_lookup.remove_node(node, layer, x_loc, y_low, e_rr_type::CHANX, ptc_num);
+        }
+    } else if (rr_graph.node_direction(node) == Direction::DEC) {
+        // Anything to the left of cut_loc_x shouldn't exist
+        rr_graph_builder.set_node_coordinates(node, cut_loc_x + 1, y_low, x_high, y_high);
+
+        // Do a loop from x_low to cut_loc_x - 1 and remove node from spatial lookup
+        for (int x_loc = x_low; x_loc <= cut_loc_x; x_loc++) {
+            spatial_lookup.remove_node(node, layer, x_loc, y_low, e_rr_type::CHANX, ptc_num);
+        }
+    }
+}
+
 // TODO: workshop a better name
 void update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(const RRGraphView& rr_graph, const DeviceGrid& grid, RRGraphBuilder& rr_graph_builder, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
     VTR_ASSERT(std::is_sorted(sg_node_indices.begin(), sg_node_indices.end()));
-    
     RRSpatialLookup& spatial_lookup = rr_graph_builder.node_lookup();
-    size_t num_sg = 0;
     for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int cut_loc_y : grid.get_horizontal_interposer_cuts()[layer]) {
             for (size_t x_loc = 0; x_loc < grid.width(); x_loc++) {
                 std::vector<RRNodeId> channel_nodes = spatial_lookup.find_channel_nodes(layer, x_loc, cut_loc_y, e_rr_type::CHANY);
                 for (RRNodeId node : channel_nodes) {
-                    
-                    bool is_sg_node = std::ranges::binary_search(std::views::keys(sg_node_indices), node, [](RRNodeId l, RRNodeId r) {return size_t(l) < size_t(r);});
-                    if (is_sg_node) {
-                        num_sg++;
-                        continue;
-                    }
+                    cut_chan_y_node(node, cut_loc_y, rr_graph, rr_graph_builder, spatial_lookup, sg_node_indices);
+                }
+            }
+        }
 
-
-                    int x_high = rr_graph.node_xhigh(node);
-                    int x_low = rr_graph.node_xlow(node);
-                    VTR_ASSERT(x_high == x_low);
-                    int y_high = rr_graph.node_yhigh(node);
-                    int y_low = rr_graph.node_ylow(node);
-                    int ptc_num = rr_graph.node_ptc_num(node);
-                    
-                    
-                    // No need to cut 1-length wires
-                    if (y_high == y_low) {
-                        continue;
-                    }
-
-                    if (!should_cut(y_low, y_high, cut_loc_y)) {
-                        continue;
-                    }
-
-                    if (rr_graph.node_direction(node) == Direction::INC) {
-                        // Anything above cut_loc_y shouldn't exist
-                        rr_graph_builder.set_node_coordinates(node, x_low, y_low, x_high, cut_loc_y);
-
-                        // Do a loop from cut_loc_y to y_high and remove node from spatial lookup
-                        for (int y_loc = cut_loc_y + 1; y_loc <= y_high; y_loc++) {
-                            spatial_lookup.remove_node(node, layer, x_low, y_loc, e_rr_type::CHANY, ptc_num);
-                        }
-                    } else if (rr_graph.node_direction(node) == Direction::DEC) {
-                        // Anything below cut_loc_y shouldn't exist
-                        rr_graph_builder.set_node_coordinates(node, x_low, cut_loc_y + 1, x_high, y_high);
-
-                        // Do a loop from y_low to cut_loc_y and remove node from spatial lookup
-                        for (int y_loc = y_low; y_loc <= cut_loc_y; y_loc++) {
-                            spatial_lookup.remove_node(node, layer, x_low, y_loc, e_rr_type::CHANY, ptc_num);
-                        }
-                    }
+        for (int cut_loc_x : grid.get_vertical_interposer_cuts()[layer]) {
+            for (size_t y_loc = 0; y_loc < grid.height(); y_loc++) {
+                std::vector<RRNodeId> channel_nodes = spatial_lookup.find_channel_nodes(layer, cut_loc_x, y_loc, e_rr_type::CHANX);
+                for (RRNodeId node : channel_nodes) {
+                    cut_chan_x_node(node, cut_loc_x, rr_graph, rr_graph_builder, spatial_lookup, sg_node_indices);
                 }
             }
         }
