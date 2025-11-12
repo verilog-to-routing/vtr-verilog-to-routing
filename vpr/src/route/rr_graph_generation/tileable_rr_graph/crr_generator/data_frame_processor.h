@@ -3,8 +3,6 @@
 #include <string>
 #include <vector>
 
-#include <xlnt/xlnt.hpp>
-
 #include "crr_common.h"
 namespace crrgenerator {
 
@@ -182,7 +180,7 @@ class DataFrameProcessor {
      * @return DataFrame containing the Excel data
      * @throws FileException if file cannot be read
      */
-    DataFrame read_excel(const std::string& filename);
+    DataFrame read_csv(const std::string& filename);
 
     /**
      * @brief Process DataFrame with merging operations
@@ -205,12 +203,14 @@ class DataFrameProcessor {
 
   private:
     // Excel parsing helpers
-    Cell parse_excel_cell(const xlnt::cell& cell);
+    Cell parse_csv_cell(const std::string& value);
+    size_t count_csv_columns(const std::string& line);
+    std::vector<std::string> parse_csv_line(const std::string& line);
     void merge_rows(DataFrame& df, const std::vector<size_t>& merge_row_indices);
     void merge_columns(DataFrame& df, const std::vector<size_t>& merge_col_indices);
 
     // Validation
-    void validate_excel_file(const std::string& filename);
+    void validate_csv_file(const std::string& filename);
 };
 
 } // namespace crrgenerator

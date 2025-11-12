@@ -3,17 +3,13 @@
 #include <charconv>
 #include <cmath>
 #include <string>
-#include <regex>
+// #include <regex>
 #include <cctype>
 #include <algorithm>
 
 #include "vtr_log.h"
 #include "vtr_assert.h"
 #include "rr_node_types.h"
-// #include <nlohmann/json.hpp>
-
-// using json = nlohmann::json;
-// using ordered_json = nlohmann::ordered_json;
 
 namespace crrgenerator {
 
@@ -22,35 +18,6 @@ static bool is_integer(const std::string& s) {
     auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
     return ec == std::errc() && ptr == s.data() + s.size();
 }
-
-// static void write_node_storage_to_json(
-//     const std::vector<std::string>& storage_sw_names,
-//     const std::vector<std::map<size_t, NodeId>>& storage_source_nodes,
-//     const std::vector<std::map<size_t, NodeId>>& storage_sink_nodes,
-//     const std::string& filename) {
-//   assert(storage_sw_names.size() == storage_source_nodes.size());
-//   assert(storage_sw_names.size() == storage_sink_nodes.size());
-
-//   ordered_json j;
-
-//   for (size_t i = 0; i < storage_sw_names.size(); ++i) {
-//     ordered_json source_nodes_json;
-//     for (const auto& [idx, node] : storage_source_nodes[i]) {
-//       source_nodes_json[std::to_string(idx)] = node;
-//     }
-
-//     ordered_json sink_nodes_json;
-//     for (const auto& [idx, node] : storage_sink_nodes[i]) {
-//       sink_nodes_json[std::to_string(idx)] = node;
-//     }
-
-//     j[storage_sw_names[i]] = {{"source_nodes", source_nodes_json},
-//                               {"sink_nodes", sink_nodes_json}};
-//   }
-
-//   std::ofstream file(filename);
-//   file << j.dump(4);  // Pretty print with indent of 4
-// }
 
 CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
                                            const NodeLookupManager& node_lookup,
@@ -321,7 +288,7 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
 }
 
 RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y, const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
-    assert(info.side == Side::OPIN || info.side == Side::IPIN);
+    VTR_ASSERT(info.side == Side::OPIN || info.side == Side::IPIN);
     e_rr_type node_type = (info.side == Side::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN;
     NodeHash hash = std::make_tuple(node_type,
                                     std::to_string(info.seg_index),

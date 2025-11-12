@@ -63,7 +63,7 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
             if (std::filesystem::exists(full_path)) {
                 try {
                     VTR_LOG_DEBUG("Attempting to read Excel file: %s\n", full_path.c_str());
-                    DataFrame df = processor_.read_excel(full_path);
+                    DataFrame df = processor_.read_csv(full_path);
                     df = processor_.process_dataframe(std::move(df), NUM_EMPTY_ROWS,
                                                       NUM_EMPTY_COLS);
                     file_cache_[full_path] = std::move(df);

@@ -116,78 +116,123 @@ void DataFrame::validate_bounds(size_t row, size_t col) const {
 }
 
 // DataFrameProcessor implementation
-DataFrame DataFrameProcessor::read_excel(const std::string& filename) {
+DataFrame DataFrameProcessor::read_csv(const std::string& filename) {
 
-    validate_excel_file(filename);
+    validate_csv_file(filename);
 
-    VTR_LOG_DEBUG("Reading Excel file: %s\n", filename.c_str());
+    VTR_LOG_DEBUG("Reading CSV file: %s\n", filename.c_str());
 
     try {
-        // Open the Excel document
-        xlnt::workbook wb;
-        wb.load(filename);
-
-        VTR_LOG_DEBUG("Document %s opened successfully\n", filename.c_str());
-
-        // Get the first worksheet
-        auto worksheet = wb.active_sheet();
-        std::string sheet_name = worksheet.title();
-
-        VTR_LOG_DEBUG("Got worksheet: '%s'\n", sheet_name.c_str());
-
-        // Get the used range dimensions
-        auto used_range = worksheet.calculate_dimension();
-        size_t last_row = used_range.bottom_right().row();
-        size_t last_col = used_range.bottom_right().column_index();
-
-        VTR_LOG_DEBUG("Worksheet dimensions: %zux%zu\n", last_row, last_col);
-
-        // Safety check
-        if (last_row > 10000 || last_col > 1000) {
-            VTR_LOG_ERROR("Excel file too large: %zux%zu (limit: 10000x1000)\n",
-                          last_row, last_col);
+        std::ifstream file(filename);
+        if (!file.is_open()) {
+            VTR_LOG_ERROR("Failed to open CSV file: %s\n", filename.c_str());
+            return DataFrame();
         }
 
-        if (last_row == 0 || last_col == 0) {
-            VTR_LOG_ERROR("Excel file appears to be empty: %s\n", filename.c_str());
+        VTR_LOG_DEBUG("File %s opened successfully\n", filename.c_str());
+
+        // Read all lines first to determine dimensions
+        std::vector<std::string> lines;
+        std::string line;
+        while (std::getline(file, line)) {
+            if (!line.empty()) {
+                lines.push_back(line);
+            }
+        }
+        file.close();
+
+        if (lines.empty()) {
+            VTR_LOG_ERROR("CSV file appears to be empty: %s\n", filename.c_str());
+            return DataFrame();
         }
 
-        DataFrame df(last_row, last_col);
-        VTR_LOG_DEBUG("Created DataFrame with dimensions: %zux%zu\n", last_row, last_col);
+        // Parse first line to get column count
+        size_t num_cols = count_csv_columns(lines[0]);
+        size_t num_rows = lines.size();
+
+        VTR_LOG_DEBUG("CSV dimensions: %zux%zu\n", num_rows, num_cols);
+
+        DataFrame df(num_rows, num_cols);
+        VTR_LOG_DEBUG("Created DataFrame with dimensions: %zux%zu\n", num_rows, num_cols);
 
         // Read all cells
         VTR_LOG_DEBUG("Reading cell data...\n");
         size_t cells_read = 0;
 
-        for (size_t row = 1; row <= last_row; ++row) {
-            for (size_t col = 1; col <= last_col; ++col) {
-                try {
-                    // xlnt uses 1-based indexing like Excel
-                    auto cell = worksheet.cell(col, row);
-                    df.at(row - 1, col - 1) = parse_excel_cell(cell);
-                    cells_read++;
-                } catch (const std::exception& e) {
-                    VTR_LOG_DEBUG("Error reading cell (%zu, %zu): %s\n", row, col, e.what());
-                    df.at(row - 1, col - 1) = Cell(); // Empty cell
-                }
+        for (size_t row = 0; row < num_rows; ++row) {
+            std::vector<std::string> tokens = parse_csv_line(lines[row]);
+            VTR_ASSERT_DEBUG(tokens.size() <= num_cols);
+            
+            for (size_t col = 0; col < tokens.size(); ++col) {
+                df.at(row, col) = parse_csv_cell(tokens[col]);
+                cells_read++;
+            }
+
+            // Fill remaining columns with empty cells if row has fewer columns
+            for (size_t col = tokens.size(); col < num_cols; ++col) {
+                df.at(row, col) = Cell();
             }
 
             // Progress logging for large files
-            if (row % 100 == 0) {
-                VTR_LOG_DEBUG("Read %zu rows (%zu cells)\n", row, cells_read);
+            if ((row + 1) % 100 == 0) {
+                VTR_LOG_DEBUG("Read %zu rows (%zu cells)\n", row + 1, cells_read);
             }
         }
 
         df.source_file = std::filesystem::path(filename).stem().string();
-        VTR_LOG_DEBUG("Successfully read Excel file with dimensions: %zux%zu, %zu cells\n",
+        VTR_LOG_DEBUG("Successfully read CSV file with dimensions: %zux%zu, %zu cells\n",
                       df.rows(), df.cols(), cells_read);
 
         return df;
 
     } catch (const std::exception& e) {
-        VTR_LOG_ERROR("Error reading Excel file %s: %s\n", filename.c_str(), e.what());
+        VTR_LOG_ERROR("Error reading CSV file %s: %s\n", filename.c_str(), e.what());
         return DataFrame();
     }
+}
+
+
+size_t DataFrameProcessor::count_csv_columns(const std::string& line) {
+    size_t count = 1;
+    bool in_quotes = false;
+    
+    for (char c : line) {
+        if (c == '"') {
+            in_quotes = !in_quotes;
+        } else if (c == ',' && !in_quotes) {
+            count++;
+        }
+    }
+    
+    return count;
+}
+
+std::vector<std::string> DataFrameProcessor::parse_csv_line(const std::string& line) {
+    std::vector<std::string> tokens;
+    std::string current;
+    bool in_quotes = false;
+    
+    for (size_t i = 0; i < line.size(); ++i) {
+        char c = line[i];
+        
+        if (c == '"') {
+            // Handle escaped quotes ("")
+            if (in_quotes && i + 1 < line.size() && line[i + 1] == '"') {
+                current += '"';
+                i++; // Skip next quote
+            } else {
+                in_quotes = !in_quotes;
+            }
+        } else if (c == ',' && !in_quotes) {
+            tokens.push_back(current);
+            current.clear();
+        } else {
+            current += c;
+        }
+    }
+    
+    tokens.push_back(current); // Add last token
+    return tokens;
 }
 
 DataFrame DataFrameProcessor::process_dataframe(DataFrame df,
@@ -241,47 +286,28 @@ void DataFrameProcessor::update_switch_delays(const DataFrame& df,
 }
 
 // Parse xlnt cell to our Cell type
-Cell DataFrameProcessor::parse_excel_cell(const xlnt::cell& cell) {
-    // Check if cell has a value
-    if (!cell.has_value()) {
-        return Cell();
+Cell DataFrameProcessor::parse_csv_cell(const std::string& value) {
+    // Trim whitespace
+    std::string trimmed = value;
+    trimmed.erase(0, trimmed.find_first_not_of(" \t\r\n"));
+    trimmed.erase(trimmed.find_last_not_of(" \t\r\n") + 1);
+    
+    if (trimmed.empty()) {
+        return Cell(); // Empty cell
     }
-
-    // Get the data type
-    auto data_type = cell.data_type();
-
-    switch (data_type) {
-        case xlnt::cell::type::boolean:
-            return Cell(static_cast<int64_t>(cell.value<bool>() ? 1 : 0));
-
-        case xlnt::cell::type::number: {
-            double value = cell.value<double>();
-            // Check if it's actually an integer
-            if (value == std::floor(value) && std::abs(value) < 9007199254740992.0) {
-                return Cell(static_cast<int64_t>(value));
-            }
-            return Cell(value);
+    
+    // Try to parse as number
+    try {
+        size_t pos;
+        double num = std::stod(trimmed, &pos);
+        if (pos == trimmed.length()) {
+            return Cell(num);
         }
-
-        case xlnt::cell::type::shared_string:
-        case xlnt::cell::type::inline_string:
-        case xlnt::cell::type::formula_string: {
-            std::string value = cell.to_string();
-            if (value.empty()) {
-                return Cell();
-            }
-            return Cell(value);
-        }
-
-        case xlnt::cell::type::date: {
-            // Convert date to string representation
-            return Cell(cell.to_string());
-        }
-
-        case xlnt::cell::type::empty:
-        default:
-            return Cell();
+    } catch (...) {
+        // Not a number, treat as string
     }
+    
+    return Cell(trimmed);
 }
 
 void DataFrameProcessor::merge_rows(DataFrame& df, const std::vector<size_t>& merge_row_indices) {
@@ -308,17 +334,17 @@ void DataFrameProcessor::merge_columns(DataFrame& df, const std::vector<size_t>&
     }
 }
 
-void DataFrameProcessor::validate_excel_file(const std::string& filename) {
+void DataFrameProcessor::validate_csv_file(const std::string& filename) {
     if (!std::filesystem::exists(filename)) {
-        VTR_LOG_ERROR("Excel file does not exist: %s\n", filename.c_str());
+        VTR_LOG_ERROR("CSV file does not exist: %s\n", filename.c_str());
     }
 
     // Check file extension
     std::string extension = std::filesystem::path(filename).extension().string();
     std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
-    if (extension != ".xlsx" && extension != ".xls") {
-        VTR_LOG_ERROR("Unsupported file format: %s. Expected .xlsx or .xls\n", extension.c_str());
+    if (extension != ".csv") {
+        VTR_LOG_ERROR("Unsupported file format: %s. Expected .csv\n", extension.c_str());
     }
 }
 
