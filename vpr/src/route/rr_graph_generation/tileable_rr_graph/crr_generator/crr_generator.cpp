@@ -11,13 +11,11 @@ namespace crrgenerator {
 CRRGraphGenerator::CRRGraphGenerator(const t_crr_opts& crr_opts,
                                      const RRGraphView& input_graph,
                                      const NodeLookupManager& node_lookup,
-                                     const SwitchBlockManager& sb_manager,
-                                     const std::string& output_graph_xml)
+                                     const SwitchBlockManager& sb_manager)
     : crr_opts_(crr_opts)
     , input_graph_(input_graph)
     , node_lookup_(node_lookup)
-    , sb_manager_(sb_manager)
-    , output_graph_xml_(output_graph_xml) {}
+    , sb_manager_(sb_manager) {}
 
 void CRRGraphGenerator::run() {
     auto start_time = std::chrono::steady_clock::now();
@@ -43,9 +41,6 @@ void CRRGraphGenerator::run() {
 
 void CRRGraphGenerator::initialize_components() {
     VTR_LOG("CRR Graph Generator: Initializing components\n");
-
-    // Initialize XML handler
-    xml_handler_ = std::make_unique<XMLHandler>();
 
     // Initialize connection builder
     connection_builder_ = std::make_unique<CRRConnectionBuilder>(input_graph_,

@@ -22,8 +22,7 @@ class CRRGraphGenerator {
     CRRGraphGenerator(const t_crr_opts& crr_opts,
                       const RRGraphView& input_graph,
                       const NodeLookupManager& node_lookup,
-                      const SwitchBlockManager& sb_manager,
-                      const std::string& output_graph_xml);
+                      const SwitchBlockManager& sb_manager);
     ~CRRGraphGenerator() = default;
 
     /**
@@ -40,11 +39,8 @@ class CRRGraphGenerator {
     const RRGraphView& input_graph_;
     const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
-    const std::string& output_graph_xml_;
 
-    std::unique_ptr<RRGraph> output_graph_;
     std::unique_ptr<CRRConnectionBuilder> connection_builder_;
-    std::unique_ptr<XMLHandler> xml_handler_;
 
     // Processing methods
     void initialize_components();

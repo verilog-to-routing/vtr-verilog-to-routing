@@ -329,7 +329,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     const crrgenerator::CRRConnectionBuilder* crr_connection_builder = nullptr;
     crrgenerator::SwitchBlockManager sb_manager;
     crrgenerator::NodeLookupManager node_lookup(rr_graph, grids.width(), grids.height());
-    crrgenerator::CRRGraphGenerator parser(crr_opts, rr_graph, node_lookup, sb_manager, "vpr_custom_rr_graph.xml");
+    crrgenerator::CRRGraphGenerator parser(crr_opts, rr_graph, node_lookup, sb_manager);
     if (build_crr_edges) {
         sb_manager.initialize(crr_opts.sb_maps, crr_opts.sb_templates, crr_opts.annotated_rr_graph);
         node_lookup.initialize();

@@ -66,12 +66,6 @@ class NodeLookupManager {
     std::vector<std::unordered_map<NodeHash, RRNodeId, NodeHasher>> column_lookup_;
     std::vector<std::unordered_map<NodeHash, RRNodeId, NodeHasher>> row_lookup_;
 
-    // Edge spatial indexes. [x][y] -> std::vector<const RREdge*>
-    std::vector<std::vector<std::vector<const RREdge*>>> edge_sink_lookup_;
-
-    // Global lookup - Return a pointer to the node corresponding to the hash
-    std::unordered_map<NodeHash, const RRNode*, NodeHasher> global_lookup_;
-
     // Grid dimensions
     size_t fpga_grid_x_;
     size_t fpga_grid_y_;
