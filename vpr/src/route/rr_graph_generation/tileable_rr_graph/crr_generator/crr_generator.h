@@ -7,10 +7,7 @@
 #include "crr_common.h"
 #include "crr_connection_builder.h"
 #include "node_lookup_manager.h"
-#include "custom_rr_graph.h"
 #include "crr_switch_block_manager.h"
-#include "crr_thread_pool.h"
-#include "xml_handler.h"
 
 namespace crrgenerator {
 

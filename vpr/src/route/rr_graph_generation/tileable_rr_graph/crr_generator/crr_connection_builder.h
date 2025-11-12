@@ -6,7 +6,6 @@
 #include "data_frame_processor.h"
 #include "node_lookup_manager.h"
 #include "crr_switch_block_manager.h"
-#include "crr_thread_pool.h"
 
 namespace crrgenerator {
 

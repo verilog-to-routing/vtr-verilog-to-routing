@@ -47,7 +47,6 @@
 #include "rr_node_indices.h"
 
 #include "crr_generator.h"
-#include "xml_handler.h"
 #include "node_lookup_manager.h"
 #include "crr_switch_block_manager.h"
 

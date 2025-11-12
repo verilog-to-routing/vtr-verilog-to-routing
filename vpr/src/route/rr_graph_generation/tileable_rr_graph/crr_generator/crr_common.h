@@ -32,23 +32,12 @@
 namespace crrgenerator {
 
 // Forward declarations
-class RRGraph;
-class RRNode;
-class RREdge;
-class Switch;
-class Segment;
-class ConfigManager;
-class XMLHandler;
 class SwitchBlockManager;
 class NodeLookupManager;
 class ConnectionBuilder;
-class SwitchManager;
 class DataFrameProcessor;
-class ThreadPool;
-class RRGraphGenerator;
 
 // Type aliases for convenience
-using NodeId = size_t;
 using SwitchId = int32_t;
 using SegmentId = int32_t;
 using Coordinate = int32_t;

@@ -17,7 +17,6 @@
 
 #include "crr_generator.h"
 #include "crr_edge_builder.h"
-#include "xml_handler.h"
 
 /************************************************************************
  * Build the edges for all the SOURCE and SINKs nodes:

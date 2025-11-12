@@ -4,7 +4,6 @@
 #include "rr_graph_view.h"
 
 #include "crr_common.h"
-#include "custom_rr_graph.h"
 
 namespace crrgenerator {
 
