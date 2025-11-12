@@ -14,9 +14,12 @@
 
 #include "interposer_cut.h"
 
-static bool should_cut(int src_start_loc, int sink_start_loc, int cut_loc) {
-    int src_delta = src_start_loc - cut_loc;
-    int sink_delta = sink_start_loc - cut_loc;
+/**
+ * @brief Takes location of a source and a sink and determines wether it crosses cut_loc or not. For example, the interval (1, 4) is cut by 3, while it is not cut by 5 or 0.
+ */
+static bool should_cut(int src_loc, int sink_loc, int cut_loc) {
+    int src_delta = src_loc - cut_loc;
+    int sink_delta = sink_loc - cut_loc;
 
     // Same sign means that both sink and source are on the same side of this cut
     if ((src_delta <= 0 && sink_delta <= 0) || (src_delta > 0 && sink_delta > 0)) {
@@ -26,6 +29,9 @@ static bool should_cut(int src_start_loc, int sink_start_loc, int cut_loc) {
     }
 }
 
+/**
+ * @brief Calculates the starting x point of node based on it's directionality.
+ */
 static short node_xstart(const RRGraphView& rr_graph, RRNodeId node) {
     // Return early for OPIN and IPIN types (Some BIDIR pins would trigger the assertion below)
     if (rr_graph.node_type(node) == e_rr_type::OPIN || rr_graph.node_type(node) == e_rr_type::IPIN) {
@@ -57,6 +63,9 @@ static short node_xstart(const RRGraphView& rr_graph, RRNodeId node) {
     }
 }
 
+/**
+ * @brief Calculates the starting y point of node based on it's directionality.
+ */
 static short node_ystart(const RRGraphView& rr_graph, RRNodeId node) {
     // Return early for OPIN and IPIN types (Some BIDIR pins would trigger the assertion below)
     if (rr_graph.node_type(node) == e_rr_type::OPIN || rr_graph.node_type(node) == e_rr_type::IPIN) {
@@ -133,11 +142,16 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
     return edges_to_be_removed;
 }
 
-static void cut_chan_y_node(RRNodeId node, int cut_loc_y, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
-    bool is_sg_node = std::ranges::binary_search(std::views::keys(sg_node_indices), node, [](RRNodeId l, RRNodeId r) {return size_t(l) < size_t(r);});
-    if (is_sg_node) {
-        return;
-    }
+/**
+ * @brief Update a CHANY node's bounding box in RRGraph and SpatialLookup entries if it crosses cut_loc_y
+ * 
+ * @param node CHANY RR graph node that might cross the interposer cut line
+ * @param cut_loc_y Y location of horizontal interposer cut line
+ * @param sg_node_indices List of scatter-gather node IDs. We do not want to cut these nodes as they're allowed to cross an interposer cut line.
+ * @note This function is very similar to cut_chan_x_node. If you're modifying this you probably also want to modify that function too.
+ */
+static void cut_chan_y_node(RRNodeId node, int cut_loc_y, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
+    VTR_ASSERT_SAFE(rr_graph.node_type(node) == e_rr_type::CHANY);
 
     int x_high = rr_graph.node_xhigh(node);
     int x_low = rr_graph.node_xlow(node);
@@ -148,11 +162,6 @@ static void cut_chan_y_node(RRNodeId node, int cut_loc_y, const RRGraphView& rr_
     int layer = rr_graph.node_layer_low(node);
 
     int ptc_num = rr_graph.node_ptc_num(node);
-
-    // No need to cut 1-length wires
-    if (y_high == y_low) {
-        return;
-    }
 
     if (!should_cut(y_low, y_high, cut_loc_y)) {
         return;
@@ -167,21 +176,28 @@ static void cut_chan_y_node(RRNodeId node, int cut_loc_y, const RRGraphView& rr_
             spatial_lookup.remove_node(node, layer, x_low, y_loc, e_rr_type::CHANY, ptc_num);
         }
     } else if (rr_graph.node_direction(node) == Direction::DEC) {
-        // Anything below cut_loc_y shouldn't exist
+        // Anything below cut_loc_y (inclusive) shouldn't exist
         rr_graph_builder.set_node_coordinates(node, x_low, cut_loc_y + 1, x_high, y_high);
 
         // Do a loop from y_low to cut_loc_y and remove node from spatial lookup
         for (int y_loc = y_low; y_loc <= cut_loc_y; y_loc++) {
             spatial_lookup.remove_node(node, layer, x_low, y_loc, e_rr_type::CHANY, ptc_num);
         }
+    } else {
+        VTR_ASSERT_MSG(false, "Bidirectional routing is not supported for interposer architectures.");
     }
 }
 
-static void cut_chan_x_node(RRNodeId node, int cut_loc_x, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
-    bool is_sg_node = std::ranges::binary_search(std::views::keys(sg_node_indices), node, [](RRNodeId l, RRNodeId r) {return size_t(l) < size_t(r);});
-    if (is_sg_node) {
-        return;
-    }
+/**
+ * @brief Update a CHANX node's bounding box in RRGraph and SpatialLookup entries if it crosses cut_loc_x
+ * 
+ * @param node CHANX RR graph node that might cross the interposer cut line
+ * @param cut_loc_y X location of vertical interposer cut line
+ * @param sg_node_indices List of scatter-gather node IDs. We do not want to cut these nodes as they're allowed to cross an interposer cut line.
+ * @note This function is very similar to cut_chan_y_node. If you're modifying this you probably also want to modify that function too.
+ */
+static void cut_chan_x_node(RRNodeId node, int cut_loc_x, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
+    VTR_ASSERT_SAFE(rr_graph.node_type(node) == e_rr_type::CHANX);
 
     int x_high = rr_graph.node_xhigh(node);
     int x_low = rr_graph.node_xlow(node);
@@ -192,11 +208,6 @@ static void cut_chan_x_node(RRNodeId node, int cut_loc_x, const RRGraphView& rr_
     int layer = rr_graph.node_layer_low(node);
 
     int ptc_num = rr_graph.node_ptc_num(node);
-
-    // No need to cut 1-length wires
-    if (x_high == x_low) {
-        return;
-    }
 
     if (!should_cut(x_low, x_high, cut_loc_x)) {
         return;
@@ -211,26 +222,35 @@ static void cut_chan_x_node(RRNodeId node, int cut_loc_x, const RRGraphView& rr_
             spatial_lookup.remove_node(node, layer, x_loc, y_low, e_rr_type::CHANX, ptc_num);
         }
     } else if (rr_graph.node_direction(node) == Direction::DEC) {
-        // Anything to the left of cut_loc_x shouldn't exist
+        // Anything to the left of cut_loc_x (inclusive) shouldn't exist
         rr_graph_builder.set_node_coordinates(node, cut_loc_x + 1, y_low, x_high, y_high);
 
         // Do a loop from x_low to cut_loc_x - 1 and remove node from spatial lookup
         for (int x_loc = x_low; x_loc <= cut_loc_x; x_loc++) {
             spatial_lookup.remove_node(node, layer, x_loc, y_low, e_rr_type::CHANX, ptc_num);
         }
+    } else {
+        VTR_ASSERT_MSG(false, "Bidirectional routing is not supported for interposer architectures.");
     }
 }
 
-// TODO: workshop a better name
 void update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(const RRGraphView& rr_graph, const DeviceGrid& grid, RRGraphBuilder& rr_graph_builder, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
+
+    constexpr auto node_indice_compare = [](RRNodeId l, RRNodeId r) noexcept { return size_t(l) < size_t(r); };
     VTR_ASSERT(std::is_sorted(sg_node_indices.begin(), sg_node_indices.end()));
+
     RRSpatialLookup& spatial_lookup = rr_graph_builder.node_lookup();
     for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int cut_loc_y : grid.get_horizontal_interposer_cuts()[layer]) {
             for (size_t x_loc = 0; x_loc < grid.width(); x_loc++) {
                 std::vector<RRNodeId> channel_nodes = spatial_lookup.find_channel_nodes(layer, x_loc, cut_loc_y, e_rr_type::CHANY);
                 for (RRNodeId node : channel_nodes) {
-                    cut_chan_y_node(node, cut_loc_y, rr_graph, rr_graph_builder, spatial_lookup, sg_node_indices);
+                    bool is_sg_node = std::ranges::binary_search(std::views::keys(sg_node_indices), node, node_indice_compare);
+                    if (is_sg_node) {
+                        continue;
+                    }
+
+                    cut_chan_y_node(node, cut_loc_y, rr_graph, rr_graph_builder, spatial_lookup);
                 }
             }
         }
@@ -239,7 +259,12 @@ void update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(con
             for (size_t y_loc = 0; y_loc < grid.height(); y_loc++) {
                 std::vector<RRNodeId> channel_nodes = spatial_lookup.find_channel_nodes(layer, cut_loc_x, y_loc, e_rr_type::CHANX);
                 for (RRNodeId node : channel_nodes) {
-                    cut_chan_x_node(node, cut_loc_x, rr_graph, rr_graph_builder, spatial_lookup, sg_node_indices);
+                    bool is_sg_node = std::ranges::binary_search(std::views::keys(sg_node_indices), node, node_indice_compare);
+                    if (is_sg_node) {
+                        continue;
+                    }
+
+                    cut_chan_x_node(node, cut_loc_x, rr_graph, rr_graph_builder, spatial_lookup);
                 }
             }
         }
