@@ -13,7 +13,6 @@ add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
 add_subdirectory(yaml-cpp)
-add_subdirectory(xlnt)
 #add_subdirectory(parmys)
 
 #Proc numbers

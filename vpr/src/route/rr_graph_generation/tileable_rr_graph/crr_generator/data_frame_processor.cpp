@@ -285,7 +285,7 @@ void DataFrameProcessor::update_switch_delays(const DataFrame& df,
                   switch_delay_max_ps);
 }
 
-// Parse xlnt cell to our Cell type
+// Parse csv cell to our Cell type
 Cell DataFrameProcessor::parse_csv_cell(const std::string& value) {
     // Trim whitespace
     std::string trimmed = value;
