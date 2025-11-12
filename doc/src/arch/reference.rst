@@ -589,7 +589,6 @@ Grid Layout Example
 
     .. note:: Exactly one of the ``x`` or ``y`` attributes must be specified.
 
-    .. note:: Interposers are experimental and are currently not supported by VPR and using the related tags will not actually result in any changes to the flow.
     Defines an interposer cut for modelling 2.5D interposer-based architectures. An interposer cut will cut all connections at location 'loc' along the axis 'dim' Leaving the two sides completely unconnected.
     To reconnect the two sides, this tag can have multiple <interdie_wire> tags as children to specify the connection between the two sides.
 
@@ -2751,7 +2750,7 @@ The number of any additional wires or muxes created by scatter-gather specificat
     Overview of how scatter-gather patterns work. First, connections from a switchblock location are selected according to the specification.
     These selected connection are then muxed and passed through the scatter-gather node, which is typically a wire segment. The scatter-gather node then fans out or scatters in another switchblock location.
 
-.. note:: Scatter-Gather patterns are only supported for 3D architectures where the scatter-gather links are unidirectional. They are not currently supported in 2D architectures or with bidirectional sg_links.
+.. note:: Scatter-Gather patterns are only supported for 3D architectures where the scatter-gather links are uni-directional and uni-directional 2D architectures. Bidirectional sg_links are not currently supported.
 
 When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
 
