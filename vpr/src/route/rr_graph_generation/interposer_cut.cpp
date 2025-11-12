@@ -110,12 +110,15 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
             VTR_LOG("HI\n");
         }
 
-        // TODO: ignoring chanz nodes for now
+        // TODO: ignoring ChanZ nodes for now
         if (rr_graph.node_type(src_node) == e_rr_type::CHANZ || rr_graph.node_type(sink_node) == e_rr_type::CHANZ) {
             continue;
         }
 
-        VTR_ASSERT(rr_graph.node_layer_low(src_node) == rr_graph.node_layer_low(sink_node));
+        // Currently 3D connection block edges cross layers. We don't want to cut these edges.
+        if (rr_graph.node_layer_low(src_node) != rr_graph.node_layer_low(sink_node)) {
+            continue;
+        }
         VTR_ASSERT(rr_graph.node_layer_low(src_node) == rr_graph.node_layer_high(src_node));
         VTR_ASSERT(rr_graph.node_layer_low(sink_node) == rr_graph.node_layer_high(sink_node));
 
