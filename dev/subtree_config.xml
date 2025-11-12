@@ -54,9 +54,4 @@
         internal_path="parmys"
         external_url="https://github.com/CAS-Atlantic/parmys-plugin.git"
         default_external_ref="v3.0"/>
-    <subtree
-        name="xlnt"
-        internal_path="libs/EXTERNAL/xlnt"
-        external_url="https://github.com/tfussell/xlnt.git"
-        default_external_ref="master"/>
 </subtrees>

@@ -1,4 +1,0 @@
-# file      : examples/buildfile
-# license   : MIT; see accompanying LICENSE file
-
-./: {*/ -build/} doc{README}

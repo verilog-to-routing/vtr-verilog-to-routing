@@ -1,6 +1,0 @@
-# file      : examples/xhtml/buildfile
-# license   : MIT; see accompanying LICENSE file
-
-import libs = libstudxml%lib{studxml}
-
-exe{driver}: {hxx cxx}{*} $libs doc{README}

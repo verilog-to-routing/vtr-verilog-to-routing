@@ -1,7 +1,0 @@
-# file      : examples/performance/buildfile
-# license   : MIT; see accompanying LICENSE file
-
-import libs = libstudxml%lib{studxml}
-
-exe{driver}: {hxx cxx}{* -expat -gen} $libs doc{README} file{*.xsd}
-exe{driver}: file{test-50k.xml}: test.input = true

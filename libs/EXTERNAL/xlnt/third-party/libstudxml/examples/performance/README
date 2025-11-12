@@ -1,4 +1,0 @@
-This example measures the performance of the parser. You can generate smaller
-or larger test files using the gen.cxx program. You can also compare the
-result to the no-op Expat implementation by compiling and running the
-expat.cxx program.

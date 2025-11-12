@@ -1,4 +1,0 @@
-This example shows how to parse a specific XML vocabulary, extract the
-data, and store it back to XML. This example can be used as a base for
-applications that need to process the data without creating any kind of
-object model.

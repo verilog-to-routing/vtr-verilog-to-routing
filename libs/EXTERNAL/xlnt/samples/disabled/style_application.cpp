@@ -1,1 +1,0 @@
-style_application.cpp

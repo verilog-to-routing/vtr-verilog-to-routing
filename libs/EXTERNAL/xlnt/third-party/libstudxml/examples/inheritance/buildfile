@@ -1,7 +1,0 @@
-# file      : examples/inheritance/buildfile
-# license   : MIT; see accompanying LICENSE file
-
-import libs = libstudxml%lib{studxml}
-
-exe{driver}: {hxx cxx}{*} $libs doc{README}
-exe{driver}: file{position.xml}: test.input = true

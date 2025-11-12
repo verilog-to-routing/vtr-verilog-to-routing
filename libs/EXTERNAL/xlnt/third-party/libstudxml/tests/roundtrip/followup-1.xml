@@ -1,8 +1,0 @@
-<root xmlns="foo" xmlns:b="bar">
-  <nested xmlns:c="cox">
-    <c:inner>x</c:inner>
-  </nested>
-  <empty/>
-  <empty x="x"/>
-  <split>foo&amp;bar</split>
-</root>
