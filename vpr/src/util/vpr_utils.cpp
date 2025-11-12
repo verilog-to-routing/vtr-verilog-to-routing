@@ -1906,23 +1906,6 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
     return pin_num_vec;
 }
 
-std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
-                                        ClusterBlockId cluster_blk_id,
-                                        int abs_cap) {
-    int max_num_pin = get_tile_total_num_pin(physical_tile) / physical_tile->capacity;
-    int num_tile_pin_per_inst = physical_tile->num_pins / physical_tile->capacity;
-    std::vector<int> pin_num_vec(num_tile_pin_per_inst);
-    std::iota(pin_num_vec.begin(), pin_num_vec.end(), abs_cap * num_tile_pin_per_inst);
-
-    pin_num_vec.reserve(max_num_pin);
-
-    auto internal_pins = get_cluster_internal_pins(cluster_blk_id);
-    pin_num_vec.insert(pin_num_vec.end(), internal_pins.begin(), internal_pins.end());
-
-    pin_num_vec.shrink_to_fit();
-    return pin_num_vec;
-}
-
 t_arch_switch_inf create_internal_arch_sw(float delay) {
     t_arch_switch_inf arch_switch_inf;
     arch_switch_inf.set_type(e_switch_type::MUX);

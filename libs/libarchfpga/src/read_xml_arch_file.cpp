@@ -404,7 +404,7 @@ void xml_read_arch(std::string_view arch_file,
         VTR_LOG_WARN(
             "Architecture file '%s' may be in incorrect format. "
             "Expecting .xml format for architecture files.\n",
-            arch_file);
+            arch_file.data());
     }
 
     // Create a unique identifier for this architecture file based on it's contents

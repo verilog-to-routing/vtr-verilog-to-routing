@@ -12,6 +12,16 @@
 #include "rr_graph_switch_utils.h"
 #include "check_rr_graph.h"
 
+/**
+ * @brief Returns the list of pins (both cluster-level and intra-cluster-level) of the given cluster block.
+ * @param physical_tile The physical tile type that the cluster block is mapped to.
+ * @param cluster_blk_id The cluster block ID.
+ * @param sub_tile_index The sub-tile absolute index (in comparison to relative index which is the index among sub-tiles of the same type) in the physical tile type.
+ */
+static std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
+                                               ClusterBlockId cluster_blk_id,
+                                               int sub_tile_index);
+
 static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
                                     vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                     bool is_flat);
@@ -178,6 +188,53 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
                           std::vector<int>& pin_index_vec,
                           std::vector<std::vector<t_pin_chain_node>>& all_chains,
                           bool is_new_chain);
+
+static std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
+                                               ClusterBlockId cluster_blk_id,
+                                               int sub_tile_index) {
+    // To get the list of pins, we first add the pins on the tile-level, then add the pins on the intra-tile-level.
+
+    // A counter to keep track of number of tile-level pins for the sub-tiles before the current sub-tile.
+    int seen_sub_tiles_num_cluser_pins = 0;
+    // The number of tile-level pins for the sub-tile instance that the cluster block is mapped to.
+    int cluster_sub_tile_inst_num_pins;
+    // A flag to check if the sub-tile instance that the cluster block is mapped to has been found.
+    bool found_sub_tile = false;
+
+    // Iterate over all the sub-tiles to find the sub-tile instance that the cluster block is mapped to.
+    for (const t_sub_tile& sub_tile: physical_tile->sub_tiles) {
+        if (sub_tile.capacity.is_in_range(sub_tile_index)) {
+            // This sub-tile type is the one that the cluster block is mapped to.
+            found_sub_tile = true;
+            // The number of tile-level pins for all isntances of the same sub-tile type is the same. Thus,
+            // we can the the number of tile-level pins for the sub-tile instance by dividing the total number of pins
+            // for the given sub-tile type by the number of instances.
+            cluster_sub_tile_inst_num_pins = (sub_tile.num_phy_pins / sub_tile.capacity.total());
+            int rel_cap = sub_tile_index - sub_tile.capacity.low;
+            // Add the number of tile-level pins for the instances before the current sub-tile instance to the counter.
+            seen_sub_tiles_num_cluser_pins += rel_cap * cluster_sub_tile_inst_num_pins;
+            break;
+        } else {
+            // This sub-tile type is not the one that the cluster block is mapped to.
+            // Add the number of tile-level pins for this sub-tile type to the counter
+            // and continue to the next sub-tile type.
+            seen_sub_tiles_num_cluser_pins += sub_tile.num_phy_pins;
+        }
+    }
+
+    VTR_ASSERT(found_sub_tile);
+    std::vector<int> pin_num_vec(cluster_sub_tile_inst_num_pins);
+    // Pin numbers are assigned such that each instance’s tile-level pins
+    // occupy a continuous range equal to the total number of tile-level pins for that instance.
+    // Since we know the starting index, we use std::iota to generate that range.
+    std::iota(pin_num_vec.begin(), pin_num_vec.end(), seen_sub_tiles_num_cluser_pins);
+
+    // Add the intra-cluster-level pins to the list.
+    std::vector<int> internal_pins = get_cluster_internal_pins(cluster_blk_id);
+    pin_num_vec.insert(pin_num_vec.end(), internal_pins.begin(), internal_pins.end());
+
+    return pin_num_vec;
+}
 
 static void set_clusters_pin_chains(const ClusteredNetlist& clb_nlist,
                                     vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
