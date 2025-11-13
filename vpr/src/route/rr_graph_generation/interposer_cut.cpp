@@ -10,8 +10,8 @@
 #include "rr_graph_view.h"
 #include "rr_node_types.h"
 #include "rr_spatial_lookup.h"
+#include "vpr_error.h"
 #include "vtr_assert.h"
-#include "vtr_log.h"
 
 #include "interposer_cut.h"
 
@@ -43,23 +43,20 @@ static short node_xstart(const RRGraphView& rr_graph, RRNodeId node) {
     switch (rr_graph.node_direction(node)) {
         case Direction::DEC:
             return rr_graph.node_xhigh(node);
-            break;
 
         case Direction::INC:
             return rr_graph.node_xlow(node);
-            break;
 
         case Direction::NONE:
             VTR_ASSERT(rr_graph.node_xlow(node) == rr_graph.node_xhigh(node));
             return (rr_graph.node_xlow(node));
-            break;
 
         case Direction::BIDIR:
-            VTR_ASSERT_MSG(false, "Bidir node has no starting point");
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Bidir node has no starting point.");
             break;
 
         default:
-            VTR_ASSERT(false);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid RR node direction.");
             break;
     }
 }
@@ -76,23 +73,20 @@ static short node_ystart(const RRGraphView& rr_graph, RRNodeId node) {
     switch (rr_graph.node_direction(node)) {
         case Direction::DEC:
             return rr_graph.node_yhigh(node);
-            break;
 
         case Direction::INC:
             return rr_graph.node_ylow(node);
-            break;
 
         case Direction::NONE:
             VTR_ASSERT(rr_graph.node_ylow(node) == rr_graph.node_yhigh(node));
             return (rr_graph.node_ylow(node));
-            break;
 
         case Direction::BIDIR:
-            VTR_ASSERT_MSG(false, "Bidir node has no starting point");
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Bidir node has no starting point.");
             break;
 
         default:
-            VTR_ASSERT(false);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid RR node direction.");
             break;
     }
 }
@@ -105,10 +99,6 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
     for (RREdgeId edge_id : rr_graph.all_edges()) {
         RRNodeId src_node = rr_graph.edge_src_node(edge_id);
         RRNodeId sink_node = rr_graph.edge_sink_node(edge_id);
-
-        if (src_node == RRNodeId(5866) && sink_node == RRNodeId(5604)) {
-            VTR_LOG("HI\n");
-        }
 
         // TODO: ignoring ChanZ nodes for now
         if (rr_graph.node_type(src_node) == e_rr_type::CHANZ || rr_graph.node_type(sink_node) == e_rr_type::CHANZ) {
@@ -147,7 +137,10 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
 }
 
 /**
-  * @brief Update a CHANY node's bounding box in RRGraph and SpatialLookup entries. This function assumes that the channel node actually crosses the cut location and might not function correctly otherwise.
+  * @brief Update a CHANY node's bounding box in RRGraph and SpatialLookup entries.
+  * This function assumes that the channel node actually crosses the cut location and
+  * might not function correctly otherwise.
+  *
   * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
   */
 static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_y, Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
@@ -173,7 +166,10 @@ static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int
 }
 
 /**
-  * @brief Update a CHANX node's bounding box in RRGraph and SpatialLookup entries. This function assumes that the channel node actually crosses the cut location and might not function correctly otherwise.
+  * @brief Update a CHANX node's bounding box in RRGraph and SpatialLookup entries.
+  * This function assumes that the channel node actually crosses the cut location and
+  * might not function correctly otherwise.
+  *
   * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
   */
 static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_x, Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
@@ -205,7 +201,6 @@ static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int
  * @param cut_loc location of vertical interposer cut line
  * @param interposer_cut_type Type of the interposer cut line (Horizontal or vertical)
  * @param sg_node_indices Sorted list of scatter-gather node IDs. We do not want to cut these nodes as they're allowed to cross an interposer cut line.
- * @note This function is very similar to cut_chan_y_node. If you're modifying this you probably also want to modify that function too.
  */
 static void cut_channel_node(RRNodeId node, int cut_loc, e_interposer_cut_type interposer_cut_type, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
     constexpr auto node_indice_compare = [](RRNodeId l, RRNodeId r) noexcept { return size_t(l) < size_t(r); };
