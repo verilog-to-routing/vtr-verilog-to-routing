@@ -299,7 +299,7 @@ Cell DataFrameProcessor::parse_csv_cell(const std::string& value) {
     // Try to parse as number
     try {
         size_t pos;
-        double num = std::stod(trimmed, &pos);
+        int num = std::stoi(trimmed, &pos);
         if (pos == trimmed.length()) {
             return Cell(num);
         }

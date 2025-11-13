@@ -12,13 +12,11 @@ namespace crrgenerator {
 struct Cell {
     enum class Type { EMPTY,
                       STRING,
-                      INTEGER,
-                      DOUBLE };
+                      INTEGER };
 
     Type type = Type::EMPTY;
     std::string string_value;
     int64_t int_value = 0;
-    double double_value = 0.0;
 
     Cell() = default;
     explicit Cell(const std::string& value)
@@ -27,34 +25,21 @@ struct Cell {
     explicit Cell(int64_t value)
         : type(Type::INTEGER)
         , int_value(value) {}
-    explicit Cell(double value)
-        : type(Type::DOUBLE)
-        , double_value(value) {}
 
     bool is_empty() const { return type == Type::EMPTY; }
     bool is_string() const { return type == Type::STRING; }
     bool is_integer() const { return type == Type::INTEGER; }
-    bool is_double() const { return type == Type::DOUBLE; }
-    bool is_number() const { return is_integer() || is_double(); }
+    bool is_number() const { return is_integer(); }
 
     int64_t as_int() const {
         if (is_integer()) return int_value;
-        if (is_double()) return static_cast<int64_t>(double_value);
         if (is_string()) return std::stoll(string_value);
         return 0;
-    }
-
-    double as_double() const {
-        if (is_double()) return double_value;
-        if (is_integer()) return static_cast<double>(int_value);
-        if (is_string()) return std::stod(string_value);
-        return 0.0;
     }
 
     std::string as_string() const {
         if (is_string()) return string_value;
         if (is_integer()) return std::to_string(int_value);
-        if (is_double()) return std::to_string(double_value);
         return "";
     }
 };
