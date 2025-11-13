@@ -86,7 +86,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
                                   int* index) {
     // Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
-    for (const t_physical_tile_loc grid_loc : grid.all_locations()) {
+    for (const t_physical_tile_loc& grid_loc : grid.all_locations()) {
         //Process each block from its root location
         if (grid.is_root_location(grid_loc)) {
             t_physical_tile_type_ptr physical_type = grid.get_physical_type(grid_loc);
@@ -458,7 +458,7 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
                                                   const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                   int* index) {
 
-    for (const t_physical_tile_loc grid_loc : grid.all_locations()) {
+    for (const t_physical_tile_loc& grid_loc : grid.all_locations()) {
 
         // Process each block from its root location
         if (grid.is_root_location(grid_loc)) {
@@ -498,7 +498,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                             const t_rr_graph_storage& rr_nodes,
                             bool is_flat) {
     std::unordered_map<RRNodeId, int> rr_node_counts;
-    for (t_physical_tile_loc tile_loc : grid.all_locations()) {
+    for (const t_physical_tile_loc& tile_loc : grid.all_locations()) {
         for (e_rr_type rr_type : RR_TYPES) {
             // Get the list of nodes at a specific location (x, y)
             std::vector<RRNodeId> nodes_from_lookup;

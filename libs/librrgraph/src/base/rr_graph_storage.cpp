@@ -62,21 +62,32 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
 void t_rr_graph_storage::remove_edges(std::vector<RREdgeId>& rr_edges_to_remove) {
     size_t starting_edge_count = edge_dest_node_.size();
 
+    // Sort and make sure all edge indices are unique
     vtr::uniquify(rr_edges_to_remove);
+    VTR_ASSERT_SAFE(std::is_sorted(rr_edges_to_remove.begin(), rr_edges_to_remove.end()));
     
+    // Index of the last edge
     size_t edge_list_end = edge_dest_node_.size() - 1;
+
+    // Iterate backwards through the list of indices we want to remove.
     for (auto it = rr_edges_to_remove.rbegin(); it != rr_edges_to_remove.rend(); ++it) {
         RREdgeId erase_idx = *it;
 
+        // Copy what's at the end of the list to the index we wanted to remove
         edge_dest_node_[erase_idx] = edge_dest_node_[RREdgeId(edge_list_end)];
         edge_src_node_[erase_idx] = edge_src_node_[RREdgeId(edge_list_end)];
         edge_switch_[erase_idx] = edge_switch_[RREdgeId(edge_list_end)];
         edge_remapped_[erase_idx] = edge_remapped_[RREdgeId(edge_list_end)];
 
+        // At this point we have no copies of what was at erase_idx and two copies of
+        // what was at the end of the list. If we make the list one element shorter,
+        // we end up with a list that has removed the element at erase_idx.
         edge_list_end--;
 
     }
 
+    // We have a new index to the end of the list, call erase on the elements past that index
+    // to update the std::vector and shrink the actual data structures.
     edge_dest_node_.erase(edge_dest_node_.begin() + edge_list_end + 1, edge_dest_node_.end());
     edge_src_node_.erase(edge_src_node_.begin() + edge_list_end + 1, edge_src_node_.end());
     edge_switch_.erase(edge_switch_.begin() + edge_list_end + 1, edge_switch_.end());

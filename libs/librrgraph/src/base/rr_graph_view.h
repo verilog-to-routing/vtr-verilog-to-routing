@@ -594,6 +594,10 @@ class RRGraphView {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
+    /** @brief Returns a range of all edges in the RR Graph.
+     * This method does not depend on the edges begin correctly
+     * sorted and can be used before partition_edges is called.
+     */
     inline vtr::StrongIdRange<RREdgeId> all_edges() const {
         return node_storage_.all_edges();
     }
