@@ -238,6 +238,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     if (pre_cluster_timing_manager.is_valid()) {
         place_delay_model = PlacementDelayModelCreator::create_delay_model(vpr_setup.PlacerOpts,
                                                                            vpr_setup.RouterOpts,
+                                                                           vpr_setup.CRROpts,
                                                                            (const Netlist<>&)atom_nlist,
                                                                            vpr_setup.RoutingArch,
                                                                            vpr_setup.Segments,

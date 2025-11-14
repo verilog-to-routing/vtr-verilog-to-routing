@@ -46,6 +46,10 @@
 #include "rr_types.h"
 #include "rr_node_indices.h"
 
+#include "crr_generator.h"
+#include "node_lookup_manager.h"
+#include "crr_switch_block_manager.h"
+
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
 
@@ -419,6 +423,7 @@ void create_rr_graph(e_graph_type graph_type,
                      t_det_routing_arch& det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
+                     const t_crr_opts& crr_opts,
                      const std::vector<t_direct_inf>& directs,
                      int* Warnings,
                      bool is_flat) {
@@ -499,6 +504,7 @@ void create_rr_graph(e_graph_type graph_type,
                 build_tileable_unidir_rr_graph(block_types,
                                                grid,
                                                nodes_per_chan,
+                                               crr_opts,
                                                det_routing_arch.switch_block_type,
                                                det_routing_arch.Fs,
                                                det_routing_arch.switch_block_subtype,
