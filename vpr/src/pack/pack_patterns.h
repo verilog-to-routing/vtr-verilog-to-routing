@@ -1,10 +1,13 @@
 #pragma once
 /*
- * Data types used to give architectural hints for the CAD algorithm
+ * Data types used to give architectural hints for the CAD algorithm through pack
+ * patterns.
  */
 
-#include "physical_types.h"
+#include <vector>
 
+struct t_pb_type;
+struct t_pb_graph_pin;
 struct t_pack_pattern_connections;
 
 /**
@@ -111,18 +114,4 @@ struct t_pack_patterns {
         is_block_optional = nullptr;
         is_chain = false;
     }
-};
-
-/**
- * Keeps track of locations that a primitive can go to during packing
- * Linked list for easy insertion/deletion
- */
-struct t_cluster_placement_primitive {
-    t_cluster_placement_primitive() {
-        pb_graph_node = nullptr;
-    }
-    t_pb_graph_node* pb_graph_node;
-    bool valid;
-    float base_cost;        /* cost independent of current status of packing */
-    float incremental_cost; /* cost dependent on current status of packing */
 };

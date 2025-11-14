@@ -10,8 +10,9 @@
 #include <queue>
 #include <unordered_set>
 #include <vector>
-#include "cad_types.h"
 #include "logic_types.h"
+#include "pack_patterns.h"
+#include "physical_types.h"
 #include "prepack.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
