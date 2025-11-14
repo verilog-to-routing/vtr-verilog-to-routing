@@ -1194,7 +1194,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                                 most_frequent_switch.first = switch_id;
                                 most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
                             }
-                        } else{
+                        } else {
                             VTR_ASSERT(rr_graph.node_layer_low(RRNodeId(sink_node)) != rr_graph.node_layer_low(RRNodeId(source_node)));
                             count_for_wire_to_ipin_switches_between_dice[switch_id]++;
                             if(count_for_wire_to_ipin_switches_between_dice[switch_id] > most_frequent_switch_between_dice.second){
