@@ -44,17 +44,16 @@
 
 #include "logic_types.h"
 #include "physical_types.h"
-#include "pugixml.hpp"
-#include "pugixml_util.hpp"
+#include "parse_switchblocks.h"
+#include "physical_types_util.h"
 
-#include "read_xml_arch_file_interposer.h"
-#include "read_xml_arch_file_vib.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
 #include "vtr_digest.h"
 #include "vtr_token.h"
 #include "vtr_bimap.h"
+#include "vtr_expr_eval.h"
 
 #include "arch_check.h"
 #include "arch_error.h"
@@ -63,13 +62,13 @@
 
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
-#include "parse_switchblocks.h"
-
-#include "physical_types_util.h"
-#include "vtr_expr_eval.h"
+#include "pugixml.hpp"
+#include "pugixml_util.hpp"
 
 #include "read_xml_arch_file_noc_tag.h"
 #include "read_xml_arch_file_sg.h"
+#include "read_xml_arch_file_interposer.h"
+#include "read_xml_arch_file_vib.h"
 
 #include "interposer_types.h"
 
@@ -102,8 +101,8 @@ struct t_pin_locs {
   public:
     e_pin_location_distr distribution = e_pin_location_distr::SPREAD;
 
-    /* [0..num_sub_tiles-1][0..width-1][0..height-1][0..num_of_layer-1][0..3][0..num_tokens-1] */
-    vtr::NdMatrix<std::vector<std::string>, 5> assignments;
+    // [0..num_sub_tiles-1][0..width-1][0..height-1][0..3][0..num_tokens-1]
+    vtr::NdMatrix<std::vector<std::string>, 4> assignments;
 
     bool is_distribution_set() const {
         return distribution_set;
@@ -263,13 +262,25 @@ static void process_mode(pugi::xml_node Parent,
                          int& parent_pb_idx);
 
 static void process_fc_values(pugi::xml_node node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
+
+/**
+ * @brief Processes the <fc> XML node for a given sub-tile and initializes
+ *        the Fc specifications for its pins.
+ *
+ * This function parses default Fc values and any <fc_override> tags defined
+ * within the XML node, then applies them to all port/segment combinations
+ * of the specified sub-tile. If no <fc> node is present, it falls back to
+ * the architecture-wide default Fc specification. The resulting Fc settings
+ * are stored in the given physical tile type.
+ */
 static void process_fc(pugi::xml_node node,
                        t_physical_tile_type* physical_tile_type,
-                       t_sub_tile* sub_tile,
+                       const t_sub_tile& sub_tile,
                        t_pin_counts pin_counts,
                        const std::vector<t_segment_inf>& segments,
                        const t_default_fc_spec& arch_def_fc,
                        const pugiutil::loc_data& loc_data);
+
 static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::loc_data& loc_data);
 
 /**
@@ -288,7 +299,7 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                                            const t_arch& arch,
                                            const pugiutil::loc_data& loc_data);
 
-static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
+static e_fc_value_type string_to_fc_value_type(std::string_view str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 static void process_chan_width_distr(pugi::xml_node node,
                                      t_arch* arch,
                                      const pugiutil::loc_data& loc_data);
@@ -583,12 +594,10 @@ static void load_pin_loc(pugi::xml_node Locations,
                          const int num_of_avail_layer) {
     type->pin_width_offset.resize(type->num_pins, 0);
     type->pin_height_offset.resize(type->num_pins, 0);
-    //layer_offset is not used if the distribution is not custom
-    type->pin_layer_offset.resize(type->num_pins, 0);
 
     std::vector<int> physical_pin_counts(type->num_pins, 0);
     if (pin_locs->distribution == e_pin_location_distr::SPREAD) {
-        /* evenly distribute pins starting at bottom left corner */
+        // Evenly distribute pins starting at bottom left corner
 
         int num_sides = 4 * (type->width * type->height);
         int side_index = 0;
@@ -613,7 +622,7 @@ static void load_pin_loc(pugi::xml_node Locations,
         VTR_ASSERT(side_index == num_sides);
         VTR_ASSERT(count == type->num_pins);
     } else if (pin_locs->distribution == e_pin_location_distr::PERIMETER) {
-        //Add one pin at-a-time to perimeter sides in round-robin order
+        // Add one pin at-a-time to perimeter sides in round-robin order
         int ipin = 0;
         while (ipin < type->num_pins) {
             for (int width = 0; width < type->width; ++width) {
@@ -639,11 +648,11 @@ static void load_pin_loc(pugi::xml_node Locations,
         VTR_ASSERT(ipin == type->num_pins);
 
     } else if (pin_locs->distribution == e_pin_location_distr::SPREAD_INPUTS_PERIMETER_OUTPUTS) {
-        //Collect the sets of block input/output pins
+        // Collect the sets of block input/output pins
         std::vector<int> input_pins;
         std::vector<int> output_pins;
         for (int pin_num = 0; pin_num < type->num_pins; ++pin_num) {
-            auto class_type = get_pin_type_from_pin_physical_num(type, pin_num);
+            e_pin_type class_type = get_pin_type_from_pin_physical_num(type, pin_num);
 
             if (class_type == e_pin_type::RECEIVER) {
                 input_pins.push_back(pin_num);
@@ -653,15 +662,14 @@ static void load_pin_loc(pugi::xml_node Locations,
             }
         }
 
-        //Allocate the inputs one pin at-a-time in a round-robin order
-        //to all sides
+        // Allocate the inputs one pin at-a-time in a round-robin order to all sides
         size_t ipin = 0;
         while (ipin < input_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
                 for (int height = 0; height < type->height; ++height) {
                     for (e_side side : TOTAL_2D_SIDES) {
                         if (ipin < input_pins.size()) {
-                            //Pins still to allocate
+                            // Pins still to allocate
 
                             int pin_num = input_pins[ipin];
 
@@ -677,7 +685,7 @@ static void load_pin_loc(pugi::xml_node Locations,
         }
         VTR_ASSERT(ipin == input_pins.size());
 
-        //Allocate the outputs one pin at-a-time to perimeter sides in round-robin order
+        // Allocate the outputs one pin at-a-time to perimeter sides in round-robin order
         ipin = 0;
         while (ipin < output_pins.size()) {
             for (int width = 0; width < type->width; ++width) {
@@ -714,7 +722,7 @@ static void load_pin_loc(pugi::xml_node Locations,
                 for (int width = 0; width < type->width; ++width) {
                     for (int height = 0; height < type->height; ++height) {
                         for (e_side side : TOTAL_2D_SIDES) {
-                            for (const std::string& token : pin_locs->assignments[sub_tile_index][width][height][layer][side]) {
+                            for (const std::string& token : pin_locs->assignments[sub_tile_index][width][height][side]) {
                                 auto pin_range = process_pin_string<t_sub_tile*>(Locations,
                                                                                  &sub_tile,
                                                                                  token.c_str(),
@@ -745,7 +753,6 @@ static void load_pin_loc(pugi::xml_node Locations,
                                         type->pinloc[width][height][side][physical_pin_index] = true;
                                         type->pin_width_offset[physical_pin_index] += width;
                                         type->pin_height_offset[physical_pin_index] += height;
-                                        type->pin_layer_offset[physical_pin_index] = layer;
                                         physical_pin_counts[physical_pin_index] += 1;
                                     }
                                 }
@@ -765,7 +772,6 @@ static void load_pin_loc(pugi::xml_node Locations,
 
         VTR_ASSERT(type->pin_width_offset[ipin] >= 0 && type->pin_width_offset[ipin] < type->width);
         VTR_ASSERT(type->pin_height_offset[ipin] >= 0 && type->pin_height_offset[ipin] < type->height);
-        VTR_ASSERT(type->pin_layer_offset[ipin] >= 0 && type->pin_layer_offset[ipin] < num_of_avail_layer);
     }
 }
 
@@ -1985,14 +1991,14 @@ static void process_mode(pugi::xml_node Parent,
 static void process_fc_values(pugi::xml_node node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data) {
     spec.specified = true;
 
-    /* Load the default fc_in */
+    // Load the default fc_in
     auto default_fc_in_attrib = get_attribute(node, "in_type", loc_data);
     spec.in_value_type = string_to_fc_value_type(default_fc_in_attrib.value(), node, loc_data);
 
     auto in_val_attrib = get_attribute(node, "in_val", loc_data);
     spec.in_value = vtr::atof(in_val_attrib.value());
 
-    /* Load the default fc_out */
+    // Load the default fc_out
     auto default_fc_out_attrib = get_attribute(node, "out_type", loc_data);
     spec.out_value_type = string_to_fc_value_type(default_fc_out_attrib.value(), node, loc_data);
 
@@ -2000,27 +2006,26 @@ static void process_fc_values(pugi::xml_node node, t_default_fc_spec& spec, cons
     spec.out_value = vtr::atof(out_val_attrib.value());
 }
 
-/* Takes in the node ptr for the 'fc' elements and initializes
- * the appropriate fields of type. */
 static void process_fc(pugi::xml_node node,
                        t_physical_tile_type* physical_tile_type,
-                       t_sub_tile* sub_tile,
+                       const t_sub_tile& sub_tile,
                        t_pin_counts pin_counts,
                        const std::vector<t_segment_inf>& segments,
                        const t_default_fc_spec& arch_def_fc,
                        const pugiutil::loc_data& loc_data) {
     std::vector<t_fc_override> fc_overrides;
     t_default_fc_spec def_fc_spec;
+
     if (node) {
-        /* Load the default Fc values from the node */
+        // Load the default Fc values from the node
         process_fc_values(node, def_fc_spec, loc_data);
-        /* Load any <fc_override/> tags */
+        // Load any <fc_override/> tags
         for (auto child_node : node.children()) {
             t_fc_override fc_override = process_fc_override(child_node, loc_data);
             fc_overrides.push_back(fc_override);
         }
     } else {
-        /* Use the default value, if available */
+        // Use the default value, if available
         if (!arch_def_fc.specified) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                            vtr::string_fmt("<sub_tile> is missing child <fc>, and no <default_fc> specified in architecture\n").c_str());
@@ -2028,20 +2033,19 @@ static void process_fc(pugi::xml_node node,
         def_fc_spec = arch_def_fc;
     }
 
-    /* Go through all the port/segment combinations and create the (potentially
-     * overriden) pin/seg Fc specifications */
+    // Go through all the port/segment combinations and create the (potentially
+    // overridden) pin/seg Fc specifications
     for (size_t iseg = 0; iseg < segments.size(); ++iseg) {
-        for (int icapacity = 0; icapacity < sub_tile->capacity.total(); ++icapacity) {
-            //If capacity > 0, we need t offset the block index by the number of pins per instance
-            //this ensures that all pins have an Fc specification
+        for (int icapacity = 0; icapacity < sub_tile.capacity.total(); ++icapacity) {
+            // If capacity > 0, we need t offset the block index by the number of pins per instance
+            // this ensures that all pins have an Fc specification
             int iblk_pin = icapacity * pin_counts.total();
 
-            for (const auto& port : sub_tile->ports) {
+            for (const t_physical_tile_port& port : sub_tile.ports) {
                 t_fc_specification fc_spec;
-
                 fc_spec.seg_index = iseg;
 
-                //Apply type and defaults
+                // Apply type and defaults
                 if (port.type == IN_PORT) {
                     fc_spec.fc_type = e_fc_type::IN;
                     fc_spec.fc_value_type = def_fc_spec.in_value_type;
@@ -2053,33 +2057,33 @@ static void process_fc(pugi::xml_node node,
                     fc_spec.fc_value = def_fc_spec.out_value;
                 }
 
-                //Apply any matching overrides
+                // Apply any matching overrides
                 bool default_overriden = false;
                 for (const t_fc_override& fc_override : fc_overrides) {
                     bool apply_override = false;
                     if (!fc_override.port_name.empty() && !fc_override.seg_name.empty()) {
-                        //Both port and seg names are specified require exact match on both
+                        // Both port and seg names are specified require exact match on both
                         if (fc_override.port_name == port.name && fc_override.seg_name == segments[iseg].name) {
                             apply_override = true;
                         }
 
                     } else if (!fc_override.port_name.empty()) {
                         VTR_ASSERT(fc_override.seg_name.empty());
-                        //Only the port name specified, require it to match
+                        // Only the port name specified, require it to match
                         if (fc_override.port_name == port.name) {
                             apply_override = true;
                         }
                     } else {
                         VTR_ASSERT(!fc_override.seg_name.empty());
                         VTR_ASSERT(fc_override.port_name.empty());
-                        //Only the seg name specified, require it to match
+                        // Only the seg name specified, require it to match
                         if (fc_override.seg_name == segments[iseg].name) {
                             apply_override = true;
                         }
                     }
 
                     if (apply_override) {
-                        //Exact match, or partial match to either port or seg name
+                        // Exact match, or partial match to either port or seg name
                         // Note that we continue searching, this ensures that the last matching override (in file order)
                         // is applied last
 
@@ -2095,11 +2099,11 @@ static void process_fc(pugi::xml_node node,
                     }
                 }
 
-                //Add all the pins from this port
+                // Add all the pins from this port
                 for (int iport_pin = 0; iport_pin < port.num_pins; ++iport_pin) {
                     //XXX: this assumes that iterating through the tile ports
                     //     in order yields the block pin order
-                    int true_physical_blk_pin = sub_tile->sub_tile_to_tile_pin_indices[iblk_pin];
+                    int true_physical_blk_pin = sub_tile.sub_tile_to_tile_pin_indices[iblk_pin];
                     fc_spec.pins.push_back(true_physical_blk_pin);
                     ++iblk_pin;
                 }
@@ -2126,21 +2130,22 @@ static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::lo
     bool seen_fc_value = false;
     bool seen_port_or_seg = false;
     for (auto attrib : node.attributes()) {
-        if (attrib.name() == std::string("port_name")) {
+        std::string_view attribute_name = attrib.name();
+        if (attribute_name == "port_name") {
             fc_override.port_name = attrib.value();
             seen_port_or_seg |= true;
-        } else if (attrib.name() == std::string("segment_name")) {
+        } else if (attribute_name == "segment_name") {
             fc_override.seg_name = attrib.value();
             seen_port_or_seg |= true;
-        } else if (attrib.name() == std::string("fc_type")) {
+        } else if (attribute_name == "fc_type") {
             fc_override.fc_value_type = string_to_fc_value_type(attrib.value(), node, loc_data);
             seen_fc_type = true;
-        } else if (attrib.name() == std::string("fc_val")) {
+        } else if (attribute_name == "fc_val") {
             fc_override.fc_value = vtr::atof(attrib.value());
             seen_fc_value = true;
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
-                           vtr::string_fmt("Unexpected attribute '%s'", attrib.name()).c_str());
+                           vtr::string_fmt("Unexpected attribute '%s'", attribute_name).c_str());
         }
     }
 
@@ -2162,7 +2167,7 @@ static t_fc_override process_fc_override(pugi::xml_node node, const pugiutil::lo
     return fc_override;
 }
 
-static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
+static e_fc_value_type string_to_fc_value_type(std::string_view str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {
     e_fc_value_type fc_value_type = e_fc_value_type::FRACTIONAL;
 
     if (str == "frac") {
@@ -2171,9 +2176,7 @@ static e_fc_value_type string_to_fc_value_type(const std::string& str, pugi::xml
         fc_value_type = e_fc_value_type::ABSOLUTE;
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
-                       vtr::string_fmt("Invalid fc_type '%s'. Must be 'abs' or 'frac'.\n",
-                                       str.c_str())
-                           .c_str());
+                       vtr::string_fmt("Invalid fc_type '%s'. Must be 'abs' or 'frac'.\n", str).c_str());
     }
 
     return fc_value_type;
@@ -2912,23 +2915,19 @@ static void process_device(pugi::xml_node node, t_arch* arch, t_default_fc_spec&
                                                loc_data, ReqOpt::OPTIONAL)
                                      .as_float(0);
 
-    //<chan_width_distr> tag
+    // <chan_width_distr> tag
     cur = get_single_child(node, "chan_width_distr", loc_data, ReqOpt::OPTIONAL);
     expect_only_attributes(cur, {}, loc_data);
     if (cur != nullptr) {
         process_chan_width_distr(cur, arch, loc_data);
     }
 
-    //<connection_block> tag
+    // <connection_block> tag
     cur = get_single_child(node, "connection_block", loc_data);
     expect_only_attributes(cur, {"input_switch_name", "input_inter_die_switch_name"}, loc_data);
-    arch->ipin_cblock_switch_name.emplace_back(get_attribute(cur, "input_switch_name", loc_data).as_string());
-    std::string inter_die_conn = get_attribute(cur, "input_inter_die_switch_name", loc_data, ReqOpt::OPTIONAL).as_string("");
-    if (inter_die_conn != "") {
-        arch->ipin_cblock_switch_name.push_back(inter_die_conn);
-    }
+    arch->ipin_cblock_switch_name = get_attribute(cur, "input_switch_name", loc_data).as_string();
 
-    //<switch_block> tag
+    // <switch_block> tag
     cur = get_single_child(node, "switch_block", loc_data);
     expect_only_attributes(cur, {"type", "fs", "sub_type", "sub_fs"}, loc_data);
     const char* prop = get_attribute(cur, "type", loc_data).value();
@@ -3449,23 +3448,23 @@ static void process_pin_locations(pugi::xml_node Locations,
 
     const int sub_tile_index = sub_tile->index;
 
-    /* Load the pin locations */
+    // Load the pin locations
     if (distribution == e_pin_location_distr::CUSTOM) {
         expect_only_children(Locations, {"loc"}, loc_data);
+
         pugi::xml_node cur = Locations.first_child();
-        //check for duplications ([0..3][0..type->width-1][0..type->height-1][0..num_of_avail_layer-1])
-        std::set<std::tuple<e_side, int, int, int>> seen_sides;
+        // check for duplications ([0..3][0..type->width-1][0..type->height-1])
+        std::set<std::tuple<e_side, int, int>> seen_sides;
         while (cur) {
             check_node(cur, "loc", loc_data);
 
-            expect_only_attributes(cur, {"side", "xoffset", "yoffset", "layer_offset"}, loc_data);
+            expect_only_attributes(cur, {"side", "xoffset", "yoffset"}, loc_data);
 
-            /* Get offset (height, width, layer) */
+            // Get offset (height, width, layer)
             int x_offset = get_attribute(cur, "xoffset", loc_data, ReqOpt::OPTIONAL).as_int(0);
             int y_offset = get_attribute(cur, "yoffset", loc_data, ReqOpt::OPTIONAL).as_int(0);
-            int layer_offset = pugiutil::get_attribute(cur, "layer_offset", loc_data, ReqOpt::OPTIONAL).as_int(0);
 
-            /* Get side */
+            // Get side
             e_side side = TOP;
             prop = get_attribute(cur, "side", loc_data).value();
             if (0 == strcmp(prop, "left")) {
@@ -3494,15 +3493,8 @@ static void process_pin_locations(pugi::xml_node Locations,
                                    .c_str());
             }
 
-            if ((layer_offset < 0) || layer_offset >= num_of_avail_layer) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
-                               vtr::string_fmt("'%d' is an invalid layer offset for type '%s' (must be within [0, num_avail_layer-1]).\n",
-                                               y_offset, physical_tile_type->name.c_str(), physical_tile_type->height - 1)
-                                   .c_str());
-            }
-
             // Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
-            auto side_offset = std::make_tuple(side, x_offset, y_offset, layer_offset);
+            auto side_offset = std::make_tuple(side, x_offset, y_offset);
             if (seen_sides.contains(side_offset)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                                vtr::string_fmt("Duplicate pin location side/offset specification."
@@ -3511,13 +3503,13 @@ static void process_pin_locations(pugi::xml_node Locations,
             }
             seen_sides.insert(side_offset);
 
-            /* Go through lists of pins */
-            const std::vector<std::string> Tokens = vtr::StringToken(cur.child_value()).split(" \t\n");
-            int Count = (int)Tokens.size();
-            if (Count > 0) {
-                for (int pin = 0; pin < Count; ++pin) {
-                    /* Store location assignment */
-                    pin_locs->assignments[sub_tile_index][x_offset][y_offset][std::abs(layer_offset)][side].emplace_back(Tokens[pin].c_str());
+            // Go through lists of pins
+            const std::vector<std::string> tokens = vtr::StringToken(cur.child_value()).split(" \t\n");
+            int count = (int)tokens.size();
+            if (count > 0) {
+                for (int pin = 0; pin < count; ++pin) {
+                    // Store location assignment
+                    pin_locs->assignments[sub_tile_index][x_offset][y_offset][side].emplace_back(tokens[pin].c_str());
                     /* Advance through list of pins in this location */
                 }
             }
@@ -3532,7 +3524,7 @@ static void process_pin_locations(pugi::xml_node Locations,
             for (int w = 0; w < physical_tile_type->width; ++w) {
                 for (int h = 0; h < physical_tile_type->height; ++h) {
                     for (e_side side : TOTAL_2D_SIDES) {
-                        for (const std::string& token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
+                        for (const std::string& token : pin_locs->assignments[sub_tile_index][w][h][side]) {
                             InstPort inst_port(token);
 
                             //A pin specification should contain only the block name, and not any instance count information
@@ -3632,13 +3624,13 @@ static void process_sub_tiles(pugi::xml_node node,
                               const int num_of_avail_layer) {
     pugi::xml_node cur;
 
-    unsigned long int num_sub_tiles = count_children(node, "sub_tile", loc_data);
-    unsigned long int width = physical_tile_type->width;
-    unsigned long int height = physical_tile_type->height;
-    unsigned long int num_sides = 4;
+    const size_t num_sub_tiles = count_children(node, "sub_tile", loc_data);
+    const size_t width = physical_tile_type->width;
+    const size_t height = physical_tile_type->height;
+    const size_t num_sides = 4;
 
     t_pin_locs pin_locs;
-    pin_locs.assignments.resize({num_sub_tiles, width, height, (unsigned long int)num_of_avail_layer, num_sides});
+    pin_locs.assignments.resize({num_sub_tiles, width, height, num_sides});
 
     if (num_sub_tiles == 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
@@ -3708,7 +3700,7 @@ static void process_sub_tiles(pugi::xml_node node,
 
         // Load Fc
         cur = get_single_child(cur_sub_tile, "fc", loc_data, ReqOpt::OPTIONAL);
-        process_fc(cur, physical_tile_type, &sub_tile, pin_counts, segments, arch_def_fc, loc_data);
+        process_fc(cur, physical_tile_type, sub_tile, pin_counts, segments, arch_def_fc, loc_data);
 
         // Load equivalent sites information
         cur = get_single_child(cur_sub_tile, "equivalent_sites", loc_data, ReqOpt::REQUIRED);
@@ -3845,14 +3837,14 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
         }
         segs[i].length = length;
 
-        /* Get the frequency */
+        // Get the frequency
         segs[i].frequency = 1; /* DEFAULT */
         tmp = get_attribute(node, "freq", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (tmp) {
             segs[i].frequency = (int)(atof(tmp) * MAX_CHANNEL_WIDTH);
         }
 
-        /* Get timing info */
+        // Get timing info
         ReqOpt TIMING_ENABLE_REQD = BoolToReqOpt(timing_enabled);
         segs[i].Rmetal = get_attribute(node, "Rmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
         segs[i].Cmetal = get_attribute(node, "Cmetal", loc_data, TIMING_ENABLE_REQD).as_float(0);
@@ -3937,23 +3929,10 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
                            vtr::string_fmt("Invalid switch type '%s'.\n", tmp).c_str());
         }
 
-        //Verify only expected sub-tags are found
+        // Verify only expected sub-tags are found
         expect_only_children(node, expected_subtags, loc_data);
 
-        //Get the switch name for different dice wire and track connections
-        sub_elem = get_single_child(node, "mux_inter_die", loc_data, ReqOpt::OPTIONAL);
-        tmp = get_attribute(sub_elem, "name", loc_data, ReqOpt::OPTIONAL).as_string("");
-        if (strlen(tmp) != 0) {
-            /* Match names */
-            int switch_idx = find_switch_by_name(switches, tmp);
-            if (switch_idx < 0) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(sub_elem),
-                               vtr::string_fmt("'%s' is not a valid mux name.\n", tmp).c_str());
-            }
-            segs[i].arch_inter_die_switch = switch_idx;
-        }
-
-        /* Get the wire and opin switches, or mux switch if unidir */
+        // Get the wire and opin switches, or mux switch if unidir
         if (UNI_DIRECTIONAL == segs[i].directionality) {
             //Get the switch name for same die wire and track connections
             sub_elem = get_single_child(node, "mux", loc_data, ReqOpt::OPTIONAL);

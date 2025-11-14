@@ -17,9 +17,8 @@ void CheckArch(const t_arch& Arch) {
 
 static void CheckSwitches(const t_arch& Arch) {
     int ipin_cblock_switch_index = UNDEFINED;
-    int ipin_cblock_switch_index_between_dice = UNDEFINED;
 
-    /* Check transistors in switches won't be less than minimum size */
+    // Check transistors in switches won't be less than minimum size
     for (int i = 0; i < (int)Arch.switches.size(); i++) {
         const t_arch_switch_inf& CurSwitch = Arch.switches[i];
         /* This assumes all segments have the same directionality */
@@ -43,15 +42,10 @@ static void CheckSwitches(const t_arch& Arch) {
                           CurSwitch.name.c_str(), CurSwitch.R, Arch.R_minW_nmos, get_arch_file_name());
             }
         }
-        for (auto cb_switch_name = 0; cb_switch_name < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name++) {
-            /* find the ipin cblock switch index, if it exists */
-            if (Arch.switches[i].name == Arch.ipin_cblock_switch_name[cb_switch_name]) {
-                if (cb_switch_name == 0) {
-                    ipin_cblock_switch_index = i;
-                } else {
-                    ipin_cblock_switch_index_between_dice = i;
-                }
-            }
+
+        // find the ipin cblock switch index, if it exists
+        if (Arch.switches[i].name == Arch.ipin_cblock_switch_name) {
+            ipin_cblock_switch_index = i;
         }
     }
 
@@ -63,12 +57,6 @@ static void CheckSwitches(const t_arch& Arch) {
      * See rr_graph.c:alloc_and_load_rr_switch_inf for more info */
     if (ipin_cblock_switch_index != UNDEFINED) {
         if (!Arch.switches[ipin_cblock_switch_index].fixed_Tdel()) {
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH,
-                            "Not currently allowing an ipin cblock switch to have fanin dependent values");
-        }
-    }
-    if (ipin_cblock_switch_index_between_dice != UNDEFINED) {
-        if (!Arch.switches[ipin_cblock_switch_index_between_dice].fixed_Tdel()) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                             "Not currently allowing an ipin cblock switch to have fanin dependent values");
         }

@@ -14,14 +14,14 @@
  *
  * The matrix should be accessed as follows as a result after allocation in rr_graph.cpp: alloc_pin_to_track_lookup (used by unidir and bidir)
  * [0..device_ctx.physical_tile_types.size()-1][0..num_pins-1][0..width][0..height][0..layer-1][0..3][0..Fc-1] */
-typedef std::vector<vtr::NdMatrix<std::vector<int>, 5>> t_pin_to_track_lookup;
+typedef std::vector<vtr::NdMatrix<std::vector<int>, 4>> t_pin_to_track_lookup;
 
 /* AA: t_pin_to_track_lookup is alloacted first and is then converted to t_track_to_pin lookup by simply redefining the accessing order.
  * As a result, the matrix should be accessed as follow as a result after allocation in rr_graph.cpp: alloc_track_to_pin_lookup (used by unidir and bidir)
  * [0..device_ctx.physical_tile_types.size()-1][0..max_chan_width-1][0..width][0..height][0..layer-1][0..3]
  * 
  * Note that when we model different channels based on position not axis, we can't use this anymore and need to have a lookup for each grid location. */
-typedef std::vector<vtr::NdMatrix<std::vector<int>, 5>> t_track_to_pin_lookup;
+typedef std::vector<vtr::NdMatrix<std::vector<int>, 4>> t_track_to_pin_lookup;
 
 /**
  * @brief Lists detailed information about wire segments.  [0 .. W-1].
@@ -57,13 +57,6 @@ struct t_seg_details {
      *  file, not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_opin_switch = 0;
-
-    /** @brief Index of the switch type that connects output pins (OPINs) *to* this segment
-     *  from *another dice*. Note that this index is in relation to the switches from the
-     *  architecture file, not the expanded list of switches that is built at the end of
-     *  build_rr_graph.
-     */
-    short arch_inter_die_switch = 0;
 
     /** @brief Resistance of a routing track, per unit logic block length. */
     float Rmetal = 0;
@@ -137,7 +130,6 @@ class t_chan_seg_details {
 
     short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
     short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
-    short arch_inter_die_switch() const { return seg_detail_->arch_inter_die_switch; }
 
     Direction direction() const { return seg_detail_->direction; }
 

@@ -93,8 +93,7 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
  * box to be used to estimate the wire-length of a net.
  *
  * @param rr_graph The routing resource graph
- *
- * @return limited_to_opin
+ * @return True if inter-die 3D connections are driven only by OPIN nodes; otherwise, false.
  */
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph);
 
