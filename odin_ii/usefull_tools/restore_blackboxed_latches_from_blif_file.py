@@ -51,14 +51,18 @@ def main():
     if args.inplace:
         print("Inplace Restortation:")
     elif not args.restoredBlifFile:
-        print('\n\nERROR: Must Specify Either Inplace Restoration "-i,--inplace" or a file to restore to "-r\--restoredBlifFile"\nExiting...\n')
+        print(
+            '\n\nERROR: Must Specify Either Inplace Restoration "-i,--inplace" or a file to restore to "-r\--restoredBlifFile"\nExiting...\n'
+        )
         parser.print_help()
         return -1
 
     if not os.path.isfile(args.blifFileToRestore):
-        print('\n\nERROR: BLIF File to Restore "{}" doesn not exist\nExiting...\n'.format(
-            args.blifFileToRestore
-        ))
+        print(
+            '\n\nERROR: BLIF File to Restore "{}" doesn not exist\nExiting...\n'.format(
+                args.blifFileToRestore
+            )
+        )
         parser.print_help()
         return -1
 

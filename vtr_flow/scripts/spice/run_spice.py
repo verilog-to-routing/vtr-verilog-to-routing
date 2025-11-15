@@ -10,7 +10,7 @@ from subprocess import Popen, PIPE, STDOUT
 my_dir = ""
 
 if len(sys.argv) < 9:
-    print (
+    print(
         "Usage: spice.py <tech_file> <tech_size> <Vdd> <P/N> <temp> <activity [hz]> <component_type> <size> <nmos_size>"
     )
     sys.exit()
@@ -37,7 +37,7 @@ if activity == "h":
 elif activity == "z":
     na = 1
 else:
-    print ("Invalid activity type\n")
+    print("Invalid activity type\n")
     sys.exit()
 
 base_dir = os.path.join(my_dir)

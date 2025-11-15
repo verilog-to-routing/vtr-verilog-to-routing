@@ -226,6 +226,7 @@ class UI:
             i.e.: y_sublist = y_raw_list[i]
         figure_name
     """
+
     # TODO: if some x,y series are all -1, then we should not create the figure
     def figure_traverser(
         self, y_sub_list, namemap, axis_left, xy_namemap, y_i, figure_name, plot_type="plot"
@@ -381,9 +382,38 @@ def main():
     data_collection = data_converter(data, ret["x"], ret["y"], filt_name_list)
 
     print("########################################")
-    print("---- Description: ----\n" + ">>\n" + "VPR benchmark experiment should have 2 types of data: \n" + "parameter: settings in for the experiment (e.g.: fc, wire length, switch block ...)\n" + "metrics: measurements from the VPR output (e.g.: min chan width, critical path delay ...)\n" + ">>\n" + "Data passed into this plotter should have already been classified into 3 axes: \n" + "one [x] axis (chosen from parameter)\n" + "multiple [y] axis (chosen from metrics)\n" + "multiple [filter] axis (all the unchosen parameters)\n" + ">>\n" + "For example, if the experiment has: \n" + "[arch, circuit, wire length, switch block, fc, min chan width, critical path delay, area, total wire length]\n" + "and you choose fc as x axis, [min chan width, critical path delay, area, total wire length] as y axes,\n" + "then filter axes are the unchosen parameters, i.e.: arch, circuit, wire length, switch block. ")
+    print(
+        "---- Description: ----\n"
+        + ">>\n"
+        + "VPR benchmark experiment should have 2 types of data: \n"
+        + "parameter: settings in for the experiment (e.g.: fc, wire length, switch block ...)\n"
+        + "metrics: measurements from the VPR output (e.g.: min chan width, critical path delay ...)\n"
+        + ">>\n"
+        + "Data passed into this plotter should have already been classified into 3 axes: \n"
+        + "one [x] axis (chosen from parameter)\n"
+        + "multiple [y] axis (chosen from metrics)\n"
+        + "multiple [filter] axis (all the unchosen parameters)\n"
+        + ">>\n"
+        + "For example, if the experiment has: \n"
+        + "[arch, circuit, wire length, switch block, fc, min chan width, critical path delay, area, total wire length]\n"
+        + "and you choose fc as x axis, [min chan width, critical path delay, area, total wire length] as y axes,\n"
+        + "then filter axes are the unchosen parameters, i.e.: arch, circuit, wire length, switch block. "
+    )
     print("#########################################")
-    print("---- Usage ----\n" + ">>\n" + "1. choose overlay axes among the filter axes (overlay axes will become legend in a single plot)\n" + '2. choose whether to whether to calculate the geo mean over the overlay axis ("merge" function)\n' + "   (Notice: you can choose as many overlay axes as you like, but when you choose merge, it will only\n" + "    calculate the geo mean over the last overlay axis. So for example, if your overlay axes are [fc, circuit],\n" + "    the merge will only get geo mean over all the circuits rather that all the (circuit,fc) combination, and \n" + "    fc will still be overlaid in the merged plot.)\n" + '3. the data after geo mean calcultion will be referred to as "gmean", and the data before the geo mean will be \n' + '   referred to as "raw", you can switch the overlay axes for both gmean data and raw data, for as many times \n' + '   as you like. But once you "merge" on a new axis, the old gmean data will be replaced by the new one, and further\n' + "   operation will be acted on only the new gmean data.")
+    print(
+        "---- Usage ----\n"
+        + ">>\n"
+        + "1. choose overlay axes among the filter axes (overlay axes will become legend in a single plot)\n"
+        + '2. choose whether to whether to calculate the geo mean over the overlay axis ("merge" function)\n'
+        + "   (Notice: you can choose as many overlay axes as you like, but when you choose merge, it will only\n"
+        + "    calculate the geo mean over the last overlay axis. So for example, if your overlay axes are [fc, circuit],\n"
+        + "    the merge will only get geo mean over all the circuits rather that all the (circuit,fc) combination, and \n"
+        + "    fc will still be overlaid in the merged plot.)\n"
+        + '3. the data after geo mean calcultion will be referred to as "gmean", and the data before the geo mean will be \n'
+        + '   referred to as "raw", you can switch the overlay axes for both gmean data and raw data, for as many times \n'
+        + '   as you like. But once you "merge" on a new axis, the old gmean data will be replaced by the new one, and further\n'
+        + "   operation will be acted on only the new gmean data."
+    )
     while 1:
         print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
         print("available axis to overlay: ")

@@ -34,7 +34,9 @@ def main(argv=None):
         print("\tDid not get any input options; use odin_config_maker.py -h for help.")
         return -1
     if options.individual is not None and options.directory is not None:
-        print("\tThe -i and -d options are mutually exclusive; use odin_config_maker.py -h for help.")
+        print(
+            "\tThe -i and -d options are mutually exclusive; use odin_config_maker.py -h for help."
+        )
         return -1
 
     # Create our Config Files
