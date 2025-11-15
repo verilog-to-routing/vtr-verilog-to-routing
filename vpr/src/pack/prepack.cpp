@@ -169,7 +169,6 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
 
     std::vector<t_pack_patterns> packing_patterns = alloc_and_init_pattern_list_from_hash(pattern_names);
 
-
     /* load packing patterns by traversing the edges to find edges belonging to pattern */
     for (size_t i = 0; i < pattern_names.size(); i++) {
         for (const t_logical_block_type& type : logical_block_types) {
