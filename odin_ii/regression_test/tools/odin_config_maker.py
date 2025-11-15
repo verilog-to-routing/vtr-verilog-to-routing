@@ -28,13 +28,13 @@ def main(argv=None):
 
     # Check our options for input errors
     if not options.arch:
-        print "\tDid not get an architecture file; use odin_config_maker.py -h for help."
+        print("\tDid not get an architecture file; use odin_config_maker.py -h for help.")
         return -1
     if options.individual is None and options.directory is None and options.files is None:
-        print "\tDid not get any input options; use odin_config_maker.py -h for help."
+        print("\tDid not get any input options; use odin_config_maker.py -h for help.")
         return -1
     if options.individual is not None and options.directory is not None:
-        print "\tThe -i and -d options are mutually exclusive; use odin_config_maker.py -h for help."
+        print("\tThe -i and -d options are mutually exclusive; use odin_config_maker.py -h for help.")
         return -1
 
     # Create our Config Files
@@ -54,7 +54,7 @@ def main(argv=None):
             )
 
         for file in file_list:
-            print file[file.rfind("/") + 1 : file.rfind(".v")]
+            print(file[file.rfind("/") + 1 : file.rfind(".v")])
             base = file[file.rfind("/") + 1 : file.rfind(".v")]
             create_odin_projects(options, [file], base, path)
 
@@ -78,7 +78,7 @@ def main(argv=None):
 
         create_odin_projects(options, file_list, base, path)
     else:
-        print "Something Failed!"
+        print("Something Failed!")
         return -1
 
 

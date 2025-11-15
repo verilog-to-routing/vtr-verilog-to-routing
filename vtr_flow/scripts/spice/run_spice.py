@@ -99,12 +99,12 @@ p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, cwd=temp_dir)
 stdout, stderr = p.communicate()
 
 if re.search("error", stdout):
-    print "Error"
+    print("Error")
 
 else:
     m = re.search("^\s*power=\s*(\S*).*$", stdout, re.MULTILINE)
     if m:
-        print m.group(1)
+        print(m.group(1))
 
 
 # f = open("~/spice_modeling/" + sys.argv[1] + ".spx")
