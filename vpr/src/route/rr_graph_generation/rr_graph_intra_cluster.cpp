@@ -202,7 +202,7 @@ static std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical
     bool found_sub_tile = false;
 
     // Iterate over all the sub-tiles to find the sub-tile instance that the cluster block is mapped to.
-    for (const t_sub_tile& sub_tile: physical_tile->sub_tiles) {
+    for (const t_sub_tile& sub_tile : physical_tile->sub_tiles) {
         if (sub_tile.capacity.is_in_range(sub_tile_index)) {
             // This sub-tile type is the one that the cluster block is mapped to.
             found_sub_tile = true;

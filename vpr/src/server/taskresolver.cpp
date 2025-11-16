@@ -8,7 +8,6 @@
 #include "telegramoptions.h"
 #include <gtk/gtk.h>
 
-
 #include <ezgl/application.hpp>
 
 namespace server {

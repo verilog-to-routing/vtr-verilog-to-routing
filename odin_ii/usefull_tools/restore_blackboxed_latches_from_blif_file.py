@@ -49,20 +49,24 @@ def main():
     # print "DEBUG: RESTORED_BLIF_FILE: {}".format(args.restoredBlifFile)
 
     if args.inplace:
-        print "Inplace Restortation:"
+        print("Inplace Restortation:")
     elif not args.restoredBlifFile:
-        print '\n\nERROR: Must Specify Either Inplace Restoration "-i,--inplace" or a file to restore to "-r\--restoredBlifFile"\nExiting...\n'
-        parser.print_help()
-        return -1
-
-    if not os.path.isfile(args.blifFileToRestore):
-        print '\n\nERROR: BLIF File to Restore "{}" doesn not exist\nExiting...\n'.format(
-            args.blifFileToRestore
+        print(
+            '\n\nERROR: Must Specify Either Inplace Restoration "-i,--inplace" or a file to restore to "-r\--restoredBlifFile"\nExiting...\n'
         )
         parser.print_help()
         return -1
 
-    print "Restoring original inputs, ouptuts, types, controls and init_vals:"
+    if not os.path.isfile(args.blifFileToRestore):
+        print(
+            '\n\nERROR: BLIF File to Restore "{}" doesn not exist\nExiting...\n'.format(
+                args.blifFileToRestore
+            )
+        )
+        parser.print_help()
+        return -1
+
+    print("Restoring original inputs, ouptuts, types, controls and init_vals:")
 
     if args.inplace:
         args.restoredBlifFile = "restored.blif.tmp"
@@ -81,7 +85,7 @@ def main():
                 line = line.replace(src, target)
             outfile.write(line)
 
-    print "Removing BlackBoxed Latch Model:"
+    print("Removing BlackBoxed Latch Model:")
 
     ignore = False
     for line in fileinput.input(args.restoredBlifFile, inplace=True):
@@ -89,7 +93,7 @@ def main():
             if line.startswith(".model bb_latch"):
                 ignore = True
             else:
-                print line,
+                print(line),
         if ignore and line.isspace():
             ignore = False
 
@@ -98,9 +102,9 @@ def main():
         dest_filename = os.path.join(args.blifFileToRestore)
         shutil.move(src_filename, dest_filename)
 
-        print "BLIF File Restored. See: {}".format(args.blifFileToRestore)
+        print("BLIF File Restored. See: {}".format(args.blifFileToRestore))
     else:
-        print "BLIF File Restored. See: {}".format(args.restoredBlifFile)
+        print("BLIF File Restored. See: {}".format(args.restoredBlifFile))
 
     return
 
