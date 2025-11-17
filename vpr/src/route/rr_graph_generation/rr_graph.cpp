@@ -1670,7 +1670,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     }
 
     // If there are any interposer cuts, remove the edges and shorten the wires that cross interposer cut lines.
-    if (!grid.get_horizontal_interposer_cuts().empty() || !grid.get_vertical_interposer_cuts().empty()) {
+    if (grid.has_interposer_cuts()) {
         std::vector<RREdgeId> interposer_edges = mark_interposer_cut_edges_for_removal(rr_graph, grid);
         rr_graph_builder.remove_edges(interposer_edges);
 
