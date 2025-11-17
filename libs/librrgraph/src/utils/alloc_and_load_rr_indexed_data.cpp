@@ -52,7 +52,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
                                      int& num_switches,
                                      int& num_shorts,
                                      short& buffered,
-                                     vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
+                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
 
 static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, size_t num_segment);
 
@@ -566,7 +566,15 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         int num_switches = 0;
         int num_shorts = 0;
         short buffered = LIBRRGRAPH_UNDEFINED_VAL;
-        calculate_average_switch(rr_graph, rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, num_shorts, buffered, fan_in_list);
+        calculate_average_switch(rr_graph,
+                                 rr_id,
+                                 avg_switch_R,
+                                 avg_switch_T,
+                                 avg_switch_Cinternal,
+                                 num_switches,
+                                 num_shorts,
+                                 buffered,
+                                 fan_in_list);
 
         if (num_switches == 0) {
             if (num_shorts == 0) {
@@ -683,7 +691,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
                                      int& num_switches,
                                      int& num_shorts,
                                      short& buffered,
-                                     vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
+                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
 
     avg_switch_R = 0;
     avg_switch_T = 0;
