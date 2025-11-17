@@ -63,6 +63,8 @@ struct LogicalRamGroup {
     t_logical_block_type_ptr pre_assigned_type = nullptr;
     t_logical_block_type_ptr last_selected_type = nullptr;
 
+    float max_atom_criticality = 0.0;
+
 
     // "Power-efficient RAM Mapping Algorithms for FPGA Embedded Memory Blocks" inspired elements
     t_logical_block_type_ptr type_init = nullptr;
@@ -345,6 +347,14 @@ class Prepacker {
         return logical_ram_stats_;
     }
 
+    inline std::vector<LogicalRamGroup>& get_mutable_logical_rams () const {
+        return logical_ram_groups_;
+    }
+
+    inline const std::unordered_map<t_logical_block_type_ptr, int> get_final_candidate_usages () const {
+        return candidate_usages_final_;
+    }
+
   private:
     /**
      * Pre-pack atoms in netlist to molecules
@@ -414,4 +424,5 @@ class Prepacker {
     mutable std::vector<LogicalRamGroup> logical_ram_groups_;
     vtr::vector<AtomBlockId, size_t> atom_to_group_;
     LogicalRamStats logical_ram_stats_;
+    std::unordered_map<t_logical_block_type_ptr, int> candidate_usages_final_;
 };

@@ -1816,6 +1816,10 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
             if (ok_ab && ok_ba && (candidate_types == g.candidate_types)) {
                 g.atoms.push_back(atom_blk_id);
                 placed = true;
+                // float atom_criticality = pre_cluster_timing_manager.calc_atom_setup_criticality(atom_blk_id, atom_nlist);
+                // if (atom_criticality > g.max_atom_criticality) {
+                //     g.max_atom_criticality = atom_criticality;
+                // }
                 break;
             }
         }
@@ -1827,6 +1831,10 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
             ng.rep_pb_type = prim->pb_type;
             ng.atoms.push_back(atom_blk_id);
             ng.candidate_types = candidate_types;
+            // float atom_criticality = pre_cluster_timing_manager.calc_atom_setup_criticality(atom_blk_id, atom_nlist);
+            // if (atom_criticality > ng.max_atom_criticality) {
+            //     ng.max_atom_criticality = atom_criticality;
+            // }
             logical_ram_groups_.push_back(std::move(ng));
 
             // Add current types if they not exist in the mapping.
@@ -1850,6 +1858,7 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
         // Hierarchical name (from representative)
         const t_pb_graph_node* prim = get_expected_lowest_cost_pb_gnode(g.rep_blk);
         if (prim) {
+            VTR_LOG("    Representative atom id: %zu\n", g.rep_blk);
             VTR_LOG("    Hierarchical name: %s\n", prim->hierarchical_type_name().c_str());
             VTR_LOG("    Blif model: %s\n", prim->pb_type->blif_model ? prim->pb_type->blif_model : "");
         }
@@ -1985,6 +1994,15 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
         }
     }
 
+    // // Timing part.
+    // VTR_LOG("Max timing criticalities:\n");
+    // for (size_t gid = 0; gid < logical_ram_groups_.size(); ++gid) {
+    //     LogicalRamGroup& g = logical_ram_groups_[gid];
+    //     VTR_LOG("\tGroup %zu has %zu atoms:\n", gid, g.total_memory_slices);
+    //     VTR_LOG("\t\tMax criticality: %f\n", g.max_atom_criticality);
+    //     VTR_LOG("\t\tPre-assigned type: %s\n", g.pre_assigned_type->name.c_str())l
+    // }
+
     // Verify the initial mappings are feasible (utilization check).
     VTR_LOG("Final mappings device utilizations:\n");
     for (auto usage: candidate_usages) {
@@ -1998,6 +2016,7 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
 
         VTR_ASSERT_MSG(utilization <= 1.0, "At least one RAM type is over utilized after final placement. Ideally, this assertion should be removed and reassigning should be tried");
     }
+    candidate_usages_final_ = candidate_usages;
 
 
     // Crosscheck and validate the atoms are assigned to correct groups.

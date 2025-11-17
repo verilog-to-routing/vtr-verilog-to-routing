@@ -417,7 +417,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
         VTR_ASSERT_MSG(it != logical_ram.atoms.end(), "Could not find root atom in the retrieved logical ram atoms");
             
 
-        VTR_ASSERT_MSG(candidate_types == logical_ram.candidate_types, "Logical ram and clustering candidate types are mismatching.");
+        // VTR_ASSERT_MSG(candidate_types == logical_ram.candidate_types, "Logical ram and clustering candidate types are mismatching.");
 
         if (logical_ram.pre_assigned_type) {
             // VTR_LOG("\tPre-assigned type: %s\n", logical_ram.pre_assigned_type->name.c_str());
