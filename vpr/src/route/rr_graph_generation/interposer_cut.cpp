@@ -166,12 +166,12 @@ static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int
 }
 
 /**
-  * @brief Update a CHANX node's bounding box in RRGraph and SpatialLookup entries.
-  * This function assumes that the channel node actually crosses the cut location and
-  * might not function correctly otherwise.
-  *
-  * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
-  */
+ * @brief Update a CHANX node's bounding box in RRGraph and SpatialLookup entries.
+ * This function assumes that the channel node actually crosses the cut location and
+ * might not function correctly otherwise.
+ *
+ * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
+ */
 static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_x, Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
     if (node_direction == Direction::INC) {
         // Anything to the right of cut_loc_x shouldn't exist

@@ -1669,7 +1669,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
             }
         }
     }
-    
+
     // If there are any interposer cuts, remove the edges and shorten the wires that cross interposer cut lines.
     if (!grid.get_horizontal_interposer_cuts().empty() || !grid.get_vertical_interposer_cuts().empty()) {
         std::vector<RREdgeId> interposer_edges = mark_interposer_cut_edges_for_removal(rr_graph, grid);
@@ -1677,7 +1677,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
         update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(rr_graph, grid, rr_graph_builder, sg_node_indices);
     }
-    
+
     // Add 2D scatter-gather link edges (the nodes have already been created at this point). These links are mostly used for interposer-crossing connections, but could also be used for other things.
     add_and_connect_non_3d_sg_links(rr_graph_builder, sg_links, sg_node_indices, chan_details_x, chan_details_y, num_seg_types_x, rr_edges_to_create);
     uniquify_edges(rr_edges_to_create);
