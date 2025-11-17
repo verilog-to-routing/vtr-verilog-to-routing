@@ -1,5 +1,13 @@
 #pragma once
 
+/**
+ * @file interposer_cut.h
+ * @brief This file implements functions that:
+ * (1) Marks all edges that cross an interposer cut for removal
+ * (2) Makes the channel nodes that cross an interposer cut shorter to have them not cross the interposer anymore
+ * Using these two functions and combined with 2D scatter-gather patterns, you can model and implement 2.5D FPGA RR Graphs.
+ */
+
 #include <vector>
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
