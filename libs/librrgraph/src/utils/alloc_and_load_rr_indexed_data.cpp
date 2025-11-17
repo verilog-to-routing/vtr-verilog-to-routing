@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
+#include <cstddef>
 #include <fstream>
 #include <iomanip>
 #include <numeric>
@@ -28,7 +29,9 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 
 static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, const bool echo_enabled, const char* echo_file_name);
 
-static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph, vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
+static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
+                                          const RRSwitchId wire_to_ipin_switch,
+                                          vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
 
 /**
  * @brief Computes average R, Tdel, and Cinternal of fan-in switches for a given node.
@@ -49,7 +52,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
                                      int& num_switches,
                                      int& num_shorts,
                                      short& buffered,
-                                     vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
+                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
 
 static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, size_t num_segment);
 
@@ -84,7 +87,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     const std::vector<t_segment_inf>& segment_inf_y,
                                     const std::vector<t_segment_inf>& segment_inf_z,
                                     vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                                    RRSwitchId wire_to_ipin_switch,
+                                    const RRSwitchId wire_to_ipin_switch,
                                     e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name) {
@@ -107,9 +110,6 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
         rr_indexed_data[RRIndexedDataId(i)].T_quadratic = 0.;
         rr_indexed_data[RRIndexedDataId(i)].C_load = 0.;
     }
-
-    //TODO: SM: IPIN t_linear assumes wire_to_ipin_switch which corresponds to within die switch connection
-    rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(wire_to_ipin_switch).Tdel;
 
     std::vector<int> ortho_costs = find_ortho_cost_index(rr_graph, segment_inf_x, segment_inf_y, e_parallel_axis::X_AXIS);
 
@@ -158,7 +158,9 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
         rr_indexed_data[index].seg_index = seg_ptr->seg_index;
     }
 
-    load_rr_indexed_data_T_values(rr_graph, rr_indexed_data);
+    load_rr_indexed_data_T_values(rr_graph,
+                 wire_to_ipin_switch,
+                 rr_indexed_data);
 
     fixup_rr_indexed_data_T_values(rr_indexed_data, total_num_segment);
 
@@ -513,6 +515,7 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
  *      - Placement Delay Matrix computation
  */
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
+                                          const RRSwitchId wire_to_ipin_switch,
                                           vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data) {
     vtr::vector<RRNodeId, std::vector<RREdgeId>> fan_in_list = get_fan_in_list(rr_graph);
 
@@ -531,11 +534,24 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_Cinternal_total(rr_indexed_data.size());
     vtr::vector<RRIndexedDataId, short> switches_buffered(rr_indexed_data.size(), LIBRRGRAPH_UNDEFINED_VAL);
 
+    std::map<short, size_t> ipin_switch_count;
+
     // Walk through the RR graph and collect all R and C values of all the nodes,
     // as well as their fan-in switches R, T_del, and Cinternal values.
     // The median of R and C values for each cost index is assigned to the indexed data.
     for (const RRNodeId rr_id : rr_graph.nodes()) {
         e_rr_type rr_type = rr_graph.node_type(rr_id);
+
+        if (rr_type == e_rr_type::IPIN) {
+            for (const RREdgeId edge : fan_in_list[rr_id]) {
+                short switch_index = rr_graph.rr_nodes().edge_switch(edge);
+                if (ipin_switch_count.find(switch_index) == ipin_switch_count.end()) {
+                    ipin_switch_count[switch_index] = 1;
+                } else {
+                    ipin_switch_count[switch_index]++;
+                }
+            }
+        }
 
         if (!is_chanxy(rr_type) && !is_chanz(rr_type)) {
             continue;
@@ -550,7 +566,15 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         int num_switches = 0;
         int num_shorts = 0;
         short buffered = LIBRRGRAPH_UNDEFINED_VAL;
-        calculate_average_switch(rr_graph, rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, num_shorts, buffered, fan_in_list);
+        calculate_average_switch(rr_graph,
+                                 rr_id,
+                                 avg_switch_R,
+                                 avg_switch_T,
+                                 avg_switch_Cinternal,
+                                 num_switches,
+                                 num_shorts,
+                                 buffered,
+                                 fan_in_list);
 
         if (num_switches == 0) {
             if (num_shorts == 0) {
@@ -588,6 +612,23 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
                 switches_buffered[cost_index] = 1;
             }
         }
+    }
+
+    short most_frequent_ipin_switch = -1;
+    size_t most_frequent_ipin_switch_count = 0;
+    for (const auto& [switch_index, count] : ipin_switch_count) {
+        if (count > most_frequent_ipin_switch_count) {
+            most_frequent_ipin_switch = switch_index;
+            most_frequent_ipin_switch_count = count;
+        }
+    }
+    VTR_ASSERT(most_frequent_ipin_switch != -1);
+    rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(most_frequent_ipin_switch)).Tdel;
+    short wire_to_ipin_switch_index = static_cast<short>(size_t(wire_to_ipin_switch));
+    if (most_frequent_ipin_switch != wire_to_ipin_switch_index) {
+        VTR_LOG_WARN("Most frequent ipin switch %d is not the same as the wire_to_ipin_switch %d\n",
+                     most_frequent_ipin_switch,
+                     wire_to_ipin_switch_index);
     }
 
     unsigned num_occurences_of_no_instances_with_cost_index = 0;
@@ -650,7 +691,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
                                      int& num_switches,
                                      int& num_shorts,
                                      short& buffered,
-                                     vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
+                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
 
     avg_switch_R = 0;
     avg_switch_T = 0;
