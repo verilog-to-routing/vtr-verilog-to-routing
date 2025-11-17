@@ -237,8 +237,7 @@ struct DeviceContext : public Context {
                          rr_rc_data,
                          rr_graph_builder.rr_segments(),
                          rr_graph_builder.rr_switch(),
-                         rr_graph_builder.node_in_edge_storage(),
-                         rr_graph_builder.node_ptc_storage()};
+                         rr_graph_builder.node_in_edge_storage()};
 
     ///@brief Track ids for each rr_node in the rr_graph. This is used by drawer for tileable routing resource graph
     std::map<RRNodeId, std::vector<size_t>> rr_node_track_ids;
