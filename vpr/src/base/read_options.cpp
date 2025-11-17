@@ -3311,6 +3311,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Whether the generated CRR should be annotated with delay")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
+    
+    crr_grp.add_argument<bool, ParseOnOff>(args.remove_dangling_nodes, "--remove_dangling_nodes")
+        .help("Whether the generated CRR should remove CHANX and CHANY nodes that have no fan-in")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");
 

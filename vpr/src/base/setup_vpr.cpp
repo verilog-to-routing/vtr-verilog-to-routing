@@ -765,6 +765,7 @@ static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts) {
     crr_opts.preserve_input_pin_connections = Options.preserve_input_pin_connections;
     crr_opts.preserve_output_pin_connections = Options.preserve_output_pin_connections;
     crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
+    crr_opts.remove_dangling_nodes = Options.remove_dangling_nodes;
 }
 
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {
