@@ -620,6 +620,54 @@ void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction
     node_storage_[id].dir_side_.direction = new_direction;
 }
 
+void t_rr_graph_storage::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str) {
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    std::vector<std::string> ptc_tokens = vtr::StringToken(ptc_str).split(",");
+    VTR_ASSERT(ptc_tokens.size() >= 1);
+    set_node_ptc_num(node, std::stoi(ptc_tokens[0]));
+    if (ptc_tokens.size() > 1) {
+        VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
+        node_tilable_track_nums_[node].resize(ptc_tokens.size());
+        for (size_t iptc = 0; iptc < ptc_tokens.size(); iptc++) {
+            node_tilable_track_nums_[node][iptc] = std::stoi(ptc_tokens[iptc]);
+        }
+    }
+}
+
+void t_rr_graph_storage::add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id) {
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY,
+                   "Track number valid only for CHANX/CHANY RR nodes");
+
+    size_t node_length = std::abs(node_xhigh(node) - node_xlow(node))
+                       + std::abs(node_yhigh(node) - node_ylow(node));
+    if (node_length + 1 != node_tilable_track_nums_[node].size()) {
+        node_tilable_track_nums_[node].resize(node_length + 1);
+    }
+
+    VTR_ASSERT(node_offset < node_tilable_track_nums_[node].size());
+
+    node_tilable_track_nums_[node][node_offset] = track_id;
+}
+
+std::string t_rr_graph_storage::node_ptc_nums_to_string(RRNodeId node) const {
+    if (node_tilable_track_nums_.empty()) {
+        return std::to_string(size_t(node_ptc_num(node)));
+    }
+    VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
+    if (node_tilable_track_nums_[node].empty()) {
+        return std::to_string(size_t(node_ptc_num(node)));
+    }
+    std::string ret;
+    for (size_t iptc = 0; iptc < node_tilable_track_nums_[node].size(); iptc++) {
+        ret += std::to_string(size_t(node_tilable_track_nums_[node][iptc])) + ",";
+    }
+    // Remove the last comma
+    ret.pop_back();
+    return ret;
+}
+
 void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != e_rr_type::IPIN && node_type(id) != e_rr_type::OPIN) {
         VTR_LOG_ERROR("Attempted to set RR node 'side' for non-pin type '%s'", node_type_string(id));
