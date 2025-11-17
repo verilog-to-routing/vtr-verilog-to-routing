@@ -83,6 +83,10 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         rr_graph_builder->add_rr_segment(segment_inf[(iseg)]);
     }
 
+    if (graph_type == e_graph_type::UNIDIR_TILEABLE) {
+        rr_graph_builder->set_tileable(true);
+    }
+
     RrGraphSerializer reader(
         graph_type,
         base_cost_type,
