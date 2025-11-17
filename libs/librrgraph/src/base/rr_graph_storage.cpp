@@ -707,8 +707,8 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
     // Iterate over the nodes to be removed and adjust the IDs of nodes 
     // that fall between them. 
     for (size_t i = 0; i < sorted_nodes.size(); ++i) {
-        size_t start_rr_node_index = sorted_nodes[i]+1;
-        size_t end_rr_node_index = (i == sorted_nodes.size() - 1) ? sorted_nodes.size() : sorted_nodes[i + 1];
+        size_t start_rr_node_index = size_t(sorted_nodes[i]) + 1;
+        size_t end_rr_node_index = (i == sorted_nodes.size() - 1) ? sorted_nodes.size() : size_t(sorted_nodes[i + 1]);
         for (size_t j = start_rr_node_index; j < end_rr_node_index; ++j) {
             RRNodeId old_node = RRNodeId(j);
             // New node index is equal to the old nodex index minus the number of nodes being removed before it.
@@ -722,6 +722,7 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
             if (is_tileable_) {
                 node_bend_start_[new_node] = node_bend_start_[old_node];
                 node_bend_end_[new_node] = node_bend_end_[old_node];
+                node_tilable_track_nums_[new_node] = node_tilable_track_nums_[old_node];
             }
         }
     }
@@ -734,14 +735,18 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
     node_first_edge_.erase(node_first_edge_.end()-num_nodes_to_remove, node_first_edge_.end());
     node_fan_in_.erase(node_fan_in_.end()-num_nodes_to_remove, node_fan_in_.end());
     node_layer_.erase(node_layer_.end()-num_nodes_to_remove, node_layer_.end());
-    node_name_.erase(node_name_.end()-num_nodes_to_remove, node_name_.end());
+    for (size_t node_index = node_name_.size()-num_nodes_to_remove; node_index < node_name_.size(); ++node_index) {
+        RRNodeId node = RRNodeId(node_index);
+        node_name_.erase(node);
+    }
     if (is_tileable_) {
         node_bend_start_.erase(node_bend_start_.end()-num_nodes_to_remove, node_bend_start_.end());
         node_bend_end_.erase(node_bend_end_.end()-num_nodes_to_remove, node_bend_end_.end());
+        node_tilable_track_nums_.erase(node_tilable_track_nums_.end()-num_nodes_to_remove, node_tilable_track_nums_.end());
     }
 
     std::vector<RREdgeId> removed_edges;
-    auto adjust_edges = [&](std::vector<RRNodeId>& edge_nodes) {
+    auto adjust_edges = [&](vtr::vector<RREdgeId, RRNodeId>& edge_nodes) {
         for (size_t edge_index = 0; edge_index < edge_nodes.size(); ++edge_index) {
             RREdgeId edge_id = RREdgeId(edge_index);
             RRNodeId node = edge_nodes[edge_id];
