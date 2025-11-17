@@ -737,6 +737,16 @@ class t_rr_graph_storage {
      */
     void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx);
 
+    /**
+     * @brief Removes a given list of RRNodes from the RR Graph
+     * This method should be called after partition_edges has been called.
+     * @note This a very expensive method, so should be called only when necessary. It is better
+     * to not add nodes in the first place, instead of relying on this method to remove nodes.
+     *
+     * @param nodes list of RRNodes to be removed
+     */
+    void remove_nodes(const std::vector<RRNodeId>& nodes);
+
     /****************
      * Edge methods *
      ****************/
