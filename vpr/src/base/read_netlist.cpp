@@ -319,11 +319,11 @@ static void sync_clustered_and_atom_netlists(ClusteredNetlist& clb_nlist,
 }
 
 static void process_complex_block(pugi::xml_node clb_block,
-                                const ClusterBlockId index,
-                                int& num_primitives,
-                                const pugiutil::loc_data& loc_data,
-                                const std::unordered_map<std::string, int>& logical_block_type_name_to_index,
-                                ClusteredNetlist& clb_nlist) {
+                                  const ClusterBlockId index,
+                                  int& num_primitives,
+                                  const pugiutil::loc_data& loc_data,
+                                  const std::unordered_map<std::string, int>& logical_block_type_name_to_index,
+                                  ClusteredNetlist& clb_nlist) {
     const auto& logical_block_types = g_vpr_ctx.device().logical_block_types;
 
     //Parse cb attributes

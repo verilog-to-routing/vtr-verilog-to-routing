@@ -13,6 +13,20 @@
 class AtomBlockId;
 
 /**
+ * Keeps track of locations that a primitive can go to during packing
+ * Linked list for easy insertion/deletion
+ */
+struct t_cluster_placement_primitive {
+    t_cluster_placement_primitive() {
+        pb_graph_node = nullptr;
+    }
+    t_pb_graph_node* pb_graph_node;
+    bool valid;
+    float base_cost;        /* cost independent of current status of packing */
+    float incremental_cost; /* cost dependent on current status of packing */
+};
+
+/**
  * @brief Stats keeper for placement within the cluster during packing
  *
  * Contains data structure of placement locations based on status of primitive

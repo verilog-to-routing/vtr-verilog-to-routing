@@ -17,7 +17,6 @@
 #include <vector>
 #include "atom_lookup.h"
 #include "atom_netlist.h"
-#include "cad_types.h"
 #include "cluster_placement.h"
 #include "cluster_router.h"
 #include "globals.h"

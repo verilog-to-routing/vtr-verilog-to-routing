@@ -77,7 +77,6 @@ struct t_pin_to_pin_annotation;
 struct t_interconnect;
 class t_pb_graph_pin;
 class t_pb_graph_edge;
-struct t_cluster_placement_primitive;
 struct t_arch;
 enum class e_sb_type;
 struct t_interposer_cut_inf;

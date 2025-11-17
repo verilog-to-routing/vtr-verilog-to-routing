@@ -1372,9 +1372,7 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         std::string source_string{src_string};
 
         // Replace '.' and '[' characters with ' '
-        std::ranges::replace_if(source_string,
-            [](char c) noexcept { return c == '.' || c == '[' || c == ':' || c == ']'; },
-            ' ');
+        std::ranges::replace_if(source_string, [](char c) noexcept { return c == '.' || c == '[' || c == ':' || c == ']'; }, ' ');
 
         std::istringstream source_iss(source_string);
         int start_pin_index, end_pin_index;
