@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <ranges>
 
 void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_src_node_.reserve(num_edges);
@@ -67,14 +68,16 @@ void t_rr_graph_storage::remove_edges(std::vector<RREdgeId>& rr_edges_to_remove)
     // Sort and make sure all edge indices are unique
     vtr::uniquify(rr_edges_to_remove);
     VTR_ASSERT_SAFE(std::is_sorted(rr_edges_to_remove.begin(), rr_edges_to_remove.end()));
+
+    // Make sure the edge indices are valid
+    VTR_ASSERT(static_cast<size_t>(rr_edges_to_remove.back()) <= edge_dest_node_.size());
     
     // Index of the last edge
     size_t edge_list_end = edge_dest_node_.size() - 1;
 
     // Iterate backwards through the list of indices we want to remove.
-    for (auto it = rr_edges_to_remove.rbegin(); it != rr_edges_to_remove.rend(); ++it) {
-        RREdgeId erase_idx = *it;
-
+    
+    for (RREdgeId erase_idx : std::ranges::reverse_view(rr_edges_to_remove)) {
         // Copy what's at the end of the list to the index we wanted to remove
         edge_dest_node_[erase_idx] = edge_dest_node_[RREdgeId(edge_list_end)];
         edge_src_node_[erase_idx] = edge_src_node_[RREdgeId(edge_list_end)];
