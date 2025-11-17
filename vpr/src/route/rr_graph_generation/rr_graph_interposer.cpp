@@ -15,10 +15,57 @@
 
 #include "rr_graph_interposer.h"
 
+// Static function declarations
+
 /**
  * @brief Takes location of a source and a sink and determines wether it crosses cut_loc or not.
  * For example, the interval (1, 4) is cut by 3, while it is not cut by 5 or 0.
  */
+static bool should_cut(int src_loc, int sink_loc, int cut_loc);
+
+/**
+ * @brief Calculates the starting x point of node based on it's directionality.
+ */
+static short node_xstart(const RRGraphView& rr_graph, RRNodeId node);
+
+/**
+ * @brief Calculates the starting y point of node based on it's directionality.
+ */
+static short node_ystart(const RRGraphView& rr_graph, RRNodeId node);
+
+/**
+ * @brief Update a CHANY node's bounding box in RRGraph and SpatialLookup entries.
+ * This function assumes that the channel node actually crosses the cut location and
+ * might not function correctly otherwise.
+ *
+ * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
+ */
+static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_y,
+                            Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup);
+
+/**
+ * @brief Update a CHANX node's bounding box in RRGraph and SpatialLookup entries.
+ * This function assumes that the channel node actually crosses the cut location and
+ * might not function correctly otherwise.
+ *
+ * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
+ */
+static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_x,
+                            Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup);
+
+/**
+ * @brief Update a CHANX or CHANY node's bounding box in RRGraph and SpatialLookup entries if it crosses cut_loc
+ * 
+ * @param node Channel segment RR graph node that might cross the interposer cut line
+ * @param cut_loc location of vertical interposer cut line
+ * @param interposer_cut_type Type of the interposer cut line (Horizontal or vertical)
+ * @param sg_node_indices Sorted list of scatter-gather node IDs. We do not want to cut these nodes as they're allowed to cross an interposer cut line.
+ */
+static void cut_channel_node(RRNodeId node, int cut_loc, e_interposer_cut_type interposer_cut_type, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder,
+                             RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices);
+
+// Function definitions
+
 static bool should_cut(int src_loc, int sink_loc, int cut_loc) {
     int src_delta = src_loc - cut_loc;
     int sink_delta = sink_loc - cut_loc;
@@ -31,9 +78,6 @@ static bool should_cut(int src_loc, int sink_loc, int cut_loc) {
     }
 }
 
-/**
- * @brief Calculates the starting x point of node based on it's directionality.
- */
 static short node_xstart(const RRGraphView& rr_graph, RRNodeId node) {
     e_rr_type node_type = rr_graph.node_type(node);
     Direction node_direction = rr_graph.node_direction(node);
@@ -67,9 +111,6 @@ static short node_xstart(const RRGraphView& rr_graph, RRNodeId node) {
     }
 }
 
-/**
- * @brief Calculates the starting y point of node based on it's directionality.
- */
 static short node_ystart(const RRGraphView& rr_graph, RRNodeId node) {
     e_rr_type node_type = rr_graph.node_type(node);
     Direction node_direction = rr_graph.node_direction(node);
@@ -147,13 +188,6 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
     return edges_to_be_removed;
 }
 
-/**
- * @brief Update a CHANY node's bounding box in RRGraph and SpatialLookup entries.
- * This function assumes that the channel node actually crosses the cut location and
- * might not function correctly otherwise.
- *
- * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
- */
 static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_y,
                             Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
     if (node_direction == Direction::INC) {
@@ -177,13 +211,6 @@ static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int
     }
 }
 
-/**
- * @brief Update a CHANX node's bounding box in RRGraph and SpatialLookup entries.
- * This function assumes that the channel node actually crosses the cut location and
- * might not function correctly otherwise.
- *
- * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
- */
 static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_x,
                             Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
     if (node_direction == Direction::INC) {
@@ -207,14 +234,6 @@ static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int
     }
 }
 
-/**
- * @brief Update a CHANX or CHANY node's bounding box in RRGraph and SpatialLookup entries if it crosses cut_loc
- * 
- * @param node Channel segment RR graph node that might cross the interposer cut line
- * @param cut_loc location of vertical interposer cut line
- * @param interposer_cut_type Type of the interposer cut line (Horizontal or vertical)
- * @param sg_node_indices Sorted list of scatter-gather node IDs. We do not want to cut these nodes as they're allowed to cross an interposer cut line.
- */
 static void cut_channel_node(RRNodeId node, int cut_loc, e_interposer_cut_type interposer_cut_type, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder,
                              RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
     constexpr auto node_indice_compare = [](RRNodeId l, RRNodeId r) noexcept { return size_t(l) < size_t(r); };
