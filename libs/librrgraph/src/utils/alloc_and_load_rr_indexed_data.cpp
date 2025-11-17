@@ -29,7 +29,9 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 
 static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, const bool echo_enabled, const char* echo_file_name);
 
-static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph, vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
+static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
+                                          const RRSwitchId wire_to_ipin_switch,
+                                          vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
 
 /**
  * @brief Computes average R, Tdel, and Cinternal of fan-in switches for a given node.
@@ -85,7 +87,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     const std::vector<t_segment_inf>& segment_inf_y,
                                     const std::vector<t_segment_inf>& segment_inf_z,
                                     vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                                    RRSwitchId wire_to_ipin_switch,
+                                    const RRSwitchId wire_to_ipin_switch,
                                     e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name) {
@@ -156,7 +158,9 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
         rr_indexed_data[index].seg_index = seg_ptr->seg_index;
     }
 
-    load_rr_indexed_data_T_values(rr_graph, rr_indexed_data);
+    load_rr_indexed_data_T_values(rr_graph,
+                 wire_to_ipin_switch,
+                 rr_indexed_data);
 
     fixup_rr_indexed_data_T_values(rr_indexed_data, total_num_segment);
 
@@ -511,6 +515,7 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
  *      - Placement Delay Matrix computation
  */
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
+                                          const RRSwitchId wire_to_ipin_switch,
                                           vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data) {
     vtr::vector<RRNodeId, std::vector<RREdgeId>> fan_in_list = get_fan_in_list(rr_graph);
 
@@ -529,7 +534,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_Cinternal_total(rr_indexed_data.size());
     vtr::vector<RRIndexedDataId, short> switches_buffered(rr_indexed_data.size(), LIBRRGRAPH_UNDEFINED_VAL);
 
-    std::map<short, int> ipin_switch_count;
+    std::map<short, size_t> ipin_switch_count;
 
     // Walk through the RR graph and collect all R and C values of all the nodes,
     // as well as their fan-in switches R, T_del, and Cinternal values.
@@ -601,15 +606,22 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         }
     }
 
-    int most_frequent_ipin_switch = -1;
+    short most_frequent_ipin_switch = -1;
+    size_t most_frequent_ipin_switch_count = 0;
     for (const auto& [switch_index, count] : ipin_switch_count) {
         if (count > most_frequent_ipin_switch_count) {
             most_frequent_ipin_switch = switch_index;
+            most_frequent_ipin_switch_count = count;
         }
     }
     VTR_ASSERT(most_frequent_ipin_switch != -1);
     rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(most_frequent_ipin_switch)).Tdel;
-
+    short wire_to_ipin_switch_index = static_cast<short>(size_t(wire_to_ipin_switch));
+    if (most_frequent_ipin_switch != wire_to_ipin_switch_index) {
+        VTR_LOG_WARN("Most frequent ipin switch %d is not the same as the wire_to_ipin_switch %d\n",
+                     most_frequent_ipin_switch,
+                     wire_to_ipin_switch_index);
+    }
 
     unsigned num_occurences_of_no_instances_with_cost_index = 0;
     for (size_t cost_index = CHANX_COST_INDEX_START; cost_index < rr_indexed_data.size(); cost_index++) {
