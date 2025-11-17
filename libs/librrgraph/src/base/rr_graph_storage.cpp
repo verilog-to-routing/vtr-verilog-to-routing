@@ -654,6 +654,10 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
         }
     };
 
+    //uniquify removed_edges
+    std::sort(removed_edges.begin(), removed_edges.end());
+    removed_edges.erase(std::unique(removed_edges.begin(), removed_edges.end()), removed_edges.end());
+
     adjust_edges(edge_src_node_);
     adjust_edges(edge_dest_node_);
 
