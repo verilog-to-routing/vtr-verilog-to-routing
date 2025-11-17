@@ -592,7 +592,7 @@ class RRGraphView {
      *
      * @note Iterating on the range returned by this function will not give you an RREdgeId, but instead gives you the index among a node's outgoing edges
      */
-    inline edge_idx_range edges(const RRNodeId& id) const {
+    inline edge_idx_range edges(RRNodeId id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
@@ -608,7 +608,7 @@ class RRGraphView {
     /**
      * @brief Return ID range for outgoing edges.
      */
-    inline edge_idx_range node_out_edges(const RRNodeId& id) const {
+    inline edge_idx_range node_out_edges(RRNodeId id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
