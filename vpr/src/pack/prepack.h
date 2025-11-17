@@ -62,6 +62,7 @@ struct LogicalRamGroup {
     int remaining_memory_slices = 0;
     t_logical_block_type_ptr pre_assigned_type = nullptr;
     t_logical_block_type_ptr last_selected_type = nullptr;
+    bool is_output_registered = false;
 
     float max_atom_criticality = 0.0;
 

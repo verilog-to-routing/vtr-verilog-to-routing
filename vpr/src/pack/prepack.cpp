@@ -1861,6 +1861,14 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
             VTR_LOG("    Representative atom id: %zu\n", g.rep_blk);
             VTR_LOG("    Hierarchical name: %s\n", prim->hierarchical_type_name().c_str());
             VTR_LOG("    Blif model: %s\n", prim->pb_type->blif_model ? prim->pb_type->blif_model : "");
+            std::string blif_model_name = prim->pb_type->blif_model;
+            bool output_registered = false;
+            if (blif_model_name.find("output_type{reg}") != std::string::npos) {
+                output_registered = true;
+            }
+            g.is_output_registered = output_registered;
+            VTR_LOG("    Output registered: %s\n", output_registered ? "Yes" : "No");
+            
         }
 
         auto root_model_id = atom_nlist.block_model(g.rep_blk);

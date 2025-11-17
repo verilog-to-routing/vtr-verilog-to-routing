@@ -749,6 +749,10 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
         VTR_LOG("\tPre-assigned type of timing critical group %zu is %s\n", group_id, logical_ram.pre_assigned_type->name.c_str());
         
         // TODO: Skip this mappings if the output is registered.
+        if (logical_ram.is_output_registered) {
+            VTR_LOG("\t\tSkipped since output is registered.\n");
+            continue;
+        }
         
         t_logical_block_type_ptr assigned_type = logical_ram.pre_assigned_type;
         int min_capacity = INT_MAX;
