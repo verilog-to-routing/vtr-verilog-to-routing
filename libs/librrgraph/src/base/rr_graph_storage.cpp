@@ -60,6 +60,8 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
 }
 
 void t_rr_graph_storage::remove_edges(std::vector<RREdgeId>& rr_edges_to_remove) {
+    VTR_ASSERT(!edges_read_);
+
     size_t starting_edge_count = edge_dest_node_.size();
 
     // Sort and make sure all edge indices are unique

@@ -2750,7 +2750,7 @@ The number of any additional wires or muxes created by scatter-gather specificat
     Overview of how scatter-gather patterns work. First, connections from a switchblock location are selected according to the specification.
     These selected connection are then muxed and passed through the scatter-gather node, which is typically a wire segment. The scatter-gather node then fans out or scatters in another switchblock location.
 
-.. note:: Scatter-Gather patterns are only supported for 3D architectures where the scatter-gather links are uni-directional and uni-directional 2D architectures. Bidirectional sg_links are not currently supported.
+.. note:: Scatter-Gather patterns are only supported for uni-directional 3D and uni-directional 2D architectures. Bidirectional sg_links are not currently supported.
 
 When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
 
