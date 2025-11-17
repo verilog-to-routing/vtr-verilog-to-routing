@@ -33,6 +33,7 @@
 #include "rr_graph_intra_cluster.h"
 #include "rr_graph_tile_nodes.h"
 #include "rr_graph_3d.h"
+#include "rr_graph_interposer.h"
 #include "rr_graph_timing_params.h"
 #include "check_rr_graph.h"
 #include "echo_files.h"
@@ -46,8 +47,6 @@
 
 #include "rr_types.h"
 #include "rr_node_indices.h"
-
-#include "interposer_cut.h"
 
 
 //#define VERBOSE

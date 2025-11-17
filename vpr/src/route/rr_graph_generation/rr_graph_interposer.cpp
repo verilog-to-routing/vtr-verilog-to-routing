@@ -13,10 +13,11 @@
 #include "vpr_error.h"
 #include "vtr_assert.h"
 
-#include "interposer_cut.h"
+#include "rr_graph_interposer.h"
 
 /**
- * @brief Takes location of a source and a sink and determines wether it crosses cut_loc or not. For example, the interval (1, 4) is cut by 3, while it is not cut by 5 or 0.
+ * @brief Takes location of a source and a sink and determines wether it crosses cut_loc or not.
+ * For example, the interval (1, 4) is cut by 3, while it is not cut by 5 or 0.
  */
 static bool should_cut(int src_loc, int sink_loc, int cut_loc) {
     int src_delta = src_loc - cut_loc;
@@ -34,22 +35,27 @@ static bool should_cut(int src_loc, int sink_loc, int cut_loc) {
  * @brief Calculates the starting x point of node based on it's directionality.
  */
 static short node_xstart(const RRGraphView& rr_graph, RRNodeId node) {
+    e_rr_type node_type = rr_graph.node_type(node);
+    Direction node_direction = rr_graph.node_direction(node);
+    short node_xlow = rr_graph.node_xlow(node);
+    short node_xhigh = rr_graph.node_xhigh(node);
+
     // Return early for OPIN and IPIN types (Some BIDIR pins would trigger the assertion below)
-    if (rr_graph.node_type(node) == e_rr_type::OPIN || rr_graph.node_type(node) == e_rr_type::IPIN) {
-        VTR_ASSERT(rr_graph.node_xlow(node) == rr_graph.node_xhigh(node));
-        return rr_graph.node_xlow(node);
+    if (is_pin(node_type)) {
+        VTR_ASSERT(node_xlow == node_xhigh);
+        return node_xlow;
     }
 
-    switch (rr_graph.node_direction(node)) {
+    switch (node_direction) {
         case Direction::DEC:
-            return rr_graph.node_xhigh(node);
+            return node_xhigh;
 
         case Direction::INC:
-            return rr_graph.node_xlow(node);
+            return node_xlow;
 
         case Direction::NONE:
-            VTR_ASSERT(rr_graph.node_xlow(node) == rr_graph.node_xhigh(node));
-            return (rr_graph.node_xlow(node));
+            VTR_ASSERT(node_xlow == node_xhigh);
+            return (node_xlow);
 
         case Direction::BIDIR:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Bidir node has no starting point.");
@@ -65,21 +71,26 @@ static short node_xstart(const RRGraphView& rr_graph, RRNodeId node) {
  * @brief Calculates the starting y point of node based on it's directionality.
  */
 static short node_ystart(const RRGraphView& rr_graph, RRNodeId node) {
+    e_rr_type node_type = rr_graph.node_type(node);
+    Direction node_direction = rr_graph.node_direction(node);
+    short node_ylow = rr_graph.node_ylow(node);
+    short node_yhigh = rr_graph.node_yhigh(node);
+
     // Return early for OPIN and IPIN types (Some BIDIR pins would trigger the assertion below)
-    if (rr_graph.node_type(node) == e_rr_type::OPIN || rr_graph.node_type(node) == e_rr_type::IPIN) {
-        return rr_graph.node_ylow(node);
+    if (is_pin(node_type)) {
+        return node_ylow;
     }
 
-    switch (rr_graph.node_direction(node)) {
+    switch (node_direction) {
         case Direction::DEC:
-            return rr_graph.node_yhigh(node);
+            return node_yhigh;
 
         case Direction::INC:
-            return rr_graph.node_ylow(node);
+            return node_ylow;
 
         case Direction::NONE:
-            VTR_ASSERT(rr_graph.node_ylow(node) == rr_graph.node_yhigh(node));
-            return (rr_graph.node_ylow(node));
+            VTR_ASSERT(node_ylow == node_yhigh);
+            return (node_ylow);
 
         case Direction::BIDIR:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Bidir node has no starting point.");
@@ -143,7 +154,8 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
  *
  * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
  */
-static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_y, Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
+static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_y,
+                            Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
     if (node_direction == Direction::INC) {
         // Anything above cut_loc_y shouldn't exist
         rr_graph_builder.set_node_coordinates(node, x_low, y_low, x_high, cut_loc_y);
@@ -172,7 +184,8 @@ static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int
  *
  * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
  */
-static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_x, Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
+static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_x,
+                            Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
     if (node_direction == Direction::INC) {
         // Anything to the right of cut_loc_x shouldn't exist
         rr_graph_builder.set_node_coordinates(node, x_low, y_low, cut_loc_x, y_high);
@@ -202,7 +215,8 @@ static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int
  * @param interposer_cut_type Type of the interposer cut line (Horizontal or vertical)
  * @param sg_node_indices Sorted list of scatter-gather node IDs. We do not want to cut these nodes as they're allowed to cross an interposer cut line.
  */
-static void cut_channel_node(RRNodeId node, int cut_loc, e_interposer_cut_type interposer_cut_type, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
+static void cut_channel_node(RRNodeId node, int cut_loc, e_interposer_cut_type interposer_cut_type, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder,
+                             RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
     constexpr auto node_indice_compare = [](RRNodeId l, RRNodeId r) noexcept { return size_t(l) < size_t(r); };
     bool is_sg_node = std::ranges::binary_search(std::views::keys(sg_node_indices), node, node_indice_compare);
     if (is_sg_node) {
@@ -239,7 +253,8 @@ static void cut_channel_node(RRNodeId node, int cut_loc, e_interposer_cut_type i
     }
 }
 
-void update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(const RRGraphView& rr_graph, const DeviceGrid& grid, RRGraphBuilder& rr_graph_builder, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
+void update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(const RRGraphView& rr_graph, const DeviceGrid& grid, RRGraphBuilder& rr_graph_builder,
+                                                                             const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
 
     VTR_ASSERT(std::is_sorted(sg_node_indices.begin(), sg_node_indices.end()));
 
@@ -249,7 +264,8 @@ void update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(con
             for (size_t x_loc = 0; x_loc < grid.width(); x_loc++) {
                 std::vector<RRNodeId> channel_nodes = spatial_lookup.find_channel_nodes(layer, x_loc, cut_loc_y, e_rr_type::CHANY);
                 for (RRNodeId node : channel_nodes) {
-                    cut_channel_node(node, cut_loc_y, e_interposer_cut_type::HORZ, rr_graph, rr_graph_builder, spatial_lookup, sg_node_indices);
+                    cut_channel_node(node, cut_loc_y, e_interposer_cut_type::HORZ,
+                                     rr_graph, rr_graph_builder, spatial_lookup, sg_node_indices);
                 }
             }
         }
@@ -258,7 +274,8 @@ void update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(con
             for (size_t y_loc = 0; y_loc < grid.height(); y_loc++) {
                 std::vector<RRNodeId> channel_nodes = spatial_lookup.find_channel_nodes(layer, cut_loc_x, y_loc, e_rr_type::CHANX);
                 for (RRNodeId node : channel_nodes) {
-                    cut_channel_node(node, cut_loc_x, e_interposer_cut_type::VERT, rr_graph, rr_graph_builder, spatial_lookup, sg_node_indices);
+                    cut_channel_node(node, cut_loc_x, e_interposer_cut_type::VERT,
+                                     rr_graph, rr_graph_builder, spatial_lookup, sg_node_indices);
                 }
             }
         }
