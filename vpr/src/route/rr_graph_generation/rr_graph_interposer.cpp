@@ -41,8 +41,17 @@ static short node_ystart(const RRGraphView& rr_graph, RRNodeId node);
  *
  * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
  */
-static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_y,
-                            Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup);
+static void cut_chan_y_node(RRNodeId node,
+                            int x_low,
+                            int y_low,
+                            int x_high,
+                            int y_high,
+                            int layer,
+                            int ptc_num,
+                            int cut_loc_y,
+                            Direction node_direction,
+                            RRGraphBuilder& rr_graph_builder,
+                            RRSpatialLookup& spatial_lookup);
 
 /**
  * @brief Update a CHANX node's bounding box in RRGraph and SpatialLookup entries.
@@ -51,8 +60,17 @@ static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int
  *
  * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
  */
-static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_x,
-                            Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup);
+static void cut_chan_x_node(RRNodeId node,
+                            int x_low,
+                            int y_low,
+                            int x_high,
+                            int y_high,
+                            int layer,
+                            int ptc_num,
+                            int cut_loc_x,
+                            Direction node_direction,
+                            RRGraphBuilder& rr_graph_builder,
+                            RRSpatialLookup& spatial_lookup);
 
 /**
  * @brief Update a CHANX or CHANY node's bounding box in RRGraph and SpatialLookup entries if it crosses cut_loc
@@ -62,8 +80,13 @@ static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int
  * @param interposer_cut_type Type of the interposer cut line (Horizontal or vertical)
  * @param sg_node_indices Sorted list of scatter-gather node IDs. We do not want to cut these nodes as they're allowed to cross an interposer cut line.
  */
-static void cut_channel_node(RRNodeId node, int cut_loc, e_interposer_cut_type interposer_cut_type, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder,
-                             RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices);
+static void cut_channel_node(RRNodeId node,
+                             int cut_loc,
+                             e_interposer_cut_type interposer_cut_type,
+                             const RRGraphView& rr_graph,
+                             RRGraphBuilder& rr_graph_builder,
+                             RRSpatialLookup& spatial_lookup,
+                             const std::vector<std::pair<RRNodeId, int>>& sg_node_indices);
 
 // Function definitions
 
@@ -189,8 +212,17 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
     return edges_to_be_removed;
 }
 
-static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_y,
-                            Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
+static void cut_chan_y_node(RRNodeId node,
+                            int x_low,
+                            int y_low,
+                            int x_high,
+                            int y_high,
+                            int layer,
+                            int ptc_num,
+                            int cut_loc_y,
+                            Direction node_direction,
+                            RRGraphBuilder& rr_graph_builder,
+                            RRSpatialLookup& spatial_lookup) {
     if (node_direction == Direction::INC) {
         // Anything above cut_loc_y shouldn't exist
         rr_graph_builder.set_node_coordinates(node, x_low, y_low, x_high, cut_loc_y);
@@ -212,8 +244,17 @@ static void cut_chan_y_node(RRNodeId node, int x_low, int y_low, int x_high, int
     }
 }
 
-static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int y_high, int layer, int ptc_num, int cut_loc_x,
-                            Direction node_direction, RRGraphBuilder& rr_graph_builder, RRSpatialLookup& spatial_lookup) {
+static void cut_chan_x_node(RRNodeId node,
+                            int x_low,
+                            int y_low,
+                            int x_high,
+                            int y_high,
+                            int layer,
+                            int ptc_num,
+                            int cut_loc_x,
+                            Direction node_direction,
+                            RRGraphBuilder& rr_graph_builder,
+                            RRSpatialLookup& spatial_lookup) {
     if (node_direction == Direction::INC) {
         // Anything to the right of cut_loc_x shouldn't exist
         rr_graph_builder.set_node_coordinates(node, x_low, y_low, cut_loc_x, y_high);
@@ -235,8 +276,13 @@ static void cut_chan_x_node(RRNodeId node, int x_low, int y_low, int x_high, int
     }
 }
 
-static void cut_channel_node(RRNodeId node, int cut_loc, e_interposer_cut_type interposer_cut_type, const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_builder,
-                             RRSpatialLookup& spatial_lookup, const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
+static void cut_channel_node(RRNodeId node,
+                             int cut_loc,
+                             e_interposer_cut_type interposer_cut_type,
+                             const RRGraphView& rr_graph,
+                             RRGraphBuilder& rr_graph_builder,
+                             RRSpatialLookup& spatial_lookup,
+                             const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
     constexpr auto node_indice_compare = [](RRNodeId l, RRNodeId r) noexcept { return size_t(l) < size_t(r); };
     bool is_sg_node = std::ranges::binary_search(std::views::keys(sg_node_indices), node, node_indice_compare);
     if (is_sg_node) {
@@ -273,7 +319,9 @@ static void cut_channel_node(RRNodeId node, int cut_loc, e_interposer_cut_type i
     }
 }
 
-void update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(const RRGraphView& rr_graph, const DeviceGrid& grid, RRGraphBuilder& rr_graph_builder,
+void update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(const RRGraphView& rr_graph,
+                                                                             const DeviceGrid& grid,
+                                                                             RRGraphBuilder& rr_graph_builder,
                                                                              const std::vector<std::pair<RRNodeId, int>>& sg_node_indices) {
 
     VTR_ASSERT(std::is_sorted(sg_node_indices.begin(), sg_node_indices.end()));
