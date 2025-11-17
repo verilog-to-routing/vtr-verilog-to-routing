@@ -601,6 +601,65 @@ void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clo
     }
 }
 
+void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
+    std::vector<RRNodeId> sorted_nodes = nodes;
+    std::sort(sorted_nodes.begin(), sorted_nodes.end());
+
+    std::unordered_map<RRNodeId, int> removed_nodes_map();
+    for (size_t i = 0; i < sorted_nodes.size(); ++i) {
+        removed_nodes_map[sorted_nodes[i]] = i+1;
+    }
+    
+    for (size_t i = 0; i < sorted_nodes.size(); ++i) {
+        size_t start_index = sorted_nodes[i]+1;
+        size_t end_index = (i == sorted_nodes.size() - 1) ? sorted_nodes.size() : sorted_nodes[i + 1];
+        for (size_t j = start_index; j < end_index; ++j) {
+            RRNodeId old_node = RRNodeId(j);
+            RRNodeId new_node = RRNodeId(j-(i+1));
+            node_storage_[new_node] = node_storage_[old_node];
+            node_ptc_[new_node] = node_ptc_[old_node];
+            node_first_edge_[new_node] = node_first_edge_[old_node];
+            node_fan_in_[new_node] = node_fan_in_[old_node];
+            node_layer_[new_node] = node_layer_[old_node];
+            node_name_[new_node] = node_name_[old_node];
+            if (is_tileable_) {
+                node_bend_start_[new_node] = node_bend_start_[old_node];
+                node_bend_end_[new_node] = node_bend_end_[old_node];
+            }
+        }
+    }
+
+    std::vector<RREdgeId> removed_edges;
+    auto adjust_edges = [&](std::vector<RRNodeId>& edge_nodes) {
+        for (size_t edge_index = 0; edge_index < edge_nodes.size(); ++edge_index) {
+            RREdgeId edge_id = RREdgeId(edge_index);
+            RRNodeId node = edge_nodes[edge_id];
+    
+            // Find insertion point in the sorted vector
+            auto node_it = std::lower_bound(sorted_nodes.begin(), sorted_nodes.end(), node);
+    
+            if (node_it != sorted_nodes.end() && *node_it == node) {
+                // Node exists in sorted_nodes, mark edge for removal
+                removed_edges.push_back(edge_id);
+            } else {
+                size_t node_offset;
+                if (node_it == sorted_nodes.end()) {
+                    node_offset = sorted_nodes.size();
+                } else {
+                    node_offset = std::distance(sorted_nodes.begin(), node_it) + 1;
+                }
+                size_t new_node_index = size_t(node) - node_offset;
+                edge_nodes[edge_id] = RRNodeId(new_node_index);
+            }
+        }
+    };
+
+    adjust_edges(edge_src_node_);
+    adjust_edges(edge_dest_node_);
+
+    remove_edges(removed_edges);
+}
+
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
