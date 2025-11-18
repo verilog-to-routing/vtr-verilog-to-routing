@@ -1017,11 +1017,7 @@ class t_rr_graph_storage {
      *           |                               |
      *     starting point                   ending point
      */
-<<<<<<< HEAD
     vtr::vector<RRNodeId, std::vector<short>> node_tilable_track_nums_;
-=======
-     vtr::vector<RRNodeId, std::vector<short>> node_tilable_track_nums_;
->>>>>>> 3b9f5526e6ecfe4cf370548812205ffcd2f31db2
 
     /** @brief
      * This array stores the first edge of each RRNodeId.  Not that the length
