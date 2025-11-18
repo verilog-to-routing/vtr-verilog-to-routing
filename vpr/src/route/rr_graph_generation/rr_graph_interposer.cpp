@@ -1,3 +1,8 @@
+/**
+ * @file interposer_cut.h
+ * @brief This file implements functions can be used to generate RR Graphs for 2.5D architectures. See rr_graph_interposer.h for more details.
+ */
+
 #include <cstddef>
 #include <utility>
 #include <vector>
@@ -19,7 +24,7 @@
 // Static function declarations
 
 /**
- * @brief Takes location of a source and a sink and determines wether it crosses cut_loc or not.
+ * @brief Takes location of a source and a sink and determines whether it crosses cut_loc or not.
  * For example, the interval (1, 4) is cut by 3, while it is not cut by 5 or 0.
  */
 static bool should_cut(int src_loc, int sink_loc, int cut_loc);
@@ -35,11 +40,23 @@ static short node_xstart(const RRGraphView& rr_graph, RRNodeId node);
 static short node_ystart(const RRGraphView& rr_graph, RRNodeId node);
 
 /**
- * @brief Update a CHANY node's bounding box in RRGraph and SpatialLookup entries.
+ * @brief Update a CHANY node's bounding box in RR Graph and Spatial Lookup entries.
  * This function assumes that the channel node actually crosses the cut location and
  * might not function correctly otherwise.
  *
  * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
+ *
+ * @param node Node's ID
+ * @param x_low Node's lower x position
+ * @param y_low Node's lower y position
+ * @param x_high Node's higher x position
+ * @param y_high Node's higher y position
+ * @param layer Node's layer
+ * @param ptc_num Node's ptc_num
+ * @param cut_loc_y y location of horizontal interposer cut line
+ * @param node_direction Node's direction
+ * @param rr_graph_builder RR Graph builder for mutating the RR Graph
+ * @param spatial_lookup RR Graph spatial lookup
  */
 static void cut_chan_y_node(RRNodeId node,
                             int x_low,
@@ -59,6 +76,18 @@ static void cut_chan_y_node(RRNodeId node,
  * might not function correctly otherwise.
  *
  * This is a low level function, you should use cut_channel_node that wraps this up in a nicer API.
+ *
+ * @param node Node's ID
+ * @param x_low Node's lower x position
+ * @param y_low Node's lower y position
+ * @param x_high Node's higher x position
+ * @param y_high Node's higher y position
+ * @param layer Node's layer
+ * @param ptc_num Node's ptc_num
+ * @param cut_loc_x x location of vertical interposer cut line
+ * @param node_direction Node's direction
+ * @param rr_graph_builder RR Graph builder for mutating the RR Graph
+ * @param spatial_lookup RR Graph spatial lookup
  */
 static void cut_chan_x_node(RRNodeId node,
                             int x_low,
@@ -167,11 +196,10 @@ static short node_ystart(const RRGraphView& rr_graph, RRNodeId node) {
     }
 }
 
-std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& rr_graph, const DeviceGrid& grid) {
+std::vector<RREdgeId> get_interposer_cut_edges_for_removal(const RRGraphView& rr_graph, const DeviceGrid& grid) {
     std::vector<RREdgeId> edges_to_be_removed;
 
-    // Loop over all RREdgeIds and mark ones that cross a cutline to be removed
-
+    // Loop over all RREdgeIds and add ones that cross a cutline to a list for removal
     for (RREdgeId edge_id : rr_graph.all_edges()) {
         RRNodeId src_node = rr_graph.edge_src_node(edge_id);
         RRNodeId sink_node = rr_graph.edge_sink_node(edge_id);
@@ -190,6 +218,8 @@ std::vector<RREdgeId> mark_interposer_cut_edges_for_removal(const RRGraphView& r
 
         int layer = rr_graph.node_layer_low(src_node);
 
+        // If the start of the source node and the start of the sink node of this edge are on different sides of an interposer cut line
+        // the edge starts on a piece of wire that would be cut by the interposed and should be added to the removal list.
         for (int cut_loc_y : grid.get_horizontal_interposer_cuts()[layer]) {
             int src_start_loc_y = node_ystart(rr_graph, src_node);
             int sink_start_loc_y = node_ystart(rr_graph, sink_node);
@@ -223,8 +253,11 @@ static void cut_chan_y_node(RRNodeId node,
                             Direction node_direction,
                             RRGraphBuilder& rr_graph_builder,
                             RRSpatialLookup& spatial_lookup) {
+
+    VTR_ASSERT_SAFE(should_cut(y_low, y_high, cut_loc_y));
+
     if (node_direction == Direction::INC) {
-        // Anything above cut_loc_y shouldn't exist
+        // This node should not exist at locations above cut_loc_y
         rr_graph_builder.set_node_coordinates(node, x_low, y_low, x_high, cut_loc_y);
 
         // Do a loop from cut_loc_y to y_high and remove node from spatial lookup
@@ -232,7 +265,7 @@ static void cut_chan_y_node(RRNodeId node,
             spatial_lookup.remove_node(node, layer, x_low, y_loc, e_rr_type::CHANY, ptc_num);
         }
     } else if (node_direction == Direction::DEC) {
-        // Anything below cut_loc_y (inclusive) shouldn't exist
+        // This node should not exist at locations below cut_loc_y (inclusive)
         rr_graph_builder.set_node_coordinates(node, x_low, cut_loc_y + 1, x_high, y_high);
 
         // Do a loop from y_low to cut_loc_y and remove node from spatial lookup
@@ -255,8 +288,10 @@ static void cut_chan_x_node(RRNodeId node,
                             Direction node_direction,
                             RRGraphBuilder& rr_graph_builder,
                             RRSpatialLookup& spatial_lookup) {
+    VTR_ASSERT_SAFE(should_cut(x_low, x_high, cut_loc_x));
+
     if (node_direction == Direction::INC) {
-        // Anything to the right of cut_loc_x shouldn't exist
+        // This node should not exist at locations to the right of cut_loc_x
         rr_graph_builder.set_node_coordinates(node, x_low, y_low, cut_loc_x, y_high);
 
         // Do a loop from cut_loc_x to x_high and remove node from spatial lookup
@@ -264,7 +299,7 @@ static void cut_chan_x_node(RRNodeId node,
             spatial_lookup.remove_node(node, layer, x_loc, y_low, e_rr_type::CHANX, ptc_num);
         }
     } else if (node_direction == Direction::DEC) {
-        // Anything to the left of cut_loc_x (inclusive) shouldn't exist
+        // This node should not exist at locations to the left of cut_loc_x (inclusive)
         rr_graph_builder.set_node_coordinates(node, cut_loc_x + 1, y_low, x_high, y_high);
 
         // Do a loop from x_low to cut_loc_x - 1 and remove node from spatial lookup

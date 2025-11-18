@@ -352,10 +352,11 @@ class RRGraphBuilder {
         node_storage_.alloc_and_load_edges(rr_edges_to_create);
     }
     
-    /** @brief Removes a given list of RREdgeIds for the RR Graph.
+    /** @brief Removes a given list of RREdgeIds from the RR Graph.
      * This method does not preserve the order of edges. If you're
-     * calling it after partition_edges has been called, you need
-     * to call it again.
+     * calling it after partition_edges has been called, you will
+     * need to call partition_edges again.
+     * This operation is O(#RR Graph edges) and should not be called frequently.
      *
      * @param rr_edges_to_remove list of RREdgeIds to be removed
      */
