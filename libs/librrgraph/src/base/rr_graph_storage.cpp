@@ -99,6 +99,8 @@ void t_rr_graph_storage::remove_edges(std::vector<RREdgeId>& rr_edges_to_remove)
     edge_remapped_.erase(edge_remapped_.begin() + edge_list_end + 1, edge_remapped_.end());
 
     VTR_ASSERT(edge_dest_node_.size() == (starting_edge_count - rr_edges_to_remove.size()));
+
+    partitioned_ = false;
 }
 
 
