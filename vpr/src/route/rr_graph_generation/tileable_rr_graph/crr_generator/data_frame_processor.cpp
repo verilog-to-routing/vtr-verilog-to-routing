@@ -296,15 +296,17 @@ Cell DataFrameProcessor::parse_csv_cell(const std::string& value) {
         return Cell(); // Empty cell
     }
     
-    // Try to parse as number
-    try {
-        size_t pos;
-        int num = std::stoi(trimmed, &pos);
-        if (pos == trimmed.length()) {
-            return Cell(num);
+    // Check if all characters are digits
+    bool is_integer = true;
+    for (char c : trimmed) {
+        if (!std::isdigit(static_cast<unsigned char>(c))) {
+            is_integer = false;
+            break;
         }
-    } catch (...) {
-        // Not a number, treat as string
+    }
+    
+    if (is_integer) {
+        return Cell(std::stoi(trimmed));
     }
     
     return Cell(trimmed);
