@@ -7,6 +7,8 @@
 #include "physical_types.h"
 #include "physical_types_util.h"
 #include "rr_graph2.h"
+#include "rr_graph_fwd.h"
+#include "rr_node_types.h"
 #include "vpr_utils.h"
 
 /**
@@ -84,7 +86,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
                                   int* index) {
     // Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
-    for (const t_physical_tile_loc grid_loc : grid.all_locations()) {
+    for (const t_physical_tile_loc& grid_loc : grid.all_locations()) {
         //Process each block from its root location
         if (grid.is_root_location(grid_loc)) {
             t_physical_tile_type_ptr physical_type = grid.get_physical_type(grid_loc);
@@ -456,7 +458,7 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
                                                   const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                   int* index) {
 
-    for (const t_physical_tile_loc grid_loc : grid.all_locations()) {
+    for (const t_physical_tile_loc& grid_loc : grid.all_locations()) {
 
         // Process each block from its root location
         if (grid.is_root_location(grid_loc)) {
@@ -496,142 +498,133 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                             const t_rr_graph_storage& rr_nodes,
                             bool is_flat) {
     std::unordered_map<RRNodeId, int> rr_node_counts;
+    for (const t_physical_tile_loc& tile_loc : grid.all_locations()) {
+        for (e_rr_type rr_type : RR_TYPES) {
+            // Get the list of nodes at a specific location (x, y)
+            std::vector<RRNodeId> nodes_from_lookup;
+            if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::CHANZ) {
+                nodes_from_lookup = rr_graph.node_lookup().find_channel_nodes(tile_loc.layer_num, tile_loc.x, tile_loc.y, rr_type);
+            } else {
+                nodes_from_lookup = rr_graph.node_lookup().find_grid_nodes_at_all_sides(tile_loc.layer_num, tile_loc.x, tile_loc.y, rr_type);
+            }
 
-    int width = grid.width();
-    int height = grid.height();
-    int layer = grid.get_num_layers();
+            for (RRNodeId inode : nodes_from_lookup) {
+                rr_node_counts[inode]++;
 
-    for (int l = 0; l < layer; ++l) {
-        for (int x = 0; x < width; ++x) {
-            for (int y = 0; y < height; ++y) {
-                for (e_rr_type rr_type : RR_TYPES) {
-                    // Get the list of nodes at a specific location (x, y)
-                    std::vector<RRNodeId> nodes_from_lookup;
-                    if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::CHANZ) {
-                        nodes_from_lookup = rr_graph.node_lookup().find_channel_nodes(l, x, y, rr_type);
-                    } else {
-                        nodes_from_lookup = rr_graph.node_lookup().find_grid_nodes_at_all_sides(l, x, y, rr_type);
+                if (rr_graph.node_type(inode) != rr_type) {
+                    VPR_ERROR(VPR_ERROR_ROUTE, "RR node type does not match between rr_nodes and rr_node_indices (%s/%s): %s",
+                              rr_node_typename[rr_graph.node_type(inode)],
+                              rr_node_typename[rr_type],
+                              describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                }
+
+                if (tile_loc.layer_num < rr_graph.node_layer_low(inode) && tile_loc.layer_num > rr_graph.node_layer_high(inode)) {
+                    VPR_ERROR(VPR_ERROR_ROUTE, "RR node layer does not match between rr_nodes and rr_node_indices (%s/%s): %s",
+                              rr_node_typename[rr_graph.node_type(inode)],
+                              rr_node_typename[rr_type],
+                              describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                }
+
+                if (rr_graph.node_type(inode) == e_rr_type::CHANX) {
+                    VTR_ASSERT_MSG(rr_graph.node_ylow(inode) == rr_graph.node_yhigh(inode), "CHANX should be horizontal");
+                    if (tile_loc.y != rr_graph.node_ylow(inode)) {
+                        VPR_ERROR(VPR_ERROR_ROUTE, "RR node y position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
+                                  rr_graph.node_ylow(inode),
+                                  tile_loc.y,
+                                  describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                     }
 
-                    for (RRNodeId inode : nodes_from_lookup) {
-                        rr_node_counts[inode]++;
-
-                        if (rr_graph.node_type(inode) != rr_type) {
-                            VPR_ERROR(VPR_ERROR_ROUTE, "RR node type does not match between rr_nodes and rr_node_indices (%s/%s): %s",
-                                      rr_node_typename[rr_graph.node_type(inode)],
-                                      rr_node_typename[rr_type],
-                                      describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                        }
-
-                        if (l < rr_graph.node_layer_low(inode) && l > rr_graph.node_layer_high(inode)) {
-                            VPR_ERROR(VPR_ERROR_ROUTE, "RR node layer does not match between rr_nodes and rr_node_indices (%s/%s): %s",
-                                      rr_node_typename[rr_graph.node_type(inode)],
-                                      rr_node_typename[rr_type],
-                                      describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                        }
-
-                        if (rr_graph.node_type(inode) == e_rr_type::CHANX) {
-                            VTR_ASSERT_MSG(rr_graph.node_ylow(inode) == rr_graph.node_yhigh(inode), "CHANX should be horizontal");
-                            if (y != rr_graph.node_ylow(inode)) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node y position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
-                                          rr_graph.node_ylow(inode),
-                                          y,
-                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                            }
-
-                            if (!rr_graph.x_in_node_range(x, inode)) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
-                                          rr_graph.node_xlow(inode),
-                                          rr_graph.node_xlow(inode),
-                                          x,
-                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                            }
-                        } else if (rr_graph.node_type(inode) == e_rr_type::CHANY) {
-                            VTR_ASSERT_MSG(rr_graph.node_xlow(inode) == rr_graph.node_xhigh(inode), "CHANY should be vertical");
-
-                            if (x != rr_graph.node_xlow(inode)) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node x position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
-                                          rr_graph.node_xlow(inode),
-                                          x,
-                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                            }
-
-                            if (!rr_graph.y_in_node_range(y, inode)) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node y positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
-                                          rr_graph.node_ylow(inode),
-                                          rr_graph.node_ylow(inode),
-                                          y,
-                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                            }
-                        } else if (rr_graph.node_type(inode) == e_rr_type::CHANZ) {
-                            VTR_ASSERT_MSG(rr_graph.node_xlow(inode) == rr_graph.node_xhigh(inode), "CHANZ should move only along layers");
-                            VTR_ASSERT_MSG(rr_graph.node_ylow(inode) == rr_graph.node_yhigh(inode), "CHANZ should move only along layers");
-
-                            if (x != rr_graph.node_xlow(inode)) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node x position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
-                                          rr_graph.node_xlow(inode),
-                                          x,
-                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                            }
-
-                            if (y != rr_graph.node_ylow(inode)) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node y position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
-                                          rr_graph.node_xlow(inode),
-                                          y,
-                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                            }
-
-                        } else if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK || rr_graph.node_type(inode) == e_rr_type::MUX) {
-                            // Sources have co-ordinates covering the entire block they are in, but not sinks
-                            if (!rr_graph.x_in_node_range(x, inode)) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
-                                          rr_graph.node_xlow(inode),
-                                          rr_graph.node_xlow(inode),
-                                          x,
-                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                            }
-
-                            if (!rr_graph.y_in_node_range(y, inode)) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node y positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
-                                          rr_graph.node_ylow(inode),
-                                          rr_graph.node_ylow(inode),
-                                          y,
-                                          describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
-                            }
-                        } else {
-                            VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::IPIN || rr_graph.node_type(inode) == e_rr_type::OPIN);
-                            /* As we allow a pin to be indexable on multiple sides,
-                             * This check code should be invalid
-                             * if (rr_node.xlow() != x) {
-                             *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
-                             *               rr_node.xlow(),
-                             *               x,
-                             *               describe_rr_node(rr_graph, grid, rr_indexed_data, inode).c_str());
-                             * }
-                             *
-                             * if (rr_node.ylow() != y) {
-                             *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node ylow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
-                             *               rr_node.ylow(),
-                             *               y,
-                             *               describe_rr_node(rr_graph, grid, rr_indexed_data, inode).c_str());
-                             * }
-                             */
-                        }
-
-                        if (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN) {
-                            /* As we allow a pin to be indexable on multiple sides,
-                             * This check code should be invalid
-                             * if (rr_node.side() != side) {
-                             *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%s/%s): %s",
-                             *               TOTAL_2D_SIDE_STRINGS[rr_node.side()],
-                             *               TOTAL_2D_SIDE_STRINGS[side],
-                             *               describe_rr_node(rr_graph, grid, rr_indexed_data, inode).c_str());
-                             * } else {
-                             *     VTR_ASSERT(rr_node.side() == side);
-                             * }
-                             */
-                        }
+                    if (!rr_graph.x_in_node_range(tile_loc.x, inode)) {
+                        VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
+                                  rr_graph.node_xlow(inode),
+                                  rr_graph.node_xlow(inode),
+                                  tile_loc.x,
+                                  describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                     }
+                } else if (rr_graph.node_type(inode) == e_rr_type::CHANY) {
+                    VTR_ASSERT_MSG(rr_graph.node_xlow(inode) == rr_graph.node_xhigh(inode), "CHANY should be vertical");
+
+                    if (tile_loc.x != rr_graph.node_xlow(inode)) {
+                        VPR_ERROR(VPR_ERROR_ROUTE, "RR node x position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
+                                  rr_graph.node_xlow(inode),
+                                  tile_loc.x,
+                                  describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                    }
+
+                    if (!rr_graph.y_in_node_range(tile_loc.y, inode)) {
+                        VPR_ERROR(VPR_ERROR_ROUTE, "RR node y positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
+                                  rr_graph.node_ylow(inode),
+                                  rr_graph.node_ylow(inode),
+                                  tile_loc.y,
+                                  describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                    }
+                } else if (rr_graph.node_type(inode) == e_rr_type::CHANZ) {
+                    VTR_ASSERT_MSG(rr_graph.node_xlow(inode) == rr_graph.node_xhigh(inode), "CHANZ should move only along layers");
+                    VTR_ASSERT_MSG(rr_graph.node_ylow(inode) == rr_graph.node_yhigh(inode), "CHANZ should move only along layers");
+
+                    if (tile_loc.x != rr_graph.node_xlow(inode)) {
+                        VPR_ERROR(VPR_ERROR_ROUTE, "RR node x position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
+                                  rr_graph.node_xlow(inode),
+                                  tile_loc.x,
+                                  describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                    }
+
+                    if (tile_loc.y != rr_graph.node_ylow(inode)) {
+                        VPR_ERROR(VPR_ERROR_ROUTE, "RR node y position does not agree between rr_nodes (%d) and rr_node_indices (%d): %s",
+                                  rr_graph.node_xlow(inode),
+                                  tile_loc.y,
+                                  describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                    }
+
+                } else if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK || rr_graph.node_type(inode) == e_rr_type::MUX) {
+                    // Sources have co-ordinates covering the entire block they are in, but not sinks
+                    if (!rr_graph.x_in_node_range(tile_loc.x, inode)) {
+                        VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
+                                  rr_graph.node_xlow(inode),
+                                  rr_graph.node_xlow(inode),
+                                  tile_loc.x,
+                                  describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                    }
+
+                    if (!rr_graph.y_in_node_range(tile_loc.y, inode)) {
+                        VPR_ERROR(VPR_ERROR_ROUTE, "RR node y positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
+                                  rr_graph.node_ylow(inode),
+                                  rr_graph.node_ylow(inode),
+                                  tile_loc.y,
+                                  describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
+                    }
+                } else {
+                    VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::IPIN || rr_graph.node_type(inode) == e_rr_type::OPIN);
+                    /* As we allow a pin to be indexable on multiple sides,
+                     * This check code should be invalid
+                     * if (rr_node.xlow() != x) {
+                     *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
+                     *               rr_node.xlow(),
+                     *               x,
+                     *               describe_rr_node(rr_graph, grid, rr_indexed_data, inode).c_str());
+                     * }
+                     *
+                     * if (rr_node.ylow() != y) {
+                     *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node ylow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
+                     *               rr_node.ylow(),
+                     *               y,
+                     *               describe_rr_node(rr_graph, grid, rr_indexed_data, inode).c_str());
+                     * }
+                     */
+                }
+
+                if (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN) {
+                    /* As we allow a pin to be indexable on multiple sides,
+                     * This check code should be invalid
+                     * if (rr_node.side() != side) {
+                     *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%s/%s): %s",
+                     *               TOTAL_2D_SIDE_STRINGS[rr_node.side()],
+                     *               TOTAL_2D_SIDE_STRINGS[side],
+                     *               describe_rr_node(rr_graph, grid, rr_indexed_data, inode).c_str());
+                     * } else {
+                     *     VTR_ASSERT(rr_node.side() == side);
+                     * }
+                     */
                 }
             }
         }
@@ -648,6 +641,7 @@ static void check_rr_node_counts(const std::unordered_map<RRNodeId, int>& rr_nod
                                  const DeviceGrid& grid,
                                  const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                                  bool is_flat) {
+
     if (rr_node_counts.size() != rr_nodes.size()) {
         VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch in number of unique RR nodes in rr_nodes (%zu) and rr_node_indices (%zu)",
                   rr_nodes.size(),

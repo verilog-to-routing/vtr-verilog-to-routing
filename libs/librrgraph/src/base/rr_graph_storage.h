@@ -400,6 +400,14 @@ class t_rr_graph_storage {
         return vtr::StrongIdRange<RREdgeId>(first_edge(id), last_edge(id));
     }
 
+    /** @brief Returns a range of all edges in the RR Graph.
+     * This method does not depend on the edges begin correctly
+     * sorted and can be used before partition_edges is called.
+     */
+    inline vtr::StrongIdRange<RREdgeId> all_edges() const {
+        return vtr::StrongIdRange<RREdgeId>(RREdgeId(0), RREdgeId(edge_src_node_.size()));
+    }
+
     /** @brief Retrieve the RREdgeId for iedge'th edge in RRNodeId.
      *
      * This method should generally not be used, and instead first_edge and
@@ -700,6 +708,8 @@ class t_rr_graph_storage {
     void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str);
     void add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id);
 
+    void emplace_back_node_tilable_track_num();
+
     bool node_contain_multiple_ptc(RRNodeId node) const {
         if (node_tilable_track_nums_.empty()) {
             return false;
@@ -726,6 +736,16 @@ class t_rr_graph_storage {
      * @param virtual_clock_network_root_idx The node ID of the virtual sink for the clock network.
      */
     void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx);
+
+    /**
+     * @brief Removes a given list of RRNodes from the RR Graph
+     * This method should be called after partition_edges has been called.
+     * @note This a very expensive method, so should be called only when necessary. It is better
+     * to not add nodes in the first place, instead of relying on this method to remove nodes.
+     *
+     * @param nodes list of RRNodes to be removed
+     */
+    void remove_nodes(const std::vector<RRNodeId>& nodes);
 
     /****************
      * Edge methods *
@@ -798,6 +818,15 @@ class t_rr_graph_storage {
 
     /** @brief Adds a batch of edges.*/
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
+
+    /** @brief Removes a given list of RREdgeIds for the RR Graph.
+     * This method does not preserve the order of edges. If you're
+     * calling it after partition_edges has been called, you need
+     * to call it again.
+     *
+     * @param rr_edges_to_remove list of RREdgeIds to be removed
+     */
+    void remove_edges(std::vector<RREdgeId>& rr_edges_to_remove);
 
     /* Edge finalization methods */
 
@@ -988,7 +1017,11 @@ class t_rr_graph_storage {
      *           |                               |
      *     starting point                   ending point
      */
+<<<<<<< HEAD
     vtr::vector<RRNodeId, std::vector<short>> node_tilable_track_nums_;
+=======
+     vtr::vector<RRNodeId, std::vector<short>> node_tilable_track_nums_;
+>>>>>>> 3b9f5526e6ecfe4cf370548812205ffcd2f31db2
 
     /** @brief
      * This array stores the first edge of each RRNodeId.  Not that the length

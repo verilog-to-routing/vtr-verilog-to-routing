@@ -8,6 +8,7 @@
 #include "get_parallel_segs.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
+#include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
 #include "rr_rc_data.h"
 #include "switchblock_types.h"
@@ -49,6 +50,7 @@
 #include "crr_generator.h"
 #include "node_lookup_manager.h"
 #include "crr_switch_block_manager.h"
+#include "interposer_cut.h"
 
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
@@ -1678,6 +1680,15 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
         }
     }
 
+    // If there are any interposer cuts, remove the edges and shorten the wires that cross interposer cut lines.
+    if (!grid.get_horizontal_interposer_cuts().empty() || !grid.get_vertical_interposer_cuts().empty()) {
+        std::vector<RREdgeId> interposer_edges = mark_interposer_cut_edges_for_removal(rr_graph, grid);
+        rr_graph_builder.remove_edges(interposer_edges);
+
+        update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(rr_graph, grid, rr_graph_builder, sg_node_indices);
+    }
+
+    // Add 2D scatter-gather link edges (the nodes have already been created at this point). These links are mostly used for interposer-crossing connections, but could also be used for other things.
     add_and_connect_non_3d_sg_links(rr_graph_builder, sg_links, sg_node_indices, chan_details_x, chan_details_y, num_seg_types_x, rr_edges_to_create);
     uniquify_edges(rr_edges_to_create);
     alloc_and_load_edges(rr_graph_builder, rr_edges_to_create);
@@ -2129,6 +2140,11 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                                                             chan_loc.y,
                                                                             gather_chan_type,
                                                                             gather_wire.wire_switchpoint.wire);
+            // TODO: Some of the nodes that the scatter-gather patterns want to connect to have been cut because they were crossing the die
+            // For now we're ignoring those, but a proper fix should be investigated.
+            if (gather_node == RRNodeId::INVALID()) {
+                continue;
+            }
             // Record deferred edge creation (gather_node --> sg_node)
             non_3d_sg_rr_edges_to_create.emplace_back(gather_node, node_id, link.arch_wire_switch, false);
         }
@@ -2146,6 +2162,12 @@ static void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
                                                                              chan_loc.y,
                                                                              scatter_chan_type,
                                                                              scatter_wire.wire_switchpoint.wire);
+
+            // TODO: Some of the nodes that the scatter-gather patterns want to connect to have been cut because they were crossing the die
+            // For now we're ignoring those, but a proper fix should be investigated.
+            if (scatter_node == RRNodeId::INVALID()) {
+                continue;
+            }
             // Determine which architecture switch this edge should use
             int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
             // Record deferred edge creation (sg_node --> scatter_node)
