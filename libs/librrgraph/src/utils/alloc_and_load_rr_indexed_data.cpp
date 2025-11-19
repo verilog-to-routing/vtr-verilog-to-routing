@@ -534,7 +534,8 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_Cinternal_total(rr_indexed_data.size());
     vtr::vector<RRIndexedDataId, short> switches_buffered(rr_indexed_data.size(), LIBRRGRAPH_UNDEFINED_VAL);
 
-    std::map<short, size_t> ipin_switch_count;
+    size_t ipin_switch_count = 0;
+    float ipin_switch_T_total = 0.;
 
     // Walk through the RR graph and collect all R and C values of all the nodes,
     // as well as their fan-in switches R, T_del, and Cinternal values.
@@ -544,12 +545,10 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
 
         if (rr_type == e_rr_type::IPIN) {
             for (const RREdgeId edge : fan_in_list[rr_id]) {
-                short switch_index = rr_graph.rr_nodes().edge_switch(edge);
-                if (ipin_switch_count.find(switch_index) == ipin_switch_count.end()) {
-                    ipin_switch_count[switch_index] = 1;
-                } else {
-                    ipin_switch_count[switch_index]++;
-                }
+                RRSwitchId rr_switch_id = RRSwitchId(rr_graph.edge_switch(edge));
+                float switch_T_del = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
+                ipin_switch_T_total += switch_T_del;
+                ipin_switch_count++;
             }
         }
 
@@ -614,21 +613,16 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         }
     }
 
-    short most_frequent_ipin_switch = -1;
-    size_t most_frequent_ipin_switch_count = 0;
-    for (const auto& [switch_index, count] : ipin_switch_count) {
-        if (count > most_frequent_ipin_switch_count) {
-            most_frequent_ipin_switch = switch_index;
-            most_frequent_ipin_switch_count = count;
+    // Set the T_linear value for the IPIN cost index
+    {
+        if (ipin_switch_count == 0) {
+            VTR_LOG_WARN("No IPIN switches found. Setting T_linear to 0\n");
+            float default_ipin_switch_T_del = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
+            rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = default_ipin_switch_T_del;
+        } else {
+            float average_ipin_switch_T_del = ipin_switch_T_total / ipin_switch_count;
+            rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = average_ipin_switch_T_del;
         }
-    }
-    VTR_ASSERT(most_frequent_ipin_switch != -1);
-    rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = rr_graph.rr_switch_inf(RRSwitchId(most_frequent_ipin_switch)).Tdel;
-    short wire_to_ipin_switch_index = static_cast<short>(size_t(wire_to_ipin_switch));
-    if (most_frequent_ipin_switch != wire_to_ipin_switch_index) {
-        VTR_LOG_WARN("Most frequent ipin switch %d is not the same as the wire_to_ipin_switch %d\n",
-                     most_frequent_ipin_switch,
-                     wire_to_ipin_switch_index);
     }
 
     unsigned num_occurences_of_no_instances_with_cost_index = 0;
