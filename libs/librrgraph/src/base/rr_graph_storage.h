@@ -739,7 +739,8 @@ class t_rr_graph_storage {
 
     /**
      * @brief Removes a given list of RRNodes from the RR Graph
-     * This method should be called after partition_edges has been called.
+     * This method should be called before partition_edges has been called.
+     * If init_fan_in has been called, you need to call it again after removing the nodes.
      * @note This a very expensive method, so should be called only when necessary. It is better
      * to not add nodes in the first place, instead of relying on this method to remove nodes.
      *
