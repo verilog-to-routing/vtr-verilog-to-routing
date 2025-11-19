@@ -5,6 +5,11 @@
 # to remove all attributes related to 3D FPGA support (layer="0",
 # layer_low="0", layer_high="0"). In VPR, these values default to 0.
 
+# This also helps convert older RR graph files that used the "layer" attribute
+# instead of "layer_low" and "layer_high" for nodes, by removing the "layer" attribute
+# altogether. As a result, VPR can read the file without issues, and it slightly
+# reduces the file size for 2D architectures.
+
 # Exit if any command fails
 set -e
 
