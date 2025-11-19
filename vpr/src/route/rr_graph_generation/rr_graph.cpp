@@ -48,11 +48,6 @@
 #include "rr_types.h"
 #include "rr_node_indices.h"
 
-#include "crr_generator.h"
-#include "node_lookup_manager.h"
-#include "crr_switch_block_manager.h"
-#include "interposer_cut.h"
-
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
 
