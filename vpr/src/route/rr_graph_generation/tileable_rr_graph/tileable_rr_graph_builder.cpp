@@ -7,6 +7,8 @@
  *  producing large FPGA fabrics.
  ***********************************************************************/
 /* Headers from vtrutil library */
+#include <fstream>
+
 #include "vtr_assert.h"
 #include "vtr_time.h"
 #include "vtr_log.h"
@@ -27,6 +29,8 @@
 #include "tileable_rr_graph_builder.h"
 
 #include "globals.h"
+
+static void remove_dangling_chan_nodes(RRGraphBuilder& rr_graph_builder);
 
 /************************************************************************
  * Main function of this file
@@ -286,6 +290,10 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Save the track ids for tileable routing resource graph
     device_ctx.rr_node_track_ids = rr_node_track_ids;
 
+    if (crr_opts.remove_dangling_nodes) {
+        remove_dangling_chan_nodes(device_ctx.rr_graph_builder);
+    }
+
     // Build incoming edges
     device_ctx.rr_graph_builder.partition_edges();
     device_ctx.rr_graph_builder.build_in_edges();
@@ -308,4 +316,35 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // No clock network support yet; Does not support flatten rr_graph yet
 
     check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, vib_grid, device_ctx.chan_width, e_graph_type::UNIDIR_TILEABLE, false);
+}
+
+static void remove_dangling_chan_nodes(RRGraphBuilder& rr_graph_builder) {
+    t_rr_graph_storage& rr_nodes = rr_graph_builder.rr_nodes();
+    std::vector<RRNodeId> dangling_nodes;
+
+    for (size_t node_index = 0; node_index < rr_nodes.size(); ++node_index) {
+        RRNodeId node = RRNodeId(node_index);
+        if (rr_nodes.node_type(node) == e_rr_type::CHANX || rr_nodes.node_type(node) == e_rr_type::CHANY) {
+            if (rr_nodes.fan_in(node) == 0) {
+                dangling_nodes.push_back(node);
+            }
+        }
+    }
+
+    // Print the info about nodes to be removed in removed_nodes.txt
+    std::ofstream removed_nodes_file("removed_nodes.txt");
+    for (const auto& node : dangling_nodes) {
+        size_t node_index = size_t(node);
+        auto node_type = rr_nodes.node_type(node);
+        auto x_low = rr_nodes.node_xlow(node);
+        auto y_low = rr_nodes.node_ylow(node);
+        auto x_high = rr_nodes.node_xhigh(node);
+        auto y_high = rr_nodes.node_yhigh(node);
+        removed_nodes_file << node_index << " " << rr_node_typename[node_type] << " (" << x_low << "," << y_low << ") to (" << x_high << "," << y_high << ")" << std::endl;
+    }
+    removed_nodes_file.close();
+
+    rr_nodes.remove_nodes(dangling_nodes);
+
+
 }
