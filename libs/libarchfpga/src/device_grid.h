@@ -211,6 +211,11 @@ class DeviceGrid {
         return vertical_interposer_cuts_;
     }
 
+    /// Returns if the grid has any interposer cuts. You should use this function instead of
+    /// checking if get_horizontal/vertical_interposer_cuts is empty, since the return value
+    /// of those functions might look something like this: {{}} which is technically not empty.
+    bool has_interposer_cuts() const;
+
   private:
     /// @brief Counts the number of each tile type on each layer and store it in instance_counts_.
     /// It is called in the constructor.
