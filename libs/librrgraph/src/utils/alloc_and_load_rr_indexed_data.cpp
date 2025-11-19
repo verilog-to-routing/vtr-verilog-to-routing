@@ -546,7 +546,8 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         if (rr_type == e_rr_type::IPIN) {
             for (const RREdgeId edge : fan_in_list[rr_id]) {
                 RRSwitchId rr_switch_id = RRSwitchId(rr_graph.edge_switch(edge));
-                ipin_switch_T_total += rr_graph.rr_switch_inf(rr_switch_id).Tdel;
+                float switch_T_del = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
+                ipin_switch_T_total += switch_T_del;
                 ipin_switch_count++;
             }
         }
@@ -619,7 +620,8 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
             float default_ipin_switch_T_del = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
             rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = default_ipin_switch_T_del;
         } else {
-            rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = ipin_switch_T_total / ipin_switch_count;
+            float average_ipin_switch_T_del = ipin_switch_T_total / ipin_switch_count;
+            rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = average_ipin_switch_T_del;
         }
     }
 
