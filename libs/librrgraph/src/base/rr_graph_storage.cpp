@@ -182,7 +182,7 @@ bool t_rr_graph_storage::verify_first_edges() const {
 
 void t_rr_graph_storage::init_fan_in() {
     //Reset all fan-ins to zero
-    edges_read_ = true;
+    node_fan_in_.clear();
     node_fan_in_.resize(node_storage_.size(), 0);
     node_fan_in_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
