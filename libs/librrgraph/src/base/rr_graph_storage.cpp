@@ -63,6 +63,10 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
 void t_rr_graph_storage::remove_edges(std::vector<RREdgeId>& rr_edges_to_remove) {
     VTR_ASSERT(!edges_read_);
 
+    if (rr_edges_to_remove.empty()) {
+        return;
+    }
+
     size_t starting_edge_count = edge_dest_node_.size();
 
     // Sort and make sure all edge indices are unique
@@ -178,7 +182,7 @@ bool t_rr_graph_storage::verify_first_edges() const {
 
 void t_rr_graph_storage::init_fan_in() {
     //Reset all fan-ins to zero
-    edges_read_ = true;
+    node_fan_in_.clear();
     node_fan_in_.resize(node_storage_.size(), 0);
     node_fan_in_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
@@ -700,6 +704,7 @@ void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clo
 }
 
 void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
+    VTR_ASSERT(!edges_read_);
     // To remove the nodes, we first sort them in ascending order. This makes it easy 
     // to calculate the offset by which other node IDs need to be adjusted. 
     // For example, after sorting the nodes to be removed, if a node ID falls between 
@@ -713,15 +718,13 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
     // that fall between them. 
     for (size_t i = 0; i < sorted_nodes.size(); ++i) {
         size_t start_rr_node_index = size_t(sorted_nodes[i]) + 1;
-        size_t end_rr_node_index = (i == sorted_nodes.size() - 1) ? sorted_nodes.size() : size_t(sorted_nodes[i + 1]);
+        size_t end_rr_node_index = (i == sorted_nodes.size() - 1) ? node_storage_.size() : size_t(sorted_nodes[i + 1]);
         for (size_t j = start_rr_node_index; j < end_rr_node_index; ++j) {
             RRNodeId old_node = RRNodeId(j);
             // New node index is equal to the old nodex index minus the number of nodes being removed before it.
             RRNodeId new_node = RRNodeId(j-(i+1));
             node_storage_[new_node] = node_storage_[old_node];
             node_ptc_[new_node] = node_ptc_[old_node];
-            node_first_edge_[new_node] = node_first_edge_[old_node];
-            node_fan_in_[new_node] = node_fan_in_[old_node];
             node_layer_[new_node] = node_layer_[old_node];
             node_name_[new_node] = node_name_[old_node];
             if (is_tileable_) {
@@ -737,8 +740,6 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
     VTR_ASSERT(num_nodes_to_remove <= node_storage_.size());
     node_storage_.erase(node_storage_.end()-num_nodes_to_remove, node_storage_.end());
     node_ptc_.erase(node_ptc_.end()-num_nodes_to_remove, node_ptc_.end());
-    node_first_edge_.erase(node_first_edge_.end()-num_nodes_to_remove, node_first_edge_.end());
-    node_fan_in_.erase(node_fan_in_.end()-num_nodes_to_remove, node_fan_in_.end());
     node_layer_.erase(node_layer_.end()-num_nodes_to_remove, node_layer_.end());
     for (size_t node_index = node_name_.size()-num_nodes_to_remove; node_index < node_name_.size(); ++node_index) {
         RRNodeId node = RRNodeId(node_index);
@@ -763,12 +764,7 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
                 // Node exists in sorted_nodes, mark edge for removal
                 removed_edges.push_back(edge_id);
             } else {
-                size_t node_offset;
-                if (node_it == sorted_nodes.end()) {
-                    node_offset = sorted_nodes.size();
-                } else {
-                    node_offset = std::distance(sorted_nodes.begin(), node_it) + 1;
-                }
+                size_t node_offset = std::distance(sorted_nodes.begin(), node_it);
                 size_t new_node_index = size_t(node) - node_offset;
                 edge_nodes[edge_id] = RRNodeId(new_node_index);
             }
