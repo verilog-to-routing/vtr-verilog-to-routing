@@ -351,6 +351,18 @@ class RRGraphBuilder {
     inline void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
         node_storage_.alloc_and_load_edges(rr_edges_to_create);
     }
+    
+    /** @brief Removes a given list of RREdgeIds from the RR Graph.
+     * This method does not preserve the order of edges. If you're
+     * calling it after partition_edges has been called, you will
+     * need to call partition_edges again.
+     * This operation is O(#RR Graph edges) and should not be called frequently.
+     *
+     * @param rr_edges_to_remove list of RREdgeIds to be removed
+     */
+    inline void remove_edges(std::vector<RREdgeId>& rr_edges_to_remove) {
+        node_storage_.remove_edges(rr_edges_to_remove);
+    }
 
     /** @brief Overrides the associated switch for a given edge by
      *         updating the edge to use the passed in switch. */

@@ -400,6 +400,14 @@ class t_rr_graph_storage {
         return vtr::StrongIdRange<RREdgeId>(first_edge(id), last_edge(id));
     }
 
+    /** @brief Returns a range of all edges in the RR Graph.
+     * This method does not depend on the edges being correctly
+     * sorted and can be used before partition_edges is called.
+     */
+    inline vtr::StrongIdRange<RREdgeId> all_edges() const {
+        return vtr::StrongIdRange<RREdgeId>(RREdgeId(0), RREdgeId(edge_src_node_.size()));
+    }
+
     /** @brief Retrieve the RREdgeId for iedge'th edge in RRNodeId.
      *
      * This method should generally not be used, and instead first_edge and
@@ -775,6 +783,16 @@ class t_rr_graph_storage {
 
     /** @brief Adds a batch of edges.*/
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
+
+    /** @brief Removes a given list of RREdgeIds from the RR Graph.
+     * This method does not preserve the order of edges. If you're
+     * calling it after partition_edges has been called, you will
+     * need to call partition_edges again.
+     * This operation is O(#RR Graph edges) and should not be called frequently.
+     *
+     * @param rr_edges_to_remove list of RREdgeIds to be removed
+     */
+    void remove_edges(std::vector<RREdgeId>& rr_edges_to_remove);
 
     /* Edge finalization methods */
 
