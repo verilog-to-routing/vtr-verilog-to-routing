@@ -104,7 +104,7 @@ parse_key_val_arg(const std::string& arg, unsigned expected_num_vals_per_key) {
                         "Error when parsing argument string");
     }
 
-    // Collect the comma seperated values into a vector.
+    // Collect the comma separated values into a vector.
     std::vector<float> vals;
     vals.reserve(expected_num_vals_per_key);
 

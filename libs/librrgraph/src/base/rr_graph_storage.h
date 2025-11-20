@@ -894,7 +894,7 @@ class t_rr_graph_storage {
         // Generic lambda that allocates a 'vec'-sized new vector with all elements set to default value,
         // then builds the new vector to have rearranged elements from 'vec' and finaly move the new vector
         // to replace vec. Essentially does a permutation on vec based on edge_indices.
-        auto array_rearrage = [&edge_indices] (auto& vec, auto default_value) {
+        auto array_rearrange = [&edge_indices] (auto& vec, auto default_value) {
 
             // Since vec could have any type, we need to figure out it's type to allocate new_vec.
             // The scary std::remove_reference stuff does exactly that. This does nothing other than building a new 'vec' sized vector.
@@ -912,10 +912,10 @@ class t_rr_graph_storage {
             vec = std::move(new_vec);
         };
 
-        array_rearrage(edge_src_node_, RRNodeId::INVALID());
-        array_rearrage(edge_dest_node_, RRNodeId::INVALID());
-        array_rearrage(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
-        array_rearrage(edge_remapped_, false);
+        array_rearrange(edge_src_node_, RRNodeId::INVALID());
+        array_rearrange(edge_dest_node_, RRNodeId::INVALID());
+        array_rearrange(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
+        array_rearrange(edge_remapped_, false);
     }
 
     /******************
