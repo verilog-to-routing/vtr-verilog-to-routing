@@ -3,7 +3,7 @@
  * @file
  * @author  Yulang (Robert) Luo
  * @date    October 2025
- * @brief   The decalarations of the AP Draw Manager class which is used
+ * @brief   The declarations of the AP Draw Manager class which is used
  *          to handle graphics updates during analytical placement.
  */
 

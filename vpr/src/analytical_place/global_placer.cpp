@@ -340,7 +340,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
     // Print the status header.
     if (log_verbosity_ >= 1)
         print_SimPL_status_header();
-    // Initialialize the partial placement object.
+    // Initialize the partial placement object.
     PartialPlacement p_placement(ap_netlist_);
 
     float total_time_spent_in_solver = 0.0f;
