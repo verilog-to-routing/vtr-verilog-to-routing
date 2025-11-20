@@ -2,11 +2,14 @@
 #include "rr_graph_storage.h"
 #include "physical_types.h"
 #include "rr_graph_fwd.h"
+#include "vtr_assert.h"
 #include "vtr_error.h"
 #include "librrgraph_types.h"
+#include "vtr_util.h"
 
 #include <algorithm>
 #include <cstddef>
+#include <ranges>
 
 void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_src_node_.reserve(num_edges);
@@ -57,6 +60,50 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
     }
 }
 
+void t_rr_graph_storage::remove_edges(std::vector<RREdgeId>& rr_edges_to_remove) {
+    VTR_ASSERT(!edges_read_);
+
+    size_t starting_edge_count = edge_dest_node_.size();
+
+    // Sort and make sure all edge indices are unique
+    vtr::uniquify(rr_edges_to_remove);
+    VTR_ASSERT_SAFE(std::is_sorted(rr_edges_to_remove.begin(), rr_edges_to_remove.end()));
+
+    // Make sure the edge indices are valid
+    VTR_ASSERT(static_cast<size_t>(rr_edges_to_remove.back()) <= edge_dest_node_.size());
+    
+    // Index of the last edge
+    size_t edge_list_end = edge_dest_node_.size() - 1;
+
+    // Iterate backwards through the list of indices we want to remove.
+    
+    for (RREdgeId erase_idx : std::ranges::reverse_view(rr_edges_to_remove)) {
+        // Copy what's at the end of the list to the index we wanted to remove
+        edge_dest_node_[erase_idx] = edge_dest_node_[RREdgeId(edge_list_end)];
+        edge_src_node_[erase_idx] = edge_src_node_[RREdgeId(edge_list_end)];
+        edge_switch_[erase_idx] = edge_switch_[RREdgeId(edge_list_end)];
+        edge_remapped_[erase_idx] = edge_remapped_[RREdgeId(edge_list_end)];
+
+        // At this point we have no copies of what was at erase_idx and two copies of
+        // what was at the end of the list. If we make the list one element shorter,
+        // we end up with a list that has removed the element at erase_idx.
+        edge_list_end--;
+
+    }
+
+    // We have a new index to the end of the list, call erase on the elements past that index
+    // to update the std::vector and shrink the actual data structures.
+    edge_dest_node_.erase(edge_dest_node_.begin() + edge_list_end + 1, edge_dest_node_.end());
+    edge_src_node_.erase(edge_src_node_.begin() + edge_list_end + 1, edge_src_node_.end());
+    edge_switch_.erase(edge_switch_.begin() + edge_list_end + 1, edge_switch_.end());
+    edge_remapped_.erase(edge_remapped_.begin() + edge_list_end + 1, edge_remapped_.end());
+
+    VTR_ASSERT(edge_dest_node_.size() == (starting_edge_count - rr_edges_to_remove.size()));
+
+    partitioned_ = false;
+}
+
+
 void t_rr_graph_storage::assign_first_edges() {
     VTR_ASSERT(node_first_edge_.empty());
 
@@ -68,31 +115,34 @@ void t_rr_graph_storage::assign_first_edges() {
         edge_src_node_.end()));
 
     size_t node_id = 0;
-    size_t first_id = 0;
-    size_t second_id = 0;
+    size_t first_edge_id = 0;
+    size_t second_edge_id = 0;
+
     size_t num_edges = edge_src_node_.size();
     VTR_ASSERT(edge_dest_node_.size() == num_edges);
     VTR_ASSERT(edge_switch_.size() == num_edges);
     VTR_ASSERT(edge_remapped_.size() == num_edges);
+
     while (true) {
-        VTR_ASSERT(first_id < num_edges);
-        VTR_ASSERT(second_id < num_edges);
-        size_t current_node_id = size_t(edge_src_node_[RREdgeId(second_id)]);
+        VTR_ASSERT(first_edge_id < num_edges);
+        VTR_ASSERT(second_edge_id < num_edges);
+
+        size_t current_node_id = size_t(edge_src_node_[RREdgeId(second_edge_id)]);
         if (node_id < current_node_id) {
             // All edges belonging to node_id are assigned.
             while (node_id < current_node_id) {
                 // Store any edges belongs to node_id.
                 VTR_ASSERT(node_id < node_first_edge_.size());
-                node_first_edge_[RRNodeId(node_id)] = RREdgeId(first_id);
-                first_id = second_id;
+                node_first_edge_[RRNodeId(node_id)] = RREdgeId(first_edge_id);
+                first_edge_id = second_edge_id;
                 node_id += 1;
             }
 
             VTR_ASSERT(node_id == current_node_id);
-            node_first_edge_[RRNodeId(node_id)] = RREdgeId(second_id);
+            node_first_edge_[RRNodeId(node_id)] = RREdgeId(second_edge_id);
         } else {
-            second_id += 1;
-            if (second_id == num_edges) {
+            second_edge_id += 1;
+            if (second_edge_id == num_edges) {
                 break;
             }
         }
@@ -100,7 +150,7 @@ void t_rr_graph_storage::assign_first_edges() {
 
     // All remaining nodes have no edges, set as such.
     for (size_t inode = node_id + 1; inode < node_first_edge_.size(); ++inode) {
-        node_first_edge_[RRNodeId(inode)] = RREdgeId(second_id);
+        node_first_edge_[RRNodeId(inode)] = RREdgeId(second_edge_id);
     }
 
     VTR_ASSERT_SAFE(verify_first_edges());

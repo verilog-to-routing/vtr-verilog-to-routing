@@ -11,13 +11,15 @@
 #include "rr_graph_type.h"
 #include "clb2clb_directs.h"
 
-/* Warnings about the routing graph that can be returned.
- * This is to avoid output messages during a value sweep */
+/** @brief Warnings about the routing graph that can be returned.
+ * This is to avoid output messages during a value sweep.
+ * @note This enum is used as a bitmask and should be one-hot encoded.
+ */
 enum {
     RR_GRAPH_NO_WARN = 0x00,
-    RR_GRAPH_WARN_FC_CLIPPED = 0x01,
-    RR_GRAPH_WARN_CHAN_X_WIDTH_CHANGED = 0x02,
-    RR_GRAPH_WARN_CHAN_Y_WIDTH_CHANGED = 0x03
+    RR_GRAPH_WARN_FC_CLIPPED = 0x01 << 0,
+    RR_GRAPH_WARN_CHAN_X_WIDTH_CHANGED = 0x01 << 1,
+    RR_GRAPH_WARN_CHAN_Y_WIDTH_CHANGED = 0x01 << 2
 };
 
 void create_rr_graph(e_graph_type graph_type,
