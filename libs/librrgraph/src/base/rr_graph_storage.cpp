@@ -718,7 +718,7 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
     // that fall between them. 
     for (size_t i = 0; i < sorted_nodes.size(); ++i) {
         size_t start_rr_node_index = size_t(sorted_nodes[i]) + 1;
-        size_t end_rr_node_index = (i == sorted_nodes.size() - 1) ? sorted_nodes.size() : size_t(sorted_nodes[i + 1]);
+        size_t end_rr_node_index = (i == sorted_nodes.size() - 1) ? node_storage_.size() : size_t(sorted_nodes[i + 1]);
         for (size_t j = start_rr_node_index; j < end_rr_node_index; ++j) {
             RRNodeId old_node = RRNodeId(j);
             // New node index is equal to the old nodex index minus the number of nodes being removed before it.
@@ -764,12 +764,7 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
                 // Node exists in sorted_nodes, mark edge for removal
                 removed_edges.push_back(edge_id);
             } else {
-                size_t node_offset;
-                if (node_it == sorted_nodes.end()) {
-                    node_offset = sorted_nodes.size();
-                } else {
-                    node_offset = std::distance(sorted_nodes.begin(), node_it) + 1;
-                }
+                size_t node_offset = std::distance(sorted_nodes.begin(), node_it);
                 size_t new_node_index = size_t(node) - node_offset;
                 edge_nodes[edge_id] = RRNodeId(new_node_index);
             }
