@@ -19,8 +19,8 @@
       http://www.altera.com/literature/hb/stratix-iv/stx4_siv51003.pdf
       multipliers at 600 MHz, no detail on 9x9 vs 36x36
       * datasheets unclear
-        * claims 4 18x18 independant multipliers, following test indicates that this is not the case:
-          created 4 18x18 mulitpliers, logiclocked them to a single DSP block, compile
+        * claims 4 18x18 independent multipliers, following test indicates that this is not the case:
+          created 4 18x18 multipliers, logiclocked them to a single DSP block, compile
           result - 2 18x18 multipliers got packed together, the other 2 got ejected out of the logiclock region without error
           conclusion - just take the 600 MHz as is, and Quartus II logiclock hasn't fixed the bug that I've seen it do to registers when I worked at Altera (ie. eject without warning)
       -->
@@ -157,7 +157,7 @@
   </device>
   <switchlist>
     <switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="6.837e-11" mux_trans_size="2.630740" buf_size="27.645901"/>
-    <!--switch ipin_cblock resistance set to yeild for 4x minimum drive strength buffer-->
+    <!--switch ipin_cblock resistance set to yield for 4x minimum drive strength buffer-->
     <switch type="mux" name="ipin_cblock" R="1516.380005" Cout="0." Cin="0.000000e+00" Tdel="7.247000e-11" mux_trans_size="1.222260" buf_size="auto"/>
   </switchlist>
   <segmentlist>
