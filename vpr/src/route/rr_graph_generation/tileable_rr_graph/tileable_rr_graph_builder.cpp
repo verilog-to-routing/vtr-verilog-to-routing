@@ -30,7 +30,13 @@
 
 #include "globals.h"
 
-static void remove_dangling_chan_nodes(RRGraphBuilder& rr_graph_builder);
+/**
+ * @brief Remove dangling chan nodes (chan nodes with no incoming edges) from the rr_graph
+ * @param grid The device grid
+ * @param rr_graph_builder The rr_graph builder
+ */
+static void remove_dangling_chan_nodes(const DeviceGrid& grid,
+                                       RRGraphBuilder& rr_graph_builder);
 
 /************************************************************************
  * Main function of this file
@@ -282,17 +288,23 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Allocate and load routing resource switches, which are derived from the switches from the architecture file,
     // based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches
     device_ctx.rr_graph_builder.init_fan_in();
-    alloc_and_load_rr_switch_inf(device_ctx.rr_graph_builder, device_ctx.switch_fanin_remap, device_ctx.all_sw_inf, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
+    if (crr_opts.remove_dangling_nodes) {
+        remove_dangling_chan_nodes(device_ctx.grid,
+                                   device_ctx.rr_graph_builder);
+    }
+    alloc_and_load_rr_switch_inf(device_ctx.rr_graph_builder,
+                                 device_ctx.switch_fanin_remap,
+                                 device_ctx.all_sw_inf,
+                                 R_minW_nmos,
+                                 R_minW_pmos,
+                                 wire_to_arch_ipin_switch,
+                                 wire_to_rr_ipin_switch);
 
     // Save the channel widths for the newly constructed graph
     device_ctx.chan_width = chan_width;
 
     // Save the track ids for tileable routing resource graph
     device_ctx.rr_node_track_ids = rr_node_track_ids;
-
-    if (crr_opts.remove_dangling_nodes) {
-        remove_dangling_chan_nodes(device_ctx.rr_graph_builder);
-    }
 
     // Build incoming edges
     device_ctx.rr_graph_builder.partition_edges();
@@ -318,8 +330,10 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, vib_grid, device_ctx.chan_width, e_graph_type::UNIDIR_TILEABLE, false);
 }
 
-static void remove_dangling_chan_nodes(RRGraphBuilder& rr_graph_builder) {
+static void remove_dangling_chan_nodes(const DeviceGrid& grid,
+                                       RRGraphBuilder& rr_graph_builder) {
     t_rr_graph_storage& rr_nodes = rr_graph_builder.rr_nodes();
+    RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
     std::vector<RRNodeId> dangling_nodes;
 
     for (size_t node_index = 0; node_index < rr_nodes.size(); ++node_index) {
@@ -330,21 +344,30 @@ static void remove_dangling_chan_nodes(RRGraphBuilder& rr_graph_builder) {
             }
         }
     }
-
-    // Print the info about nodes to be removed in removed_nodes.txt
-    std::ofstream removed_nodes_file("removed_nodes.txt");
-    for (const auto& node : dangling_nodes) {
-        size_t node_index = size_t(node);
-        auto node_type = rr_nodes.node_type(node);
-        auto x_low = rr_nodes.node_xlow(node);
-        auto y_low = rr_nodes.node_ylow(node);
-        auto x_high = rr_nodes.node_xhigh(node);
-        auto y_high = rr_nodes.node_yhigh(node);
-        removed_nodes_file << node_index << " " << rr_node_typename[node_type] << " (" << x_low << "," << y_low << ") to (" << x_high << "," << y_high << ")" << std::endl;
-    }
-    removed_nodes_file.close();
-
     rr_nodes.remove_nodes(dangling_nodes);
 
+    node_lookup.clear();
+    // Alloc the lookup table
+    for (e_rr_type rr_type : RR_TYPES) {
+        node_lookup.resize_nodes(grid.get_num_layers(),
+                                 grid.width(),
+                                 grid.height(),
+                                 rr_type,
+                                 NUM_2D_SIDES);
+    }
 
+    // Add the correct node into the vector
+    for (size_t node_index = 0; node_index < rr_nodes.size(); ++node_index) {
+        RRNodeId node = RRNodeId(node_index);
+        // Set track numbers as a node may have multiple ptc
+        if (rr_graph_builder.node_contain_multiple_ptc(node)) {
+            if (rr_nodes.node_type(node) == e_rr_type::CHANX ||
+                rr_nodes.node_type(node) == e_rr_type::CHANY) {
+                rr_graph_builder.add_track_node_to_lookup(node);
+            }
+        } else {
+            rr_graph_builder.add_node_to_all_locs(node);
+        }
+    }
+    rr_graph_builder.init_fan_in();
 }
