@@ -95,7 +95,7 @@ class RRGraphView {
     void operator=(const RRGraphView&) = delete;
 
     /* -- Accessors -- */
-    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin'
+    /* TODO: The accessors may be turned into private later if they are replaceable by 'questionin'
      * kind of accessors
      */
   public:

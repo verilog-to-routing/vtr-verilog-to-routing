@@ -48,7 +48,7 @@ class RRGraphBuilder {
     /** @brief Return a writable object for the meta data on the edge */
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
     
-    /** @brief Return a writable object fo the incoming edge storage */
+    /** @brief Return a writable object for the incoming edge storage */
     vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edge_storage();
 
     /** @brief Return the size for rr_node_metadata */
@@ -353,7 +353,7 @@ class RRGraphBuilder {
      * This method does not preserve the order of edges. If you're
      * calling it after partition_edges has been called, you will
      * need to call partition_edges again.
-     * This operation is O(#RR Graph edges) and should not be called frequently.
+     * This operation is O(#Edges to be removed) and should not be called frequently.
      *
      * @param rr_edges_to_remove list of RREdgeIds to be removed
      */
@@ -425,13 +425,13 @@ class RRGraphBuilder {
     inline void reserve_switches(size_t num_switches) {
         this->rr_switch_inf_.reserve(num_switches);
     }
-    /** @brief This function resize node storage to accomidate size RR nodes. */
+    /** @brief This function resize node storage to accommodate size RR nodes. */
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
 
 
-    /** @brief This function resize rr_switch to accomidate size RR Switch. */
+    /** @brief This function resize rr_switch to accommodate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);
     }
