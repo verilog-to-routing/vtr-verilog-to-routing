@@ -1334,7 +1334,7 @@ ezgl::color get_block_type_color(t_physical_tile_type_ptr type) {
     return color;
 }
 
-//Lightens a color's luminance [0, 1] by an aboslute 'amount'
+//Lightens a color's luminance [0, 1] by an absolute 'amount'
 ezgl::color lighten_color(ezgl::color color, float amount) {
     constexpr double MAX_LUMINANCE = 0.95; //Clip luminance so it doesn't go full white
     auto hsl = color2hsl(color);

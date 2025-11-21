@@ -495,7 +495,7 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
 /**
  * @brief Turns on autocomplete
  *
- * This function enables the auto-complete fuctionality for the search bar.
+ * This function enables the auto-complete functionality for the search bar.
  * Normally, this is pretty simple, but the idea is to have auto-complete appear as soon
  * as the user hits the "Enter" key. To accomplish this, a fake Gdk event is created
  * to simulate the user hitting a key.
@@ -514,7 +514,7 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
  * BLOCKS       1835
  * BLOCK SRCH.  21840
  * For second model (much larger, much longer CPU times) observed large dropoff in times from one char to two chars (about 2 times faster) but after stayed consistent
- * Maybe when I ahve more time, will make a cute graph or something, no time right now
+ * Maybe when I have more time, will make a cute graph or something, no time right now
  * MODEL 2: Strativix arch + MES_NOC (TITAN)
  * NETS         577696
  * NET SRCH.    4.93438e+06
