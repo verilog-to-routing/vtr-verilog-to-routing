@@ -473,7 +473,7 @@ void print_wirelen_prob_dist(bool is_flat) {
     VTR_LOG("\n");
     VTR_LOG("Probability distribution of 2-pin net lengths:\n");
     VTR_LOG("\n");
-    VTR_LOG("Length    p(Lenth)\n");
+    VTR_LOG("Length    p(Length)\n");
 
     av_length = 0;
 
