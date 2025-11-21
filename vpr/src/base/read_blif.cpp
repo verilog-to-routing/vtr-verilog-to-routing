@@ -217,7 +217,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         VTR_ASSERT(q_model_port->size == 1);
         VTR_ASSERT(clk_model_port->is_clock);
 
-        //We set the initital value as a single entry in the 'truth_table' field
+        //We set the initial value as a single entry in the 'truth_table' field
         AtomNetlist::TruthTable truth_table(1);
         truth_table[0].push_back(to_vtr_logic_value(init));
 
@@ -361,7 +361,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         //however we must defer that until all the net drivers
         //and sinks have been created (otherwise they may not
         //be properly merged depending on where the .conn is
-        //delcared).
+        //declared).
         //
         //As a result we record the nets to merge and do the actual merging at
         //the end of the .model
@@ -531,7 +531,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         return std::make_pair(trimmed_signal_name, bit_index);
     }
 
-    ///@brief Retieves a reference to the currently active .model
+    ///@brief Retrieves a reference to the currently active .model
     AtomNetlist& curr_model() {
         if (blif_models_.empty() || ended_) {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Expected .model");
