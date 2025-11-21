@@ -200,7 +200,7 @@ Once downloaded and extracted, benchmarks are provided as post-synthesized blif 
 NoC Benchmarks
 ----------------
 NoC benchmarks are composed of synthetic and MLP benchmarks and target NoC-enhanced FPGA architectures. Synthetic
-benchmarks include a wide variety of traffic flow patters and are divided into two groups: 1) simple and 2) complex
+benchmarks include a wide variety of traffic flow patterns and are divided into two groups: 1) simple and 2) complex
 benchmarks. As their names imply, simple benchmarks use very simple and small logic modules connected to NoC routers,
 while complex benchmarks implement more complicated functionalities like encryption. These benchmarks do not come from
 real application domains. On the other hand, MLP benchmarks include modules that perform matrix-vector multiplication

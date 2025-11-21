@@ -376,7 +376,7 @@ def parse_single_test(task_lists, check=True, calculate=True, create=False):
 
 
 def print_header(heading, divider="=", print_first_line=True):
-    """Print heading formated in the center of two lines"""
+    """Print heading formatted in the center of two lines"""
     if print_first_line:
         print(divider * len(heading) * 2)
     print(" " * int((len(heading) / 2)), end="")
