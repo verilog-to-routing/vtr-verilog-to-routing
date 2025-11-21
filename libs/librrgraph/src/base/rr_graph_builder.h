@@ -48,7 +48,7 @@ class RRGraphBuilder {
     /** @brief Return a writable object for the meta data on the edge */
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
     
-    /** @brief Return a writable object fo the incoming edge storage */
+    /** @brief Return a writable object for the incoming edge storage */
     vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edge_storage();
     
     /** @brief Return a writable object of the node ptc storage (for tileable routing resource graph) */
@@ -428,7 +428,7 @@ class RRGraphBuilder {
     inline void reserve_switches(size_t num_switches) {
         this->rr_switch_inf_.reserve(num_switches);
     }
-    /** @brief This function resize node storage to accomidate size RR nodes. */
+    /** @brief This function resize node storage to accommodate size RR nodes. */
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
@@ -438,7 +438,7 @@ class RRGraphBuilder {
     }
 
 
-    /** @brief This function resize rr_switch to accomidate size RR Switch. */
+    /** @brief This function resize rr_switch to accommodate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);
     }

@@ -43,7 +43,7 @@ class Tokens {
     std::vector<t_token> tokens_;
 };
 
-/// @brief Returns a 2D array representing the atof result of all the input string entries seperated by whitespace
+/// @brief Returns a 2D array representing the atof result of all the input string entries separated by whitespace
 void my_atof_2D(float** matrix, const int max_i, const int max_j, std::string_view instring);
 
 /**
