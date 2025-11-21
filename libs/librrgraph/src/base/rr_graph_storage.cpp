@@ -63,6 +63,10 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
 void t_rr_graph_storage::remove_edges(std::vector<RREdgeId>& rr_edges_to_remove) {
     VTR_ASSERT(!edges_read_);
 
+    if (rr_edges_to_remove.empty()) {
+        return;
+    }
+
     size_t starting_edge_count = edge_dest_node_.size();
 
     // Sort and make sure all edge indices are unique
@@ -178,7 +182,7 @@ bool t_rr_graph_storage::verify_first_edges() const {
 
 void t_rr_graph_storage::init_fan_in() {
     //Reset all fan-ins to zero
-    edges_read_ = true;
+    node_fan_in_.clear();
     node_fan_in_.resize(node_storage_.size(), 0);
     node_fan_in_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
@@ -625,6 +629,54 @@ void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction
     node_storage_[id].dir_side_.direction = new_direction;
 }
 
+void t_rr_graph_storage::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str) {
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    std::vector<std::string> ptc_tokens = vtr::StringToken(ptc_str).split(",");
+    VTR_ASSERT(ptc_tokens.size() >= 1);
+    set_node_ptc_num(node, std::stoi(ptc_tokens[0]));
+    if (ptc_tokens.size() > 1) {
+        VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
+        node_tilable_track_nums_[node].resize(ptc_tokens.size());
+        for (size_t iptc = 0; iptc < ptc_tokens.size(); iptc++) {
+            node_tilable_track_nums_[node][iptc] = std::stoi(ptc_tokens[iptc]);
+        }
+    }
+}
+
+void t_rr_graph_storage::add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id) {
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY,
+                   "Track number valid only for CHANX/CHANY RR nodes");
+
+    size_t node_length = std::abs(node_xhigh(node) - node_xlow(node))
+                       + std::abs(node_yhigh(node) - node_ylow(node));
+    if (node_length + 1 != node_tilable_track_nums_[node].size()) {
+        node_tilable_track_nums_[node].resize(node_length + 1);
+    }
+
+    VTR_ASSERT(node_offset < node_tilable_track_nums_[node].size());
+
+    node_tilable_track_nums_[node][node_offset] = track_id;
+}
+
+std::string t_rr_graph_storage::node_ptc_nums_to_string(RRNodeId node) const {
+    if (node_tilable_track_nums_.empty()) {
+        return std::to_string(size_t(node_ptc_num(node)));
+    }
+    VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
+    if (node_tilable_track_nums_[node].empty()) {
+        return std::to_string(size_t(node_ptc_num(node)));
+    }
+    std::string ret;
+    for (size_t iptc = 0; iptc < node_tilable_track_nums_[node].size(); iptc++) {
+        ret += std::to_string(size_t(node_tilable_track_nums_[node][iptc])) + ",";
+    }
+    // Remove the last comma
+    ret.pop_back();
+    return ret;
+}
+
 void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != e_rr_type::IPIN && node_type(id) != e_rr_type::OPIN) {
         VTR_LOG_ERROR("Attempted to set RR node 'side' for non-pin type '%s'", node_type_string(id));
@@ -649,6 +701,80 @@ void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clo
         // If no name is available, throw a VtrError indicating the absence of the attribute name for the virtual sink node.
         throw vtr::VtrError(vtr::string_fmt("Attribute name is not specified for virtual sink node '%u'\n", size_t(virtual_clock_network_root_idx)), __FILE__, __LINE__);
     }
+}
+
+void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
+    VTR_ASSERT(!edges_read_);
+    // To remove the nodes, we first sort them in ascending order. This makes it easy 
+    // to calculate the offset by which other node IDs need to be adjusted. 
+    // For example, after sorting the nodes to be removed, if a node ID falls between 
+    // the first and second element, its ID should be reduced by 1. 
+    // If a node ID is larger than the last element, its ID should be reduced by 
+    // the total number of nodes being removed.
+    std::vector<RRNodeId> sorted_nodes = nodes;
+    std::sort(sorted_nodes.begin(), sorted_nodes.end());
+    
+    // Iterate over the nodes to be removed and adjust the IDs of nodes 
+    // that fall between them. 
+    for (size_t i = 0; i < sorted_nodes.size(); ++i) {
+        size_t start_rr_node_index = size_t(sorted_nodes[i]) + 1;
+        size_t end_rr_node_index = (i == sorted_nodes.size() - 1) ? node_storage_.size() : size_t(sorted_nodes[i + 1]);
+        for (size_t j = start_rr_node_index; j < end_rr_node_index; ++j) {
+            RRNodeId old_node = RRNodeId(j);
+            // New node index is equal to the old nodex index minus the number of nodes being removed before it.
+            RRNodeId new_node = RRNodeId(j-(i+1));
+            node_storage_[new_node] = node_storage_[old_node];
+            node_ptc_[new_node] = node_ptc_[old_node];
+            node_layer_[new_node] = node_layer_[old_node];
+            node_name_[new_node] = node_name_[old_node];
+            if (is_tileable_) {
+                node_bend_start_[new_node] = node_bend_start_[old_node];
+                node_bend_end_[new_node] = node_bend_end_[old_node];
+                node_tilable_track_nums_[new_node] = node_tilable_track_nums_[old_node];
+            }
+        }
+    }
+
+    // Now that the data structures are adjusted, we can shrink the size of them
+    size_t num_nodes_to_remove = sorted_nodes.size();
+    VTR_ASSERT(num_nodes_to_remove <= node_storage_.size());
+    node_storage_.erase(node_storage_.end()-num_nodes_to_remove, node_storage_.end());
+    node_ptc_.erase(node_ptc_.end()-num_nodes_to_remove, node_ptc_.end());
+    node_layer_.erase(node_layer_.end()-num_nodes_to_remove, node_layer_.end());
+    for (size_t node_index = node_name_.size()-num_nodes_to_remove; node_index < node_name_.size(); ++node_index) {
+        RRNodeId node = RRNodeId(node_index);
+        node_name_.erase(node);
+    }
+    if (is_tileable_) {
+        node_bend_start_.erase(node_bend_start_.end()-num_nodes_to_remove, node_bend_start_.end());
+        node_bend_end_.erase(node_bend_end_.end()-num_nodes_to_remove, node_bend_end_.end());
+        node_tilable_track_nums_.erase(node_tilable_track_nums_.end()-num_nodes_to_remove, node_tilable_track_nums_.end());
+    }
+
+    std::vector<RREdgeId> removed_edges;
+    auto adjust_edges = [&](vtr::vector<RREdgeId, RRNodeId>& edge_nodes) {
+        for (size_t edge_index = 0; edge_index < edge_nodes.size(); ++edge_index) {
+            RREdgeId edge_id = RREdgeId(edge_index);
+            RRNodeId node = edge_nodes[edge_id];
+    
+            // Find insertion point in the sorted vector
+            auto node_it = std::lower_bound(sorted_nodes.begin(), sorted_nodes.end(), node);
+    
+            if (node_it != sorted_nodes.end() && *node_it == node) {
+                // Node exists in sorted_nodes, mark edge for removal
+                removed_edges.push_back(edge_id);
+            } else {
+                size_t node_offset = std::distance(sorted_nodes.begin(), node_it);
+                size_t new_node_index = size_t(node) - node_offset;
+                edge_nodes[edge_id] = RRNodeId(new_node_index);
+            }
+        }
+    };
+
+    adjust_edges(edge_src_node_);
+    adjust_edges(edge_dest_node_);
+
+    remove_edges(removed_edges);
 }
 
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {
