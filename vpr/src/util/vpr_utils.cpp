@@ -986,7 +986,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     return nullptr;
 }
 
-/* Recusively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
+/* Recursively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
     for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {

@@ -816,7 +816,7 @@ static void process_ports(pugi::xml_node Parent,
                     VTR_ASSERT(num_sets == 1 && num_ptrs[0] == 1);
                     int rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
 
-                    //Why does this not use the output pin used to deterimine the rr node index?
+                    //Why does this not use the output pin used to determine the rr node index?
                     pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
                     pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
                     pb_route[rr_node_index].pb_graph_pin = &pb->pb_graph_node->output_pins[out_port][i];

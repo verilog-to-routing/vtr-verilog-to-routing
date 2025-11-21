@@ -20,10 +20,10 @@
  */
 int infer_and_mark_constant_pins(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, const LogicalModels& models, int verbosity);
 
-///@brief Marks all primtive output pins which have no combinationally connected inputs as constant pins
+///@brief Marks all primitive output pins which have no combinationally connected inputs as constant pins
 int mark_undriven_primitive_outputs_as_constant(AtomNetlist& netlist, int verbosity);
 
-///@brief Marks all primtive output pins of blk which have only constant inputs as constant pins
+///@brief Marks all primitive output pins of blk which have only constant inputs as constant pins
 int infer_and_mark_block_pins_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, const LogicalModels& models, int verbosity);
 int infer_and_mark_block_combinational_outputs_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, int verbosity);
 int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, const LogicalModels& models, int verbosity);
@@ -129,7 +129,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
 
         //Artificial buffers
         for (auto buf_pair : artificial_buffer_connections_required) {
-            fprintf(f, "#Artificially inserted primary-output assigment buffer\n");
+            fprintf(f, "#Artificially inserted primary-output assignment buffer\n");
             fprintf(f, ".names %s %s\n", buf_pair.first.c_str(), buf_pair.second.c_str());
             fprintf(f, "1 1\n");
             fprintf(f, "\n");
@@ -194,7 +194,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
             auto type = "re";
 
             //Latch initial value
-            int init_val = 3; //Unkown or unspecified
+            int init_val = 3; //Unknown or unspecified
             //The initial value is stored as a single value in the truth table
             const auto& so_cover = netlist.block_truth_table(blk_id);
             if (so_cover.size() == 1) {
@@ -849,7 +849,7 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, const LogicalModel
     //We now need to determine the name of the 'new' net
     //
     // We need to be careful about this name since a net pin could be
-    // a Primary-Input/Primary-Output, and we don't want to change PI/PO names (for equivalance checking)
+    // a Primary-Input/Primary-Output, and we don't want to change PI/PO names (for equivalence checking)
     //
     //Check if we have any PI/POs in the new net's pins
     // Note that the driver can only (potentially) be an INPAD, and the sinks only (potentially) OUTPADs
@@ -873,10 +873,10 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, const LogicalModel
     auto output_net_name = netlist.net_name(output_net);
 
     if ((driver_is_pi || po_in_input_sinks) && !po_in_output_sinks) {
-        //Must use the input name to perserve primary-input or primary-output name
+        //Must use the input name to preserve primary-input or primary-output name
         new_net_name = input_net_name;
     } else if (!(driver_is_pi || po_in_input_sinks) && po_in_output_sinks) {
-        //Must use the output name to perserve primary-output name
+        //Must use the output name to preserve primary-output name
         new_net_name = output_net_name;
     } else {
         new_net_name = input_net_name;
@@ -1077,7 +1077,7 @@ size_t sweep_blocks(AtomNetlist& netlist, const LogicalModels& models, int verbo
 
         AtomBlockType type = netlist.block_type(blk_id);
 
-        //Don't remove inpads/outpads here, we have seperate sweep functions for these
+        //Don't remove inpads/outpads here, we have separate sweep functions for these
         if (type == AtomBlockType::INPAD || type == AtomBlockType::OUTPAD) continue;
 
         //We remove any blocks with no fanout
