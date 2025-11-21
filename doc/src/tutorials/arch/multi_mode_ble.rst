@@ -11,7 +11,7 @@ Definition
 Modern FPGA logic blocks are designed to operate in various modes, so as to provide best performance for different applications.
 VPR offers enriched syntax to support highly flexible multi-mode logic block architecture.
 
-:numref:`fig_frac_lut_le` shows the physical implemenation of a Fracturable Logic Element (FLE), which consists of a fracturable 6-input Look-Up Table (LUT), two Flip-flops (FFs) and routing multiplexers to select between combinational and sequential outputs.
+:numref:`fig_frac_lut_le` shows the physical implementation of a Fracturable Logic Element (FLE), which consists of a fracturable 6-input Look-Up Table (LUT), two Flip-flops (FFs) and routing multiplexers to select between combinational and sequential outputs.
 
 .. _fig_frac_lut_le:
 

@@ -1,6 +1,6 @@
 /* TODOS:
  * - find constants in not base 12 that have implicit length - add 32 to front
- * - convert multidim wire thing to use pure indicies
+ * - convert multidim wire thing to use pure indices
  * - generate loops
  * - add #(...) to defparam conversion
  * - remove signed, arithmetic shifts?

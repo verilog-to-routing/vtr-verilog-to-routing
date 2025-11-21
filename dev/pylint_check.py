@@ -149,9 +149,9 @@ def expand_paths():
             for glob_path in path.glob(glob_str):
                 paths.append(glob_path)
 
-        # Non-existant paths, and unhanlded file types error
+        # Non-existent paths, and unhanlded file types error
         elif not path.exists():
-            error("Non-existant path:", path)
+            error("Non-existent path:", path)
         else:
             error("Unhandled path:", path)
     return paths

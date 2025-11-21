@@ -44,7 +44,7 @@ If you download a different version of those tools, then those versions may not 
 
 ## Verifying Installation
 
-To verfiy that VTR has been installed correctly run::
+To verify that VTR has been installed correctly run::
 
     ./vtr_flow/scripts/run_vtr_task.py ./vtr_flow/tasks/regression_tests/vtr_reg_basic/basic_timing
 

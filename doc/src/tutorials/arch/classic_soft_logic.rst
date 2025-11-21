@@ -1,7 +1,7 @@
 Classic Soft Logic Block Tutorial
 ---------------------------------
 
-The following is an example on how to use the VPR architecture description langauge to describe a classical academic soft logic block.
+The following is an example on how to use the VPR architecture description language to describe a classical academic soft logic block.
 First we provide a step-by-step explanation on how to construct the logic block.
 Afterwards, we present the complete code for the logic block.
 

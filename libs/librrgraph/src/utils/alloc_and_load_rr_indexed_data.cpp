@@ -287,7 +287,7 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
         ortho_costs_indices[seg_index] = parallel_axis == e_parallel_axis::X_AXIS ? ortho_costs_indices[seg_index] + num_segments : ortho_costs_indices[seg_index];
     }
 
-    /*Pertubate indices to make sure all perp seg types have a corresponding perp segment.*/
+    /*Perturb indices to make sure all perp seg types have a corresponding perp segment.*/
 #    ifdef PERTURB_ORTHO_COST_indices
     std::vector<int> perp_segments;
     std::unordered_multimap<int, int> indices_map;

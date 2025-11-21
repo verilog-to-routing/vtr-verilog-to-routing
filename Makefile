@@ -1,7 +1,7 @@
 # This is a simple wrapper which hides cmake (for convenience, and from non-expert end users).
 #
 # It supports the targets:
-#   'make'           - builds everything (all libaries/executables)
+#   'make'           - builds everything (all libraries/executables)
 #   'make clean'     - removes generated build objects/libraries/executables etc.
 #   'make distclean' - will clean everything including the cmake generated build files
 #

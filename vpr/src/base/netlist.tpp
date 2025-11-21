@@ -532,7 +532,7 @@ PinId Netlist<BlockId, PortId, PinId, NetId>::find_pin(const PortId port_id, Bit
 
     if (iter == pins_rng.end() || pin_port_bit(*iter) != port_bit) {
         //Either the end of the pins (i.e. not found), or
-        //the value does not match (indicating a gap in the indicies, so also not found)
+        //the value does not match (indicating a gap in the indices, so also not found)
         return PinId::INVALID();
     } else {
         //Found it
@@ -1325,7 +1325,7 @@ void Netlist<BlockId, PortId, PinId, NetId>::rebuild_block_refs(const vtr::vecto
         VTR_ASSERT_SAFE_MSG(all_valid(pin_collection), "All Ids should be valid");
         VTR_ASSERT(pin_collection.size() == size_t(block_num_input_pins_[blk_id] + block_num_output_pins_[blk_id] + block_num_clock_pins_[blk_id]));
 
-        //Similarily for ports
+        //Similarly for ports
         size_t num_input_ports = count_valid_refs(block_input_ports(blk_id), port_id_map);
         size_t num_output_ports = count_valid_refs(block_output_ports(blk_id), port_id_map);
         size_t num_clock_ports = count_valid_refs(block_clock_ports(blk_id), port_id_map);
@@ -1710,12 +1710,12 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_port_pin_refs() const {
 
             //Verify that the pins are listed in increasing order of port bit index,
             //we rely on this property to perform fast binary searches for pins with specific bit
-            //indicies
+            //indices
             if (first_bit) {
                 prev_bit_index = port_bit_index;
                 first_bit = false;
             } else if (prev_bit_index >= port_bit_index) {
-                VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Port pin indicies are not in ascending order");
+                VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Port pin indices are not in ascending order");
             }
         }
     }
@@ -1909,7 +1909,7 @@ BlockId Netlist<BlockId, PortId, PinId, NetId>::find_block(const typename Netlis
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::associate_pin_with_block(const PinId pin_id, const PortType type, const BlockId blk_id) {
-    //Get an interator pointing to where we want to insert
+    //Get an iterator pointing to where we want to insert
     pin_iterator iter;
     if (type == PortType::INPUT) {
         iter = block_input_pins(blk_id).end();
@@ -1981,7 +1981,7 @@ template<typename BlockId, typename PortId, typename PinId, typename NetId>
 void Netlist<BlockId, PortId, PinId, NetId>::associate_port_with_block(const PortId port_id, const PortType type, const BlockId blk_id) {
     //Associate the port with the blocks inputs/outputs/clocks
 
-    //Get an interator pointing to where we want to insert
+    //Get an iterator pointing to where we want to insert
     port_iterator iter;
     if (type == PortType::INPUT) {
         iter = block_input_ports(blk_id).end();

@@ -1148,7 +1148,7 @@ void setup_pin_classes(t_physical_tile_type* type) {
                         // as ignored pins (i.e. connections are not created in the rr_graph and
                         // nets connected to the port are ignored as well).
                         type->is_ignored_pin[pin_count] = port.is_clock || port.is_non_clock_global;
-                        // clock pins and other specified global ports are flaged as global
+                        // clock pins and other specified global ports are flagged as global
                         type->is_pin_global[pin_count] = port.is_clock || port.is_non_clock_global;
 
                         if (port.is_clock) {

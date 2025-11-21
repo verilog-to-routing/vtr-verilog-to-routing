@@ -12,7 +12,7 @@ namespace vtr {
  * The main use of this container is to behave like a std::map which is optimized to hold
  * mappings between a dense linear range of keys (e.g. vtr::StrongId).
  *
- * Requires that K be convertable to size_t with the size_t operator (i.e. size_t()), and
+ * Requires that K be convertible to size_t with the size_t operator (i.e. size_t()), and
  * that the conversion results in a linearly increasing index into the underlying vector.
  * Also requires that K() return the sentinel value used to mark invalid entries.
  *
@@ -286,7 +286,7 @@ class linear_map {
         /*
          * This is a work around for the fact that there is no conversion between a const_iterator and iterator.
          * 
-         * We intiailize i to the start of the container and then advance it by
+         * We initialize i to the start of the container and then advance it by
          * the distance to const_iter. The resulting i points to the same element
          * as const_iter
          *

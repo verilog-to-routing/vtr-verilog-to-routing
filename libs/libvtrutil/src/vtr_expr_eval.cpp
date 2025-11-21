@@ -800,7 +800,7 @@ static bool is_variable(const std::string& var_name) {
     return false;
 }
 
-//returns the length of the substring consisting of valid vairable characters from
+//returns the length of the substring consisting of valid variable characters from
 //the start of the string
 static int identifier_length(const char* str) {
     int ichar = 0;

@@ -17,12 +17,12 @@
 //						interconnections. (TC)
 // April 20, 2005 - Adding code to handle concatenation statements that are implicit in the
 //					instantiation of a module. (TC)
-// March 4, 2013 - Modifying code to perform a couting pass followed by an allocation
+// March 4, 2013 - Modifying code to perform a counting pass followed by an allocation
 //                 pass to decrease memory fragmentation by reducing the number of realloc
 //                 calls.  Additionally remove linear growth regieme for array allocation,
 //                 as this will also cause memory fragmentaiton.
-//                 Modify pointer-integer casts  ot use uintptr_t which is
-//                 gaurenteed to match the size of a pointer on any platform.  This prevents
+//                 Modify pointer-integer casts to use uintptr_t which is
+//                 guaranteed to match the size of a pointer on any platform.  This prevents
 //                 bad addresses being generated due to sign extension when converting from
 //                 a 32 bit integer type to a 64 bit pointer type.
 //                 Also fixed various compiler warnings from casting and signed/unsigned
@@ -361,7 +361,7 @@ t_pin_def *add_pin(char *name, int left, int right, t_pin_def_type type, t_parse
         pin_hash->size = 2*parse_info->number_of_pins;
     }
 
-    //Append the element, the position is one less thatn the size of the array
+    //Append the element, the position is one less than the size of the array
     //which is returned by append_array_element
     size_t position = append_array_element( (intptr_t) pin, pin_list) - 1;
 
@@ -689,7 +689,7 @@ void insert_hash(char* key, size_t value, t_hash_table* hash_table)
 /* Inserts the key, value pair into the hash_table
  */
 {
-    //Find the emtpy slot for this key, or the last member of the linked list
+    //Find the empty slot for this key, or the last member of the linked list
     //in the slot
     t_hash_elem* entry = get_hash_entry(key, hash_table);
 
@@ -698,7 +698,7 @@ void insert_hash(char* key, size_t value, t_hash_table* hash_table)
 
         if(strcmp(key, entry->key) == 0) {
             //Duplicate entry
-            printf("Warning: atempting to add duplicate hash entry for key: '%s'. No action taken.\n", key);
+            printf("Warning: attempting to add duplicate hash entry for key: '%s'. No action taken.\n", key);
             return; //Do nothing
 
         } else {
@@ -897,7 +897,7 @@ t_node_port_association *create_node_port_association(char *port_name, int port_
 
 
 t_array_ref *associate_identifier_with_port_name(t_identifier_pass *identifier, char *port_name, int port_index)
-/* Given a port and an identifier, create an association between them. An association is bascially
+/* Given a port and an identifier, create an association between them. An association is basically
  * a structure that states that a named port is connected to a particular bus or a single wire from
  * a bus.
  */
@@ -1165,7 +1165,7 @@ void add_concatenation_assignments(t_array_ref *con_array, t_pin_def *target_pin
  * assignment:
  * assign a[2] = b[1];
  *
- * And so on. The final two assignemnts are:
+ * And so on. The final two assignments are:
  * assign a[1] = b[0];
  * assign a[0] = c;
  */
@@ -1202,7 +1202,7 @@ void add_concatenation_assignments(t_array_ref *con_array, t_pin_def *target_pin
 		}
 		pin = locate_net_by_name(source->name);
 
-		/* Iterate through all wires. The trick here is count the wire indicies
+		/* Iterate through all wires. The trick here is count the wire indices
 			* from left to right (either in increasing or decreasing order).
 			*/
 		for(	wire_index = pin->left;
@@ -1306,7 +1306,7 @@ void define_instance_parameter(t_identifier_pass *identifier, char *parameter_na
 
 
 uintptr_t *allocate_array(int element_count)
-/* This funciton allocates the memory for the specified array. The size is specified in
+/* This function allocates the memory for the specified array. The size is specified in
  * number of elements, not number of bytes. When allocating memory this function will
  * multiply the element_count by sizeof(int).
  */
@@ -1324,7 +1324,7 @@ uintptr_t *allocate_array(int element_count)
 
 
 void deallocate_array(uintptr_t *array, size_t element_count, void (*free_element)(void *element))
-/* This funciton frees the memory allocated by the array. You must pass
+/* This function frees the memory allocated by the array. You must pass
  * a function that frees the memory allocated for the elements of the array.
  * If NULL is passed for that function then the elements themselves will not be freed.
  * Use with care.
@@ -1347,7 +1347,7 @@ void deallocate_array(uintptr_t *array, size_t element_count, void (*free_elemen
 
 
 void **reallocate_array(t_array_ref* array_ref, int new_element_count)
-/* This funciton reallocates the memory for the specified array. The size is specified in
+/* This function reallocates the memory for the specified array. The size is specified in
  * number of elements, not number of bytes. When reallocating memory this function will
  * multiply the element_count by sizeof(int).
  */

@@ -77,7 +77,7 @@ class FlatPlacementInfo {
     // the flat placement to encode information about where atom blocks would
     // want to go if they cannot be placed at the grid position they are at.
     // (for example, a block placed at (0.9, 0.9) wants to be at tile (0, 0),
-    // but if thats not possible it would prefer (1, 1) over anything else.
+    // but if that's not possible it would prefer (1, 1) over anything else.
 
     /// @brief The x-positions of each atom block. Is UNDEFINED_POS if undefined.
     vtr::vector<AtomBlockId, float> blk_x_pos;
