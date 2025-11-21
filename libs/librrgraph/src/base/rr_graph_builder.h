@@ -356,7 +356,7 @@ class RRGraphBuilder {
      * This method does not preserve the order of edges. If you're
      * calling it after partition_edges has been called, you will
      * need to call partition_edges again.
-     * This operation is O(#RR Graph edges) and should not be called frequently.
+     * This operation is O(#Edges to be removed) and should not be called frequently.
      *
      * @param rr_edges_to_remove list of RREdgeIds to be removed
      */
