@@ -30,7 +30,6 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, const bool echo_enabled, const char* echo_file_name);
 
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
-                                          const RRSwitchId wire_to_ipin_switch,
                                           vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
 
 /**
@@ -87,7 +86,6 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     const std::vector<t_segment_inf>& segment_inf_y,
                                     const std::vector<t_segment_inf>& segment_inf_z,
                                     vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
-                                    const RRSwitchId wire_to_ipin_switch,
                                     e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name) {
@@ -159,8 +157,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     }
 
     load_rr_indexed_data_T_values(rr_graph,
-                 wire_to_ipin_switch,
-                 rr_indexed_data);
+                                  rr_indexed_data);
 
     fixup_rr_indexed_data_T_values(rr_indexed_data, total_num_segment);
 
@@ -515,7 +512,6 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
  *      - Placement Delay Matrix computation
  */
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
-                                          const RRSwitchId wire_to_ipin_switch,
                                           vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data) {
     vtr::vector<RRNodeId, std::vector<RREdgeId>> fan_in_list = get_fan_in_list(rr_graph);
 
@@ -617,8 +613,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
     {
         if (ipin_switch_count == 0) {
             VTR_LOG_WARN("No IPIN switches found. Setting T_linear to 0\n");
-            float default_ipin_switch_T_del = rr_graph.rr_switch_inf(RRSwitchId(wire_to_ipin_switch)).Tdel;
-            rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = default_ipin_switch_T_del;
+            rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = 0.0;
         } else {
             float average_ipin_switch_T_del = ipin_switch_T_total / ipin_switch_count;
             rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].T_linear = average_ipin_switch_T_del;
