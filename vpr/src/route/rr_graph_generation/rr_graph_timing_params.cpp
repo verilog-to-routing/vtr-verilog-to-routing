@@ -57,9 +57,8 @@ void add_rr_graph_C_from_switches() {
             for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
                 to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
-
+                switch_index = rr_graph.edge_switch(rr_id, iedge);
                 if (to_rr_type == e_rr_type::CHANX || to_rr_type == e_rr_type::CHANY) {
-                    switch_index = rr_graph.edge_switch(rr_id, iedge);
                     Cin = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cin;
                     Cout = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout;
                     buffered = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered();
