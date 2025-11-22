@@ -131,7 +131,7 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         REQUIRE(vec1.get_dim_val(dim_1) == 2.f);
         REQUIRE(vec1.get_dim_val(dim_2) == 4.f);
     }
-    SECTION("Test comparitors") {
+    SECTION("Test comparators") {
         PrimitiveVector vec1, vec2;
         // empty vector.
         vec2.set_dim_val(dim_0, 10.f);
@@ -213,7 +213,7 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         REQUIRE(vec1.is_non_negative());
         vec1.set_dim_val(dim_0, 0.f);
         REQUIRE(vec1.is_non_negative());
-        // Postive vector is non-negative
+        // Positive vector is non-negative
         vec1.set_dim_val(dim_0, 1.f);
         REQUIRE(vec1.is_non_negative());
         vec1.set_dim_val(dim_1, 2.f);

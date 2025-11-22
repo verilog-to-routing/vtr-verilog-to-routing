@@ -248,7 +248,7 @@ bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks,
  *
  * In particular, we can not simply calculate the incremental delta's caused by changed
  * connection timing costs and adjust the timing cost. Due to limited precision, the results
- * of floating point math operations are order dependant and we would get a different result.
+ * of floating point math operations are order dependent and we would get a different result.
  *
  * To get around this, we calculate the timing costs hierarchically, to ensure that we
  * calculate the sum with the same order of operations as comp_td_costs().

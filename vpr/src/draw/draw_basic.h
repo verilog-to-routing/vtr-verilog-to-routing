@@ -127,7 +127,7 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
                                         ezgl::renderer* g);
 
 /* Draws any placement macros (e.g. carry chains, which require specific relative placements
- * between some blocks) if the Placement Macros (in the GUI) is seelected.
+ * between some blocks) if the Placement Macros (in the GUI) is selected.
  */
 void draw_placement_macros(ezgl::renderer* g);
 

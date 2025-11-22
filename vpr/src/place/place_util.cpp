@@ -215,7 +215,7 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
             // Can still accommodate blocks here, check the next position
             continue;
         } else {
-            // Cant be placed here - skip to the next try
+            // Can't be placed here - skip to the next try
             mac_can_be_placed = false;
             break;
         }

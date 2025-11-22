@@ -664,7 +664,7 @@ class SdcParseCallback : public sdcparse::Callback {
                     tc_.clock_domain_name(capture_domain).c_str());
             }
 
-            //Override the constarint
+            //Override the constraint
             setup_constraint = override_setup_constraint;
         }
 
@@ -720,7 +720,7 @@ class SdcParseCallback : public sdcparse::Callback {
                     tc_.clock_domain_name(capture_domain).c_str());
             }
 
-            //Override the constarint
+            //Override the constraint
             hold_constraint = override_hold_constraint;
         }
 
@@ -729,7 +729,7 @@ class SdcParseCallback : public sdcparse::Callback {
         return tatum::Time(hold_constraint);
     }
 
-    //Determine the minumum time (in SDC units) between the edges of the launch and capture clocks
+    //Determine the minimum time (in SDC units) between the edges of the launch and capture clocks
     float calculate_min_launch_to_capture_edge_time(tatum::DomainId launch_domain, tatum::DomainId capture_domain) const {
         constexpr int CLOCK_SCALE = 1000;
 
@@ -794,12 +794,12 @@ class SdcParseCallback : public sdcparse::Callback {
 
             //Compare every edge in source_edges with every edge in sink_edges.
             //The lowest STRICTLY POSITIVE difference between a sink edge and a
-            //source edge yeilds the setup time constraint.
+            //source edge yields the setup time constraint.
             int scaled_constraint = std::numeric_limits<int>::max(); //Initialize to +inf, so any constraint will be less
 
             for (int launch_edge : launch_edges) {
                 for (int capture_edge : capture_edges) {
-                    if (capture_edge >= launch_edge) { //Postive only
+                    if (capture_edge >= launch_edge) { //Positive only
                         int edge_diff = capture_edge - launch_edge;
                         VTR_ASSERT(edge_diff >= 0.);
 
@@ -1148,7 +1148,7 @@ void apply_combinational_default_timing_constraints(const AtomNetlist& netlist,
     std::string clock_name = "virtual_io_clock";
 
     VTR_LOG("Setting default timing constraints:\n");
-    VTR_LOG("   * constrain all primay inputs and primary outputs on a virtual external clock '%s'\n", clock_name.c_str());
+    VTR_LOG("   * constrain all primary inputs and primary outputs on a virtual external clock '%s'\n", clock_name.c_str());
     VTR_LOG("   * optimize virtual clock to run as fast as possible\n");
 
     //Create a virtual clock, with 0 period
@@ -1172,7 +1172,7 @@ void apply_single_clock_default_timing_constraints(const AtomNetlist& netlist,
     std::string clock_name = netlist.net_name(clock_net);
 
     VTR_LOG("Setting default timing constraints:\n");
-    VTR_LOG("   * constrain all primay inputs and primary outputs on netlist clock '%s'\n", clock_name.c_str());
+    VTR_LOG("   * constrain all primary inputs and primary outputs on netlist clock '%s'\n", clock_name.c_str());
     VTR_LOG("   * optimize netlist clock to run as fast as possible\n");
 
     //Create the netlist clock with period 0
@@ -1200,7 +1200,7 @@ void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
                                                   tatum::TimingConstraints& tc) {
     std::string virtual_clock_name = "virtual_io_clock";
     VTR_LOG("Setting default timing constraints:\n");
-    VTR_LOG("   * constrain all primay inputs and primary outputs on a virtual external clock '%s'\n", virtual_clock_name.c_str());
+    VTR_LOG("   * constrain all primary inputs and primary outputs on a virtual external clock '%s'\n", virtual_clock_name.c_str());
     VTR_LOG("   * optimize all netlist and virtual clocks to run as fast as possible\n");
     VTR_LOG("   * ignore cross netlist clock domain timing paths\n");
 
@@ -1254,7 +1254,7 @@ void mark_constant_generators(const AtomNetlist& netlist,
     }
 }
 
-//Constrain all primary inputs and primary outputs to the specifed clock domains and delays
+//Constrain all primary inputs and primary outputs to the specified clock domains and delays
 void constrain_all_ios(const AtomNetlist& netlist,
                        const AtomLookup& lookup,
                        tatum::TimingConstraints& tc,
@@ -1326,7 +1326,7 @@ std::regex glob_pattern_to_regex(const std::string& glob_pattern) {
     //   '*' is a wildcard match of zero or more instances of any characters
     //
     //In regex:
-    //   '*' matches zero or more of the preceeding character
+    //   '*' matches zero or more of the preceding character
     //   '.' matches any character
     //
     //To convert a glob to a regex we need to:

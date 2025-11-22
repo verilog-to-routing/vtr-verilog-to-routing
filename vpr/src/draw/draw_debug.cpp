@@ -4,7 +4,7 @@
 #include "draw_global.h"
 #include "vtr_expr_eval.h"
 
-//keeps track of open windows to avoid reopenning windows that are alerady open
+//keeps track of open windows to avoid reopenning windows that are already open
 struct open_windows {
     bool debug_window = false;
     bool advanced_window = false;
@@ -31,7 +31,7 @@ class DrawDebuggerGlobals {
     }
 };
 
-//the global variable that holds all global variables realted to breakpoint graphics
+//the global variable that holds all global variables related to breakpoint graphics
 DrawDebuggerGlobals draw_debug_glob_vars;
 
 //draws main debugger window
@@ -360,7 +360,7 @@ void refresh_bpList() {
         gtk_widget_set_halign(checkbox, GTK_ALIGN_END);
         gtk_widget_set_valign(checkbox, GTK_ALIGN_CENTER);
 
-        //button seetings
+        //button settings
         GtkWidget* deleteButton = gtk_button_new();
         GtkWidget* image = gtk_image_new_from_file("src/draw/trash.png");
         gtk_button_set_image((GtkButton*)deleteButton, image);

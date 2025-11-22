@@ -127,7 +127,7 @@ void draw_selected_pb_flylines(ezgl::renderer* g);
 /*
  * Draws lines from the proper logical sources, to the proper logical sinks.
  * If the draw state says to show all logical connections, it will,
- * and if there is a selected sub-block, it will highlight it's conections
+ * and if there is a selected sub-block, it will highlight it's connections
  */
 
 void draw_logical_connections(ezgl::renderer* g);

@@ -42,7 +42,7 @@ void basic_button_setup(ezgl::application* app) {
     gtk_button_set_label(search, "Search");
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
 
-    //button for save graphcis, created in main.ui
+    //button for save graphics, created in main.ui
     GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
     g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
                      app);

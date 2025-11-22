@@ -228,7 +228,7 @@ t_propose_action EpsilonGreedyAgent::propose_action() {
         /* Explore
          * With probability epsilon, choose randomly amongst all move types */
 
-        // Cummulative epsilon action probabilty stores a CDF for all available
+        // Cumulative epsilon action probability stores a CDF for all available
         // actions where each action has an equal probability to occur. Pick
         // a random number between 0 and 1 and select the action in the CDF equal
         // to or just less than the random number.

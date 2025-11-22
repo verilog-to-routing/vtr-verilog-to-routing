@@ -52,7 +52,7 @@ struct t_grid_empty_locs_block_type {
     t_pl_loc first_avail_loc;
     /*
      * Number of consecutive y-locations starting (and including) from first_avail_loc
-     * that can accomadate blocks of the type at first_avail_loc.
+     * that can accommodate blocks of the type at first_avail_loc.
      */
     int num_of_empty_locs_in_y_axis;
 };

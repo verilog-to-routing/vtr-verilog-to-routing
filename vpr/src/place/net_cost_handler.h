@@ -304,7 +304,7 @@ class NetCostHandler {
 
     /**
      * @brief Allocates and loads acc_tile_num_inter_die_conn_ which contains the accumulative number of inter-die
-     * conntections.
+     * connections.
      *
      * @details This is only useful for multi-die FPGAs.
      */

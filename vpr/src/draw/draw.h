@@ -2,7 +2,7 @@
 /**
  * @file draw.h
  *
- * The main drawing file. Contains the setup for ezgl application, ui setup, and graphis functions
+ * The main drawing file. Contains the setup for ezgl application, ui setup, and graphics functions
  *
  * This is VPR's main graphics application program. The program interacts with ezgl/graphics.hpp,
  * which provides an API for displaying graphics on both X11 and Win32. The most important
