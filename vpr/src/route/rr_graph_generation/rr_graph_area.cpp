@@ -205,11 +205,11 @@ static void count_bidir_routing_transistors(int num_switch, float R_minW_nmos, f
                             break;
 
                         case e_rr_type::IPIN:
-                            RRSwitchId switch_id = RRSwitchId(rr_graph.edge_switch(RRNodeId(from_node), iedge));
-                            if (ipin_switch_count.find(switch_id) == ipin_switch_count.end()) {
-                                ipin_switch_count[switch_id] = 0;
+                            iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
+                            if (ipin_switch_count.find(RRSwitchId(iswitch)) == ipin_switch_count.end()) {
+                                ipin_switch_count[RRSwitchId(iswitch)] = 0;
                             }
-                            ipin_switch_count[switch_id]++;
+                            ipin_switch_count[RRSwitchId(iswitch)]++;
                             num_inputs_to_cblock[to_node]++;
                             max_inputs_to_cblock = std::max(max_inputs_to_cblock, num_inputs_to_cblock[to_node]);
 
@@ -369,6 +369,7 @@ static void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segme
 
     ntrans = 0;
     std::unordered_map<RRSwitchId, size_t> ipin_switch_count;
+    RRSwitchId switch_id;
     for (const RRNodeId from_rr_node : device_ctx.rr_graph.nodes()) {
         size_t from_node = size_t(from_rr_node);
         from_rr_type = rr_graph.node_type(from_rr_node);
@@ -436,7 +437,7 @@ static void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segme
                             break;
 
                         case e_rr_type::IPIN:
-                            RRSwitchId switch_id = RRSwitchId(rr_graph.edge_switch(RRNodeId(from_node), iedge));
+                            switch_id = RRSwitchId(rr_graph.edge_switch(RRNodeId(from_node), iedge));
                             if (ipin_switch_count.find(switch_id) == ipin_switch_count.end()) {
                                 ipin_switch_count[switch_id] = 0;
                             }
