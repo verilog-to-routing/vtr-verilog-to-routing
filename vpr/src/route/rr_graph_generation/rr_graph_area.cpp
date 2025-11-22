@@ -161,7 +161,7 @@ static void count_bidir_routing_transistors(int num_switch, float R_minW_nmos, f
 
     sharable_switch_trans = alloc_and_load_sharable_switch_trans(num_switch,
                                                                  R_minW_nmos, R_minW_pmos);
-    
+
     std::unordered_map<RRSwitchId, size_t> ipin_switch_count;
 
     for (const RRNodeId from_rr_node : device_ctx.rr_graph.nodes()) {
@@ -293,8 +293,9 @@ static void count_bidir_routing_transistors(int num_switch, float R_minW_nmos, f
     RRSwitchId most_frequent_ipin_switch = std::max_element(ipin_switch_count.begin(),
                                                             ipin_switch_count.end(),
                                                             [](const auto& a, const auto& b) {
-        return a.second < b.second;
-    })->first;
+                                                                return a.second < b.second;
+                                                            })
+                                               ->first;
     input_cblock_trans = get_cblock_trans(num_inputs_to_cblock,
                                           most_frequent_ipin_switch,
                                           max_inputs_to_cblock,
@@ -491,8 +492,8 @@ static void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segme
 
     // Get most frequent ipin switch
     RRSwitchId most_frequent_ipin_switch = std::max_element(ipin_switch_count.begin(), ipin_switch_count.end(), [](const auto& a, const auto& b) {
-        return a.second < b.second;
-    })->first;
+                                               return a.second < b.second;
+                                           })->first;
 
     input_cblock_trans = get_cblock_trans(num_inputs_to_cblock,
                                           most_frequent_ipin_switch,
