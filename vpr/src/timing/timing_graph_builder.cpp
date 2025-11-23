@@ -6,11 +6,11 @@
  *
  * The Timing Graph is a directed acyclic graph (DAG) consisting of nodes and edges:
  *    - Nodes: represent netlist pins (tatum::IPIN, tatum::OPIN) and logical sources/
- *      sinks like primary inputs/outpus, flip-flops and clock generators (tatum::SOURCE,
+ *      sinks like primary inputs/outputs, flip-flops and clock generators (tatum::SOURCE,
  *      tatum::SINK).
  *
  *      Note that tatum::SOURCE/tatum::SINK represent the start/end of
- *      a timing path. As a result tatum::SOURCE's hould never have input edges (except
+ *      a timing path. As a result tatum::SOURCE's should never have input edges (except
  *      perhaps from a tatum::CPIN if it is a sequential source), and tatum::SINKS's
  *      should never have output edges.
  *
@@ -35,7 +35,7 @@
  * sequential elements 'A' and 'B' (controlled by the primitive input
  * pin 'clk'), and two clouds of combinational logic 'C' and 'D'.
  *
- * The combinational logic 'D' is driven by primtive input 'e' and
+ * The combinational logic 'D' is driven by primitive input 'e' and
  * drives primitive output pin 'g'.
  *
  * The combinational logic 'C' is driven by the sequential element 'A' and
@@ -67,8 +67,8 @@
  *
  *  As a result there are the following "timing sub-paths" within this primitive:
  *
- *  1) 'e' -> 'D' -> 'g'            (combinational propogation delay)
- *  2) 'e' -> 'C' -> 'B'            (combinational propogation delay + sequentialsetup/hold check)
+ *  1) 'e' -> 'D' -> 'g'            (combinational propagation delay)
+ *  2) 'e' -> 'C' -> 'B'            (combinational propagation delay + sequentialsetup/hold check)
  *  3) 'f' -> 'A'                   (sequential setup/hold check)
  *  4) 'A' -> 'C' -> 'D' -> 'g'     (sequential clock-to-q + combinational propogataion delay)
  *  5) 'B' -> 'h'                   (sequential clock-to-q)
@@ -77,7 +77,7 @@
  *
  *  and one fully contained timing path:
  *
- *  8) 'A' -> 'C' -> 'B' (clock-to-q + combinational propogation delay
+ *  8) 'A' -> 'C' -> 'B' (clock-to-q + combinational propagation delay
  *                       + sequential setup/hold check)
  *
  * which all must be modelled by the timing graph:
@@ -155,15 +155,15 @@
  * Building the Timing Graph From VPR's Data Structures
  * ----------------------------------------------------
  *
- * VPR does not directly model the intenals of netlist primitives (e.g. internal
+ * VPR does not directly model the internals of netlist primitives (e.g. internal
  * sequential elements like 'A' or 'B' above). Instead, various attributes are
  * tagged on the pins of the primitive which indicate:
  *     - whether a pin is sequential, combinational or a clock
  *     - whether the pin is combinationally connected to another pin
  *       within the primitive.
  *
- * Mostly there is a one-to-one correspondance between netlist pins and tnodes,
- * the only exception is for sequential-sequential connections within a primtive
+ * Mostly there is a one-to-one correspondence between netlist pins and tnodes,
+ * the only exception is for sequential-sequential connections within a primitive
  * (e.g. the fully internal 'A' to 'B' timing path above).
  *
  * As a result we make a distinction between tnodes which are strictly "internal"
