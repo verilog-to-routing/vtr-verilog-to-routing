@@ -514,7 +514,6 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
  * BLOCKS       1835
  * BLOCK SRCH.  21840
  * For second model (much larger, much longer CPU times) observed large dropoff in times from one char to two chars (about 2 times faster) but after stayed consistent
- * Maybe when I have more time, will make a cute graph or something, no time right now
  * MODEL 2: Strativix arch + MES_NOC (TITAN)
  * NETS         577696
  * NET SRCH.    4.93438e+06
