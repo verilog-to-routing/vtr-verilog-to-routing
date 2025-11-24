@@ -693,22 +693,22 @@ void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clo
     }
 }
 
-void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
+void t_rr_graph_storage::remove_nodes(std::vector<RRNodeId> nodes_to_remove) {
     VTR_ASSERT(!edges_read_);
+    VTR_ASSERT(!partitioned_);
     // To remove the nodes, we first sort them in ascending order. This makes it easy 
     // to calculate the offset by which other node IDs need to be adjusted. 
     // For example, after sorting the nodes to be removed, if a node ID falls between 
     // the first and second element, its ID should be reduced by 1. 
     // If a node ID is larger than the last element, its ID should be reduced by 
     // the total number of nodes being removed.
-    std::vector<RRNodeId> sorted_nodes = nodes;
-    std::sort(sorted_nodes.begin(), sorted_nodes.end());
+    std::sort(nodes_to_remove.begin(), nodes_to_remove.end());
     
     // Iterate over the nodes to be removed and adjust the IDs of nodes 
     // that fall between them. 
-    for (size_t i = 0; i < sorted_nodes.size(); ++i) {
-        size_t start_rr_node_index = size_t(sorted_nodes[i]) + 1;
-        size_t end_rr_node_index = (i == sorted_nodes.size() - 1) ? node_storage_.size() : size_t(sorted_nodes[i + 1]);
+    for (size_t i = 0; i < nodes_to_remove.size(); ++i) {
+        size_t start_rr_node_index = size_t(nodes_to_remove[i]) + 1;
+        size_t end_rr_node_index = (i == nodes_to_remove.size() - 1) ? node_storage_.size() : size_t(nodes_to_remove[i + 1]);
         for (size_t j = start_rr_node_index; j < end_rr_node_index; ++j) {
             RRNodeId old_node = RRNodeId(j);
             // New node index is equal to the old nodex index minus the number of nodes being removed before it.
@@ -726,11 +726,15 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
     }
 
     // Now that the data structures are adjusted, we can shrink the size of them
-    size_t num_nodes_to_remove = sorted_nodes.size();
+    size_t num_nodes_to_remove = nodes_to_remove.size();
     VTR_ASSERT(num_nodes_to_remove <= node_storage_.size());
     node_storage_.erase(node_storage_.end()-num_nodes_to_remove, node_storage_.end());
     node_ptc_.erase(node_ptc_.end()-num_nodes_to_remove, node_ptc_.end());
     node_layer_.erase(node_layer_.end()-num_nodes_to_remove, node_layer_.end());
+    // After shifting the IDs of nodes that are not removed to the left, the last
+    // `num_nodes_to_remove` node IDs become invalid (their names have already been
+    // updated for other nodes). Therefore, the corresponding entries in `node_name_`
+    // must be removed.
     for (size_t node_index = node_name_.size()-num_nodes_to_remove; node_index < node_name_.size(); ++node_index) {
         RRNodeId node = RRNodeId(node_index);
         node_name_.erase(node);
@@ -742,19 +746,25 @@ void t_rr_graph_storage::remove_nodes(const std::vector<RRNodeId>& nodes) {
     }
 
     std::vector<RREdgeId> removed_edges;
+    // This function iterates over edge_src_node_ and edge_dest_node_ to remove
+    // entries where either endpoint of an edge is in the nodes_to_remove list.
+    // It also updates the node IDs of the remaining edges, since node IDs have
+    // been shifted.
     auto adjust_edges = [&](vtr::vector<RREdgeId, RRNodeId>& edge_nodes) {
         for (size_t edge_index = 0; edge_index < edge_nodes.size(); ++edge_index) {
             RREdgeId edge_id = RREdgeId(edge_index);
             RRNodeId node = edge_nodes[edge_id];
     
             // Find insertion point in the sorted vector
-            auto node_it = std::lower_bound(sorted_nodes.begin(), sorted_nodes.end(), node);
+            auto node_it = std::lower_bound(nodes_to_remove.begin(), nodes_to_remove.end(), node);
     
-            if (node_it != sorted_nodes.end() && *node_it == node) {
-                // Node exists in sorted_nodes, mark edge for removal
+            if (node_it != nodes_to_remove.end() && *node_it == node) {
+                // Node exists in nodes_to_remove, mark edge for removal
                 removed_edges.push_back(edge_id);
             } else {
-                size_t node_offset = std::distance(sorted_nodes.begin(), node_it);
+                // If the node is not in the nodes_to_remove list, update the node ID of the edge
+                // by finding how many nodes are there in nodes_to_remove before the node.
+                size_t node_offset = std::distance(nodes_to_remove.begin(), node_it);
                 size_t new_node_index = size_t(node) - node_offset;
                 edge_nodes[edge_id] = RRNodeId(new_node_index);
             }

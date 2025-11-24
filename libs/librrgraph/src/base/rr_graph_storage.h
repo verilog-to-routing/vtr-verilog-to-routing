@@ -751,10 +751,13 @@ class t_rr_graph_storage {
      * If init_fan_in has been called, you need to call it again after removing the nodes.
      * @note This a very expensive method, so should be called only when necessary. It is better
      * to not add nodes in the first place, instead of relying on this method to remove nodes.
+     * 
+     * @note This operation is O(|V| + |E|·log k), where k is the number of nodes to remove,
+     * and should not be called frequently.
      *
-     * @param nodes list of RRNodes to be removed
+     * @param nodes_to_remove list of RRNodes to be removed
      */
-    void remove_nodes(const std::vector<RRNodeId>& nodes);
+    void remove_nodes(std::vector<RRNodeId> nodes_to_remove);
 
     /****************
      * Edge methods *
