@@ -12,7 +12,10 @@ add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
+
+set_directory_properties(PROPERTIES COMPILE_OPTIONS "-Wno-switch-default")
 add_subdirectory(yaml-cpp)
+
 #add_subdirectory(parmys)
 
 #Proc numbers
