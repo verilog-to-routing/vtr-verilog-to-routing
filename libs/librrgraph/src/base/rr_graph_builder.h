@@ -401,13 +401,6 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(arch_switch_inf, arch_switch_fanins);
     }
 
-    /** @brief Unlock storage; required to modify an routing resource graph after edge is read */
-    inline void unlock_storage() {
-        node_storage_.edges_read_ = false;
-        node_storage_.partitioned_ = false;
-        node_storage_.clear_node_first_edge();
-    }
-
     /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
      * when adding a large number of nodes/edge/switches/segments,
