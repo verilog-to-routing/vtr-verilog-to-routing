@@ -92,7 +92,7 @@ struct alignas(16) t_rr_node_data {
 static_assert(sizeof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 
-/* t_rr_node_ptc_data is cold data is therefore kept seperate from
+/* t_rr_node_ptc_data is cold data is therefore kept separate from
  * t_rr_node_data.
  *
  * ptc_num:  Pin, track or class number, depending on rr_node type.          *
@@ -757,16 +757,16 @@ class t_rr_graph_storage {
     //     initialize edges.  All edges must be added prior to calling any
     //     methods that read edge data.
     //
-    //     Note: Either arch_switch_inf indicies or rr_switch_inf should be
+    //     Note: Either arch_switch_inf indices or rr_switch_inf should be
     //     used with emplace_back_edge and alloc_and_load_edges.  Do not mix
-    //     indicies, otherwise things will be break.
+    //     indices, otherwise things will be break.
     //
     //     The rr_switch_inf switches are remapped versions of the
     //     arch_switch_inf switch indices that are used when we have
     //     different delays and hence different indices based on the fanout
     //     of a switch.  Because fanout of the switch can only be computed
     //     after the graph is built, the graph is initially built using
-    //     arch_switch_inf indicies, and then remapped once fanout is
+    //     arch_switch_inf indices, and then remapped once fanout is
     //     determined.
     //
     //  2. The following methods read from the edge data, and lock out the
@@ -777,7 +777,7 @@ class t_rr_graph_storage {
     //       - remap_rr_node_switch_indices
     //       - mark_edges_as_rr_switch_ids
     //
-    //  3. If edge_switch values are arch_switch_inf indicies,
+    //  3. If edge_switch values are arch_switch_inf indices,
     //     remap_rr_node_switch_indices must be called prior to calling
     //     partition_edges.
     //
@@ -824,7 +824,7 @@ class t_rr_graph_storage {
      * This method does not preserve the order of edges. If you're
      * calling it after partition_edges has been called, you will
      * need to call partition_edges again.
-     * This operation is O(#RR Graph edges) and should not be called frequently.
+     * This operation is O(#Edges to be removed) and should not be called frequently.
      *
      * @param rr_edges_to_remove list of RREdgeIds to be removed
      */
@@ -840,17 +840,17 @@ class t_rr_graph_storage {
      size_t count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
                               t_arch_switch_fanin& arch_switch_fanins);
 
-    /** @brief Maps arch_switch_inf indicies to rr_switch_inf indicies.
+    /** @brief Maps arch_switch_inf indices to rr_switch_inf indices.
      *
      * This must be called before partition_edges if edges were created with
-     * arch_switch_inf indicies.
+     * arch_switch_inf indices.
      */
     void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin);
 
-    /** @brief Marks that edge switch values are rr switch indicies.
+    /** @brief Marks that edge switch values are rr switch indices.
      *
      * This must be called before partition_edges if edges were created with
-     * rr_switch_inf indicies.
+     * rr_switch_inf indices.
      */
     void mark_edges_as_rr_switch_ids();
 
@@ -892,9 +892,9 @@ class t_rr_graph_storage {
         std::stable_sort(edge_indices.begin(), edge_indices.end(), comparison_function);
         
         // Generic lambda that allocates a 'vec'-sized new vector with all elements set to default value,
-        // then builds the new vector to have rearranged elements from 'vec' and finaly move the new vector
+        // then builds the new vector to have rearranged elements from 'vec' and finally move the new vector
         // to replace vec. Essentially does a permutation on vec based on edge_indices.
-        auto array_rearrage = [&edge_indices] (auto& vec, auto default_value) {
+        auto array_rearrange = [&edge_indices] (auto& vec, auto default_value) {
 
             // Since vec could have any type, we need to figure out it's type to allocate new_vec.
             // The scary std::remove_reference stuff does exactly that. This does nothing other than building a new 'vec' sized vector.
@@ -912,10 +912,10 @@ class t_rr_graph_storage {
             vec = std::move(new_vec);
         };
 
-        array_rearrage(edge_src_node_, RRNodeId::INVALID());
-        array_rearrage(edge_dest_node_, RRNodeId::INVALID());
-        array_rearrage(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
-        array_rearrage(edge_remapped_, false);
+        array_rearrange(edge_src_node_, RRNodeId::INVALID());
+        array_rearrange(edge_dest_node_, RRNodeId::INVALID());
+        array_rearrange(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
+        array_rearrange(edge_remapped_, false);
     }
 
     /******************

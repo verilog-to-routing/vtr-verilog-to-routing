@@ -92,7 +92,7 @@ typedef vtr::StrongId<struct logical_model_id_tag, size_t> LogicalModelId;
  *
  * There are two types of logical models:
  *  1) Library Models: These are models that all architectures share. These are
- *                     created in the construtor of this class.
+ *                     created in the constructor of this class.
  *  2) User Models: These are models defined by the user and are created outside
  *                  of this class (usually by parsing an architecture file).
  */

@@ -54,7 +54,7 @@ Container compress_ids(const Container& ids) {
 }
 
 //Returns a vector based on 'values', which has had entries dropped & re-ordered according according to 'id_map'.
-//Each entry in id_map corresponds to the assoicated element in 'values'.
+//Each entry in id_map corresponds to the associated element in 'values'.
 //The value of the id_map entry is the new ID of the entry in values.
 //
 //If it is an invalid ID, the element in values is dropped.

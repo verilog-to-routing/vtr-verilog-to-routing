@@ -181,7 +181,7 @@ void expect_only_children(const pugi::xml_node node,
 }
 
 //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node' with an additional explanation.
-//Note this does not check whether the attribues in 'attribute_names' actually exist.
+//Note this does not check whether the attributes in 'attribute_names' actually exist.
 //
 //  node - The parent xml node
 //  attribute_names - expected attribute names
