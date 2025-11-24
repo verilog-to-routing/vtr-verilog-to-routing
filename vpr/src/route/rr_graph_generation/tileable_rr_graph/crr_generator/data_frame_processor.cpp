@@ -162,7 +162,7 @@ DataFrame DataFrameProcessor::read_csv(const std::string& filename) {
         for (size_t row = 0; row < num_rows; ++row) {
             std::vector<std::string> tokens = parse_csv_line(lines[row]);
             VTR_ASSERT_DEBUG(tokens.size() <= num_cols);
-            
+
             for (size_t col = 0; col < tokens.size(); ++col) {
                 df.at(row, col) = parse_csv_cell(tokens[col]);
                 cells_read++;
@@ -191,11 +191,10 @@ DataFrame DataFrameProcessor::read_csv(const std::string& filename) {
     }
 }
 
-
 size_t DataFrameProcessor::count_csv_columns(const std::string& line) {
     size_t count = 1;
     bool in_quotes = false;
-    
+
     for (char c : line) {
         if (c == '"') {
             in_quotes = !in_quotes;
@@ -203,7 +202,7 @@ size_t DataFrameProcessor::count_csv_columns(const std::string& line) {
             count++;
         }
     }
-    
+
     return count;
 }
 
@@ -211,10 +210,10 @@ std::vector<std::string> DataFrameProcessor::parse_csv_line(const std::string& l
     std::vector<std::string> tokens;
     std::string current;
     bool in_quotes = false;
-    
+
     for (size_t i = 0; i < line.size(); ++i) {
         char c = line[i];
-        
+
         if (c == '"') {
             // Handle escaped quotes ("")
             if (in_quotes && i + 1 < line.size() && line[i + 1] == '"') {
@@ -230,7 +229,7 @@ std::vector<std::string> DataFrameProcessor::parse_csv_line(const std::string& l
             current += c;
         }
     }
-    
+
     tokens.push_back(current); // Add last token
     return tokens;
 }
@@ -291,11 +290,11 @@ Cell DataFrameProcessor::parse_csv_cell(const std::string& value) {
     std::string trimmed = value;
     trimmed.erase(0, trimmed.find_first_not_of(" \t\r\n"));
     trimmed.erase(trimmed.find_last_not_of(" \t\r\n") + 1);
-    
+
     if (trimmed.empty()) {
         return Cell(); // Empty cell
     }
-    
+
     // Check if all characters are digits
     bool is_integer = true;
     for (char c : trimmed) {
@@ -304,11 +303,11 @@ Cell DataFrameProcessor::parse_csv_cell(const std::string& value) {
             break;
         }
     }
-    
+
     if (is_integer) {
         return Cell(std::stoi(trimmed));
     }
-    
+
     return Cell(trimmed);
 }
 

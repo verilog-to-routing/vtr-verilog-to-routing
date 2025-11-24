@@ -361,8 +361,7 @@ static void remove_dangling_chan_nodes(const DeviceGrid& grid,
         RRNodeId node = RRNodeId(node_index);
         // Set track numbers as a node may have multiple ptc
         if (rr_graph_builder.node_contain_multiple_ptc(node)) {
-            if (rr_nodes.node_type(node) == e_rr_type::CHANX ||
-                rr_nodes.node_type(node) == e_rr_type::CHANY) {
+            if (rr_nodes.node_type(node) == e_rr_type::CHANX || rr_nodes.node_type(node) == e_rr_type::CHANY) {
                 rr_graph_builder.add_track_node_to_lookup(node);
             }
         } else {

@@ -1129,11 +1129,11 @@ static void build_rr_graph(e_graph_type graph_type,
     device_ctx.chan_width = nodes_per_chan;
 
     rr_graph_externals(segment_inf,
-         segment_inf_x,
-         segment_inf_y,
-         segment_inf_z,
-         wire_to_rr_ipin_switch,
-         base_cost_type);
+                       segment_inf_x,
+                       segment_inf_y,
+                       segment_inf_z,
+                       wire_to_rr_ipin_switch,
+                       base_cost_type);
 
     const VibDeviceGrid vib_grid;
     check_rr_graph(device_ctx.rr_graph,
