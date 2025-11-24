@@ -1,5 +1,7 @@
 #include "node_lookup_manager.h"
 
+#include "rr_graph_utils.h"
+
 #include "vtr_log.h"
 #include "vtr_assert.h"
 
@@ -92,8 +94,9 @@ void NodeLookupManager::clear() {
 }
 
 NodeHash NodeLookupManager::build_node_hash(RRNodeId node_id) const {
-    const std::string& node_ptcs = rr_graph_.rr_nodes().node_ptc_nums_to_string(node_id);
-    return std::make_tuple(rr_graph_.node_type(node_id), node_ptcs,
+    const std::string& node_ptcs = node_ptc_number_to_string(rr_graph_, node_id);
+    return std::make_tuple(rr_graph_.node_type(node_id),
+                           node_ptcs,
                            rr_graph_.node_xlow(node_id), rr_graph_.node_xhigh(node_id),
                            rr_graph_.node_ylow(node_id), rr_graph_.node_yhigh(node_id));
 }
