@@ -276,8 +276,8 @@ class RRGraphBuilder {
         node_storage_.set_node_mux_num(id, new_mux_num);
     }
 
-    /** @brief Add a list of ptc number in string (split by comma) to a given node. This function is used by rr graph reader only. */
-    void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str);
+    /** @brief Add a list of ptc numbers to a given node. This function is used by rr graph reader only. */
+    void set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers);
 
     /** @brief With a given node, output ptc numbers into a string (use comma as delima). This function is used by rr graph writer only. */
     std::string node_ptc_nums_to_string(RRNodeId node) const;

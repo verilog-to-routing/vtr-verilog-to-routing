@@ -708,11 +708,9 @@ class t_rr_graph_storage {
     /**
      * @brief Set the ptc numbers for a node.
      * @param node The node id
-     * @param ptc_str The ptc numbers string. Note that if tileable RR Graph is used,
-     * multiple ptc numbers can be assigned to node of the type of CHANX or CHANY. If that's the case,
-     * the ptc numbers are separated by commas.
+     * @param ptc_numbers The ptc numbers vector to be set for the node.
      */
-    void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str);
+    void set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers);
 
     /**
      * @brief Add a track number to a node.

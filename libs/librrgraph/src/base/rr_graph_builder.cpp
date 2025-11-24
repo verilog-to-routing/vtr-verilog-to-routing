@@ -225,8 +225,8 @@ std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) const {
     return node_in_edges_[node];
 }
 
-void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str) {
-    node_storage_.set_node_ptc_nums(node, ptc_str);
+void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers) {
+    node_storage_.set_node_ptc_nums(node, ptc_numbers);
 }
 
 std::string RRGraphBuilder::node_ptc_nums_to_string(RRNodeId node) const {
@@ -266,8 +266,12 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
             // Find the track ids using the x/y offset  
             if (e_rr_type::CHANX == node_type || e_rr_type::CHANY == node_type) {
                 const std::vector<short>& track_nums = node_storage_.node_tilable_track_nums(node);
-                ptc = (node_type == e_rr_type::CHANX) ? track_nums[x - node_storage_.node_xlow(node)] : 
-                      track_nums[y - node_storage_.node_ylow(node)];
+                if (node_type == e_rr_type::CHANX) {
+                    ptc = track_nums[x - node_storage_.node_xlow(node)];
+                } else {
+                    VTR_ASSERT_DEBUG(node_type == e_rr_type::CHANY);
+                    ptc = track_nums[y - node_storage_.node_ylow(node)];
+                }
                 node_lookup_.add_node(node, node_storage_.node_layer_low(node), x, y, node_type, ptc);
             }
         }

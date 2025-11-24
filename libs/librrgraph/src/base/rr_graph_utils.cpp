@@ -391,3 +391,12 @@ bool chan_same_type_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RR
 
     return false; // unreachable
 }
+
+std::vector<int> parse_ptc_numbers(const std::string& ptc_str) {
+    std::vector<int> ptc_numbers;
+    std::vector<std::string> ptc_tokens = vtr::StringToken(ptc_str).split(",");
+    for (const std::string& ptc_token : ptc_tokens) {
+        ptc_numbers.push_back(std::stoi(ptc_token));
+    }
+    return ptc_numbers;
+}

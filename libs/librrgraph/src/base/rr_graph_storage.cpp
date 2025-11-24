@@ -629,16 +629,15 @@ void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction
     node_storage_[id].dir_side_.direction = new_direction;
 }
 
-void t_rr_graph_storage::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str) {
+void t_rr_graph_storage::set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers) {
     VTR_ASSERT(size_t(node) < node_storage_.size());
-    std::vector<std::string> ptc_tokens = vtr::StringToken(ptc_str).split(",");
-    VTR_ASSERT(ptc_tokens.size() >= 1);
-    set_node_ptc_num(node, std::stoi(ptc_tokens[0]));
-    if (ptc_tokens.size() > 1) {
+    VTR_ASSERT(ptc_numbers.size() >= 1);
+    set_node_ptc_num(node, ptc_numbers[0]);
+    if (ptc_numbers.size() > 1) {
         VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
-        node_tilable_track_nums_[node].resize(ptc_tokens.size());
-        for (size_t iptc = 0; iptc < ptc_tokens.size(); iptc++) {
-            node_tilable_track_nums_[node][iptc] = std::stoi(ptc_tokens[iptc]);
+        node_tilable_track_nums_[node].resize(ptc_numbers.size());
+        for (size_t iptc = 0; iptc < ptc_numbers.size(); iptc++) {
+            node_tilable_track_nums_[node][iptc] = ptc_numbers[iptc];
         }
     }
 }
