@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#Reformats and then ammends the currently checked-out commit
+#Reformats and then amends the currently checked-out commit
 #
 #Usually used by rebase-format.sh
 

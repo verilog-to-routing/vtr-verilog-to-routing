@@ -36,7 +36,7 @@ void draw_noc(ezgl::renderer* g) {
         return;
     }
 
-    // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anything as the NoC tile won't be drawn
+    // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we can't draw anything as the NoC tile won't be drawn
     /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capacity of a noc router tile
      */
     const auto& type = device_ctx.grid.get_physical_type({router_list.begin()->get_router_grid_position_x(),
@@ -54,7 +54,7 @@ void draw_noc(ezgl::renderer* g) {
     // Now construct the coordinates for the markers that represent the connections between links (relative to the noc router tile position)
     ezgl::rectangle noc_connection_marker_bbox = get_noc_connection_marker_bbox(noc_router_logical_type);
 
-    // only draw the noc useage if the user selected the option
+    // only draw the noc usage if the user selected the option
     if (draw_state->draw_noc == DRAW_NOC_LINK_USAGE) {
         draw_noc_usage(noc_link_colors);
 

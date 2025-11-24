@@ -139,7 +139,7 @@ The following key = value are available for configuration files:
 |script_simulation_params  |[see exec_wrapper.sh options]                       |
 |synthesis_params          |[see Odin options]                                  |
 |simulation_params         |[see Odin options]                                  |
-|regression_params         |[see Regression Parameters bellow]
+|regression_params         |[see Regression Parameters below]
 
 Regression Parameters:
 
@@ -158,7 +158,7 @@ The following diagram illustrates the structure of regression tests.
 Each regression test needs a corresponding folder in the task directory containing the configuration file.
 The \<task display name\> should have the same name as the verilog file group in the verilog directory.
 This folder is where the synthesis results and simulation results will be stored.
-The task diplay name and the verilog file group should share the same title.
+The task display name and the verilog file group should share the same title.
 
 ```bash
 └── odin_ii
@@ -319,7 +319,7 @@ This regression test targets the function of keywords. It has a folder or child 
 
 ### preprocessor
 
-This set of regression test includes benchmarks targetting compiler directives available in Verilog.
+This set of regression test includes benchmarks targeting compiler directives available in Verilog.
 
 ### Regression Tests Directory Tree
 

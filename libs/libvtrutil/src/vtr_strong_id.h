@@ -72,7 +72,7 @@
  *    2. T          - the underlying integral id type (default: int) [Optional]
  *    3. T sentinel - a value representing an invalid Id (default: -1) [Optional]
  *
- * If no value is supllied during construction the StrongId is initialized to the invalid/sentinel value.
+ * If no value is supplied during construction the StrongId is initialized to the invalid/sentinel value.
  *
  * Example 1: default definition
  *

@@ -643,7 +643,7 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
         return pin_name;
     }
 
-    return "<UNKOWN>";
+    return "<UNKNOWN>";
 }
 
 std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_type_ptr type,

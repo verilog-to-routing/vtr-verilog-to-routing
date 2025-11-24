@@ -22,9 +22,9 @@
  * 'Instance' object to represent the primitive. NetlistWriterVisitor saves these representations for later
  * output.
  *
- * 'Instance' is an abstract class representing objects which know how to create thier own representation in
+ * 'Instance' is an abstract class representing objects which know how to create their own representation in
  * BLIF, Verilog and SDF formats.  Most primitives can be represented by the BlackBoxInst class, but special
- * primitives like LUTs and Latchs have thier own implementations (LutInst, LatchInst) to handle some of their
+ * primitives like LUTs and Latchs have their own implementations (LutInst, LatchInst) to handle some of their
  * unique requirements.
  *
  * Once the entire netlist has been traversed the netlist walker will call NetlistWriterVisitor's finish_impl()
@@ -35,11 +35,11 @@
  * Name Escaping
  * =============
  * One of the challenges in generating netlists is producing consistent naming of netlist elements.
- * In particular valid BLIF names, Verilog names and SDF names are not neccessarily the same.
+ * In particular valid BLIF names, Verilog names and SDF names are not necessarily the same.
  * As a result we must escape invalid characters/identifiers when producing some formats.
  *
  * All name escaping is handled at the output stage (i.e. in the print_*() functions) since it is
- * very format dependant.
+ * very format dependent.
  *
  * VPR stores names internally generally following BLIF conventions.  As a result these names need
  * to be escaped when generating Verilog or SDF.  This is handled with escape_verilog_identifier()
@@ -47,7 +47,7 @@
  *
  * Primitives
  * ==========
- * Verilog netlist generation assumes the existance of appropriate primitives for the various
+ * Verilog netlist generation assumes the existence of appropriate primitives for the various
  * atom types (i.e. a LUT_K module, a DFF module etc.).  These are currently defined the file
  * `<vtr>/vtr_flow/primitives.v`, where `<vtr>` is the root of the VTR source tree.
  *
@@ -168,7 +168,7 @@ struct DelayTriple {
     }
 };
 
-// This pair cointains the following values:
+// This pair contains the following values:
 //      - double: hold, setup or clock-to-q delays of the port
 //      - string: port name of the associated source clock pin of the sequential port
 typedef std::pair<DelayTriple, std::string> sequential_port_delay_pair;
@@ -287,10 +287,10 @@ class Instance {
      */
     virtual void print_blif(std::ostream& os, size_t& unconn_count, int depth = 0) = 0;
 
-    ///@brief Print the current instanse in Verilog, see print_blif() for argument descriptions
+    ///@brief Print the current instance in Verilog, see print_blif() for argument descriptions
     virtual void print_verilog(std::ostream& os, size_t& unconn_count, int depth = 0) = 0;
 
-    ///@brief Print the current instanse in SDF, see print_blif() for argument descriptions
+    ///@brief Print the current instance in SDF, see print_blif() for argument descriptions
     virtual void print_sdf(std::ostream& os, int depth = 0) = 0;
 };
 
@@ -665,8 +665,8 @@ class BlackBoxInst : public Instance {
   public:
     BlackBoxInst(std::string type_name,                                             ///<Instance type
                  std::string inst_name,                                             ///<Instance name
-                 std::map<std::string, std::string> params,                         ///<Verilog parameters: Dictonary of <param_name,value>
-                 std::map<std::string, std::string> attrs,                          ///<Instance attributes: Dictonary of <attr_name,value>
+                 std::map<std::string, std::string> params,                         ///<Verilog parameters: Dictionary of <param_name,value>
+                 std::map<std::string, std::string> attrs,                          ///<Instance attributes: Dictionary of <attr_name,value>
                  std::map<std::string, std::vector<std::string>> input_port_conns,  ///<Port connections: Dictionary of <port,nets>
                  std::map<std::string, std::vector<std::string>> output_port_conns, ///<Port connections: Dictionary of <port,nets>
                  std::vector<Arc> timing_arcs,                                      ///<Combinational timing arcs
@@ -925,7 +925,7 @@ class BlackBoxInst : public Instance {
 /**
  * @brief Assignment represents the logical connection between two nets
  *
- * This is synonomous with verilog's 'assign x = y' which connects
+ * This is synonymous with verilog's 'assign x = y' which connects
  * two nets with logical identity, assigning the value of 'y' to 'x'
  */
 class Assignment {
@@ -1473,7 +1473,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
     /**
      * @brief Returns an Instance object representing the RAM
-     * @note  the primtive interface to dual and single port rams is nearly identical,
+     * @note  the primitive interface to dual and single port rams is nearly identical,
      *        so we using a single function to handle both
      */
     std::shared_ptr<Instance> make_ram_instance(const t_pb* atom) {
@@ -1783,7 +1783,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                     //Delays
                     //
-                    //We record the souce sink tnodes and thier delays here
+                    //We record the source sink tnodes and their delays here
                     for (tatum::EdgeId edge : timing_ctx.graph->node_out_edges(src_tnode)) {
                         DelayTriple delay_triple = get_edge_delay_triple(edge, *delay_calc_, *timing_ctx.graph);
                         auto sink_tnode = timing_ctx.graph->edge_sink_node(edge);
@@ -2820,7 +2820,7 @@ void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::strin
             // Individual bits
             os << "{"
                << "\n";
-            for (int ipin = (int)nets.size() - 1; ipin >= 0; --ipin) { //Reverse order to match endianess
+            for (int ipin = (int)nets.size() - 1; ipin >= 0; --ipin) { //Reverse order to match endianness
                 os << indent(depth + 1);
                 if (nets[ipin].empty()) {
                     //Disconnected
@@ -2855,7 +2855,7 @@ std::string escape_verilog_identifier(const std::string identifier) {
     //The escaped identifiers start with a literal back-slash '\'
     //followed by the identifier and are terminated by white space
     //
-    //We pre-pend the escape back-slash and append a space to avoid
+    //We prepend the escape back-slash and append a space to avoid
     //the identifier gobbling up adjacent characters like commas which
     //are not actually part of the identifier
     std::string prefix = "\\";
@@ -2883,7 +2883,7 @@ bool is_special_sdf_char(char c) {
     //Since the spec allows for non-special characters to be escaped (they are treated
     //normally), we treat $ as a special character to be safe.
     //
-    //Note that the spec appears to have rendering errors in the PDF availble
+    //Note that the spec appears to have rendering errors in the PDF available
     //on IEEE Xplore, listing the 'LEFT-POINTING DOUBLE ANGLE QUOTATION MARK'
     //character (decimal code 171) in place of the APOSTROPHE character '
     //with decimal code 39 in the special character list. We assume code 39.

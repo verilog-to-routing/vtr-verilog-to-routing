@@ -42,10 +42,10 @@ generated code.  Roughly half of the methods are for the reader interface
 VPR to disk).
 
 The methods starting with `preallocate_`, `add_`, `init_`, and `finish_`
-are associated with the reader interface.  The reader interface has three additionals methods, `start_load`, `finish_load` and `error_encountered`.
+are associated with the reader interface.  The reader interface has three additional methods, `start_load`, `finish_load` and `error_encountered`.
 
 The methods starting with `get_`, `has_` and `size_` are associated with
-the writer interface.  The writer interface has two additionals methods, `start_write`, and `finish_write`.
+the writer interface.  The writer interface has two additional methods, `start_write`, and `finish_write`.
 
 #### Load interface
 

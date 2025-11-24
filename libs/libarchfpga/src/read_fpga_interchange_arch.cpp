@@ -2304,7 +2304,7 @@ struct ArchReader {
         /*
          * The generic architecture data is not currently available in the interchange format
          * therefore, for a very initial implementation, the values are taken from the ones
-         * used primarly in the Xilinx series7 devices, generated using SymbiFlow.
+         * used primarily in the Xilinx series7 devices, generated using SymbiFlow.
          *
          * As the interchange format develops further, with possibly more details, this function can
          * become dynamic, allowing for different parameters for the different architectures.

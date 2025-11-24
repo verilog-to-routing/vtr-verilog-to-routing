@@ -27,7 +27,7 @@ If VTR does not support your use case, consider [filling an enhancement](#fillin
 
 ### I have a bug-fix/feature I'd like to include in VTR
 Great! Submitting bug-fixes and features is a great way to improve VTR.
-See the guidlines for [submitting code](#submitting-code-to-vtr).
+See the guidelines for [submitting code](#submitting-code-to-vtr).
 
 ## The Details
 

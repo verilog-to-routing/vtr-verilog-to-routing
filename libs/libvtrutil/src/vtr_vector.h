@@ -14,7 +14,7 @@ namespace vtr {
  * @brief A std::vector container which is indexed by K (instead of size_t).
  *
  * The main use of this container is to behave like a std::vector which is
- * indexed by a vtr::StrongId. It assumes that K is explicitly convertable to size_t
+ * indexed by a vtr::StrongId. It assumes that K is explicitly convertible to size_t
  * (i.e. via operator size_t()), and can be explicitly constructed from a size_t.
  *
  * It includes all the following std::vector functions:
@@ -198,7 +198,7 @@ class vector : private std::vector<V, Allocator> {
 
   public:
     /**
-     * @brief Iterator class which is convertable to the key_type
+     * @brief Iterator class which is convertible to the key_type
      *
      * This allows end-users to call the parent class's keys() member
      * to iterate through the keys with a range-based for loop
@@ -216,7 +216,7 @@ class vector : private std::vector<V, Allocator> {
             : value_(init) {}
 
         /*
-         * vtr::vector assumes that the key time is convertable to size_t.
+         * vtr::vector assumes that the key time is convertible to size_t.
          *
          * It also assumes all the underlying IDs are zero-based and contiguous. That means
          * we can just increment the underlying Id to build the next key.

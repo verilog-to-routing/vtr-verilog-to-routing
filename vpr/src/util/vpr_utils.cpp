@@ -986,7 +986,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     return nullptr;
 }
 
-/* Recusively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
+/* Recursively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
     for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
@@ -1372,9 +1372,7 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         std::string source_string{src_string};
 
         // Replace '.' and '[' characters with ' '
-        std::ranges::replace_if(source_string,
-            [](char c) noexcept { return c == '.' || c == '[' || c == ':' || c == ']'; },
-            ' ');
+        std::ranges::replace_if(source_string, [](char c) noexcept { return c == '.' || c == '[' || c == ':' || c == ']'; }, ' ');
 
         std::istringstream source_iss(source_string);
         int start_pin_index, end_pin_index;
@@ -1901,23 +1899,6 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
             }
         }
     }
-
-    pin_num_vec.shrink_to_fit();
-    return pin_num_vec;
-}
-
-std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
-                                        ClusterBlockId cluster_blk_id,
-                                        int abs_cap) {
-    int max_num_pin = get_tile_total_num_pin(physical_tile) / physical_tile->capacity;
-    int num_tile_pin_per_inst = physical_tile->num_pins / physical_tile->capacity;
-    std::vector<int> pin_num_vec(num_tile_pin_per_inst);
-    std::iota(pin_num_vec.begin(), pin_num_vec.end(), abs_cap * num_tile_pin_per_inst);
-
-    pin_num_vec.reserve(max_num_pin);
-
-    auto internal_pins = get_cluster_internal_pins(cluster_blk_id);
-    pin_num_vec.insert(pin_num_vec.end(), internal_pins.begin(), internal_pins.end());
 
     pin_num_vec.shrink_to_fit();
     return pin_num_vec;

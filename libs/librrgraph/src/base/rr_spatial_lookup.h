@@ -296,6 +296,6 @@ class RRSpatialLookup {
 
     /* -- Internal data storage -- */
   private:
-    /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional array mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
+    /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional array where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
     t_rr_node_indices rr_node_indices_;
 };

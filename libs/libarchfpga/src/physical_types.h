@@ -77,7 +77,6 @@ struct t_pin_to_pin_annotation;
 struct t_interconnect;
 class t_pb_graph_pin;
 class t_pb_graph_edge;
-struct t_cluster_placement_primitive;
 struct t_arch;
 enum class e_sb_type;
 struct t_interposer_cut_inf;
@@ -495,7 +494,7 @@ enum class e_sb_type {
  * pin_avg_width_offset: Average width offset to specified pin (exact if only a single physical pin instance)
  * pin_avg_height_offset: Average height offset to specified pin (exact if only a single physical pin instance)
  * pin_class: The class a pin belongs to
- * is_ignored_pin: Whether or not a pin is ignored durring rr_graph generation and routing.
+ * is_ignored_pin: Whether or not a pin is ignored during rr_graph generation and routing.
  *                 This is usually the case for clock pins and other global pins unless the
  *                 clock_modeling option is set to route the clock through regular inter-block
  *                 wiring or through a dedicated clock network.
@@ -998,7 +997,7 @@ struct t_pb_type {
      * @brief Check if t_pb_type is the root of the pb graph. Root pb_types correspond to a single top level block type and map to a particular type
      * of location in the FPGA device grid (e.g. Logic, DSP, RAM etc.)
      *
-     * @return if t_pb_type is root ot not
+     * @return if t_pb_type is root or not
      */
     inline bool is_root() const {
         return parent_mode == nullptr;
@@ -1007,7 +1006,7 @@ struct t_pb_type {
     /**
      * @brief Check if t_pb_type is a primitive block or equivalently a leaf of the pb graph.
      *
-     * @return if t_pb_type is primitive/leaf ot not
+     * @return if t_pb_type is primitive/leaf or not
      */
     inline bool is_primitive() const {
         return num_modes == 0;
@@ -1298,8 +1297,8 @@ class t_pb_graph_node {
      *          as well), but LUTs A, B and C could still be routed using the parent pb_graph_node's mode "LUTRAM".
      *          Therefore, "LUTs" is marked as illegal and all the LUTs (A, B, C and D) will have a consistent parent pb_graph_node mode, namely "LUTRAM".
      *
-     * Usage: cluster_router uses this information to exclude the expansion of a node which has a not cosistent mode.
-     *        Everytime the mode consistency check fails, the index of the mode that causes the conflict is added to this vector.
+     * Usage: cluster_router uses this information to exclude the expansion of a node which has a not consistent mode.
+     *        Every time the mode consistency check fails, the index of the mode that causes the conflict is added to this vector.
      * */
     std::vector<int> illegal_modes;
 
@@ -1967,7 +1966,7 @@ struct t_arch {
     bool shrink_boundary;
 
     /// Allow routing channels to pass through multi-width and
-    /// multi-height programable blocks
+    /// multi-height programmable blocks
     bool through_channel;
 
     /// Allow each output pin of a programmable block to drive the

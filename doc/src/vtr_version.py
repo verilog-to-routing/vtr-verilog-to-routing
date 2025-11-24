@@ -12,14 +12,14 @@ class VersionInfo:
         self.prerelease = prerelease
 
     def version_str(self):
-        version_str = "<unkown vtr version>"
+        version_str = "<unknown vtr version>"
         if self.major != None and self.minor != None:
             version_str = "{}.{}".format(self.major, self.minor)
 
         return version_str
 
     def release_str(self):
-        release_str = "<unkown vtr release>"
+        release_str = "<unknown vtr release>"
 
         if self.major != None and self.minor != None and self.patch != None:
             release_str = "{}.{}.{}".format(self.major, self.minor, self.patch)

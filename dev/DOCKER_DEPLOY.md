@@ -3,7 +3,7 @@
 ## Overview
 Docker creates an isolated container on your system so you know that VTR will run without further configurations nor affecting any other work.
 
-Our Docker file sets up this enviroment by installing all necessary Linux packages and applications as well as Perl modules.
+Our Docker file sets up this environment by installing all necessary Linux packages and applications as well as Perl modules.
 
 ## Setup
 
@@ -38,7 +38,7 @@ The project root directory from the docker build process is copied and placed in
     docker exec -it vtr /bin/bash
     ```
 
-1. Verfiy that VTR has been installed correctly:
+1. Verify that VTR has been installed correctly:
 
     ```sh
     # in container

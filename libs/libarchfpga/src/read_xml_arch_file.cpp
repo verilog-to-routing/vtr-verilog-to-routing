@@ -6,7 +6,7 @@
  * help the developer build, and traverse tree (this is also sometimes referred to
  * as the Document Object Model or DOM).
  *
- * For convenience, it often makes sense to use some wraper functions (provided in
+ * For convenience, it often makes sense to use some wrapper functions (provided in
  * the pugiutil namespace of libvtrutil) which simplify loading an XML file and
  * error handling.
  *
@@ -415,7 +415,7 @@ void xml_read_arch(std::string_view arch_file,
         VTR_LOG_WARN(
             "Architecture file '%s' may be in incorrect format. "
             "Expecting .xml format for architecture files.\n",
-            arch_file);
+            arch_file.data());
     }
 
     // Create a unique identifier for this architecture file based on it's contents
@@ -440,7 +440,7 @@ void xml_read_arch(std::string_view arch_file,
         char* prop = get_attribute(architecture, "version", loc_data, ReqOpt::OPTIONAL).as_string(NULL);
         if (prop != NULL) {
             if (atof(prop) > atof(VPR_VERSION)) {
-                VTR_LOG_WARN( "This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatability issues may arise\n",
+                VTR_LOG_WARN( "This architecture version is for VPR %f while your current VPR version is " VPR_VERSION ", compatibility issues may arise\n",
                         atof(prop));
             }
         }
@@ -455,7 +455,7 @@ void xml_read_arch(std::string_view arch_file,
         next = get_single_child(architecture, "layout", loc_data);
         process_layout(next, arch, loc_data, num_of_avail_layers);
 
-        // Precess vib_layout
+        // Process vib_layout
         next = get_single_child(architecture, "vib_layout", loc_data, ReqOpt::OPTIONAL);
         if (next) {
             process_vib_layout(next, arch, loc_data);
@@ -3602,7 +3602,7 @@ static void process_pin_locations(pugi::xml_node Locations,
                     if (!port_pins_with_specified_locations[iinst][port.name].contains(ipin)) {
                         //Missing
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                       vtr::string_fmt("Pin '%s[%d].%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
+                                       vtr::string_fmt("Pin '%s[%d].%s[%d]' has no pin location specified (a location is required for pattern=\"custom\")",
                                                        sub_tile->name.c_str(), iinst, port.name, ipin)
                                            .c_str());
                     }
@@ -3812,7 +3812,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
         if (tmp) {
             segs[i].name = tmp;
         } else {
-            /* if swich block is "custom", then you have to provide a name for segment */
+            /* if switch block is "custom", then you have to provide a name for segment */
             if (switchblocklist_required) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
                                vtr::string_fmt("No name specified for the segment #%d.\n", i).c_str());

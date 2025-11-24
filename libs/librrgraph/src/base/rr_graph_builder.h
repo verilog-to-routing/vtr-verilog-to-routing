@@ -48,7 +48,7 @@ class RRGraphBuilder {
     /** @brief Return a writable object for the meta data on the edge */
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
     
-    /** @brief Return a writable object fo the incoming edge storage */
+    /** @brief Return a writable object for the incoming edge storage */
     vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edge_storage();
     
     /** @brief Return a writable object of the node ptc storage (for tileable routing resource graph) */
@@ -351,6 +351,18 @@ class RRGraphBuilder {
     inline void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
         node_storage_.alloc_and_load_edges(rr_edges_to_create);
     }
+    
+    /** @brief Removes a given list of RREdgeIds from the RR Graph.
+     * This method does not preserve the order of edges. If you're
+     * calling it after partition_edges has been called, you will
+     * need to call partition_edges again.
+     * This operation is O(#Edges to be removed) and should not be called frequently.
+     *
+     * @param rr_edges_to_remove list of RREdgeIds to be removed
+     */
+    inline void remove_edges(std::vector<RREdgeId>& rr_edges_to_remove) {
+        node_storage_.remove_edges(rr_edges_to_remove);
+    }
 
     /** @brief Overrides the associated switch for a given edge by
      *         updating the edge to use the passed in switch. */
@@ -416,7 +428,7 @@ class RRGraphBuilder {
     inline void reserve_switches(size_t num_switches) {
         this->rr_switch_inf_.reserve(num_switches);
     }
-    /** @brief This function resize node storage to accomidate size RR nodes. */
+    /** @brief This function resize node storage to accommodate size RR nodes. */
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
@@ -426,7 +438,7 @@ class RRGraphBuilder {
     }
 
 
-    /** @brief This function resize rr_switch to accomidate size RR Switch. */
+    /** @brief This function resize rr_switch to accommodate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);
     }

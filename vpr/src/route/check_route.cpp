@@ -740,23 +740,23 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
             //forward/reverse edge is used.
             std::vector<t_node_edge> dedupped_difference;
             std::ranges::copy_if(difference,
-                         std::back_inserter(dedupped_difference),
-                         [&](t_node_edge forward_edge) {
-                             VTR_ASSERT_MSG(!routing_edges.contains(forward_edge), "Difference should not contain used routing edges");
+                                 std::back_inserter(dedupped_difference),
+                                 [&](t_node_edge forward_edge) {
+                                     VTR_ASSERT_MSG(!routing_edges.contains(forward_edge), "Difference should not contain used routing edges");
 
-                             t_node_edge reverse_edge = {forward_edge.to_node, forward_edge.from_node};
+                                     t_node_edge reverse_edge = {forward_edge.to_node, forward_edge.from_node};
 
-                             //Check whether the reverse edge was used
-                             if (rr_edges.contains(reverse_edge) && routing_edges.contains(reverse_edge)) {
-                                 //The reverse edge exists in the set of rr_edges, and was used
-                                 //by the routing.
-                                 //
-                                 //We can therefore safely ignore the fact that this (forward) edge is un-used
-                                 return false; //Drop from difference
-                             } else {
-                                 return true; //Keep, this edge should have been used
-                             }
-                         });
+                                     //Check whether the reverse edge was used
+                                     if (rr_edges.contains(reverse_edge) && routing_edges.contains(reverse_edge)) {
+                                         //The reverse edge exists in the set of rr_edges, and was used
+                                         //by the routing.
+                                         //
+                                         //We can therefore safely ignore the fact that this (forward) edge is un-used
+                                         return false; //Drop from difference
+                                     } else {
+                                         return true; //Keep, this edge should have been used
+                                     }
+                                 });
 
             //At this point only valid missing node pairs are in the set
             if (!dedupped_difference.empty()) {

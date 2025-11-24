@@ -10,6 +10,7 @@
 #include "get_parallel_segs.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
+#include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
 #include "rr_rc_data.h"
 #include "switchblock_types.h"
@@ -36,6 +37,7 @@
 #include "rr_graph_opin_chan_edges.h"
 #include "rr_graph_chan_chan_edges.h"
 #include "rr_graph_sg.h"
+#include "rr_graph_interposer.h"
 #include "rr_graph_timing_params.h"
 #include "check_rr_graph.h"
 #include "echo_files.h"
@@ -1419,6 +1421,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                         chan_width, chan_details_x, chan_details_y,
                         sb_conn_map, switch_block_conn, interdie_3d_links, sblock_pattern,
                         Fs, wire_to_ipin_switch, directionality, is_global_graph, num_edges);
+
     VTR_LOGV(route_verbosity > 1, "CHAN->CHAN type edge count:%d\n", num_edges);
 
 
