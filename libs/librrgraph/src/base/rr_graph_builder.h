@@ -279,9 +279,6 @@ class RRGraphBuilder {
     /** @brief Add a list of ptc numbers to a given node. This function is used by rr graph reader only. */
     void set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers);
 
-    /** @brief With a given node, output ptc numbers into a string (use comma as delima). This function is used by rr graph writer only. */
-    std::string node_ptc_nums_to_string(RRNodeId node) const;
-
     /** @brief Identify if a node contains multiple ptc numbers. It is used for tileable RR Graph and mainly used by I/O reader only. */
     bool node_contain_multiple_ptc(RRNodeId node) const;
 

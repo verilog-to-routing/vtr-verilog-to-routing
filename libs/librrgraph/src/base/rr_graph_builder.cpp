@@ -229,10 +229,6 @@ void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::vector<int>& pt
     node_storage_.set_node_ptc_nums(node, ptc_numbers);
 }
 
-std::string RRGraphBuilder::node_ptc_nums_to_string(RRNodeId node) const {
-    return node_storage_.node_ptc_nums_to_string(node);
-}
-
 bool RRGraphBuilder::node_contain_multiple_ptc(RRNodeId node) const {
     return node_storage_.node_contain_multiple_ptc(node);
 }

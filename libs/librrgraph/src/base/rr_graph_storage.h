@@ -728,8 +728,6 @@ class t_rr_graph_storage {
         }
     }
 
-    std::string node_ptc_nums_to_string(RRNodeId node) const;
-
     const std::vector<short>& node_tilable_track_nums(RRNodeId node) const {
         return node_tilable_track_nums_[node];
     }

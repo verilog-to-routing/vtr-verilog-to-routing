@@ -667,23 +667,6 @@ void t_rr_graph_storage::add_node_tilable_track_num(RRNodeId node, size_t node_o
     node_tilable_track_nums_[node][node_offset] = track_id;
 }
 
-std::string t_rr_graph_storage::node_ptc_nums_to_string(RRNodeId node) const {
-    if (node_tilable_track_nums_.empty()) {
-        return std::to_string(size_t(node_ptc_num(node)));
-    }
-    VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
-    if (node_tilable_track_nums_[node].empty()) {
-        return std::to_string(size_t(node_ptc_num(node)));
-    }
-    std::string ret;
-    for (size_t iptc = 0; iptc < node_tilable_track_nums_[node].size(); iptc++) {
-        ret += std::to_string(size_t(node_tilable_track_nums_[node][iptc])) + ",";
-    }
-    // Remove the last comma
-    ret.pop_back();
-    return ret;
-}
-
 void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != e_rr_type::IPIN && node_type(id) != e_rr_type::OPIN) {
         VTR_LOG_ERROR("Attempted to set RR node 'side' for non-pin type '%s'", node_type_string(id));
