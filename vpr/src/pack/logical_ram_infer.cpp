@@ -138,6 +138,17 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
         candidate_usages[first_candidate] += inferred_instance_num;
     }
 
+    // Crosscheck and validate the atoms are assigned to correct groups.
+    // This should be at the end of logical ram assignemts after any sorting since
+    // helper methods use the order in this data structure afterwards.
+    atom_to_group_.resize(atom_nlist.blocks().size());
+    for (size_t gid = 0; gid < logical_ram_groups_.size(); ++gid) {
+        auto& g = logical_ram_groups_[gid];
+        for (AtomBlockId atom_id: g.atoms) {
+            atom_to_group_[atom_id] = gid;
+        }
+    }
+
     // Verify the initial mappings are feasible (utilization check).
     VTR_LOG("Initial mappings device utilizations:\n");
     for (auto usage: candidate_usages) {
@@ -151,6 +162,115 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
 
         VTR_ASSERT_MSG(utilization <= 1.0, "At least one RAM type is over utilized after initial placement. Ideally, this assertion should be removed and reassigning should be tried");
     }
+
+
+    // Timing pass to lock the timing critical ones to faster RAMs.
+    VTR_LOG("Starting timing pass for Logical RAMs\n");
+    // auto& logical_rams = logical_ram_groups_;
+    AtomBlockId max_crit_logical_ram_rep_atom;
+    float overall_max_atom_criticality = 0.0;
+    for (LogicalRamGroup& logical_ram: logical_ram_groups_) {
+        float max_atom_criticality = 0.0;
+        for (AtomBlockId atom_blk_id: logical_ram.atoms) {
+            float current_atom_criticality = pre_cluster_timing_manager.calc_atom_setup_criticality(atom_blk_id, g_vpr_ctx.atom().netlist());
+            if (current_atom_criticality > max_atom_criticality) {
+                max_atom_criticality = current_atom_criticality;
+            }
+        }
+        logical_ram.max_atom_criticality = max_atom_criticality;
+        VTR_LOG("\tMax Atom Crit. of logical ram with representative atom id %zu is %f\n", logical_ram.rep_blk, max_atom_criticality);
+        if (max_atom_criticality > overall_max_atom_criticality) {
+            overall_max_atom_criticality = max_atom_criticality;
+            max_crit_logical_ram_rep_atom = logical_ram.rep_blk;
+        }
+    }
+    std::vector<AtomBlockId> max_crit_logical_ram_rep_atoms;
+    const float EPS = 1e-6f;
+    for (LogicalRamGroup& logical_ram: logical_ram_groups_) {
+        if (std::fabs(overall_max_atom_criticality - logical_ram.max_atom_criticality) < EPS) {
+            max_crit_logical_ram_rep_atoms.push_back(logical_ram.rep_blk);
+        }
+    }
+    VTR_LOG("The max atom criticality is %f with representative atom id %zu from logical ram group id %zu. There are total of %zu groups with same max criticality.\n", 
+            overall_max_atom_criticality, max_crit_logical_ram_rep_atom, group_id_of(max_crit_logical_ram_rep_atom), max_crit_logical_ram_rep_atoms.size());
+
+    VTR_LOG("Trying to remap these atoms to the smaller RAMs (believed to be faster)\n");
+    // std::unordered_map<t_logical_block_type_ptr, int> candidate_usages = get_final_candidate_usages();
+
+    std::unordered_set<AtomBlockId> timinig_locked_logical_ram_representative_atoms;
+
+    for (AtomBlockId atom_blk_id: max_crit_logical_ram_rep_atoms) {
+        size_t group_id =  group_id_of(atom_blk_id);
+        LogicalRamGroup& logical_ram = logical_ram_groups_[group_id];
+        VTR_LOG("\tPre-assigned type of timing critical group %zu is %s\n", group_id, logical_ram.pre_assigned_type->name.c_str());
+        
+        // TODO: Skip this mappings if the output is registered.
+        if (logical_ram.is_output_registered) {
+            VTR_LOG("\t\tSkipped since output is registered.\n");
+            continue;
+        }
+        
+        t_logical_block_type_ptr assigned_type = logical_ram.pre_assigned_type;
+        int min_capacity = INT_MAX;
+        t_logical_block_type_ptr min_capacity_type = nullptr;
+        for (const auto& [cand_type, capacity]: logical_ram.candidate_capacity) {
+            if (capacity < min_capacity) {
+                min_capacity = capacity;
+                min_capacity_type = cand_type;
+            }
+        }
+        if (min_capacity_type == assigned_type) {
+            VTR_LOG("\t\tAssigned type and min capacity type is same. No need to move to min capacity type.\n");
+            continue;
+        }
+
+        int min_capacity_inferred_number = std::ceil(vtr::safe_ratio<float>(logical_ram.total_memory_slices, logical_ram.candidate_capacity[min_capacity_type]));
+        int min_capacity_equivalent_num_instances = 0;
+        for (auto type : min_capacity_type->equivalent_tiles) {
+            min_capacity_equivalent_num_instances += g_vpr_ctx.device().grid.num_instances(type, -1);
+        }
+        int min_capacity_type_new_usage = min_capacity_inferred_number + candidate_usages[min_capacity_type];
+        VTR_LOG("\t\tAfter mapping, min capacity type utilization used and total: (%d/%d)\n", min_capacity_type_new_usage, min_capacity_equivalent_num_instances);
+        if (min_capacity_type_new_usage > min_capacity_equivalent_num_instances) {
+            VTR_LOG("\t\tRemapping rejected due to utilization going above 1.0.\n");
+            continue;
+        }
+
+        // Remapping accepted at this point.
+        timinig_locked_logical_ram_representative_atoms.insert(logical_ram.rep_blk);
+
+        candidate_usages[min_capacity_type] = min_capacity_type_new_usage;
+        int pre_assigned_capacity_inferred_number = std::ceil(vtr::safe_ratio<float>(logical_ram.total_memory_slices, logical_ram.candidate_capacity[assigned_type]));
+        int pre_assigned_capacity_equivalent_num_instances = 0;
+        for (auto type : min_capacity_type->equivalent_tiles) {
+            pre_assigned_capacity_equivalent_num_instances += g_vpr_ctx.device().grid.num_instances(type, -1);
+        }
+        int pre_assigned_capacity_type_new_usage = candidate_usages[assigned_type] - pre_assigned_capacity_inferred_number;
+        candidate_usages[assigned_type] = pre_assigned_capacity_type_new_usage;
+        // Update the logical ram as well.
+        logical_ram.pre_assigned_type = min_capacity_type;
+    }
+
+    // Verify the initial mappings are feasible (utilization check).
+    VTR_LOG("After timing mappings device utilizations:\n");
+    for (auto usage: candidate_usages) {
+        t_logical_block_type_ptr type = usage.first;
+        int used_ins_number = usage.second;
+        int total_ins_number = 0;
+        for (auto physical_type : type->equivalent_tiles)
+            total_ins_number += device_ctx.grid.num_instances(physical_type, -1);
+        float utilization = vtr::safe_ratio<float>(used_ins_number, total_ins_number);
+        VTR_LOG("  %s: %f\n", type->name.c_str(), utilization);
+
+        VTR_ASSERT_MSG(utilization <= 1.0, "At least one RAM type is over utilized after final placement. Ideally, this assertion should be removed and reassigning should be tried");
+    }
+    candidate_usages_final_ = candidate_usages;
+
+
+
+
+
+
 
     // Calculate cost of eahc possible implementation for each logical ram and store for later evaluation.
     VTR_LOG("Calculating each possible implementation costs for each logical RAM.");
@@ -216,6 +336,13 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
     VTR_LOG("Selecting the lowest cost & feasible type for eahc logical RAM.\n");
     for (size_t gid = 0; gid < logical_ram_groups_.size(); ++gid) {
         LogicalRamGroup& g = logical_ram_groups_[gid];
+        
+        // Skip this logical ram if it is locked to a type for timing.
+        if (timinig_locked_logical_ram_representative_atoms.find(g.rep_blk) != timinig_locked_logical_ram_representative_atoms.end()) {
+            VTR_LOG("\tSkipping the current logical ram with representative atom id %zu since its locked by timing.\n", g.rep_blk);
+            continue;
+        }
+        
         for (t_logical_block_type_ptr candidate_type: g.candidate_types) {
             int inferred_instance_num = std::ceil(vtr::safe_ratio<float>(g.total_memory_slices, g.candidate_capacity[candidate_type]));
             int total_ins_number = 0;
@@ -273,105 +400,4 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
             atom_to_group_[atom_id] = gid;
         }
     }
-
-    // Last timing pass Starts:
-    VTR_LOG("## Starting timing pass for Logical RAMs\n");
-    auto& logical_rams = logical_ram_groups_;
-    AtomBlockId max_crit_logical_ram_rep_atom;
-    float overall_max_atom_criticality = 0.0;
-    for (LogicalRamGroup& logical_ram: logical_rams) {
-        float max_atom_criticality = 0.0;
-        for (AtomBlockId atom_blk_id: logical_ram.atoms) {
-            float current_atom_criticality = pre_cluster_timing_manager.calc_atom_setup_criticality(atom_blk_id, g_vpr_ctx.atom().netlist());
-            if (current_atom_criticality > max_atom_criticality) {
-                max_atom_criticality = current_atom_criticality;
-            }
-        }
-        logical_ram.max_atom_criticality = max_atom_criticality;
-        VTR_LOG("\tMax Atom Crit. of logical ram with representative atom id %zu is %f\n", logical_ram.rep_blk, max_atom_criticality);
-        if (max_atom_criticality > overall_max_atom_criticality) {
-            overall_max_atom_criticality = max_atom_criticality;
-            max_crit_logical_ram_rep_atom = logical_ram.rep_blk;
-        }
-    }
-    std::vector<AtomBlockId> max_crit_logical_ram_rep_atoms;
-    const float EPS = 1e-6f;
-    for (LogicalRamGroup& logical_ram: logical_rams) {
-        if (std::fabs(overall_max_atom_criticality - logical_ram.max_atom_criticality) < EPS) {
-            max_crit_logical_ram_rep_atoms.push_back(logical_ram.rep_blk);
-        }
-    }
-    VTR_LOG("The max atom criticality is %f with representative atom id %zu from logical ram group id %zu. There are total of %zu groups with same max criticality.\n", 
-            overall_max_atom_criticality, max_crit_logical_ram_rep_atom, group_id_of(max_crit_logical_ram_rep_atom), max_crit_logical_ram_rep_atoms.size());
-
-    VTR_LOG("Trying to remap these atoms to the smaller RAMs (believed to be faster)\n");
-    // std::unordered_map<t_logical_block_type_ptr, int> candidate_usages = get_final_candidate_usages();
-
-    for (AtomBlockId atom_blk_id: max_crit_logical_ram_rep_atoms) {
-        size_t group_id =  group_id_of(atom_blk_id);
-        LogicalRamGroup& logical_ram = logical_rams[group_id];
-        VTR_LOG("\tPre-assigned type of timing critical group %zu is %s\n", group_id, logical_ram.pre_assigned_type->name.c_str());
-        
-        // TODO: Skip this mappings if the output is registered.
-        if (logical_ram.is_output_registered) {
-            VTR_LOG("\t\tSkipped since output is registered.\n");
-            continue;
-        }
-        
-        t_logical_block_type_ptr assigned_type = logical_ram.pre_assigned_type;
-        int min_capacity = INT_MAX;
-        t_logical_block_type_ptr min_capacity_type = nullptr;
-        for (const auto& [cand_type, capacity]: logical_ram.candidate_capacity) {
-            if (capacity < min_capacity) {
-                min_capacity = capacity;
-                min_capacity_type = cand_type;
-            }
-        }
-        if (min_capacity_type == assigned_type) {
-            VTR_LOG("\t\tAssigned type and min capacity type is same. No need to move to min capacity type.\n");
-            continue;
-        }
-
-        int min_capacity_inferred_number = std::ceil(vtr::safe_ratio<float>(logical_ram.total_memory_slices, logical_ram.candidate_capacity[min_capacity_type]));
-        int min_capacity_equivalent_num_instances = 0;
-        for (auto type : min_capacity_type->equivalent_tiles) {
-            min_capacity_equivalent_num_instances += g_vpr_ctx.device().grid.num_instances(type, -1);
-        }
-        int min_capacity_type_new_usage = min_capacity_inferred_number + candidate_usages[min_capacity_type];
-        VTR_LOG("\t\tAfter mapping, min capacity type utilization used and total: (%d/%d)\n", min_capacity_type_new_usage, min_capacity_equivalent_num_instances);
-        if (min_capacity_type_new_usage > min_capacity_equivalent_num_instances) {
-            VTR_LOG("\t\tRemapping rejected due to utilization going above 1.0.\n");
-            continue;
-        }
-
-        // Remapping accepted at this point.
-        candidate_usages[min_capacity_type] = min_capacity_type_new_usage;
-        int pre_assigned_capacity_inferred_number = std::ceil(vtr::safe_ratio<float>(logical_ram.total_memory_slices, logical_ram.candidate_capacity[assigned_type]));
-        int pre_assigned_capacity_equivalent_num_instances = 0;
-        for (auto type : min_capacity_type->equivalent_tiles) {
-            pre_assigned_capacity_equivalent_num_instances += g_vpr_ctx.device().grid.num_instances(type, -1);
-        }
-        int pre_assigned_capacity_type_new_usage = candidate_usages[assigned_type] - pre_assigned_capacity_inferred_number;
-        candidate_usages[assigned_type] = pre_assigned_capacity_type_new_usage;
-        // Update the logical ram as well.
-        logical_ram.pre_assigned_type = min_capacity_type;
-    }
-
-    // Verify the initial mappings are feasible (utilization check).
-    VTR_LOG("After timing mappings device utilizations:\n");
-    for (auto usage: candidate_usages) {
-        t_logical_block_type_ptr type = usage.first;
-        int used_ins_number = usage.second;
-        int total_ins_number = 0;
-        for (auto physical_type : type->equivalent_tiles)
-            total_ins_number += device_ctx.grid.num_instances(physical_type, -1);
-        float utilization = vtr::safe_ratio<float>(used_ins_number, total_ins_number);
-        VTR_LOG("  %s: %f\n", type->name.c_str(), utilization);
-
-        VTR_ASSERT_MSG(utilization <= 1.0, "At least one RAM type is over utilized after final placement. Ideally, this assertion should be removed and reassigning should be tried");
-    }
-    candidate_usages_final_ = candidate_usages;
-    
-    VTR_LOG("## Finished timing pass for Logical RAMs\n");
-
 }
