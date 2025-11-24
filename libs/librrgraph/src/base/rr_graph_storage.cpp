@@ -658,7 +658,7 @@ void t_rr_graph_storage::add_node_tilable_track_num(RRNodeId node, size_t node_o
     size_t node_length = std::abs(node_xhigh(node) - node_xlow(node))
                        + std::abs(node_yhigh(node) - node_ylow(node))
                        + 1;
-    VTR_ASSERT(node_offset < node_length-1); // Since the offset starts from 0, the last index is node_length-1
+    VTR_ASSERT(node_offset < node_length);
 
     if (node_length != node_tilable_track_nums_[node].size()) {
         node_tilable_track_nums_[node].resize(node_length);
