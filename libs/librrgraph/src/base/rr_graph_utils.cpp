@@ -400,3 +400,20 @@ std::vector<int> parse_ptc_numbers(const std::string& ptc_str) {
     }
     return ptc_numbers;
 }
+
+std::string node_ptc_number_to_string(const RRGraphView& rr_graph, RRNodeId node) {
+    const t_rr_graph_storage& node_storage = rr_graph.rr_nodes();
+
+    if (!node_storage.node_contain_multiple_ptc(node)) {
+        return std::to_string(size_t(node_storage.node_ptc_num(node)));
+    }
+
+    std::string ret;
+    const std::vector<short>& track_nums = node_storage.node_tilable_track_nums(node);
+    for (size_t iptc = 0; iptc < track_nums.size(); iptc++) {
+        ret += std::to_string(track_nums[iptc]) + ",";
+    }
+    // Remove the last comma
+    ret.pop_back();
+    return ret;
+}
