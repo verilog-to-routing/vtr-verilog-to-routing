@@ -16,6 +16,7 @@
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
+#include "logical_ram_infer.h"
 
 // Forward declarations
 class t_pack_molecule;
@@ -49,39 +50,39 @@ enum class e_pack_pattern_molecule_type : bool {
     MOLECULE_FORCED_PACK  ///<more than one atom representing a packing pattern forming a large molecule
 };
 
-// Each group: representative atom + pb_type (from its expected primitive)
-struct LogicalRamGroup {
-    AtomBlockId rep_blk;
-    const t_pb_type* rep_pb_type; // primitive type used for the feasibility check
-    std::vector<AtomBlockId> atoms;
-    std::unordered_map<t_logical_block_type_ptr, int> candidate_capacity;
-    float candidate_capacity_ratio;
-    float candidate_area_ratio;
-    std::vector<t_logical_block_type_ptr> candidate_types;
-    int total_memory_slices = 0;
-    int remaining_memory_slices = 0;
-    t_logical_block_type_ptr pre_assigned_type = nullptr;
-    t_logical_block_type_ptr last_selected_type = nullptr;
-    bool is_output_registered = false;
+// // Each group: representative atom + pb_type (from its expected primitive)
+// struct LogicalRamGroup {
+//     AtomBlockId rep_blk;
+//     const t_pb_type* rep_pb_type; // primitive type used for the feasibility check
+//     std::vector<AtomBlockId> atoms;
+//     std::unordered_map<t_logical_block_type_ptr, int> candidate_capacity;
+//     float candidate_capacity_ratio;
+//     float candidate_area_ratio;
+//     std::vector<t_logical_block_type_ptr> candidate_types;
+//     int total_memory_slices = 0;
+//     int remaining_memory_slices = 0;
+//     t_logical_block_type_ptr pre_assigned_type = nullptr;
+//     t_logical_block_type_ptr last_selected_type = nullptr;
+//     bool is_output_registered = false;
 
-    float max_atom_criticality = 0.0;
+//     float max_atom_criticality = 0.0;
 
 
-    // "Power-efficient RAM Mapping Algorithms for FPGA Embedded Memory Blocks" inspired elements
-    t_logical_block_type_ptr type_init = nullptr;
-    int area_init = 0;
-    std::unordered_map<t_logical_block_type_ptr, int> area_type;
-    int area_mem = 0;
+//     // "Power-efficient RAM Mapping Algorithms for FPGA Embedded Memory Blocks" inspired elements
+//     t_logical_block_type_ptr type_init = nullptr;
+//     int area_init = 0;
+//     std::unordered_map<t_logical_block_type_ptr, int> area_type;
+//     int area_mem = 0;
 
-};
+// };
 
-// This is implemented only for 2 physical RAM type for now to try the usage of
-// this idea. It can be extended to a general case if it works.
-// Currently it is always defined to be M9K_cap / M144K_cap.
-struct LogicalRamStats {
-    float max_capacity_ratio = 0;
-    float min_capacity_ratio = std::numeric_limits<float>::max();
-};
+// // This is implemented only for 2 physical RAM type for now to try the usage of
+// // this idea. It can be extended to a general case if it works.
+// // Currently it is always defined to be M9K_cap / M144K_cap.
+// struct LogicalRamStats {
+//     float max_capacity_ratio = 0;
+//     float min_capacity_ratio = std::numeric_limits<float>::max();
+// };
 
 /**
  * @brief Represents a grouping of atom blocks that match a pack_pattern,
@@ -266,6 +267,9 @@ class Prepacker {
         return expected_lowest_cost_pb_gnode[blk_id];
     }
 
+    t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
+                                                                       const std::vector<t_logical_block_type>& logical_block_types) const;
+
     /*
      * @brief Calculates molecule statistics for a single molecule.
      */
@@ -329,32 +333,67 @@ class Prepacker {
         return list_of_pack_patterns;
     }
 
-    inline size_t group_id_of(AtomBlockId blk) const {
-        if (!blk) return SIZE_MAX;
-        if (size_t(blk) >= atom_to_group_.size()) return SIZE_MAX;
-        return atom_to_group_[blk];
+    // inline size_t group_id_of(AtomBlockId blk) const {
+    //     if (!blk) return SIZE_MAX;
+    //     if (size_t(blk) >= atom_to_group_.size()) return SIZE_MAX;
+    //     return atom_to_group_[blk];
+    // }
+
+    // inline LogicalRamGroup& group_by_id_mut(size_t gid) const {
+    //     VTR_ASSERT(gid < logical_ram_groups_.size());
+    //     return logical_ram_groups_[gid];
+    // }
+    // inline const LogicalRamGroup& group_by_id(size_t gid) const {
+    //     VTR_ASSERT(gid < logical_ram_groups_.size());
+    //     return logical_ram_groups_[gid];
+    // }
+
+    // inline LogicalRamStats get_overall_logical_ram_stats () const {
+    //     return logical_ram_stats_;
+    // }
+
+    // inline std::vector<LogicalRamGroup>& get_mutable_logical_rams () const {
+    //     return logical_ram_groups_;
+    // }
+
+    // inline const std::unordered_map<t_logical_block_type_ptr, int> get_final_candidate_usages () const {
+    //     return candidate_usages_final_;
+    // }
+
+    // Attach a RamMapper AFTER it has been built externally
+    void set_ram_mapper(RamMapper&& mapper) {
+        ram_mapper_ = std::move(mapper);
     }
 
-    inline LogicalRamGroup& group_by_id_mut(size_t gid) const {
-        VTR_ASSERT(gid < logical_ram_groups_.size());
-        return logical_ram_groups_[gid];
-    }
-    inline const LogicalRamGroup& group_by_id(size_t gid) const {
-        VTR_ASSERT(gid < logical_ram_groups_.size());
-        return logical_ram_groups_[gid];
+    // Accessor so packer code can use it
+    const RamMapper& ram_mapper() const { return ram_mapper_; }
+
+    // The old APIs
+    size_t group_id_of(AtomBlockId blk) const {
+        return ram_mapper_.group_id_of(blk);
     }
 
-    inline LogicalRamStats get_overall_logical_ram_stats () const {
-        return logical_ram_stats_;
+    LogicalRamGroup& group_by_id_mut(size_t gid) const {
+        return ram_mapper_.group_by_id_mut(gid);
     }
 
-    inline std::vector<LogicalRamGroup>& get_mutable_logical_rams () const {
-        return logical_ram_groups_;
+    const LogicalRamGroup& group_by_id(size_t gid) const {
+        return ram_mapper_.group_by_id(gid);
     }
 
-    inline const std::unordered_map<t_logical_block_type_ptr, int> get_final_candidate_usages () const {
-        return candidate_usages_final_;
+    LogicalRamStats get_overall_logical_ram_stats() const {
+        return ram_mapper_.get_overall_logical_ram_stats();
     }
+
+    std::vector<LogicalRamGroup>& get_mutable_logical_rams() const {
+        return ram_mapper_.get_mutable_logical_rams();
+    }
+
+    const std::unordered_map<t_logical_block_type_ptr, int>
+    get_final_candidate_usages() const {
+        return ram_mapper_.get_final_candidate_usages();
+    }
+
 
   private:
     /**
@@ -422,8 +461,9 @@ class Prepacker {
      */
     vtr::vector<MoleculeChainId, t_chain_info> chain_info_;
 
-    mutable std::vector<LogicalRamGroup> logical_ram_groups_;
-    vtr::vector<AtomBlockId, size_t> atom_to_group_;
-    LogicalRamStats logical_ram_stats_;
-    std::unordered_map<t_logical_block_type_ptr, int> candidate_usages_final_;
+    // mutable std::vector<LogicalRamGroup> logical_ram_groups_;
+    // vtr::vector<AtomBlockId, size_t> atom_to_group_;
+    // LogicalRamStats logical_ram_stats_;
+    // std::unordered_map<t_logical_block_type_ptr, int> candidate_usages_final_;
+    RamMapper ram_mapper_;  // new member
 };
