@@ -221,6 +221,7 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
         }
         if (min_capacity_type == assigned_type) {
             VTR_LOG("\t\tAssigned type and min capacity type is same. No need to move to min capacity type.\n");
+            timinig_locked_logical_ram_representative_atoms.insert(logical_ram.rep_blk);
             continue;
         }
 
@@ -265,12 +266,6 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
         VTR_ASSERT_MSG(utilization <= 1.0, "At least one RAM type is over utilized after final placement. Ideally, this assertion should be removed and reassigning should be tried");
     }
     candidate_usages_final_ = candidate_usages;
-
-
-
-
-
-
 
     // Calculate cost of eahc possible implementation for each logical ram and store for later evaluation.
     VTR_LOG("Calculating each possible implementation costs for each logical RAM.");
