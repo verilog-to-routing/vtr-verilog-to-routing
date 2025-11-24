@@ -631,7 +631,14 @@ void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction
 
 void t_rr_graph_storage::set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers) {
     VTR_ASSERT(size_t(node) < node_storage_.size());
-    VTR_ASSERT(ptc_numbers.size() >= 1);
+    VTR_ASSERT(!ptc_numbers.empty());
+    // The default VTR RR graph generator assigns only one PTC number per node, which is
+    // stored in the node_ptc_ field of rr_graph_storage. However, when the tileable RR
+    // graph is used, CHANX/CHANY nodes can have multiple PTC numbers.
+    // 
+    // To satisfy VPR's requirements, we store the PTC number for offset = 0 in the
+    // node_ptc_ field, and store all PTC numbers assigned to the node in the
+    // node_tileable_track_nums_ field.
     set_node_ptc_num(node, ptc_numbers[0]);
     if (ptc_numbers.size() > 1) {
         VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
@@ -649,12 +656,13 @@ void t_rr_graph_storage::add_node_tilable_track_num(RRNodeId node, size_t node_o
                    "Track number valid only for CHANX/CHANY RR nodes");
 
     size_t node_length = std::abs(node_xhigh(node) - node_xlow(node))
-                       + std::abs(node_yhigh(node) - node_ylow(node));
-    if (node_length + 1 != node_tilable_track_nums_[node].size()) {
-        node_tilable_track_nums_[node].resize(node_length + 1);
-    }
+                       + std::abs(node_yhigh(node) - node_ylow(node))
+                       + 1;
+    VTR_ASSERT(node_offset < node_length-1); // Since the offset starts from 0, the last index is node_length-1
 
-    VTR_ASSERT(node_offset < node_tilable_track_nums_[node].size());
+    if (node_length != node_tilable_track_nums_[node].size()) {
+        node_tilable_track_nums_[node].resize(node_length);
+    }
 
     node_tilable_track_nums_[node][node_offset] = track_id;
 }
