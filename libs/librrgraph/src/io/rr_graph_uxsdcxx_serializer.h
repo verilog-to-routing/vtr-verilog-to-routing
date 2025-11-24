@@ -713,11 +713,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_node_loc_ptc(const char* ptc, int& inode) final {
         t_rr_node node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
-        return rr_graph_builder_->set_node_ptc_nums(node_id, std::string(ptc));
+        std::vector<int> ptc_numbers = parse_ptc_numbers(ptc);
+        return rr_graph_builder_->set_node_ptc_nums(node_id, ptc_numbers);
     }
 
     inline const char* get_node_loc_ptc(const t_rr_node& node) final {
-        temp_string_ = rr_graph_builder_->node_ptc_nums_to_string(node.id());
+        temp_string_ = node_ptc_number_to_string(*rr_graph_, node.id());
         return temp_string_.c_str();
     }
     inline int get_node_loc_layer_low(const t_rr_node& node) final {

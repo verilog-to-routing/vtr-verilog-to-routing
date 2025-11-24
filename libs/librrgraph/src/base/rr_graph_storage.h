@@ -705,10 +705,20 @@ class t_rr_graph_storage {
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, Direction new_direction);
 
-    void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str);
-    void add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id);
+    /**
+     * @brief Set the ptc numbers for a node.
+     * @param node The node id
+     * @param ptc_numbers The ptc numbers vector to be set for the node.
+     */
+    void set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers);
 
-    void emplace_back_node_tilable_track_num();
+    /**
+     * @brief Add a track number to a node.
+     * @param node The node id
+     * @param node_offset The offset of the node from the beginning of the node.
+     * @param track_id The track number (ptc number) of the node at the given offset.
+     */
+    void add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id);
 
     bool node_contain_multiple_ptc(RRNodeId node) const {
         if (node_tilable_track_nums_.empty()) {
@@ -717,8 +727,6 @@ class t_rr_graph_storage {
             return node_tilable_track_nums_[node].size() > 1;
         }
     }
-
-    std::string node_ptc_nums_to_string(RRNodeId node) const;
 
     const std::vector<short>& node_tilable_track_nums(RRNodeId node) const {
         return node_tilable_track_nums_[node];
@@ -743,10 +751,13 @@ class t_rr_graph_storage {
      * If init_fan_in has been called, you need to call it again after removing the nodes.
      * @note This a very expensive method, so should be called only when necessary. It is better
      * to not add nodes in the first place, instead of relying on this method to remove nodes.
+     * 
+     * @note This operation is O(|V| + |E|·log k), where k is the number of nodes to remove,
+     * and should not be called frequently.
      *
-     * @param nodes list of RRNodes to be removed
+     * @param nodes_to_remove list of RRNodes to be removed
      */
-    void remove_nodes(const std::vector<RRNodeId>& nodes);
+    void remove_nodes(std::vector<RRNodeId> nodes_to_remove);
 
     /****************
      * Edge methods *
