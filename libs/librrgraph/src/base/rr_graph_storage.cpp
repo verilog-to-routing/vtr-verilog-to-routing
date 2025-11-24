@@ -186,8 +186,8 @@ void t_rr_graph_storage::init_fan_in() {
     node_fan_in_.resize(node_storage_.size(), 0);
     node_fan_in_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
-    for(const auto& edge_id : edge_dest_node_.keys()) {
-        node_fan_in_[edge_dest_node_[edge_id]] += 1;
+    for(const auto& [_, dest_node] : edge_dest_node_.pairs()) {
+        node_fan_in_[dest_node] += 1;
     }
 }
 

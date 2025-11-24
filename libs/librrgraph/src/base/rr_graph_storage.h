@@ -705,10 +705,22 @@ class t_rr_graph_storage {
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, Direction new_direction);
 
+    /**
+     * @brief Set the ptc numbers for a node.
+     * @param node The node id
+     * @param ptc_str The ptc numbers string. Note that if tileable RR Graph is used,
+     * multiple ptc numbers can be assigned to node of the type of CHANX or CHANY. If that's the case,
+     * the ptc numbers are separated by commas.
+     */
     void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str);
-    void add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id);
 
-    void emplace_back_node_tilable_track_num();
+    /**
+     * @brief Add a track number to a node.
+     * @param node The node id
+     * @param node_offset The offset of the node from the beginning of the node.
+     * @param track_id The track number (ptc number) of the node at the given offset.
+     */
+    void add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id);
 
     bool node_contain_multiple_ptc(RRNodeId node) const {
         if (node_tilable_track_nums_.empty()) {
