@@ -706,13 +706,13 @@ void t_rr_graph_storage::remove_nodes(std::vector<RRNodeId> nodes_to_remove) {
     
     // Iterate over the nodes to be removed and adjust the IDs of nodes 
     // that fall between them. 
-    for (size_t i = 0; i < nodes_to_remove.size(); ++i) {
-        size_t start_rr_node_index = size_t(nodes_to_remove[i]) + 1;
-        size_t end_rr_node_index = (i == nodes_to_remove.size() - 1) ? node_storage_.size() : size_t(nodes_to_remove[i + 1]);
-        for (size_t j = start_rr_node_index; j < end_rr_node_index; ++j) {
-            RRNodeId old_node = RRNodeId(j);
+    for (size_t removal_idx = 0; removal_idx < nodes_to_remove.size(); ++removal_idx) {
+        size_t start_rr_node_index = size_t(nodes_to_remove[removal_idx]) + 1;
+        size_t end_rr_node_index = (removal_idx == nodes_to_remove.size() - 1) ? node_storage_.size() : size_t(nodes_to_remove[removal_idx + 1]);
+        for (size_t node_idx = start_rr_node_index; node_idx < end_rr_node_index; ++node_idx) {
+            RRNodeId old_node = RRNodeId(node_idx);
             // New node index is equal to the old nodex index minus the number of nodes being removed before it.
-            RRNodeId new_node = RRNodeId(j-(i+1));
+            RRNodeId new_node = RRNodeId(node_idx-(removal_idx+1));
             node_storage_[new_node] = node_storage_[old_node];
             node_ptc_[new_node] = node_ptc_[old_node];
             node_layer_[new_node] = node_layer_[old_node];
