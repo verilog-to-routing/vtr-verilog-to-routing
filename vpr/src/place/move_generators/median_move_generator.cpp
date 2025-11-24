@@ -304,7 +304,7 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
             } else {
                 bb_coord_new.xmax = curr_bb_coord.xmax;
             }
-        } else { /* Move to left, old postion was not at xmax. */
+        } else { /* Move to left, old position was not at xmax. */
             bb_coord_new.xmax = curr_bb_coord.xmax;
         }
 
@@ -360,7 +360,7 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
             } else {
                 bb_coord_new.ymax = curr_bb_coord.ymax;
             }
-        } else { /* Move down, old postion was not at ymax. */
+        } else { /* Move down, old position was not at ymax. */
             bb_coord_new.ymax = curr_bb_coord.ymax;
         }
 

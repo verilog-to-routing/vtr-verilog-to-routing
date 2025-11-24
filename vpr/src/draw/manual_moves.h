@@ -76,7 +76,7 @@ struct ManualMovesState {
 /** manual moves functions **/
 
 /**
- * @brief Gets the state of the manual moves togle button and assigns it to the manual_move_enabled in the ManualMovesState struct.
+ * @brief Gets the state of the manual moves toggle button and assigns it to the manual_move_enabled in the ManualMovesState struct.
  *
  * @return True if the toggle button is active, false otherwise.
  */
@@ -94,7 +94,7 @@ void draw_manual_moves_window(const std::string& block_id);
  * @brief Evaluates if the user input is valid and allowed.
  *
  * Sets the members from the ManualMovesState manual_moves_state variable to their respective values (block id and locations).
- * @param GtkWidget* widget: Passed in for gtk callback functions (Needed due to the GTK function protoype, in GTK documentation).
+ * @param GtkWidget* widget: Passed in for gtk callback functions (Needed due to the GTK function prototype, in GTK documentation).
  * @param GtkWidget* grid: The grid is used to extract the user input from the manual move window, to later assign to the ManualMovesState variable. 
  */
 void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid);
@@ -102,7 +102,7 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid);
 /**
  * @brief In -detail checking of the user's input.
  *
- * Checks if the user input is between the grid's dimensions, block comptaibility, if the block requested to move is valid, if the block is fixed, and if the curent location of the block is different from the location requested by the user.
+ * Checks if the user input is between the grid's dimensions, block comptaibility, if the block requested to move is valid, if the block is fixed, and if the current location of the block is different from the location requested by the user.
  * @param block_id: The ID of the block to move used as the from block in the move generator).
  * @param to: Location of where the user wants to move the block.
  *
