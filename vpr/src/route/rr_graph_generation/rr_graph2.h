@@ -62,7 +62,7 @@ bool is_sblock(const int chan,
                const int sb_seg,
                const int track,
                const t_chan_seg_details* seg_details,
-               const enum e_directionality directionality);
+               const e_directionality directionality);
 
 /**
  * @brief Identifies and labels all mux endpoints at a given channel segment coordinate.

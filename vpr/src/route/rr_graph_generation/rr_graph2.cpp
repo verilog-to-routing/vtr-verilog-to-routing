@@ -657,7 +657,7 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
     }
 }
 
-bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track, const t_chan_seg_details* seg_details, const enum e_directionality directionality) {
+bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track, const t_chan_seg_details* seg_details, const e_directionality directionality) {
     int fac = 1;
     if (UNI_DIRECTIONAL == directionality) {
         fac = 2;
@@ -668,17 +668,17 @@ bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track, 
     // Make sure they gave us correct start
     wire_seg = get_seg_start(seg_details, track, chan, wire_seg);
 
-    int ofs = sb_seg - wire_seg + 1; // Offset 0 is behind us, so add 1
+    int offset = sb_seg - wire_seg + 1; // Offset 0 is behind us, so add 1
 
-    VTR_ASSERT(ofs >= 0);
-    VTR_ASSERT(ofs < (length + 1));
+    VTR_ASSERT(offset >= 0);
+    VTR_ASSERT(offset < length + 1);
 
     // If unidir segment that is going backwards, we need to flip the ofs
-    if ((ofs % fac) > 0) {
-        ofs = length - ofs;
+    if (offset % fac > 0) {
+        offset = length - offset;
     }
 
-    return seg_details[track].sb(ofs);
+    return seg_details[track].sb(offset);
 }
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,

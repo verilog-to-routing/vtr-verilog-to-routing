@@ -1575,10 +1575,10 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
     // allocate 'result' matrix and initialize entries to UNDEFINED. also allocate and initialize matrix which will be used
     // to index into the correct entries when loading up 'result'
     auto result = vtr::NdMatrix<std::vector<int>, 4>({
-        size_t(tile_type->num_pins), //[0..num_pins-1]
-        size_t(tile_type->width),    //[0..width-1]
-        size_t(tile_type->height),   //[0..height-1]
-        4,                           //[0..sides-1]
+        size_t(tile_type->num_pins),    // [0..num_pins-1]
+        size_t(tile_type->width),       // [0..width-1]
+        size_t(tile_type->height),      // [0..height-1]
+        size_t(e_side::NUM_2D_SIDES),   // [0..sides-1]
     });
 
     // multiplier for unidirectional vs bidirectional architectures
