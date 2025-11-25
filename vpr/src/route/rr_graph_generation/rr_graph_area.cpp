@@ -291,8 +291,8 @@ static void count_bidir_routing_transistors(int num_switch, float R_minW_nmos, f
 
     // Get most frequent ipin switch
     std::pair<RRSwitchId, size_t> most_frequent_ipin_switch_pair = std::ranges::max(ipin_switch_count,
-                                                            {},
-                                                            [](const auto& p) { return p.second; });
+                                                                                    {},
+                                                                                    [](const auto& p) { return p.second; });
     RRSwitchId most_frequent_ipin_switch = most_frequent_ipin_switch_pair.first;
 
     input_cblock_trans = get_cblock_trans(num_inputs_to_cblock,
