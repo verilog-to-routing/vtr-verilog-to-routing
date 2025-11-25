@@ -129,17 +129,15 @@ class RRSpatialLookup {
                                                   e_rr_type rr_type,
                                                   int ptc) const;
 
-    /**
-     * @brief Returns all matching nodes on all the sides at a specific grid tile (layer,x,y) location.
-     *
-     * As this is applicable to grid pins, the type of nodes are limited to SOURCE/SINK/IPIN/OPIN/MUX
-     */
+    /// @brief Returns all matching nodes on all the sides at a specific grid tile (layer,x,y) location.
+    /// As this is applicable to grid pins, the type of nodes are limited to SOURCE/SINK/IPIN/OPIN/MUX
     std::vector<RRNodeId> find_grid_nodes_at_all_sides(int layer,
                                                        int x,
                                                        int y,
                                                        e_rr_type rr_type) const;
 
-
+    /// @brief Returns all pin nodes on the given side at a specific grid tile (layer,x,y) location.
+    /// As this is applicable to grid pins, the type of nodes are limited to IPIN/OPIN
     std::vector<RRNodeId> find_pin_nodes_at_side(int layer,
                                                  int x,
                                                  int y,
@@ -148,7 +146,7 @@ class RRSpatialLookup {
 
     /* -- Mutators -- */
   public:
-    /** @brief Reserve the memory for a list of nodes at (layer, x, y) location with given type and side */
+    /// @brief Reserve the memory for a list of nodes at (layer, x, y) location with given type and side
     void reserve_nodes(int layer,
                        int x,
                        int y,
