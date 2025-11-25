@@ -80,8 +80,7 @@ void print_rr_graph_stats();
  *   @param seg_inf Segments type information, such as length, frequency, and etc.
  *   @param sets_per_seg_type Number of available sets within the channel_width of each segment type.
  * 
- * @return an 4D matrix which keeps the track indices connected to each pin ([0..num_pins-1][0..width-1][0..height-1][0..layer-1][0..sides-1]).
- * 
+ * @return an 4D matrix which keeps the track indices connected to each pin ([0..num_pins-1][0..width-1][0..height-1]0..sides-1]).
  */
 static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
@@ -105,7 +104,7 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_pin_to_track_map(const 
  *   @param perturb_switch_pattern Specifies whether connections should be distributed unevenly across the channel or not.
  *   @param directionality Segment directionality, should be either *UNI-DIRECTIONAL* or *BI-DIRECTIONAL* 
  * 
- * @return an 5D matrix which keeps the track indices connected to each pin ([0..num_pins-1][0..width-1][0..height-1][0..layer-1][0..sides-1][0..Fc_to_curr_seg_type-1]).
+ * @return an 5D matrix which keeps the track indices connected to each pin ([0..num_pins-1][0..width-1][0..height-1][0..sides-1][0..Fc_to_curr_seg_type-1]).
  */
 static vtr::NdMatrix<int, 5> alloc_and_load_pin_to_seg_type(const e_pin_type pin_type,
                                                             const vtr::Matrix<int>& Fc,
