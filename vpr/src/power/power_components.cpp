@@ -397,7 +397,7 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
  * This function calculates power of a local interconnect structure
  * - power_usage: (Return value) Power usage of the structure
  * - pb: The physical block to which this interconnect belongs
- * - interc_pins: The interconnect input/ouput pin information
+ * - interc_pins: The interconnect input/output pin information
  * - interc_length: The physical length spanned by the interconnect (meters)
  */
 void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interconnect_pins* interc_pins, ClusterBlockId iblk) {

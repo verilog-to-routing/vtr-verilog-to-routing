@@ -127,10 +127,10 @@ struct ClusterGainStats {
     /// @brief Indicator for the initial search for feasible blocks.
     bool initial_search_for_feasible_blocks;
 
-    /// @brief Limit for the number of candiate proposed at each stage.
+    /// @brief Limit for the number of candidates proposed at each stage.
     unsigned candidates_propose_limit;
 
-    /// @brief Counter for the number of candiate proposed at each stage.
+    /// @brief Counter for the number of candidates proposed at each stage.
     unsigned num_candidates_proposed;
 
     /// @brief Check if the current stage candidates proposed limit is reached.
@@ -232,7 +232,7 @@ class GreedyCandidateSelector {
      *  @param is_global
      *              The set of global nets in the Atom Netlist. These will be
      *              routed on special dedicated networks, and hence are less
-     *              relavent to locality / attraction.
+     *              relevant to locality / attraction.
      *  @param net_output_feeds_driving_block_input
      *              The set of nets whose output feeds the block that drives
      *              itself. This may cause double-counting in the gain
