@@ -1232,6 +1232,10 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
             // General case indicating that this pin connects to general-purpose routing
 
             // Unidir tracks formed in pairs, otherwise no effect.
+            // CHANZ wires are not necessarily formed in pairs. Even if they are created in pairs,
+            // an OPIN may not connect to a pair of CHANZ wires going into different directions.
+            // For example, a in 2-layer architecture, an OPIN at the bottom layer may connect to CHANZ wires
+            // going upward, but it doesn't make sense to connect it to CHANZ wires going downward.
             int fac = 1;
             if (directionality == UNI_DIRECTIONAL && segment_inf[iseg].parallel_axis != e_parallel_axis::Z_AXIS) {
                 fac = 2;
