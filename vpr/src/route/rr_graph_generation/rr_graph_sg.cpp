@@ -7,6 +7,72 @@
 #include "globals.h"
 #include "get_parallel_segs.h"
 
+//
+// Static Function Declarations
+//
+
+/// @brief Collect CHANZ nodes (and their switches) for one switch-block and segment index.
+static void collect_chanz_nodes_for_seg(const RRSpatialLookup& node_lookup,
+                                        const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
+                                        const t_physical_tile_loc& sb_loc,
+                                        int layer,
+                                        int seg_index,
+                                        std::vector<std::pair<RRNodeId, short>>& out_nodes);
+
+/// @brief Pick the next CHANZ node from the less-used side and update Fc_zofs.
+static std::pair<RRNodeId, short> next_chanz_node_for_seg(const std::array<t_physical_tile_loc, 2>& sb_locs,
+                                                          int seg_index,
+                                                          vtr::NdMatrix<int, 3>& Fc_zofs,
+                                                          std::vector<std::pair<RRNodeId, short>>& nodes0,
+                                                          std::vector<std::pair<RRNodeId, short>>& nodes1);
+
+//
+// Static Function Definitions
+//
+
+static void collect_chanz_nodes_for_seg(const RRSpatialLookup& node_lookup,
+                                        const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
+                                        const t_physical_tile_loc& sb_loc,
+                                        int layer,
+                                        int seg_index,
+                                        std::vector<std::pair<RRNodeId, short>>& out_nodes) {
+    out_nodes.clear();
+
+    const std::vector<t_bottleneck_link>& links_at_sb = interdie_3d_links[sb_loc.x][sb_loc.y];
+    for (size_t track_num = 0; track_num < links_at_sb.size(); ++track_num) {
+        const t_bottleneck_link& bottleneck_link = links_at_sb[track_num];
+        if (bottleneck_link.parallel_segment_index == seg_index && bottleneck_link.gather_loc.layer_num == layer) {
+            RRNodeId node_id = node_lookup.find_node(sb_loc.layer_num,
+                                                     sb_loc.x,
+                                                     sb_loc.y,
+                                                     e_rr_type::CHANZ,
+                                                     track_num);
+            out_nodes.emplace_back(node_id, bottleneck_link.arch_wire_switch);
+        }
+    }
+}
+
+static std::pair<RRNodeId, short> next_chanz_node_for_seg(const std::array<t_physical_tile_loc, 2>& sb_locs,
+                                                          int seg_index,
+                                                          vtr::NdMatrix<int, 3>& Fc_zofs,
+                                                          std::vector<std::pair<RRNodeId, short>>& nodes0,
+                                                          std::vector<std::pair<RRNodeId, short>>& nodes1) {
+
+    VTR_ASSERT_SAFE(!nodes0.empty());
+    VTR_ASSERT_SAFE(!nodes1.empty());
+
+    int& offset0 = Fc_zofs[sb_locs[0].x][sb_locs[0].y][seg_index];
+    int& offset1 = Fc_zofs[sb_locs[1].x][sb_locs[1].y][seg_index];
+
+    if (offset0 < offset1) {
+        const int idx = offset0++;
+        return nodes0[idx % nodes0.size()];
+    } else {
+        const int idx = offset1++;
+        return nodes1[idx % nodes1.size()];
+    }
+}
+
 void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
                             int x_coord,
                             int y_coord,
@@ -18,14 +84,20 @@ void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
     const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
     const int num_tracks = interdie_3d_links.size();
 
+    // Process each inter-die 3D link / CHANZ track at this switch block
     for (int track = 0; track < num_tracks; track++) {
         const t_bottleneck_link& link = interdie_3d_links[track];
+
+        // Sanity check: this link must be anchored at the given (x_coord, y_coord)
         VTR_ASSERT_SAFE(x_coord == link.gather_loc.x && y_coord == link.gather_loc.y);
         VTR_ASSERT_SAFE(x_coord == link.scatter_loc.x && y_coord == link.scatter_loc.y);
 
+        // Find the CHANZ node that represents this 3D link (track index = ptc)
         RRNodeId chanz_node = node_lookup.find_node(0, x_coord, y_coord, e_rr_type::CHANZ, track);
 
+        // 1) Add edges from all gather (fanin) wires to the CHANZ node
         for (const t_sg_candidate& gather_wire : link.gather_fanin_connections) {
+            // Find the source CHAN RR node
             const t_physical_tile_loc& chan_loc = gather_wire.chan_loc.location;
             e_rr_type chan_type = gather_wire.chan_loc.chan_type;
             RRNodeId gather_node = node_lookup.find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, chan_type, gather_wire.wire_switchpoint.wire);
@@ -33,12 +105,15 @@ void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
             interdie_3d_rr_edges_to_create.emplace_back(gather_node, chanz_node, link.arch_wire_switch, false);
         }
 
+        // 2) Add edges from the CHANZ node to all scatter (fanout) wires
         for (const t_sg_candidate& scatter_wire : link.scatter_fanout_connections) {
+            // Find the sink CHAN RR node
             const t_physical_tile_loc& chan_loc = scatter_wire.chan_loc.location;
             e_rr_type chan_type = scatter_wire.chan_loc.chan_type;
             const t_chan_details& chan_details = (chan_type == e_rr_type::CHANX) ? chan_details_x : chan_details_y;
             RRNodeId scatter_node = node_lookup.find_node(chan_loc.layer_num, chan_loc.x, chan_loc.y, chan_type, scatter_wire.wire_switchpoint.wire);
 
+            // Look up the switch used to drive this track
             int switch_index = chan_details[chan_loc.x][chan_loc.y][scatter_wire.wire_switchpoint.wire].arch_wire_switch();
             interdie_3d_rr_edges_to_create.emplace_back(chanz_node, scatter_node, switch_index, false);
         }
@@ -164,23 +239,12 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
             continue;
         }
 
-        selected_chanz_nodes0.clear();
-        for (size_t track_num = 0; track_num < interdie_3d_links[adjacent_sb_loc[0].x][adjacent_sb_loc[0].y].size(); track_num++) {
-            const t_bottleneck_link& bottleneck_link = interdie_3d_links[adjacent_sb_loc[0].x][adjacent_sb_loc[0].y][track_num];
-            if (bottleneck_link.parallel_segment_index == seg_index && bottleneck_link.gather_loc.layer_num == layer) {
-                RRNodeId node_id = node_lookup.find_node(adjacent_sb_loc[0].layer_num, adjacent_sb_loc[0].x, adjacent_sb_loc[0].y, e_rr_type::CHANZ, track_num);
-                selected_chanz_nodes0.emplace_back(node_id, bottleneck_link.arch_wire_switch);
-            }
-        }
+        // Collect candidate CHANZ nodes on both adjacent switch blocks
+        collect_chanz_nodes_for_seg(node_lookup, interdie_3d_links, adjacent_sb_loc[0],
+                                    layer, seg_index, selected_chanz_nodes0);
 
-        selected_chanz_nodes1.clear();
-        for (size_t track_num = 0; track_num < interdie_3d_links[adjacent_sb_loc[1].x][adjacent_sb_loc[1].y].size(); track_num++) {
-            const t_bottleneck_link& bottleneck_link = interdie_3d_links[adjacent_sb_loc[1].x][adjacent_sb_loc[1].y][track_num];
-            if (bottleneck_link.parallel_segment_index == seg_index && bottleneck_link.gather_loc.layer_num == layer) {
-                RRNodeId node_id = node_lookup.find_node(adjacent_sb_loc[1].layer_num, adjacent_sb_loc[1].x, adjacent_sb_loc[1].y, e_rr_type::CHANZ, track_num);
-                selected_chanz_nodes1.emplace_back(node_id, bottleneck_link.arch_wire_switch);
-            }
-        }
+        collect_chanz_nodes_for_seg(node_lookup, interdie_3d_links, adjacent_sb_loc[1],
+                                    layer, seg_index, selected_chanz_nodes1);
 
         for (RRNodeId opin_node_id : opin_nodes) {
             int pin_number = rr_graph.node_pin_num(opin_node_id);
@@ -188,21 +252,11 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
 
             for (int i = 0; i < fc; i++) {
 
-                RRNodeId chanz_node_id;
-                short switch_id;
-                if (Fc_zofs[adjacent_sb_loc[0].x][adjacent_sb_loc[0].y][seg_index] < Fc_zofs[adjacent_sb_loc[1].x][adjacent_sb_loc[1].y][seg_index]) {
-                    int chanz_idx = Fc_zofs[adjacent_sb_loc[0].x][adjacent_sb_loc[0].y][seg_index];
-                    chanz_node_id = selected_chanz_nodes0[chanz_idx % selected_chanz_nodes0.size()].first;
-                    switch_id = selected_chanz_nodes0[chanz_idx % selected_chanz_nodes0.size()].second;
-                    Fc_zofs[adjacent_sb_loc[0].x][adjacent_sb_loc[0].y][seg_index]++;
-                } else {
-                    int chanz_idx = Fc_zofs[adjacent_sb_loc[1].x][adjacent_sb_loc[1].y][seg_index];
-                    chanz_node_id = selected_chanz_nodes1[chanz_idx % selected_chanz_nodes1.size()].first;
-                    switch_id = selected_chanz_nodes1[chanz_idx % selected_chanz_nodes1.size()].second;
-                    Fc_zofs[adjacent_sb_loc[1].x][adjacent_sb_loc[1].y][seg_index]++;
-                }
+                auto [chanz_node_id, switch_id] = next_chanz_node_for_seg(adjacent_sb_loc, seg_index, Fc_zofs,
+                                                                            selected_chanz_nodes0, selected_chanz_nodes1);
 
                 rr_edges_to_create.emplace_back(opin_node_id, chanz_node_id, switch_id, false);
+
             }
         }
     }
