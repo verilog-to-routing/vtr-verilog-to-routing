@@ -13,6 +13,10 @@
 
 namespace crrgenerator {
 
+static std::string get_switch_block_name(size_t x, size_t y) {
+    return "SB_" + std::to_string(x) + "__" + std::to_string(y) + "_";
+}
+
 static bool is_integer(const std::string& s) {
     int value;
     auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
@@ -86,7 +90,7 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
                                                           std::vector<Connection>& tile_connections) const {
 
     // Find matching switch block pattern
-    std::string sw_name = "SB_" + std::to_string(x) + "__" + std::to_string(y) + "_";
+    std::string sw_name = get_switch_block_name(x, y);
     std::string pattern = sb_manager_.find_matching_pattern(sw_name);
     tile_connections.clear();
 
