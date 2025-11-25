@@ -118,26 +118,28 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
 
     std::vector<RRNodeId> opin_nodes = node_lookup.find_pin_nodes_at_side(layer, x, y, e_rr_type::OPIN, side);
 
-    t_physical_tile_loc sb_loc0, sb_loc1;
+    // Two switch-block location adjacent to this channel segment
+    std::array<t_physical_tile_loc, 2> adjacent_sb_loc;
+    
     switch (side) {
         case TOP:
-            sb_loc0 = {x, y, layer};
-            sb_loc1 = {x - 1, y, layer};
+            adjacent_sb_loc[0] = {x, y, layer};
+            adjacent_sb_loc[1] = {x - 1, y, layer};
             break;
 
         case BOTTOM:
-            sb_loc0 = {x, y - 1, layer};
-            sb_loc1 = {x - 1, y - 1, layer};
+            adjacent_sb_loc[0] = {x, y - 1, layer};
+            adjacent_sb_loc[1] = {x - 1, y - 1, layer};
             break;
 
         case RIGHT:
-            sb_loc0 = {x, y, layer};
-            sb_loc1 = {x, y - 1, layer};
+            adjacent_sb_loc[0] = {x, y, layer};
+            adjacent_sb_loc[1] = {x, y - 1, layer};
             break;
 
         case LEFT:
-            sb_loc0 = {x - 1, y, layer};
-            sb_loc1 = {x - 1, y - 1, layer};
+            adjacent_sb_loc[0] = {x - 1, y, layer};
+            adjacent_sb_loc[1] = {x - 1, y - 1, layer};
             break;
 
         default:
@@ -147,11 +149,11 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
     const int grid_width = grid.width();
     const int grid_height = grid.height();
 
-    sb_loc0.x = std::clamp(sb_loc0.x, 0, grid_width - 1);
-    sb_loc0.y = std::clamp(sb_loc0.y, 0, grid_height - 1);
+    adjacent_sb_loc[0].x = std::clamp(adjacent_sb_loc[0].x, 0, grid_width - 1);
+    adjacent_sb_loc[0].y = std::clamp(adjacent_sb_loc[0].y, 0, grid_height - 1);
 
-    sb_loc1.x = std::clamp(sb_loc1.x, 0, grid_width - 1);
-    sb_loc1.y = std::clamp(sb_loc1.y, 0, grid_height - 1);
+    adjacent_sb_loc[1].x = std::clamp(adjacent_sb_loc[1].x, 0, grid_width - 1);
+    adjacent_sb_loc[1].y = std::clamp(adjacent_sb_loc[1].y, 0, grid_height - 1);
 
     std::vector<std::pair<RRNodeId, short>> selected_chanz_nodes0;
     std::vector<std::pair<RRNodeId, short>> selected_chanz_nodes1;
@@ -163,19 +165,19 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
         }
 
         selected_chanz_nodes0.clear();
-        for (size_t track_num = 0; track_num < interdie_3d_links[sb_loc0.x][sb_loc0.y].size(); track_num++) {
-            const t_bottleneck_link& bottleneck_link = interdie_3d_links[sb_loc0.x][sb_loc0.y][track_num];
+        for (size_t track_num = 0; track_num < interdie_3d_links[adjacent_sb_loc[0].x][adjacent_sb_loc[0].y].size(); track_num++) {
+            const t_bottleneck_link& bottleneck_link = interdie_3d_links[adjacent_sb_loc[0].x][adjacent_sb_loc[0].y][track_num];
             if (bottleneck_link.parallel_segment_index == seg_index && bottleneck_link.gather_loc.layer_num == layer) {
-                RRNodeId node_id = node_lookup.find_node(sb_loc0.layer_num, sb_loc0.x, sb_loc0.y, e_rr_type::CHANZ, track_num);
+                RRNodeId node_id = node_lookup.find_node(adjacent_sb_loc[0].layer_num, adjacent_sb_loc[0].x, adjacent_sb_loc[0].y, e_rr_type::CHANZ, track_num);
                 selected_chanz_nodes0.emplace_back(node_id, bottleneck_link.arch_wire_switch);
             }
         }
 
         selected_chanz_nodes1.clear();
-        for (size_t track_num = 0; track_num < interdie_3d_links[sb_loc1.x][sb_loc1.y].size(); track_num++) {
-            const t_bottleneck_link& bottleneck_link = interdie_3d_links[sb_loc1.x][sb_loc1.y][track_num];
+        for (size_t track_num = 0; track_num < interdie_3d_links[adjacent_sb_loc[1].x][adjacent_sb_loc[1].y].size(); track_num++) {
+            const t_bottleneck_link& bottleneck_link = interdie_3d_links[adjacent_sb_loc[1].x][adjacent_sb_loc[1].y][track_num];
             if (bottleneck_link.parallel_segment_index == seg_index && bottleneck_link.gather_loc.layer_num == layer) {
-                RRNodeId node_id = node_lookup.find_node(sb_loc1.layer_num, sb_loc1.x, sb_loc1.y, e_rr_type::CHANZ, track_num);
+                RRNodeId node_id = node_lookup.find_node(adjacent_sb_loc[1].layer_num, adjacent_sb_loc[1].x, adjacent_sb_loc[1].y, e_rr_type::CHANZ, track_num);
                 selected_chanz_nodes1.emplace_back(node_id, bottleneck_link.arch_wire_switch);
             }
         }
@@ -188,16 +190,16 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
 
                 RRNodeId chanz_node_id;
                 short switch_id;
-                if (Fc_zofs[sb_loc0.x][sb_loc0.y][seg_index] < Fc_zofs[sb_loc1.x][sb_loc1.y][seg_index]) {
-                    int chanz_idx = Fc_zofs[sb_loc0.x][sb_loc0.y][seg_index];
+                if (Fc_zofs[adjacent_sb_loc[0].x][adjacent_sb_loc[0].y][seg_index] < Fc_zofs[adjacent_sb_loc[1].x][adjacent_sb_loc[1].y][seg_index]) {
+                    int chanz_idx = Fc_zofs[adjacent_sb_loc[0].x][adjacent_sb_loc[0].y][seg_index];
                     chanz_node_id = selected_chanz_nodes0[chanz_idx % selected_chanz_nodes0.size()].first;
                     switch_id = selected_chanz_nodes0[chanz_idx % selected_chanz_nodes0.size()].second;
-                    Fc_zofs[sb_loc0.x][sb_loc0.y][seg_index]++;
+                    Fc_zofs[adjacent_sb_loc[0].x][adjacent_sb_loc[0].y][seg_index]++;
                 } else {
-                    int chanz_idx = Fc_zofs[sb_loc1.x][sb_loc1.y][seg_index];
+                    int chanz_idx = Fc_zofs[adjacent_sb_loc[1].x][adjacent_sb_loc[1].y][seg_index];
                     chanz_node_id = selected_chanz_nodes1[chanz_idx % selected_chanz_nodes1.size()].first;
                     switch_id = selected_chanz_nodes1[chanz_idx % selected_chanz_nodes1.size()].second;
-                    Fc_zofs[sb_loc1.x][sb_loc1.y][seg_index]++;
+                    Fc_zofs[adjacent_sb_loc[1].x][adjacent_sb_loc[1].y][seg_index]++;
                 }
 
                 rr_edges_to_create.emplace_back(opin_node_id, chanz_node_id, switch_id, false);

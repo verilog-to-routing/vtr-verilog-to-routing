@@ -85,21 +85,21 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    int& edge_count);
 
-/// Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent blocks along the wire's length
-static int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
-                             int layer,
-                             int seg,
-                             int chan,
-                             int track,
-                             int tracks_per_chan,
-                             RRNodeId from_rr_node,
-                             t_rr_edge_info_set& rr_edges_to_create,
-                             const t_track_to_pin_lookup& track_to_pin_lookup,
-                             const t_chan_seg_details* seg_details,
-                             e_rr_type chan_type,
-                             int chan_length,
-                             int wire_to_ipin_switch,
-                             e_directionality directionality);
+/// Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent IPINs along the wire's length
+static int get_track_to_ipins(RRGraphBuilder& rr_graph_builder,
+                              int layer,
+                              int seg,
+                              int chan,
+                              int track,
+                              int tracks_per_chan,
+                              RRNodeId from_rr_node,
+                              t_rr_edge_info_set& rr_edges_to_create,
+                              const t_track_to_pin_lookup& track_to_pin_lookup,
+                              const t_chan_seg_details* seg_details,
+                              e_rr_type chan_type,
+                              int chan_length,
+                              int wire_to_ipin_switch,
+                              e_directionality directionality);
 
 //Returns how the switch type for the switch block at the specified location should be created
 //  from_chan_coord: The horizontal or vertical channel index (i.e. x-coord for CHANY, y-coord for CHANX)
@@ -239,9 +239,9 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         }
 
         // Add the edges from this track to all it's connected pins into the list
-        get_track_to_pins(rr_graph_builder, layer, start, chan_coord, track, tracks_per_chan, node, rr_edges_to_create,
-                          track_to_pin_lookup, seg_details, chan_type, seg_dimension,
-                          wire_to_ipin_switch, directionality);
+        get_track_to_ipins(rr_graph_builder, layer, start, chan_coord, track, tracks_per_chan, node, rr_edges_to_create,
+                           track_to_pin_lookup, seg_details, chan_type, seg_dimension,
+                           wire_to_ipin_switch, directionality);
 
         // Add edges going from the current track into channel segments which are perpendicular to it
         if (chan_coord > 0) {
@@ -297,7 +297,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
             }
             if (target_seg > 0 && target_seg < seg_dimension + 1) {
                 const t_chan_seg_details* to_seg_details;
-                // AA: Same channel width for straight through connections assuming uniform width distributions along the axis
+                // Same channel width for straight through connections assuming uniform width distributions along the axis
                 int max_chan_width = 0;
                 if (chan_type == e_rr_type::CHANX) {
                     to_seg_details = chan_details_x[target_seg][y_coord].data();
@@ -319,7 +319,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         }
 
         // Edge arrays have now been built up.  Do everything else.
-        // AA: The cost_index should be w.r.t the index of the segment to its **parallel** segment_inf vector.
+        // The cost_index should be w.r.t the index of the segment to its **parallel** segment_inf vector.
         // Note that when building channels, we use the indices w.r.t segment_inf_x and segment_inf_y as
         // computed earlier in build_rr_graph so it's fine to use .index() for to get the correct index.
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + seg_details[track].index()));
@@ -692,7 +692,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-static int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
+static int get_track_to_ipins(RRGraphBuilder& rr_graph_builder,
                              int layer,
                              int seg,
                              int chan,
@@ -729,7 +729,7 @@ static int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                     side = (0 == pass ? RIGHT : LEFT);
                 }
 
-                /* PAJ - if the pointed to is an EMPTY then shouldn't look for ipins */
+                // if the pointed to is an EMPTY then shouldn't look for ipins
                 t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({x, y, layer});
                 if (type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
                     continue;
