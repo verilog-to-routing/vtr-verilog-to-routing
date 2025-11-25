@@ -156,8 +156,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
         rr_indexed_data[index].seg_index = seg_ptr->seg_index;
     }
 
-    load_rr_indexed_data_T_values(rr_graph,
-                                  rr_indexed_data);
+    load_rr_indexed_data_T_values(rr_graph, rr_indexed_data);
 
     fixup_rr_indexed_data_T_values(rr_indexed_data, total_num_segment);
 
