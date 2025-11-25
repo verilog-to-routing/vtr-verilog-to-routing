@@ -251,7 +251,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //
     //This function is only called when both the main swap's from/to blocks are placement macros.
     //The position in the from macro ('imacro_from') is specified by 'imember_from', and the relevant
-    //macro fro the to block is 'imacro_to'.
+    //macro for the to block is 'imacro_to'.
 
     const auto& block_locs = blk_loc_registry.block_locs();
 
@@ -272,7 +272,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         return outcome;
     }
 
-    //From/To blocks should be exactly the swap offset appart
+    //From/To blocks should be exactly the swap offset apart
     ClusterBlockId blk_from = pl_macros[imacro_from].members[imember_from].blk_index;
     VTR_ASSERT_SAFE(block_locs[blk_from].loc + swap_offset == block_locs[blk_to].loc);
 
@@ -661,7 +661,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
     //of the same block types, and not the physical grid space). This means, for example, that columns of 'rare'
     //blocks (e.g. DSPs/RAMs) which are physically far apart but logically adjacent will be swappable even
-    //at an rlim fo 1.
+    //at an rlim of 1.
     //
     //This ensures that such blocks don't get locked down too early during placement (as would be the
     //case with a physical distance rlim)

@@ -58,7 +58,7 @@ void draw_highlight_fan_in_fan_out(const std::set<RRNodeId>& nodes);
 std::set<RRNodeId> draw_expand_non_configurable_rr_nodes(RRNodeId hit_node);
 
 /* Sets the color of all clbs, nets and rr_nodes to the default.
- * as well as clearing the highlighed sub-block */
+ * as well as clearing the highlighted sub-block */
 void deselect_all();
 
 #endif /* NO_GRAPHICS */
