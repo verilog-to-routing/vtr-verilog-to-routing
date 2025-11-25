@@ -150,6 +150,7 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
     }
 
     // Verify the initial mappings are feasible (utilization check).
+    bool overfill = false;
     VTR_LOG("Initial mappings device utilizations:\n");
     for (auto usage: candidate_usages) {
         t_logical_block_type_ptr type = usage.first;
@@ -160,8 +161,155 @@ RamMapper::RamMapper(const AtomNetlist& atom_nlist,
         float utilization = vtr::safe_ratio<float>(used_ins_number, total_ins_number);
         VTR_LOG("  %s: %f\n", type->name.c_str(), utilization);
 
-        VTR_ASSERT_MSG(utilization <= 1.0, "At least one RAM type is over utilized after initial placement. Ideally, this assertion should be removed and reassigning should be tried");
+        // VTR_ASSERT_MSG(utilization <= 1.0, "At least one RAM type is over utilized after initial placement. Ideally, this assertion should be removed and reassigning should be tried");
+        if (utilization > 1.0) {
+            overfill = true;
+        }
     }
+
+    if (overfill) {
+        VTR_LOG("At least one RAM type is over utilized after initial placement. Trying to assign densely.\n");
+        
+        VTR_LOG("Sorting the logical RAM blocks by max inferred block count and then atom count.\n");
+        // Stable sort to preserve original order for equal differences
+        std::stable_sort(logical_ram_groups_.begin(),
+                        logical_ram_groups_.end(),
+                        [](const LogicalRamGroup& a, const LogicalRamGroup& b) {
+                            int atom_count_a = a.total_memory_slices;
+                            int atom_count_b = b.total_memory_slices;
+
+                            int num_types_a = (int)a.candidate_types.size();
+                            int num_types_b = (int)b.candidate_types.size();
+                            if (num_types_a != num_types_b) {
+                                return num_types_a < num_types_b; // fewer types first
+                            }
+                            
+                            int max_inferred_number_a = 0;
+                            for (const auto& [cand_type, capacity]: a.candidate_capacity) {
+                                int inferred_num = std::ceil(vtr::safe_ratio<float>(a.total_memory_slices, capacity));
+                                if (inferred_num > max_inferred_number_a) {
+                                    max_inferred_number_a = inferred_num;
+                                }        
+                            }
+                            int max_inferred_number_b = 0;
+                            for (const auto& [cand_type, capacity]: b.candidate_capacity) {
+                                int inferred_num = std::ceil(vtr::safe_ratio<float>(b.total_memory_slices, capacity));
+                                if (inferred_num > max_inferred_number_b) {
+                                    max_inferred_number_b = inferred_num;
+                                }        
+                            }
+
+                            if (max_inferred_number_a != max_inferred_number_b)
+                                return max_inferred_number_a > max_inferred_number_b;
+                            else
+                                return atom_count_a > atom_count_b;
+                        });
+        
+        // Reassign everything. Try to put all to M144K (bigger capacity type) until we dont have more.
+        // The ordered logical rams help us to get most dense version.
+        // Reset the candidate types first, then update with each assignment decision. If higher capacity one's
+        // utilization will go above 1.0, choose other.
+        // Reset usages
+        for (auto& usage : candidate_usages) {
+            usage.second = 0;
+        }
+
+        // Reassign groups
+        for (LogicalRamGroup& g : logical_ram_groups_) {
+            // Sort this group's candidate types by capacity, descending
+            std::vector<t_logical_block_type_ptr> cand_sorted = g.candidate_types;
+            std::sort(cand_sorted.begin(),
+                      cand_sorted.end(),
+                      [&](const t_logical_block_type_ptr& a,
+                          const t_logical_block_type_ptr& b) {
+                          int cap_a = g.candidate_capacity.count(a) ? g.candidate_capacity.at(a) : 0;
+                          int cap_b = g.candidate_capacity.count(b) ? g.candidate_capacity.at(b) : 0;
+                          return cap_a > cap_b; // higher capacity first
+                      });
+
+            t_logical_block_type_ptr chosen_type = nullptr;
+
+            for (t_logical_block_type_ptr cand_type : cand_sorted) {
+                int capacity = g.candidate_capacity.at(cand_type);
+                int inferred_instances = std::ceil(
+                    vtr::safe_ratio<float>(g.total_memory_slices, capacity));
+
+                int total_instances = 0;
+                for (auto physical_type : cand_type->equivalent_tiles) {
+                    total_instances += device_ctx.grid.num_instances(physical_type, -1);
+                }
+
+                float new_utilization = vtr::safe_ratio<float>(
+                    candidate_usages[cand_type] + inferred_instances,
+                    total_instances);
+
+                if (new_utilization <= 1.0f) {
+                    // This type is feasible; assign and update usage
+                    chosen_type = cand_type;
+                    candidate_usages[cand_type] += inferred_instances;
+                    break;
+                }
+            }
+
+            // Fallback: if nothing was feasible (should be rare),
+            // assign the smallest-capacity candidate and accept overfill.
+            if (!chosen_type && !cand_sorted.empty()) {
+                t_logical_block_type_ptr fallback_type = cand_sorted.back();
+                int capacity = g.candidate_capacity.at(fallback_type);
+                int inferred_instances = std::ceil(
+                    vtr::safe_ratio<float>(g.total_memory_slices, capacity));
+
+                candidate_usages[fallback_type] += inferred_instances;
+                chosen_type = fallback_type;
+            }
+
+            // Update the group's pre-assigned type based on dense mapping
+            if (chosen_type) {
+                g.pre_assigned_type = chosen_type;
+                g.type_init = chosen_type;
+
+                int capacity = g.candidate_capacity.at(chosen_type);
+                int inferred_instances = std::ceil(
+                    vtr::safe_ratio<float>(g.total_memory_slices, capacity));
+                int instance_area = chosen_type->equivalent_tiles[0]->height
+                                * chosen_type->equivalent_tiles[0]->width;
+
+                g.area_init = inferred_instances * instance_area;
+            }
+        }
+
+        VTR_LOG("After dense mappings device utilizations:\n");
+        overfill = false;
+        for (auto usage: candidate_usages) {
+            t_logical_block_type_ptr type = usage.first;
+            int used_ins_number = usage.second;
+            int total_ins_number = 0;
+            for (auto physical_type : type->equivalent_tiles)
+                total_ins_number += device_ctx.grid.num_instances(physical_type, -1);
+            float utilization = vtr::safe_ratio<float>(used_ins_number, total_ins_number);
+            VTR_LOG("  %s: %f\n", type->name.c_str(), utilization);
+
+            // VTR_ASSERT_MSG(utilization <= 1.0, "At least one RAM type is over utilized after initial placement. Ideally, this assertion should be removed and reassigning should be tried");
+            if (utilization > 1.0) {
+                overfill = true;
+            }
+        }
+        VTR_ASSERT_MSG(!overfill, "Device is overfilled after dense assignment.");
+
+        
+    }
+
+    // Crosscheck and validate the atoms are assigned to correct groups.
+    // This should be at the end of logical ram assignemts after any sorting since
+    // helper methods use the order in this data structure afterwards.
+    atom_to_group_.resize(atom_nlist.blocks().size());
+    for (size_t gid = 0; gid < logical_ram_groups_.size(); ++gid) {
+        auto& g = logical_ram_groups_[gid];
+        for (AtomBlockId atom_id: g.atoms) {
+            atom_to_group_[atom_id] = gid;
+        }
+    }
+
 
 
     // Timing pass to lock the timing critical ones to faster RAMs.
