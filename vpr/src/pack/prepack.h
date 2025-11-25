@@ -186,10 +186,10 @@ class Prepacker {
     ~Prepacker();
 
     /**
-     * @brief Construtor. Performs prepacking.
+     * @brief Constructor. Performs prepacking.
      *
      * Initializes the prepacker by performing prepacking and allocating the
-     * necessary data strucutres.
+     * necessary data structures.
      *
      *  @param atom_nlist           The atom netlist to prepack.
      *  @param models
@@ -242,7 +242,7 @@ class Prepacker {
                                          const LogicalModels& models) const;
 
     /**
-     * @brief Calculates maximum molecule statistics accross all molecules,
+     * @brief Calculates maximum molecule statistics across all molecules,
      */
     t_molecule_stats calc_max_molecule_stats(const AtomNetlist& netlist,
                                              const LogicalModels& models) const;

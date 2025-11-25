@@ -118,7 +118,7 @@ void power_routing_init(const t_det_routing_arch& routing_arch);
  *  This function calculates the power of primitives (ff, lut, etc),
  *  by calling the appropriate primitive function.
  *  - power_usage: (Return value)
- *  - pb: The pysical block
+ *  - pb: The physical block
  *  - pb_graph_node: The physical block graph node
  *  - calc_dynamic: Calculate dynamic power? Otherwise ignore
  *  - calc_static: Calculate static power? Otherwise ignore
@@ -303,7 +303,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage* power_usage,
  * First checks if dynamic/static power is provided by user in arch file.  If not:
  * - Calculate power of all interconnect
  * - Call recursively for children
- * - If no children, must be a primitive.  Call primitive hander.
+ * - If no children, must be a primitive.  Call primitive handler.
  */
 static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node* pb_node, ClusterBlockId iblk) {
     t_power_usage power_usage_bufs_wires;
@@ -592,7 +592,7 @@ static void power_reset_tile_usage() {
 }
 
 /*
- * Calcultes the power usage of all tiles in the FPGA
+ * Calculates the power usage of all tiles in the FPGA
  */
 static void power_usage_blocks(t_power_usage* power_usage) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -1331,7 +1331,7 @@ bool power_init(const char* power_out_filepath,
     /* Initialize sub-modules */
     power_components_init();
 
-    /* Perform callibration */
+    /* Perform calibration */
     power_callibrate();
 
     /* Initialize routing information */
@@ -1408,7 +1408,7 @@ bool power_uninit() {
 
 #if 0
 /**
- * Prints the power of all pb structures, in an xml format that matches the archicture file
+ * Prints the power of all pb structures, in an xml format that matches the architecture file
  */
 static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 		int indent_level, float parent_power, float total_power) {
@@ -1577,7 +1577,7 @@ static const char* power_estimation_method_name(e_power_estimation_method power_
         case POWER_METHOD_SUM_OF_CHILDREN:
             return "Sum of Children";
         default:
-            return "Unkown";
+            return "Unknown";
     }
 }
 
@@ -1771,7 +1771,7 @@ e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, co
 
 /**
  * Prints the power usage for all components
- * - fp: File descripter to print out to
+ * - fp: File descriptor to print out to
  */
 static void power_print_breakdown_summary(FILE* fp) {
     power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, nullptr,

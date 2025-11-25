@@ -382,7 +382,7 @@ static double power_count_transistors_switchbox() {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     for (size_t seg_idx = 0; seg_idx < rr_graph.num_rr_segments(); seg_idx++) {
-        /* In each switchbox, the different types of segments occur with relative freqencies.
+        /* In each switchbox, the different types of segments occur with relative frequencies.
          * Thus the total number of wires of each segment type is (#tracks * freq * 2).
          * The (x2) factor accounts for vertical and horizontal tracks.
          * Of the wires of each segment type only (1/seglength) will have a mux&buffer.
@@ -855,7 +855,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
             pin->pin_power->buffer_size = pin->port->port_power->buffer_size;
             break;
         case POWER_BUFFER_TYPE_AUTO:
-            /* Asume the buffer drives the wire & fanout muxes */
+            /* Assume the buffer drives the wire & fanout muxes */
             C_load = pin->pin_power->C_wire
                      + (fanout)*power_ctx.commonly_used->INV_1X_C_in; //power_ctx.commonly_used->NMOS_1X_C_d;
             if (C_load > power_ctx.commonly_used->INV_1X_C_in) {

@@ -77,7 +77,7 @@ void load_pin_classes_in_pb_graph_head(t_pb_graph_node* pb_graph_node) {
     for (i = 0; i < depth; i++) {
         input_count = output_count = 0;
         // The following function marks pins based on the pin count. This is
-        // used when traversing the pb heirarchy.
+        // used when traversing the pb hierarchy.
         std::unordered_map<t_pb_graph_pin*, int> pin_marker;
         load_pin_class_by_depth(pb_graph_node, i, &input_count, &output_count, pin_marker);
     }
