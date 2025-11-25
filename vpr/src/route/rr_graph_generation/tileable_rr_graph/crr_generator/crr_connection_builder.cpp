@@ -92,6 +92,7 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
     // Find matching switch block pattern
     std::string sw_name = get_switch_block_name(x, y);
     std::string pattern = sb_manager_.find_matching_pattern(sw_name);
+    std::string sw_block_file_name = sb_manager_.get_pattern_file_name(pattern);
     tile_connections.clear();
 
     if (pattern.empty()) {
@@ -134,6 +135,7 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
                     e_rr_type source_node_type = rr_graph_.node_type(source_node);
                     RRNodeId sink_node = sink_it->second;
                     e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
+                    std::string crr_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
                     // If the source node is an IPIN, then it should be considered as
                     // a sink of the connection.
                     if (source_node_type == e_rr_type::IPIN) {
@@ -142,7 +144,7 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
                                                                sink_node,
                                                                source_node);
 
-                        tile_connections.emplace_back(source_node, sink_node, delay_ps);
+                        tile_connections.emplace_back(source_node, sink_node, delay_ps, crr_id);
                     } else {
                         int segment_length = -1;
                         if (sink_node_type == e_rr_type::CHANX || sink_node_type == e_rr_type::CHANY) {
@@ -154,7 +156,7 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
                                                                sink_node,
                                                                segment_length);
 
-                        tile_connections.emplace_back(sink_node, source_node, delay_ps);
+                        tile_connections.emplace_back(sink_node, source_node, delay_ps, crr_id);
                     }
                 }
             }
