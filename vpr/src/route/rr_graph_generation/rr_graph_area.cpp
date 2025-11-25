@@ -290,12 +290,11 @@ static void count_bidir_routing_transistors(int num_switch, float R_minW_nmos, f
     /* Now add in the input connection block transistors. */
 
     // Get most frequent ipin switch
-    RRSwitchId most_frequent_ipin_switch = std::max_element(ipin_switch_count.begin(),
-                                                            ipin_switch_count.end(),
-                                                            [](const auto& a, const auto& b) {
-                                                                return a.second < b.second;
-                                                            })
-                                               ->first;
+    std::pair<RRSwitchId, size_t> most_frequent_ipin_switch_pair = std::ranges::max(ipin_switch_count,
+                                                            {},
+                                                            [](const auto& p) { return p.second; });
+    RRSwitchId most_frequent_ipin_switch = most_frequent_ipin_switch_pair.first;
+
     input_cblock_trans = get_cblock_trans(num_inputs_to_cblock,
                                           most_frequent_ipin_switch,
                                           max_inputs_to_cblock,
@@ -491,9 +490,10 @@ static void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segme
     /* Now add in the input connection block transistors. */
 
     // Get most frequent ipin switch
-    RRSwitchId most_frequent_ipin_switch = std::max_element(ipin_switch_count.begin(), ipin_switch_count.end(), [](const auto& a, const auto& b) {
-                                               return a.second < b.second;
-                                           })->first;
+    std::pair<RRSwitchId, size_t> most_frequent_ipin_switch_pair = std::ranges::max(ipin_switch_count,
+                                                                                    {},
+                                                                                    [](const auto& p) { return p.second; });
+    RRSwitchId most_frequent_ipin_switch = most_frequent_ipin_switch_pair.first;
 
     input_cblock_trans = get_cblock_trans(num_inputs_to_cblock,
                                           most_frequent_ipin_switch,
