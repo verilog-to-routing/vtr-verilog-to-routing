@@ -395,7 +395,7 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
  * Build the track_to_track_map[from_side][0..chan_width-1][to_side][track_indices]
  * based on the existing routing resources in the General Switch Block (GSB)
  * The track_indices is the indices of tracks that the node at from_side and [0..chan_width-1] will drive
- * IMPORTANT: the track_indices are the indicies in the GSB context, but not the rr_graph!!!
+ * IMPORTANT: the track_indices are the indices in the GSB context, but not the rr_graph!!!
  * We separate the connections into two groups:
  * Group 1: the routing tracks start from this GSB
  *          We will apply switch block patterns (SUBSET, UNIVERSAL, WILTON)
@@ -564,7 +564,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
         std::vector<RRNodeId> rr_nodes;
         switch (side) {
             case TOP: /* TOP = 0 */
-                /* For the bording, we should take special care */
+                /* For the boarder, we should take special care */
                 if (gsb_coordinate.y() == grids.height() - 2) {
 
                     break;
@@ -600,7 +600,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 
                 break;
             case RIGHT: /* RIGHT = 1 */
-                /* For the bording, we should take special care */
+                /* For the boarder, we should take special care */
                 if (gsb_coordinate.x() == grids.width() - 2) {
 
                     break;
@@ -635,7 +635,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 }
                 break;
             case BOTTOM: /* BOTTOM = 2 */
-                /* For the bording, we should take special care */
+                /* For the boarder, we should take special care */
                 if (gsb_coordinate.y() == 0) {
 
                     break;
@@ -670,7 +670,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 }
                 break;
             case LEFT: /* BOTTOM = 2 */
-                /* For the bording, we should take special care */
+                /* For the boarder, we should take special care */
                 if (gsb_coordinate.x() == 0) {
 
                     break;
@@ -1544,7 +1544,7 @@ t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
 
             int grid_type_index = grids.get_physical_type(ipin_node_phy_tile_loc)->index;
             /* Get Fc of the ipin */
-            /* skip Fc = 0 or unintialized, those pins are in the <directlist> */
+            /* skip Fc = 0 or uninitialized, those pins are in the <directlist> */
             bool skip_conn2track = true;
             std::vector<int> ipin_Fc_out;
             for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
@@ -1625,7 +1625,7 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
             int grid_type_index = grids.get_physical_type(opin_node_phy_tile_loc)->index;
 
             /* Get Fc of the ipin */
-            /* skip Fc = 0 or unintialized, those pins are in the <directlist> */
+            /* skip Fc = 0 or uninitialized, those pins are in the <directlist> */
             bool skip_conn2track = true;
             std::vector<int> opin_Fc_out;
             for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {

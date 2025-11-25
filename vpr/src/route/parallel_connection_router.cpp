@@ -17,7 +17,7 @@ static inline bool post_target_prune_node(float new_total_cost,
     // This is a correction factor to the forward cost to make the total
     // cost an under-estimate.
     // TODO: Should investigate creating a heuristic function that is
-    //       gaurenteed to be an under-estimate.
+    //       guaranteed to be an under-estimate.
     // NOTE: Found experimentally that using the original heuristic to order
     //       the nodes in the queue and then post-target pruning based on the
     //       under-estimating heuristic has better runtime.
@@ -80,7 +80,7 @@ static inline bool prune_node(RRNodeId inode,
     if (new_back_cost == best_back_cost) {
 #ifndef NON_DETERMINISTIC_PRUNING
         // With deterministic pruning, cannot always prune on ties.
-        // In the case of a true tie, just prune, no need to explore neightbors
+        // In the case of a true tie, just prune, no need to explore neighbors
         RREdgeId best_prev_edge = route_inf->prev_edge;
         if (new_prev_edge == best_prev_edge)
             return true;
@@ -95,7 +95,7 @@ static inline bool prune_node(RRNodeId inode,
             return false;
         // Finally, if this node is not coming from a preferred edge, prune
         // Deterministic version prefers a given EdgeID, so a unique path is returned since,
-        // in the case of a tie, a determinstic path wins.
+        // in the case of a tie, a deterministic path wins.
         // Is first preferred over second?
         auto is_preferred_edge = [](RREdgeId first, RREdgeId second) {
             return first < second;
@@ -134,10 +134,10 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
                                                 const t_conn_cost_params& params) {
 #ifndef NON_DETERMINISTIC_PRUNING
     // For deterministic pruning, cannot enforce anything on the total cost since
-    // traversal order is not gaurenteed. However, since total cost is used as a
+    // traversal order is not guaranteed. However, since total cost is used as a
     // "key" to signify that this node is the last node that was pushed, we can
     // just check for equality. There is a chance this may cause some duplicates
-    // for the deterministic case, but thats ok they will be handled.
+    // for the deterministic case, but that's ok they will be handled.
     // TODO: Maybe consider having the non-deterministic version do this too.
     if (new_total_cost != rr_node_route_inf_[inode].path_cost)
         return true;

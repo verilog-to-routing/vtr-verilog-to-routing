@@ -60,7 +60,7 @@
  *
  * The 'wireconn' entries define ordered source/destination sets of wire segments that should be connected with the specified permutation functions. The wireconn entries essentially "re-index" the channel so that a permutation function of 't/2' means that the t'th wire segment in the source wireconn set should connect to the [(t/2)%W]'th wire segment in the destination set where W is the size, or effective channel width, of the destination set (note that permutation functions are implicitly modulo W so that all functions evaluate to a number that indexes into the destination set).
  *
- * <!-- Specify that custom switch blocks will be used. This is backwards compatible with VPR's previous wilton/subset/univeral specification,
+ * <!-- Specify that custom switch blocks will be used. This is backwards compatible with VPR's previous wilton/subset/universal specification,
  * but "custom" is specified instead. -->
  * <switch_block type="custom"/>			<-- backwards-compatible with VPR's previous wilton/subset/universal/full specification
  * ...
