@@ -107,7 +107,7 @@ void power_tech_load_xml_file(const char* cmos_tech_behavior_filepath) {
     auto next = child.next_sibling("transistor");
     if (next) {
         vpr_throw(VPR_ERROR_POWER, loc_data.filename_c_str(), loc_data.line(next),
-                  "Encountered extra <transitor> section (expect 2 only: pmos and nmos)\n");
+                  "Encountered extra <transistor> section (expect 2 only: pmos and nmos)\n");
     }
 
     /* Multiplexer Voltage Information */
@@ -501,7 +501,7 @@ void power_find_buffer_strength_inf(t_power_buffer_strength_inf** lower,
  * based on the size of the multiplexer driving the input
  * - lower: (Return value) The lower-bound matching record
  * - upper: (Return value) The upper-bound matching record
- * - buffer_strength: The set of records to search withing, which are for a specific buffer size/strength
+ * - buffer_strength: The set of records to search within, which are for a specific buffer size/strength
  * - input_mux_size: The input mux size to search for
  */
 void power_find_buffer_sc_levr(t_power_buffer_sc_levr_inf** lower,

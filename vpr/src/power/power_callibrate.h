@@ -17,7 +17,7 @@
  ********************************************************************/
 
 /* This file provides functions used to verify the power estimations
- * againt SPICE.
+ * against SPICE.
  */
 
 /************************* DEFINES **********************************/
