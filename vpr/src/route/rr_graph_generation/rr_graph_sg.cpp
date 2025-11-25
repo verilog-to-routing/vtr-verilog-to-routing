@@ -120,7 +120,7 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
 
     // Two switch-block location adjacent to this channel segment
     std::array<t_physical_tile_loc, 2> adjacent_sb_loc;
-    
+
     switch (side) {
         case TOP:
             adjacent_sb_loc[0] = {x, y, layer};

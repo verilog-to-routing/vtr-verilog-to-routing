@@ -693,19 +693,19 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
 }
 
 static int get_track_to_ipins(RRGraphBuilder& rr_graph_builder,
-                             int layer,
-                             int seg,
-                             int chan,
-                             int track,
-                             int tracks_per_chan,
-                             RRNodeId from_rr_node,
-                             t_rr_edge_info_set& rr_edges_to_create,
-                             const t_track_to_pin_lookup& track_to_pin_lookup,
-                             const t_chan_seg_details* seg_details,
-                             e_rr_type chan_type,
-                             int chan_length,
-                             int wire_to_ipin_switch,
-                             e_directionality directionality) {
+                              int layer,
+                              int seg,
+                              int chan,
+                              int track,
+                              int tracks_per_chan,
+                              RRNodeId from_rr_node,
+                              t_rr_edge_info_set& rr_edges_to_create,
+                              const t_track_to_pin_lookup& track_to_pin_lookup,
+                              const t_chan_seg_details* seg_details,
+                              e_rr_type chan_type,
+                              int chan_length,
+                              int wire_to_ipin_switch,
+                              e_directionality directionality) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     // End of this wire

@@ -204,7 +204,7 @@ size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
 
             // Adjust for boundry conditions
             int x_offset = 0;
-            if ((x_start == 0) ||              // CHANX wires left boundry
+            if ((x_start == 0) ||               // CHANX wires left boundry
                 (x_start + repeat_.x == x_end)) // Avoid overlap
             {
                 x_offset = 1;
@@ -258,7 +258,7 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
 
             // Adjust for boundry conditions
             int x_offset = 0;
-            if ((x_start == 0) ||              // CHANX wires left boundry
+            if ((x_start == 0) ||               // CHANX wires left boundry
                 (x_start + repeat_.x == x_end)) // Avoid overlap
             {
                 x_offset = 1;

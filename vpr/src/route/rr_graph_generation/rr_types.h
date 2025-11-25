@@ -26,10 +26,9 @@ typedef std::vector<vtr::NdMatrix<std::vector<int>, 4>> t_pin_to_track_lookup;
  * [0..device_ctx.physical_tile_types.size()-1][0..max_chan_width - 1][0..width][0..height][0..3]
  *
  * @note When we model different channels based on position not axis,
-         we can't use this anymore and need to have a lookup for each grid location.
+ * we can't use this anymore and need to have a lookup for each grid location.
  */
 typedef std::vector<vtr::NdMatrix<std::vector<int>, 4>> t_track_to_pin_lookup;
-
 
 /**
  * @brief Lists detailed information about wire segments.  [0 .. W-1].

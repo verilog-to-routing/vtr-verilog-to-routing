@@ -44,9 +44,13 @@ static void setup_server_opts(const t_options& Options,
 static void setup_routing_arch(const t_arch& Arch, t_det_routing_arch& RoutingArch);
 
 static void setup_timing(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
+
+///@brief This loads up VPR's arch_switch_inf data by combining the switches
+///       from the arch file with the special switches that VPR needs.
 static void setup_switches(const t_arch& arch,
                            t_det_routing_arch& routing_arch,
                            const std::vector<t_arch_switch_inf>& arch_switches);
+
 static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
@@ -358,10 +362,6 @@ static void setup_timing(const t_options& Options, const bool TimingEnabled, t_t
     Timing->SDCFile = Options.SDCFile;
 }
 
-/**
- * @brief This loads up VPR's arch_switch_inf data by combining the switches
- *        from the arch file with the special switches that VPR needs.
- */
 static void setup_switches(const t_arch& arch,
                            t_det_routing_arch& routing_arch,
                            const std::vector<t_arch_switch_inf>& arch_switches) {
