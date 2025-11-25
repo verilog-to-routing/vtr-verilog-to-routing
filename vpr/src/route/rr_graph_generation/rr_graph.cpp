@@ -1424,13 +1424,11 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
     VTR_LOGV(route_verbosity > 1, "CHAN->CHAN type edge count:%d\n", num_edges);
 
-
     add_and_connect_non_3d_sg_links(rr_graph_builder,
                                     sg_links, sg_node_indices,
                                     chan_details_x, chan_details_y,
                                     num_seg_types_x, num_edges);
     VTR_LOGV(route_verbosity > 1, "Non-3D scatter-gather edge count:%d\n", num_edges);
-
 
     num_edges = 0;
     std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) noexcept {};
