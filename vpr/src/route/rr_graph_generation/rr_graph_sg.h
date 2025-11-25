@@ -11,10 +11,11 @@ class RRGraphView;
 struct t_bottleneck_link;
 
 /**
- * @brief builds the extra length-0 CHANX nodes to handle 3D custom switchblocks edges in the RR graph.
+ * @brief Builds CHANZ nodes to handle 3D switchblock edges in the RR graph.
  *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
  *  @param x_coord switch block x_coordinate
  *  @param y_coord switch block y-coordinate
+ *  @param interdie_3d_links 3D wires and their connectivity specification for the given location.
  *  @param const_index_offset index to the correct node type for RR node cost initialization
  */
 void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,

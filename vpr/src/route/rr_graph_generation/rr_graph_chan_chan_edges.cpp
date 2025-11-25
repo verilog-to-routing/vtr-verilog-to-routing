@@ -29,6 +29,24 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           int wire_to_ipin_switch,
                           e_directionality directionality);
 
+/**
+ * @brief Collects the edges fanning-out of the 'from' track which connect to
+ *  the 'to' tracks, according to the switch block pattern.
+ *
+ * It returns the number of connections added, and updates edge_list_ptr to
+ * point at the head of the (extended) linked list giving the nodes to which
+ * this segment connects and the switch type used to connect to each.
+ *
+ * An edge is added from this segment to a y-segment if:
+ * (1) this segment should have a switch box at that location, or
+ * (2) the y-segment to which it would connect has a switch box, and the switch
+ *     type of that y-segment is unbuffered (bidirectional pass transistor).
+ *
+ * For bidirectional:
+ * If the switch in each direction is a pass transistor (unbuffered), both
+ * switches are marked as being of the types of the larger (lower R) pass
+ * transistor.
+ */
 static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                                int layer,
                                int from_chan,
@@ -345,24 +363,6 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-/*
- * Collects the edges fanning-out of the 'from' track which connect to the 'to'
- * tracks, according to the switch block pattern.
- *
- * It returns the number of connections added, and updates edge_list_ptr to
- * point at the head of the (extended) linked list giving the nodes to which
- * this segment connects and the switch type used to connect to each.
- *
- * An edge is added from this segment to a y-segment if:
- * (1) this segment should have a switch box at that location, or
- * (2) the y-segment to which it would connect has a switch box, and the switch
- *     type of that y-segment is unbuffered (bidirectional pass transistor).
- *
- * For bidirectional:
- * If the switch in each direction is a pass transistor (unbuffered), both
- * switches are marked as being of the types of the larger (lower R) pass
- * transistor.
- */
 static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                                int layer,
                                int from_chan,
@@ -400,12 +400,12 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
 
     int from_switch = from_seg_details[from_track].arch_wire_switch();
 
-    //The absolute coordinate along the channel where the switch block at the
-    //beginning of the current wire segment is located
+    // The absolute coordinate along the channel where the switch block at the
+    // beginning of the current wire segment is located
     int start_sb_seg = from_seg - 1;
 
-    //The absolute coordinate along the channel where the switch block at the
-    //end of the current wire segment is located
+    // The absolute coordinate along the channel where the switch block at the
+    // end of the current wire segment is located
     int end_sb_seg = get_seg_end(from_seg_details, from_track, from_seg, from_chan, chan_len);
 
     // Figure out the sides of SB the from_wire will use
@@ -430,8 +430,8 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         end = to_seg;
     }
 
-    //Walk along the 'from' wire segment identifying if a switchblock is located
-    //at each coordinate and add any related fan-out connections to the 'from' wire segment
+    // Walk along the 'from' wire segment identifying if a switchblock is located
+    // at each coordinate and add any related fan-out connections to the 'from' wire segment
     int num_conn = 0;
     for (int sb_seg = start; sb_seg <= end; ++sb_seg) {
         if (sb_seg < start_sb_seg || sb_seg > end_sb_seg) {
@@ -454,7 +454,7 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
         // Get the coordinates of the current SB from the perspective of the destination channel.
         // i.e. for segments laid in the x-direction, sb_seg corresponds to the x coordinate and from_chan to the y,
         // but for segments in the y-direction, from_chan is the x coordinate and sb_seg is the y. So here we reverse
-        //the coordinates if necessary
+        // the coordinates if necessary
         if (from_type == to_type) {
             // Same channel
             to_chan = from_chan;
@@ -566,8 +566,8 @@ static int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 }
                 if (UNI_DIRECTIONAL == directionality) {
                     // No fanout if no SB.
-                    /* Also, we are connecting from the bottom or left of SB so it
-                     * makes the most sense to only get there from Direction::INC wires. */
+                    // Also, we are connecting from the bottom or left of SB so it
+                    // makes the most sense to only get there from Direction::INC wires.
                     if ((from_is_sblock)
                         && (Direction::INC == from_seg_details[from_track].direction())) {
                         num_conn += get_unidir_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan,

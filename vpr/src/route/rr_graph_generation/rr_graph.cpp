@@ -1541,8 +1541,7 @@ static void alloc_and_load_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
 
 void free_rr_graph() {
     // Frees all the routing graph data structures, if they have been allocated.
-    // I use rr_mem_chunk_list_head as a flag to indicate whether or not the graph has been allocated -- if it is not NULL,
-    // a routing graph exists and can be freed.  Hence, you can call this routine even if you're not sure of whether a rr_graph exists or not.
+    // You can call this routine even if you're not sure of whether a rr_graph exists or not.
 
     // Before adding any more free calls here, be sure the data is NOT chunk allocated, as ALL the chunk allocated data is already free!
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
@@ -1559,6 +1558,12 @@ void free_rr_graph() {
     device_ctx.switch_fanin_remap.clear();
 
     device_ctx.rr_graph_is_flat = false;
+
+    device_ctx.rr_chanx_segment_width.clear();
+    device_ctx.rr_chany_segment_width.clear();
+    device_ctx.rr_chanz_segment_width.clear();
+    device_ctx.rr_chanx_width.clear();
+    device_ctx.rr_chany_width.clear();
 
     invalidate_router_lookahead_cache();
 }

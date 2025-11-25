@@ -988,26 +988,26 @@ static void dijkstra_flood_to_wires(int itile,
     int ptc = rr_graph.node_ptc_num(node);
     int root_layer_num = rr_graph.node_layer_low(node);
 
-    /*
-     * Perform Dijkstra from the SOURCE/OPIN of interest, stopping at the first
-     * reachable wires (i.e. until we hit the inter-block routing network), or a SINK
-     * (via a direct-connect).
-     *
-     * Note that typical RR graphs are structured :
-     *
-     *      SOURCE ---> OPIN --> CHANX/CHANY
-     *              |
-     *              --> OPIN --> CHANX/CHANY
-     *              |
-     *             ...
-     *
-     *   possibly with direct-connects of the form:
-     *
-     *      SOURCE --> OPIN --> IPIN --> SINK
-     *
-     * and there is a small number of fixed hops from SOURCE/OPIN to CHANX/CHANY or
-     * to a SINK (via a direct-connect), so this runs very fast (i.e. O(1))
-     */
+
+    // Perform Dijkstra from the SOURCE/OPIN of interest, stopping at the first
+    // reachable wires (i.e. until we hit the inter-block routing network), or a SINK
+    // (via a direct-connect).
+    //
+    // Note that typical RR graphs are structured :
+    //
+    //      SOURCE ---> OPIN --> CHANX/CHANY/CHANZ
+    //              |
+    //              --> OPIN --> CHANX/CHANY/CHANZ
+    //              |
+    //             ...
+    //
+    //   possibly with direct-connects of the form:
+    //
+    //      SOURCE --> OPIN --> IPIN --> SINK
+    //
+    // and there is a small number of fixed hops from SOURCE/OPIN to CHANX/CHANY or
+    // to a SINK (via a direct-connect), so this runs very fast (i.e. O(1))
+
     pq.push(root);
     while (!pq.empty()) {
         t_pq_entry curr = pq.top();
@@ -1016,16 +1016,15 @@ static void dijkstra_flood_to_wires(int itile,
         e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
         int curr_layer_num = rr_graph.node_layer_low(curr.node);
         if (curr_rr_type == e_rr_type::CHANX || curr_rr_type == e_rr_type::CHANY || curr_rr_type == e_rr_type::CHANZ || curr_rr_type == e_rr_type::SINK) {
-            // We stop expansion at any CHANX/CHANY/SINK
+            // We stop expansion at any CHANX/CHANY/CHANZ/SINK
             int seg_index;
             if (curr_rr_type != e_rr_type::SINK) {
-                //It's a wire, figure out its type
+                // It's a wire, figure out its type
                 RRIndexedDataId cost_index = rr_graph.node_cost_index(curr.node);
                 seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
             } else {
                 // This is a direct-connect path between an IPIN and OPIN,
                 // which terminated at a SINK.
-                //
                 // We treat this as a 'special' wire type.
                 // When the src_opin_delays data structure is queried and a SINK rr_type
                 // is found, the lookahead is not accessed to get the cost entries
@@ -1033,6 +1032,8 @@ static void dijkstra_flood_to_wires(int itile,
                 seg_index = DIRECT_CONNECT_SPECIAL_SEG_TYPE;
             }
 
+            // Reaching a CHANZ nodes means that we are moving to a different layer than
+            // where root node is located. It's assumed that there are only two layers.
             if (curr_rr_type == e_rr_type::CHANZ) {
                 curr_layer_num = (root_layer_num + 1) % 2;
             }
@@ -1048,9 +1049,9 @@ static void dijkstra_flood_to_wires(int itile,
             }
 
         } else if (curr_rr_type == e_rr_type::SOURCE || curr_rr_type == e_rr_type::OPIN || curr_rr_type == e_rr_type::IPIN || curr_rr_type == e_rr_type::MUX) {
-            //We allow expansion through SOURCE/OPIN/IPIN types
+            // We allow expansion through SOURCE/OPIN/IPIN types
             RRIndexedDataId cost_index = rr_graph.node_cost_index(curr.node);
-            float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
+            float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; // Current nodes congestion cost
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
                 int iswitch = rr_graph.rr_nodes().edge_switch(edge);
@@ -1064,8 +1065,8 @@ static void dijkstra_flood_to_wires(int itile,
                 }
 
                 t_pq_entry next;
-                next.congestion = curr.congestion + incr_cong; //Of current node
-                next.delay = curr.delay + incr_delay;          //To reach next node
+                next.congestion = curr.congestion + incr_cong; // Of current node
+                next.delay = curr.delay + incr_delay;          // To reach next node
                 next.node = next_node;
 
                 pq.push(next);
