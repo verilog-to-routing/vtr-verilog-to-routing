@@ -2294,16 +2294,16 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
     std::vector<bool> perturb_opins(segment_inf.size(), false);
 
     if (segment_inf.size() > 1) {
-        /* Segments of one length are grouped together in the channel.	*
-         *  In the future we can determine if any of these segments will	*
-         *  encounter the pathological step size case, and determine if	*
-         *  we need to perturb based on the segment's frequency (if 	*
-         *  frequency is small we should not perturb - testing has found	*
-         *  that perturbing a channel when unnecessary increases needed	*
-         *  W to achieve the same delay); but for now we just return.	*/
+        // Segments of one length are grouped together in the channel.
+        // In the future we can determine if any of these segments will
+        // encounter the pathological step size case, and determine if
+        // we need to perturb based on the segment's frequency (if
+        // frequency is small we should not perturb - testing has found
+        // that perturbing a channel when unnecessary increases needed
+        // W to achieve the same delay); but for now we just return.
         return perturb_opins;
     } else {
-        /* There are as many wire start points as the value of L */
+        // There are as many wire start points as the value of L
         num_wire_types = segment_inf[0].length;
     }
 
@@ -2315,25 +2315,22 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
             Fc_max = Fc_out[i][0];
         }
     }
-    /* Nothing to perturb if Fc=0; no need to perturb if Fc = 1 */
+
+    // Nothing to perturb if Fc=0; no need to perturb if Fc = 1
     if (Fc_max == 0 || Fc_max == max_chan_width) {
         return perturb_opins;
     }
 
-    /* Pathological cases occur when the step size, W/Fc, is a multiple of	*
-     *  the number of wire starting points, L. Specifically, when the step 	*
-     *  size is a multiple of a prime factor of L, the connection pattern	*
-     *  will always skip some wires. Thus, we perturb pins if we detect this	*
-     *  case.								*/
+    // Pathological cases occur when the step size, W/Fc, is a multiple of
+    // the number of wire starting points, L. Specifically, when the step
+    // size is a multiple of a prime factor of L, the connection pattern
+    // will always skip some wires. Thus, we perturb pins if we detect this	case.
 
     // get an upper bound on the number of prime factors of num_wire_types
     int max_primes = (int)floor(log((float)num_wire_types) / log(2.0));
-    max_primes = std::max(max_primes, 1); //Minimum of 1 to ensure we allocate space for at least one prime_factor
+    max_primes = std::max(max_primes, 1); // Minimum of 1 to ensure we allocate space for at least one prime_factor
 
-    int* prime_factors = new int[max_primes];
-    for (int i = 0; i < max_primes; i++) {
-        prime_factors[i] = 0;
-    }
+    std::vector<int> prime_factors(max_primes, 0);
 
     // Find the prime factors of num_wire_types
     int num = num_wire_types;
@@ -2351,11 +2348,11 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
         }
     }
     if (num_factors == 0) {
-        prime_factors[num_factors++] = num_wire_types; /* covers cases when num_wire_types is prime */
+        prime_factors[num_factors++] = num_wire_types; // covers cases when num_wire_types is prime
     }
 
-    /* Now see if step size is an approximate multiple of one of the factors. A 	*
-     *  threshold is used because step size may not be an integer.			*/
+    // Now see if step size is an approximate multiple of one of the factors.
+    // A threshold is used because step size may not be an integer.
     step_size = (float)max_chan_width / Fc_max;
     for (int i = 0; i < num_factors; i++) {
         if (vtr::nint(step_size) < prime_factors[i]) {
@@ -2364,7 +2361,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
         }
 
         n = step_size / prime_factors[i];
-        n = n - (float)vtr::nint(n); /* fractional part */
+        n = n - (float)vtr::nint(n); // fractional part
         if (fabs(n) < threshold) {
             perturb_opins[0] = true;
             break;
@@ -2372,7 +2369,6 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
             perturb_opins[0] = false;
         }
     }
-    delete[] prime_factors;
 
     return perturb_opins;
 }
