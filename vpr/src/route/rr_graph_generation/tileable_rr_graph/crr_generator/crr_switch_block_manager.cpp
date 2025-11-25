@@ -95,6 +95,17 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
     }
 }
 
+std::string SwitchBlockManager::get_pattern_file_name(const std::string& pattern) const {
+    auto it = switch_block_to_file_.find(pattern);
+
+    if (it == switch_block_to_file_.end()) {
+        return "";
+    } else {
+        std::filesystem::path path(it->second);
+        return path.filename().string();
+    }
+}
+
 const DataFrame* SwitchBlockManager::get_switch_block_dataframe(const std::string& pattern) const {
     auto it = dataframes_.find(pattern);
     return (it != dataframes_.end()) ? it->second : nullptr;

@@ -30,6 +30,11 @@ class SwitchBlockManager {
                     const bool is_annotated_excel);
 
     /**
+     * @brief Get the switch template file name for a given pattern
+     */
+    std::string get_pattern_file_name(const std::string& pattern) const;
+
+    /**
      * @brief Get DataFrame for a specific switch block pattern
      * @param pattern Switch block pattern name (e.g., "SB_1__2_")
      * @return Pointer to DataFrame or nullptr if not found
