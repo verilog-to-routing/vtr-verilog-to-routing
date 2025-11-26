@@ -826,7 +826,7 @@ class t_rr_graph_storage {
      * of the node. Also, the information about switches is fly-weighted and are accessible with IDs. Thus,
      * the number of rr switch types can be higher than the number of arch switch types.
      */
-    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped);
+    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped, std::string crr_id);
 
     /** @brief Adds a batch of edges.*/
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
@@ -1092,6 +1092,8 @@ class t_rr_graph_storage {
      * corresponds to the architecture ID or the RR Graph switch ID for an edge.
     */
     vtr::vector<RREdgeId, bool> edge_remapped_;
+
+    vtr::vector<RREdgeId, std::string> edge_crr_id_;
 
     /** @brief
      * The following data structures are only used for tileable routing resource graph.
