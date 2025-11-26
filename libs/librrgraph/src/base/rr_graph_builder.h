@@ -12,6 +12,7 @@
  *
  */
 
+#include <string>
 #include "rr_graph_storage.h"
 #include "rr_spatial_lookup.h"
 #include "metadata_storage.h"
@@ -332,8 +333,8 @@ class RRGraphBuilder {
      * remap the arch switch id to rr switch id, the edge switch id of this edge shouldn't be changed. For example, when the intra-cluster graph
      * is built and the rr-graph related to global resources are read from a file, this parameter is true since the intra-cluster switches are
      * also listed in rr-graph file. So, we use that list to use the rr switch id instead of passing arch switch id for intra-cluster edges.*/
-    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped) {
-        node_storage_.emplace_back_edge(src, dest, edge_switch, remapped);
+    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped, std::string crr_id="") {
+        node_storage_.emplace_back_edge(src, dest, edge_switch, remapped, std::move(crr_id));
     }
     /** @brief Append 1 more RR node to the RR graph. */
     inline void emplace_back() {
