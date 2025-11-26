@@ -154,7 +154,7 @@ class Connection {
             : sink_node_(sink_node)
             , src_node_(src_node)
             , delay_ps_(delay_ps)
-            , crr_id_(crr_id_) {}
+            , crr_id_(std::move(crr_id)) {}
 
         RRNodeId sink_node() const { return sink_node_; }
         RRNodeId src_node() const { return src_node_; }
