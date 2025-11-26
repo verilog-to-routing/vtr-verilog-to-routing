@@ -12,13 +12,13 @@ struct t_rr_edge_info {
         , to_node(to)
         , switch_type(type)
         , remapped(is_remapped)
-        , crr_id_(std::move(crr_id_)) {}
+        , crr_id(std::move(crr_id_)) {}
 
     RRNodeId from_node = RRNodeId::INVALID();
     RRNodeId to_node = RRNodeId::INVALID();
     short switch_type = LIBRRGRAPH_UNDEFINED_VAL;
     bool remapped = false;
-    std::string crr_id_ = "";
+    std::string crr_id = "";
 
     friend bool operator<(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
         VTR_ASSERT(lhs.remapped == rhs.remapped);
