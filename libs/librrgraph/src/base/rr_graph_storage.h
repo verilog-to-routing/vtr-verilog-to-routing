@@ -20,6 +20,7 @@
 #include <numeric>
 #include <optional>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 /* Main structure describing one routing resource node.  Everything in       *
@@ -482,6 +483,10 @@ class t_rr_graph_storage {
      */
     RRNodeId edge_source_node(const RRNodeId id, t_edge_size iedge) const {
         return edge_source_node(edge_id(id, iedge));
+    }
+
+    std::string edge_crr_id(RREdgeId edge) const {
+        return edge_crr_id_[edge];
     }
 
     /** 

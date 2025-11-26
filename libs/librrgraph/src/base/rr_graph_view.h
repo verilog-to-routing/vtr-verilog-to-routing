@@ -63,6 +63,7 @@
  */
 
 #include "metadata_storage.h"
+#include "rr_graph_fwd.h"
 #include "rr_node.h"
 #include "physical_types.h"
 #include "rr_node_types.h"
@@ -512,6 +513,10 @@ class RRGraphView {
      */
     inline RRNodeId edge_source_node(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_source_node(id, iedge);
+    }
+
+    inline std::string edge_crr_id(RREdgeId edge) const {
+        return node_storage_.edge_crr_id(edge);
     }
 
     /** @brief Check if the edge is a configurable edge 
