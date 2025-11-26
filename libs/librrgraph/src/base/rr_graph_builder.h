@@ -289,7 +289,7 @@ class RRGraphBuilder {
 
     /** @brief Add a new edge to the cache of edges to be built 
      *  @note This will not add an edge to storage. You need to call build_edges() after all the edges are cached. */
-    void create_edge_in_cache(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped);
+    void create_edge_in_cache(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped, std::string crr_id_="");
 
     /** @brief Add a new edge to the cache of edges to be built 
      *  @note This will not add an edge to storage! You need to call build_edges() after all the edges are cached! */

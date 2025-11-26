@@ -12,7 +12,7 @@ struct t_rr_edge_info {
         , to_node(to)
         , switch_type(type)
         , remapped(is_remapped)
-        , crr_id_(crr_id_) {}
+        , crr_id_(std::move(crr_id_)) {}
 
     RRNodeId from_node = RRNodeId::INVALID();
     RRNodeId to_node = RRNodeId::INVALID();

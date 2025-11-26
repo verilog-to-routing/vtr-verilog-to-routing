@@ -176,8 +176,8 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
     });
 }
 
-void RRGraphBuilder::create_edge_in_cache(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped) {
-    edges_to_build_.emplace_back(src, dest, size_t(edge_switch), remapped);
+void RRGraphBuilder::create_edge_in_cache(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped, std::string crr_id_) {
+    edges_to_build_.emplace_back(src, dest, size_t(edge_switch), remapped, std::move(crr_id_));
     is_edge_dirty_ = true; // Adding a new edge revokes the flag
     is_incoming_edge_dirty_ = true;
 }
