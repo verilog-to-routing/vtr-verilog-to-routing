@@ -2,11 +2,12 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: 040903603053940a1b24392c38663b59
+# Cmdline: uxsdcxx/uxsdcap.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
 
-@0xe7650575a8718aa2;
+# md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
+
+@0xe787bf7696810419;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -36,12 +37,10 @@ enum NodeType {
 	uxsdInvalid @0;
 	chanx @1;
 	chany @2;
-	chanz @3;
-	source @4;
-	sink @5;
-	opin @6;
-	ipin @7;
-	mux @8;
+	source @3;
+	sink @4;
+	opin @5;
+	ipin @6;
 }
 
 enum NodeDirection {
@@ -178,10 +177,10 @@ struct GridLocs {
 }
 
 struct NodeLoc {
-	layerHigh @0 :Int32 = 0;
-	layerLow @1 :Int32 = 0;
-	ptc @2 :Text;
-	side @3 :LocSide;
+	layer @0 :Int32 = 0;
+	ptc @1 :Text;
+	side @2 :LocSide;
+	twist @3 :Int32;
 	xhigh @4 :Int32;
 	xlow @5 :Int32;
 	yhigh @6 :Int32;
