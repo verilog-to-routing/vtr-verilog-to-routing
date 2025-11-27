@@ -16,6 +16,7 @@ void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_dest_node_.reserve(num_edges);
     edge_switch_.reserve(num_edges);
     edge_remapped_.reserve(num_edges);
+    edge_crr_id_.reserve(num_edges);
 }
 
 void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped, std::string crr_id) {
@@ -50,6 +51,7 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
         edge_dest_node_.reserve(new_capacity);
         edge_switch_.reserve(new_capacity);
         edge_remapped_.reserve(new_capacity);
+        edge_crr_id_.reserve(new_capacity);
     }
 
     for (const t_rr_edge_info& new_edge : *rr_edges_to_create) {
@@ -89,6 +91,7 @@ void t_rr_graph_storage::remove_edges(std::vector<RREdgeId>& rr_edges_to_remove)
         edge_src_node_[erase_idx] = edge_src_node_[RREdgeId(edge_list_end)];
         edge_switch_[erase_idx] = edge_switch_[RREdgeId(edge_list_end)];
         edge_remapped_[erase_idx] = edge_remapped_[RREdgeId(edge_list_end)];
+        edge_crr_id_[erase_idx] = edge_crr_id_[RREdgeId(edge_list_end)];
 
         // At this point we have no copies of what was at erase_idx and two copies of
         // what was at the end of the list. If we make the list one element shorter,
@@ -103,6 +106,7 @@ void t_rr_graph_storage::remove_edges(std::vector<RREdgeId>& rr_edges_to_remove)
     edge_src_node_.erase(edge_src_node_.begin() + edge_list_end + 1, edge_src_node_.end());
     edge_switch_.erase(edge_switch_.begin() + edge_list_end + 1, edge_switch_.end());
     edge_remapped_.erase(edge_remapped_.begin() + edge_list_end + 1, edge_remapped_.end());
+    edge_crr_id_.erase(edge_crr_id_.begin() + edge_list_end + 1, edge_crr_id_.end());
 
     VTR_ASSERT(edge_dest_node_.size() == (starting_edge_count - rr_edges_to_remove.size()));
 
@@ -128,6 +132,7 @@ void t_rr_graph_storage::assign_first_edges() {
     VTR_ASSERT(edge_dest_node_.size() == num_edges);
     VTR_ASSERT(edge_switch_.size() == num_edges);
     VTR_ASSERT(edge_remapped_.size() == num_edges);
+    VTR_ASSERT(edge_crr_id_.size() == num_edges);
 
     while (true) {
         VTR_ASSERT(first_edge_id < num_edges);
@@ -813,6 +818,7 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(edge_src_node_),
         vtr::make_const_array_view_id(edge_dest_node_),
         vtr::make_const_array_view_id(edge_switch_),
+        vtr::make_const_array_view_id(edge_crr_id_),
         virtual_clock_network_root_idx_,
         vtr::make_const_array_view_id(node_bend_start_),
         vtr::make_const_array_view_id(node_bend_end_));
@@ -851,6 +857,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         auto old_edge_dest_node = edge_dest_node_;
         auto old_edge_switch = edge_switch_;
         auto old_edge_remapped = edge_remapped_;
+        auto old_edge_crr_id = edge_crr_id_;
         RREdgeId cur_edge(0);
 
         // Reorder edges by source node
@@ -864,6 +871,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                 edge_dest_node_[cur_edge] = order[old_edge_dest_node[e]];
                 edge_switch_[cur_edge] = old_edge_switch[e];
                 edge_remapped_[cur_edge] = old_edge_remapped[e];
+                edge_crr_id_[cur_edge] = old_edge_crr_id[e];
                 cur_edge = RREdgeId(size_t(cur_edge) + 1);
             }
         }

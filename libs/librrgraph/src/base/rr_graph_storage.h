@@ -631,6 +631,7 @@ class t_rr_graph_storage {
         edge_dest_node_.clear();
         edge_switch_.clear();
         edge_remapped_.clear();
+        edge_crr_id_.clear();
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
@@ -667,6 +668,7 @@ class t_rr_graph_storage {
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
         edge_remapped_.shrink_to_fit();
+        edge_crr_id_.shrink_to_fit();
     }
 
     /** @brief Append 1 more RR node to the RR graph.*/
@@ -931,6 +933,7 @@ class t_rr_graph_storage {
         array_rearrange(edge_src_node_, RRNodeId::INVALID());
         array_rearrange(edge_dest_node_, RRNodeId::INVALID());
         array_rearrange(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
+        array_rearrange(edge_crr_id_, "");
         array_rearrange(edge_remapped_, false);
     }
 
@@ -1164,6 +1167,7 @@ class t_rr_graph_view {
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch,
+        const vtr::array_view_id<RREdgeId, const std::string> edge_crr_id,
         const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx,
         const vtr::array_view_id<RRNodeId, const int16_t> node_bend_start,
         const vtr::array_view_id<RRNodeId, const int16_t> node_bend_end)
@@ -1176,6 +1180,7 @@ class t_rr_graph_view {
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
         , edge_switch_(edge_switch)
+        , edge_crr_id_(edge_crr_id)
         , virtual_clock_network_root_idx_(virtual_clock_network_root_idx)
         , node_bend_start_(node_bend_start)
         , node_bend_end_(node_bend_end) {}
@@ -1364,6 +1369,10 @@ class t_rr_graph_view {
         return edge_switch_[edge];
     }
 
+    std::string edge_crr_id(RREdgeId edge) const {
+        return edge_crr_id_[edge];
+    }
+
   private:
     RREdgeId first_edge(RRNodeId id) const {
         return node_first_edge_[id];
@@ -1382,6 +1391,7 @@ class t_rr_graph_view {
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
+    vtr::array_view_id<RREdgeId, const std::string> edge_crr_id_;
     const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx_;
 
     vtr::array_view_id<RRNodeId, const int16_t> node_bend_start_;
