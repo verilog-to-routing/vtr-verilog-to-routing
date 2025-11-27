@@ -23,7 +23,69 @@
 #include "segment_stats.h"
 #include "channel_stats.h"
 
+#include "crr_common.h"
+
 /********************** Subroutines local to this module *********************/
+
+// Helper struct to parse the sb_id keys
+struct SBKeyParts {
+    std::string filename;
+    size_t row;
+    size_t col;
+};
+
+// Parse the key to extract filename, row, and column
+static SBKeyParts parse_sb_key(const std::string& key) {
+    SBKeyParts parts;
+    
+    // Find the last two underscores
+    size_t last_underscore = key.rfind('_');
+    size_t second_last_underscore = key.rfind('_', last_underscore - 1);
+    
+    parts.filename = key.substr(0, second_last_underscore);
+    parts.row = std::stoi(key.substr(second_last_underscore + 1, last_underscore - second_last_underscore - 1));
+    parts.col = std::stoi(key.substr(last_underscore + 1));
+    
+    return parts;
+}
+
+// Read CSV file and keep first NUM_EMPTY_ROWS rows completely and first NUM_EMPTY_COLS columns of all other rows
+static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string& filepath) {
+    std::vector<std::vector<std::string>> data;
+    std::ifstream file(filepath);
+    
+    if (!file.is_open()) {
+        return data;
+    }
+    
+    std::string line;
+    int row_count = 0;
+    while (std::getline(file, line)) {
+        std::vector<std::string> row;
+        std::stringstream ss(line);
+        std::string cell;
+        int col_count = 0;
+        
+        if (row_count < NUM_EMPTY_ROWS) {
+            // Keep entire row for first NUM_EMPTY_ROWS rows
+            while (std::getline(ss, cell, ',')) {
+                row.push_back(cell);
+            }
+        } else {
+            // Keep only first NUM_EMPTY_COLS columns for other rows
+            while (std::getline(ss, cell, ',') && col_count < NUM_EMPTY_COLS) {
+                row.push_back(cell);
+                col_count++;
+            }
+        }
+        
+        data.push_back(row);
+        row_count++;
+    }
+    
+    file.close();
+    return data;
+}
 
 /**
  * @brief Loads the two arrays passed in with the total occupancy at each of the
@@ -149,9 +211,6 @@ void write_sb_count_stats(const Netlist<>& net_list, const std::string& /*out_di
 
                 RRNodeId src_node = parent_rt_node.inode;
                 RRNodeId sink_node = rt_node.inode;
-                if (size_t(src_node) == 175454 && size_t(sink_node) == 213534) {
-                    VTR_LOG("Here - Source node: %zu, Sink node: %zu\n", size_t(src_node), size_t(sink_node));
-                }
                 std::vector<RREdgeId> edges = rr_graph.find_edges(src_node, sink_node);
                 VTR_ASSERT(edges.size() == 1);
                 std::string sb_id = rr_graph.edge_crr_id(edges[0]);
@@ -167,11 +226,6 @@ void write_sb_count_stats(const Netlist<>& net_list, const std::string& /*out_di
     }
 
     // Write the sb_count to a file
-    std::ofstream file("sb_count.txt");
-    for (const auto& [sb_id, count] : sb_count) {
-        file << sb_id << "," << count << "\n";
-    }
-    file.close();
 }
 
 void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
