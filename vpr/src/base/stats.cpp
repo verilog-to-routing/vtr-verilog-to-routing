@@ -126,6 +126,54 @@ void routing_stats(const Netlist<>& net_list,
     }
 }
 
+void write_sb_count_stats(const Netlist<>& net_list, const std::string& /*out_dir*/) {
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    const auto& route_ctx = g_vpr_ctx.routing();
+    std::unordered_map<std::string, int> sb_count;
+
+    for (ParentNetId net_id : net_list.nets()) {
+        if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) {
+            const vtr::optional<RouteTree>& tree = route_ctx.route_trees[net_id];
+            if (!tree) {
+                continue;
+            }
+
+            for (const RouteTreeNode& rt_node : tree.value().all_nodes()) {
+                auto parent = rt_node.parent();
+                // Skip the root node
+                if (!parent) {
+                    continue;
+                }
+
+                const RouteTreeNode& parent_rt_node = parent.value();
+
+                RRNodeId src_node = parent_rt_node.inode;
+                RRNodeId sink_node = rt_node.inode;
+                if (size_t(src_node) == 175454 && size_t(sink_node) == 213534) {
+                    VTR_LOG("Here - Source node: %zu, Sink node: %zu\n", size_t(src_node), size_t(sink_node));
+                }
+                std::vector<RREdgeId> edges = rr_graph.find_edges(src_node, sink_node);
+                VTR_ASSERT(edges.size() == 1);
+                std::string sb_id = rr_graph.edge_crr_id(edges[0]);
+                if (sb_id.empty()) {
+                    continue;
+                }
+                if (sb_count.find(sb_id) == sb_count.end()) {
+                    sb_count[sb_id] = 0;
+                }
+                sb_count[sb_id]++;
+            }
+        }
+    }
+
+    // Write the sb_count to a file
+    std::ofstream file("sb_count.txt");
+    for (const auto& [sb_id, count] : sb_count) {
+        file << sb_id << "," << count << "\n";
+    }
+    file.close();
+}
+
 void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int max_bends = 0;
     int total_bends = 0;

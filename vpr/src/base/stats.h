@@ -24,6 +24,8 @@ void routing_stats(const Netlist<>& net_list,
                    RRSwitchId wire_to_ipin_switch,
                    bool is_flat);
 
+void write_sb_count_stats(const Netlist<>& net_list, const std::string& out_dir);
+
 void print_wirelen_prob_dist(bool is_flat);
 
 void print_lambda();
