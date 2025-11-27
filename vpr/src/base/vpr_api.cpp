@@ -1510,6 +1510,10 @@ void vpr_analysis(const Netlist<>& net_list,
                   vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
                   is_flat);
 
+    if (!vpr_setup.CRROpts.sb_count_dir.empty()) {
+        write_sb_count_stats(net_list, vpr_setup.CRROpts.sb_count_dir);
+    }
+
     if (vpr_setup.TimingEnabled) {
         //Load the net delays
 
