@@ -1,8 +1,11 @@
 
 #include "stats.h"
 
-#include <set>
 #include <fstream>
+#include <sstream>
+#include <vector>
+#include <algorithm>
+#include <filesystem>
 #include <string>
 #include <iomanip>
 
@@ -24,6 +27,8 @@
 #include "channel_stats.h"
 
 #include "crr_common.h"
+
+namespace fs = std::filesystem;
 
 /********************** Subroutines local to this module *********************/
 
@@ -66,14 +71,14 @@ static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string
         std::string cell;
         int col_count = 0;
         
-        if (row_count < NUM_EMPTY_ROWS) {
+        if (row_count < crrgenerator::NUM_EMPTY_ROWS) {
             // Keep entire row for first NUM_EMPTY_ROWS rows
             while (std::getline(ss, cell, ',')) {
                 row.push_back(cell);
             }
         } else {
             // Keep only first NUM_EMPTY_COLS columns for other rows
-            while (std::getline(ss, cell, ',') && col_count < NUM_EMPTY_COLS) {
+            while (std::getline(ss, cell, ',') && col_count < crrgenerator::NUM_EMPTY_COLS) {
                 row.push_back(cell);
                 col_count++;
             }
@@ -85,6 +90,23 @@ static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string
     
     file.close();
     return data;
+}
+
+// Write 2D vector to CSV file
+void write_csv(const std::string& filepath, const std::vector<std::vector<std::string>>& data) {
+    std::ofstream file(filepath);
+    
+    for (size_t i = 0; i < data.size(); ++i) {
+        for (size_t j = 0; j < data[i].size(); ++j) {
+            file << data[i][j];
+            if (j < data[i].size() - 1) {
+                file << ",";
+            }
+        }
+        file << "\n";
+    }
+    
+    file.close();
 }
 
 /**
@@ -188,7 +210,9 @@ void routing_stats(const Netlist<>& net_list,
     }
 }
 
-void write_sb_count_stats(const Netlist<>& net_list, const std::string& /*out_dir*/) {
+void write_sb_count_stats(const Netlist<>& net_list,
+                          const std::string& sb_map_dir,
+                          const std::string& sb_count_dir) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     const auto& route_ctx = g_vpr_ctx.routing();
     std::unordered_map<std::string, int> sb_count;
@@ -226,6 +250,68 @@ void write_sb_count_stats(const Netlist<>& net_list, const std::string& /*out_di
     }
 
     // Write the sb_count to a file
+    // First, read all CSV files from directory and trim them
+    std::unordered_map<std::string, std::vector<std::vector<std::string>>> csv_data;
+    
+    for (const auto& entry : fs::directory_iterator(sb_map_dir)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".csv") {
+            std::string filename = entry.path().filename().string();
+            csv_data[filename] = read_and_trim_csv(entry.path().string());
+        }
+    }
+    
+    // Group sb_count entries by filename
+    std::unordered_map<std::string, std::vector<std::pair<int, std::pair<int, int>>>> file_groups;
+    
+    for (const auto& [sb_id, count] : sb_count) {
+        SBKeyParts parts = parse_sb_key(sb_id);
+        file_groups[parts.filename].push_back({parts.row, {parts.col, count}});
+    }
+    
+    // Process each file
+    for (auto& [filename, data] : csv_data) {
+        // Check if this file has updates from sb_count
+        if (file_groups.find(filename) == file_groups.end()) {
+            // No updates for this file, just write trimmed version
+            std::string output_path = sb_count_dir + "/" + filename;
+            write_csv(output_path, data);
+            VTR_LOG("Written trimmed CSV: %s\n", filename.c_str());
+            continue;
+        }
+        
+        const auto& entries = file_groups[filename];
+        
+        // Find maximum row and column needed
+        int max_row = 0, max_col = 0;
+        for (const auto& entry : entries) {
+            max_row = std::max(max_row, entry.first);
+            max_col = std::max(max_col, entry.second.first);
+        }
+        
+        // Expand data structure if needed
+        while (data.size() <= static_cast<size_t>(max_row)) {
+            data.push_back(std::vector<std::string>());
+        }
+        
+        for (auto& row : data) {
+            while (row.size() <= static_cast<size_t>(max_col)) {
+                row.push_back("");
+            }
+        }
+        
+        // Update values from sb_count
+        for (const auto& entry : entries) {
+            int row = entry.first;
+            int col = entry.second.first;
+            int count = entry.second.second;
+            data[row][col] = std::to_string(count);
+        }
+        
+        // Write updated file
+        std::string output_path = sb_count_dir + "/" + filename;
+        write_csv(output_path, data);
+        VTR_LOG("Written switchbox counts to: %s\n", filename.c_str());
+    }
 }
 
 void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
