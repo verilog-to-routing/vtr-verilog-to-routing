@@ -293,6 +293,7 @@ struct t_options {
     argparse::ArgValue<bool> preserve_output_pin_connections;
     argparse::ArgValue<bool> annotated_rr_graph;
     argparse::ArgValue<bool> remove_dangling_nodes;
+    argparse::ArgValue<std::string> sb_count_dir;
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);

@@ -3316,6 +3316,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Whether the generated CRR should remove CHANX and CHANY nodes that have no fan-in")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
+    
+    crr_grp.add_argument(args.sb_count_dir, "--sb_count_dir")
+        .help("Directory to store csv files showing how many times each switch specified in the switch block templates is used")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");
 

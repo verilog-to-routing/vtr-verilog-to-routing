@@ -1419,6 +1419,7 @@ struct t_crr_opts {
     bool preserve_output_pin_connections;
     bool annotated_rr_graph;
     bool remove_dangling_nodes;
+    std::string sb_count_dir;
 };
 
 /// Stores NoC specific options, when supplied as an input by the user
