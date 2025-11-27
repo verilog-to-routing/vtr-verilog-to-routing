@@ -564,7 +564,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
         std::vector<RRNodeId> rr_nodes;
         switch (side) {
             case TOP: /* TOP = 0 */
-                /* For the boarder, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.y() == grids.height() - 2) {
 
                     break;
@@ -600,7 +600,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 
                 break;
             case RIGHT: /* RIGHT = 1 */
-                /* For the boarder, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.x() == grids.width() - 2) {
 
                     break;
@@ -635,7 +635,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 }
                 break;
             case BOTTOM: /* BOTTOM = 2 */
-                /* For the boarder, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.y() == 0) {
 
                     break;
@@ -670,7 +670,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 }
                 break;
             case LEFT: /* BOTTOM = 2 */
-                /* For the boarder, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.x() == 0) {
 
                     break;

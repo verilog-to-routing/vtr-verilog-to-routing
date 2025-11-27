@@ -80,7 +80,7 @@ static inline bool prune_node(RRNodeId inode,
     if (new_back_cost == best_back_cost) {
 #ifndef NON_DETERMINISTIC_PRUNING
         // With deterministic pruning, cannot always prune on ties.
-        // In the case of a true tie, just prune, no need to explore neighbors
+        // In the case of a true tie, just prune, no need to explore neighbours
         RREdgeId best_prev_edge = route_inf->prev_edge;
         if (new_prev_edge == best_prev_edge)
             return true;
