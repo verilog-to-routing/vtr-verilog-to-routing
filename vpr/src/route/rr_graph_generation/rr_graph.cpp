@@ -421,6 +421,7 @@ void create_rr_graph(e_graph_type graph_type,
                      t_det_routing_arch& det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
+                     const t_crr_opts& crr_opts,
                      const std::vector<t_direct_inf>& directs,
                      int* Warnings,
                      bool is_flat) {
@@ -501,6 +502,7 @@ void create_rr_graph(e_graph_type graph_type,
                 build_tileable_unidir_rr_graph(block_types,
                                                grid,
                                                nodes_per_chan,
+                                               crr_opts,
                                                det_routing_arch.switch_block_type,
                                                det_routing_arch.Fs,
                                                det_routing_arch.switch_block_subtype,
@@ -1126,7 +1128,12 @@ static void build_rr_graph(e_graph_type graph_type,
     // Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
 
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, wire_to_rr_ipin_switch, base_cost_type);
+    rr_graph_externals(segment_inf,
+                       segment_inf_x,
+                       segment_inf_y,
+                       segment_inf_z,
+                       wire_to_rr_ipin_switch,
+                       base_cost_type);
 
     const VibDeviceGrid vib_grid;
     check_rr_graph(device_ctx.rr_graph,
