@@ -35,8 +35,8 @@ namespace fs = std::filesystem;
 // Helper struct to parse the sb_id keys
 struct SBKeyParts {
     std::string filename;
-    size_t row;
-    size_t col;
+    int row;
+    int col;
 };
 
 // Parse the key to extract filename, row, and column
