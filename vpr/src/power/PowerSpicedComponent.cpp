@@ -14,7 +14,7 @@ bool sorter_PowerCalibSize(PowerCalibSize* a, PowerCalibSize* b);
 bool sorter_PowerCalibInputs(PowerCalibInputs* a, PowerCalibInputs* b);
 
 PowerCalibInputs::PowerCalibInputs(PowerSpicedComponent* parent_,
-                                     float inputs)
+                                   float inputs)
     : parent(parent_)
     , num_inputs(inputs)
     , sorted(false)
@@ -65,7 +65,7 @@ void PowerCalibInputs::calibrate() {
 }
 
 PowerCalibSize* PowerCalibInputs::get_entry_bound(bool lower,
-                                                    float transistor_size) {
+                                                  float transistor_size) {
     PowerCalibSize* prev = entries[0];
 
     VTR_ASSERT(sorted);
@@ -125,7 +125,7 @@ PowerCalibInputs* PowerSpicedComponent::get_entry(int num_inputs) {
 }
 
 PowerCalibInputs* PowerSpicedComponent::get_entry_bound(bool lower,
-                                                         int num_inputs) {
+                                                        int num_inputs) {
     PowerCalibInputs* prev = entries[0];
 
     VTR_ASSERT(sorted);
@@ -255,7 +255,7 @@ void PowerSpicedComponent::print(FILE* fp) {
          it != entries.end() - 1; it++) {
         fprintf(fp, "Num Inputs: %d\n", (*it)->num_inputs);
         for (std::vector<PowerCalibSize*>::iterator it2 = (*it)->entries.begin()
-                                                           + 1;
+                                                          + 1;
              it2 != (*it)->entries.end() - 1; it2++) {
             fprintf(fp, "  Transistor Size: %6f Factor: %3f\n",
                     (*it2)->transistor_size, (*it2)->factor);

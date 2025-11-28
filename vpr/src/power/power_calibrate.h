@@ -39,7 +39,7 @@ void power_print_spice_comparison();
 void power_calibrate();
 float power_usage_buf_for_calibration(int num_inputs, float transistor_size);
 float power_usage_buf_levr_for_calibration(int num_inputs,
-                                            float transistor_size);
+                                           float transistor_size);
 float power_usage_mux_for_calibration(int num_inputs, float transistor_size);
 float power_usage_lut_for_calibration(int num_inputs, float transistor_size);
 float power_usage_ff_for_calibration(int num_inputs, float transistor_size);

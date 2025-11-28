@@ -566,7 +566,7 @@ void power_usage_mux_multilevel(t_power_usage* power_usage,
     calibration = power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_MUX];
     if (calibration->is_done_calibration()) {
         scale_factor = calibration->scale_factor(mux_arch->num_inputs,
-                                                  mux_arch->transistor_size);
+                                                 mux_arch->transistor_size);
         power_scale_usage(power_usage, scale_factor);
     }
 }

@@ -314,7 +314,7 @@ float power_usage_buf_for_calibration(int num_inputs, float transistor_size) {
 }
 
 float power_usage_buf_levr_for_calibration(int num_inputs,
-                                            float transistor_size) {
+                                           float transistor_size) {
     t_power_usage power_usage;
 
     VTR_ASSERT(num_inputs == 1);
