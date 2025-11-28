@@ -38,7 +38,7 @@
 #include "power_util.h"
 #include "power_lowlevel.h"
 #include "power_sizing.h"
-#include "power_callibrate.h"
+#include "power_calibrate.h"
 #include "power_cmos_tech.h"
 
 #include "physical_types.h"
@@ -979,7 +979,8 @@ static void power_usage_routing(t_power_usage* power_usage,
                 connectionbox_fanout = 0;
                 switchbox_fanout = 0;
                 for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
-                    if ((RRSwitchId)rr_graph.edge_switch(rr_id, iedge) == routing_arch.wire_to_rr_ipin_switch) {
+                    RRNodeId edge_sink = rr_graph.edge_sink_node(rr_id, iedge);
+                    if (rr_graph.node_type(edge_sink) == e_rr_type::IPIN) {
                         connectionbox_fanout++;
                     } else if (rr_graph.edge_switch(rr_id, iedge) == routing_arch.delayless_switch) {
                         /* Do nothing */
@@ -1225,7 +1226,8 @@ void power_routing_init(const t_det_routing_arch& routing_arch) {
             case e_rr_type::CHANX:
             case e_rr_type::CHANY:
                 for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_node_idx); iedge++) {
-                    if ((RRSwitchId)rr_graph.edge_switch(rr_node_idx, iedge) == routing_arch.wire_to_rr_ipin_switch) {
+                    RRNodeId edge_sink = rr_graph.edge_sink_node(rr_node_idx, iedge);
+                    if (rr_graph.node_type(edge_sink) == e_rr_type::IPIN) {
                         fanout_to_IPIN++;
                     } else if (rr_graph.edge_switch(rr_node_idx, iedge) != routing_arch.delayless_switch) {
                         fanout_to_seg++;
@@ -1332,7 +1334,7 @@ bool power_init(const char* power_out_filepath,
     power_components_init();
 
     /* Perform calibration */
-    power_callibrate();
+    power_calibrate();
 
     /* Initialize routing information */
     power_routing_init(routing_arch);
@@ -1344,7 +1346,7 @@ bool power_init(const char* power_out_filepath,
     power_sizing_init();
 
     //power_print_spice_comparison();
-    //	power_print_callibration();
+    //	power_print_calibration();
 
     return error;
 }
@@ -1386,10 +1388,10 @@ bool power_uninit() {
         delete mux_info;
     }
     /* Free components */
-    for (int i = 0; i < POWER_CALLIB_COMPONENT_MAX; ++i) {
-        delete power_ctx.commonly_used->component_callibration[i];
+    for (int i = 0; i < POWER_CALIB_COMPONENT_MAX; ++i) {
+        delete power_ctx.commonly_used->component_calibration[i];
     }
-    delete[] power_ctx.commonly_used->component_callibration;
+    delete[] power_ctx.commonly_used->component_calibration;
 
     delete power_ctx.commonly_used;
 

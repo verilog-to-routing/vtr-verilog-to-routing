@@ -21,26 +21,26 @@
  */
 
 /************************* DEFINES **********************************/
-const float power_callib_period = 5e-9;
+const float power_calib_period = 5e-9;
 
 /************************* STRUCTS **********************************/
 /************************* ENUMS ************************************/
 typedef enum {
-    POWER_CALLIB_COMPONENT_BUFFER = 0,
-    POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR,
-    POWER_CALLIB_COMPONENT_FF,
-    POWER_CALLIB_COMPONENT_MUX,
-    POWER_CALLIB_COMPONENT_LUT,
-    POWER_CALLIB_COMPONENT_MAX
-} e_power_callib_component;
+    POWER_CALIB_COMPONENT_BUFFER = 0,
+    POWER_CALIB_COMPONENT_BUFFER_WITH_LEVR,
+    POWER_CALIB_COMPONENT_FF,
+    POWER_CALIB_COMPONENT_MUX,
+    POWER_CALIB_COMPONENT_LUT,
+    POWER_CALIB_COMPONENT_MAX
+} e_power_calib_component;
 
 /************************* FUNCTION DECLARATIONS ********************/
 void power_print_spice_comparison();
-void power_callibrate();
-float power_usage_buf_for_callibration(int num_inputs, float transistor_size);
-float power_usage_buf_levr_for_callibration(int num_inputs,
-                                            float transistor_size);
-float power_usage_mux_for_callibration(int num_inputs, float transistor_size);
-float power_usage_lut_for_callibration(int num_inputs, float transistor_size);
-float power_usage_ff_for_callibration(int num_inputs, float transistor_size);
-void power_print_callibration();
+void power_calibrate();
+float power_usage_buf_for_calibration(int num_inputs, float transistor_size);
+float power_usage_buf_levr_for_calibration(int num_inputs,
+                                           float transistor_size);
+float power_usage_mux_for_calibration(int num_inputs, float transistor_size);
+float power_usage_lut_for_calibration(int num_inputs, float transistor_size);
+float power_usage_ff_for_calibration(int num_inputs, float transistor_size);
+void power_print_calibration();

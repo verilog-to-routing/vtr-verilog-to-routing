@@ -634,7 +634,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 };
 
 vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
-    vtr::LogicValue new_val = vtr::LogicValue::UNKOWN;
+    vtr::LogicValue new_val = vtr::LogicValue::UNKNOWN;
     switch (val) {
         case blifparse::LogicValue::TRUE:
             new_val = vtr::LogicValue::TRUE;
@@ -645,8 +645,8 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
         case blifparse::LogicValue::DONT_CARE:
             new_val = vtr::LogicValue::DONT_CARE;
             break;
-        case blifparse::LogicValue::UNKOWN:
-            new_val = vtr::LogicValue::UNKOWN;
+        case blifparse::LogicValue::UNKNOWN:
+            new_val = vtr::LogicValue::UNKNOWN;
             break;
         default:
             VTR_ASSERT_OPT_MSG(false, "Unknown logic value");

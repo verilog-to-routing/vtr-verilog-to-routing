@@ -38,7 +38,7 @@ void GraphvizDotWriter::write_dot_file(std::ostream& os) {
     for(NodeId node : nodes_to_dump_) {
         node_slacks[node] = std::vector<TimingTag>(); //No slacks
     }
-    TimingType timing_type = TimingType::UNKOWN;
+    TimingType timing_type = TimingType::UNKNOWN;
 
     write_dot_format(os, node_tags, node_slacks, timing_type);
 }
@@ -175,7 +175,7 @@ void GraphvizDotWriter::write_dot_edge(std::ostream& os, const EdgeId edge, cons
             } else if (timing_type == TimingType::HOLD) {
                 os << "\\n"<< delay_calc_.hold_time(tg_, edge) << " (thld)";
             } else {
-                TATUM_ASSERT(timing_type == TimingType::UNKOWN);
+                TATUM_ASSERT(timing_type == TimingType::UNKNOWN);
                 //Create both setup and hold edges if type is unknown
                 os << "\\n"<< -delay_calc_.setup_time(tg_, edge) << " (-tsu)";
                 os << "\\n"<< delay_calc_.hold_time(tg_, edge) << " (thld)";
@@ -190,7 +190,7 @@ void GraphvizDotWriter::write_dot_edge(std::ostream& os, const EdgeId edge, cons
             } else if (timing_type == TimingType::HOLD) {
                 os << "\\n" << delay_calc_.min_edge_delay(tg_, edge);
             } else {
-                TATUM_ASSERT(timing_type == TimingType::UNKOWN);
+                TATUM_ASSERT(timing_type == TimingType::UNKNOWN);
                 os << "\\n" << delay_calc_.max_edge_delay(tg_, edge) << " (tmax)";
                 os << "\\n" << delay_calc_.min_edge_delay(tg_, edge) << " (tmin)";
             }
