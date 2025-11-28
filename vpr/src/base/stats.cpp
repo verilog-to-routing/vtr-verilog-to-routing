@@ -42,15 +42,15 @@ struct SBKeyParts {
 // Parse the key to extract filename, row, and column
 static SBKeyParts parse_sb_key(const std::string& key) {
     SBKeyParts parts;
-    
+
     // Find the last two underscores
     size_t last_underscore = key.rfind('_');
     size_t second_last_underscore = key.rfind('_', last_underscore - 1);
-    
+
     parts.filename = key.substr(0, second_last_underscore);
     parts.row = std::stoi(key.substr(second_last_underscore + 1, last_underscore - second_last_underscore - 1));
     parts.col = std::stoi(key.substr(last_underscore + 1));
-    
+
     return parts;
 }
 
@@ -58,11 +58,11 @@ static SBKeyParts parse_sb_key(const std::string& key) {
 static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string& filepath) {
     std::vector<std::vector<std::string>> data;
     std::ifstream file(filepath);
-    
+
     if (!file.is_open()) {
         return data;
     }
-    
+
     std::string line;
     int row_count = 0;
     while (std::getline(file, line)) {
@@ -70,7 +70,7 @@ static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string
         std::stringstream ss(line);
         std::string cell;
         int col_count = 0;
-        
+
         if (row_count < crrgenerator::NUM_EMPTY_ROWS) {
             // Keep entire row for first NUM_EMPTY_ROWS rows
             while (std::getline(ss, cell, ',')) {
@@ -83,11 +83,11 @@ static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string
                 col_count++;
             }
         }
-        
+
         data.push_back(row);
         row_count++;
     }
-    
+
     file.close();
     return data;
 }
@@ -95,7 +95,7 @@ static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string
 // Write 2D vector to CSV file
 static void write_csv(const std::string& filepath, const std::vector<std::vector<std::string>>& data) {
     std::ofstream file(filepath);
-    
+
     for (size_t i = 0; i < data.size(); ++i) {
         for (size_t j = 0; j < data[i].size(); ++j) {
             file << data[i][j];
@@ -105,7 +105,7 @@ static void write_csv(const std::string& filepath, const std::vector<std::vector
         }
         file << "\n";
     }
-    
+
     file.close();
 }
 
@@ -252,22 +252,22 @@ void write_sb_count_stats(const Netlist<>& net_list,
     // Write the sb_count to a file
     // First, read all CSV files from directory and trim them
     std::unordered_map<std::string, std::vector<std::vector<std::string>>> csv_data;
-    
+
     for (const auto& entry : fs::directory_iterator(sb_map_dir)) {
         if (entry.is_regular_file() && entry.path().extension() == ".csv") {
             std::string filename = entry.path().filename().string();
             csv_data[filename] = read_and_trim_csv(entry.path().string());
         }
     }
-    
+
     // Group sb_count entries by filename
     std::unordered_map<std::string, std::vector<std::pair<int, std::pair<int, int>>>> file_groups;
-    
+
     for (const auto& [sb_id, count] : sb_count) {
         SBKeyParts parts = parse_sb_key(sb_id);
         file_groups[parts.filename].push_back({parts.row, {parts.col, count}});
     }
-    
+
     // Process each file
     for (auto& [filename, data] : csv_data) {
         // Check if this file has updates from sb_count
@@ -278,27 +278,27 @@ void write_sb_count_stats(const Netlist<>& net_list,
             VTR_LOG("Written trimmed CSV: %s\n", filename.c_str());
             continue;
         }
-        
+
         const auto& entries = file_groups[filename];
-        
+
         // Find maximum row and column needed
         int max_row = 0, max_col = 0;
         for (const auto& entry : entries) {
             max_row = std::max(max_row, entry.first);
             max_col = std::max(max_col, entry.second.first);
         }
-        
+
         // Expand data structure if needed
         while (data.size() <= static_cast<size_t>(max_row)) {
             data.push_back(std::vector<std::string>());
         }
-        
+
         for (auto& row : data) {
             while (row.size() <= static_cast<size_t>(max_col)) {
                 row.push_back("");
             }
         }
-        
+
         // Update values from sb_count
         for (const auto& entry : entries) {
             int row = entry.first;
@@ -306,7 +306,7 @@ void write_sb_count_stats(const Netlist<>& net_list,
             int count = entry.second.second;
             data[row][col] = std::to_string(count);
         }
-        
+
         // Write updated file
         std::string output_path = sb_count_dir + "/" + filename;
         write_csv(output_path, data);
