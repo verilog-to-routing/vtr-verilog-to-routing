@@ -210,7 +210,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
                     case vtr::LogicValue::DONT_CARE:
                         init_val = 2;
                         break;
-                    case vtr::LogicValue::UNKOWN:
+                    case vtr::LogicValue::UNKNOWN:
                         init_val = 3;
                         break;
                     default:

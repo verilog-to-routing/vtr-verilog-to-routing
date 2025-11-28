@@ -33,14 +33,14 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
   public:
     //Accessors
     tatum::TimingPathInfo least_slack_critical_path() const override {
-        if (least_slack_critical_path_.type() == tatum::TimingType::UNKOWN) {
+        if (least_slack_critical_path_.type() == tatum::TimingType::UNKNOWN) {
             least_slack_critical_path_ = find_least_slack_critical_path_delay(*timing_constraints_, *setup_analyzer_);
         }
         return least_slack_critical_path_;
     }
 
     tatum::TimingPathInfo longest_critical_path() const override {
-        if (longest_critical_path_.type() == tatum::TimingType::UNKOWN) {
+        if (longest_critical_path_.type() == tatum::TimingType::UNKNOWN) {
             longest_critical_path_ = find_longest_critical_path_delay(*timing_constraints_, *setup_analyzer_);
         }
         return longest_critical_path_;

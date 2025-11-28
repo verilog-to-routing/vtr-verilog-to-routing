@@ -38,7 +38,7 @@
 #include "power_util.h"
 #include "power_lowlevel.h"
 #include "power_sizing.h"
-#include "power_callibrate.h"
+#include "power_calibrate.h"
 #include "power_cmos_tech.h"
 
 #include "physical_types.h"
@@ -1332,7 +1332,7 @@ bool power_init(const char* power_out_filepath,
     power_components_init();
 
     /* Perform calibration */
-    power_callibrate();
+    power_calibrate();
 
     /* Initialize routing information */
     power_routing_init(routing_arch);
@@ -1344,7 +1344,7 @@ bool power_init(const char* power_out_filepath,
     power_sizing_init();
 
     //power_print_spice_comparison();
-    //	power_print_callibration();
+    //	power_print_calibration();
 
     return error;
 }
@@ -1386,10 +1386,10 @@ bool power_uninit() {
         delete mux_info;
     }
     /* Free components */
-    for (int i = 0; i < POWER_CALLIB_COMPONENT_MAX; ++i) {
-        delete power_ctx.commonly_used->component_callibration[i];
+    for (int i = 0; i < POWER_CALIB_COMPONENT_MAX; ++i) {
+        delete power_ctx.commonly_used->component_calibration[i];
     }
-    delete[] power_ctx.commonly_used->component_callibration;
+    delete[] power_ctx.commonly_used->component_calibration;
 
     delete power_ctx.commonly_used;
 
