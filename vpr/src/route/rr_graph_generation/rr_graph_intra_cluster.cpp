@@ -100,7 +100,7 @@ static int add_edges_for_collapsed_nodes(RRGraphBuilder& rr_graph_builder,
                                          bool load_rr_graph);
 
 /***
- * @brief Return a pair. The firt element indicates whether the switch is added or it was already added. The second element is the switch index.
+ * @brief Return a pair. The first element indicates whether the switch is added or it was already added. The second element is the switch index.
  * @param rr_graph
  * @param arch_sw_inf
  * @param R_minW_nmos Needs to be passed to use create_rr_switch_from_arch_switch
@@ -206,7 +206,7 @@ static std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical
         if (sub_tile.capacity.is_in_range(sub_tile_index)) {
             // This sub-tile type is the one that the cluster block is mapped to.
             found_sub_tile = true;
-            // The number of tile-level pins for all isntances of the same sub-tile type is the same. Thus,
+            // The number of tile-level pins for all instances of the same sub-tile type is the same. Thus,
             // we can the the number of tile-level pins for the sub-tile instance by dividing the total number of pins
             // for the given sub-tile type by the number of instances.
             cluster_sub_tile_inst_num_pins = (sub_tile.num_phy_pins / sub_tile.capacity.total());

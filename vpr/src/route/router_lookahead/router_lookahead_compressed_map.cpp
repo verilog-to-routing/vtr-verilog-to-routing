@@ -245,7 +245,7 @@ static util::Cost_Entry get_nearby_cost_entry_compressed_lookahead(int from_laye
     /* compute the slope from x,y to 0,0 and then move towards 0,0 by one unit to get the coordinates
      * of the cost entry to be copied */
 
-    //VTR_ASSERT(x > 0 || y > 0); //Asertion fails in practise. TODO: debug
+    //VTR_ASSERT(x > 0 || y > 0); //Assertion fails in practise. TODO: debug
 
     float slope;
     if (x == 0) {

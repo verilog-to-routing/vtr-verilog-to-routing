@@ -135,7 +135,7 @@ static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, in
 }
 
 //
-// When writing capnp targetted serialization, always allow compilation when
+// When writing capnp targeted serialization, always allow compilation when
 // VTR_ENABLE_CAPNPROTO=OFF.  Generally this means throwing an exception
 // instead.
 //

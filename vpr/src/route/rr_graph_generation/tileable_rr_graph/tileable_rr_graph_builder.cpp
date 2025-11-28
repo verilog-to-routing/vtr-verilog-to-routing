@@ -119,7 +119,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Set the tileable flag to true
     device_ctx.rr_graph_builder.set_tileable(true);
 
-    // Annotate the device grid on the boundry
+    // Annotate the device grid on the boundary
     DeviceGridAnnotation device_grid_annotation(device_ctx.grid, perimeter_cb);
 
     // The number of segments are in general small, reserve segments may not bring
