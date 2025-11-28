@@ -391,3 +391,29 @@ bool chan_same_type_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RR
 
     return false; // unreachable
 }
+
+std::vector<int> parse_ptc_numbers(const std::string& ptc_str) {
+    std::vector<int> ptc_numbers;
+    std::vector<std::string> ptc_tokens = vtr::StringToken(ptc_str).split(",");
+    for (const std::string& ptc_token : ptc_tokens) {
+        ptc_numbers.push_back(std::stoi(ptc_token));
+    }
+    return ptc_numbers;
+}
+
+std::string node_ptc_number_to_string(const RRGraphView& rr_graph, RRNodeId node) {
+    const t_rr_graph_storage& node_storage = rr_graph.rr_nodes();
+
+    if (!node_storage.node_contain_multiple_ptc(node)) {
+        return std::to_string(size_t(node_storage.node_ptc_num(node)));
+    }
+
+    std::string ret;
+    const std::vector<short>& track_nums = node_storage.node_tilable_track_nums(node);
+    for (size_t iptc = 0; iptc < track_nums.size(); iptc++) {
+        ret += std::to_string(track_nums[iptc]) + ",";
+    }
+    // Remove the last comma
+    ret.pop_back();
+    return ret;
+}
