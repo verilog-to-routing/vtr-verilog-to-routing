@@ -93,7 +93,7 @@ static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string
 }
 
 // Write 2D vector to CSV file
-void write_csv(const std::string& filepath, const std::vector<std::vector<std::string>>& data) {
+static void write_csv(const std::string& filepath, const std::vector<std::vector<std::string>>& data) {
     std::ofstream file(filepath);
     
     for (size_t i = 0; i < data.size(); ++i) {
