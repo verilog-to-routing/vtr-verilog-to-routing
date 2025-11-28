@@ -386,7 +386,7 @@ int RRGSB::get_node_index(const RRGraphView& rr_graph,
 
     VTR_ASSERT((0 == cnt) || (1 == cnt));
 
-    return ret; /* Return an invalid value: nonthing is found*/
+    return ret; /* Return an invalid value: nothing is found*/
 }
 
 /* Get the side of a node in this SB */
@@ -588,7 +588,7 @@ bool RRGSB::is_sb_node_passing_wire(const RRGraphView& rr_graph,
 }
 
 /* check if the candidate SB satisfy the basic requirements on being a mirror of the current one */
-/* Idenify mirror Switch blocks
+/* Identify mirror Switch blocks
  * Check each two switch blocks:
  * Number of channel/opin/ipin rr_nodes are same
  * If all above are satisfied, the two switch blocks may be mirrors !

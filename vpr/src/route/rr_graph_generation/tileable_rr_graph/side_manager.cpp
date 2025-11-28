@@ -1,5 +1,5 @@
 /********************************************************************
- * Memeber function for class SideManagerManager
+ * Member function for class SideManagerManager
  *******************************************************************/
 #include "side_manager.h"
 

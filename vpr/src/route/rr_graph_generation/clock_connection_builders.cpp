@@ -178,7 +178,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
             y);
 
         // boundary conditions:
-        // y at gird height and height -1 connections share the same drive point
+        // y at grid height and height -1 connections share the same drive point
         if (y == int(grid.height() - 2)) {
             y = y - 1;
         }

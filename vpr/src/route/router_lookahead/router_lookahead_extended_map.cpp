@@ -228,8 +228,8 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     // The CHAN -> IPIN delay gets re-added to the final calculation as it effectively is a valid delay
     // to reach the destination.
     //
-    // TODO: Capture this delay as a funtion of both the current wire type and the ipin to have a more
-    //       realistic excpected cost returned.
+    // TODO: Capture this delay as a function of both the current wire type and the ipin to have a more
+    //       realistic expected cost returned.
     float site_pin_delay = this->get_chan_ipin_delays(to_node);
     expected_delay += site_pin_delay;
 
@@ -465,7 +465,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
                 // and the second to find minimum base costs.
                 //
                 // NOTE: Doing two separate dijkstra expansions, each finding a minimum value leads to have an optimistic lookahead,
-                //       given that delay and base costs may not be simultaneously achievemnts.
+                //       given that delay and base costs may not be simultaneously achievements.
                 //       Experiments have shown that the having two separate expansions lead to better results for Series 7 devices, but
                 //       this might not be true for Stratix ones.
                 {
@@ -499,7 +499,7 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
         // The mutex locks the common data structures that each worker uses to store the routing
         // expansion data.
         //
-        // This because delay_costs and base_costs are in the worker's scope, so they can be run parallely and
+        // This because delay_costs and base_costs are in the worker's scope, so they can be run in parallel and
         // no data is shared among workers.
         // Instead, all_delay_costs and all_base_costs is a shared object between all the workers, hence the
         // need of a mutex when modifying their entries.

@@ -837,7 +837,7 @@ void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf
 // so long as it is from the appropriate SRC).
 //
 // This correctly models 'full' equivalence (e.g. if there is a full crossbar between the outputs), but is too
-// optimistic for 'instance' equivalence (which typcially models the pin equivalence possible by swapping sub-block
+// optimistic for 'instance' equivalence (which typically models the pin equivalence possible by swapping sub-block
 // instances like BLEs). In particular, for the 'instance' equivalence case, some of the 'equivalent' block outputs
 // may be used by internal signals which are routed entirely *within* the block (i.e. the signals which never leave
 // the block). These signals effectively 'use-up' an output pin which should now be unavailable to the router.

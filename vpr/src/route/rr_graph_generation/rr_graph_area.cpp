@@ -69,7 +69,7 @@ void count_routing_transistors(enum e_directionality directionality,
      *                                                                           *
      * I assume a minimum width transistor takes 1 unit of area.  A double-width *
      * transistor takes the twice the diffusion width, but the same spacing, so  *
-     * I assume it takes 1.5x the area of a minimum-width transitor.             */
+     * I assume it takes 1.5x the area of a minimum-width transistor.             */
 
     /* Area per SRAM cell (in minimum-width transistor areas) */
     const float trans_sram_bit = 4.;

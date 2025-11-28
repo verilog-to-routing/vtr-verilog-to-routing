@@ -577,7 +577,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                     }
 
                 } else if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK || rr_graph.node_type(inode) == e_rr_type::MUX) {
-                    // Sources have co-ordinates covering the entire block they are in, but not sinks
+                    // Sources have coordinates covering the entire block they are in, but not sinks
                     if (!rr_graph.x_in_node_range(tile_loc.x, inode)) {
                         VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
                                   rr_graph.node_xlow(inode),

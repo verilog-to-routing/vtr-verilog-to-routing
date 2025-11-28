@@ -118,7 +118,7 @@ static constexpr int Y_OFFSET = 2;
 // want to have the data on the last delay to get to an IPIN, we do not want to have an unbounded
 // number of hops to get to the IPIN, as this would result in high run-times.
 //
-// E.g.: if the constant value is set to 2, the following expansions are perfomed:
+// E.g.: if the constant value is set to 2, the following expansions are performed:
 //          - CHANX --> CHANX --> exploration interrupted: Maximum expansion level reached
 //          - CHANX --> IPIN --> exploration interrupted: IPIN found, no need to expand further
 static constexpr int MAX_EXPANSION_LEVEL = 1;
@@ -261,7 +261,7 @@ Cost_Entry Expansion_Cost_Entry::get_geomean_entry() const {
 
 /* returns a cost entry that represents the medial of all recorded entries */
 Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
-    /* find median by binning the delays of all entries and then chosing the bin
+    /* find median by binning the delays of all entries and then choosing the bin
      * with the largest number of entries */
 
     // This is code that needs to be revisited. For the time being, if the median entry
@@ -1424,7 +1424,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         util::PQ_Entry child_entry(child_node, switch_ind, parent_entry.delay,
                                    parent_entry.R_upstream, parent_entry.congestion_upstream, false);
 
-        //VTR_ASSERT(child_entry.cost >= 0); //Asertion fails in practise. TODO: debug
+        //VTR_ASSERT(child_entry.cost >= 0); //Assertion fails in practise. TODO: debug
 
         /* skip this child if it has been visited with smaller cost */
         if (node_visited_costs[child_node] >= 0 && node_visited_costs[child_node] < child_entry.cost) {
@@ -1457,7 +1457,7 @@ static std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
 
 static std::pair<int, int> get_adjusted_rr_pin_position(const RRNodeId rr) {
     /*
-     * VPR uses a co-ordinate system where wires above and to the right of a block
+     * VPR uses a coordinate system where wires above and to the right of a block
      * are at the same location as the block:
      *
      *

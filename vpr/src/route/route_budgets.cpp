@@ -333,7 +333,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
                                   bool keep_in_bounds,
                                   slack_allocated_type slack_type) {
     /*This function uses weights to calculate how much slack to allocate to a connection.
-     * The weights are deteremined by how much delay of the whole path is present in this connection*/
+     * The weights are determined by how much delay of the whole path is present in this connection*/
 
     std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer = orig_timing_info->setup_hold_analyzer();
     float total_path_delay = 0;
@@ -736,7 +736,7 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
                             delay_max_budget[net_id][ipin] += 2 * delay_increment;
                         }
 
-                        // Increase short path criticality as well, this encourages the router to meet the lower delay budgets more aggresively
+                        // Increase short path criticality as well, this encourages the router to meet the lower delay budgets more aggressively
                         if (short_path_crit[net_id][ipin] < MAX_SHORT_PATH_CRIT) short_path_crit[net_id][ipin] *= 2;
                     }
                 }
@@ -762,8 +762,6 @@ void route_budgets::increase_short_crit(ParentNetId net_id, float delay_decs) {
         // VTR_LOG("Increasing short path crit for net %d\n", net_id);
         for (auto pin_id : net_list_.net_sinks(net_id)) {
             int ipin = net_list_.pin_net_index(pin_id);
-            // if (!once) VTR_LOG("Net %d crit %f scrit %f \n", net_id, pin_criticality[pin_id], budgeting_inf.get_crit_short_path(net_id, ipin));
-            // once = true;
             short_path_crit[net_id][ipin] *= delay_decs;
         }
         num_times_congested[net_id] = 0;
@@ -772,8 +770,6 @@ void route_budgets::increase_short_crit(ParentNetId net_id, float delay_decs) {
     // if (num_times_congested[net_id] >= 9) {
     //     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
     //         int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-    //         // if (!once) VTR_LOG("Net %d crit %f scrit %f \n", net_id, pin_criticality[pin_id], budgeting_inf.get_crit_short_path(net_id, ipin));
-    //         // once = true;
     //         delay_min_budget[net_id][ipin] *= 1.5;
     //         keep_budget_in_bounds(delay_min_budget, net_id, pin_id);
     //     }

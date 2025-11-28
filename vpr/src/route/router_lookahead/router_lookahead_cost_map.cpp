@@ -14,7 +14,7 @@
 #endif
 
 // Lookahead penalties constants
-// Penalities are added for deltas that are outside of a specific segment bounding box region.
+// Penalties are added for deltas that are outside of a specific segment bounding box region.
 // These penalties are calculated based on the distance of the requested delta to a valid closest point of the bounding
 // box.
 

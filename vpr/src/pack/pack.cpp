@@ -35,7 +35,7 @@ namespace {
 enum class e_packer_state {
     /// @brief Default packer state.
     DEFAULT,
-    /// @brief Succcess state for the packer. The packing looks feasible to
+    /// @brief Success state for the packer. The packing looks feasible to
     ///        fit on the device (does not exceed number of blocks of each
     ///        type in the grid) and meets floorplanning constraints.
     SUCCESS,
