@@ -21,7 +21,6 @@ void routing_stats(const Netlist<>& net_list,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
                    e_directionality directionality,
-                   RRSwitchId wire_to_ipin_switch,
                    bool is_flat);
 
 void print_wirelen_prob_dist(bool is_flat);

@@ -24,10 +24,9 @@ static const e_trans_area_eq trans_area_eq = AREA_IMPROVED_NMOS_ONLY;
 
 /************************ Subroutines local to this module *******************/
 
-static void count_bidir_routing_transistors(int num_switch, RRSwitchId wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit);
+static void count_bidir_routing_transistors(int num_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit);
 
 static void count_unidir_routing_transistors(std::vector<t_segment_inf>& segment_inf,
-                                             RRSwitchId wire_to_ipin_switch,
                                              float R_minW_nmos,
                                              float R_minW_pmos,
                                              const float trans_sram_bit,
@@ -54,7 +53,6 @@ static float trans_per_R(float Rtrans, float R_minW_trans);
 
 void count_routing_transistors(enum e_directionality directionality,
                                int num_switch,
-                               RRSwitchId wire_to_ipin_switch,
                                std::vector<t_segment_inf>& segment_inf,
                                float R_minW_nmos,
                                float R_minW_pmos,
@@ -75,11 +73,10 @@ void count_routing_transistors(enum e_directionality directionality,
     const float trans_sram_bit = 4.;
 
     if (directionality == BI_DIRECTIONAL) {
-        count_bidir_routing_transistors(num_switch, wire_to_ipin_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit);
+        count_bidir_routing_transistors(num_switch, R_minW_nmos, R_minW_pmos, trans_sram_bit);
     } else {
         VTR_ASSERT(directionality == UNI_DIRECTIONAL);
         count_unidir_routing_transistors(segment_inf,
-                                         wire_to_ipin_switch,
                                          R_minW_nmos,
                                          R_minW_pmos,
                                          trans_sram_bit,
@@ -87,7 +84,7 @@ void count_routing_transistors(enum e_directionality directionality,
     }
 }
 
-static void count_bidir_routing_transistors(int num_switch, RRSwitchId wire_to_ipin_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit) {
+static void count_bidir_routing_transistors(int num_switch, float R_minW_nmos, float R_minW_pmos, const float trans_sram_bit) {
     /* Tri-state buffers are designed as a buffer followed by a pass transistor. *
      * I make Rbuffer = Rpass_transitor = 1/2 Rtri-state_buffer.                 *
      * I make the pull-up and pull-down sides of the buffer the same strength -- *
@@ -165,6 +162,8 @@ static void count_bidir_routing_transistors(int num_switch, RRSwitchId wire_to_i
     sharable_switch_trans = alloc_and_load_sharable_switch_trans(num_switch,
                                                                  R_minW_nmos, R_minW_pmos);
 
+    std::unordered_map<RRSwitchId, size_t> ipin_switch_count;
+
     for (const RRNodeId from_rr_node : device_ctx.rr_graph.nodes()) {
         size_t from_node = (size_t)from_rr_node;
         from_rr_type = rr_graph.node_type(from_rr_node);
@@ -206,6 +205,11 @@ static void count_bidir_routing_transistors(int num_switch, RRSwitchId wire_to_i
                             break;
 
                         case e_rr_type::IPIN:
+                            iswitch = rr_graph.edge_switch(RRNodeId(from_node), iedge);
+                            if (ipin_switch_count.find(RRSwitchId(iswitch)) == ipin_switch_count.end()) {
+                                ipin_switch_count[RRSwitchId(iswitch)] = 0;
+                            }
+                            ipin_switch_count[RRSwitchId(iswitch)]++;
                             num_inputs_to_cblock[to_node]++;
                             max_inputs_to_cblock = std::max(max_inputs_to_cblock, num_inputs_to_cblock[to_node]);
 
@@ -285,8 +289,15 @@ static void count_bidir_routing_transistors(int num_switch, RRSwitchId wire_to_i
 
     /* Now add in the input connection block transistors. */
 
-    input_cblock_trans = get_cblock_trans(num_inputs_to_cblock, wire_to_ipin_switch,
-                                          max_inputs_to_cblock, trans_sram_bit);
+    // Get most frequent ipin switch
+    auto most_frequent_ipin_switch_it = std::ranges::max_element(ipin_switch_count, {}, [](const auto& p) noexcept { return p.second; });
+    VTR_ASSERT(most_frequent_ipin_switch_it != ipin_switch_count.end());
+    RRSwitchId most_frequent_ipin_switch = most_frequent_ipin_switch_it->first;
+
+    input_cblock_trans = get_cblock_trans(num_inputs_to_cblock,
+                                          most_frequent_ipin_switch,
+                                          max_inputs_to_cblock,
+                                          trans_sram_bit);
 
     ntrans_sharing += input_cblock_trans;
     ntrans_no_sharing += input_cblock_trans;
@@ -301,7 +312,6 @@ static void count_bidir_routing_transistors(int num_switch, RRSwitchId wire_to_i
 }
 
 static void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*/,
-                                             RRSwitchId wire_to_ipin_switch,
                                              float R_minW_nmos,
                                              float R_minW_pmos,
                                              const float trans_sram_bit,
@@ -357,6 +367,8 @@ static void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segme
         cblock_counted[k] = 0;
 
     ntrans = 0;
+    std::unordered_map<RRSwitchId, size_t> ipin_switch_count;
+    RRSwitchId switch_id;
     for (const RRNodeId from_rr_node : device_ctx.rr_graph.nodes()) {
         size_t from_node = size_t(from_rr_node);
         from_rr_type = rr_graph.node_type(from_rr_node);
@@ -424,6 +436,11 @@ static void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segme
                             break;
 
                         case e_rr_type::IPIN:
+                            switch_id = RRSwitchId(rr_graph.edge_switch(RRNodeId(from_node), iedge));
+                            if (ipin_switch_count.find(switch_id) == ipin_switch_count.end()) {
+                                ipin_switch_count[switch_id] = 0;
+                            }
+                            ipin_switch_count[switch_id]++;
                             num_inputs_to_cblock[to_node]++;
                             max_inputs_to_cblock = std::max(max_inputs_to_cblock, num_inputs_to_cblock[to_node]);
                             iseg = seg_index_of_cblock(rr_graph, from_rr_type, size_t(to_node));
@@ -471,8 +488,15 @@ static void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segme
 
     /* Now add in the input connection block transistors. */
 
-    input_cblock_trans = get_cblock_trans(num_inputs_to_cblock, wire_to_ipin_switch,
-                                          max_inputs_to_cblock, trans_sram_bit);
+    // Get most frequent ipin switch
+    auto most_frequent_ipin_switch_it = std::ranges::max_element(ipin_switch_count, {}, [](const auto& p) noexcept { return p.second; });
+    VTR_ASSERT(most_frequent_ipin_switch_it != ipin_switch_count.end());
+    RRSwitchId most_frequent_ipin_switch = most_frequent_ipin_switch_it->first;
+
+    input_cblock_trans = get_cblock_trans(num_inputs_to_cblock,
+                                          most_frequent_ipin_switch,
+                                          max_inputs_to_cblock,
+                                          trans_sram_bit);
 
     delete[] cblock_counted;
 
