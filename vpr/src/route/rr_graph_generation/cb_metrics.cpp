@@ -7,7 +7,7 @@
  * what groups of wires a pin connects to (groups being defined by wire start points).
  * And a second class which is related to the quality of the switch pattern that the pins
  * make into the channel in general (specifically, how much the switches of the pins overlap
- * with eachother). Again, these two classes of metrics are fairly orthogonal, so it is
+ * with each other). Again, these two classes of metrics are fairly orthogonal, so it is
  * possible to adjust one while keeping the other relatively constant.
  *
  * The code below currently works for the input/output connection blocks of bidirectional
@@ -330,7 +330,7 @@ int get_num_wire_types(const int num_segments, const t_segment_inf* segment_inf)
         /* There are as many wire start points as the value of L */
         num_wire_types = segment_inf[0].length;
     } else {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Currently, the connection block metrics code can only deal with channel segments that carry wires of only one lenght.\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Currently, the connection block metrics code can only deal with channel segments that carry wires of only one length.\n");
     }
 
     return num_wire_types;
@@ -1216,7 +1216,7 @@ static void normalize_xbar(const float fraction_wires_used, t_xbar_matrix* xbar)
      * 1) the total number of possible switch configurations in which 'wires_used' wires are occupied by a signal
      * 2) in general, we have some number of 'wire groups' as defined above. each wire group is used a certain number of times in some
      * specific configuration of switches. we want to determine, for each wire group, the number of switch configurations
-     * that leads to y wires of this group being used, for every feasable y.
+     * that leads to y wires of this group being used, for every feasible y.
      *
      * These two things should allow us to calculate the expectation of how many wires of each group are used on average.
      * And this in turn allows us to set the probabilities of each wire in the xbar matrix being available/unavailable
@@ -1226,7 +1226,7 @@ static void normalize_xbar(const float fraction_wires_used, t_xbar_matrix* xbar)
      * this vector is created here, but is updated inside the count_switch_configurations function */
     std::vector<int> config(count_map.size(), 0); // Prefill with zeroes
 
-    /* the nuber of wires that are used */
+    /* the number of wires that are used */
     int wires_used = vtr::nint(fraction_wires_used * (float)capacity);
 
     long double total_configurations = count_switch_configurations(0, wires_used, capacity, &config, &count_map);

@@ -22,7 +22,7 @@
  *******************************************************************/
 
 /************************************************************************
- * Data stuctures related to the functions
+ * Data structures related to the functions
  ***********************************************************************/
 typedef std::map<RRNodeId, RRNodeId> t_bend_track2track_map;
 typedef std::map<RRNodeId, std::vector<RRNodeId>> t_vib_map;

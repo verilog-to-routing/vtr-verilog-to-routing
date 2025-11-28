@@ -56,7 +56,7 @@ static void load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
             RRSwitchId i_rr_switch;
             std::tie(fanin, i_rr_switch) = fanin_rrswitch;
 
-            // setup device_ctx.switch_fanin_remap, for future swich usage analysis
+            // setup device_ctx.switch_fanin_remap, for future switch usage analysis
             switch_fanin_remap[arch_sw_id][fanin] = i_rr_switch;
 
             load_rr_switch_from_arch_switch(rr_graph_builder,
