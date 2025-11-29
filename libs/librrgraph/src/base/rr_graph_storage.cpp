@@ -757,11 +757,8 @@ void t_rr_graph_storage::remove_nodes(std::vector<RRNodeId> nodes_to_remove) {
     // entries where either endpoint of an edge is in the nodes_to_remove list.
     // It also updates the node IDs of the remaining edges, since node IDs have
     // been shifted.
-    auto adjust_edges = [&](vtr::vector<RREdgeId, RRNodeId>& edge_nodes) {
-        for (size_t edge_index = 0; edge_index < edge_nodes.size(); ++edge_index) {
-            RREdgeId edge_id = RREdgeId(edge_index);
-            RRNodeId node = edge_nodes[edge_id];
-    
+    auto adjust_edges = [&nodes_to_remove, &removed_edges](vtr::vector<RREdgeId, RRNodeId>& edge_nodes) {
+        for (auto [edge_id, node] : edge_nodes.pairs()) {
             // Find insertion point in the sorted vector
             auto node_it = std::lower_bound(nodes_to_remove.begin(), nodes_to_remove.end(), node);
     

@@ -594,7 +594,7 @@ class LatchInst : public Instance {
                 os << "1'b0";
             else if (initial_value_ == vtr::LogicValue::DONT_CARE)
                 os << "1'bx";
-            else if (initial_value_ == vtr::LogicValue::UNKOWN)
+            else if (initial_value_ == vtr::LogicValue::UNKNOWN)
                 os << "1'bx";
             else
                 VTR_ASSERT(false);
@@ -2395,7 +2395,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         size_t i = 0;
         //Walk through each input in the input cube for this row
         while (names_row[i] != ' ') {
-            vtr::LogicValue input_val = vtr::LogicValue::UNKOWN;
+            vtr::LogicValue input_val = vtr::LogicValue::UNKNOWN;
             if (names_row[i] == '1') {
                 input_val = vtr::LogicValue::TRUE;
             } else if (names_row[i] == '0') {

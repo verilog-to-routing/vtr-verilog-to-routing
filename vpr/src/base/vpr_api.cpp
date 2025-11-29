@@ -1507,7 +1507,6 @@ void vpr_analysis(const Netlist<>& net_list,
                   vpr_setup.RoutingArch.R_minW_pmos,
                   Arch.grid_logic_tile_area,
                   vpr_setup.RoutingArch.directionality,
-                  vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
                   is_flat);
 
     if (!vpr_setup.CRROpts.sb_count_dir.empty()) {

@@ -36,7 +36,7 @@
 #include "power.h"
 #include "power_util.h"
 #include "PowerSpicedComponent.h"
-#include "power_callibrate.h"
+#include "power_calibrate.h"
 
 /************************* FILE SCOPE **********************************/
 static t_transistor_inf* f_transistor_last_searched;
@@ -154,29 +154,29 @@ static void power_tech_xml_load_component(pugi::xml_node parent, const pugiutil:
 static void power_tech_xml_load_components(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
     auto& power_ctx = g_vpr_ctx.power();
 
-    power_ctx.commonly_used->component_callibration = new PowerSpicedComponent*[POWER_CALLIB_COMPONENT_MAX];
-    for (int i = 0; i < POWER_CALLIB_COMPONENT_MAX; i++)
-        power_ctx.commonly_used->component_callibration[i] = nullptr;
+    power_ctx.commonly_used->component_calibration = new PowerSpicedComponent*[POWER_CALIB_COMPONENT_MAX];
+    for (int i = 0; i < POWER_CALIB_COMPONENT_MAX; i++)
+        power_ctx.commonly_used->component_calibration[i] = nullptr;
 
     power_tech_xml_load_component(parent, loc_data,
-                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER],
-                                  "buf", power_usage_buf_for_callibration);
+                                  &power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_BUFFER],
+                                  "buf", power_usage_buf_for_calibration);
 
     power_tech_xml_load_component(parent, loc_data,
-                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR],
-                                  "buf_levr", power_usage_buf_levr_for_callibration);
+                                  &power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_BUFFER_WITH_LEVR],
+                                  "buf_levr", power_usage_buf_levr_for_calibration);
 
     power_tech_xml_load_component(parent, loc_data,
-                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF],
-                                  "dff", power_usage_ff_for_callibration);
+                                  &power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_FF],
+                                  "dff", power_usage_ff_for_calibration);
 
     power_tech_xml_load_component(parent, loc_data,
-                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX],
-                                  "mux", power_usage_mux_for_callibration);
+                                  &power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_MUX],
+                                  "mux", power_usage_mux_for_calibration);
 
     power_tech_xml_load_component(parent, loc_data,
-                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT],
-                                  "lut", power_usage_lut_for_callibration);
+                                  &power_ctx.commonly_used->component_calibration[POWER_CALIB_COMPONENT_LUT],
+                                  "lut", power_usage_lut_for_calibration);
 }
 
 /**

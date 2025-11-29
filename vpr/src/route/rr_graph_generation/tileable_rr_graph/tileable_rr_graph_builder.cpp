@@ -93,7 +93,6 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const float R_minW_pmos,
                                     const e_base_cost_type& base_cost_type,
                                     const std::vector<t_direct_inf>& directs,
-                                    RRSwitchId& wire_to_rr_ipin_switch,
                                     const bool& shrink_boundary,
                                     const bool& perimeter_cb,
                                     const bool& through_channel,
@@ -296,9 +295,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                  device_ctx.switch_fanin_remap,
                                  device_ctx.all_sw_inf,
                                  R_minW_nmos,
-                                 R_minW_pmos,
-                                 wire_to_arch_ipin_switch,
-                                 wire_to_rr_ipin_switch);
+                                 R_minW_pmos);
 
     // Save the channel widths for the newly constructed graph
     device_ctx.chan_width = chan_width;
@@ -313,7 +310,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Allocate external data structures
     //  a. cost_index
     //  b. RC tree
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, wire_to_rr_ipin_switch, base_cost_type);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type);
 
     // Sanitizer for the rr_graph, check connectivities of rr_nodes
     // Essential check for rr_graph, build look-up and

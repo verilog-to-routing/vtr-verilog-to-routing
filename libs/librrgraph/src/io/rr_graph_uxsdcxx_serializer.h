@@ -274,8 +274,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     RrGraphSerializer(
         const e_graph_type graph_type,
         const enum e_base_cost_type base_cost_type,
-        RRSwitchId* wire_to_rr_ipin_switch,
-        int* wire_to_rr_ipin_switch_between_dice,
         bool do_check_rr_graph,
         const char* read_rr_graph_name,
         std::string* loaded_rr_graph_filename,
@@ -297,9 +295,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata,
         vtr::string_internment* strings,
         bool is_flat)
-        : wire_to_rr_ipin_switch_(wire_to_rr_ipin_switch)
-        , wire_to_rr_ipin_switch_between_dice_(wire_to_rr_ipin_switch_between_dice)
-        , chan_width_(chan_width)
+        : chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
         , rr_graph_builder_(rr_graph_builder)
         , rr_graph_(rr_graph)
@@ -1129,20 +1125,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return nullptr;
     }
     inline void finish_rr_graph_rr_edges(void*& /*ctx*/) final {
-        /*initialize a vector that keeps track of the number of wire to ipin switches
-         * There should be only one wire to ipin switch. In case there are more, make sure to
-         * store the most frequent switch */
-        const auto& rr_graph = (*rr_graph_);
-        std::vector<int> count_for_wire_to_ipin_switches;
-        count_for_wire_to_ipin_switches.resize(rr_switch_inf_->size(), 0);
-        //switch for same layer Track to IPIN connection
-        //first is index, second is count
-        std::pair<int, int> most_frequent_switch(-1, 0);
-        //switch for different layer Track to IPIN connection
-        std::vector<int> count_for_wire_to_ipin_switches_between_dice;
-        count_for_wire_to_ipin_switches_between_dice.resize(rr_switch_inf_->size(), 0);
-        std::pair<int,int> most_frequent_switch_between_dice(-1,0);
-
         // Partition the rr graph edges for efficient access to
         // configurable/non-configurable edge subsets. Must be done after RR
         // switches have been allocated.
@@ -1165,37 +1147,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                         "switch_id %zu is larger than num_rr_switches %zu",
                         switch_id, rr_switch_inf_->size());
                 }
-                auto node = (*rr_nodes_)[source_node];
-
-                /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
-                 * use the pair data structure to keep the maximum*/
-                if (rr_graph.node_type(node.id()) == e_rr_type::CHANX || rr_graph.node_type(node.id()) == e_rr_type::CHANY) {
-                    if(rr_graph.node_type(RRNodeId(sink_node)) == e_rr_type::IPIN){
-                        if (rr_graph.node_layer_low(RRNodeId(sink_node)) == rr_graph.node_layer_low(RRNodeId(source_node))) {
-                            count_for_wire_to_ipin_switches[switch_id]++;
-                            if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
-                                most_frequent_switch.first = switch_id;
-                                most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
-                            }
-                        }
-                        else{
-                            VTR_ASSERT(rr_graph.node_layer_low(RRNodeId(sink_node)) != rr_graph.node_layer_low(RRNodeId(source_node)));
-                            count_for_wire_to_ipin_switches_between_dice[switch_id]++;
-                            if(count_for_wire_to_ipin_switches_between_dice[switch_id] > most_frequent_switch_between_dice.second){
-                                most_frequent_switch_between_dice.first = switch_id;
-                                most_frequent_switch_between_dice.second = count_for_wire_to_ipin_switches_between_dice[switch_id];
-                            }
-                        }
-                    }
-                }
             }
         }
-
-        VTR_ASSERT(wire_to_rr_ipin_switch_ != nullptr);
-        *wire_to_rr_ipin_switch_ = (RRSwitchId)most_frequent_switch.first;
-
-        VTR_ASSERT(wire_to_rr_ipin_switch_between_dice_ != nullptr);
-        *wire_to_rr_ipin_switch_between_dice_ = most_frequent_switch_between_dice.first;
     }
 
     inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
@@ -1827,7 +1780,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             segment_inf_y_,
             segment_inf_z_,
             *rr_indexed_data_,
-            *wire_to_rr_ipin_switch_,
             base_cost_type_,
             echo_enabled_,
             echo_file_name_);
@@ -2169,8 +2121,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     std::array<uxsd::enum_loc_side, 16> side_map_;
 
     // Output for loads, and constant data for writes.
-    RRSwitchId* wire_to_rr_ipin_switch_;
-    int* wire_to_rr_ipin_switch_between_dice_;
     t_chan_width* chan_width_;
     t_rr_graph_storage* rr_nodes_;
     RRGraphBuilder* rr_graph_builder_;
