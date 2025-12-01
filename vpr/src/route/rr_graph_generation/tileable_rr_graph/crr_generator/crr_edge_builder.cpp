@@ -1,22 +1,55 @@
 #include "crr_edge_builder.h"
 #include "globals.h"
 
+#include "physical_types.h"
 #include "crr_connection_builder.h"
 
-static RRSwitchId find_crr_switch_id(const int delay_ps) {
-    const auto& arch_switches = g_vpr_ctx.device().arch_switch_inf;
+static t_arch_switch_inf create_crr_switch(const int delay_ps) {
     std::string switch_name;
     if (delay_ps == 0) {
         switch_name = "sw_zero";
     } else {
         switch_name = "sw_" + std::to_string(delay_ps);
     }
-    for (int sw_id = 0; sw_id < (int)arch_switches.size(); sw_id++) {
-        if (arch_switches[sw_id].name == switch_name) {
-            return RRSwitchId(sw_id);
+    t_arch_switch_inf arch_switch_inf;
+    arch_switch_inf.set_type(e_switch_type::MUX);
+    arch_switch_inf.name = switch_name;
+    arch_switch_inf.R = 0.;
+    arch_switch_inf.Cin = 0.;
+    arch_switch_inf.Cout = 0;
+    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay_ps);
+    arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
+    arch_switch_inf.mux_trans_size = 0.;
+    arch_switch_inf.buf_size_type = e_buffer_size::ABSOLUTE;
+    arch_switch_inf.buf_size = 0.;
+    arch_switch_inf.intra_tile = false;
+
+    return arch_switch_inf;
+}
+
+static RRSwitchId find_or_create_crr_switch_id(const int delay_ps) {
+    auto& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
+    std::string switch_name;
+    int found_sw_id = -1;
+    if (delay_ps == 0) {
+        switch_name = "sw_zero";
+    } else {
+        switch_name = "sw_" + std::to_string(delay_ps);
+    }
+    for (int sw_id = 0; sw_id < (int)all_sw_inf.size(); sw_id++) {
+        if (all_sw_inf[sw_id].name == switch_name) {
+            found_sw_id = sw_id;
+            break;
         }
     }
-    return RRSwitchId::INVALID();
+
+    if (found_sw_id == -1) {
+        t_arch_switch_inf new_arch_switch_inf = create_crr_switch(delay_ps);
+        found_sw_id = (int)all_sw_inf.size();
+        all_sw_inf.insert(std::make_pair(found_sw_id, new_arch_switch_inf));
+        VTR_LOG("Created new CRR switch: %s with ID: %d\n", switch_name.c_str(), found_sw_id);
+    }
+    return RRSwitchId(found_sw_id);
 }
 
 void build_crr_gsb_track_to_track_edges(RRGraphBuilder& rr_graph_builder,
@@ -27,7 +60,7 @@ void build_crr_gsb_track_to_track_edges(RRGraphBuilder& rr_graph_builder,
 
     std::vector<crrgenerator::Connection> gsb_connections = connection_builder.get_tile_connections(gsb_x, gsb_y);
     for (const auto& connection : gsb_connections) {
-        RRSwitchId rr_switch_id = find_crr_switch_id(connection.delay_ps());
+        RRSwitchId rr_switch_id = find_or_create_crr_switch_id(connection.delay_ps());
         VTR_ASSERT(rr_switch_id != RRSwitchId::INVALID());
         rr_graph_builder.create_edge_in_cache(connection.src_node(), connection.sink_node(), rr_switch_id, false, connection.crr_id());
     }
