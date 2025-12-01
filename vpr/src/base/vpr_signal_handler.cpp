@@ -26,6 +26,7 @@
 
 #ifdef VPR_USE_SIGACTION
 #include <csignal>
+#include "vpr_exit_codes.h"
 #endif
 
 void vpr_signal_handler(int signal);

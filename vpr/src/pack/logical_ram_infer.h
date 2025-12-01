@@ -1,7 +1,6 @@
 #pragma once
 
 #include "atom_netlist_fwd.h"
-#include "cad_types.h"
 #include "PreClusterTimingManager.h"
 
 // // Each group: representative atom + pb_type (from its expected primitive)
