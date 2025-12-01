@@ -33,7 +33,6 @@ paths_to_lint = [
 # These python files existed before the linter.
 # At some point they should be cleaned up and removed from this list
 grandfathered_files = [
-    repo_path / "sweep_build_configs.py",
     repo_path / "dev/vtr_gdb_pretty_printers.py",
     repo_path / "dev/submit_slurm.py",
     repo_path / "dev/code_format_fixup.py",
