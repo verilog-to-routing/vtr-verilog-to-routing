@@ -108,12 +108,22 @@ class CRRConnectionBuilder {
                                         std::vector<Connection>& tile_connections) const;
 
     // Node processing methods
-    std::map<size_t, RRNodeId> get_vertical_nodes(Coordinate x, Coordinate y, const DataFrame& df, const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+    std::map<size_t, RRNodeId> get_vertical_nodes(Coordinate x,
+                                                  Coordinate y,
+                                                  const DataFrame& df,
+                                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
-    std::map<size_t, RRNodeId> get_horizontal_nodes(Coordinate x, Coordinate y, const DataFrame& df, const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+    std::map<size_t, RRNodeId> get_horizontal_nodes(Coordinate x,
+                                                    Coordinate y,
+                                                    const DataFrame& df,
+                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
     // PTC sequence calculation
-    std::string get_ptc_sequence(int seg_index, int seg_length, int physical_length, Direction direction, int truncated) const;
+    std::string get_ptc_sequence(int seg_index,
+                                 int seg_length,
+                                 int physical_length,
+                                 Direction direction,
+                                 int truncated) const;
 
     // Segment processing helpers
     struct SegmentInfo {
