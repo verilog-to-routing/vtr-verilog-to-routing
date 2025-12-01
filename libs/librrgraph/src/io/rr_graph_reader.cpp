@@ -13,6 +13,8 @@
  * are overwritten by the rr graph file if one is specified. If an optional
  * identifier such as capacitance is not specified, it is set to 0 */
 
+
+#include <capnp/schema.h>
 #include "rr_graph_reader.h"
 
 #include "rr_graph_uxsdcxx_serializer.h"
@@ -85,6 +87,10 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         rr_graph_builder->set_tileable(true);
     }
 
+    ::capnp::Schema schema = ::capnp::Schema::from<ucap::RrGraph>();
+    unsigned long schema_file_id = schema.getProto().getScopeId();
+    VTR_LOG("Schema file ID: 0x%016lx\n", schema_file_id);
+
     RrGraphSerializer reader(
         graph_type,
         base_cost_type,
@@ -108,6 +114,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         &rr_graph_builder->rr_node_metadata(),
         &rr_graph_builder->rr_edge_metadata(),
         &arch->strings,
+        schema_file_id,
         is_flat);
 
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml")) {

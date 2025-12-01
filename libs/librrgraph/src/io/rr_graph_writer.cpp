@@ -5,7 +5,9 @@
  * children tags such as timing, location, or some general
  * details. Each tag has attributes to describe them */
 
-#include "rr_graph_writer.h"
+
+#include <capnp/schema.h>
+ #include "rr_graph_writer.h"
 
 #include <cstdio>
 #include <fstream>
@@ -39,6 +41,10 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     const char* echo_file_name,
                     bool is_flat) {
 
+    ::capnp::Schema schema = ::capnp::Schema::from<ucap::RrGraph>();
+    unsigned long schema_file_id = schema.getProto().getScopeId();
+    VTR_LOG("Schema file ID: 0x%016lx\n", schema_file_id);
+
     RrGraphSerializer reader(
         /*graph_type=*/e_graph_type(),
         /*base_cost_type=*/e_base_cost_type(),
@@ -62,6 +68,7 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
         &rr_graph_builder->rr_node_metadata(),
         &rr_graph_builder->rr_edge_metadata(),
         &arch->strings,
+        schema_file_id,
         is_flat);
 
     if (vtr::check_file_name_extension(file_name, ".xml")) {
