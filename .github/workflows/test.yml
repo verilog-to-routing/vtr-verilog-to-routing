@@ -521,8 +521,8 @@ jobs:
         include: [
           {
             name: 'Basic',
-            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on -DWITH_PARMYS=OFF -DWITH_ODIN=on',
-            suite: 'vtr_reg_basic_odin'
+            params: '-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off',
+            suite: 'vtr_reg_basic'
           }
           #- { name: 'Strong', suite: 'vtr_reg_strong' } # SKIP Too long to run on GitHub Actions (max 6h)
         ]
@@ -534,6 +534,7 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: 3.12.3
+
     - uses: actions/checkout@v4
       with:
         submodules: 'true'
@@ -565,9 +566,8 @@ jobs:
         # when github deploys a more stable Ubuntu image.
         NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
       run: |
-        sudo sysctl -w vm.mmap_rnd_bits=28
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
+        make -j${{ steps.cpu-cores.outputs.count}}
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count }} -skip_qor
 
