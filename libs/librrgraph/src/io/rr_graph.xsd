@@ -37,6 +37,7 @@
        attribute should be the name of a xs:simpleType that defines an
        xs:restriction / xs:enumeration.  This will be demonstrated later.
   -->
+
   <xs:complexType name="channel">
     <xs:attribute name="chan_width_max" type="xs:int" use="required"/>
     <xs:attribute name="x_min" type="xs:int" use="required"/>
@@ -375,6 +376,8 @@
       <xs:attribute name="tool_name" type="xs:string"/>
       <xs:attribute name="tool_version" type="xs:string"/>
       <xs:attribute name="tool_comment" type="xs:string"/>
+
+      <xs:attribute name="schema_file_id" type="xs:unsignedLong"/>
     </xs:complexType>
   </xs:element>
 
