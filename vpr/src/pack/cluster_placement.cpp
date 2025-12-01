@@ -207,7 +207,7 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
      * 4. Return NULL if not found
      */
 
-    // Intialize variables
+    // Initialize variables
     bool found_best = false;
     lowest_cost = std::numeric_limits<float>::max();
 

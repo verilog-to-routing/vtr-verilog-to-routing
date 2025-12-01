@@ -11,6 +11,7 @@
 #include <limits>
 #include <memory>
 #include <vector>
+#include "ap_draw_manager.h"
 #include "PreClusterTimingManager.h"
 #include "analytical_solver.h"
 #include "ap_flow_enums.h"
@@ -339,7 +340,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
     // Print the status header.
     if (log_verbosity_ >= 1)
         print_SimPL_status_header();
-    // Initialialize the partial placement object.
+    // Initialize the partial placement object.
     PartialPlacement p_placement(ap_netlist_);
 
     float total_time_spent_in_solver = 0.0f;
@@ -352,6 +353,10 @@ PartialPlacement SimPLGlobalPlacer::place() {
     PartialPlacement best_p_placement(ap_netlist_);
     double best_ub_hpwl = std::numeric_limits<double>::max();
 
+    // Initialize graphics for analytical placement, setting the reference in
+    // the draw state.
+    APDrawManager draw_manager(p_placement);
+
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
         float iter_start_time = runtime_timer.elapsed_sec();
@@ -362,11 +367,17 @@ PartialPlacement SimPLGlobalPlacer::place() {
         float solver_end_time = runtime_timer.elapsed_sec();
         double lb_hpwl = p_placement.get_hpwl(ap_netlist_);
 
+        // Update graphics after analytical solver
+        draw_manager.update_graphics(i, APDrawType::Solver);
+
         // Run the legalizer.
         float legalizer_start_time = runtime_timer.elapsed_sec();
         partial_legalizer_->legalize(p_placement);
         float legalizer_end_time = runtime_timer.elapsed_sec();
         double ub_hpwl = p_placement.get_hpwl(ap_netlist_);
+
+        // Update graphics after legalizer
+        draw_manager.update_graphics(i, APDrawType::Legalizer);
 
         // Perform a timing update
         float timing_update_start_time = runtime_timer.elapsed_sec();

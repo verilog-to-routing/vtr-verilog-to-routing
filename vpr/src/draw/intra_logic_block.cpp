@@ -148,7 +148,7 @@ void draw_internal_init_blk() {
         // and that consequently we have *one* model for each type.
         bot_left = {0, 0};
         if (size_t(width) > device_ctx.grid.width() || size_t(height) > device_ctx.grid.height()) {
-            // in this case, the clb certainly wont't fit, but this prevents
+            // in this case, the clb certainly won't fit, but this prevents
             // an out-of-bounds access, and provides some sort of (probably right)
             // value
             top_right = ezgl::point2d(
@@ -465,7 +465,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         }
 
     } else {
-        // else (ie. has chilren, and isn't at the lowest displayed level)
+        // else (ie. has children, and isn't at the lowest displayed level)
         // just label its type, and put it up at the top so we can see it
         if (draw_state->draw_block_text) {
             g->draw_text(
@@ -882,7 +882,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterB
         for (auto blk_id : atom_ctx.netlist().blocks()) {
             const ClusterBlockId clb = atom_ctx.lookup().atom_clb(blk_id);
             const t_pb_graph_node* pb_graph_node = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(blk_id);
-            // find the atom block that corrisponds to this pb.
+            // find the atom block that corresponds to this pb.
             if (is_in_selected_subtree(pb_graph_node, clb)) {
                 //Collect the sources of all nets driving this node
                 for (auto pin_id : atom_ctx.netlist().block_input_pins(blk_id)) {

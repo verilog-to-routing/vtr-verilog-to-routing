@@ -258,7 +258,7 @@ Detailed Command-line Options
 
 .. note::
 
-    Parmys is a Yosys plugin which provides intelligent partial mapping features (inference, binding, and hard/soft logic trade-offs) from Odin-II for Yosys. For more information on available paramters see the `Parmys <https://github.com/CAS-Atlantic/parmys-plugin.git>`_ plugin page.
+    Parmys is a Yosys plugin which provides intelligent partial mapping features (inference, binding, and hard/soft logic trade-offs) from Odin-II for Yosys. For more information on available parameters see the `Parmys <https://github.com/CAS-Atlantic/parmys-plugin.git>`_ plugin page.
 
 .. Universal Hardware Data Model (UHDM) is a complete modeling of the IEEE SystemVerilog Object Model with VPI Interface, Elaborator, Serialization, Visitor and Listener.
 ..     UHDM is used as a compiled interchange format in between SystemVerilog tools. Typical inputs to the UHDM flow are files with ``.v`` or ``.sv`` extensions.

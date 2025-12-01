@@ -473,7 +473,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
             port_node.text().set(vtr::join(pins.begin(), pins.end(), " ").c_str());
 
             //The cluster router may have rotated equivalent pins (e.g. LUT inputs),
-            //record the resulting rotation here so it can be unambigously mapped
+            //record the resulting rotation here so it can be unambiguously mapped
             //back to the atom netlist
             if (pb_type->ports[i].equivalent != PortEquivalence::NONE && pb_type->parent_mode != nullptr && pb_type->is_primitive()) {
                 //This is a primitive with equivalent inputs

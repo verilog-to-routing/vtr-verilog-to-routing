@@ -97,7 +97,7 @@ class ClockNetwork {
     void set_num_instance(int num_inst);
 
     /*
-     * Member funtions
+     * Member functions
      */
     /* Creates the RR nodes for the clock network wires and adds them to the reverse lookup
      * in ClockRRGraphBuilder. The reverse lookup maps the nodes to their switch point locations */
@@ -203,7 +203,7 @@ class ClockSpine : public ClockNetwork {
     // segment indices
     /* AA:Initially, after loading up these values in device setup, the indices will be relative to the **unified** segment_inf vector which
      * is carried in the device.Arch; The sole purpose of these indices is for calculating the cost index when allocating the drive, left, and 
-     * right nodes for the network. We now use segment indices realtive to the **parallel** vector of segments to setup the cost index, so these
+     * right nodes for the network. We now use segment indices relative to the **parallel** vector of segments to setup the cost index, so these
      * will be remapped later in the map_relative_seg_indices.  */
 
     int right_seg_idx = UNDEFINED;

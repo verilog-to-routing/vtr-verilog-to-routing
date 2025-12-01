@@ -110,7 +110,7 @@ vtr::vector<RRNodeId, RTExploredNode> SerialConnectionRouter<Heap>::timing_drive
         // we do not specify a target node.
         //
         // By setting the target_node to INVALID in combination with the NoOp router
-        // lookahead we can re-use the node exploration code from the regular router
+        // lookahead we can reuse the node exploration code from the regular router
         RRNodeId target_node = RRNodeId::INVALID();
 
         timing_driven_expand_cheapest(inode,

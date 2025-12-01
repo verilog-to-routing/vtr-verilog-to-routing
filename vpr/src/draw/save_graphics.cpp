@@ -116,7 +116,7 @@ void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/)
 
     // set default values
     gtk_combo_box_set_active((GtkComboBox*)combo_box, 0);      // default set to pdf which has an index 0
-    gtk_entry_set_text((GtkEntry*)text_entry, "vpr_graphics"); // defualt text set to vpr_graphics
+    gtk_entry_set_text((GtkEntry*)text_entry, "vpr_graphics"); // default text set to vpr_graphics
 
     // attach elements to the content area of the dialog
     content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));

@@ -108,7 +108,7 @@ void PathManager::empty_heap() {
     freed_nodes_.resize(alloc_list_.size());
 
     // Copy alloc_list_ into the freed nodes list
-    std::copy(alloc_list_.begin(), alloc_list_.end(), freed_nodes_.begin());
+    std::ranges::copy(alloc_list_, freed_nodes_.begin());
 }
 
 void PathManager::update_route_tree_set(t_heap_path* cheapest_path_struct) {

@@ -398,7 +398,7 @@ class NocCostHandler {
      * bandwidth of the traffic flow. If the traffic flow route is being deleted,
      * then the link bandwidth needs to be decremented. If the traffic flow
      * route has just been added then the link bandwidth needs to be incremented.
-     * This function needs to be called everytime a traffic flow has been newly
+     * This function needs to be called every time a traffic flow has been newly
      * routed.
      *
      * @param traffic_flow_route The routed path for a traffic flow. This

@@ -108,7 +108,7 @@ Different circuits may produce other types of netlist primitives corresponding t
 .. note:: The different primitives produced by VPR are defined in ``$VTR_ROOT/vtr_flow/primitives.v``
 
 
-Lets now take a look at the Standard Delay Fromat (SDF) file:
+Lets now take a look at the Standard Delay Format (SDF) file:
 
 .. code-block:: none
     :linenos:

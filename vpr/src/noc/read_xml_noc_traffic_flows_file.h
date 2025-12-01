@@ -117,7 +117,7 @@ int get_traffic_flow_priority(pugi::xml_node single_flow_tag, const pugiutil::lo
 /**
  * @brief Checks to see that the two router module names provided in the 
  *        traffic flow description are not empty and they dont have the
- *        same names. The two routers cant be the exact same since a router
+ *        same names. The two routers can't be the exact same since a router
  *        cannot communicate with itself. These names can be partial and not the
  *        exact name of the router blocks.
  * 

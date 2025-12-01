@@ -35,7 +35,7 @@
 
        For strings with a set of valid values (e.g. enumerations), the "type"
        attribute should be the name of a xs:simpleType that defines an
-       xs:restriction / xs:enumeration.  This will be demostrated later.
+       xs:restriction / xs:enumeration.  This will be demonstrated later.
   -->
   <xs:complexType name="channel">
     <xs:attribute name="chan_width_max" type="xs:int" use="required"/>

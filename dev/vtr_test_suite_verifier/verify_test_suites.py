@@ -228,7 +228,7 @@ def verify_test_suites():
 
     # If any failures were found in any suite, return exit code 1.
     if num_failures != 0:
-        print(f"Failure: Test suite verifcation failed with {num_failures} failures")
+        print(f"Failure: Test suite verification failed with {num_failures} failures")
         print(f"Please fix the failing test suites found in {args.vtr_regression_tests_dir}")
         print(f"If necessary, update the test suites info found here: {args.test_suite_info}")
         sys.exit(1)

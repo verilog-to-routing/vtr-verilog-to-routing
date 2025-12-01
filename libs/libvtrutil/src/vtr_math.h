@@ -88,7 +88,7 @@ ResultTy median_presorted(const Container& c) {
 }
 
 /**
- * @brief Returns the geometric mean of the elments in range [first, last)
+ * @brief Returns the geometric mean of the elements in range [first, last)
  *
  * To avoid potential round-off issues we transform the standard formula:
  *
@@ -120,7 +120,7 @@ double geomean(const Container& c) {
     return geomean(std::begin(c), std::end(c));
 }
 
-///@brief Returns the arithmatic mean of the elements in range [first, last)
+///@brief Returns the arithmetic mean of the elements in range [first, last)
 template<typename InputIterator>
 double arithmean(const InputIterator first, const InputIterator last, double init = 0.) {
     double sum = init;

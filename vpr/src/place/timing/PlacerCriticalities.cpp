@@ -52,7 +52,7 @@ void PlacerCriticalities::update_criticalities(const PlaceCritParams& crit_param
             if (new_crit > crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] < crit_params.crit_limit) {
                 highly_crit_pins.emplace_back(clb_net, pin_index_in_net);
             } else if (new_crit < crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] > crit_params.crit_limit) {
-                highly_crit_pins.erase(std::remove(highly_crit_pins.begin(), highly_crit_pins.end(), std::make_pair(clb_net, pin_index_in_net)),
+                highly_crit_pins.erase(std::ranges::remove(highly_crit_pins, std::make_pair(clb_net, pin_index_in_net)).begin(),
                                        highly_crit_pins.end());
             }
         } else {

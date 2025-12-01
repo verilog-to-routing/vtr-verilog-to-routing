@@ -60,7 +60,7 @@ struct t_lb_type_rr_node_edge {
 struct t_lb_type_rr_node {
     short capacity; /* Number of nets that can simultaneously use this node */
     int num_modes;
-    short* num_fanout;      /* [0..num_modes - 1] Mode dependant fanout */
+    short* num_fanout;      /* [0..num_modes - 1] Mode dependent fanout */
     enum e_lb_rr_type type; /* Type of logic cluster_ctx.blocks resource node */
 
     t_lb_type_rr_node_edge** outedges; /* [0..num_modes - 1][0..num_fanout-1] index and cost of out edges */
@@ -169,10 +169,10 @@ class compare_expansion_node {
 
 /* Stores explored nodes by router */
 struct t_explored_node_tb {
-    int prev_index;     /* Prevous node that drives this one */
+    int prev_index;     /* Previous node that drives this one */
     int explored_id;    /* ID used to determine if this node has been explored */
     int inet;           /* net index of route tree */
-    int enqueue_id;     /* ID used ot determine if this node has been pushed on exploration priority queue */
+    int enqueue_id;     /* ID used to determine if this node has been pushed on exploration priority queue */
     float enqueue_cost; /* cost of node pused on exploration priority queue */
 
     t_explored_node_tb() {

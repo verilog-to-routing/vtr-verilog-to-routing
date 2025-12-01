@@ -128,14 +128,27 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - { name: 'C/C++',       script: 'check-format.sh'   , with_python: 'no', pkgs: 'clang-format-18' }
-        - { name: 'Python',      script: 'check-format-py.sh', with_python: 'yes', pkgs: '' }
-        - { name: 'Python Lint', script: 'pylint_check.py'   , with_python: 'yes', pkgs: '' }
+        - { name: 'C/C++',       script: 'check-format.sh'   , with_python: 'yes', with_submodules: 'true', all_vtr_pkgs: 'yes', pkgs: 'clang-format-18' }
+        - { name: 'Python',      script: 'check-format-py.sh', with_python: 'yes', with_submodules: 'true', all_vtr_pkgs: 'yes', pkgs: '' }
+        - { name: 'Python Lint', script: 'pylint_check.py'   , with_python: 'yes', with_submodules: 'false', all_vtr_pkgs: 'no', pkgs: '' }
     name: 'F: ${{ matrix.name }}'
     steps:
 
     - uses: actions/checkout@v4
-      # NOTE: We do not need sub-modules. We do not check sub-modules for formatting.
+      with:
+        submodules: ${{ matrix.with_submodules }}
+      # NOTE: We usually do not need sub-modules. We do not check sub-modules
+      #       for formatting. However we may need to build make-format which
+      #       requires building VTR which will not build without submodules.
+      # TODO: We should relax this requirement.
+
+      # In order to perform a cpp format of VTR, make format is used which requires
+      # all of the vpr dependencies to be installed.
+      # TODO: This should be fixed so this test is not as heavy. We do not need
+      #       these dependencies to perform a simple format.
+    - name: Install dependencies
+      if: ${{ matrix.all_vtr_pkgs == 'yes' }}
+      run: ./install_apt_packages.sh
 
     # TODO: This should be on the same version of Python as would be found on
     #       Ubuntu 24.04 (3.12.3); however that version has some linting errors.

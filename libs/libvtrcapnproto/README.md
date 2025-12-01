@@ -17,7 +17,7 @@ capnproto can be broken down into 3 parts:
  - A library
 
 The schema language is used to define messages.  Each message must have an
-explcit capnproto schema, which are stored in files suffixed with ".capnp".
+explicit capnproto schema, which are stored in files suffixed with ".capnp".
 The capnproto documentation for how to write these schema files can be found
 here: https://capnproto.org/language.html
 
@@ -72,7 +72,7 @@ actual header file will appear in the CMake build directory
 Writing capnproto binary files to text
 ======================================
 
-The `capnp` tool (found in the CMake build directiory
+The `capnp` tool (found in the CMake build directory
 `libs/EXTERNAL/capnproto/c++/src/capnp`) can be used to convert from a binary
 capnp message to a textual form.
 

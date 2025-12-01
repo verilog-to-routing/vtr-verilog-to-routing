@@ -60,7 +60,7 @@ class NdOffsetMatrixProxy {
      *
      *   dim_ranges: Array of DimRange objects
      * idim: The dimension associated with this proxy
-     *  dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
+     *  dim_stride: The stride of this dimension (i.e. how many element in memory between indices of this dimension)
      *  start: Pointer to the start of the sub-matrix this proxy represents
      */
     NdOffsetMatrixProxy(const DimRange* dim_ranges, size_t idim, size_t dim_stride, T* start)
@@ -113,7 +113,7 @@ class NdOffsetMatrixProxy<T, 1> {
      * @brief Construct a matrix proxy object
      *
      *     - dim_ranges: Array of DimRange objects
-     *     - dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
+     *     - dim_stride: The stride of this dimension (i.e. how many element in memory between indices of this dimension)
      *     - start: Pointer to the start of the sub-matrix this proxy represents
      */
     NdOffsetMatrixProxy(const DimRange* dim_ranges, size_t idim, size_t dim_stride, T* start)

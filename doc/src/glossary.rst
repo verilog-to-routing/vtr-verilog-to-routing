@@ -9,7 +9,7 @@ Glossary
         For instance, if you extracted/cloned the VTR source into ``/home/myusername/vtr``, your ``$VTR_ROOT`` would be ``/home/myusername/vtr``.
 
     MWTA
-        Minimum Width Transitor Area (MWTA) is a simple process technology independent unit for measuring circuit area.
+        Minimum Width Transistor Area (MWTA) is a simple process technology independent unit for measuring circuit area.
         It corresponds to the size the smallest (minimum width) transistor area.
 
         For example, a 1x (unit-sized) CMOS inverter consists of two minimum width transistors (a PMOS pull-up, and NMOS pull-down).

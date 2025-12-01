@@ -77,7 +77,6 @@ struct t_pin_to_pin_annotation;
 struct t_interconnect;
 class t_pb_graph_pin;
 class t_pb_graph_edge;
-struct t_cluster_placement_primitive;
 struct t_arch;
 enum class e_sb_type;
 struct t_interposer_cut_inf;
@@ -495,7 +494,7 @@ enum class e_sb_type {
  * pin_avg_width_offset: Average width offset to specified pin (exact if only a single physical pin instance)
  * pin_avg_height_offset: Average height offset to specified pin (exact if only a single physical pin instance)
  * pin_class: The class a pin belongs to
- * is_ignored_pin: Whether or not a pin is ignored durring rr_graph generation and routing.
+ * is_ignored_pin: Whether or not a pin is ignored during rr_graph generation and routing.
  *                 This is usually the case for clock pins and other global pins unless the
  *                 clock_modeling option is set to route the clock through regular inter-block
  *                 wiring or through a dedicated clock network.
@@ -999,7 +998,7 @@ struct t_pb_type {
      * @brief Check if t_pb_type is the root of the pb graph. Root pb_types correspond to a single top level block type and map to a particular type
      * of location in the FPGA device grid (e.g. Logic, DSP, RAM etc.)
      *
-     * @return if t_pb_type is root ot not
+     * @return if t_pb_type is root or not
      */
     inline bool is_root() const {
         return parent_mode == nullptr;
@@ -1008,7 +1007,7 @@ struct t_pb_type {
     /**
      * @brief Check if t_pb_type is a primitive block or equivalently a leaf of the pb graph.
      *
-     * @return if t_pb_type is primitive/leaf ot not
+     * @return if t_pb_type is primitive/leaf or not
      */
     inline bool is_primitive() const {
         return num_modes == 0;
@@ -1076,18 +1075,13 @@ struct t_pin_to_pin_annotation {
     e_pin_to_pin_annotation_type type;
     e_pin_to_pin_annotation_format format;
 
-    char* input_pins;
-    char* output_pins;
-    char* clock;
+    std::string input_pins;
+    std::string output_pins;
+    std::string clock;
 
     int line_num; /* used to report what line number this annotation is found in architecture file */
 
     t_pin_to_pin_annotation() noexcept {
-        annotation_entries = std::vector<std::pair<int, std::string>>();
-        input_pins = nullptr;
-        output_pins = nullptr;
-        clock = nullptr;
-
         line_num = 0;
         type = (e_pin_to_pin_annotation_type)0;
         format = (e_pin_to_pin_annotation_format)0;
@@ -1113,8 +1107,8 @@ struct t_interconnect {
     e_interconnect type;
     char* name;
 
-    char* input_string;
-    char* output_string;
+    std::string input_string;
+    std::string output_string;
 
     std::vector<t_pin_to_pin_annotation> annotations;
     bool infer_annotations;
@@ -1132,8 +1126,6 @@ struct t_interconnect {
     t_interconnect() {
         type = (e_interconnect)0;
         name = nullptr;
-        input_string = nullptr;
-        output_string = nullptr;
         infer_annotations = false;
         line_num = 0;
         parent_mode_index = 0;
@@ -1306,8 +1298,8 @@ class t_pb_graph_node {
      *          as well), but LUTs A, B and C could still be routed using the parent pb_graph_node's mode "LUTRAM".
      *          Therefore, "LUTs" is marked as illegal and all the LUTs (A, B, C and D) will have a consistent parent pb_graph_node mode, namely "LUTRAM".
      *
-     * Usage: cluster_router uses this information to exclude the expansion of a node which has a not cosistent mode.
-     *        Everytime the mode consistency check fails, the index of the mode that causes the conflict is added to this vector.
+     * Usage: cluster_router uses this information to exclude the expansion of a node which has a not consistent mode.
+     *        Every time the mode consistency check fails, the index of the mode that causes the conflict is added to this vector.
      * */
     std::vector<int> illegal_modes;
 
@@ -1329,8 +1321,6 @@ class t_pb_graph_node {
     t_pb_graph_node* parent_pb_graph_node;
 
     int total_pb_pins; /* only valid for top-level */
-
-    void* temp_scratch_pad; /* temporary data, useful for keeping track of things when traversing data structure */
 
     int* input_pin_class_size;  /* Stores the number of pins that belong to a particular input pin class */
     int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
@@ -1396,8 +1386,6 @@ class t_pb_graph_pin {
 
     t_pb_graph_node* parent_node = nullptr;
     int pin_count_in_cluster = 0;
-
-    int scratch_pad = 0; /* temporary data structure useful to store traversal info */
 
     enum e_pb_graph_pin_type type = PB_PIN_NORMAL; /* The type of this pin (sequential, i/o etc.) */
 
@@ -1971,7 +1959,7 @@ struct t_arch {
     std::vector<vtr::interned_string> interned_strings;
 
     /// Secure hash digest of the architecture file to uniquely identify this architecture
-    char* architecture_id;
+    std::string architecture_id;
 
     // Options for tileable routing architectures
     // These are used for an alternative, tilable, rr-graph generator that can produce
@@ -1987,7 +1975,7 @@ struct t_arch {
     bool shrink_boundary;
 
     /// Allow routing channels to pass through multi-width and
-    /// multi-height programable blocks
+    /// multi-height programmable blocks
     bool through_channel;
 
     /// Allow each output pin of a programmable block to drive the
@@ -2006,12 +1994,12 @@ struct t_arch {
     int sub_fs;
 
     /// Connecting type for pass tracks in each switch block
-    enum e_switch_block_type sb_sub_type;
+    e_switch_block_type sb_sub_type;
 
     // End of tileable architecture options
 
     t_chan_width_dist Chans;
-    enum e_switch_block_type sb_type;
+    e_switch_block_type sb_type;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;
@@ -2067,7 +2055,11 @@ struct t_arch {
     // types of connections requires a different switch, all names should correspond to a switch in Switches.
     std::vector<std::string> ipin_cblock_switch_name;
 
-    std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+    /// Set of potential device layouts
+    std::vector<t_grid_def> grid_layouts;
+
+    /// @brief Returns the grid layout specified by the --device command-line option.
+    const t_grid_def& grid_layout() const;
 
     // the layout that is chosen to be used with command line options
     // It is used to generate custom SB for a specific locations within the device

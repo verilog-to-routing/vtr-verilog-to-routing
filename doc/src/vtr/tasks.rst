@@ -18,7 +18,7 @@ Example Tasks
 
 * ``regression_mcnc``: Runs VTR on the historical MCNC benchmarks on a legacy architecture file. (Note: This is only useful for comparing to the past, it is not realistic in the modern world)
 
-* ``regression_titan/titan_small``: Runs a small subset of the Titan benchmarks targetting a simplified Altera Stratix IV (commercial FPGA) architecture capture
+* ``regression_titan/titan_small``: Runs a small subset of the Titan benchmarks targeting a simplified Altera Stratix IV (commercial FPGA) architecture capture
 
 * ``regression_fpu_hard_block_arch``: Custom hard FPU logic block architecture
 
@@ -130,7 +130,7 @@ Optional Fields
 
 * **script_params_list_add**: Adds a set of command-line arguments
 
-    Multiple `script_params_list_add` can be provided which are addded to the cartesian product of configurations to be evaluated.
+    Multiple `script_params_list_add` can be provided which are added to the cartesian product of configurations to be evaluated.
 
 * **sdc_dir**: Directory path to benchmark SDC files.
 

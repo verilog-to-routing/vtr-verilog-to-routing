@@ -346,7 +346,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
  * @param delta_x
  * @param delta_y
  * @param to_layer_num
- * @param wire_cost_func call back function that would return a cost ot get to a given location from the given segment
+ * @param wire_cost_func call back function that would return a cost to get to a given location from the given segment
  * @return (delay, congestion)
  */
 std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reachable_wire_inf>& src_opin_delay_map,

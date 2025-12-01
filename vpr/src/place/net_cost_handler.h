@@ -68,7 +68,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::pair<double, double> comp_bb_cost(e_cost_methods method);
+    std::pair<double, double> comp_bb_cost(e_cost_methods method) const;
 
     /**
      * @brief Find all the nets and pins affected by this swap and update costs.
@@ -304,7 +304,7 @@ class NetCostHandler {
 
     /**
      * @brief Allocates and loads acc_tile_num_inter_die_conn_ which contains the accumulative number of inter-die
-     * conntections.
+     * connections.
      *
      * @details This is only useful for multi-die FPGAs.
      */

@@ -83,7 +83,7 @@ struct t_pl_blocks_to_be_moved {
                                           t_pl_loc to,
                                           const BlkLocRegistry& blk_loc_registry);
 
-    std::set<t_pl_loc> determine_locations_emptied_by_move();
+    std::set<t_pl_loc> determine_locations_emptied_by_move() const;
 
     std::vector<t_pl_moved_block> moved_blocks;
     std::unordered_set<t_pl_loc> moved_from;

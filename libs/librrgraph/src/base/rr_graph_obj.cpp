@@ -177,7 +177,7 @@ RRSegmentId RRGraph::node_segment(const RRNodeId& node) const {
  * Get the number of configurable input edges of a node
  * TODO: we would use the node_num_configurable_in_edges() 
  * when the rr_graph edges have been partitioned 
- * This can avoid unneccessary walkthrough
+ * This can avoid unnecessary walkthrough
  */
 short RRGraph::node_num_configurable_in_edges(const RRNodeId& node) const {
     return node_configurable_in_edges(node).size();
@@ -187,7 +187,7 @@ short RRGraph::node_num_configurable_in_edges(const RRNodeId& node) const {
  * Get the number of configurable output edges of a node
  * TODO: we would use the node_num_configurable_out_edges() 
  * when the rr_graph edges have been partitioned 
- * This can avoid unneccessary walkthrough
+ * This can avoid unnecessary walkthrough
  */
 short RRGraph::node_num_configurable_out_edges(const RRNodeId& node) const {
     return node_configurable_out_edges(node).size();
@@ -197,7 +197,7 @@ short RRGraph::node_num_configurable_out_edges(const RRNodeId& node) const {
  * Get the number of non-configurable input edges of a node
  * TODO: we would use the node_num_configurable_in_edges() 
  * when the rr_graph edges have been partitioned 
- * This can avoid unneccessary walkthrough
+ * This can avoid unnecessary walkthrough
  */
 short RRGraph::node_num_non_configurable_in_edges(const RRNodeId& node) const {
     return node_non_configurable_in_edges(node).size();
@@ -207,7 +207,7 @@ short RRGraph::node_num_non_configurable_in_edges(const RRNodeId& node) const {
  * Get the number of non-configurable output edges of a node
  * TODO: we would use the node_num_configurable_out_edges() 
  * when the rr_graph edges have been partitioned 
- * This can avoid unneccessary walkthrough
+ * This can avoid unnecessary walkthrough
  */
 short RRGraph::node_num_non_configurable_out_edges(const RRNodeId& node) const {
     return node_non_configurable_out_edges(node).size();

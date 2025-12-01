@@ -69,7 +69,6 @@ void routing_stats(const Netlist<>& net_list,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
                    e_directionality directionality,
-                   RRSwitchId wire_to_ipin_switch,
                    bool is_flat) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
@@ -116,8 +115,12 @@ void routing_stats(const Netlist<>& net_list,
     VTR_LOG("\tTotal used logic block area: %g\n", used_area);
 
     if (route_type == e_route_type::DETAILED) {
-        count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch,
-                                  segment_inf, R_minW_nmos, R_minW_pmos, is_flat);
+        count_routing_transistors(directionality,
+                                  num_rr_switch,
+                                  segment_inf,
+                                  R_minW_nmos,
+                                  R_minW_pmos,
+                                  is_flat);
         get_segment_usage_stats(segment_inf);
     }
 
@@ -473,7 +476,7 @@ void print_wirelen_prob_dist(bool is_flat) {
     VTR_LOG("\n");
     VTR_LOG("Probability distribution of 2-pin net lengths:\n");
     VTR_LOG("\n");
-    VTR_LOG("Length    p(Lenth)\n");
+    VTR_LOG("Length    p(Length)\n");
 
     av_length = 0;
 

@@ -556,7 +556,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     float C = rr_graph.node_C(rr_node);
     float R = rr_graph.node_R(rr_node);
 
-    if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
+    if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::CHANZ) {
         if (C < 0. || R < 0.) {
             VPR_ERROR(VPR_ERROR_ROUTE,
                       "in check_rr_node: node %d of type %d has R = %g and C = %g.\n", inode, rr_type, R, C);
@@ -623,8 +623,8 @@ static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& 
 
     if ((rr_graph.node_xlow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), RIGHT))                          //left device edge connects only along block's right side
         || (rr_graph.node_ylow(node.id()) == int(grid.height() - 1) && !rr_graph.is_node_on_specific_side(node.id(), BOTTOM)) //top device edge connects only along block's bottom side
-        || (rr_graph.node_xlow(node.id()) == int(grid.width() - 1) && !rr_graph.is_node_on_specific_side(node.id(), LEFT))    //right deivce edge connects only along block's left side
-        || (rr_graph.node_ylow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), TOP))                         //bottom deivce edge connects only along block's top side
+        || (rr_graph.node_xlow(node.id()) == int(grid.width() - 1) && !rr_graph.is_node_on_specific_side(node.id(), LEFT))    //right device edge connects only along block's left side
+        || (rr_graph.node_ylow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), TOP))                         //bottom device edge connects only along block's top side
     ) {
         return false;
     }

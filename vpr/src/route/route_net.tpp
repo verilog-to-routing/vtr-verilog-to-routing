@@ -161,7 +161,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             || route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::DEDICATED_NETWORK) {
             std::string clock_network_name = "";
 
-            // If a user-specified routing constratins exists for the curret net get the clock network name
+            // If a user-specified routing constraints exists for the current net get the clock network name
             // from the constraints file, otherwise use the default clock network name
             if (route_constraints.has_routing_constraint(net_name)) {
                 clock_network_name = route_constraints.get_routing_network_name_by_net_name(net_name);

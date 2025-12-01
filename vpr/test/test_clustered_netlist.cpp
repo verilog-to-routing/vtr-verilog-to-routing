@@ -65,7 +65,7 @@ TEST_CASE("test_find_block_with_matching_name", "[vpr_clustered_netlist]") {
         noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_four)->second);
 
         // now find a block just knowing its instance name
-        // the test names will have an arbritary number of characters in front and then the name of the instance and then maybe some characters after
+        // the test names will have an arbitrary number of characters in front and then the name of the instance and then maybe some characters after
         std::string test_router_module_name = "(.*)(noc_router_one)(.*)";
 
         //get the block id
@@ -96,7 +96,7 @@ TEST_CASE("test_find_block_with_matching_name", "[vpr_clustered_netlist]") {
         noc_router_logical_type_clusters.push_back(block_id_from_name.find(router_four)->second);
 
         // now find a block just knowing its unique identifier
-        // the test names will have an arbritary number of characters in front of them and the unique identifier at the end
+        // the test names will have an arbitrary number of characters in front of them and the unique identifier at the end
         std::string test_router_module_name = "(.*)(q_a\\[2\\])(.*)";
 
         //get the block id
@@ -117,7 +117,7 @@ TEST_CASE("test_find_block_with_matching_name", "[vpr_clustered_netlist]") {
 
         // add the routers and the IO block
 
-        // add the IO block with a similiar name
+        // add the IO block with a similar name
         block_id_from_name.emplace(i_o_block_with_same_name, test_netlist.create_block(i_o_block_with_same_name, &i_o_pb, i_o_ref));
 
         // add routers

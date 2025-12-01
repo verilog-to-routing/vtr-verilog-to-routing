@@ -10,7 +10,7 @@
  * @brief Parses all <sg_link> tags under a <sg_link_list> tag.
  * 
  * @param sg_link_list_tag XML node pointing to the <sg_link_list> tag.
- * @param loc_data Points to the location in the architecture file where the parser is reading. Used for priting error messages.
+ * @param loc_data Points to the location in the architecture file where the parser is reading. Used for printing error messages.
  * @return std::vector<t_sg_link> the information for the sg_links in the sg_link_list.
  */
 static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag,
@@ -45,7 +45,7 @@ static std::vector<t_sg_link> parse_sg_link_tags(pugi::xml_node sg_link_list_tag
  * @brief Parses all <sg_location> tags under a <sg_pattern> tag.
  * 
  * @param sg_pattern_tag XML node pointing to the <sg_pattern> tag.
- * @param loc_data Points to the location in the architecture file where the parser is reading. Used for priting error messages.
+ * @param loc_data Points to the location in the architecture file where the parser is reading. Used for printing error messages.
  * @return std::vector<t_sg_location> contains information of scatter gather locations.
  */
 static std::vector<t_sg_location> parse_sg_location_tags(pugi::xml_node sg_pattern_tag,

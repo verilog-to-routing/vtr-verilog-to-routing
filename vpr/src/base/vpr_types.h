@@ -208,7 +208,7 @@ class t_pack_high_fanout_thresholds {
     explicit t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
     t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
-    ///@brief Returns the high fanout threshold of the specifi  ed block
+    ///@brief Returns the high fanout threshold of the specified block
     int get_threshold(std::string_view block_type_name) const;
 
     ///@brief Returns a string describing high fanout thresholds for different block types
@@ -387,6 +387,7 @@ enum class e_sched_type {
 enum class e_pic_type {
     NO_PICTURE,
     PLACEMENT,
+    ANALYTICAL_PLACEMENT,
     ROUTING
 };
 
@@ -859,7 +860,7 @@ enum class e_place_bounding_box_mode {
  *
  * Supports the method is_timing_driven(), which allows flexible updates
  * to the placer algorithms if more timing driven placement strategies
- * are added in tht future. This method is used across various placement
+ * are added in the future. This method is used across various placement
  * setup files, and it can be useful for major placer routines as well.
  *
  * More methods can be added to this class if the placement strategies
@@ -1491,14 +1492,6 @@ struct t_det_routing_arch {
     /// Keeps track of the type of architecture switch that connects
     /// wires from another die to ipins in different die
     int wire_to_arch_ipin_switch_between_dice = -1;
-
-    /// keeps track of the type of RR graph switch
-    /// that connects wires to ipins in the RR graph
-    RRSwitchId wire_to_rr_ipin_switch;
-
-    /// keeps track of the type of RR graph switch that connects wires
-    /// from another die to ipins in different die in the RR graph
-    int wire_to_rr_ipin_switch_between_dice = -1;
 
     /// Resistance (in Ohms) of a minimum width nmos transistor.
     /// Used only in the FPGA area model.

@@ -23,7 +23,7 @@ static void PrintPb_types_recPower(FILE* Echo,
                                    const char* tabs);
 
 /* Output the data from architecture data so user can verify it
- * was interpretted correctly. */
+ * was interpreted correctly. */
 void EchoArch(const char* EchoFile,
               const std::vector<t_physical_tile_type>& PhysicalTileTypes,
               const std::vector<t_logical_block_type>& LogicalBlockTypes,
@@ -397,12 +397,12 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
             for (int j = 0; j < pb_type->modes[i].num_interconnect; j++) {
                 fprintf(Echo, "%s\t\tinterconnect %d %s %s\n", tabs.c_str(),
                         pb_type->modes[i].interconnect[j].type,
-                        pb_type->modes[i].interconnect[j].input_string,
-                        pb_type->modes[i].interconnect[j].output_string);
+                        pb_type->modes[i].interconnect[j].input_string.c_str(),
+                        pb_type->modes[i].interconnect[j].output_string.c_str());
                 for (const t_pin_to_pin_annotation& annotation : pb_type->modes[i].interconnect[j].annotations) {
                     fprintf(Echo, "%s\t\t\tannotation %s %s %d: %s\n", tabs.c_str(),
-                            annotation.input_pins,
-                            annotation.output_pins,
+                            annotation.input_pins.c_str(),
+                            annotation.output_pins.c_str(),
                             annotation.format,
                             annotation.annotation_entries[0].second.c_str());
                 }
@@ -420,7 +420,7 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
     } else { /*leaf pb with unknown model*/
         /*LUT(names) already handled, it naturally has 2 modes.
          * I/O has no annotations to be displayed
-         * All other library or user models may have delays specificied, e.g. Tsetup and Tcq
+         * All other library or user models may have delays specified, e.g. Tsetup and Tcq
          * Display the additional information*/
         std::string pb_type_model_name = models.get_model(pb_type->model_id).name;
         if (pb_type_model_name != LogicalModels::MODEL_NAMES
@@ -428,9 +428,9 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
             && pb_type_model_name != LogicalModels::MODEL_OUTPUT) {
             for (const t_pin_to_pin_annotation& annotation : pb_type->annotations) {
                 fprintf(Echo, "%s\t\t\tannotation %s %s %s %d: %s\n", tabs.c_str(),
-                        annotation.clock,
-                        annotation.input_pins,
-                        annotation.output_pins,
+                        annotation.clock.c_str(),
+                        annotation.input_pins.c_str(),
+                        annotation.output_pins.c_str(),
                         annotation.format,
                         annotation.annotation_entries[0].second.c_str());
             }
@@ -633,7 +633,7 @@ static void PrintPb_types_recPower(FILE* Echo,
                         pb_type->pb_type_power->absolute_power_per_instance.dynamic);
             break;
         default:
-            fprintf(Echo, "%s\tpower method: error has occcured\n", tabs);
+            fprintf(Echo, "%s\tpower method: error has occcurred\n", tabs);
             break;
     }
 }

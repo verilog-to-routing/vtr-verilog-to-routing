@@ -7,7 +7,7 @@ namespace tatum {
 enum class TimingType {
     SETUP,
     HOLD,
-    UNKOWN
+    UNKNOWN
 };
 
 } //namespace

@@ -193,7 +193,7 @@ void verify_traffic_flow_router_modules(const std::string& source_router_name, c
     }
     // check if the source and sink routers have the same name
     if (source_router_name == sink_router_name) {
-        // Cannot have the source and sink routers have the same name (they need to be different). A flow cant go to a single router.
+        // Cannot have the source and sink routers have the same name (they need to be different). A flow can't go to a single router.
         vpr_throw(VPR_ERROR_OTHER, loc_data.filename_c_str(), loc_data.line(single_flow_tag), "Source and sink NoC routers cannot be the same modules.");
     }
 }

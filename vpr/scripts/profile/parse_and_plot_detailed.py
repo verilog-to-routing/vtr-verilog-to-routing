@@ -12,7 +12,7 @@ import shutil
 import csv
 from datetime import datetime
 
-# generate images wihtout having a window appear
+# generate images without having a window appear
 import matplotlib
 
 matplotlib.use("Agg")

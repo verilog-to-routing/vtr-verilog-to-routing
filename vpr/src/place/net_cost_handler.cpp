@@ -228,7 +228,7 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
                                                          });
 }
 
-std::pair<double, double> NetCostHandler::comp_bb_cost(e_cost_methods method) {
+std::pair<double, double> NetCostHandler::comp_bb_cost(e_cost_methods method) const {
     return comp_bb_cost_functor_(method);
 }
 

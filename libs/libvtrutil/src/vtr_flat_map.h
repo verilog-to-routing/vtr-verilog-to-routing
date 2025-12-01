@@ -44,7 +44,7 @@ flat_map2<K, V> make_flat_map2(std::vector<std::pair<K, V>>&& vec) {
  * This container is typically useful in the following scenarios:
  *    - Reduced memory usage if key/value are small (std::map needs to store pointers to
  *      other BST nodes which can add substantial overhead for small keys/values)
- *    - Faster search/iteration by exploiting data locality (all elments are in continguous
+ *    - Faster search/iteration by exploiting data locality (all elements are in contiguous
  *      memory enabling better spatial locality)
  *
  * The container deviates from the behaviour of std::map in the following important ways:
@@ -53,7 +53,7 @@ flat_map2<K, V> make_flat_map2(std::vector<std::pair<K, V>>&& vec) {
  *
  * The slow insertion/erase performance makes this container poorly suited to maps that
  * frequently add/remove new keys. If this is required you likely want std::map or
- * std::unordered_map. However if the map is constructed once and then repeatedly quieried,
+ * std::unordered_map. However if the map is constructed once and then repeatedly queried,
  * consider using the range or vector-based constructors which initializes the flat_map in
  * O(NlogN) time.
  */

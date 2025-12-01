@@ -21,7 +21,7 @@ void save_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routi
                   const t_clb_opins_used& clb_opins_used_locally,
                   t_clb_opins_used& saved_clb_opins_used_locally);
 
-void restore_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
+void restore_routing(const vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
                      t_clb_opins_used& clb_opins_used_locally,
                      const t_clb_opins_used& saved_clb_opins_used_locally);
 

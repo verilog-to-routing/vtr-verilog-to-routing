@@ -422,7 +422,6 @@ def check_two_files(
     for (arch, circuit, script_params), _ in first_results.all_metrics().items():
         first_primary_keys.append((arch, circuit, script_params))
 
-
     # Warn about any elements in first result file that are not found in second result file
     for arch, circuit, script_params in first_primary_keys:
         if second_results.metrics(arch, circuit, script_params) is None:
@@ -443,9 +442,11 @@ def check_two_files(
                     "/".join(str((Path(config.config_dir).parent)).split("/")[-3:])
                 )
             )
-            print("Required case {}/{} missing from {} results: {}".format(
+            print(
+                "Required case {}/{} missing from {} results: {}".format(
                     arch, circuit, first_name, first_results_filepath
-                ))
+                )
+            )
             num_qor_failures += 1
             continue
 

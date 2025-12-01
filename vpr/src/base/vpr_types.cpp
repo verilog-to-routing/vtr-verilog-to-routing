@@ -80,7 +80,7 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(const std::vector<std::string>& s
                 target_ext_pin_util.output_pin_util = vtr::atof(elements[1]);
             } else {
                 std::stringstream msg;
-                msg << "Invalid conversion from '" << spec << "' to external pin util (expected either a single float value, or two float values separted by a comma)";
+                msg << "Invalid conversion from '" << spec << "' to external pin util (expected either a single float value, or two float values separated by a comma)";
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, msg.str().c_str());
             }
 
@@ -431,7 +431,7 @@ std::string t_pb::hierarchical_type_name() const {
  *        equivalent pins
  */
 BitIndex t_pb::atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
-    VTR_ASSERT_MSG(is_primitive(), "Atom pin indicies can only be looked up from primitives");
+    VTR_ASSERT_MSG(is_primitive(), "Atom pin indices can only be looked up from primitives");
 
     auto iter = pin_rotations_.find(gpin);
 

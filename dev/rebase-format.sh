@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#Reformat and ammend each commit since the provided 
+#Reformat and amend each commit since the provided 
 #commit-sh argument
 #
 #NOTE: Only use on local branches!

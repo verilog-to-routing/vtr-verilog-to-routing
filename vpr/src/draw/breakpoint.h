@@ -6,13 +6,13 @@
  * 
  * This file holds the declaration of the breakpoint class, and also some of the breakpoint related functions.
  * 
- * This class holds the definiton of type Breakpoint as well as all related functions. 
+ * This class holds the definition of type Breakpoint as well as all related functions. 
  * Breakpoints can be set through the GUI anytime during placement or routing. Breakpoints can also be activated, 
  * deactivated, and deleted. Each breakpoint has a type (BT_MOVE_NUM, BT_TEMP_NUM, BT_FROM_BLOCK, BT_ROUTER_ITER, BT_ROUTE_NET_ID, BT_EXPRESSION) and holds the 
  * values for corresponding to its type, as well as a boolean variable to activate and deactivate a breakpoint. It should be noted that each breakpoint can only have one type and hold one value corresponding to that type. 
  * More complicated breakpoints are set using an expression. (e.g move_num > 3 && block_id == 11) 
- * Breakpoints can be create using 3 constructors, the default contructor that doesn't identify the type and sets a breakpoint that is never reached, 
- * a constructor that takes in the type and an int value, and lastly a constructor that takes in the type and the sting that holds the expression. 
+ * Breakpoints can be create using 3 constructors, the default constructor that doesn't identify the type and sets a breakpoint that is never reached, 
+ * a constructor that takes in the type and an int value, and lastly a constructor that takes in the type and the string that holds the expression. 
  * (e.g Breakpoint(BT_MOVE_NUM, 4) or Breakpoint(BT_EXPRESSION, "move_num += 3")) The == operator has also been provided which returns true when two 
  * breakpoints have the same type, and the same value corresponding to the type.
  */
@@ -69,7 +69,7 @@ class Breakpoint {
             bt_route_net_id = breakpoint_value;
     }
 
-    //sets the breakpoint type to BT_EXPRESSION and sets the string member bt_expression to the expresssion the user inputted. e.g Breakpoint(BT_EXPRESSION, "move_num==3")
+    //sets the breakpoint type to BT_EXPRESSION and sets the string member bt_expression to the expression the user inputted. e.g Breakpoint(BT_EXPRESSION, "move_num==3")
     //the user can set breakpoints, during routing or placement, using an expression with the available variables and operators
     Breakpoint(bp_type ty, std::string expr) {
         type = ty;
@@ -99,7 +99,7 @@ class Breakpoint {
     }
 };
 
-//breakpoint realted functions to be called from draw.cpp, place.cpp and route_timing.cpp
+//breakpoint related functions to be called from draw.cpp, place.cpp and route_timing.cpp
 
 //checks for all types of breakpoint and returns true if a breakpoint is encountered
 bool check_for_breakpoints(bool in_placer);

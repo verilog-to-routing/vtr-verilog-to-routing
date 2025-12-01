@@ -114,9 +114,8 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int la
     rr_graph_builder.set_node_capacity(node_index, 1);
     rr_graph_builder.set_node_cost_index(node_index, RRIndexedDataId(SINK_COST_INDEX));
 
-    float R = 0.;
-    float C = 0.;
-    rr_graph_builder.set_node_rc_index(node_index, NodeRCIndex(find_create_rr_rc_data(R, C, rr_rc_data)));
+    const NodeRCIndex rc_index = find_create_rr_rc_data(0, 0, rr_rc_data);
+    rr_graph_builder.set_node_rc_index(node_index, rc_index);
 
     // Use a generic way when adding nodes to lookup.
     // However, since the SINK node has the same xhigh/xlow as well as yhigh/ylow, we can probably use a shortcut
@@ -179,7 +178,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
             y);
 
         // boundary conditions:
-        // y at gird height and height -1 connections share the same drive point
+        // y at grid height and height -1 connections share the same drive point
         if (y == int(grid.height() - 2)) {
             y = y - 1;
         }

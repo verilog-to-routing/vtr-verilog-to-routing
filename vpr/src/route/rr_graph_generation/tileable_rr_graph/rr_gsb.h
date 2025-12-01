@@ -44,7 +44,7 @@
  * num_conf_bits: number of configuration bits this switch block requires
  *******************************************************************/
 class RRGSB {
-  public:    /* Contructors */
+  public:    /* Constructors */
     RRGSB(); /* Default constructor */
   public:    /* Accessors */
     /* Get the number of sides of this SB */

@@ -261,7 +261,7 @@ void toggle_blk_internal_cbk(GtkSpinButton* self, ezgl::application* app) {
  * @brief cbk function when pin util gets changed in ui; sets pin util drawing to new val
  * updates draw_state->show_blk_pin_util
  * 
- * @param self ptr to selt
+ * @param self ptr to self
  * @param app ezgl::app
  */
 void toggle_blk_pin_util_cbk(GtkComboBoxText* self, ezgl::application* app) {
@@ -286,7 +286,7 @@ void toggle_blk_pin_util_cbk(GtkComboBoxText* self, ezgl::application* app) {
  * @brief cbk function when pin util gets changed in ui; sets pin util drawing to new val
  * updates draw_state->show_placement_macros
  * 
- * @param self ptr to selt
+ * @param self ptr to self
  * @param app ezgl::app
  */
 void placement_macros_cbk(GtkComboBoxText* self, ezgl::application* app) {

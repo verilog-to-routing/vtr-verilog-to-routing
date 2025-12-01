@@ -136,7 +136,7 @@ class APPackMaxDistThManager {
     void set_max_distance_thresholds_from_strings(const std::vector<std::string>& max_dist_ths,
                                                   const std::vector<t_logical_block_type>& logical_block_types);
 
-    /// @brief A flag which shows if the thesholds have been computed or not.
+    /// @brief A flag which shows if the thresholds have been computed or not.
     bool is_initialized_ = false;
 
     /// @brief The max distance thresholds of all logical blocks in the architecture.

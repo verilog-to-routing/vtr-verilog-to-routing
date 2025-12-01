@@ -45,7 +45,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
     // make sure the test result is not corrupted
     REQUIRE(list_of_routers.empty());
 
-    SECTION("All routers are seperated by one or more grid spaces") {
+    SECTION("All routers are separated by one or more grid spaces") {
         // in this test, the routers will be on the 4 corners of the FPGA
 
         // bottom left corner
@@ -442,7 +442,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
 
     const vtr::vector<NocRouterId, NocRouter>* noc_routers = nullptr;
 
-    SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is less than whats on the FPGA.") {
+    SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is less than what's on the FPGA.") {
         // start by creating all the logical routers
         // this is similar to the user provided a config file
         temp_router = new t_router;
@@ -472,7 +472,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
 
         // now we got through the noc model and confirm that the correct
         for (int router_id = 1; router_id < 7; router_id++) {
-            // covert the router id
+            // convert the router id
             noc_router_id = noc_model.convert_router_id(router_id);
 
             // get the router that we are testing from the NoC
@@ -515,7 +515,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
 
         // now we got through the noc model and confirm that the correct
         for (int router_id = 1; router_id < 10; router_id++) {
-            // covert the router id
+            // convert the router id
             noc_router_id = noc_model.convert_router_id(router_id);
 
             // get the router that we are testing now from the NoC

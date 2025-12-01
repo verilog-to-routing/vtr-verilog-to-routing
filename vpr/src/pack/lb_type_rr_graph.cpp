@@ -12,7 +12,7 @@
  * Common acryonyms:
  * rr - routing resource
  * lb - logic block
- * pb - phsyical block (the top level physical block is the logic block, a leaf physical block is a primitive)
+ * pb - physical block (the top level physical block is the logic block, a leaf physical block is a primitive)
  *
  * Author: Jason Luu
  * Date: July 22, 2013

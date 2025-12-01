@@ -2,6 +2,7 @@
 #include <regex>
 #include <algorithm>
 #include <sstream>
+#include <ranges>
 
 #include "pack_types.h"
 #include "vpr_types.h"
@@ -415,7 +416,7 @@ int get_sub_tile_index(ClusterBlockId blk,
 
     for (const auto& sub_tile : type->sub_tiles) {
         if (sub_tile.capacity.is_in_range(sub_tile_coordinate)) {
-            auto result = std::find(sub_tile.equivalent_sites.begin(), sub_tile.equivalent_sites.end(), logical_block);
+            auto result = std::ranges::find(sub_tile.equivalent_sites, logical_block);
             if (result == sub_tile.equivalent_sites.end()) {
                 VPR_THROW(VPR_ERROR_PLACE, "The Block Id %d has been placed in an incompatible sub tile location.\n", blk);
             }
@@ -596,7 +597,7 @@ t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid) {
             rhs_num_instances += grid.num_instances(type, -1);
         return lhs_num_instances > rhs_num_instances;
     };
-    std::stable_sort(logic_block_candidates.begin(), logic_block_candidates.end(), by_desc_grid_count);
+    std::ranges::stable_sort(logic_block_candidates, by_desc_grid_count);
 
     if (!logic_block_candidates.empty()) {
         return logic_block_candidates.front();
@@ -985,7 +986,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
     return nullptr;
 }
 
-/* Recusively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
+/* Recursively visit through all pb_graph_nodes to populate pb_graph_pin_lookup_from_index */
 static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pin_lookup_from_index, t_pb_graph_node* pb_graph_node) {
     for (int iport = 0; iport < pb_graph_node->num_input_ports; iport++) {
         for (int ipin = 0; ipin < pb_graph_node->num_input_pins[iport]; ipin++) {
@@ -1061,7 +1062,7 @@ vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     vtr::vector<ClusterBlockId, t_pb**> pin_id_to_pb_mapping(cluster_ctx.clb_nlist.blocks().size());
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         pin_id_to_pb_mapping[blk_id] = new t_pb*[cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins];
         for (int j = 0; j < cluster_ctx.clb_nlist.block_type(blk_id)->pb_graph_head->total_pb_pins; j++) {
             pin_id_to_pb_mapping[blk_id][j] = nullptr;
@@ -1248,7 +1249,7 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
     //Look through the output nets for any duplicates of the input nets
     for (auto pin_id : atom_ctx.netlist().block_output_pins(blk_id)) {
         auto net_id = atom_ctx.netlist().pin_net(pin_id);
-        if (input_nets.count(net_id)) {
+        if (input_nets.contains(net_id)) {
             --ext_inps;
         }
     }
@@ -1273,10 +1274,7 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
         return;
     }
 
-    const t_pb_type* pb_type;
-    int i, j, mode;
-
-    pb_type = pb->pb_graph_node->pb_type;
+    const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
     if (pb->name) {
         free(pb->name);
@@ -1284,9 +1282,9 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
     }
 
     if (pb_type->blif_model == nullptr) {
-        mode = pb->mode;
-        for (i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
-            for (j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
+        int mode = pb->mode;
+        for (int i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
+            for (int j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
                 if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
                     free_pb(&pb->child_pbs[i][j], atom_pb_bimap);
                 }
@@ -1354,7 +1352,7 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
 
         std::string source_string{src_string};
         // replace '.' characters with space
-        std::replace(source_string.begin(), source_string.end(), '.', ' ');
+        std::ranges::replace(source_string, '.', ' ');
 
         std::istringstream source_iss(source_string);
         std::string pb_type_name, port_name;
@@ -1374,10 +1372,7 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         std::string source_string{src_string};
 
         // Replace '.' and '[' characters with ' '
-        std::replace_if(
-            source_string.begin(), source_string.end(),
-            [](char c) { return c == '.' || c == '[' || c == ':' || c == ']'; },
-            ' ');
+        std::ranges::replace_if(source_string, [](char c) noexcept { return c == '.' || c == '[' || c == ':' || c == ']'; }, ' ');
 
         std::istringstream source_iss(source_string);
         int start_pin_index, end_pin_index;
@@ -1479,7 +1474,7 @@ void print_switch_usage() {
             // Assumption: suppose for a L4 wire (bi-directional): ----+----+----+----, it can be driven from any point (0, 1, 2, 3).
             //             physically, the switch driving from point 1 & 3 should be the same. But we will assign then different switch
             //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
-            if (inward_switch_inf[to_node_index].count(switch_index) == 0)
+            if (!inward_switch_inf[to_node_index].contains(switch_index))
                 inward_switch_inf[to_node_index][switch_index] = 0;
             //VTR_ASSERT(from_node.type != OPIN);
             inward_switch_inf[to_node_index][switch_index]++;
@@ -1487,10 +1482,10 @@ void print_switch_usage() {
     }
 
     for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
-        for (const auto [rr_switch_id, node_switch_fanin] : inward_switch_inf[rr_id]) {
+        for (const RRSwitchId rr_switch_id : inward_switch_inf[rr_id] | std::views::keys) {
             float Tdel = rr_graph.rr_switch_inf(rr_switch_id).Tdel;
             const auto [arch_switch_id, fanin] = convert_switch_index(rr_switch_id);
-            if (switch_fanin_count[arch_switch_id].count(fanin) == 0) {
+            if (!switch_fanin_count[arch_switch_id].contains(fanin)) {
                 switch_fanin_count[arch_switch_id][fanin] = 0;
             }
             switch_fanin_count[arch_switch_id][fanin]++;
@@ -1538,6 +1533,25 @@ int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
     pin_physical_num = get_pb_pin_physical_num(physical_type, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_pin);
 
     return get_class_num_from_pin_physical_num(physical_type, pin_physical_num);
+}
+
+std::vector<int> find_sub_tile_indices_by_port_name(t_physical_tile_type_ptr type, std::string_view port_name) {
+    std::vector<int> ret;
+    for (const t_sub_tile& sub_tile : type->sub_tiles) {
+        bool matched = false;
+        for (const t_physical_tile_port& port : sub_tile.ports) {
+            if (port_name == port.name) {
+                matched = true;
+                break;
+            }
+        }
+        if (matched) {
+            for (int idx = sub_tile.capacity.low; idx <= sub_tile.capacity.high; ++idx) {
+                ret.push_back(idx);
+            }
+        }
+    }
+    return ret;
 }
 
 t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, std::string_view port_name) {
@@ -1885,23 +1899,6 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
             }
         }
     }
-
-    pin_num_vec.shrink_to_fit();
-    return pin_num_vec;
-}
-
-std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
-                                        ClusterBlockId cluster_blk_id,
-                                        int abs_cap) {
-    int max_num_pin = get_tile_total_num_pin(physical_tile) / physical_tile->capacity;
-    int num_tile_pin_per_inst = physical_tile->num_pins / physical_tile->capacity;
-    std::vector<int> pin_num_vec(num_tile_pin_per_inst);
-    std::iota(pin_num_vec.begin(), pin_num_vec.end(), abs_cap * num_tile_pin_per_inst);
-
-    pin_num_vec.reserve(max_num_pin);
-
-    auto internal_pins = get_cluster_internal_pins(cluster_blk_id);
-    pin_num_vec.insert(pin_num_vec.end(), internal_pins.begin(), internal_pins.end());
 
     pin_num_vec.shrink_to_fit();
     return pin_num_vec;

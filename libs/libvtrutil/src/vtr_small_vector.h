@@ -62,7 +62,7 @@ struct short_format<T, S, CAPACITY, 0> {
  * std::vector's characteristics.
  * 
  * For short vectors vtr::small_vector will try to store elements in-place (i.e. within the
- * vtr::small_vector object) instead of dynamically allocating an array (by re-using the
+ * vtr::small_vector object) instead of dynamically allocating an array (by reusing the
  * internal storage for the pointer, size and capacity). Whether this is possible depends on
  * the size and alignment requirements of the value type, as compared to
  * vtr::small_vector. If in-place storage is not possible (e.g. due to a large value
@@ -251,7 +251,7 @@ class small_vector {
     }
 
     /**
-     * @brief Reserve memory for a spicific number of elemnts
+     * @brief Reserve memory for a specific number of elements
      *
      * Don't change capacity unless requested number of elements is both:
      *   - More than the short capacity (no need to reserve up to short capacity)
@@ -533,7 +533,7 @@ class small_vector {
              * @brief Copy short data into long
              *
              * Note that the long format contains only basic data types with no destructors to call,
-             * so we can use uninitialzed copy
+             * so we can use uninitialized copy
              */
             std::uninitialized_copy(short_vec.short_.begin(), short_vec.short_.end(), long_vec.short_.data_);
             long_vec.short_.size_ = short_vec.size();
@@ -622,7 +622,7 @@ class small_vector {
             short_ = other.short_;
         } else {
             if (!is_short() && capacity() >= other.size()) {
-                //Re-use existing buffer, since it has sufficient capacity
+                //Reuse existing buffer, since it has sufficient capacity
                 destruct_elements();
 
             } else {
@@ -762,7 +762,7 @@ class small_vector {
      * @brief set the size 
      *
      * The two data (short/long) are padded to
-     * ensure that thier size_ members area always
+     * ensure that their size_ members area always
      * aligned, allowing is to set the size directly
      * for both formats
      */
@@ -836,7 +836,7 @@ class small_vector {
 
   private: //Data
     /*
-     * The object data storage is re-used between the long and short formats.
+     * The object data storage is reused between the long and short formats.
      *
      * If the capacity is small (less than or equal to SHORT_CAPACITY) the
      * short format (which stores element in-place) is used. Otherwise the

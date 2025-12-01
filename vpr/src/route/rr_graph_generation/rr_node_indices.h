@@ -42,6 +42,19 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               int* index);
 
 /**
+ * @brief Allocates RR nodes for non-3D scatter–gather links.
+ *
+ * Creates RR node indices for each bottleneck link, assigns track numbers
+ * within CHANX/CHANY channels, and updates the RR graph lookup tables.
+ *
+ * @return A list of created RR node IDs paired with their track numbers.
+ */
+std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                                                                       const std::vector<t_bottleneck_link>& bottleneck_links,
+                                                                                       const t_chan_width& chan_width_inf,
+                                                                                       int& index);
+
+/**
  * @brief Allocates and loads RR node indices for a specific tile.
  *
  * This function assigns RR node IDs to all classes (SOURCE/SINK) and pins (IPIN/OPIN)

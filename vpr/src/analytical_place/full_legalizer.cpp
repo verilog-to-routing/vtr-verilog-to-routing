@@ -174,7 +174,7 @@ class APClusterPlacer {
 
     /**
      * @brief Given a cluster and tile it wants to go into, try to place the
-     *        cluster at this tile's postion.
+     *        cluster at this tile's position.
      */
     bool place_cluster(ClusterBlockId clb_blk_id,
                        const t_physical_tile_loc& tile_loc,
@@ -1312,7 +1312,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
 
 void FullLegalizer::update_drawing_data_structures() {
 #ifndef NO_GRAPHICS
-    // update graphic resources incase of clustering changes
+    // update graphic resources in case of clustering changes
     if (get_draw_state_vars()) {
         get_draw_state_vars()->refresh_graphic_resources_after_cluster_change();
     }

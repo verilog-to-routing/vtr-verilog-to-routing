@@ -253,7 +253,7 @@ Button Description Table
 |                   |                   |                              | pin utilization              |
 +-------------------+-------------------+------------------------------+------------------------------+
 | Cong. Cost        | Routing           | Visualizes the congestion    |                              |
-|                   |                   | costs of routing resouces    |                              |
+|                   |                   | costs of routing resources   |                              |
 |                   |                   |                              |                              |
 |                   |                   |                              |                              |
 +-------------------+-------------------+------------------------------+------------------------------+

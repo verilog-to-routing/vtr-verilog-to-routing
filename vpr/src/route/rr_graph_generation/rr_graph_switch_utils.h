@@ -67,12 +67,9 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
  * @param R_minW_nmos               Reference R for a minimum-width nMOS (for AUTO buf sizing).
  * @param R_minW_pmos               Reference R for a minimum-width pMOS (for AUTO buf sizing).
  * @param wire_to_arch_ipin_switch  Architecture index of the IPIN connection-block switch.
- * @param wire_to_rr_ipin_switch    Output: rr_switch index of the representative IPIN cblock switch.
  */
 void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                   t_arch_switch_fanin& switch_fanin_remap,
                                   const std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                   const float R_minW_nmos,
-                                  const float R_minW_pmos,
-                                  const int wire_to_arch_ipin_switch,
-                                  RRSwitchId& wire_to_rr_ipin_switch);
+                                  const float R_minW_pmos);

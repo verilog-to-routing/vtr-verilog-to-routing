@@ -231,15 +231,15 @@ static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type,
         return capacity;
     }
     // For now, we simply mix the capacities of modes by taking the max of each
-    // dimension of the capcities. This provides an upper-bound on the amount of
+    // dimension of the capacities. This provides an upper-bound on the amount of
     // primitives this pb can contain.
     for (int mode = 0; mode < pb_type->num_modes; mode++) {
         PrimitiveVector mode_capacity = calc_mode_capacity(pb_type->modes[mode], memory_model_dims, dim_manager);
         capacity = PrimitiveVector::max(capacity, mode_capacity);
     }
 
-    // A pb_type represents a heirarchy of physical blocks that can be implemented,
-    // with leaves of primitives at the bottom of the heirarchy. A pb_type will have
+    // A pb_type represents a hierarchy of physical blocks that can be implemented,
+    // with leaves of primitives at the bottom of the hierarchy. A pb_type will have
     // many children, each with their own physical cost; however, a parent pb_type
     // should not have higher cost than its children. For example, here we use
     // pin counts to represent cost. The children of the pb_type cannot use more
@@ -264,7 +264,7 @@ static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type,
 }
 
 /**
- * @brief Calculate the cpacity of the given logical block type.
+ * @brief Calculate the capacity of the given logical block type.
  */
 static PrimitiveVector calc_logical_block_type_capacity(const t_logical_block_type& logical_block_type,
                                                         const PrimitiveDimManager& dim_manager) {
@@ -372,7 +372,7 @@ static PrimitiveVector calc_block_mass(APBlockId blk_id,
 namespace {
 
 /**
- * @brief A struct to hold information on pb types which act like one-hot primitves.
+ * @brief A struct to hold information on pb types which act like one-hot primitives.
  */
 struct OneHotPbType {
     /// @brief The root pb type which contains the modes which act in a one-hot
@@ -553,13 +553,13 @@ static void initialize_dim_manager(PrimitiveDimManager& dim_manager,
         }
     }
 
-    // Count the number of occurences of each model in the netlist.
+    // Count the number of occurrences of each model in the netlist.
     vtr::vector<LogicalModelId, unsigned> num_model_occurence(models.all_models().size(), 0);
     for (AtomBlockId blk_id : atom_netlist.blocks()) {
         LogicalModelId model_id = atom_netlist.block_model(blk_id);
 
         // If this model is not part of a shared dimension, just accumulate its
-        // number of occurences.
+        // number of occurrences.
         int one_hot_id = model_one_hot_id[model_id];
         if (one_hot_id == -1) {
             num_model_occurence[model_id]++;
@@ -568,7 +568,7 @@ static void initialize_dim_manager(PrimitiveDimManager& dim_manager,
 
         // If this model is part of a shared dimension, only accumulate into the
         // first shared model. This creates an accurate count of the number of
-        // occurences of the overall shared dimension in this first model id.
+        // occurrences of the overall shared dimension in this first model id.
         const OneHotPbType& one_hot_pb_type = one_hot_pb_types[one_hot_id];
         LogicalModelId first_model_id = *one_hot_pb_type.shared_models.begin();
         num_model_occurence[first_model_id]++;

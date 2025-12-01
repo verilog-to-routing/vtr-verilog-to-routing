@@ -81,9 +81,7 @@ inline const std::unordered_map<std::string, e_sb_location> SB_LOCATION_STRING_M
                                                                                       {"FRINGE", e_sb_location::E_FRINGE},
                                                                                       {"XY_SPECIFIED", e_sb_location::E_XY_SPECIFIED}};
 
-/**
- * @brief Describes regions that a specific switch block specifications should be applied to
- */
+/// @brief Describes regions that a specific switch block specifications should be applied to
 struct t_sb_loc_spec {
     int start = -1;
     int repeat = -1;
@@ -97,8 +95,8 @@ struct t_sb_loc_spec {
 class SBSideConnection {
   public:
     // Specify the two SB sides that form a connection
-    enum e_side from_side = TOP;
-    enum e_side to_side = TOP;
+    e_side from_side = TOP;
+    e_side to_side = TOP;
 
     void set_sides(enum e_side from, enum e_side to) {
         from_side = from;

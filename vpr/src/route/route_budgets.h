@@ -112,7 +112,7 @@ class route_budgets {
     tatum::EdgeId get_edge_from_nets(ParentNetId net_id, int ipin);
 
     /*debugging tools*/
-    void print_temporary_budgets_to_file(NetPinsMatrix<float>& temp_budgets);
+    void print_temporary_budgets_to_file(NetPinsMatrix<float>& temp_budgets) const;
 
     /*Budget variables*/
     NetPinsMatrix<float> delay_min_budget;  //[0..num_nets][0..clb_net[inet].pins]

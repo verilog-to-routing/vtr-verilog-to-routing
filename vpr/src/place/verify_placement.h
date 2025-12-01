@@ -7,7 +7,7 @@
  *          given placement is valid and can be used with the rest of the VPR
  *          flow.
  *
- * This methods were orginally part of methods found in the place.cpp file and
+ * This methods were originally part of methods found in the place.cpp file and
  * the place_constraints.cpp files. Moved into here to put it all in one place.
  * Since these methods should be completely independent of the place flow, it
  * makes sense that they are in their own file.

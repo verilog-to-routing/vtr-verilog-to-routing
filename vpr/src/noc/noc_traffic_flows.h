@@ -55,7 +55,7 @@ struct t_noc_traffic_flow {
     /** The bandwidth of the information transferred between the two routers. Units in bytes per second. This parameters will be used to update the link usage in the noc model after routing the traffic flow.*/
     double traffic_flow_bandwidth;
 
-    /** The maximum allowable time to transmit data between thw two routers, in seconds. This parameter will be used to evaluate a router traffic flow.*/
+    /** The maximum allowable time to transmit data between the two routers, in seconds. This parameter will be used to evaluate a router traffic flow.*/
     double max_traffic_flow_latency;
 
     /** Indicates the importance of the traffic flow. Higher priority traffic flows will have more importance and will be more likely to have their latency reduced and constraints met. Range: [0-inf) */

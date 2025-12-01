@@ -89,3 +89,19 @@ void DeviceGrid::count_instances() {
         }
     }
 }
+
+bool DeviceGrid::has_interposer_cuts() const {
+    for (const std::vector<int>& layer_h_cuts : horizontal_interposer_cuts_) {
+        if (!layer_h_cuts.empty()) {
+            return true;
+        }
+    }
+
+    for (const std::vector<int>& layer_v_cuts : vertical_interposer_cuts_) {
+        if (!layer_v_cuts.empty()) {
+            return true;
+        }
+    }
+
+    return false;
+}

@@ -3,11 +3,11 @@
  * This file contains utilities for the  PUGI XML parser.
  *
  * They primarily relate to:
- *   - Checking for node/attribute exitance and reporting errors if not
+ *   - Checking for node/attribute existence and reporting errors if not
  *   - Misc. utilities like counting tags
  *
  * Using these utilities simplifies error handling while manipulating XML
- * since the user doesn't need to explicitly check for node/attribute existance
+ * since the user doesn't need to explicitly check for node/attribute existence
  * (by default most of these functions will raise exceptions with useful error
  * messages if the requested item does not exists).
  */
@@ -142,7 +142,7 @@ void expect_only_children(const pugi::xml_node node,
                           const loc_data& loc_data);
 
 //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node'.
-//Note this does not check whether the attribues in 'attribute_names' actually exist.
+//Note this does not check whether the attributes in 'attribute_names' actually exist.
 //
 //  node - The parent xml node
 //  attribute_names - expected attribute names
@@ -152,7 +152,7 @@ void expect_only_attributes(const pugi::xml_node node,
                             const loc_data& loc_data);
 
 //Throws a well formatted error if any attribute other than those named in 'attribute_names' are found on 'node' with an additional explanation.
-//Note this does not check whether the attribues in 'attribute_names' actually exist.
+//Note this does not check whether the attributes in 'attribute_names' actually exist.
 //
 //  node - The parent xml node
 //  attribute_names - expected attribute names

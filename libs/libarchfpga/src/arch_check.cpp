@@ -163,11 +163,11 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
         if (annotation.type == E_ANNOT_PIN_TO_PIN_DELAY) {
             //Check that any combinational delays specified match the 'combinational_sinks_ports' in the model
 
-            if (annotation.clock) {
+            if (!annotation.clock.empty()) {
                 //Sequential annotation, check that the clock on the specified port matches the model
 
-                //Annotations always put the pin in the input_pins field
-                VTR_ASSERT(annotation.input_pins);
+                // Annotations always put the pin in the input_pins field
+                VTR_ASSERT(!annotation.input_pins.empty());
                 for (const std::string& input_pin : vtr::StringToken(annotation.input_pins).split(" \t\n")) {
                     InstPort annot_port(input_pin);
                     for (const std::string& clock : vtr::StringToken(annotation.clock).split(" \t\n")) {
@@ -207,15 +207,15 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                     }
                 }
 
-            } else if (annotation.input_pins && annotation.output_pins) {
-                //Combinational annotation
-                VTR_ASSERT_MSG(!annotation.clock, "Combinational annotations should have no clock");
+            } else if (!annotation.input_pins.empty() && !annotation.output_pins.empty()) {
+                // Combinational annotation
+                VTR_ASSERT_MSG(annotation.clock.empty(), "Combinational annotations should have no clock");
                 for (const std::string& input_pin : vtr::StringToken(annotation.input_pins).split(" \t\n")) {
                     InstPort annot_in(input_pin);
                     for (const std::string& output_pin : vtr::StringToken(annotation.output_pins).split(" \t\n")) {
                         InstPort annot_out(output_pin);
 
-                        //Find the input model port
+                        // Find the input model port
                         const t_model_ports* model_port = nullptr;
                         for (const t_model_ports* port = model.inputs; port != nullptr; port = port->next) {
                             if (port->name == annot_in.port_name()) {
@@ -230,7 +230,7 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                                            annot_in.port_name().c_str(), annot_in.instance_name().c_str());
                         }
 
-                        //Check that the output port is listed in the model's combinational sinks
+                        // Check that the output port is listed in the model's combinational sinks
                         auto b = model_port->combinational_sink_ports.begin();
                         auto e = model_port->combinational_sink_ports.end();
                         auto iter = std::find(b, e, annot_out.port_name());

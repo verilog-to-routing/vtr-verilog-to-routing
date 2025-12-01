@@ -31,7 +31,7 @@ Continue to work on the branch, pushing the commits regularly.
 Like a PR, test cases must be included through the use of benchmarks.
 See [regression tests](regression_test.md) for further instruction.
 
-### Formating
+### Formatting
 
 Odin II shares the same contributing philosophy as [VPR](https://docs.verilogtorouting.org/en/latest/dev/contributing/contributing/).
 Most importantly PRs will be rejected if they do not respect the coding standard: see [VPRs coding standard](https://docs.verilogtorouting.org/en/latest/dev/developing/#code-formatting)

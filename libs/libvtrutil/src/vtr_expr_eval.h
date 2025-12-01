@@ -187,10 +187,10 @@ class Formula_Object {
             } else if (data.op == E_OP_AA) {
                 return "+=";
             } else {
-                return "???"; //Unkown
+                return "???"; //Unknown
             }
         } else {
-            return "???"; //Unkown
+            return "???"; //Unknown
         }
     }
 };

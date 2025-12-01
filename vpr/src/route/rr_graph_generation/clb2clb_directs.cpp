@@ -33,6 +33,11 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
         clb_to_clb_directs[i].from_clb_type = physical_tile;
 
         t_physical_tile_port tile_port = find_tile_port_by_name(physical_tile, port_name);
+        /* Find the sub tile indices */
+        clb_to_clb_directs[i].from_sub_tiles = find_sub_tile_indices_by_port_name(physical_tile, port_name);
+        if (clb_to_clb_directs[i].from_sub_tiles.empty()) {
+            VPR_THROW(VPR_ERROR_ARCH, "Unable to find sub tile under tile '%s' which contains the port %s.\n", tile_name.c_str(), port_name.data());
+        }
 
         if (start_pin_index == UNDEFINED) {
             VTR_ASSERT(start_pin_index == end_pin_index);
@@ -57,6 +62,8 @@ std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::v
         clb_to_clb_directs[i].to_clb_type = physical_tile;
 
         tile_port = find_tile_port_by_name(physical_tile, port_name);
+        // Cache the destination port name as the pin index is not enough to identify if the destination subtile is the one we want
+        clb_to_clb_directs[i].to_port = port_name;
 
         if (start_pin_index == UNDEFINED) {
             VTR_ASSERT(start_pin_index == end_pin_index);

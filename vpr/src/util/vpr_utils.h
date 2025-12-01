@@ -23,6 +23,15 @@ bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
 /**
+ * @brief Returns the indices of sub tiles in a given physical type which contain the specified port name. It will return all the sub tiles that contain the required port. Note that the sub tiles may be of different types
+ *
+ * @param type the pointer to the physical tile type descriptor
+ * @param port_name the name of the port as a qualifier to match sub tiles
+ * @return A vector of the indices of qualified sub tiles in the specified physical tile
+ */
+std::vector<int> find_sub_tile_indices_by_port_name(t_physical_tile_type_ptr type, std::string_view port_name);
+
+/**
  * @brief Returns the corresponding physical type given the location in the grid.
  * @param loc The block location in the grid.
  * @return The physical tile type of the given location.
@@ -167,7 +176,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id);
 
 /**
- * @brief Retrieves the atom pin associated with a specific CLB and pb_graph_pin. Warning: Not all pb_graph_pins are associated with an atom pin! Only pb_graph_pins on primatives are associated with an AtomPinId. Returns AtomPinId::INVALID() if no atom pin is found.
+ * @brief Retrieves the atom pin associated with a specific CLB and pb_graph_pin. Warning: Not all pb_graph_pins are associated with an atom pin! Only pb_graph_pins on primitives are associated with an AtomPinId. Returns AtomPinId::INVALID() if no atom pin is found.
  */
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
@@ -319,10 +328,6 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type);
-
-std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
-                                        ClusterBlockId cluster_blk_id,
-                                        int abs_cap);
 
 t_arch_switch_inf create_internal_arch_sw(float delay);
 

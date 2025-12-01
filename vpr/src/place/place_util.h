@@ -121,7 +121,7 @@ class t_placer_costs {
      * @param noc_opts Determines if placement includes the NoC
      * @return double The computed total cost of the current placement
      */
-    double get_total_cost(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts);
+    double get_total_cost(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) const;
 
     /**
      * @brief Accumulates NoC cost difference terms

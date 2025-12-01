@@ -1569,7 +1569,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
-            "A set of semi-colon seperated graphics commands. \n"
+            "A set of semi-colon separated graphics commands. \n"
             "Commands must be surrounded by quotation marks (e.g. --graphics_commands \"save_graphics place.png\")\n"
             "   Commands:\n"
             "      * save_graphics <file>\n"
@@ -2035,7 +2035,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "is used as a guide, the legalizer may not follow this if it must fill "
             "the tile more."
             "\n"
-            "When this option is set ot auto, VPR will select good values for the "
+            "When this option is set to auto, VPR will select good values for the "
             "target density of tiles."
             "\n"
             "This option is similar to appack_max_dist_th, where a regex string "
@@ -2142,7 +2142,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     pack_grp.add_argument(args.connection_gain_weight, "--connection_gain_weight")
         .help(
             "Parameter that weights the absorption of small nets vs signal sharing."
-            " 0.0 focuses solely on sharing, 1.0 solely on small net absoprtion."
+            " 0.0 focuses solely on sharing, 1.0 solely on small net absorption."
             " Only meaningful if --connection_driven_clustering=on")
         .default_value("0.9")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2665,7 +2665,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_timing_grp.add_argument(args.place_tsu_abs_margin, "--place_tsu_abs_margin")
         .help(
-            "Specifies an absolute offest added to cell setup times used by the placer."
+            "Specifies an absolute offset added to cell setup times used by the placer."
             " This effectively controls whether the placer should try to achieve extra margin on setup paths."
             " For example a value of 500e-12 corresponds to requesting an extra 500ps of setup margin.")
         .default_value("0.0")
@@ -2854,7 +2854,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
         .help(
             "Controls the directedness of the timing-driven router's exploration."
-            " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
+            " Values between 1 and 2 are reasonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2862,7 +2862,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Controls the directedness of the timing-driven router's exploration."
             " It is a subtractive adjustment to the lookahead heuristic."
-            " Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.")
+            " Values between 0 and 1e-9 are reasonable; higher values may increase quality at the expense of run-time.")
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2871,7 +2871,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls the directedness of the timing-driven router's exploration"
             " when doing router delay profiling of an architecture."
             " The router delay profiling step is currently used to calculate the place delay matrix lookup."
-            " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
+            " Values between 1 and 2 are reasonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -3225,7 +3225,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "'--echo_file on' is set:\n"
             " * -1: All nodes are dumped into the DOT file\n"
             " * >= 0: Only the transitive fanin/fanout of the node is dumped (easier to view)\n"
-            " * a string: Interpretted as a VPR pin name which is converted to a node id, and dumped as above\n")
+            " * a string: Interpreted as a VPR pin name which is converted to a node id, and dumped as above\n")
         .default_value("-1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

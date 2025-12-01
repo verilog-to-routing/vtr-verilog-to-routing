@@ -35,7 +35,7 @@ namespace {
 /**
  * @brief Struct to hold overestimation information found while profiling
  *        sample routes. Here, overestimation is defined as the amount the
- *        router lookahead (heuristic_delay) overestimated the actualy delay
+ *        router lookahead (heuristic_delay) overestimated the actually delay
  *        of the path (path_delay).
  */
 struct t_overestimation_info {
@@ -256,7 +256,7 @@ static void profile_lookahead_overestimation(std::ofstream& os,
     os << "Important metrics in the data below include the Mean Squared Error (MSE)\n";
     os << "between the estimated cost of the path and the actual cost of the path, and\n";
     os << "the worst overestimation of the cost of the path. The MSE measures how\n";
-    os << "acccurate the router lookahead is. The more accurate the router lookahead\n";
+    os << "accurate the router lookahead is. The more accurate the router lookahead\n";
     os << "is, the faster the router will be while maintaining good quality. The\n";
     os << "max overestimation is a measure of how admissible the router lookahead is\n";
     os << "as a heuristic in the router. The higher this number is, the worse the\n";

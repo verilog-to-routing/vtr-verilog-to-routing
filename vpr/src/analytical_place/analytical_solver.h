@@ -48,7 +48,7 @@ typedef vtr::StrongId<struct ap_row_id_tag, size_t> APRowId;
  * This provides functionality that all Analytical Solvers will use.
  *
  * It provides a standard interface that all Analytical Solvers must implement
- * so they can be used interchangably. This makes it very easy to test and
+ * so they can be used interchangeably. This makes it very easy to test and
  * compare different solvers.
  */
 class AnalyticalSolver {
@@ -90,7 +90,7 @@ class AnalyticalSolver {
     /**
      * @brief Print statistics on the analytical solver.
      *
-     * This is expected to be called after global placement to collect cummulative
+     * This is expected to be called after global placement to collect cumulative
      * information on how the solver performed.
      */
     virtual void print_statistics() = 0;
@@ -178,7 +178,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          int log_verbosity);
 
 /**
- * @brief An analytical solver which does not solve anthing. This solver acts
+ * @brief An analytical solver which does not solve anything. This solver acts
  *        like the identity matrix in a system of equations and just passes the
  *        previous solution (from the partial legalizer) along. This solver
  *        should only be used for testing.
@@ -295,7 +295,7 @@ class QPHybridSolver : public AnalyticalSolver {
     void init_linear_system();
 
     /**
-     * @brief Intializes the guesses which will be used in the solver.
+     * @brief Initializes the guesses which will be used in the solver.
      *
      * The guesses will be used as starting points for the CG solver. The better
      * these guesses are, the faster the solver will converge.
@@ -473,7 +473,7 @@ class B2BSolver : public AnalyticalSolver {
     /// @brief Since the weights in the B2B model divide by the distance between
     ///        blocks and their bounds, that distance may get very very close to
     ///        0. This causes the weight matrix to become numerically unstable.
-    ///        We can gaurd against this by clamping the distance to not be smaller
+    ///        We can guard against this by clamping the distance to not be smaller
     ///        than some epsilon.
     ///        Decreasing this number may lead to more instability, but can yield
     ///        a higher quality solution.
@@ -703,7 +703,7 @@ class B2BSolver : public AnalyticalSolver {
      *        placement object.
      *
      * Note: The x_soln and y_soln may be modified if it is found that the
-     *       solution is imposible (i.e. has negative positions).
+     *       solution is impossible (i.e. has negative positions).
      */
     void store_solution_into_placement(Eigen::VectorXd& x_soln,
                                        Eigen::VectorXd& y_soln,

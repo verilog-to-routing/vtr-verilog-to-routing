@@ -193,12 +193,12 @@ subckt: DOT_SUBCKT STRING       { $$ = SubCkt(); $$.model = $2; }
 latch: DOT_LATCH STRING STRING {
                                     //Input and output only
                                     callback.lineno(lexer.lineno()); 
-                                    callback.latch($2, $3, LatchType::UNSPECIFIED, "", LogicValue::UNKOWN);
+                                    callback.latch($2, $3, LatchType::UNSPECIFIED, "", LogicValue::UNKNOWN);
                                }
     | DOT_LATCH STRING STRING latch_type latch_control {
                                     //Input, output, type and control
                                     callback.lineno(lexer.lineno()); 
-                                    callback.latch($2, $3, $4, $5, LogicValue::UNKOWN);
+                                    callback.latch($2, $3, $4, $5, LogicValue::UNKNOWN);
                                }
     | DOT_LATCH STRING STRING latch_type latch_control latch_init {
                                     //Input, output, type, control and init-value
@@ -215,7 +215,7 @@ latch: DOT_LATCH STRING STRING {
 latch_init: LOGIC_TRUE { $$ = LogicValue::TRUE; }
     | LOGIC_FALSE { $$ = LogicValue::FALSE; }
     | LATCH_INIT_2 { $$ = LogicValue::DONT_CARE; }
-    | LATCH_INIT_3 { $$ = LogicValue::UNKOWN; }
+    | LATCH_INIT_3 { $$ = LogicValue::UNKNOWN; }
     ;
 
 latch_control: STRING { $$ = $1;}

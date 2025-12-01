@@ -633,7 +633,7 @@ class Netlist {
     /**
      * @brief Removes a pin from the netlist.
      *
-     * The pin is marked invalid, and removed from any assoicated nets
+     * The pin is marked invalid, and removed from any associated nets
      *   @param pin_id   The pin_id of the pin to be removed
      */
     void remove_pin(const PinId pin_id);
@@ -680,7 +680,7 @@ class Netlist {
     void remove_net(const NetId net_id);
 
     /**
-     * @brief Removes a connection betwen a net and pin.
+     * @brief Removes a connection between a net and pin.
      *
      * The pin is removed from the net and the pin
      * will be marked as having no associated net
@@ -730,7 +730,7 @@ class Netlist {
     /**
      * @brief Finds a block where the block's name contains the
      *        provided input name as a substring. 
-     *        The intented use is to find the block id of a 
+     *        The intended use is to find the block id of a 
      *        hard block without knowing its name in the netlist. Instead
      *        the block's module name in the HDL design can be used as it will
      *        be a substring within its full name in the netlist.
@@ -754,7 +754,7 @@ class Netlist {
      *              The clustered netlist class defines another version of this
      *              function that find blocks by checking for a pattern match,
      *              meaning that the input is a pattern string and the pattern
-     *              is looked for ine each block name.
+     *              is looked for in each block name.
      * 
      * @param name_substring A substring of a block name for which an ID needs  
      *             to be found.
@@ -765,7 +765,7 @@ class Netlist {
     BlockId find_block_by_name_fragment(const std::string& name_substring) const;
 
     /**
-     * @brief Returns the PortId of the specifed port if it exists or PortId::INVALID() if not
+     * @brief Returns the PortId of the specified port if it exists or PortId::INVALID() if not
      *
      * @note  This method is typically less efficient than searching by a t_model_port
      *        With the overloaded AtomNetlist method
@@ -948,21 +948,21 @@ class Netlist {
      */
 
     /**
-     * @brief Returns the StringId of the specifed string if it exists or StringId::INVALID() if not
+     * @brief Returns the StringId of the specified string if it exists or StringId::INVALID() if not
      *
      *   @param str   The string to look for
      */
     StringId find_string(const std::string& str) const;
 
     /**
-     * @brief Returns the BlockId of the specifed block if it exists or BlockId::INVALID() if not
+     * @brief Returns the BlockId of the specified block if it exists or BlockId::INVALID() if not
      *
      *   @param name_id : The block name to look for
      */
     BlockId find_block(const StringId name_id) const;
 
     /**
-     * @brief Returns the NetId of the specifed port if it exists or NetId::INVALID() if not
+     * @brief Returns the NetId of the specified port if it exists or NetId::INVALID() if not
      *
      *   @param name_id   The string ID of the net name to look for
      */

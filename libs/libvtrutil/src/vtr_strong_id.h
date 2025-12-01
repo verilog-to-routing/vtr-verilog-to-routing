@@ -72,7 +72,7 @@
  *    2. T          - the underlying integral id type (default: int) [Optional]
  *    3. T sentinel - a value representing an invalid Id (default: -1) [Optional]
  *
- * If no value is supllied during construction the StrongId is initialized to the invalid/sentinel value.
+ * If no value is supplied during construction the StrongId is initialized to the invalid/sentinel value.
  *
  * Example 1: default definition
  *
@@ -160,10 +160,10 @@ class StrongId;
  * friend them
  */
 template<typename tag, typename T, T sentinel>
-constexpr bool operator==(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+constexpr bool operator==(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept;
 
 template<typename tag, typename T, T sentinel>
-constexpr bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+constexpr bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept;
 
 template<typename tag, typename T, T sentinel>
 constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept;
@@ -211,9 +211,9 @@ class StrongId {
      * Note that since these are templated functions we provide an empty set of template parameters
      * after the function name (i.e. <>)
      */
-    friend constexpr bool operator== <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    friend constexpr bool operator== <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept;
     ///@brief != operator
-    friend constexpr bool operator!= <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+    friend constexpr bool operator!= <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept;
     ///@brief < operator
     friend constexpr bool operator< <>(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept;
 
@@ -228,13 +228,13 @@ class StrongId {
 
 ///@brief == operator
 template<typename tag, typename T, T sentinel>
-constexpr bool operator==(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
+constexpr bool operator==(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept {
     return lhs.id_ == rhs.id_;
 }
 
 ///@brief != operator
 template<typename tag, typename T, T sentinel>
-constexpr bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
+constexpr bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept {
     return !(lhs == rhs);
 }
 

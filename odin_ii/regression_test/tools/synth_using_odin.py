@@ -9,7 +9,7 @@ from os.path import abspath
 
 
 if len(sys.argv) is not 2:
-    print "usage: " + sys.argv[0] + " <dir>"
+    print("usage: " + sys.argv[0] + " <dir>")
 
 path = abspath(sys.argv[1]) + "/"
 slog = open(path + "ODIN_success.lst", "w")

@@ -271,7 +271,7 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
     // TODO: If this threshold lookup gets expensive, move outside.
     int high_fanout_net_threshold = high_fanout_thresholds_.get_threshold(cluster_legalizer.get_cluster_type(cluster_id)->name);
 
-    // Mark and update the gain stats for each block in the succesfully
+    // Mark and update the gain stats for each block in the successfully
     // clustered molecule.
     // Makes calls to update cluster stats such as the gain map for atoms, used
     // pins, and clock structures, in order to reflect the new content of the

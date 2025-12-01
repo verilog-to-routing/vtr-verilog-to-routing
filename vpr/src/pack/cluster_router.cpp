@@ -246,7 +246,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
                 pb_graph_node->illegal_modes.push_back(result.first->second->index);
             }
 
-            // If the number of illegal modes equals the number of available mode for a specific pb_graph_node it means that no cluster can be generated. This resuts
+            // If the number of illegal modes equals the number of available mode for a specific pb_graph_node it means that no cluster can be generated. This results
             // in a fatal error.
             if ((int)pb_graph_node->illegal_modes.size() >= pb_graph_node->pb_type->num_modes) {
                 VPR_FATAL_ERROR(VPR_ERROR_PACK, "There are no more available modes to be used. Routing Failed!");
@@ -693,7 +693,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPin
     if (lb_nets[ipos].terminals.empty()) {
         /* Add terminals */
 
-        //Default assumption is that the source is outside the current cluster (will be overriden later if required)
+        //Default assumption is that the source is outside the current cluster (will be overridden later if required)
         int source_terminal = get_lb_type_rr_graph_ext_source_index(lb_type);
         lb_nets[ipos].terminals.push_back(source_terminal);
 
@@ -782,10 +782,10 @@ static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPin
     //Sanity checks
     int num_extern_sources = 0;
     int num_extern_sinks = 0;
-    for (size_t iterm = 0; iterm < lb_nets[ipos].terminals.size(); ++iterm) {
-        int inode = lb_nets[ipos].terminals[iterm];
-        AtomPinId atom_pin = lb_nets[ipos].atom_pins[iterm];
-        if (iterm == 0) {
+    for (size_t term_idx = 0; term_idx < lb_nets[ipos].terminals.size(); ++term_idx) {
+        int inode = lb_nets[ipos].terminals[term_idx];
+        AtomPinId atom_pin = lb_nets[ipos].atom_pins[term_idx];
+        if (term_idx == 0) {
             //Net driver
             VTR_ASSERT_SAFE_MSG(lb_type_graph[inode].type == LB_SOURCE, "Driver must be a source RR node");
             VTR_ASSERT_SAFE_MSG(atom_pin, "Driver have an associated atom pin");
@@ -867,7 +867,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const At
 
         /* Remove sink from list of terminals */
         int pin_index = pb_graph_pin->pin_count_in_cluster;
-        unsigned int iterm;
+        size_t term_idx;
 
         VTR_ASSERT(lb_type_graph[pin_index].num_modes == 1);
         VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
@@ -877,8 +877,8 @@ static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const At
         int target_index = -1;
         //Search for the sink
         found = false;
-        for (iterm = 0; iterm < lb_nets[ipos].terminals.size(); iterm++) {
-            if (lb_nets[ipos].terminals[iterm] == sink_index) {
+        for (term_idx = 0; term_idx < lb_nets[ipos].terminals.size(); term_idx++) {
+            if (lb_nets[ipos].terminals[term_idx] == sink_index) {
                 target_index = sink_index;
                 found = true;
                 break;
@@ -887,8 +887,8 @@ static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const At
         if (!found) {
             //Search for the pin
             found = false;
-            for (iterm = 0; iterm < lb_nets[ipos].terminals.size(); iterm++) {
-                if (lb_nets[ipos].terminals[iterm] == pin_index) {
+            for (term_idx = 0; term_idx < lb_nets[ipos].terminals.size(); term_idx++) {
+                if (lb_nets[ipos].terminals[term_idx] == pin_index) {
                     target_index = pin_index;
                     found = true;
                     break;
@@ -896,14 +896,13 @@ static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const At
             }
         }
         VTR_ASSERT(found == true);
-        VTR_ASSERT(lb_nets[ipos].terminals[iterm] == target_index);
-        VTR_ASSERT(iterm > 0);
+        VTR_ASSERT(lb_nets[ipos].terminals[term_idx] == target_index);
 
         /* Drop terminal from list */
-        lb_nets[ipos].terminals[iterm] = lb_nets[ipos].terminals.back();
+        lb_nets[ipos].terminals[term_idx] = lb_nets[ipos].terminals.back();
         lb_nets[ipos].terminals.pop_back();
 
-        lb_nets[ipos].atom_pins[iterm] = lb_nets[ipos].atom_pins.back();
+        lb_nets[ipos].atom_pins[term_idx] = lb_nets[ipos].atom_pins.back();
         lb_nets[ipos].atom_pins.pop_back();
 
         if (lb_nets[ipos].terminals.size() == 1 && lb_nets[ipos].terminals[0] != get_lb_type_rr_graph_ext_source_index(lb_type)) {
@@ -946,12 +945,12 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data, const A
     std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
 
     for (size_t ilb_net = 0; ilb_net < lb_nets.size(); ++ilb_net) {
-        //Collect all the sink terminals indicies which target a particular node
+        //Collect all the sink terminals indices which target a particular node
         std::map<int, std::vector<int>> duplicate_terminals;
-        for (size_t iterm = 1; iterm < lb_nets[ilb_net].terminals.size(); ++iterm) {
-            int node = lb_nets[ilb_net].terminals[iterm];
+        for (size_t term_idx = 1; term_idx < lb_nets[ilb_net].terminals.size(); ++term_idx) {
+            int node = lb_nets[ilb_net].terminals[term_idx];
 
-            duplicate_terminals[node].push_back(iterm);
+            duplicate_terminals[node].push_back(term_idx);
         }
 
         for (auto kv : duplicate_terminals) {
@@ -959,10 +958,10 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data, const A
 
             //Remap all the duplicate terminals so they target the pin instead of the sink
             for (size_t idup_term = 0; idup_term < kv.second.size(); ++idup_term) {
-                int iterm = kv.second[idup_term]; //The index in terminals which is duplicated
+                int term_idx = kv.second[idup_term]; //The index in terminals which is duplicated
 
                 VTR_ASSERT(lb_nets[ilb_net].atom_pins.size() == lb_nets[ilb_net].terminals.size());
-                AtomPinId atom_pin = lb_nets[ilb_net].atom_pins[iterm];
+                AtomPinId atom_pin = lb_nets[ilb_net].atom_pins[term_idx];
                 VTR_ASSERT(atom_pin);
 
                 const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.netlist(), atom_to_pb, atom_pin);
@@ -984,10 +983,10 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data, const A
                 VTR_ASSERT(lb_type_graph[pin_index].num_fanout[0] == 1);
                 int sink_index = lb_type_graph[pin_index].outedges[0][0].node_index;
                 VTR_ASSERT(lb_type_graph[sink_index].type == LB_SINK);
-                VTR_ASSERT_MSG(sink_index == lb_nets[ilb_net].terminals[iterm], "Remapped pin must be connected to original sink");
+                VTR_ASSERT_MSG(sink_index == lb_nets[ilb_net].terminals[term_idx], "Remapped pin must be connected to original sink");
 
                 //Change the target
-                lb_nets[ilb_net].terminals[iterm] = pin_index;
+                lb_nets[ilb_net].terminals[term_idx] = pin_index;
             }
         }
     }
@@ -1370,8 +1369,8 @@ static void save_and_reset_lb_route(t_lb_router_data* router_data) {
          */
         saved_lb_nets[inet].atom_net_id = lb_nets[inet].atom_net_id;
         saved_lb_nets[inet].terminals.resize(lb_nets[inet].terminals.size());
-        for (int iterm = 0; iterm < (int)lb_nets[inet].terminals.size(); iterm++) {
-            saved_lb_nets[inet].terminals[iterm] = lb_nets[inet].terminals[iterm];
+        for (int term_idx = 0; term_idx < (int)lb_nets[inet].terminals.size(); term_idx++) {
+            saved_lb_nets[inet].terminals[term_idx] = lb_nets[inet].terminals[term_idx];
         }
         saved_lb_nets[inet].rt_tree = lb_nets[inet].rt_tree;
         lb_nets[inet].rt_tree = nullptr;

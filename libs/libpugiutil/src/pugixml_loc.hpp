@@ -1,7 +1,7 @@
 #pragma once
 /*
  * This file contains utilities for the  PUGI XML parser,
- * hanlding the retrieval of line numbers (useful for error messages)
+ * handling the retrieval of line numbers (useful for error messages)
  */
 
 #include <vector>

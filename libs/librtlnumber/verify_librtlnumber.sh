@@ -3,7 +3,7 @@
 #         Jean-Philippe Legault (jlegault@unb.ca, jeanphilippe.legault@gmail.com) and
 #          Dr. Kenneth B. Kent (ken@unb.ca)
 #          for the Reconfigurable Computing Research Lab at the
-#           Univerity of New Brunswick in Fredericton, New Brunswick, Canada
+#           University of New Brunswick in Fredericton, New Brunswick, Canada
 
 # trap ctrl-c and call ctrl_c()
 trap ctrl_c INT
@@ -49,7 +49,7 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 		#glob whitespace from line and remove everything after comment
 		input_line=$(echo ${input_line} | tr -d '[:space:]' | cut -d '#' -f1)
 
-		#flip escaped commas to 'ESCAPED_COMMA' to safeguard agains having them as csv separator
+		#flip escaped commas to 'ESCAPED_COMMA' to safeguard against having them as csv separator
 		input_line=$(echo ${input_line} | sed 's/\\\,/ESCAPED_COMMA/g')
 
 		#skip empty lines

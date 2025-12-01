@@ -183,7 +183,7 @@ void IdentityAnalyticalSolver::solve(unsigned iteration, PartialPlacement& p_pla
     // If this is the first iteration, we need to create a starting placement
     // to act as the starting point.
     // TODO: It may be convenient to create a class which creates the initial
-    //       placement. That way we can use different intial placements with
+    //       placement. That way we can use different initial placements with
     //       the identity solver not optimizing.
     // Place all of the moveable blocks at the center of the device.
     for (APBlockId blk_id : netlist_.blocks()) {
@@ -250,7 +250,7 @@ static inline void add_connection_to_system(size_t src_row_id,
     // Verify that this is a valid block id.
     VTR_ASSERT_DEBUG(target_blk_id.is_valid());
     // The src_row_id is always a moveable block (rows in the matrix always
-    // coorespond to a moveable APBlock or a star node.
+    // correspond to a moveable APBlock or a star node.
     if (netlist.block_mobility(target_blk_id) == APBlockMobility::MOVEABLE) {
         // If the target is also moveable, update the coefficient matrix.
         size_t target_row_id = (size_t)blk_id_to_row_id[target_blk_id];
@@ -309,7 +309,7 @@ void QPHybridSolver::init_linear_system() {
     tripletList.reserve(num_nets);
 
     // Create the connections using a hybrid connection model of the star and
-    // clique connnection models.
+    // clique connection models.
     size_t star_node_offset = 0;
     for (APNetId net_id : netlist_.nets()) {
         if (netlist_.net_is_ignored(net_id))
@@ -454,7 +454,7 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     Eigen::SparseMatrix<double> A_sparse_diff = Eigen::SparseMatrix<double>(A_sparse);
     Eigen::VectorXd b_x_diff = Eigen::VectorXd(b_x);
     Eigen::VectorXd b_y_diff = Eigen::VectorXd(b_y);
-    // In the first iteration, the orginal linear system is used.
+    // In the first iteration, the original linear system is used.
     // In any other iteration, use the moveable APBlocks current placement as
     //                         anchor-points (fixed block positions).
     if (iteration != 0) {
@@ -600,7 +600,7 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         }
 
         // In the first iteration, we have no prior information.
-        // Run the intial placer to get a first guess.
+        // Run the initial placer to get a first guess.
         switch (initial_placement_ty_) {
             case e_initial_placement_type::LeastDense:
                 initialize_placement_least_dense(p_placement);

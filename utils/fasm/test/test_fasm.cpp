@@ -179,7 +179,7 @@ equivalent port pins rotation.
 The output pin description format is:
 "PIN_<xlow>_<ylow>_<sub_tile_type>_<sub_tile_port>_<port_pin_index>"
 
-Pin decriptions returned by this functions are injected as FASM features to the
+Pin descriptions returned by this functions are injected as FASM features to the
 edges of a rr graph that are immediately connected with pins from "outside"
 (not to from/to a SOURCE or SINK). Then, after genfasm is run they are identified,
 and decoded to get all the pin information. This allows to get information

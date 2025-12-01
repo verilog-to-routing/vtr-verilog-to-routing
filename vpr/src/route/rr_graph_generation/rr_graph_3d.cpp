@@ -85,9 +85,8 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(const_index_offset + link.parallel_segment_index));
         rr_graph_builder.set_node_capacity(node, 1); // GLOBAL routing handled elsewhere
-        float R = 0;
-        float C = 0;
-        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
+        const NodeRCIndex rc_index = find_create_rr_rc_data(link.R_metal, link.C_metal, mutable_device_ctx.rr_rc_data);
+        rr_graph_builder.set_node_rc_index(node, rc_index);
 
         rr_graph_builder.set_node_type(node, e_rr_type::CHANZ);
         rr_graph_builder.set_node_track_num(node, track_num);

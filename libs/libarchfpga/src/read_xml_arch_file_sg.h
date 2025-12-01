@@ -9,7 +9,7 @@
  * @param sg_list_tag XML node pointing to the <scatter_gather_patterns> tag.
  * @param arch High-level architecture information. This function fills
  * arch->scatter_gather_patterns with scatter-gather-related information.
- * @param loc_data Points to the location in the architecture file where the parser is reading. Used for priting error messages.
+ * @param loc_data Points to the location in the architecture file where the parser is reading. Used for printing error messages.
  * @param switches Contains all the architecture switches. Usually same as arch->switches.
  */
 void process_sg_tag(pugi::xml_node sg_list_tag,

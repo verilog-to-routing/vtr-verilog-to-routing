@@ -45,11 +45,11 @@ struct t_compressed_block_grid {
         int cy = UNDEFINED;
         int layer_num = grid_loc.layer_num;
 
-        auto itr_x = std::lower_bound(compressed_to_grid_x[layer_num].begin(), compressed_to_grid_x[layer_num].end(), grid_loc.x);
+        auto itr_x = std::ranges::lower_bound(compressed_to_grid_x[layer_num], grid_loc.x);
         VTR_ASSERT(*itr_x == grid_loc.x);
         cx = std::distance(compressed_to_grid_x[layer_num].begin(), itr_x);
 
-        auto itr_y = std::lower_bound(compressed_to_grid_y[layer_num].begin(), compressed_to_grid_y[layer_num].end(), grid_loc.y);
+        auto itr_y = std::ranges::lower_bound(compressed_to_grid_y[layer_num], grid_loc.y);
         VTR_ASSERT(*itr_y == grid_loc.y);
         cy = std::distance(compressed_to_grid_y[layer_num].begin(), itr_y);
 
@@ -69,7 +69,7 @@ struct t_compressed_block_grid {
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_up(t_physical_tile_loc grid_loc) const {
         auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
             // Get the first element that is not less than the value
-            auto itr = std::lower_bound(compressed.begin(), compressed.end(), value);
+            auto itr = std::ranges::lower_bound(compressed, value);
             if (itr == compressed.end()) {
                 // If all the compressed locations are less than the grid location, return the last compressed location
                 return compressed.size() - 1;
@@ -99,7 +99,7 @@ struct t_compressed_block_grid {
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_down(t_physical_tile_loc grid_loc) const {
         auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
             // Get the first element that is strictly bigger than the value
-            auto itr = std::upper_bound(compressed.begin(), compressed.end(), value);
+            auto itr = std::ranges::upper_bound(compressed, value);
             if (itr == compressed.begin()) {
                 // If all the compressed locations are bigger than the grid location, return the first compressed location
                 return 0;
@@ -135,7 +135,7 @@ struct t_compressed_block_grid {
             }
 
             // Find the first element not less than loc
-            auto itr = std::lower_bound(compressed_grid_dim.begin(), compressed_grid_dim.end(), loc);
+            auto itr = std::ranges::lower_bound(compressed_grid_dim, loc);
 
             if (itr == compressed_grid_dim.begin()) {
                 // If all the compressed locations are bigger that or equal to loc, return the first compressed location
