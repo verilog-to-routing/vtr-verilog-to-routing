@@ -7,8 +7,11 @@
     the lower number of wires that appear in each switchblock due to the longer segments.
 
     For implementing the 7-series using the recently merged VIB tileable routing structure it is 
-    recommended to use the 7series_BRAM_DSP_cary-true_length.xml architecture as a starting point
-    as that architecture's connectivity does not have the exaggerated segment connection patterns.
+    recommended to use the 7series_BRAM_DSP_carry-unmodified_length.xml architecture as a starting
+    point as that architecture's connectivity does not have the exaggerated segment connection
+    patterns.
+
+    For more details see https://scholarsarchive.byu.edu/etd/11058.
 
     Description:
     This architecture is an approximation of Xilinx 7-series FPGAs and is the same architecture 
