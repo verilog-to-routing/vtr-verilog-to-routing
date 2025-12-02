@@ -1730,10 +1730,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   </xs:complexType>
      */
     inline void set_rr_graph_schema_file_id(unsigned long schema_file_id, void*& /*ctx*/) final {
-        if (schema_file_id != schema_file_id_) {
-            report_error(
-                "Schema file ID mismatch: Expected ID 0x%016lx, but got ID 0x%016lx",
-                schema_file_id_, schema_file_id);
+        // Only check if the schema file ID is not 0. If it is 0, it means capnproto is not enabled.
+        // Thus, we cannot check the schema file ID mismatch.
+        if (schema_file_id_ != 0) {
+            if (schema_file_id != schema_file_id_) {
+                report_error(
+                    "Schema file ID mismatch: Expected ID 0x%016lx, but got ID 0x%016lx",
+                    schema_file_id_, schema_file_id);
+            }
         }
     }
     inline void set_rr_graph_tool_comment(const char* tool_comment, void*& /*ctx*/) final {
