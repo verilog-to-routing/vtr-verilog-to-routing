@@ -100,3 +100,22 @@ On each side, there should be:
 For the columns, the count should be:
 
 - ``4`` (number of sides) × ``160/2`` (number of tracks in one direction) ÷ ``4`` (number of starting tracks per lane) = ``80`` columns.
+
+Each switch block template file must contain the number of rows and columns
+determined in the previous section. After creating the template file with the
+correct dimensions, you can populate the spreadsheet by placing the switch
+delay values in the appropriate cells (i.e., in the cells representing valid
+connections between source and sink nodes).
+
+Once the switch block map file and template files are created, include the
+following arguments in the VPR command line:
+
+- ``--sb_maps <switch_block_map_file>``
+- ``--sb_templates <switch_block_template_directory>``
+- ``--sb_count_dir <switch_block_count_directory>`` (optional):  
+  If provided, VPR will generate a CSV file for each switch block template,
+  indicating how many times each switch defined in the template is used in the
+  final routing results.
+
+For additional arguments, refer to the command-line usage section on the
+:ref:`vpr_command_line_usage` page.
