@@ -460,6 +460,7 @@ void create_rr_graph(e_graph_type graph_type,
                              router_opts.do_check_rr_graph,
                              echo_enabled,
                              echo_file_name,
+                             router_opts.route_verbosity,
                              is_flat);
                 if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
                     mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,

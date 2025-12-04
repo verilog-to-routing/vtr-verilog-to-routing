@@ -29,6 +29,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   bool do_check_rr_graph,
                   bool echo_enabled,
                   const char* echo_file_name,
+                  const int route_verbosity,
                   bool is_flat);
 
 /**

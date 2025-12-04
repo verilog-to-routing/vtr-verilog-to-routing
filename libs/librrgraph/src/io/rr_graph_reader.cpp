@@ -73,6 +73,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   bool do_check_rr_graph,
                   bool echo_enabled,
                   const char* echo_file_name,
+                  const int route_verbosity,
                   bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
@@ -90,7 +91,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
 #ifdef VTR_ENABLE_CAPNPROTO
     ::capnp::Schema schema = ::capnp::Schema::from<ucap::RrGraph>();
     schema_file_id = schema.getProto().getScopeId();
-    VTR_LOG("Schema file ID: 0x%016lx\n", schema_file_id);
+    VTR_LOGV(route_verbosity > 1, "Schema file ID: 0x%016lx\n", schema_file_id);
 #endif
 
     RrGraphSerializer reader(
