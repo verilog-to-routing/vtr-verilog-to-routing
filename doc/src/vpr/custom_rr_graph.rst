@@ -86,26 +86,78 @@ Each column has header rows describing the sink node:
 Example
 ^^^^^^^
 
-Let’s consider an architecture with a channel width of 16 that contains only wire segments of length 4.
+Consider an architecture with a channel width of ``160`` containing only wire
+segments of length ``4`` (L4).
 
-The number of rows should be calculated as:
+The number of **rows** is computed as:
 
-- ``4`` (number of sides) × ``160/2`` (number of tracks in one direction) = ``320`` rows.
+- ``4`` (number of sides) × ``160/2`` (number of tracks in one direction)
+  = ``320`` rows.
 
-On each side, there should be:
+On each side, we have:
 
 - ``20`` lanes (``80 / 4``), and
-- each lane requires ``4`` rows (because length-4 wires require 4 tap positions).
+- each lane requires ``4`` rows (since length-4 wires have 4 tap positions).
 
-For the columns, the count should be:
+The number of **columns** is:
 
-- ``4`` (number of sides) × ``160/2`` (number of tracks in one direction) ÷ ``4`` (number of starting tracks per lane) = ``80`` columns.
+- ``4`` (number of sides) × ``160/2`` (number of tracks in one direction) ÷ ``4`` (starting tracks per lane)
+  = ``80`` columns.
+
+----
+
+To illustrate how a particular cell in the template file is interpreted, assume
+the following row and column specifications:
+
+**Row specification:**
+
+- Direction: ``left``
+- Segment type: ``l4``
+- Lane number: ``2``
+- Tap number: ``3``
+
+**Column specification:**
+
+- Direction: ``right``
+- Segment type: ``l4``
+- Lane number: ``2``
+
+Assuming ``l4`` is the only segment type, the row specification corresponds to a
+source wire entering the switch block from the *left* side. The starting PTC
+(track) number for lane 2 is:
+
+.. code-block:: none
+
+   (2 - 1) * 4 * 2 = 8
+
+Thus, the PTC sequence for this L4 wire is (it increases by 2 since the odd PTC numbers are used for wires comming from the other side):
+
+.. code-block:: none
+
+   8, 10, 12, 14
+
+The row refers to the node associated with the **third tap**, meaning the
+source node corresponds to the PTC value ``12``. With the starting and ending of the track,
+and the PTC values, VPR can determine the source **Node ID**.
+
+For the sink node, the column specification describes a wire exiting the switch
+block on the *right* side, using the same PTC sequence:
+
+.. code-block:: none
+
+   8, 10, 12, 14
+
+Using this sequence, VPR determines the sink **Node ID**.
+
+After computing both Node IDs, the tool inserts the switch defined in the
+template file, with the associated delay value, into the RR Graph.
+
+----
 
 Each switch block template file must contain the number of rows and columns
-determined in the previous section. After creating the template file with the
-correct dimensions, you can populate the spreadsheet by placing the switch
-delay values in the appropriate cells (i.e., in the cells representing valid
-connections between source and sink nodes).
+calculated in the previous section. After creating a correctly sized template
+file, populate it by placing switch delay values in the cells representing valid
+connections between source and sink nodes.
 
 Once the switch block map file and template files are created, include the
 following arguments in the VPR command line:
@@ -113,9 +165,9 @@ following arguments in the VPR command line:
 - ``--sb_maps <switch_block_map_file>``
 - ``--sb_templates <switch_block_template_directory>``
 - ``--sb_count_dir <switch_block_count_directory>`` (optional):  
-  If provided, VPR will generate a CSV file for each switch block template,
-  indicating how many times each switch defined in the template is used in the
+  If provided, VPR generates a CSV file for each switch block template,
+  showing how many times each switch specified in the template is used in the
   final routing results.
 
-For additional arguments, refer to the command-line usage section on the
-:ref:`vpr_command_line_usage` page.
+For additional arguments, refer to the command-line usage section in
+:ref:`vpr_command_line_usage`.
