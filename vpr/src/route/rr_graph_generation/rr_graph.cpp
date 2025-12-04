@@ -587,6 +587,7 @@ void create_rr_graph(e_graph_type graph_type,
                        det_routing_arch.write_rr_graph_filename.c_str(),
                        echo_enabled,
                        echo_file_name,
+                       router_opts.route_verbosity,
                        is_flat);
     }
 }

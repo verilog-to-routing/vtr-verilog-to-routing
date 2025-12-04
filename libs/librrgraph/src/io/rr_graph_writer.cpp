@@ -38,13 +38,14 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     const char* file_name,
                     bool echo_enabled,
                     const char* echo_file_name,
+                    const int route_verbosity,
                     bool is_flat) {
 
     unsigned long schema_file_id = 0;
 #ifdef VTR_ENABLE_CAPNPROTO
     ::capnp::Schema schema = ::capnp::Schema::from<ucap::RrGraph>();
     schema_file_id = schema.getProto().getScopeId();
-    VTR_LOG("Schema file ID: 0x%016lx\n", schema_file_id);
+    VTR_LOGV(route_verbosity > 1, "Schema file ID: 0x%016lx\n", schema_file_id);
 #endif
 
     RrGraphSerializer reader(
