@@ -38,7 +38,11 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     const char* file_name,
                     bool echo_enabled,
                     const char* echo_file_name,
+#ifdef VTR_ENABLE_CAPNPROTO
                     const int route_verbosity,
+#else
+                    bool /*route_verbosity*/,
+#endif
                     bool is_flat) {
 
     // If Cap'n Proto is enabled, a unique ID is assigned to the schema used to serialize the RR graph.

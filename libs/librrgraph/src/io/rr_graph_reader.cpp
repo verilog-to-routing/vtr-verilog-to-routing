@@ -73,7 +73,11 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   bool do_check_rr_graph,
                   bool echo_enabled,
                   const char* echo_file_name,
+#ifdef VTR_ENABLE_CAPNPROTO
                   const int route_verbosity,
+#else
+                  bool /*route_verbosity*/,
+#endif
                   bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
