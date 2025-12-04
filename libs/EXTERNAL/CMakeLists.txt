@@ -12,6 +12,16 @@ add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
+
+add_subdirectory(yaml-cpp)
+# Treat yaml-cpp headers as system headers to suppress warnings
+if(TARGET yaml-cpp)
+    get_target_property(YAML_INCLUDE_DIRS yaml-cpp INTERFACE_INCLUDE_DIRECTORIES)
+    set_target_properties(yaml-cpp PROPERTIES
+        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${YAML_INCLUDE_DIRS}"
+    )
+endif()
+
 #add_subdirectory(parmys)
 
 #Proc numbers

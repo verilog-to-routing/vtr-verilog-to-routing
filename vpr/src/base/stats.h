@@ -23,6 +23,10 @@ void routing_stats(const Netlist<>& net_list,
                    e_directionality directionality,
                    bool is_flat);
 
+void write_sb_count_stats(const Netlist<>& net_list,
+                          const std::string& sb_map_dir,
+                          const std::string& sb_count_dir);
+
 void print_wirelen_prob_dist(bool is_flat);
 
 void print_lambda();

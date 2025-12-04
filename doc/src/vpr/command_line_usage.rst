@@ -1,3 +1,5 @@
+.. _vpr_command_line_usage:
+
 Command-line Options
 ====================
 .. program:: vpr

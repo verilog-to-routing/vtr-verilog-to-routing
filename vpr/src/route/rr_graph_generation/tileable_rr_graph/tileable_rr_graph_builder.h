@@ -16,6 +16,7 @@
 void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& types,
                                     const DeviceGrid& grids,
                                     const t_chan_width& chan_width,
+                                    const t_crr_opts& crr_opts,
                                     const e_switch_block_type& sb_type,
                                     const int& Fs,
                                     const e_switch_block_type& sb_subtype,

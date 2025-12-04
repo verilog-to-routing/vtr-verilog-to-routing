@@ -64,6 +64,7 @@ AnnealerDetailedPlacer::AnnealerDetailedPlacer(const BlkLocRegistry& curr_cluste
     if (vpr_setup.PlacerOpts.place_algorithm.is_timing_driven()) {
         place_delay_model = PlacementDelayModelCreator::create_delay_model(vpr_setup.PlacerOpts,
                                                                            vpr_setup.RouterOpts,
+                                                                           vpr_setup.CRROpts,
                                                                            (const Netlist<>&)clustered_netlist,
                                                                            vpr_setup.RoutingArch,
                                                                            vpr_setup.Segments,

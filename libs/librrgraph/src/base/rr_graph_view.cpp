@@ -61,9 +61,10 @@ std::vector<RREdgeId> RRGraphView::node_non_configurable_in_edges(RRNodeId node)
 
 std::vector<RREdgeId> RRGraphView::find_edges(RRNodeId src_node, RRNodeId des_node) const {
     std::vector<RREdgeId> edge_list;
-    for (auto iedge : node_out_edges(src_node)) {
-        if (edge_sink_node(RREdgeId(iedge)) == des_node) {
-            edge_list.push_back(RREdgeId(iedge));
+    for (auto iedge: node_out_edges(src_node)) {
+        RREdgeId edge = node_storage_.edge_id(src_node, iedge);
+        if (edge_sink_node(edge) == des_node) {
+            edge_list.push_back(edge);
         }
     }
     return edge_list;
