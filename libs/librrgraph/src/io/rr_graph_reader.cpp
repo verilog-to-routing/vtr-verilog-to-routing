@@ -87,6 +87,10 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         rr_graph_builder->set_tileable(true);
     }
 
+    // If Cap'n Proto is enabled, a unique ID is assigned to the schema used to serialize the RR graph.
+    // This ID is used to verify that the schema used to serialize the RR graph matches the
+    // schema being used to deserialize it.
+    // If Cap'n Proto is not enabled, the schema ID is 0 and no schema ID check is performed.
     unsigned long schema_file_id = 0;
 #ifdef VTR_ENABLE_CAPNPROTO
     ::capnp::Schema schema = ::capnp::Schema::from<ucap::RrGraph>();

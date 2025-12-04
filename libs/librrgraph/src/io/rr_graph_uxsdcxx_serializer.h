@@ -1730,8 +1730,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   </xs:complexType>
      */
     inline void set_rr_graph_schema_file_id(unsigned long schema_file_id, void*& /*ctx*/) final {
-        // Only check if the schema file ID is not 0. If it is 0, it means capnproto is not enabled.
-        // Thus, we cannot check the schema file ID mismatch.
+        // Only check if schema_file_id_ (set when initializing the class) is not 0.
+        // If it is 0, it means Cap'n Proto is not enabled, so we cannot check for a schema file ID mismatch.
+        // This function is only called when the RR graph file being read contains a schema file ID.
+        // If it does not, this function is not called, and the RR graph can be read without performing
+        // the schema file ID check.
         if (schema_file_id_ != 0) {
             if (schema_file_id != schema_file_id_) {
                 report_error(
