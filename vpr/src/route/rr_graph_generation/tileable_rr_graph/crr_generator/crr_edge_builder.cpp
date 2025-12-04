@@ -66,7 +66,7 @@ void build_crr_gsb_track_to_track_edges(RRGraphBuilder& rr_graph_builder,
         if (delay_ps == -1) {
             rr_switch_id = rr_node_driver_switches[connection.sink_node()];
         } else {
-            rr_switch_id = find_or_create_crr_switch_id(delay_ps, segment_inf_x, segment_inf_y);
+            rr_switch_id = find_or_create_crr_switch_id(delay_ps);
         }
         VTR_ASSERT(rr_switch_id != RRSwitchId::INVALID());
         rr_graph_builder.create_edge_in_cache(connection.src_node(), connection.sink_node(), rr_switch_id, false, connection.sw_template_id());
