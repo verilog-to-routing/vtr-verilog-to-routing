@@ -150,16 +150,16 @@ struct Sizing {
  */
 class Connection {
   public:
-    Connection(RRNodeId sink_node, RRNodeId src_node, int delay_ps, std::string crr_id) noexcept
+    Connection(RRNodeId sink_node, RRNodeId src_node, int delay_ps, std::string sw_template_id) noexcept
         : sink_node_(sink_node)
         , src_node_(src_node)
         , delay_ps_(delay_ps)
-        , crr_id_(std::move(crr_id)) {}
+        , sw_template_id_(std::move(sw_template_id)) {}
 
     RRNodeId sink_node() const { return sink_node_; }
     RRNodeId src_node() const { return src_node_; }
     int delay_ps() const { return delay_ps_; }
-    std::string crr_id() const { return crr_id_; }
+    std::string sw_template_id() const { return sw_template_id_; }
 
     bool operator<(const Connection& other) const {
         return std::tie(sink_node_, src_node_, delay_ps_) < std::tie(other.sink_node_, other.src_node_, other.delay_ps_);
@@ -173,7 +173,7 @@ class Connection {
     RRNodeId sink_node_;
     RRNodeId src_node_;
     int delay_ps_;
-    std::string crr_id_;
+    std::string sw_template_id_;
 };
 
 // Node hash type for lookups

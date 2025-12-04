@@ -240,7 +240,7 @@ void write_sb_count_stats(const Netlist<>& net_list,
                 RRNodeId sink_node = rt_node.inode;
                 std::vector<RREdgeId> edges = rr_graph.find_edges(src_node, sink_node);
                 VTR_ASSERT(edges.size() == 1);
-                std::string sb_id = rr_graph.edge_crr_id(edges[0]);
+                std::string sb_id = rr_graph.edge_sw_template_id(edges[0]);
                 if (sb_id.empty()) {
                     continue;
                 }
