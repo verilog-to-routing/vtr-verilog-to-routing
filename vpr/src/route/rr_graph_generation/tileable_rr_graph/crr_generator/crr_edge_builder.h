@@ -17,5 +17,6 @@
 #include "crr_connection_builder.h"
 
 void build_crr_gsb_track_to_track_edges(RRGraphBuilder& rr_graph_builder,
+                                        const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                         const RRGSB& rr_gsb,
                                         const crrgenerator::CRRConnectionBuilder& connection_builder);

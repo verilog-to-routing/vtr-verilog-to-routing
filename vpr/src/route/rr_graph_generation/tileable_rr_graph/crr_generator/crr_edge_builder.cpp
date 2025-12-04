@@ -53,6 +53,7 @@ static RRSwitchId find_or_create_crr_switch_id(const int delay_ps) {
 }
 
 void build_crr_gsb_track_to_track_edges(RRGraphBuilder& rr_graph_builder,
+                                        const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                         const RRGSB& rr_gsb,
                                         const crrgenerator::CRRConnectionBuilder& connection_builder) {
     size_t gsb_x = rr_gsb.get_sb_x();
@@ -60,7 +61,13 @@ void build_crr_gsb_track_to_track_edges(RRGraphBuilder& rr_graph_builder,
 
     std::vector<crrgenerator::Connection> gsb_connections = connection_builder.get_tile_connections(gsb_x, gsb_y);
     for (const auto& connection : gsb_connections) {
-        RRSwitchId rr_switch_id = find_or_create_crr_switch_id(connection.delay_ps());
+        RRSwitchId rr_switch_id;
+        int delay_ps = connection.delay_ps();
+        if (delay_ps == -1) {
+            rr_switch_id = rr_node_driver_switches[connection.sink_node()];
+        } else {
+            rr_switch_id = find_or_create_crr_switch_id(delay_ps, segment_inf_x, segment_inf_y);
+        }
         VTR_ASSERT(rr_switch_id != RRSwitchId::INVALID());
         rr_graph_builder.create_edge_in_cache(connection.src_node(), connection.sink_node(), rr_switch_id, false, connection.sw_template_id());
     }
