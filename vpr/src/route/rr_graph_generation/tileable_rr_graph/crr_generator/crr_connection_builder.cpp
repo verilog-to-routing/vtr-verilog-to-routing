@@ -39,40 +39,6 @@ void CRRConnectionBuilder::initialize(
     fpga_grid_y_ = fpga_grid_y;
     is_annotated_excel_ = is_annotated_excel;
 
-    // for (const auto& original_switch : rr_graph_.rr_switches()) {
-    //     std::string switch_name = original_switch.name;
-    //     std::transform(switch_name.begin(), switch_name.end(), switch_name.begin(),
-    //                    ::tolower);
-
-    //     if (switch_name.find("delayless") != std::string::npos) {
-    //         VTR_LOG("Adding delayless switch: %s\n", switch_name.c_str());
-    //         default_switch_id_["delayless"] = original_switch.get_id();
-    //     } else if (switch_name.find("ipin") != std::string::npos) {
-    //         VTR_LOG("Adding ipin switch: %s\n", switch_name.c_str());
-    //         default_switch_id_["ipin"] = original_switch.get_id();
-    //     } else if (std::regex_match(switch_name, std::regex(R"(l1(_.*)?)"))) {
-    //         VTR_LOG("Adding l1 switch: %s\n", switch_name.c_str());
-    //         default_switch_id_["l1"] = original_switch.get_id();
-    //     } else if (std::regex_match(switch_name, std::regex(R"(l2(_.*)?)"))) {
-    //         VTR_LOG("Adding l2 switch: %s\n", switch_name.c_str());
-    //         default_switch_id_["l2"] = original_switch.get_id();
-    //     } else if (std::regex_match(switch_name, std::regex(R"(l4(_.*)?)"))) {
-    //         VTR_LOG("Adding l4 switch: %s\n", switch_name.c_str());
-    //         default_switch_id_["l4"] = original_switch.get_id();
-    //     } else if (std::regex_match(switch_name, std::regex(R"(l8(_.*)?)"))) {
-    //         VTR_LOG("Adding l8 switch: %s\n", switch_name.c_str());
-    //         default_switch_id_["l8"] = original_switch.get_id();
-    //     } else if (std::regex_match(switch_name, std::regex(R"(l12(_.*)?)"))) {
-    //         VTR_LOG("Adding l12 switch: %s\n", switch_name.c_str());
-    //         default_switch_id_["l12"] = original_switch.get_id();
-    //     } else {
-    //         VTR_LOG_ERROR("Unknown switch type: %s\n", switch_name.c_str());
-    //     }
-    // }
-
-    // assert(default_switch_id_.size() == crr_graph_.get_switches().size());
-    // sw_zero_id_ = static_cast<SwitchId>(crr_graph_.get_switches().size());
-
     // Total locations is the number of locations on the FPGA grid minus the 4
     // corner locations.
     total_locations_ = static_cast<size_t>(fpga_grid_x_ * fpga_grid_y_) - 4;
@@ -532,27 +498,7 @@ int CRRConnectionBuilder::get_connection_delay_ps(const std::string& cell_value,
         int switch_delay_ps = std::stoi(cell_value);
         return switch_delay_ps;
     } else {
-        VTR_LOG_ERROR("Not implemented - get_connection_delay_ps\n");
-        return static_cast<SwitchId>(-1);
-        // std::string switch_id_key = "";
-        // if (segment_length > 0) {
-        //     switch_id_key = "l" + std::to_string(segment_length);
-        // } else {
-        //     switch_id_key = lower_case_sink_node_type;
-        // }
-
-        // std::string capitalized_switch_id_key = switch_id_key;
-        // std::transform(capitalized_switch_id_key.begin(),
-        //                capitalized_switch_id_key.end(),
-        //                capitalized_switch_id_key.begin(), ::toupper);
-
-        // if (default_switch_id_.find(switch_id_key) != default_switch_id_.end()) {
-        //     return default_switch_id_.at(switch_id_key);
-        // } else if (default_switch_id_.find(capitalized_switch_id_key) != default_switch_id_.end()) {
-        //     return default_switch_id_.at(capitalized_switch_id_key);
-        // } else {
-        //     throw std::runtime_error("Default switch id not found for Node Type: " + lower_case_sink_node_type + " and Switch ID Key: " + capitalized_switch_id_key);
-        // }
+        return -1;
     }
 }
 

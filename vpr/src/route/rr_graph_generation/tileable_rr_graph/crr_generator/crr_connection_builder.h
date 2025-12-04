@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rr_graph_view.h"
+#include "physical_types.h"
 
 #include "crr_common.h"
 #include "data_frame_processor.h"
@@ -90,7 +91,6 @@ class CRRConnectionBuilder {
     const RRGraphView& rr_graph_;
     const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
-    SwitchId sw_zero_id_;
 
     // Generated connections
     std::vector<std::vector<std::vector<Connection>>> all_connections_;
