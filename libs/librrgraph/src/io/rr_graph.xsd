@@ -375,6 +375,8 @@
       <xs:attribute name="tool_name" type="xs:string"/>
       <xs:attribute name="tool_version" type="xs:string"/>
       <xs:attribute name="tool_comment" type="xs:string"/>
+
+      <xs:attribute name="schema_file_id" type="xs:unsignedLong"/>
     </xs:complexType>
   </xs:element>
 

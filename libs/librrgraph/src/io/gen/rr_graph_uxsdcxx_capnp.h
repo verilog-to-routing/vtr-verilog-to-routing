@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcap.py /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 040903603053940a1b24392c38663b59
+ * Cmdline: uxsdcxx/uxsdcap.py /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: e14523c72a5db9cc83592d3baaf45780
  */
 
 #include <functional>
@@ -434,6 +434,8 @@ inline void load_rr_graph_capnp(T &out, kj::ArrayPtr<const ::capnp::word> data, 
 template <class T, typename Context>
 inline void write_rr_graph_capnp(T &in, Context &context, ucap::RrGraph::Builder &root) {
 	in.start_write();
+	if((bool)in.get_rr_graph_schema_file_id(context))
+		root.setSchemaFileId(in.get_rr_graph_schema_file_id(context));
 	if((bool)in.get_rr_graph_tool_comment(context))
 		root.setToolComment(in.get_rr_graph_tool_comment(context));
 	if((bool)in.get_rr_graph_tool_name(context))
@@ -946,6 +948,7 @@ inline void load_rr_graph_capnp_type(const ucap::RrGraph::Reader &root, T &out, 
 	(void)report_error;
 	(void)stack;
 
+	out.set_rr_graph_schema_file_id(root.getSchemaFileId(), context);
 	out.set_rr_graph_tool_comment(root.getToolComment().cStr(), context);
 	out.set_rr_graph_tool_name(root.getToolName().cStr(), context);
 	out.set_rr_graph_tool_version(root.getToolVersion().cStr(), context);

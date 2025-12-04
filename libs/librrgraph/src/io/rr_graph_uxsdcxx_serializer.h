@@ -294,6 +294,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         MetadataStorage<int>* rr_node_metadata,
         MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata,
         vtr::string_internment* strings,
+        unsigned long schema_file_id,
         bool is_flat)
         : chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
@@ -319,6 +320,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , strings_(strings)
         , empty_(strings_->intern_string(""))
         , report_error_(nullptr)
+        , schema_file_id_(schema_file_id)
         , is_flat_(is_flat) {
         // Initialize internal data
         init_side_map();
@@ -1727,6 +1729,20 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *     <xs:attribute name="tool_comment" type="xs:string" />
      *   </xs:complexType>
      */
+    inline void set_rr_graph_schema_file_id(unsigned long schema_file_id, void*& /*ctx*/) final {
+        // Only check if schema_file_id_ (set when initializing the class) is not 0.
+        // If it is 0, it means Cap'n Proto is not enabled, so we cannot check for a schema file ID mismatch.
+        // This function is only called when the RR graph file being read contains a schema file ID.
+        // If it does not, this function is not called, and the RR graph can be read without performing
+        // the schema file ID check.
+        if (schema_file_id_ != 0) {
+            if (schema_file_id != schema_file_id_) {
+                report_error(
+                    "Schema file ID mismatch: Expected ID 0x%016lx, but got ID 0x%016lx",
+                    schema_file_id_, schema_file_id);
+            }
+        }
+    }
     inline void set_rr_graph_tool_comment(const char* tool_comment, void*& /*ctx*/) final {
         std::string correct_string = "Generated from arch file ";
         correct_string += get_arch_file_name();
@@ -1746,6 +1762,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                          tool_version, vtr::VERSION);
             VTR_LOG("\n");
         }
+    }
+
+    inline unsigned long get_rr_graph_schema_file_id(void*& /*ctx*/) final {
+        return schema_file_id_;
     }
 
     inline const char* get_rr_graph_tool_comment(void*& /*ctx*/) final {
@@ -2181,6 +2201,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     vtr::string_internment* strings_;
     vtr::interned_string empty_;
     const std::function<void(const char*)>* report_error_;
+    unsigned long schema_file_id_;
     bool is_flat_;
 
     // Temporary data to check grid block types
