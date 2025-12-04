@@ -38,11 +38,7 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     const char* file_name,
                     bool echo_enabled,
                     const char* echo_file_name,
-#ifdef VTR_ENABLE_CAPNPROTO
                     const int route_verbosity,
-#else
-                    bool /*route_verbosity*/,
-#endif
                     bool is_flat) {
 
     // If Cap'n Proto is enabled, a unique ID is assigned to the schema used to serialize the RR graph.
@@ -54,6 +50,9 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
     ::capnp::Schema schema = ::capnp::Schema::from<ucap::RrGraph>();
     schema_file_id = schema.getProto().getScopeId();
     VTR_LOGV(route_verbosity > 1, "Schema file ID: 0x%016lx\n", schema_file_id);
+#else
+    // Suppress the warning about unused variable 'route_verbosity'
+    (void)route_verbosity;
 #endif
 
     RrGraphSerializer reader(
