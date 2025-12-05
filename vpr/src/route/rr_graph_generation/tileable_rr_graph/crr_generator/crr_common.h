@@ -1,7 +1,9 @@
 #pragma once
 
+#include <unordered_map>
 #include <vector>
 #include <array>
+#include <string>
 
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
@@ -40,7 +42,16 @@ enum class e_sw_template_side {LEFT = 0,
                                OPIN,
                                NUM_SIDES};
 
-constexpr std::array<e_sw_template_side, (size_t)e_sw_template_side::NUM_SIDES> SIDE 
+const std::unordered_map<std::string, e_sw_template_side> name_sw_template_side = {{"LEFT", e_sw_template_side::LEFT},
+                                                                                   {"RIGHT", e_sw_template_side::RIGHT},
+                                                                                   {"TOP", e_sw_template_side::TOP},
+                                                                                   {"BOTTOM", e_sw_template_side::BOTTOM},
+                                                                                   {"IPIN", e_sw_template_side::IPIN},
+                                                                                   {"OPIN", e_sw_template_side::OPIN}};
+
+constexpr vtr::array<e_sw_template_side, const char*, (size_t)e_sw_template_side::NUM_SIDES> template_side_name = {"LEFT", "RIGHT",
+                                                                                                                   "TOP", "BOTTOM",
+                                                                                                                   "IPIN", "OPIN"};
 
 // Location structure
 struct Location {
