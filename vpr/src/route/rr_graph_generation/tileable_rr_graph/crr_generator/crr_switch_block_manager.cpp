@@ -16,7 +16,7 @@ SwitchBlockManager::SwitchBlockManager() = default;
 
 void SwitchBlockManager::initialize(const std::string& sb_maps_file,
                                     const std::string& sb_annotated_dir,
-                                    const bool is_annotated_excel) {
+                                    const bool is_annotated) {
     VTR_LOG("Initializing SwitchBlockManager with maps file: %s\n", sb_maps_file.c_str());
 
     annotated_dir_ = sb_annotated_dir;
@@ -38,13 +38,13 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
         for (const auto& item : sb_maps) {
             std::string pattern = item.first.as<std::string>();
 
-            std::string excel_file = item.second.as<std::string>();
+            std::string sw_template_file = item.second.as<std::string>();
             if (item.second.IsNull()) {
-                excel_file = "";
+                sw_template_file = "";
             }
 
-            std::string full_path = std::filesystem::path(annotated_dir_) / excel_file;
-            if (excel_file.empty()) {
+            std::string full_path = std::filesystem::path(annotated_dir_) / sw_template_file;
+            if (sw_template_file.empty()) {
                 full_path = "";
             }
 
@@ -62,7 +62,7 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
         for (const auto& full_path : unique_files) {
             if (std::filesystem::exists(full_path)) {
                 try {
-                    VTR_LOG_DEBUG("Attempting to read Excel file: %s\n", full_path.c_str());
+                    VTR_LOG_DEBUG("Attempting to read switch template file: %s\n", full_path.c_str());
                     DataFrame df = processor_.read_csv(full_path);
                     df = processor_.process_dataframe(std::move(df), NUM_EMPTY_ROWS,
                                                       NUM_EMPTY_COLS);
@@ -71,10 +71,10 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
                                   file_cache_[full_path].connections,
                                   std::filesystem::path(full_path).filename().string().c_str());
                 } catch (const std::exception& e) {
-                    VTR_LOG_ERROR("Failed to read required Excel file '%s': %s\n", full_path.c_str(), e.what());
+                    VTR_LOG_ERROR("Failed to read required switch template file '%s': %s\n", full_path.c_str(), e.what());
                 }
             } else {
-                VTR_LOG_ERROR("Required Excel file not found: %s\n", full_path.c_str());
+                VTR_LOG_ERROR("Required switch template file not found: %s\n", full_path.c_str());
             }
         }
 
@@ -84,8 +84,6 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
                 dataframes_[pattern] = &file_cache_[full_path];
             }
         }
-
-        update_and_set_global_switch_delays(is_annotated_excel);
 
         print_statistics();
     } catch (const YAML::Exception& e) {
@@ -135,31 +133,11 @@ std::string SwitchBlockManager::find_matching_pattern(const std::string& sw_name
     return "";
 }
 
-void SwitchBlockManager::update_and_set_global_switch_delays(const bool is_annotated_excel) {
-    if (is_annotated_excel) {
-        int switch_delay_max_ps = std::numeric_limits<int>::min();
-        int switch_delay_min_ps = std::numeric_limits<int>::max();
-        for (const auto& [pattern, df] : dataframes_) {
-            processor_.update_switch_delays(*df, switch_delay_max_ps,
-                                            switch_delay_min_ps);
-        }
-
-        switch_delay_max_ps_ = switch_delay_max_ps;
-        switch_delay_min_ps_ = switch_delay_min_ps;
-    } else {
-        switch_delay_max_ps_ = 1000;
-        switch_delay_min_ps_ = 1;
-    }
-
-    VTR_LOG("Global switch delay range updated: %d - %d\n", switch_delay_min_ps_, switch_delay_max_ps_);
-}
-
 void SwitchBlockManager::print_statistics() const {
     VTR_LOG("=== CRR Generator Switch Block Manager Statistics ===\n");
     VTR_LOG("Patterns loaded: %zu\n", dataframes_.size());
-    VTR_LOG("Unique Excel files: %zu\n", file_cache_.size());
+    VTR_LOG("Unique switch template files: %zu\n", file_cache_.size());
     VTR_LOG("Total connections: %zu\n", get_total_connections());
-    VTR_LOG("Switch delay range: %d - %d\n", switch_delay_min_ps_, switch_delay_max_ps_);
 
     // Print file details
     for (const auto& [file, df] : file_cache_) {

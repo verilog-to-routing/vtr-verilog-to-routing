@@ -45,9 +45,9 @@ struct Cell {
 };
 
 /**
- * @brief Simple dataframe implementation for processing Excel data
+ * @brief Simple dataframe implementation for processing switch template data
  *
- * This class provides pandas-like functionality for processing Excel files
+ * This class provides pandas-like functionality for processing switch template files
  * containing switch block configuration data.
  */
 class DataFrame {
@@ -150,9 +150,9 @@ class DataFrame {
 };
 
 /**
- * @brief Processes Excel files and converts them to DataFrames
+ * @brief Processes switch template files and converts them to DataFrames
  *
- * This class handles reading Excel files and performing the cell merging
+ * This class handles reading switch template files and performing the cell merging
  * operations similar to the Python pandas functionality.
  */
 class DataFrameProcessor {
@@ -160,9 +160,9 @@ class DataFrameProcessor {
     DataFrameProcessor() = default;
 
     /**
-     * @brief Read Excel file and create DataFrame
-     * @param filename Path to Excel file
-     * @return DataFrame containing the Excel data
+     * @brief Read switch template file and create DataFrame
+     * @param filename Path to switch template file
+     * @return DataFrame containing the switch template data
      * @throws FileException if file cannot be read
      */
     DataFrame read_csv(const std::string& filename);
@@ -187,7 +187,7 @@ class DataFrameProcessor {
     void update_switch_delays(const DataFrame& df, int& switch_delay_max_ps, int& switch_delay_min_ps);
 
   private:
-    // Excel parsing helpers
+    // switch template parsing helpers
     Cell parse_csv_cell(const std::string& value);
     size_t count_csv_columns(const std::string& line);
     std::vector<std::string> parse_csv_line(const std::string& line);

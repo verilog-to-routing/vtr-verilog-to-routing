@@ -33,11 +33,11 @@ CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
 void CRRConnectionBuilder::initialize(
     int fpga_grid_x,
     int fpga_grid_y,
-    bool is_annotated_excel) {
+    bool is_annotated) {
 
     fpga_grid_x_ = fpga_grid_x;
     fpga_grid_y_ = fpga_grid_y;
-    is_annotated_excel_ = is_annotated_excel;
+    is_annotated_ = is_annotated;
 
     // Total locations is the number of locations on the FPGA grid minus the 4
     // corner locations.
@@ -495,7 +495,7 @@ int CRRConnectionBuilder::get_connection_delay_ps(const std::string& cell_value,
                    lower_case_sink_node_type.end(),
                    lower_case_sink_node_type.begin(), ::tolower);
 
-    if (is_integer(cell_value) && is_annotated_excel_) {
+    if (is_integer(cell_value) && is_annotated_) {
         // TODO: This is a temporary solution. We need to have an API call to get
         // the switch id from delay.
         if (cell_value == "0") {

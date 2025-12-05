@@ -8,9 +8,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
 namespace crrgenerator {
-
-// Constants
-// Number of empty rows and columns in the Excel file
+// Number of empty rows and columns in the switch template file
 constexpr int NUM_EMPTY_ROWS = 5;
 constexpr int NUM_EMPTY_COLS = 4;
 

@@ -10,9 +10,9 @@
 namespace crrgenerator {
 
 /**
- * @brief Manages switch block configurations and Excel file processing
+ * @brief Manages switch block configurations and switch template file processing
  *
- * This class handles reading YAML configuration files, processing Excel files
+ * This class handles reading YAML configuration files, processing switch template files
  * containing switch block data, and managing switch block patterns.
  */
 class SwitchBlockManager {
@@ -22,12 +22,12 @@ class SwitchBlockManager {
     /**
      * @brief Initialize the manager with configuration file
      * @param sb_maps_file Path to the YAML configuration file
-     * @param sb_annotated_dir Directory containing Excel files
-     * @param is_annotated_excel Whether the switches are annotated in Excel
+     * @param sb_annotated_dir Directory containing switch template files
+     * @param is_annotated Whether the switches are annotated in switch template files
      */
     void initialize(const std::string& sb_maps_file,
                     const std::string& sb_annotated_dir,
-                    const bool is_annotated_excel);
+                    const bool is_annotated);
 
     /**
      * @brief Get the switch template file name for a given pattern
@@ -73,18 +73,6 @@ class SwitchBlockManager {
      */
     size_t get_total_connections() const;
 
-    /**
-     * @brief Get the maximum switch delay in picoseconds
-     * @return Maximum switch delay in picoseconds
-     */
-    int get_max_switch_delay_ps() const { return switch_delay_max_ps_; }
-
-    /**
-     * @brief Get the minimum switch delay in picoseconds
-     * @return Minimum switch delay in picoseconds
-     */
-    int get_min_switch_delay_ps() const { return switch_delay_min_ps_; }
-
   private:
     /**
      * @brief Ordered list of switch block patterns
@@ -98,26 +86,11 @@ class SwitchBlockManager {
     std::unordered_map<std::string, DataFrame*> dataframes_;
     std::unordered_map<std::string, DataFrame> file_cache_;
 
-    // Global switch delay range
-    int switch_delay_max_ps_;
-    int switch_delay_min_ps_;
-
     DataFrameProcessor processor_;
     std::string annotated_dir_;
 
-    // File processing
-    void load_excel_file(const std::string& pattern,
-                         const std::string& excel_file);
-
-    /**
-     * @brief Update global switch delay ranges based on all loaded DataFrames
-     * @param is_annotated_excel Whether the switches are annotated in Excel
-     */
-    void update_and_set_global_switch_delays(const bool is_annotated_excel);
-
     // Validation
     void validate_yaml_structure(const YAML::Node& root);
-    void validate_excel_files();
 };
 
 } // namespace crrgenerator

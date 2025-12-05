@@ -32,7 +32,7 @@ class CRRConnectionBuilder {
      */
     void initialize(int fpga_grid_x,
                     int fpga_grid_y,
-                    bool is_annotated_excel);
+                    bool is_annotated);
 
     /**
      * @brief Get connections for a tile
@@ -77,7 +77,7 @@ class CRRConnectionBuilder {
     // Info from config
     int fpga_grid_x_;
     int fpga_grid_y_;
-    bool is_annotated_excel_;
+    bool is_annotated_;
 
     // Dependencies
     const RRGraphView& rr_graph_;
