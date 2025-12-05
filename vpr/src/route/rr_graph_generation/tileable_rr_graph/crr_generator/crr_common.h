@@ -9,18 +9,13 @@
 #include "rr_node_types.h"
 namespace crrgenerator {
 
-// Type aliases for convenience
-using SwitchId = int32_t;
-using Coordinate = int32_t;
-
 // Constants
 // Number of empty rows and columns in the Excel file
 constexpr int NUM_EMPTY_ROWS = 5;
 constexpr int NUM_EMPTY_COLS = 4;
 
 // Direction types
-enum class Direction { INC_DIR,
-                       DEC_DIR };
+enum class Direction {INC_DIR, DEC_DIR };
 
 // e_sw_template_side types
 enum class e_sw_template_side {LEFT = 0,

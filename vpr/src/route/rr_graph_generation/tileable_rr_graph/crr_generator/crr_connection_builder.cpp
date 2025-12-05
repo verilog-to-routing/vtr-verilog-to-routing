@@ -31,8 +31,8 @@ CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
     , sb_manager_(sb_manager) {}
 
 void CRRConnectionBuilder::initialize(
-    Coordinate fpga_grid_x,
-    Coordinate fpga_grid_y,
+    int fpga_grid_x,
+    int fpga_grid_y,
     bool is_annotated_excel) {
 
     fpga_grid_x_ = fpga_grid_x;
@@ -146,8 +146,8 @@ std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x
     return tile_connections;
 }
 
-std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(Coordinate x,
-                                                                    Coordinate y,
+std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(int x,
+                                                                    int y,
                                                                     const DataFrame& df,
                                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     std::map<size_t, RRNodeId> source_nodes;
@@ -181,8 +181,8 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(Coordinate x
     return source_nodes;
 }
 
-std::map<size_t, RRNodeId> CRRConnectionBuilder::get_horizontal_nodes(Coordinate x,
-                                                                      Coordinate y,
+std::map<size_t, RRNodeId> CRRConnectionBuilder::get_horizontal_nodes(int x,
+                                                                      int y,
                                                                       const DataFrame& df,
                                                                       const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     std::map<size_t, RRNodeId> sink_nodes;
@@ -276,8 +276,8 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
 }
 
 RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
-                                                      Coordinate x,
-                                                      Coordinate y,
+                                                      int x,
+                                                      int y,
                                                       const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     VTR_ASSERT(info.side == e_sw_template_side::OPIN || info.side == e_sw_template_side::IPIN);
     e_rr_type node_type = (info.side == e_sw_template_side::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN;
@@ -294,8 +294,8 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
 }
 
 RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
-                                                    Coordinate x,
-                                                    Coordinate y,
+                                                    int x,
+                                                    int y,
                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
                                                     int& prev_seg_index,
                                                     e_sw_template_side& prev_side,
@@ -322,7 +322,7 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
     Direction direction = get_direction_for_side(info.side, is_vertical);
 
     // Calculate segment coordinates
-    Coordinate x_low, x_high, y_low, y_high;
+    int x_low, x_high, y_low, y_high;
     int physical_length, truncated;
     calculate_segment_coordinates(info, x, y, x_low, x_high, y_low, y_high,
                                   physical_length, truncated, is_vertical);
@@ -356,12 +356,12 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
 }
 
 void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info,
-                                                         Coordinate x,
-                                                         Coordinate y,
-                                                         Coordinate& x_low,
-                                                         Coordinate& x_high,
-                                                         Coordinate& y_low,
-                                                         Coordinate& y_high,
+                                                         int x,
+                                                         int y,
+                                                         int& x_low,
+                                                         int& x_high,
+                                                         int& y_low,
+                                                         int& y_high,
                                                          int& physical_length,
                                                          int& truncated,
                                                          bool is_vertical) const {
@@ -434,12 +434,12 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
     }
 
     // Calculate truncation
-    truncated = (std::max(x_low, static_cast<Coordinate>(1)) - x_low) - (x_high - std::min(x_high, fpga_grid_x_));
-    truncated += (std::max(y_low, static_cast<Coordinate>(1)) - y_low) - (y_high - std::min(y_high, fpga_grid_y_));
+    truncated = (std::max(x_low, 1) - x_low) - (x_high - std::min(x_high, fpga_grid_x_));
+    truncated += (std::max(y_low, 1) - y_low) - (y_high - std::min(y_high, fpga_grid_y_));
 
     // Apply grid boundaries
-    x_low = std::max(x_low, static_cast<Coordinate>(1));
-    y_low = std::max(y_low, static_cast<Coordinate>(1));
+    x_low = std::max(x_low, 1);
+    y_low = std::max(y_low, 1);
     x_high = std::min(x_high, fpga_grid_x_);
     y_high = std::min(y_high, fpga_grid_y_);
 
@@ -512,8 +512,8 @@ int CRRConnectionBuilder::get_connection_delay_ps(const std::string& cell_value,
     }
 }
 
-bool CRRConnectionBuilder::is_valid_grid_location(Coordinate x,
-                                                  Coordinate y) const {
+bool CRRConnectionBuilder::is_valid_grid_location(int x,
+                                                  int y) const {
     return x >= 1 && x <= fpga_grid_x_ && y >= 1 && y <= fpga_grid_y_;
 }
 

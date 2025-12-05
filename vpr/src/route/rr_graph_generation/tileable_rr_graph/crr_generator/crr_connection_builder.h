@@ -30,8 +30,8 @@ class CRRConnectionBuilder {
      * @param sb_manager Switch block manager
      * @param original_switches Original switches from the input graph
      */
-    void initialize(Coordinate fpga_grid_x,
-                    Coordinate fpga_grid_y,
+    void initialize(int fpga_grid_x,
+                    int fpga_grid_y,
                     bool is_annotated_excel);
 
     /**
@@ -65,26 +65,18 @@ class CRRConnectionBuilder {
     }
 
     /**
-     * @brief Get the default switch id map
-     * @return Map of default switch id
-     */
-    std::map<std::string, SwitchId> get_default_swithes_map() const {
-        return default_switch_id_;
-    }
-
-    /**
      * @brief Clear all connections
      */
     void clear() { all_connections_.clear(); }
-    void remove_tile_connections(Coordinate x, Coordinate y) {
+    void remove_tile_connections(int x, int y) {
         all_connections_[static_cast<size_t>(x)][static_cast<size_t>(y)].clear();
         all_connections_[static_cast<size_t>(x)][static_cast<size_t>(y)].shrink_to_fit();
     }
 
   private:
     // Info from config
-    Coordinate fpga_grid_x_;
-    Coordinate fpga_grid_y_;
+    int fpga_grid_x_;
+    int fpga_grid_y_;
     bool is_annotated_excel_;
 
     // Dependencies
@@ -99,22 +91,19 @@ class CRRConnectionBuilder {
     std::atomic<size_t> processed_locations_{0};
     size_t total_locations_{0};
 
-    // Default switch id based on the node type
-    std::map<std::string, SwitchId> default_switch_id_;
-
     // Connection building methods
     void build_connections_for_location(size_t x,
                                         size_t y,
                                         std::vector<Connection>& tile_connections) const;
 
     // Node processing methods
-    std::map<size_t, RRNodeId> get_vertical_nodes(Coordinate x,
-                                                  Coordinate y,
+    std::map<size_t, RRNodeId> get_vertical_nodes(int x,
+                                                  int y,
                                                   const DataFrame& df,
                                                   const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
-    std::map<size_t, RRNodeId> get_horizontal_nodes(Coordinate x,
-                                                    Coordinate y,
+    std::map<size_t, RRNodeId> get_horizontal_nodes(int x,
+                                                    int y,
                                                     const DataFrame& df,
                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
@@ -146,13 +135,13 @@ class CRRConnectionBuilder {
     SegmentInfo parse_segment_info(const DataFrame& df, size_t row_or_col, bool is_vertical) const;
 
     RRNodeId process_opin_ipin_node(const SegmentInfo& info,
-                                    Coordinate x,
-                                    Coordinate y,
+                                    int x,
+                                    int y,
                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
     RRNodeId process_channel_node(const SegmentInfo& info,
-                                  Coordinate x,
-                                  Coordinate y,
+                                  int x,
+                                  int y,
                                   const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
                                   int& prev_seg_index,
                                   e_sw_template_side& prev_side,
@@ -162,12 +151,12 @@ class CRRConnectionBuilder {
 
     // Coordinate and direction calculations
     void calculate_segment_coordinates(const SegmentInfo& info,
-                                       Coordinate x,
-                                       Coordinate y,
-                                       Coordinate& x_low,
-                                       Coordinate& x_high,
-                                       Coordinate& y_low,
-                                       Coordinate& y_high,
+                                       int x,
+                                       int y,
+                                       int& x_low,
+                                       int& x_high,
+                                       int& y_low,
+                                       int& y_high,
                                        int& physical_length,
                                        int& truncated,
                                        bool is_vertical) const;
@@ -183,7 +172,7 @@ class CRRConnectionBuilder {
                                 int segment_length = -1) const;
 
     // Validation and bounds checking
-    bool is_valid_grid_location(Coordinate x, Coordinate y) const;
+    bool is_valid_grid_location(int x, int y) const;
 
     // Progress tracking
     void update_progress();
