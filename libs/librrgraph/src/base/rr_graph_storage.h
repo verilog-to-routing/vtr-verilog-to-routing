@@ -1101,6 +1101,17 @@ class t_rr_graph_storage {
     */
     vtr::vector<RREdgeId, bool> edge_remapped_;
 
+    /** @brief
+     * This vector stores the template ID corresponding to each edge.
+     * It is primarily used for the tileable RR Graph. In a tileable RR Graph,
+     * we have a limited set of unique switch block patterns that are
+     * instantiated across the FPGA array. Each edge in a pattern has an ID.
+     * This data structure stores the ID of the pattern edge associated with
+     * each RR edge (i.e., the instantiated edge).
+     *
+     * This information can be used for various analyses, such as identifying
+     * which edges within each pattern are used most or least frequently.
+    */
     vtr::vector<RREdgeId, std::string> edge_sw_template_id_;
 
     /** @brief
