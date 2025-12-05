@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <array>
 
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
@@ -30,14 +31,16 @@ constexpr int DEFAULT_SWITCH_DELAY_MIN = 10000;
 enum class Direction { INC_DIR,
                        DEC_DIR };
 
-// Side types
-enum class Side { LEFT,
-                  RIGHT,
-                  TOP,
-                  BOTTOM,
-                  IPIN,
-                  OPIN,
-                  INVALID };
+// e_sw_template_side types
+enum class e_sw_template_side {LEFT = 0,
+                               RIGHT,
+                               TOP,
+                               BOTTOM,
+                               IPIN,
+                               OPIN,
+                               NUM_SIDES};
+
+constexpr std::array<e_sw_template_side, (size_t)e_sw_template_side::NUM_SIDES> SIDE 
 
 // Location structure
 struct Location {

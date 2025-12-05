@@ -127,16 +127,16 @@ class CRRConnectionBuilder {
 
     // Segment processing helpers
     struct SegmentInfo {
-        Side side;
+        e_sw_template_side side;
         std::string seg_type;
         int seg_index;
         int tap;
 
         SegmentInfo()
-            : side(Side::INVALID)
+            : side(e_sw_template_side::NUM_SIDES)
             , seg_index(-1)
             , tap(-1) {}
-        SegmentInfo(Side s, const std::string& type, int index, int t = 1)
+        SegmentInfo(e_sw_template_side s, const std::string& type, int index, int t = 1)
             : side(s)
             , seg_type(type)
             , seg_index(index)
@@ -145,15 +145,35 @@ class CRRConnectionBuilder {
 
     SegmentInfo parse_segment_info(const DataFrame& df, size_t row_or_col, bool is_vertical) const;
 
-    RRNodeId process_opin_ipin_node(const SegmentInfo& info, Coordinate x, Coordinate y, const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+    RRNodeId process_opin_ipin_node(const SegmentInfo& info,
+                                    Coordinate x,
+                                    Coordinate y,
+                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
-    RRNodeId process_channel_node(const SegmentInfo& info, Coordinate x, Coordinate y, const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup, int& prev_seg_index, Side& prev_side, std::string& prev_seg_type, int& prev_ptc_number, bool is_vertical) const;
+    RRNodeId process_channel_node(const SegmentInfo& info,
+                                  Coordinate x,
+                                  Coordinate y,
+                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
+                                  int& prev_seg_index,
+                                  e_sw_template_side& prev_side,
+                                  std::string& prev_seg_type,
+                                  int& prev_ptc_number,
+                                  bool is_vertical) const;
 
     // Coordinate and direction calculations
-    void calculate_segment_coordinates(const SegmentInfo& info, Coordinate x, Coordinate y, Coordinate& x_low, Coordinate& x_high, Coordinate& y_low, Coordinate& y_high, int& physical_length, int& truncated, bool is_vertical) const;
+    void calculate_segment_coordinates(const SegmentInfo& info,
+                                       Coordinate x,
+                                       Coordinate y,
+                                       Coordinate& x_low,
+                                       Coordinate& x_high,
+                                       Coordinate& y_low,
+                                       Coordinate& y_high,
+                                       int& physical_length,
+                                       int& truncated,
+                                       bool is_vertical) const;
 
-    Direction get_direction_for_side(Side side, bool is_vertical) const;
-    std::string get_segment_type_label(Side side) const;
+    Direction get_direction_for_side(e_sw_template_side side, bool is_vertical) const;
+    std::string get_segment_type_label(e_sw_template_side side) const;
 
     // Return the switch id of an edge between two nodes
     int get_connection_delay_ps(const std::string& cell_value,
