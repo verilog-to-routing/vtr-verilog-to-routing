@@ -9,25 +9,14 @@
 #include "rr_node_types.h"
 namespace crrgenerator {
 
-// Forward declarations
-class SwitchBlockManager;
-class NodeLookupManager;
-class ConnectionBuilder;
-class DataFrameProcessor;
-
 // Type aliases for convenience
 using SwitchId = int32_t;
-using SegmentId = int32_t;
 using Coordinate = int32_t;
-using DelayValue = float;
 
 // Constants
 // Number of empty rows and columns in the Excel file
 constexpr int NUM_EMPTY_ROWS = 5;
 constexpr int NUM_EMPTY_COLS = 4;
-
-constexpr SwitchId DELAY_0_ID = 1;
-constexpr int DEFAULT_SWITCH_DELAY_MIN = 10000;
 
 // Direction types
 enum class Direction { INC_DIR,
@@ -52,75 +41,6 @@ const std::unordered_map<std::string, e_sw_template_side> name_sw_template_side 
 constexpr vtr::array<e_sw_template_side, const char*, (size_t)e_sw_template_side::NUM_SIDES> template_side_name = {"LEFT", "RIGHT",
                                                                                                                    "TOP", "BOTTOM",
                                                                                                                    "IPIN", "OPIN"};
-
-// Location structure
-struct Location {
-    Coordinate x_low{-1};
-    Coordinate x_high{-1};
-    Coordinate y_low{-1};
-    Coordinate y_high{-1};
-    Coordinate layer{-1};
-    std::string ptc;
-    std::string side;
-
-    Location() = default;
-    Location(Coordinate xl, Coordinate xh, Coordinate yl, Coordinate yh, Coordinate l, const std::string& p, const std::string& s)
-        : x_low(xl)
-        , x_high(xh)
-        , y_low(yl)
-        , y_high(yh)
-        , layer(l)
-        , ptc(p)
-        , side(s) {}
-
-    bool operator==(const Location& other) const {
-        return x_low == other.x_low && x_high == other.x_high && y_low == other.y_low && y_high == other.y_high && layer == other.layer && ptc == other.ptc && side == other.side;
-    }
-};
-
-// Node timing information
-struct NodeTiming {
-    DelayValue r{0.0};
-    DelayValue c{0.0};
-
-    NodeTiming() = default;
-    NodeTiming(DelayValue r_val, DelayValue c_val)
-        : r(r_val)
-        , c(c_val) {}
-};
-
-// Node segment information
-struct NodeSegmentId {
-    int segment_id{-1};
-
-    NodeSegmentId() = default;
-    NodeSegmentId(int segment_id_val)
-        : segment_id(segment_id_val) {}
-
-    bool empty() const { return segment_id == -1; }
-};
-
-// Timing information
-struct Timing {
-    DelayValue Cin{0.0};
-    DelayValue Tdel{0.0};
-
-    Timing() = default;
-    Timing(DelayValue cin_val, DelayValue tdel_val)
-        : Cin(cin_val)
-        , Tdel(tdel_val) {}
-};
-
-// Sizing information
-struct Sizing {
-    DelayValue mux_trans_size{0.0};
-    DelayValue buf_size{0.0};
-
-    Sizing() = default;
-    Sizing(DelayValue mux_size, DelayValue buffer_size)
-        : mux_trans_size(mux_size)
-        , buf_size(buffer_size) {}
-};
 
 /**
  * @brief Connection class
