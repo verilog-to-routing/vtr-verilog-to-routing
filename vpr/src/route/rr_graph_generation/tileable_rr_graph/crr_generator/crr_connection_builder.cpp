@@ -320,6 +320,7 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
     }
     std::string seg_type_label = get_segment_type_label(info.side);
     Direction direction = get_direction_for_side(info.side, is_vertical);
+    VTR_ASSERT(direction == Direction::INC || direction == Direction::DEC);
 
     // Calculate segment coordinates
     int x_low, x_high, y_low, y_high;
@@ -333,8 +334,8 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
     prev_seg_index =
         std::max({prev_seg_index, seg_index + 2 * seg_length});
 
-    seg_index += (direction == Direction::INC_DIR) ? 0 : 1;
-    seg_index += (direction == Direction::DEC_DIR) ? 2 * (seg_length - 1) : 0;
+    seg_index += (direction == Direction::INC) ? 0 : 1;
+    seg_index += (direction == Direction::DEC) ? 2 * (seg_length - 1) : 0;
 
     // Calculate PTC sequence
     std::string seg_sequence = get_ptc_sequence(
@@ -450,11 +451,13 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
 Direction CRRConnectionBuilder::get_direction_for_side(e_sw_template_side side,
                                                        bool is_vertical) const {
     if (is_vertical) {
-        return (side == e_sw_template_side::RIGHT || side == e_sw_template_side::TOP) ? Direction::DEC_DIR
-                                                          : Direction::INC_DIR;
+        return (side == e_sw_template_side::RIGHT ||
+                side == e_sw_template_side::TOP) ? Direction::DEC
+                                                 : Direction::INC;
     } else {
-        return (side == e_sw_template_side::RIGHT || side == e_sw_template_side::TOP) ? Direction::INC_DIR
-                                                          : Direction::DEC_DIR;
+        return (side == e_sw_template_side::RIGHT ||
+                side == e_sw_template_side::TOP) ? Direction::INC
+                                                 : Direction::DEC;
     }
 }
 
@@ -469,12 +472,13 @@ std::string CRRConnectionBuilder::get_ptc_sequence(int seg_index,
                                                    int truncated) const {
     std::vector<std::string> sequence;
 
-    if (direction == Direction::DEC_DIR) {
+    if (direction == Direction::DEC) {
         seg_index -= (2 * truncated > 0) ? 2 * truncated : 0;
         for (int i = 0; i < physical_length; ++i) {
             sequence.push_back(std::to_string(seg_index - (i * 2)));
         }
     } else {
+        VTR_ASSERT(direction == Direction::INC);
         seg_index += (2 * truncated > 0) ? 2 * truncated : 0;
         for (int i = 0; i < physical_length; ++i) {
             sequence.push_back(std::to_string(seg_index + (i * 2)));

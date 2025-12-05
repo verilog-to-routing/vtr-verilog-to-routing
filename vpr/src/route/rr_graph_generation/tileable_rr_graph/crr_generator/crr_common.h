@@ -14,9 +14,6 @@ namespace crrgenerator {
 constexpr int NUM_EMPTY_ROWS = 5;
 constexpr int NUM_EMPTY_COLS = 4;
 
-// Direction types
-enum class Direction {INC_DIR, DEC_DIR };
-
 // e_sw_template_side types
 enum class e_sw_template_side {LEFT = 0,
                                RIGHT,
