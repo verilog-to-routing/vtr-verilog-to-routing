@@ -15,8 +15,7 @@ namespace crrgenerator {
 SwitchBlockManager::SwitchBlockManager() = default;
 
 void SwitchBlockManager::initialize(const std::string& sb_maps_file,
-                                    const std::string& sb_annotated_dir,
-                                    const bool is_annotated) {
+                                    const std::string& sb_annotated_dir) {
     VTR_LOG("Initializing SwitchBlockManager with maps file: %s\n", sb_maps_file.c_str());
 
     annotated_dir_ = sb_annotated_dir;

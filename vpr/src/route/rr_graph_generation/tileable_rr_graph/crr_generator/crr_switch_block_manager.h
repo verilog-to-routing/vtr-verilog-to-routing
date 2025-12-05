@@ -26,8 +26,7 @@ class SwitchBlockManager {
      * @param is_annotated Whether the switches are annotated in switch template files
      */
     void initialize(const std::string& sb_maps_file,
-                    const std::string& sb_annotated_dir,
-                    const bool is_annotated);
+                    const std::string& sb_annotated_dir);
 
     /**
      * @brief Get the switch template file name for a given pattern
