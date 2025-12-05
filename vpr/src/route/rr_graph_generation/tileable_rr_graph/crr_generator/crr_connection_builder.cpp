@@ -233,7 +233,9 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
         const Cell& tap_cell = df.at(row_or_col, 3);
 
         if (!side_cell.is_empty()) {
-            info.side = string_to_side(side_cell.as_string());
+            std::string side_str_cap = side_cell.as_string();
+            std::transform(side_str_cap.begin(), side_str_cap.end(), side_str_cap.begin(), ::toupper);
+            info.side = name_sw_template_side.at(side_str_cap);
         }
         if (!type_cell.is_empty()) {
             info.seg_type = type_cell.as_string();
@@ -253,7 +255,9 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
         const Cell& tap_cell = df.at(4, row_or_col); // Note: row 4 for horizontal
 
         if (!side_cell.is_empty()) {
-            info.side = string_to_side(side_cell.as_string());
+            std::string side_str_cap = side_cell.as_string();
+            std::transform(side_str_cap.begin(), side_str_cap.end(), side_str_cap.begin(), ::toupper);
+            info.side = name_sw_template_side.at(side_str_cap);
         }
         if (!type_cell.is_empty()) {
             info.seg_type = type_cell.as_string();
@@ -337,7 +341,7 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
         seg_index, seg_length, physical_length, direction, truncated);
 
     // Create node hash and lookup
-    NodeHash hash = std::make_tuple(string_to_node_type(seg_type_label),
+    NodeHash hash = std::make_tuple(rr_node_type_map.at(seg_type_label),
                                     seg_sequence,
                                     x_low, x_high, y_low, y_high);
     auto it = node_lookup.find(hash);
