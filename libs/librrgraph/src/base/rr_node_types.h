@@ -56,6 +56,15 @@ constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr
                                                                                                "CHANX", "CHANY", "CHANZ",
                                                                                                "MUX"};
 
+const std::unordered_map<std::string, e_rr_type> rr_node_type_map = {{"SOURCE", e_rr_type::SOURCE},
+                                                                     {"SINK", e_rr_type::SINK},
+                                                                     {"IPIN", e_rr_type::IPIN},
+                                                                     {"OPIN", e_rr_type::OPIN},
+                                                                     {"CHANX", e_rr_type::CHANX},
+                                                                     {"CHANY", e_rr_type::CHANY},
+                                                                     {"CHANZ", e_rr_type::CHANZ},
+                                                                     {"MUX", e_rr_type::MUX}};
+
 /**
  * @enum Direction
  * @brief Represents the wire direction for a routing resource node.
