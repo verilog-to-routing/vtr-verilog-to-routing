@@ -35,7 +35,7 @@ Before describing the template files, let's define some key terminology:
 
 See the figure below for an illustration:
 
-.. figure:: images/lane_and_tap.png
+.. figure:: lane_and_tap.png
    :alt: Lane and Tap
    :width: 50%
    :align: center
@@ -44,7 +44,7 @@ See the figure below for an illustration:
 
 In the actual RR Graph, when a wire passes through a switch block, its track number changes. Below is a more realistic example:
 
-.. figure:: images/lane_and_tap_realistic.png
+.. figure:: lane_and_tap_realistic.png
    :alt: Lane and Tap Realistic
    :width: 50%
    :align: center
