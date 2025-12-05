@@ -162,10 +162,7 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(int x,
 
         if (info.side == e_sw_template_side::IPIN || info.side == e_sw_template_side::OPIN) {
             node_id = process_opin_ipin_node(info, x, y, node_lookup);
-        } else if (info.side == e_sw_template_side::LEFT ||
-                   info.side == e_sw_template_side::RIGHT ||
-                   info.side == e_sw_template_side::TOP ||
-                   info.side == e_sw_template_side::BOTTOM) {
+        } else if (info.side == e_sw_template_side::LEFT || info.side == e_sw_template_side::RIGHT || info.side == e_sw_template_side::TOP || info.side == e_sw_template_side::BOTTOM) {
             node_id = process_channel_node(info, x, y, node_lookup, prev_seg_index,
                                            prev_side, prev_seg_type, prev_ptc_number, true);
         }
@@ -200,10 +197,7 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_horizontal_nodes(int x,
 
         if (info.side == e_sw_template_side::IPIN) {
             node_id = process_opin_ipin_node(info, x, y, node_lookup);
-        } else if (info.side == e_sw_template_side::LEFT ||
-                   info.side == e_sw_template_side::RIGHT ||
-                   info.side == e_sw_template_side::TOP ||
-                   info.side == e_sw_template_side::BOTTOM) {
+        } else if (info.side == e_sw_template_side::LEFT || info.side == e_sw_template_side::RIGHT || info.side == e_sw_template_side::TOP || info.side == e_sw_template_side::BOTTOM) {
             node_id = process_channel_node(info, x, y, node_lookup, prev_seg_index,
                                            prev_side, prev_seg_type, prev_ptc_number,
                                            false);
@@ -451,13 +445,11 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
 Direction CRRConnectionBuilder::get_direction_for_side(e_sw_template_side side,
                                                        bool is_vertical) const {
     if (is_vertical) {
-        return (side == e_sw_template_side::RIGHT ||
-                side == e_sw_template_side::TOP) ? Direction::DEC
-                                                 : Direction::INC;
+        return (side == e_sw_template_side::RIGHT || side == e_sw_template_side::TOP) ? Direction::DEC
+                                                                                      : Direction::INC;
     } else {
-        return (side == e_sw_template_side::RIGHT ||
-                side == e_sw_template_side::TOP) ? Direction::INC
-                                                 : Direction::DEC;
+        return (side == e_sw_template_side::RIGHT || side == e_sw_template_side::TOP) ? Direction::INC
+                                                                                      : Direction::DEC;
     }
 }
 

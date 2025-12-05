@@ -15,13 +15,13 @@ constexpr int NUM_EMPTY_ROWS = 5;
 constexpr int NUM_EMPTY_COLS = 4;
 
 // e_sw_template_side types
-enum class e_sw_template_side {LEFT = 0,
-                               RIGHT,
-                               TOP,
-                               BOTTOM,
-                               IPIN,
-                               OPIN,
-                               NUM_SIDES};
+enum class e_sw_template_side { LEFT = 0,
+                                RIGHT,
+                                TOP,
+                                BOTTOM,
+                                IPIN,
+                                OPIN,
+                                NUM_SIDES };
 
 const std::unordered_map<std::string, e_sw_template_side> name_sw_template_side = {{"LEFT", e_sw_template_side::LEFT},
                                                                                    {"RIGHT", e_sw_template_side::RIGHT},
