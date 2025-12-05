@@ -1,31 +1,6 @@
 #pragma once
 
-#include <algorithm>
-#include <atomic>
-#include <cmath>
-#include <condition_variable>
-#include <fstream>
-#include <functional>
-#include <future>
-#include <iostream>
-#include <iterator>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <numeric>
-#include <optional>
-#include <queue>
-#include <regex>
-#include <set>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
-#include <chrono>
-#include <sys/resource.h> // For getrusage on Unix/Linux
 
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
@@ -50,15 +25,6 @@ constexpr int NUM_EMPTY_COLS = 4;
 
 constexpr SwitchId DELAY_0_ID = 1;
 constexpr int DEFAULT_SWITCH_DELAY_MIN = 10000;
-
-// Node types
-enum class NodeType { SOURCE,
-                      SINK,
-                      IPIN,
-                      OPIN,
-                      CHANX,
-                      CHANY,
-                      INVALID };
 
 // Direction types
 enum class Direction { INC_DIR,
@@ -200,26 +166,6 @@ struct NodeHasher {
         return result;
     }
 };
-
-// Utility functions
-inline std::string to_string(NodeType type) {
-    switch (type) {
-        case NodeType::SOURCE:
-            return "SOURCE";
-        case NodeType::SINK:
-            return "SINK";
-        case NodeType::IPIN:
-            return "IPIN";
-        case NodeType::OPIN:
-            return "OPIN";
-        case NodeType::CHANX:
-            return "CHANX";
-        case NodeType::CHANY:
-            return "CHANY";
-        default:
-            return "UNKNOWN";
-    }
-}
 
 inline e_rr_type string_to_node_type(const std::string& str) {
     if (str == "SOURCE" || str == "source") return e_rr_type::SOURCE;
