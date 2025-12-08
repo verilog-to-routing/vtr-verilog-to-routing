@@ -59,15 +59,15 @@ class CRRConnectionBuilder {
                                         std::vector<Connection>& tile_connections) const;
 
     // Node processing methods
-    std::map<size_t, RRNodeId> get_vertical_nodes(int x,
-                                                  int y,
-                                                  const DataFrame& df,
-                                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+    std::map<size_t, RRNodeId> get_tile_source_nodes(int x,
+                                                     int y,
+                                                     const DataFrame& df,
+                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
-    std::map<size_t, RRNodeId> get_horizontal_nodes(int x,
-                                                    int y,
-                                                    const DataFrame& df,
-                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+    std::map<size_t, RRNodeId> get_tile_sink_nodes(int x,
+                                                   int y,
+                                                   const DataFrame& df,
+                                                   const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
 
     // PTC sequence calculation
     std::string get_ptc_sequence(int seg_index,

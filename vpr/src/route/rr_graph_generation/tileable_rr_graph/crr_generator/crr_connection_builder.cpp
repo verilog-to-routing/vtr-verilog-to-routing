@@ -75,8 +75,8 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
     auto combined_nodes = node_lookup_.get_combined_nodes(x, y);
 
     // Get vertical and horizontal nodes
-    auto source_nodes = get_vertical_nodes(x, y, *df, combined_nodes);
-    auto sink_nodes = get_horizontal_nodes(x, y, *df, combined_nodes);
+    auto source_nodes = get_tile_source_nodes(x, y, *df, combined_nodes);
+    auto sink_nodes = get_tile_sink_nodes(x, y, *df, combined_nodes);
 
     // Build connections based on dataframe
     for (auto row_iter = df->begin(); row_iter != df->end(); ++row_iter) {
@@ -142,10 +142,10 @@ std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x
     return tile_connections;
 }
 
-std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(int x,
-                                                                    int y,
-                                                                    const DataFrame& df,
-                                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
+std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
+                                                                       int y,
+                                                                       const DataFrame& df,
+                                                                       const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     std::map<size_t, RRNodeId> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
@@ -174,10 +174,10 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_vertical_nodes(int x,
     return source_nodes;
 }
 
-std::map<size_t, RRNodeId> CRRConnectionBuilder::get_horizontal_nodes(int x,
-                                                                      int y,
-                                                                      const DataFrame& df,
-                                                                      const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
+std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(int x,
+                                                                     int y,
+                                                                     const DataFrame& df,
+                                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
     std::map<size_t, RRNodeId> sink_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
