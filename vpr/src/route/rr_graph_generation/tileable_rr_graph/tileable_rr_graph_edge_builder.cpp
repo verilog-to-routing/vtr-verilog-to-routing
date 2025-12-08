@@ -15,7 +15,6 @@
 #include "tileable_rr_graph_gsb.h"
 #include "tileable_rr_graph_edge_builder.h"
 
-#include "crr_generator.h"
 #include "crr_edge_builder.h"
 
 /************************************************************************
@@ -333,8 +332,13 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     if (build_crr_edges) {
         sb_manager.initialize(crr_opts.sb_maps, crr_opts.sb_templates);
         node_lookup.initialize();
-        parser.run();
-        crr_connection_builder = parser.get_connection_builder();
+        crr_connection_builder = std::make_unique<CRRConnectionBuilder>(input_graph_,
+                                                                        node_lookup,
+                                                                        sb_manager);
+        const DeviceGrid& grid = g_vpr_ctx.device().grid;
+        crr_connection_builder->initialize(grid.width() - 2,
+                                           grid.height() - 2,
+                                           crr_opts.annotated_rr_graph);
     }
 
     /* Go Switch Block by Switch Block */
