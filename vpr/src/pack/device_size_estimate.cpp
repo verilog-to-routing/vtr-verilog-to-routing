@@ -197,53 +197,104 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         std::unordered_set<AtomNetId> cur_input_nets;
         std::unordered_set<AtomNetId> cur_output_nets;
 
-        for (PackMoleculeId mol_id : mol_ids) {
-            auto ext = prepacker.calc_molecule_external_nets(mol_id, atom_ctx.netlist(), models);
-            // We ignore ext.ext_clock_nets for now as you requested
+        // Current cluster’s primitive usage (how many times each primitive template is used)
+        std::map<const t_pb_graph_node*, int> cur_primitive_usage;
 
-            // Count how many *new* unique nets this molecule would add
-            int new_input_nets = 0;
+        // Helper: primitive demand of a molecule in this logical_type
+        auto compute_molecule_primitive_usage =
+            [&](PackMoleculeId mol_id) {
+                std::map<const t_pb_graph_node*, int> usage;
+
+                const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+
+                // We always try mapping this molecule into 'logical_type'
+                std::vector<t_logical_block_type> candidate_logical_type = {*logical_type};
+
+                for (AtomBlockId blk : mol.atom_block_ids) {
+                    if (!blk) continue;
+
+                    const t_pb_graph_node* prim =
+                        prepacker.get_expected_lowest_cost_primitive_for_atom_block(
+                            blk, candidate_logical_type);
+
+                    if (!prim) continue;
+
+                    usage[prim]++; // this molecule wants one instance of this primitive
+                }
+
+                return usage;
+            };
+
+        for (PackMoleculeId mol_id : mol_ids) {
+            auto ext = prepacker.calc_molecule_external_nets(
+                        mol_id, atom_ctx.netlist(), models);
+            // We ignore ext.ext_clock_nets for now
+
+            // Primitive demand of this molecule in this logical_type
+            auto mol_prim_usage = compute_molecule_primitive_usage(mol_id);
+
+            // ----------------- Unique-net pin capacity check -----------------
+            int new_input_nets  = 0;
+            int new_output_nets = 0;
+
             for (AtomNetId net : ext.ext_input_nets) {
                 if (!cur_input_nets.count(net)) {
                     ++new_input_nets;
                 }
             }
 
-            int new_output_nets = 0;
             for (AtomNetId net : ext.ext_output_nets) {
                 if (!cur_output_nets.count(net)) {
                     ++new_output_nets;
                 }
             }
 
-            // Would adding this molecule overflow input or output pin capacity?
             bool overflow_input  = (input_pin_capacity  > 0) &&
                                 (static_cast<int>(cur_input_nets.size())  + new_input_nets  > input_pin_capacity);
             bool overflow_output = (output_pin_capacity > 0) &&
                                 (static_cast<int>(cur_output_nets.size()) + new_output_nets > output_pin_capacity);
 
-            if (overflow_input || overflow_output) {
-                // Close current cluster
-                if (!cur_input_nets.empty() || !cur_output_nets.empty()) {
+            // ----------------- Primitive capacity check -----------------
+            bool capacity_overflow = false;
+            for (const auto& [prim, need] : mol_prim_usage) {
+                int already_used = cur_primitive_usage[prim];
+                int capacity     = prim->total_primitive_count; // per-cluster capacity for this primitive template
+
+                if (already_used + need > capacity) {
+                    capacity_overflow = true;
+                    break;
+                }
+            }
+
+            // ----------------- If cannot fit, start a new cluster -----------------
+            if (overflow_input || overflow_output || capacity_overflow) {
+                if (!cur_input_nets.empty() || !cur_output_nets.empty() ||
+                    !cur_primitive_usage.empty()) {
                     num_type_instances_by_unique_constrained_pin[logical_type]++;
                 }
 
-                // Start a new cluster with just this molecule
+                // Reset cluster state
                 cur_input_nets.clear();
                 cur_output_nets.clear();
+                cur_primitive_usage.clear();
             }
 
-            // Add this molecule’s nets to the current cluster
+            // ----------------- Add this molecule to the current cluster -----------------
             cur_input_nets.insert(ext.ext_input_nets.begin(),  ext.ext_input_nets.end());
             cur_output_nets.insert(ext.ext_output_nets.begin(), ext.ext_output_nets.end());
+
+            for (const auto& [prim, need] : mol_prim_usage) {
+                cur_primitive_usage[prim] += need;
+            }
         }
 
         // Count the final open cluster, if any
-        if (!cur_input_nets.empty() || !cur_output_nets.empty()) {
+        if (!cur_input_nets.empty() || !cur_output_nets.empty() || !cur_primitive_usage.empty()) {
             num_type_instances_by_unique_constrained_pin[logical_type]++;
         }
     }
-    VTR_LOG("Inferred cluster counts for unique input and output nets:\n");
+
+    VTR_LOG("Inferred cluster counts for unique input/output nets with primitive capacity:\n");
     for (auto& [type_ptr, count] : num_type_instances_by_unique_constrained_pin) {
         VTR_LOG("  %s: %zu\n", type_ptr->name.c_str(), count);
     }
@@ -327,8 +378,8 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
             // assigned_num = num_type_instances_capacity[logical_type];
             // assigned_num = std::max(num_type_instances_by_avg_pin[logical_type], num_type_instances_capacity[logical_type]);
             // assigned_num = num_type_instances_by_constrained_pin[logical_type];
-            // assigned_num = num_type_instances_by_unique_constrained_pin[logical_type];
-            assigned_num = std::max(num_type_instances_by_unique_constrained_pin[logical_type], num_type_instances_capacity[logical_type]);
+            assigned_num = num_type_instances_by_unique_constrained_pin[logical_type];
+            // assigned_num = std::max(num_type_instances_by_unique_constrained_pin[logical_type], num_type_instances_capacity[logical_type]);
         }
         num_type_instances_pin_or_capacity[logical_type] = assigned_num;
         VTR_LOG("  %s (assigned):   %zu\n", logical_type->name.c_str(), assigned_num);
