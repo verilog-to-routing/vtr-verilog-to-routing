@@ -295,6 +295,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        kRrGraphFile,
                        echo_enabled,
                        echo_file_name,
+                       vpr_setup.RouterOpts.route_verbosity,
                        is_flat);
         vpr_free_all(arch, vpr_setup);
     }
