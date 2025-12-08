@@ -29,7 +29,7 @@ Terminology
 
 Before describing the template files, let's define some key terminology:
 
-**Lane:** A group of wires with the same length. The starting points of consecutive wires in a lane are one switch block apart.
+**Lane:** A lane is a group of routing wires that shuffle only within the boundaries of their own lane region as they propagate across tiles.
 
 **Tap:** A switch block location where a wire passes through and can have fan-out connections.
 
@@ -58,7 +58,7 @@ There should be a directory containing the pattern files specified in the switch
 
 * **Rows** represent source nodes
 * **Columns** represent sink nodes
-* An **'x' mark** at an intersection indicates that the source and sink nodes are connected
+* An **'x' mark** at an intersection indicates that the source and sink nodes are connected. The delay for that connections is retrieved from the sitch type specified in the architecture file.
 * A **number** at an intersection indicates that the nodes are connected with the switch delay specified by that number
 
 **Note:** The pattern currently only supports uni-directional segments. Therefore, wires can only be driven from their starting point.
@@ -80,8 +80,10 @@ Each column has header rows describing the sink node:
 
 1. **Row 1 - Direction:** The side from which the sink node is exiting the switch block
 2. **Row 2 - Segment Type:** The segment length to which the sink node belongs
-3. **Row 3 - Fan-in:** The fan-in of the sink node (optional)
+3. **Row 3 - Fan-in:** The number of fan-ins to the sink node (optional)
 4. **Row 4 - Lane Number:** The lane to which the sink node belongs
+
+*Note:* Given that currently we only support unidirectional segments, the tap is not specified because a wire can only be driven from its starting point.
 
 Example
 ^^^^^^^
@@ -89,7 +91,7 @@ Example
 Consider an architecture with a channel width of ``160`` containing only wire
 segments of length ``4`` (L4).
 
-The number of **rows** is computed as:
+The number of **rows** in the template file is computed as:
 
 - ``4`` (number of sides) × ``160/2`` (number of tracks in one direction)
   = ``320`` rows.
@@ -97,12 +99,14 @@ The number of **rows** is computed as:
 On each side, we have:
 
 - ``20`` lanes (``80 / 4``), and
-- each lane requires ``4`` rows (since length-4 wires have 4 tap positions).
+- each lane requires ``4`` rows (Lane width is equal to the segment length).
 
 The number of **columns** is:
 
 - ``4`` (number of sides) × ``160/2`` (number of tracks in one direction) ÷ ``4`` (starting tracks per lane)
   = ``80`` columns.
+
+**Note:** The reason for dividing by 4 is that only the first track of each lane can be driven from each switch location.
 
 ----
 
@@ -157,7 +161,8 @@ template file, with the associated delay value, into the RR Graph.
 Each switch block template file must contain the number of rows and columns
 calculated in the previous section. After creating a correctly sized template
 file, populate it by placing switch delay values in the cells representing valid
-connections between source and sink nodes.
+connections between source and sink nodes, or if you want to use the switches defined
+in the architecture file, you can mark the connection with an 'x'.
 
 Once the switch block map file and template files are created, include the
 following arguments in the VPR command line:
