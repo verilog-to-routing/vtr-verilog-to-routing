@@ -13,10 +13,6 @@ namespace crrgenerator {
 /**
  * @brief Builds connections between routing nodes based on switch block
  * configurations
- *
- * This class processes switch block configurations and generates routing
- * connections between nodes, supporting both parallel and sequential
- * processing.
  */
 class CRRConnectionBuilder {
   public:
@@ -42,37 +38,6 @@ class CRRConnectionBuilder {
      */
     std::vector<Connection> get_tile_connections(size_t tile_x, size_t tile_y) const;
 
-    /**
-     * @brief Get all generated connections
-     * @return Vector of all connections
-     */
-    const std::vector<std::vector<std::vector<Connection>>>& get_all_connections() const {
-        return all_connections_;
-    }
-
-    /**
-     * @brief Get connection count
-     * @return Number of connections generated
-     */
-    size_t get_connection_count() const {
-        size_t count = 0;
-        for (const auto& x : all_connections_) {
-            for (const auto& y : x) {
-                count += y.size();
-            }
-        }
-        return count;
-    }
-
-    /**
-     * @brief Clear all connections
-     */
-    void clear() { all_connections_.clear(); }
-    void remove_tile_connections(int x, int y) {
-        all_connections_[static_cast<size_t>(x)][static_cast<size_t>(y)].clear();
-        all_connections_[static_cast<size_t>(x)][static_cast<size_t>(y)].shrink_to_fit();
-    }
-
   private:
     // Info from config
     int fpga_grid_x_;
@@ -83,9 +48,6 @@ class CRRConnectionBuilder {
     const RRGraphView& rr_graph_;
     const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
-
-    // Generated connections
-    std::vector<std::vector<std::vector<Connection>>> all_connections_;
 
     // Processing state
     std::atomic<size_t> processed_locations_{0};

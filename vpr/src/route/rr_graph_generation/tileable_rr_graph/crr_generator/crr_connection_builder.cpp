@@ -30,10 +30,9 @@ CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
     , node_lookup_(node_lookup)
     , sb_manager_(sb_manager) {}
 
-void CRRConnectionBuilder::initialize(
-    int fpga_grid_x,
-    int fpga_grid_y,
-    bool is_annotated) {
+void CRRConnectionBuilder::initialize(int fpga_grid_x,
+                                      int fpga_grid_y,
+                                      bool is_annotated) {
 
     fpga_grid_x_ = fpga_grid_x;
     fpga_grid_y_ = fpga_grid_y;
@@ -43,9 +42,6 @@ void CRRConnectionBuilder::initialize(
     // corner locations.
     total_locations_ = static_cast<size_t>(fpga_grid_x_ * fpga_grid_y_) - 4;
     processed_locations_ = 0;
-
-    all_connections_.resize(static_cast<size_t>(fpga_grid_x_ + 1),
-                            std::vector<std::vector<Connection>>(static_cast<size_t>(fpga_grid_y_ + 1)));
 
     VTR_LOG("CRRConnectionBuilder initialized for %d x %d grid (%zu locations)\n",
             fpga_grid_x_, fpga_grid_y_, total_locations_);
