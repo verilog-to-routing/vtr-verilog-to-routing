@@ -33,8 +33,12 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
     std::map<const t_pb_graph_node*, size_t> primitive_usage_count;
     std::map<const t_pb_graph_node*, t_logical_block_type_ptr> primitive_to_logical_type;
     for (AtomBlockId atom_blk_id: atom_ctx.netlist().blocks()) {
-        VTR_LOG("\tCurrrent atom id is %zu\n", atom_blk_id);
+        //VTR_LOG("\tCurrrent atom id is %zu\n", atom_blk_id);
         const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(atom_blk_id);
+        
+        // Skip rams since we will handle them at the very end.
+        if (!prim || !prim->pb_type || !prim->pb_type->is_primitive()) continue;
+        if (prim->pb_type->class_type == MEMORY_CLASS) continue;
 
         auto root_model_id = atom_ctx.netlist().block_model(atom_blk_id);
         std::vector<t_logical_block_type_ptr> candidate_types = primitive_candidate_block_types[root_model_id];
@@ -53,7 +57,7 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
             primitive_to_logical_type[candidate_prim] = candidate_type;
 
             int capacity = candidate_prim->total_primitive_count;
-            VTR_LOG("\t\tCandidate type %s can get max of %d of that atom.\n", candidate_type->name.c_str(), capacity);
+            //VTR_LOG("\t\tCandidate type %s can get max of %d of that atom.\n", candidate_type->name.c_str(), capacity);
         }
     }
 
@@ -82,6 +86,10 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
         AtomBlockId root_atom = mol.atom_block_ids[mol.root];
         const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(root_atom);
+        
+        // Skip rams since we will handle them at the very end.
+        if (!prim || !prim->pb_type || !prim->pb_type->is_primitive()) continue;
+        if (prim->pb_type->class_type == MEMORY_CLASS) continue;
 
         auto root_model_id = atom_ctx.netlist().block_model(root_atom);
         std::vector<t_logical_block_type_ptr> candidate_types = primitive_candidate_block_types[root_model_id];
@@ -95,6 +103,66 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
             logical_type_molecules[candidate_type].push_back(mol_id);
         }
     }
+
+    // Now doing a pass to infer the logical memories. I will start with the simplest case.
+    std::vector<LogicalRamGroup> logical_ram_groups;
+    for (AtomBlockId atom_blk_id: atom_ctx.netlist().blocks()) {
+        const t_pb_graph_node* prim = prepacker.get_expected_lowest_cost_pb_gnode(atom_blk_id);
+        if (!prim || !prim->pb_type || !prim->pb_type->is_primitive()) continue;
+        if (prim->pb_type->class_type != MEMORY_CLASS) continue;
+        
+        auto root_model_id = atom_ctx.netlist().block_model(atom_blk_id);
+        std::vector<t_logical_block_type_ptr> candidate_types = primitive_candidate_block_types[root_model_id];
+        
+        // Try to place this atom into an existing group by sibling-feasible equivalence
+        bool placed = false;
+        for (auto& g : logical_ram_groups) {
+            // Quick filter: require same model_id, otherwise the function will definitely fail
+            if (g.rep_pb_type->model_id != prim->pb_type->model_id) continue;
+
+            // Key check (as used inside the packer): non-data ports must match bit-for-bit
+            // Call in both directions to be extra safe (should be redundant if model_id matches)
+            bool ok_ab = primitive_memory_sibling_feasible(atom_blk_id, g.rep_pb_type, g.rep_blk);
+            bool ok_ba = primitive_memory_sibling_feasible(g.rep_blk, prim->pb_type, atom_blk_id);
+
+            if (ok_ab && ok_ba && (candidate_types == g.candidate_types)) {
+                g.atoms.push_back(atom_blk_id);
+                placed = true;
+                // float atom_criticality = pre_cluster_timing_manager.calc_atom_setup_criticality(atom_blk_id, atom_nlist);
+                // if (atom_criticality > g.max_atom_criticality) {
+                //     g.max_atom_criticality = atom_criticality;
+                // }
+                break;
+            }
+        }
+
+        if (!placed) {
+            // Start a new group with this atom as representative
+            LogicalRamGroup ng;
+            ng.rep_blk = atom_blk_id;
+            ng.rep_pb_type = prim->pb_type;
+            ng.atoms.push_back(atom_blk_id);
+            ng.candidate_types = candidate_types;
+            // float atom_criticality = pre_cluster_timing_manager.calc_atom_setup_criticality(atom_blk_id, atom_nlist);
+            // if (atom_criticality > ng.max_atom_criticality) {
+            //     ng.max_atom_criticality = atom_criticality;
+            // }
+            logical_ram_groups.push_back(std::move(ng));
+        }
+    }
+    // Dump logical rams
+    for (size_t gid = 0; gid < logical_ram_groups.size(); ++gid) {
+        LogicalRamGroup& g = logical_ram_groups[gid];
+        g.total_memory_slices = g.atoms.size();
+        g.remaining_memory_slices = g.total_memory_slices;
+        for (t_logical_block_type_ptr& cand : g.candidate_types) {
+            /* Search through all primitives and return the lowest cost primitive that fits this atom block */
+            std::vector<t_logical_block_type> candidate_logical_type = {*cand};
+            const t_pb_graph_node* candidate_prim = prepacker.get_expected_lowest_cost_primitive_for_atom_block(g.rep_blk, candidate_logical_type);
+            g.candidate_capacity[cand] = candidate_prim->total_primitive_count;
+        }
+    }
+
 
     VTR_LOG("Inferring cluster counts by used external input pin numbers:\n");
     for (auto& [logical_type, mol_ids] : logical_type_molecules) {
@@ -154,9 +222,40 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         VTR_LOG("    %s (max):        %zu\n", logical_type->name.c_str(), max_num);
     }
 
+    // Note: check the resutls of neuron. Above formulation works perfectly for VTR benchmarks but struggle in Titan.
+    //       we can do a new thing like: use the capacity only for RAMs and IOs. Then average of pin and capacity for others. Check that or other combinations.
+    //
+    // Note: For the io and memories (especially for the io), the capacity works very well.
+    //       For LABs, the average pin seems to be the best but averaging or takin max of avg. pin and capacity can also be not bad.
+    //         - most probably max of avg. pin and capacity would be better.
+    //       For DSPs, they are the problem here. Sometimes so close to the capacity and sometimes to the pin number. If we figure it out, we can get a better estimate for StratixIV arch as well.
+    //       For RAMs (memories), we can fast infer the logical RAMs and map them to the first available candidate always [for more accurate estimation, consistency and not to constrain device too much].
+    VTR_LOG("Using capacity for io and memory blocks, pin count for other:\n");
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances_pin_or_capacity;
+    for (auto& [logical_type, inferred_num]: num_type_instances_by_avg_pin) {
+        size_t assigned_num = 0;
+        // if (logical_type->is_io() || logical_type->pb_type->class_type == e_pb_type_class::MEMORY_CLASS) {
+        if (logical_type->is_io()) {
+            assigned_num = num_type_instances_capacity[logical_type];
+        } else {
+            //assigned_num = std::ceil(vtr::safe_ratio<float>(num_type_instances_by_avg_pin[logical_type] + num_type_instances_capacity[logical_type], 2));
+            assigned_num = num_type_instances_by_avg_pin[logical_type];
+        }
+        num_type_instances_pin_or_capacity[logical_type] = assigned_num;
+        VTR_LOG("  %s (assigned):   %zu\n", logical_type->name.c_str(), assigned_num);
+    }
 
-
-    return num_type_instances_pin_and_capacity;
+    // Count inferred numbers for the logical rams.
+    // Note: Currently assigning to the first available type. This is the simplest
+    //       solution to try and get an initial result.
+    for (auto& g : logical_ram_groups) {
+        t_logical_block_type_ptr candidate_type = g.candidate_types[0];
+        size_t inferred_number = std::ceil(vtr::safe_ratio<float>(g.total_memory_slices, g.candidate_capacity[candidate_type]));
+        num_type_instances_pin_or_capacity[candidate_type] += inferred_number;
+    }
+    
+    
+    return num_type_instances_pin_or_capacity;
 }
 
 DeviceSizeEstimator::DeviceSizeEstimator(const std::string& device_layout,
@@ -165,8 +264,11 @@ DeviceSizeEstimator::DeviceSizeEstimator(const std::string& device_layout,
                                          const LogicalModels& models,
                                          const Prepacker& prepacker) {
     vtr::ScopedStartFinishTimer timer("Estime Device Size");
+    auto& device_ctx = g_vpr_ctx.mutable_device();
     if (device_layout != "auto") {
         VTR_LOG("Device is fixed (%s), no need to estimate.\n", device_layout.c_str());
+        std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+        device_ctx.grid = create_device_grid(device_layout, grid_layouts, num_type_instances, packer_opts.target_device_utilization);
         return;
     }
 
@@ -180,7 +282,6 @@ DeviceSizeEstimator::DeviceSizeEstimator(const std::string& device_layout,
 
     // Not sure about do we always want to cast this to global.
     VTR_LOG("Cast the update to global device\n");
-    auto& device_ctx = g_vpr_ctx.mutable_device();
     device_ctx.grid = create_device_grid(device_layout, grid_layouts, num_type_instances, packer_opts.target_device_utilization);
 
     // Report the updated device.

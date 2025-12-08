@@ -451,7 +451,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     tbb::global_control c(tbb::global_control::max_allowed_parallelism, vpr_setup.num_workers);
 #endif
 
-    vpr_create_device(vpr_setup, arch);
+    // vpr_create_device(vpr_setup, arch);
     { //Pack
         bool pack_success = vpr_pack_flow(vpr_setup, arch);
 
@@ -460,7 +460,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    // vpr_create_device(vpr_setup, arch);
+    vpr_create_device(vpr_setup, arch);
     // If packing is not skipped, cluster netlist contain valid information, so
     // we can print the resource usage and device utilization
     if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
