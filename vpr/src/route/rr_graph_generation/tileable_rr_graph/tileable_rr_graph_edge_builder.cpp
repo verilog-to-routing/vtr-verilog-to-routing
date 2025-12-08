@@ -325,19 +325,17 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     vtr::Point<size_t> gsb_range(grids.width() - 1, grids.height() - 1);
 
     // Building CRR Graph
-    const crrgenerator::CRRConnectionBuilder* crr_connection_builder = nullptr;
+    std::unique_ptr<crrgenerator::CRRConnectionBuilder> crr_connection_builder;;
     crrgenerator::SwitchBlockManager sb_manager;
     crrgenerator::NodeLookupManager node_lookup(rr_graph, grids.width(), grids.height());
-    crrgenerator::CRRGraphGenerator parser(crr_opts, rr_graph, node_lookup, sb_manager);
     if (build_crr_edges) {
         sb_manager.initialize(crr_opts.sb_maps, crr_opts.sb_templates);
         node_lookup.initialize();
-        crr_connection_builder = std::make_unique<CRRConnectionBuilder>(input_graph_,
-                                                                        node_lookup,
-                                                                        sb_manager);
-        const DeviceGrid& grid = g_vpr_ctx.device().grid;
-        crr_connection_builder->initialize(grid.width() - 2,
-                                           grid.height() - 2,
+        crr_connection_builder = std::make_unique<crrgenerator::CRRConnectionBuilder>(rr_graph,
+                                                                                      node_lookup,
+                                                                                      sb_manager);
+        crr_connection_builder->initialize(grids.width() - 2,
+                                           grids.height() - 2,
                                            crr_opts.annotated_rr_graph);
     }
 

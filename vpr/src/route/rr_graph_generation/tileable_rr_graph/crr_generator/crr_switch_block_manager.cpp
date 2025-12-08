@@ -123,7 +123,7 @@ std::vector<std::string> SwitchBlockManager::get_all_patterns() const {
 
 std::string SwitchBlockManager::find_matching_pattern(const std::string& sw_name) const {
     for (const auto& pattern : ordered_switch_block_patterns_) {
-        if (PatternMatcher::matches_pattern(sw_name, pattern)) {
+        if (CRRPatternMatcher::matches_pattern(sw_name, pattern)) {
             return pattern;
         }
     }
