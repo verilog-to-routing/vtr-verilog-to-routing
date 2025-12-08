@@ -287,6 +287,9 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Allocate and load routing resource switches, which are derived from the switches from the architecture file,
     // based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches
     device_ctx.rr_graph_builder.init_fan_in();
+    // If requested, remove dangling chan nodes from the rr graph. This is done
+    // before allocating and loading routing resource switches since removing these nodes
+    // may affect the fanin of the switches.
     if (crr_opts.remove_dangling_nodes) {
         remove_dangling_chan_nodes(device_ctx.grid,
                                    device_ctx.rr_graph_builder);
@@ -333,6 +336,7 @@ static void remove_dangling_chan_nodes(const DeviceGrid& grid,
     RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
     std::vector<RRNodeId> dangling_nodes;
 
+    // Iterate over chan nodes and find dangling ones
     for (size_t node_index = 0; node_index < rr_nodes.size(); ++node_index) {
         RRNodeId node = RRNodeId(node_index);
         if (rr_nodes.node_type(node) == e_rr_type::CHANX || rr_nodes.node_type(node) == e_rr_type::CHANY) {
@@ -342,7 +346,9 @@ static void remove_dangling_chan_nodes(const DeviceGrid& grid,
         }
     }
     rr_nodes.remove_nodes(dangling_nodes);
-
+    
+    // After removing dangling chan nodes, we need to update the node lookup
+    // since some nodes may have been removed, and the node ids have changed
     node_lookup.clear();
     // Alloc the lookup table
     for (e_rr_type rr_type : RR_TYPES) {
@@ -353,7 +359,7 @@ static void remove_dangling_chan_nodes(const DeviceGrid& grid,
                                  NUM_2D_SIDES);
     }
 
-    // Add the correct node into the vector
+    // Update other data structures realated to lookup after removing dangling chan nodes
     for (size_t node_index = 0; node_index < rr_nodes.size(); ++node_index) {
         RRNodeId node = RRNodeId(node_index);
         // Set track numbers as a node may have multiple ptc
@@ -365,5 +371,8 @@ static void remove_dangling_chan_nodes(const DeviceGrid& grid,
             rr_graph_builder.add_node_to_all_locs(node);
         }
     }
+
+    // Initialize the fanin of the rr graph since the fan-in of nodes connected to
+    // remove nodes is changed
     rr_graph_builder.init_fan_in();
 }

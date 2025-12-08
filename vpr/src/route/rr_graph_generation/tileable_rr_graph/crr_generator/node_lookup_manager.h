@@ -8,10 +8,12 @@
 namespace crrgenerator {
 
 /**
- * @brief Manages efficient node lookup and indexing for RR graphs
+ * @brief Manages efficient node lookup and indexing for CRR graphs
  *
  * This class creates spatial indexes for nodes to enable fast lookup
  * by coordinates, type, and other attributes.
+ * @note Eventually, this class should be removed and the lookup already created for
+ * RR graph should be used.
  */
 class NodeLookupManager {
   public:

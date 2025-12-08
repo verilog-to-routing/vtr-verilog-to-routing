@@ -47,7 +47,7 @@ struct Cell {
 /**
  * @brief Simple dataframe implementation for processing switch template data
  *
- * This class provides pandas-like functionality for processing switch template files
+ * This class provides functions for processing switch template files
  * containing switch block configuration data.
  */
 class DataFrame {
