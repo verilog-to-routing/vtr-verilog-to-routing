@@ -163,6 +163,30 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         }
     }
 
+    // Inferring by both in&out counts.
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances_by_constrained_pin;
+    for (auto& [logical_type, mol_ids] : logical_type_molecules) {
+        int input_pin_number = logical_type->pb_type->num_input_pins;
+        int output_pin_number = logical_type->pb_type->num_output_pins;
+        int used_input = 0;
+        int used_output = 0;
+        for (PackMoleculeId mol_id: mol_ids) {
+            t_molecule_stats mol_stats = prepacker.calc_molecule_stats(mol_id, atom_ctx.netlist(), models);
+            int mol_used_input_pins = mol_stats.num_used_ext_inputs;
+            int mol_used_output_pins = mol_stats.num_used_ext_outputs;
+            used_input += mol_used_input_pins;
+            used_output += mol_used_output_pins;
+            if (used_input >= input_pin_number || used_output >= output_pin_number) {
+                num_type_instances_by_constrained_pin[logical_type]++;
+                used_input = mol_used_input_pins;
+                used_output = mol_used_output_pins;
+            }
+        }
+    }
+    VTR_LOG("Inferred cluster counts for input and output pins:\n");
+    for (auto& [type_ptr, count] : num_type_instances_by_constrained_pin) {
+        VTR_LOG("  %s: %zu\n", type_ptr->name.c_str(), count);
+    }
 
     VTR_LOG("Inferring cluster counts by used external input pin numbers:\n");
     for (auto& [logical_type, mol_ids] : logical_type_molecules) {
@@ -238,8 +262,11 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         if (logical_type->is_io()) {
             assigned_num = num_type_instances_capacity[logical_type];
         } else {
-            //assigned_num = std::ceil(vtr::safe_ratio<float>(num_type_instances_by_avg_pin[logical_type] + num_type_instances_capacity[logical_type], 2));
-            assigned_num = num_type_instances_by_avg_pin[logical_type];
+            // assigned_num = std::ceil(vtr::safe_ratio<float>(num_type_instances_by_avg_pin[logical_type] + num_type_instances_capacity[logical_type], 2));
+            // assigned_num = num_type_instances_by_avg_pin[logical_type];
+            // assigned_num = num_type_instances_capacity[logical_type];
+            // assigned_num = std::max(num_type_instances_by_avg_pin[logical_type], num_type_instances_capacity[logical_type]);
+            assigned_num = num_type_instances_by_constrained_pin[logical_type];
         }
         num_type_instances_pin_or_capacity[logical_type] = assigned_num;
         VTR_LOG("  %s (assigned):   %zu\n", logical_type->name.c_str(), assigned_num);
