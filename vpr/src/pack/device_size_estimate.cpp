@@ -188,6 +188,66 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         VTR_LOG("  %s: %zu\n", type_ptr->name.c_str(), count);
     }
 
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances_by_unique_constrained_pin;
+    for (auto& [logical_type, mol_ids] : logical_type_molecules) {
+        int input_pin_capacity  = logical_type->pb_type->num_input_pins;
+        int output_pin_capacity = logical_type->pb_type->num_output_pins;
+
+        // Current cluster’s unique external nets
+        std::unordered_set<AtomNetId> cur_input_nets;
+        std::unordered_set<AtomNetId> cur_output_nets;
+
+        for (PackMoleculeId mol_id : mol_ids) {
+            auto ext = prepacker.calc_molecule_external_nets(mol_id, atom_ctx.netlist(), models);
+            // We ignore ext.ext_clock_nets for now as you requested
+
+            // Count how many *new* unique nets this molecule would add
+            int new_input_nets = 0;
+            for (AtomNetId net : ext.ext_input_nets) {
+                if (!cur_input_nets.count(net)) {
+                    ++new_input_nets;
+                }
+            }
+
+            int new_output_nets = 0;
+            for (AtomNetId net : ext.ext_output_nets) {
+                if (!cur_output_nets.count(net)) {
+                    ++new_output_nets;
+                }
+            }
+
+            // Would adding this molecule overflow input or output pin capacity?
+            bool overflow_input  = (input_pin_capacity  > 0) &&
+                                (static_cast<int>(cur_input_nets.size())  + new_input_nets  > input_pin_capacity);
+            bool overflow_output = (output_pin_capacity > 0) &&
+                                (static_cast<int>(cur_output_nets.size()) + new_output_nets > output_pin_capacity);
+
+            if (overflow_input || overflow_output) {
+                // Close current cluster
+                if (!cur_input_nets.empty() || !cur_output_nets.empty()) {
+                    num_type_instances_by_unique_constrained_pin[logical_type]++;
+                }
+
+                // Start a new cluster with just this molecule
+                cur_input_nets.clear();
+                cur_output_nets.clear();
+            }
+
+            // Add this molecule’s nets to the current cluster
+            cur_input_nets.insert(ext.ext_input_nets.begin(),  ext.ext_input_nets.end());
+            cur_output_nets.insert(ext.ext_output_nets.begin(), ext.ext_output_nets.end());
+        }
+
+        // Count the final open cluster, if any
+        if (!cur_input_nets.empty() || !cur_output_nets.empty()) {
+            num_type_instances_by_unique_constrained_pin[logical_type]++;
+        }
+    }
+    VTR_LOG("Inferred cluster counts for unique input and output nets:\n");
+    for (auto& [type_ptr, count] : num_type_instances_by_unique_constrained_pin) {
+        VTR_LOG("  %s: %zu\n", type_ptr->name.c_str(), count);
+    }
+
     VTR_LOG("Inferring cluster counts by used external input pin numbers:\n");
     for (auto& [logical_type, mol_ids] : logical_type_molecules) {
         int input_pin_number_of_type = logical_type->pb_type->num_input_pins;
@@ -266,7 +326,9 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
             // assigned_num = num_type_instances_by_avg_pin[logical_type];
             // assigned_num = num_type_instances_capacity[logical_type];
             // assigned_num = std::max(num_type_instances_by_avg_pin[logical_type], num_type_instances_capacity[logical_type]);
-            assigned_num = num_type_instances_by_constrained_pin[logical_type];
+            // assigned_num = num_type_instances_by_constrained_pin[logical_type];
+            // assigned_num = num_type_instances_by_unique_constrained_pin[logical_type];
+            assigned_num = std::max(num_type_instances_by_unique_constrained_pin[logical_type], num_type_instances_capacity[logical_type]);
         }
         num_type_instances_pin_or_capacity[logical_type] = assigned_num;
         VTR_LOG("  %s (assigned):   %zu\n", logical_type->name.c_str(), assigned_num);

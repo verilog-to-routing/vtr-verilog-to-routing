@@ -2162,6 +2162,81 @@ t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
     return molecule_stats;
 }
 
+t_molecule_external_nets Prepacker::calc_molecule_external_nets(
+        PackMoleculeId molecule_id,
+        const AtomNetlist& atom_nlist,
+        const LogicalModels& models) const {
+
+    VTR_ASSERT(molecule_id.is_valid());
+
+    t_molecule_external_nets result;
+
+    const t_pack_molecule& molecule = pack_molecules_[molecule_id];
+
+    // Set of all atoms in this molecule
+    std::unordered_set<AtomBlockId> mol_atoms(
+        molecule.atom_block_ids.begin(),
+        molecule.atom_block_ids.end());
+
+    // Helper lambda: does this net have at least one sink outside the molecule?
+    auto net_leaves_molecule = [&](AtomNetId net) -> bool {
+        if (!net) return false;
+        for (AtomPinId sink_pin : atom_nlist.net_sinks(net)) {
+            AtomBlockId sink_blk = atom_nlist.pin_block(sink_pin);
+            if (!mol_atoms.count(sink_blk)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    for (AtomBlockId blk : molecule.atom_block_ids) {
+        if (!blk) continue;
+
+        // -------- CLOCK PINS (treated like inputs, but tracked separately) --------
+        for (AtomPinId pin : atom_nlist.block_clock_pins(blk)) {
+            AtomNetId net = atom_nlist.pin_net(pin);
+            if (!net) continue;
+
+            // Clock pins are sinks; check if driver is outside the molecule
+            AtomBlockId drv_blk = atom_nlist.net_driver_block(net);
+            if (!drv_blk) continue;
+
+            if (!mol_atoms.count(drv_blk)) {
+                // Driver is outside → external clock net
+                result.ext_clock_nets.insert(net);
+            }
+        }
+
+        // -------- INPUT PINS (SINKs) --------
+        for (AtomPinId pin : atom_nlist.block_input_pins(blk)) {
+            AtomNetId net = atom_nlist.pin_net(pin);
+            if (!net) continue;
+
+            AtomBlockId drv_blk = atom_nlist.net_driver_block(net);
+            if (!drv_blk) continue;
+
+            if (!mol_atoms.count(drv_blk)) {
+                // Driver is outside → external input net
+                result.ext_input_nets.insert(net);
+            }
+        }
+
+        // -------- OUTPUT PINS (DRIVERs) --------
+        for (AtomPinId pin : atom_nlist.block_output_pins(blk)) {
+            AtomNetId net = atom_nlist.pin_net(pin);
+            if (!net) continue;
+
+            // If this net has at least one sink outside the molecule, it’s an external output
+            if (net_leaves_molecule(net)) {
+                result.ext_output_nets.insert(net);
+            }
+        }
+    }
+
+    return result;
+}
+
 t_molecule_stats Prepacker::calc_max_molecule_stats(const AtomNetlist& atom_nlist, const LogicalModels& models) const {
     t_molecule_stats max_molecules_stats;
     for (PackMoleculeId molecule_id : molecules()) {

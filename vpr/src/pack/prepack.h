@@ -177,6 +177,12 @@ struct t_molecule_stats {
     int num_used_ext_outputs = 0;
 };
 
+struct t_molecule_external_nets {
+    std::unordered_set<AtomNetId> ext_clock_nets;
+    std::unordered_set<AtomNetId> ext_input_nets;
+    std::unordered_set<AtomNetId> ext_output_nets;
+};
+
 /**
  * @brief Class that performs prepacking.
  *
@@ -284,6 +290,10 @@ class Prepacker {
      */
     t_molecule_stats calc_max_molecule_stats(const AtomNetlist& netlist,
                                              const LogicalModels& models) const;
+
+    t_molecule_external_nets calc_molecule_external_nets(PackMoleculeId molecule_id,
+                                                        const AtomNetlist& atom_nlist,
+                                                        const LogicalModels& models) const;
 
     /**
      * @brief Gets the largest number of blocks (atoms) that any molecule contains.
