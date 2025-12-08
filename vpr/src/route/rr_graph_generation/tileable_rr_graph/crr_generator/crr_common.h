@@ -67,6 +67,12 @@ class Connection {
 };
 
 // Node hash type for lookups
+// The first element is the node type
+// The second element is the PTC sequence
+// The third element is the x-low coordinate of the node
+// The fourth element is the x-high coordinate of the node
+// The fifth element is the y-low coordinate of the node
+// The sixth element is the y-high coordinate of the node
 using NodeHash = std::tuple<e_rr_type, std::string, short, short, short, short>;
 
 // Hash function for NodeHash

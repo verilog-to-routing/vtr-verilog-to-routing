@@ -365,10 +365,10 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
             if (build_crr_edges) {
                 if (ix != gsb_range.x() && iy != gsb_range.y()) {
-                    build_crr_gsb_track_to_track_edges(rr_graph_builder,
-                                                       rr_node_driver_switches,
-                                                       rr_gsb,
-                                                       *crr_connection_builder);
+                    build_crr_gsb_edges(rr_graph_builder,
+                                        rr_node_driver_switches,
+                                        rr_gsb,
+                                        *crr_connection_builder);
                 }
             } else {
                 sb_conn = build_gsb_track_to_track_map(rr_graph,

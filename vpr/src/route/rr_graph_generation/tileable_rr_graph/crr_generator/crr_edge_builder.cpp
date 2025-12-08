@@ -52,10 +52,10 @@ static RRSwitchId find_or_create_crr_switch_id(const int delay_ps) {
     return RRSwitchId(found_sw_id);
 }
 
-void build_crr_gsb_track_to_track_edges(RRGraphBuilder& rr_graph_builder,
-                                        const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
-                                        const RRGSB& rr_gsb,
-                                        const crrgenerator::CRRConnectionBuilder& connection_builder) {
+void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
+                         const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                         const RRGSB& rr_gsb,
+                         const crrgenerator::CRRConnectionBuilder& connection_builder) {
     size_t gsb_x = rr_gsb.get_sb_x();
     size_t gsb_y = rr_gsb.get_sb_y();
 
@@ -63,6 +63,7 @@ void build_crr_gsb_track_to_track_edges(RRGraphBuilder& rr_graph_builder,
     for (const auto& connection : gsb_connections) {
         RRSwitchId rr_switch_id;
         int delay_ps = connection.delay_ps();
+        // If the delay is -1, it means the switch type should be determined from the switches defined in the architecture file.
         if (delay_ps == -1) {
             rr_switch_id = rr_node_driver_switches[connection.sink_node()];
         } else {
