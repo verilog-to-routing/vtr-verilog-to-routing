@@ -508,7 +508,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
         for (size_t x_loc = 0; x_loc < grid.width() - 1; x_loc++) {
             for (size_t y_loc = 0; y_loc < grid.height() - 1; y_loc++) {
 
-                // Get all chanx nodes at location (x_loc, y_loc), find largest ptc_num accross all nodes
+                // Get all chanx nodes at location (x_loc, y_loc), find largest ptc_num across all nodes
                 std::vector<RRNodeId> chanx_nodes = rr_graph.node_lookup().find_channel_nodes(layer, x_loc, y_loc, e_rr_type::CHANX);
                 int max_chanx_ptc_num = 0;
                 if (!chanx_nodes.empty()) {
