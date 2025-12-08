@@ -1,0 +1,51 @@
+[codespell]
+# These are a list of files that should skip spell-checking.
+skip = ./build,
+       # File types that we do not need to spell-check.
+       *.pdf,
+       *.svg,
+       *.log,
+       # External projects that do not belong to us.
+       ./libs/EXTERNAL,
+       ./parmys,
+       ./abc,
+       # Sub-projects which are not as maintained.
+       ./odin_ii,
+       ./ace2,
+       ./blifexplorer,
+       ./verilog_preprocessor,
+       # WIP spelling cleanups.
+       ./vtr_flow,
+       ./utils/vqm2blif,
+       # Temporary as we wait for some PRs to merge.
+       *_graph_uxsdcxx_capnp.h,
+       ./vpr/src/route/rr_graph_generation/rr_graph.cpp,
+       ./vpr/src/route/rr_graph_generation/rr_graph2.cpp,
+
+# Show a count of the number of spelling mistakes when codespell is run.
+count = true
+
+# Only show critical information.
+quiet-level = 3
+
+# Words to ignore for spell-checking. These are words that we know are spelled
+# correctly.
+ignore-words-list = subtile,
+                    subtiles,
+                    fle,
+                    EArch,
+                    FPT,
+                    Synopsys,
+                    inout,
+                    INOUT,
+                    Dout,
+                    dout,
+                    DATIN,
+                    ShowIn,
+                    # Special case: pres fac / pres cost for example.
+                    Pres,
+                    pres,
+                    # This is another special case. This happens due to string
+                    # formatting code "%shold". This can be fixed when std::format
+                    # is better supported in C++20.
+                    shold,
