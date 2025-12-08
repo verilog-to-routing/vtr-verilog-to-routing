@@ -6,7 +6,12 @@
 
 namespace crrgenerator {
 
-class PatternMatcher {
+/**
+ * @brief Helper class used by the CRR Generator to determine which switch block pattern
+ * should be applied to each tile. It does so by finding the first matching pattern
+ * for each location.
+ */
+class CRRPatternMatcher {
   private:
     // Helper function to parse range [start:end:step] or comma-separated values [7,20]
     static bool matches_range(int value, const std::string& range_str) {

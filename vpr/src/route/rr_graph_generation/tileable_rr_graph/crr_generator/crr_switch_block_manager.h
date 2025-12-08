@@ -22,11 +22,10 @@ class SwitchBlockManager {
     /**
      * @brief Initialize the manager with configuration file
      * @param sb_maps_file Path to the YAML configuration file
-     * @param sb_annotated_dir Directory containing switch template files
-     * @param is_annotated Whether the switches are annotated in switch template files
+     * @param sb_templates_dir Directory containing switch template files
      */
     void initialize(const std::string& sb_maps_file,
-                    const std::string& sb_annotated_dir);
+                    const std::string& sb_templates_dir);
 
     /**
      * @brief Get the switch template file name for a given pattern
@@ -81,12 +80,26 @@ class SwitchBlockManager {
      * YAML file, the pattern defined earliest in the list will be used.
      */
     std::vector<std::string> ordered_switch_block_patterns_;
+
+    /**
+     * @brief Maps switch block patterns to their corresponding full file paths.
+     */
     std::unordered_map<std::string, std::string> switch_block_to_file_;
+
+    /**
+     * @brief Maps switch block patterns to their corresponding dataframes.
+     */
     std::unordered_map<std::string, DataFrame*> dataframes_;
+
+    /**
+     * @brief Maps full file paths to their corresponding dataframes.
+     */
     std::unordered_map<std::string, DataFrame> file_cache_;
 
+    /**
+     * @brief Processor for reading and processing switch block template files.
+     */
     DataFrameProcessor processor_;
-    std::string annotated_dir_;
 
     // Validation
     void validate_yaml_structure(const YAML::Node& root);

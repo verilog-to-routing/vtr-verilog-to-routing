@@ -15,10 +15,8 @@ namespace crrgenerator {
 SwitchBlockManager::SwitchBlockManager() = default;
 
 void SwitchBlockManager::initialize(const std::string& sb_maps_file,
-                                    const std::string& sb_annotated_dir) {
+                                    const std::string& sb_templates_dir) {
     VTR_LOG("Initializing SwitchBlockManager with maps file: %s\n", sb_maps_file.c_str());
-
-    annotated_dir_ = sb_annotated_dir;
 
     // Load YAML configuration
     try {
@@ -42,7 +40,7 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
                 sw_template_file = "";
             }
 
-            std::string full_path = std::filesystem::path(annotated_dir_) / sw_template_file;
+            std::string full_path = std::filesystem::path(sb_templates_dir) / sw_template_file;
             if (sw_template_file.empty()) {
                 full_path = "";
             }
