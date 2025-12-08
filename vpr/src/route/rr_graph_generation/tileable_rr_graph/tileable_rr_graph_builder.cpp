@@ -346,7 +346,7 @@ static void remove_dangling_chan_nodes(const DeviceGrid& grid,
         }
     }
     rr_nodes.remove_nodes(dangling_nodes);
-    
+
     // After removing dangling chan nodes, we need to update the node lookup
     // since some nodes may have been removed, and the node ids have changed
     node_lookup.clear();

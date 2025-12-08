@@ -325,7 +325,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     vtr::Point<size_t> gsb_range(grids.width() - 1, grids.height() - 1);
 
     // Building CRR Graph
-    std::unique_ptr<crrgenerator::CRRConnectionBuilder> crr_connection_builder;;
+    std::unique_ptr<crrgenerator::CRRConnectionBuilder> crr_connection_builder;
     crrgenerator::SwitchBlockManager sb_manager;
     crrgenerator::NodeLookupManager node_lookup(rr_graph, grids.width(), grids.height());
     if (build_crr_edges) {
