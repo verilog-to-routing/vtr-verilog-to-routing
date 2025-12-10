@@ -485,7 +485,7 @@ class t_rr_graph_storage {
         return edge_source_node(edge_id(id, iedge));
     }
 
-    std::string edge_sw_template_id(RREdgeId edge) const {
+    const std::optional<std::string>& edge_sw_template_id(RREdgeId edge) const {
         return edge_sw_template_id_[edge];
     }
 
@@ -833,7 +833,11 @@ class t_rr_graph_storage {
      * of the node. Also, the information about switches is fly-weighted and are accessible with IDs. Thus,
      * the number of rr switch types can be higher than the number of arch switch types.
      */
-    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped, std::string sw_template_id);
+    void emplace_back_edge(RRNodeId src,
+                           RRNodeId dest,
+                           short edge_switch,
+                           bool remapped,
+                           std::optional<std::string> sw_template_id);
 
     /** @brief Adds a batch of edges.*/
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
@@ -933,7 +937,7 @@ class t_rr_graph_storage {
         array_rearrange(edge_src_node_, RRNodeId::INVALID());
         array_rearrange(edge_dest_node_, RRNodeId::INVALID());
         array_rearrange(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
-        array_rearrange(edge_sw_template_id_, "");
+        array_rearrange(edge_sw_template_id_, std::nullopt);
         array_rearrange(edge_remapped_, false);
     }
 
@@ -1112,7 +1116,7 @@ class t_rr_graph_storage {
      * This information can be used for various analyses, such as identifying
      * which edges within each pattern are used most or least frequently.
     */
-    vtr::vector<RREdgeId, std::string> edge_sw_template_id_;
+    vtr::vector<RREdgeId, std::optional<std::string>> edge_sw_template_id_;
 
     /** @brief
      * The following data structures are only used for tileable routing resource graph.
@@ -1178,7 +1182,7 @@ class t_rr_graph_view {
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch,
-        const vtr::array_view_id<RREdgeId, const std::string> edge_sw_template_id,
+        const vtr::array_view_id<RREdgeId, const std::optional<std::string>> edge_sw_template_id,
         const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx,
         const vtr::array_view_id<RRNodeId, const int16_t> node_bend_start,
         const vtr::array_view_id<RRNodeId, const int16_t> node_bend_end)
@@ -1380,7 +1384,7 @@ class t_rr_graph_view {
         return edge_switch_[edge];
     }
 
-    std::string edge_sw_template_id(RREdgeId edge) const {
+    std::optional<std::string> edge_sw_template_id(RREdgeId edge) const {
         return edge_sw_template_id_[edge];
     }
 
@@ -1402,7 +1406,7 @@ class t_rr_graph_view {
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
-    vtr::array_view_id<RREdgeId, const std::string> edge_sw_template_id_;
+    vtr::array_view_id<RREdgeId, const std::optional<std::string>> edge_sw_template_id_;
     const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx_;
 
     vtr::array_view_id<RRNodeId, const int16_t> node_bend_start_;

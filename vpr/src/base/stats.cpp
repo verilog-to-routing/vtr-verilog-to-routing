@@ -240,14 +240,14 @@ void write_sb_count_stats(const Netlist<>& net_list,
                 RRNodeId sink_node = rt_node.inode;
                 std::vector<RREdgeId> edges = rr_graph.find_edges(src_node, sink_node);
                 VTR_ASSERT(edges.size() == 1);
-                std::string sb_id = rr_graph.edge_sw_template_id(edges[0]);
-                if (sb_id.empty()) {
+                const std::optional<std::string>& sb_id = rr_graph.edge_sw_template_id(edges[0]);
+                if (!sb_id) {
                     continue;
                 }
-                if (sb_count.find(sb_id) == sb_count.end()) {
-                    sb_count[sb_id] = 0;
+                if (sb_count.find(*sb_id) == sb_count.end()) {
+                    sb_count[*sb_id] = 0;
                 }
-                sb_count[sb_id]++;
+                sb_count[*sb_id]++;
             }
         }
     }

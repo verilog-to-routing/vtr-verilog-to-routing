@@ -515,7 +515,7 @@ class RRGraphView {
         return node_storage_.edge_source_node(id, iedge);
     }
 
-    inline std::string edge_sw_template_id(RREdgeId edge) const {
+    inline const std::optional<std::string>& edge_sw_template_id(RREdgeId edge) const {
         return node_storage_.edge_sw_template_id(edge);
     }
 
