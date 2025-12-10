@@ -1,13 +1,14 @@
 #pragma once
 
 #include <string>
+#include <optional>
 
 #include "physical_types.h"
 #include "librrgraph_types.h"
 #include "rr_graph_fwd.h"
 
 struct t_rr_edge_info {
-    t_rr_edge_info(RRNodeId from, RRNodeId to, short type, bool is_remapped, std::string sw_template_id_="") noexcept
+    t_rr_edge_info(RRNodeId from, RRNodeId to, short type, bool is_remapped, std::optional<std::string> sw_template_id_=std::nullopt) noexcept
         : from_node(from)
         , to_node(to)
         , switch_type(type)
@@ -18,7 +19,7 @@ struct t_rr_edge_info {
     RRNodeId to_node = RRNodeId::INVALID();
     short switch_type = LIBRRGRAPH_UNDEFINED_VAL;
     bool remapped = false;
-    std::string sw_template_id = "";
+    std::optional<std::string> sw_template_id;
 
     friend bool operator<(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
         VTR_ASSERT(lhs.remapped == rhs.remapped);

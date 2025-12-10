@@ -37,7 +37,6 @@ See the figure below for an illustration:
 
 .. figure:: lane_and_tap.png
    :alt: Lane and Tap
-   :width: 50%
    :align: center
 
    In the figure above, the taps for the red wire are shown, and the lanes are separated by dotted lines. Note that the figure is simplified for illustration purposes.
@@ -46,7 +45,6 @@ In the actual RR Graph, when a wire passes through a switch block, its track num
 
 .. figure:: lane_and_tap_realistic.png
    :alt: Lane and Tap Realistic
-   :width: 50%
    :align: center
 
    A more realistic example of a lane and a tap. Each box contains a lane.
