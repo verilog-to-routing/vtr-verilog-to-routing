@@ -1,4 +1,4 @@
-.. _custom_rr_graph:
+.. _custom_rr_graph_generator:
 
 Custom RR Graph
 ===============
