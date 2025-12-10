@@ -56,14 +56,29 @@ constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr
                                                                                                "CHANX", "CHANY", "CHANZ",
                                                                                                "MUX"};
 
-const std::unordered_map<std::string, e_rr_type> rr_node_type_map = {{"SOURCE", e_rr_type::SOURCE},
-                                                                     {"SINK", e_rr_type::SINK},
-                                                                     {"IPIN", e_rr_type::IPIN},
-                                                                     {"OPIN", e_rr_type::OPIN},
-                                                                     {"CHANX", e_rr_type::CHANX},
-                                                                     {"CHANY", e_rr_type::CHANY},
-                                                                     {"CHANZ", e_rr_type::CHANZ},
-                                                                     {"MUX", e_rr_type::MUX}};
+inline e_rr_type get_rr_type(const std::string& type_name) {
+    switch (type_name) {
+        case "SOURCE":
+            return e_rr_type::SOURCE;
+        case "SINK":
+            return e_rr_type::SINK;
+        case "IPIN":
+            return e_rr_type::IPIN;
+        case "OPIN":
+            return e_rr_type::OPIN;
+        case "CHANX":
+            return e_rr_type::CHANX;
+        case "CHANY":
+            return e_rr_type::CHANY;
+        case "CHANZ":
+            return e_rr_type::CHANZ;
+        case "MUX":
+            return e_rr_type::MUX;
+        default:
+            VTR_ASSERT_MSG(false, "Invalid RR type name");
+            return e_rr_type::NUM_RR_TYPES;
+    }
+}
 
 /**
  * @enum Direction

@@ -332,7 +332,7 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
         seg_index, seg_length, physical_length, direction, truncated);
 
     // Create node hash and lookup
-    NodeHash hash = std::make_tuple(rr_node_type_map.at(seg_type_label),
+    NodeHash hash = std::make_tuple(get_rr_type(seg_type_label),
                                     seg_sequence,
                                     x_low, x_high, y_low, y_high);
     auto it = node_lookup.find(hash);
