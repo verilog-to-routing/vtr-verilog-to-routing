@@ -8,6 +8,7 @@
 #include "setup_grid.h"
 #include "cluster_util.h"
 #include "vtr_math.h"
+#include "cluster_placement.h"
 
 std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resource_requirement(const Prepacker& prepacker,
                                                                                               const t_packer_opts& packer_opts,
@@ -299,6 +300,238 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         VTR_LOG("  %s: %zu\n", type_ptr->name.c_str(), count);
     }
 
+    // ---------------------------------------------------------------------------
+    // Realistic capacity estimation using mini-packer-style intra-cluster placement
+    // ---------------------------------------------------------------------------
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances_realistic_capacity;
+
+    VTR_LOG("Estimating realistic cluster counts using intra-cluster placement stats (capacity only):\n");
+
+    for (auto& [logical_type, mol_ids] : logical_type_molecules) {
+        if (mol_ids.empty()) continue;
+
+        VTR_LOG("  Logical type %s:\n", logical_type->name.c_str());
+
+        // Pick a cluster mode. Often 0 is the "default" mode at the root.
+        // If your arch uses a specific root mode, set it here.
+        int cluster_mode = 0;
+
+        t_intra_cluster_placement_stats* cluster_stats = nullptr;
+        size_t cluster_count = 0;
+
+        auto open_new_cluster = [&]() {
+            if (cluster_stats) {
+                free_cluster_placement_stats(cluster_stats);
+            }
+            cluster_stats = alloc_and_load_cluster_placement_stats(logical_type, cluster_mode);
+            ++cluster_count;
+            // VTR_LOG("    Opened new virtual cluster #%zu for type %s\n",
+            //         cluster_count, logical_type->name.c_str());
+        };
+
+        for (PackMoleculeId mol_id : mol_ids) {
+            const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+
+            // Lazily open first cluster when we see the first molecule
+            if (!cluster_stats) {
+                open_new_cluster();
+            }
+
+            // Prepare primitives list sized to the molecule’s atoms
+            std::vector<t_pb_graph_node*> primitives_list(mol.atom_block_ids.size(), nullptr);
+
+            // Try to pack this molecule into the current virtual cluster
+            bool placed = get_next_primitive_list(
+                cluster_stats,
+                mol_id,
+                primitives_list,
+                prepacker,
+                /*force_site=*/-1);
+
+            if (!placed) {
+                // Could not fit in current cluster: open a new one and retry once
+                // VTR_LOG("    Molecule %zu did not fit in current cluster, "
+                //         "opening a new cluster and retrying.\n",
+                //         size_t(mol_id));
+
+                open_new_cluster();
+
+                std::fill(primitives_list.begin(), primitives_list.end(), nullptr);
+                placed = get_next_primitive_list(
+                    cluster_stats,
+                    mol_id,
+                    primitives_list,
+                    prepacker,
+                    /*force_site=*/-1);
+
+                if (!placed) {
+                    // Even a fresh cluster cannot host this molecule – log and skip
+                    // VTR_LOG_WARN(
+                    //     "    WARNING: mini-packer could not place molecule %zu "
+                    //     "for logical type %s even in a fresh cluster; skipping.\n",
+                    //     size_t(mol_id), logical_type->name.c_str());
+                    continue;
+                }
+            }
+
+            // We got a valid primitive list – commit them to this virtual cluster
+            for (t_pb_graph_node* prim : primitives_list) {
+                if (!prim) continue;
+                commit_primitive(cluster_stats, prim);
+            }
+        }
+
+        if (cluster_stats) {
+            free_cluster_placement_stats(cluster_stats);
+            cluster_stats = nullptr;
+        }
+
+        num_type_instances_realistic_capacity[logical_type] = cluster_count;
+        VTR_LOG("    => Estimated realistic capacity: %zu clusters of type %s\n",
+                cluster_count, logical_type->name.c_str());
+    }
+    VTR_LOG("Inferred cluster counts for realistic capacity clustering:\n");
+    for (auto& [type_ptr, count] : num_type_instances_realistic_capacity) {
+        VTR_LOG("  %s: %zu\n", type_ptr->name.c_str(), count);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Combined unique-net pin + realistic capacity estimation
+    // ---------------------------------------------------------------------------
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances_by_unique_constrained_pin_and_realistic_capacity;
+
+    VTR_LOG("Estimating cluster counts using unique external nets + intra-cluster capacity:\n");
+
+    for (auto& [logical_type, mol_ids] : logical_type_molecules) {
+        if (mol_ids.empty()) continue;
+
+        VTR_LOG("  Logical type %s:\n", logical_type->name.c_str());
+
+        int input_pin_capacity  = logical_type->pb_type->num_input_pins;
+        int output_pin_capacity = logical_type->pb_type->num_output_pins;
+
+        // Current cluster’s unique external nets
+        std::unordered_set<AtomNetId> cur_input_nets;
+        std::unordered_set<AtomNetId> cur_output_nets;
+
+        // Mini-packer state for this logical type
+        int cluster_mode = 0; // root mode; adjust if your arch needs another
+        t_intra_cluster_placement_stats* cluster_stats = nullptr;
+        size_t cluster_count = 0;
+
+        auto open_new_cluster = [&]() {
+            if (cluster_stats) {
+                free_cluster_placement_stats(cluster_stats);
+            }
+            cluster_stats = alloc_and_load_cluster_placement_stats(logical_type, cluster_mode);
+            ++cluster_count;
+
+            cur_input_nets.clear();
+            cur_output_nets.clear();
+
+            // VTR_LOG("    Opened new virtual cluster #%zu for type %s\n",
+            //         cluster_count, logical_type->name.c_str());
+        };
+
+        for (PackMoleculeId mol_id : mol_ids) {
+            const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+
+            // Lazily open first cluster
+            if (!cluster_stats) {
+                open_new_cluster();
+            }
+
+            // ----------------- Unique-net pin capacity part -----------------
+            auto ext = prepacker.calc_molecule_external_nets(
+                mol_id, atom_ctx.netlist(), models);
+            // ignoring ext.ext_clock_nets for now
+
+            int new_input_nets  = 0;
+            int new_output_nets = 0;
+
+            for (AtomNetId net : ext.ext_input_nets) {
+                if (!cur_input_nets.count(net)) ++new_input_nets;
+            }
+            for (AtomNetId net : ext.ext_output_nets) {
+                if (!cur_output_nets.count(net)) ++new_output_nets;
+            }
+
+            bool overflow_input  = (input_pin_capacity  > 0)
+                                && (static_cast<int>(cur_input_nets.size())  + new_input_nets  > input_pin_capacity);
+            bool overflow_output = (output_pin_capacity > 0)
+                                && (static_cast<int>(cur_output_nets.size()) + new_output_nets > output_pin_capacity);
+
+            bool pin_overflow = overflow_input || overflow_output;
+
+            // If we would overflow pins and this cluster is already used, move to a new one
+            if (pin_overflow &&
+                (!cur_input_nets.empty() || !cur_output_nets.empty())) {
+                // VTR_LOG("    Pin overflow; closing current cluster and opening a new one.\n");
+                open_new_cluster();
+                // After this, cur_input_nets/cur_output_nets are empty
+                // We will treat this molecule as the first occupant of the new cluster
+            }
+
+            // ----------------- Capacity part via mini-packer -----------------
+            std::vector<t_pb_graph_node*> primitives_list(mol.atom_block_ids.size(), nullptr);
+
+            // First try: place in current cluster
+            bool placed = get_next_primitive_list(
+                cluster_stats,
+                mol_id,
+                primitives_list,
+                prepacker,
+                /*force_site=*/-1);
+
+            if (!placed) {
+                // Could not fit in current cluster. Open a new one and retry once.
+                // VTR_LOG("    Capacity overflow; opening new cluster and retrying molecule %zu.\n",
+                //         size_t(mol_id));
+                open_new_cluster();
+
+                std::fill(primitives_list.begin(), primitives_list.end(), nullptr);
+                placed = get_next_primitive_list(
+                    cluster_stats,
+                    mol_id,
+                    primitives_list,
+                    prepacker,
+                    /*force_site=*/-1);
+
+                if (!placed) {
+                    // Even a fresh cluster cannot host this molecule – log and skip
+                    // VTR_LOG_WARN(
+                    //     "    WARNING: mini-packer could not place molecule %zu "
+                    //     "for logical type %s even in a fresh cluster; skipping.\n",
+                    //     size_t(mol_id), logical_type->name.c_str());
+                    continue;
+                }
+            }
+
+            // Commit the primitives for this molecule into the current virtual cluster
+            for (t_pb_graph_node* prim : primitives_list) {
+                if (!prim) continue;
+                commit_primitive(cluster_stats, prim);
+            }
+
+            // ----------------- Update unique nets for this cluster -----------------
+            cur_input_nets.insert(ext.ext_input_nets.begin(),  ext.ext_input_nets.end());
+            cur_output_nets.insert(ext.ext_output_nets.begin(), ext.ext_output_nets.end());
+        }
+
+        if (cluster_stats) {
+            free_cluster_placement_stats(cluster_stats);
+            cluster_stats = nullptr;
+        }
+
+        num_type_instances_by_unique_constrained_pin_and_realistic_capacity[logical_type] = cluster_count;
+    }
+
+    VTR_LOG("Inferred cluster counts for unique nets + realistic capacity:\n");
+    for (auto& [type_ptr, count] : num_type_instances_by_unique_constrained_pin_and_realistic_capacity) {
+        VTR_LOG("  %s: %zu\n", type_ptr->name.c_str(), count);
+    }
+
+
     VTR_LOG("Inferring cluster counts by used external input pin numbers:\n");
     for (auto& [logical_type, mol_ids] : logical_type_molecules) {
         int input_pin_number_of_type = logical_type->pb_type->num_input_pins;
@@ -371,14 +604,14 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
         size_t assigned_num = 0;
         // if (logical_type->is_io() || logical_type->pb_type->class_type == e_pb_type_class::MEMORY_CLASS) {
         if (logical_type->is_io()) {
-            assigned_num = num_type_instances_capacity[logical_type];
+            assigned_num = num_type_instances_by_unique_constrained_pin_and_realistic_capacity[logical_type];
         } else {
             // assigned_num = std::ceil(vtr::safe_ratio<float>(num_type_instances_by_avg_pin[logical_type] + num_type_instances_capacity[logical_type], 2));
             // assigned_num = num_type_instances_by_avg_pin[logical_type];
             // assigned_num = num_type_instances_capacity[logical_type];
             // assigned_num = std::max(num_type_instances_by_avg_pin[logical_type], num_type_instances_capacity[logical_type]);
             // assigned_num = num_type_instances_by_constrained_pin[logical_type];
-            assigned_num = num_type_instances_by_unique_constrained_pin[logical_type];
+            assigned_num = num_type_instances_by_unique_constrained_pin_and_realistic_capacity[logical_type];
             // assigned_num = std::max(num_type_instances_by_unique_constrained_pin[logical_type], num_type_instances_capacity[logical_type]);
         }
         num_type_instances_pin_or_capacity[logical_type] = assigned_num;
