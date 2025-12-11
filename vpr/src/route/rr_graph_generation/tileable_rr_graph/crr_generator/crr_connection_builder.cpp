@@ -96,38 +96,41 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
             auto source_it = source_nodes.find(row_idx);
             auto sink_it = sink_nodes.find(col_idx);
 
-            if (source_it != source_nodes.end() && sink_it != sink_nodes.end()) {
-                RRNodeId source_node = source_it->second;
-                e_rr_type source_node_type = rr_graph_.node_type(source_node);
-                RRNodeId sink_node = sink_it->second;
-                e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
-                std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
-                // If the source node is an IPIN, then it should be considered as
-                // a sink of the connection.
-                if (source_node_type == e_rr_type::IPIN) {
-                    int delay_ps = get_connection_delay_ps(cell.as_string(),
-                                                            rr_node_typename[source_node_type],
-                                                            sink_node,
-                                                            source_node);
+            if (source_it == source_nodes.end() || sink_it == sink_nodes.end()) {
+                continue;
+            }
 
-                    tile_connections.emplace_back(source_node, sink_node, delay_ps, sw_template_id);
-                } else {
-                    int segment_length = -1;
-                    if (sink_node_type == e_rr_type::CHANX || sink_node_type == e_rr_type::CHANY) {
-                        segment_length = rr_graph_.node_length(sink_node);
-                    }
-                    int delay_ps = get_connection_delay_ps(cell.as_string(),
-                                                            rr_node_typename[sink_node_type],
-                                                            source_node,
-                                                            sink_node,
-                                                            segment_length);
+            RRNodeId source_node = source_it->second;
+            e_rr_type source_node_type = rr_graph_.node_type(source_node);
+            RRNodeId sink_node = sink_it->second;
+            e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
+            std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
+            // If the source node is an IPIN, then it should be considered as
+            // a sink of the connection.
+            if (source_node_type == e_rr_type::IPIN) {
+                int delay_ps = get_connection_delay_ps(cell.as_string(),
+                                                        rr_node_typename[source_node_type],
+                                                        sink_node,
+                                                        source_node);
 
-                    tile_connections.emplace_back(sink_node, source_node, delay_ps, sw_template_id);
+                tile_connections.emplace_back(source_node, sink_node, delay_ps, sw_template_id);
+            } else {
+                int segment_length = -1;
+                if (sink_node_type == e_rr_type::CHANX || sink_node_type == e_rr_type::CHANY) {
+                    segment_length = rr_graph_.node_length(sink_node);
                 }
+                int delay_ps = get_connection_delay_ps(cell.as_string(),
+                                                        rr_node_typename[sink_node_type],
+                                                        source_node,
+                                                        sink_node,
+                                                        segment_length);
+
+                tile_connections.emplace_back(sink_node, source_node, delay_ps, sw_template_id);
             }
         }
     }
 
+    // Uniqueify the connections
     std::sort(tile_connections.begin(), tile_connections.end());
     tile_connections.erase(std::unique(tile_connections.begin(),
                                        tile_connections.end()),
@@ -157,8 +160,11 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
 
     for (size_t row = NUM_EMPTY_ROWS; row < df.rows(); ++row) {
         SegmentInfo info = parse_segment_info(df, row, true);
-        RRNodeId node_id;
+        if (!info.is_valid()) {
+            continue;
+        }
 
+        RRNodeId node_id;
         if (info.side == e_sw_template_dir::IPIN || info.side == e_sw_template_dir::OPIN) {
             node_id = process_opin_ipin_node(info, x, y, node_lookup);
         } else if (info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT || info.side == e_sw_template_dir::TOP || info.side == e_sw_template_dir::BOTTOM) {
@@ -189,7 +195,7 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(int x,
 
     for (size_t col = NUM_EMPTY_COLS; col < df.cols(); ++col) {
         SegmentInfo info = parse_segment_info(df, col, false);
-        if (info.side == e_sw_template_dir::NUM_SIDES) {
+        if (!info.is_valid()) {
             continue;
         }
         RRNodeId node_id;

@@ -92,6 +92,9 @@ class CRRConnectionBuilder {
             , seg_type(type)
             , seg_index(index)
             , tap(t) {}
+        bool is_valid() const {
+            return side != e_sw_template_dir::NUM_SIDES;
+        }
     };
 
     SegmentInfo parse_segment_info(const DataFrame& df, size_t row_or_col, bool is_vertical) const;
