@@ -3,7 +3,6 @@
 #include <charconv>
 #include <cmath>
 #include <string>
-// #include <regex>
 #include <cctype>
 #include <algorithm>
 
@@ -13,13 +12,15 @@
 
 namespace crrgenerator {
 
-static std::string get_switch_block_name(size_t x, size_t y) {
-    return "SB_" + std::to_string(x) + "__" + std::to_string(y) + "_";
-}
-
 static bool is_integer(const std::string& s) {
     int value;
     auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
+    // Uses std::from_chars to parse the entire string as an integer.
+    // Returns true only if:
+    // 1. The conversion succeeds without errors (ec == std::errc())
+    // 2. The entire string was consumed (ptr points to the end)
+    // This ensures strings like "123abc" or "12.5" return false, while
+    // "123" or "-456" return true.
     return ec == std::errc() && ptr == s.data() + s.size();
 }
 
@@ -40,11 +41,10 @@ void CRRConnectionBuilder::initialize(int fpga_grid_x,
 
     // Total locations is the number of locations on the FPGA grid minus the 4
     // corner locations.
-    total_locations_ = static_cast<size_t>(fpga_grid_x_ * fpga_grid_y_) - 4;
+    int number_of_tiles = fpga_grid_x_ * fpga_grid_y_;
+    VTR_ASSERT(number_of_tiles > 4);
+    total_locations_ = static_cast<size_t>(number_of_tiles) - 4;
     processed_locations_ = 0;
-
-    VTR_LOG("CRRConnectionBuilder initialized for %d x %d grid (%zu locations)\n",
-            fpga_grid_x_, fpga_grid_y_, total_locations_);
 }
 
 void CRRConnectionBuilder::build_connections_for_location(size_t x,
@@ -52,8 +52,7 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
                                                           std::vector<Connection>& tile_connections) const {
 
     // Find matching switch block pattern
-    std::string sw_name = get_switch_block_name(x, y);
-    std::string pattern = sb_manager_.find_matching_pattern(sw_name);
+    std::string pattern = sb_manager_.find_matching_pattern(x, y);
     std::string sw_block_file_name = sb_manager_.get_pattern_file_name(pattern);
     tile_connections.clear();
 
@@ -68,8 +67,8 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
         return;
     }
 
-    VTR_LOG("Processing switch block '%s' with pattern '%s' at (%zu, %zu)\n",
-            sw_name.c_str(), pattern.c_str(), x, y);
+    VTR_LOG("Processing switch block with pattern '%s' at (%zu, %zu)\n",
+            pattern.c_str(), x, y);
 
     // Get combined nodes for this location
     auto combined_nodes = node_lookup_.get_combined_nodes(x, y);

@@ -53,12 +53,12 @@ class SwitchBlockManager {
     std::vector<std::string> get_all_patterns() const;
 
     /**
-     * @brief Find the first matching pattern in switch mapping file
-     * for a switch block name
-     * @param sw_name Switch block name to match
+     * @brief Find the first matching pattern for the switch block at the given location
+     * @param x X coordinate of the switch block location
+     * @param y Y coordinate of the switch block location
      * @return Matching pattern or empty string if no match
      */
-    std::string find_matching_pattern(const std::string& sw_name) const;
+    std::string find_matching_pattern(size_t x, size_t y) const;
 
     /**
      * @brief Print statistics about loaded switch blocks

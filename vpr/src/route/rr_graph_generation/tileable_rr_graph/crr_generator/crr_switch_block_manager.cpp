@@ -12,6 +12,10 @@
 
 namespace crrgenerator {
 
+static std::string get_switch_block_name(size_t x, size_t y) {
+    return "SB_" + std::to_string(x) + "__" + std::to_string(y) + "_";
+}
+
 SwitchBlockManager::SwitchBlockManager() = default;
 
 void SwitchBlockManager::initialize(const std::string& sb_maps_file,
@@ -121,7 +125,8 @@ std::vector<std::string> SwitchBlockManager::get_all_patterns() const {
     return patterns;
 }
 
-std::string SwitchBlockManager::find_matching_pattern(const std::string& sw_name) const {
+std::string SwitchBlockManager::find_matching_pattern(size_t x, size_t y) const {
+    std::string sw_name = get_switch_block_name(x, y);
     for (const auto& pattern : ordered_switch_block_patterns_) {
         if (CRRPatternMatcher::matches_pattern(sw_name, pattern)) {
             return pattern;
