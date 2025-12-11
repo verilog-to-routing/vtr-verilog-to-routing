@@ -89,38 +89,40 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
         for (size_t col_idx = NUM_EMPTY_COLS; col_idx < df->cols(); ++col_idx) {
             const Cell& cell = df->at(row_idx, col_idx);
 
-            if (!cell.is_empty()) {
-                auto source_it = source_nodes.find(row_idx);
-                auto sink_it = sink_nodes.find(col_idx);
+            if (cell.is_empty()) {
+                continue;
+            }
 
-                if (source_it != source_nodes.end() && sink_it != sink_nodes.end()) {
-                    RRNodeId source_node = source_it->second;
-                    e_rr_type source_node_type = rr_graph_.node_type(source_node);
-                    RRNodeId sink_node = sink_it->second;
-                    e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
-                    std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
-                    // If the source node is an IPIN, then it should be considered as
-                    // a sink of the connection.
-                    if (source_node_type == e_rr_type::IPIN) {
-                        int delay_ps = get_connection_delay_ps(cell.as_string(),
-                                                               rr_node_typename[source_node_type],
-                                                               sink_node,
-                                                               source_node);
+            auto source_it = source_nodes.find(row_idx);
+            auto sink_it = sink_nodes.find(col_idx);
 
-                        tile_connections.emplace_back(source_node, sink_node, delay_ps, sw_template_id);
-                    } else {
-                        int segment_length = -1;
-                        if (sink_node_type == e_rr_type::CHANX || sink_node_type == e_rr_type::CHANY) {
-                            segment_length = rr_graph_.node_length(sink_node);
-                        }
-                        int delay_ps = get_connection_delay_ps(cell.as_string(),
-                                                               rr_node_typename[sink_node_type],
-                                                               source_node,
-                                                               sink_node,
-                                                               segment_length);
+            if (source_it != source_nodes.end() && sink_it != sink_nodes.end()) {
+                RRNodeId source_node = source_it->second;
+                e_rr_type source_node_type = rr_graph_.node_type(source_node);
+                RRNodeId sink_node = sink_it->second;
+                e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
+                std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
+                // If the source node is an IPIN, then it should be considered as
+                // a sink of the connection.
+                if (source_node_type == e_rr_type::IPIN) {
+                    int delay_ps = get_connection_delay_ps(cell.as_string(),
+                                                            rr_node_typename[source_node_type],
+                                                            sink_node,
+                                                            source_node);
 
-                        tile_connections.emplace_back(sink_node, source_node, delay_ps, sw_template_id);
+                    tile_connections.emplace_back(source_node, sink_node, delay_ps, sw_template_id);
+                } else {
+                    int segment_length = -1;
+                    if (sink_node_type == e_rr_type::CHANX || sink_node_type == e_rr_type::CHANY) {
+                        segment_length = rr_graph_.node_length(sink_node);
                     }
+                    int delay_ps = get_connection_delay_ps(cell.as_string(),
+                                                            rr_node_typename[sink_node_type],
+                                                            source_node,
+                                                            sink_node,
+                                                            segment_length);
+
+                    tile_connections.emplace_back(sink_node, source_node, delay_ps, sw_template_id);
                 }
             }
         }
