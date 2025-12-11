@@ -225,7 +225,7 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
         if (!side_cell.is_empty()) {
             std::string side_str_cap = side_cell.as_string();
             std::transform(side_str_cap.begin(), side_str_cap.end(), side_str_cap.begin(), ::toupper);
-            info.side = name_sw_template_dir.at(side_str_cap);
+            info.side = get_sw_template_dir(side_str_cap);
         }
         if (!type_cell.is_empty()) {
             info.seg_type = type_cell.as_string();
@@ -247,7 +247,7 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
         if (!side_cell.is_empty()) {
             std::string side_str_cap = side_cell.as_string();
             std::transform(side_str_cap.begin(), side_str_cap.end(), side_str_cap.begin(), ::toupper);
-            info.side = name_sw_template_dir.at(side_str_cap);
+            info.side = get_sw_template_dir(side_str_cap);
         }
         if (!type_cell.is_empty()) {
             info.seg_type = type_cell.as_string();

@@ -26,13 +26,25 @@ enum class e_sw_template_dir { LEFT = 0,
                                OPIN,
                                NUM_SIDES };
 
-const std::unordered_map<std::string, e_sw_template_dir> name_sw_template_dir = {{"LEFT", e_sw_template_dir::LEFT},
-                                                                                   {"RIGHT", e_sw_template_dir::RIGHT},
-                                                                                   {"TOP", e_sw_template_dir::TOP},
-                                                                                   {"BOTTOM", e_sw_template_dir::BOTTOM},
-                                                                                   {"IPIN", e_sw_template_dir::IPIN},
-                                                                                   {"OPIN", e_sw_template_dir::OPIN}};
-
+inline e_sw_template_dir get_sw_template_dir(const std::string& name) {
+    switch (name) {
+        case "LEFT":
+            return e_sw_template_dir::LEFT;
+        case "RIGHT":
+            return e_sw_template_dir::RIGHT;
+        case "TOP":
+            return e_sw_template_dir::TOP;
+        case "BOTTOM":
+            return e_sw_template_dir::BOTTOM;
+        case "IPIN":
+            return e_sw_template_dir::IPIN;
+        case "OPIN":
+            return e_sw_template_dir::OPIN;
+        default:
+            VTR_ASSERT_MSG(false, "Invalid switch template direction name");
+            return e_sw_template_dir::NUM_SIDES;
+    }
+}
 constexpr vtr::array<e_sw_template_dir, const char*, (size_t)e_sw_template_dir::NUM_SIDES> template_side_name = {"LEFT", "RIGHT",
                                                                                                                    "TOP", "BOTTOM",
                                                                                                                    "IPIN", "OPIN"};
