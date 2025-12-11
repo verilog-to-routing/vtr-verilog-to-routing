@@ -124,7 +124,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const bool& opin2all_sides,
                           const bool& concat_wire,
                           const bool& wire_opposite_side,
-                          const RRSwitchId& delayless_switch) {
+                          const RRSwitchId& delayless_switch,
+                          const int route_verbosity) {
 
     if (!vib_grid.is_empty()) {
         build_rr_graph_vib_edges(rr_graph,
@@ -159,7 +160,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                      perimeter_cb,
                                      opin2all_sides,
                                      concat_wire,
-                                     wire_opposite_side);
+                                     wire_opposite_side,
+                                     route_verbosity);
     }
 }
 
@@ -315,7 +317,8 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   const bool& perimeter_cb,
                                   const bool& opin2all_sides,
                                   const bool& concat_wire,
-                                  const bool& wire_opposite_side) {
+                                  const bool& wire_opposite_side,
+                                  const int route_verbosity) {
     bool build_crr_edges = !crr_opts.sb_templates.empty();
     size_t num_edges_to_create = 0;
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
@@ -326,7 +329,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
 
     // Building CRR Graph
     std::unique_ptr<crrgenerator::CRRConnectionBuilder> crr_connection_builder;
-    crrgenerator::SwitchBlockManager sb_manager;
+    crrgenerator::SwitchBlockManager sb_manager(route_verbosity);
     crrgenerator::NodeLookupManager node_lookup(rr_graph, grids.width(), grids.height());
     if (build_crr_edges) {
         sb_manager.initialize(crr_opts.sb_maps, crr_opts.sb_templates);

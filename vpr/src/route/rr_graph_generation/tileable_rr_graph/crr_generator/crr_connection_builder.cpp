@@ -57,6 +57,8 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
     tile_connections.clear();
 
     if (pattern.empty()) {
+        // If no pattern is found, it means that no switch block is defined for this location
+        // Thus, we return an empty vector of connections.
         VTR_LOG_DEBUG("No pattern found for switch block at (%zu, %zu)\n", x, y);
         return;
     }

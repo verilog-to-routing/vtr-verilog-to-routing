@@ -99,6 +99,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const bool& opin2all_sides,
                                     const bool& concat_wire,
                                     const bool& wire_opposite_side,
+                                    const int route_verbosity,
                                     int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build tileable routing resource graph");
 
@@ -268,7 +269,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          perimeter_cb,
                          opin2all_sides, concat_wire,
                          wire_opposite_side,
-                         delayless_rr_switch);
+                         delayless_rr_switch,
+                         route_verbosity);
 
     // Build direction connection lists
     // TODO: use tile direct builder

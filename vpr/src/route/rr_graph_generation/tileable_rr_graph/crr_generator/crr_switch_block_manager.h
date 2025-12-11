@@ -17,7 +17,7 @@ namespace crrgenerator {
  */
 class SwitchBlockManager {
   public:
-    SwitchBlockManager();
+    SwitchBlockManager(int log_verbosity);
 
     /**
      * @brief Initialize the manager with configuration file
@@ -100,6 +100,11 @@ class SwitchBlockManager {
      * @brief Processor for reading and processing switch block template files.
      */
     DataFrameProcessor processor_;
+
+    /**
+     * @brief Verbosity level for logging messages
+     */
+    int log_verbosity_;
 
     // Validation
     void validate_yaml_structure(const YAML::Node& root);
