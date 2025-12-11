@@ -33,11 +33,14 @@ namespace fs = std::filesystem;
 /********************** Subroutines local to this module *********************/
 
 // Helper struct to parse the sb_id keys
+// Using anonymous namespace to avoid polluting the global namespace
+namespace {
 struct SBKeyParts {
     std::string filename;
     int row;
     int col;
 };
+}
 
 // Parse the key to extract filename, row, and column
 static SBKeyParts parse_sb_key(const std::string& key) {
@@ -60,6 +63,7 @@ static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string
     std::ifstream file(filepath);
 
     if (!file.is_open()) {
+        VTR_LOG_ERROR("Failed to open file: %s\n", filepath.c_str());
         return data;
     }
 
@@ -216,8 +220,8 @@ void routing_stats(const Netlist<>& net_list,
 void write_sb_count_stats(const Netlist<>& net_list,
                           const std::string& sb_map_dir,
                           const std::string& sb_count_dir) {
-    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-    const auto& route_ctx = g_vpr_ctx.routing();
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
     std::unordered_map<std::string, int> sb_count;
 
     for (ParentNetId net_id : net_list.nets()) {
