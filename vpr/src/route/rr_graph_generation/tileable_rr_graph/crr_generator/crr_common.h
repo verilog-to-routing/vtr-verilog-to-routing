@@ -1,5 +1,10 @@
 #pragma once
 
+/**
+ * @file 
+ * @brief Common data structures used by custom RR graph generator.
+ */
+
 #include <unordered_map>
 #include <vector>
 #include <array>
@@ -12,23 +17,23 @@ namespace crrgenerator {
 constexpr int NUM_EMPTY_ROWS = 5;
 constexpr int NUM_EMPTY_COLS = 4;
 
-// e_sw_template_side types
-enum class e_sw_template_side { LEFT = 0,
-                                RIGHT,
-                                TOP,
-                                BOTTOM,
-                                IPIN,
-                                OPIN,
-                                NUM_SIDES };
+// e_sw_template_dir types
+enum class e_sw_template_dir { LEFT = 0,
+                               RIGHT,
+                               TOP,
+                               BOTTOM,
+                               IPIN,
+                               OPIN,
+                               NUM_SIDES };
 
-const std::unordered_map<std::string, e_sw_template_side> name_sw_template_side = {{"LEFT", e_sw_template_side::LEFT},
-                                                                                   {"RIGHT", e_sw_template_side::RIGHT},
-                                                                                   {"TOP", e_sw_template_side::TOP},
-                                                                                   {"BOTTOM", e_sw_template_side::BOTTOM},
-                                                                                   {"IPIN", e_sw_template_side::IPIN},
-                                                                                   {"OPIN", e_sw_template_side::OPIN}};
+const std::unordered_map<std::string, e_sw_template_dir> name_sw_template_dir = {{"LEFT", e_sw_template_dir::LEFT},
+                                                                                   {"RIGHT", e_sw_template_dir::RIGHT},
+                                                                                   {"TOP", e_sw_template_dir::TOP},
+                                                                                   {"BOTTOM", e_sw_template_dir::BOTTOM},
+                                                                                   {"IPIN", e_sw_template_dir::IPIN},
+                                                                                   {"OPIN", e_sw_template_dir::OPIN}};
 
-constexpr vtr::array<e_sw_template_side, const char*, (size_t)e_sw_template_side::NUM_SIDES> template_side_name = {"LEFT", "RIGHT",
+constexpr vtr::array<e_sw_template_dir, const char*, (size_t)e_sw_template_dir::NUM_SIDES> template_side_name = {"LEFT", "RIGHT",
                                                                                                                    "TOP", "BOTTOM",
                                                                                                                    "IPIN", "OPIN"};
 

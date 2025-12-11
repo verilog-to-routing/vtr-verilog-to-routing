@@ -78,16 +78,16 @@ class CRRConnectionBuilder {
 
     // Segment processing helpers
     struct SegmentInfo {
-        e_sw_template_side side;
+        e_sw_template_dir side;
         std::string seg_type;
         int seg_index;
         int tap;
 
         SegmentInfo()
-            : side(e_sw_template_side::NUM_SIDES)
+            : side(e_sw_template_dir::NUM_SIDES)
             , seg_index(-1)
             , tap(-1) {}
-        SegmentInfo(e_sw_template_side s, const std::string& type, int index, int t = 1)
+        SegmentInfo(e_sw_template_dir s, const std::string& type, int index, int t = 1)
             : side(s)
             , seg_type(type)
             , seg_index(index)
@@ -106,7 +106,7 @@ class CRRConnectionBuilder {
                                   int y,
                                   const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
                                   int& prev_seg_index,
-                                  e_sw_template_side& prev_side,
+                                  e_sw_template_dir& prev_side,
                                   std::string& prev_seg_type,
                                   int& prev_ptc_number,
                                   bool is_vertical) const;
@@ -123,8 +123,8 @@ class CRRConnectionBuilder {
                                        int& truncated,
                                        bool is_vertical) const;
 
-    Direction get_direction_for_side(e_sw_template_side side, bool is_vertical) const;
-    std::string get_segment_type_label(e_sw_template_side side) const;
+    Direction get_direction_for_side(e_sw_template_dir side, bool is_vertical) const;
+    std::string get_segment_type_label(e_sw_template_dir side) const;
 
     // Return the switch id of an edge between two nodes
     int get_connection_delay_ps(const std::string& cell_value,

@@ -149,16 +149,16 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
     std::map<size_t, RRNodeId> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
-    e_sw_template_side prev_side = e_sw_template_side::NUM_SIDES;
+    e_sw_template_dir prev_side = e_sw_template_dir::NUM_SIDES;
     int prev_ptc_number = 0;
 
     for (size_t row = NUM_EMPTY_ROWS; row < df.rows(); ++row) {
         SegmentInfo info = parse_segment_info(df, row, true);
         RRNodeId node_id;
 
-        if (info.side == e_sw_template_side::IPIN || info.side == e_sw_template_side::OPIN) {
+        if (info.side == e_sw_template_dir::IPIN || info.side == e_sw_template_dir::OPIN) {
             node_id = process_opin_ipin_node(info, x, y, node_lookup);
-        } else if (info.side == e_sw_template_side::LEFT || info.side == e_sw_template_side::RIGHT || info.side == e_sw_template_side::TOP || info.side == e_sw_template_side::BOTTOM) {
+        } else if (info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT || info.side == e_sw_template_dir::TOP || info.side == e_sw_template_dir::BOTTOM) {
             node_id = process_channel_node(info, x, y, node_lookup, prev_seg_index,
                                            prev_side, prev_seg_type, prev_ptc_number, true);
         }
@@ -181,19 +181,19 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(int x,
     std::map<size_t, RRNodeId> sink_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
-    e_sw_template_side prev_side = e_sw_template_side::NUM_SIDES;
+    e_sw_template_dir prev_side = e_sw_template_dir::NUM_SIDES;
     int prev_ptc_number = 0;
 
     for (size_t col = NUM_EMPTY_COLS; col < df.cols(); ++col) {
         SegmentInfo info = parse_segment_info(df, col, false);
-        if (info.side == e_sw_template_side::NUM_SIDES) {
+        if (info.side == e_sw_template_dir::NUM_SIDES) {
             continue;
         }
         RRNodeId node_id;
 
-        if (info.side == e_sw_template_side::IPIN) {
+        if (info.side == e_sw_template_dir::IPIN) {
             node_id = process_opin_ipin_node(info, x, y, node_lookup);
-        } else if (info.side == e_sw_template_side::LEFT || info.side == e_sw_template_side::RIGHT || info.side == e_sw_template_side::TOP || info.side == e_sw_template_side::BOTTOM) {
+        } else if (info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT || info.side == e_sw_template_dir::TOP || info.side == e_sw_template_dir::BOTTOM) {
             node_id = process_channel_node(info, x, y, node_lookup, prev_seg_index,
                                            prev_side, prev_seg_type, prev_ptc_number,
                                            false);
@@ -225,7 +225,7 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
         if (!side_cell.is_empty()) {
             std::string side_str_cap = side_cell.as_string();
             std::transform(side_str_cap.begin(), side_str_cap.end(), side_str_cap.begin(), ::toupper);
-            info.side = name_sw_template_side.at(side_str_cap);
+            info.side = name_sw_template_dir.at(side_str_cap);
         }
         if (!type_cell.is_empty()) {
             info.seg_type = type_cell.as_string();
@@ -247,7 +247,7 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
         if (!side_cell.is_empty()) {
             std::string side_str_cap = side_cell.as_string();
             std::transform(side_str_cap.begin(), side_str_cap.end(), side_str_cap.begin(), ::toupper);
-            info.side = name_sw_template_side.at(side_str_cap);
+            info.side = name_sw_template_dir.at(side_str_cap);
         }
         if (!type_cell.is_empty()) {
             info.seg_type = type_cell.as_string();
@@ -269,8 +269,8 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
                                                       int x,
                                                       int y,
                                                       const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
-    VTR_ASSERT(info.side == e_sw_template_side::OPIN || info.side == e_sw_template_side::IPIN);
-    e_rr_type node_type = (info.side == e_sw_template_side::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN;
+    VTR_ASSERT(info.side == e_sw_template_dir::OPIN || info.side == e_sw_template_dir::IPIN);
+    e_rr_type node_type = (info.side == e_sw_template_dir::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN;
     NodeHash hash = std::make_tuple(node_type,
                                     std::to_string(info.seg_index),
                                     x, x, y, y);
@@ -288,12 +288,12 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
                                                     int y,
                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
                                                     int& prev_seg_index,
-                                                    e_sw_template_side& prev_side,
+                                                    e_sw_template_dir& prev_side,
                                                     std::string& prev_seg_type,
                                                     int& prev_ptc_number,
                                                     bool is_vertical) const {
     // Check grid boundaries
-    if ((info.side == e_sw_template_side::RIGHT && x == fpga_grid_x_) || (info.side == e_sw_template_side::TOP && y == fpga_grid_y_)) {
+    if ((info.side == e_sw_template_dir::RIGHT && x == fpga_grid_x_) || (info.side == e_sw_template_dir::TOP && y == fpga_grid_y_)) {
         return RRNodeId::INVALID();
     }
 
@@ -362,25 +362,25 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
     // Calculate initial coordinates based on side
     if (is_vertical) {
         switch (info.side) {
-            case e_sw_template_side::LEFT:
+            case e_sw_template_dir::LEFT:
                 x_high = x + (seg_length - tap);
                 x_low = x - (tap - 1);
                 y_high = y;
                 y_low = y;
                 break;
-            case e_sw_template_side::RIGHT:
+            case e_sw_template_dir::RIGHT:
                 x_high = x + tap;
                 x_low = x + tap + 1 - seg_length;
                 y_high = y;
                 y_low = y;
                 break;
-            case e_sw_template_side::TOP:
+            case e_sw_template_dir::TOP:
                 x_high = x;
                 x_low = x;
                 y_high = y + tap;
                 y_low = y + 1 - seg_length + tap;
                 break;
-            case e_sw_template_side::BOTTOM:
+            case e_sw_template_dir::BOTTOM:
                 x_high = x;
                 x_low = x;
                 y_high = y + seg_length - tap;
@@ -393,25 +393,25 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
         }
     } else {
         switch (info.side) {
-            case e_sw_template_side::LEFT:
+            case e_sw_template_dir::LEFT:
                 x_high = x + tap - 1;
                 x_low = x - seg_length + tap;
                 y_high = y;
                 y_low = y;
                 break;
-            case e_sw_template_side::RIGHT:
+            case e_sw_template_dir::RIGHT:
                 x_high = x + seg_length;
                 x_low = x + 1;
                 y_high = y;
                 y_low = y;
                 break;
-            case e_sw_template_side::TOP:
+            case e_sw_template_dir::TOP:
                 x_high = x;
                 x_low = x;
                 y_high = y + seg_length;
                 y_low = y + 1;
                 break;
-            case e_sw_template_side::BOTTOM:
+            case e_sw_template_dir::BOTTOM:
                 x_high = x;
                 x_low = x;
                 y_high = y;
@@ -438,19 +438,19 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
     physical_length = (x_high - x_low) + (y_high - y_low) + 1;
 }
 
-Direction CRRConnectionBuilder::get_direction_for_side(e_sw_template_side side,
+Direction CRRConnectionBuilder::get_direction_for_side(e_sw_template_dir side,
                                                        bool is_vertical) const {
     if (is_vertical) {
-        return (side == e_sw_template_side::RIGHT || side == e_sw_template_side::TOP) ? Direction::DEC
+        return (side == e_sw_template_dir::RIGHT || side == e_sw_template_dir::TOP) ? Direction::DEC
                                                                                       : Direction::INC;
     } else {
-        return (side == e_sw_template_side::RIGHT || side == e_sw_template_side::TOP) ? Direction::INC
+        return (side == e_sw_template_dir::RIGHT || side == e_sw_template_dir::TOP) ? Direction::INC
                                                                                       : Direction::DEC;
     }
 }
 
-std::string CRRConnectionBuilder::get_segment_type_label(e_sw_template_side side) const {
-    return (side == e_sw_template_side::LEFT || side == e_sw_template_side::RIGHT) ? "CHANX" : "CHANY";
+std::string CRRConnectionBuilder::get_segment_type_label(e_sw_template_dir side) const {
+    return (side == e_sw_template_dir::LEFT || side == e_sw_template_dir::RIGHT) ? "CHANX" : "CHANY";
 }
 
 std::string CRRConnectionBuilder::get_ptc_sequence(int seg_index,
