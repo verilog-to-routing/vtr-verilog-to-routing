@@ -8,18 +8,16 @@
 #include "rr_graph_fwd.h"
 
 struct t_rr_edge_info {
-    t_rr_edge_info(RRNodeId from, RRNodeId to, short type, bool is_remapped, std::optional<std::string> sw_template_id_=std::nullopt) noexcept
+    t_rr_edge_info(RRNodeId from, RRNodeId to, short type, bool is_remapped) noexcept
         : from_node(from)
         , to_node(to)
         , switch_type(type)
-        , remapped(is_remapped)
-        , sw_template_id(std::move(sw_template_id_)) {}
+        , remapped(is_remapped) {}
 
     RRNodeId from_node = RRNodeId::INVALID();
     RRNodeId to_node = RRNodeId::INVALID();
     short switch_type = LIBRRGRAPH_UNDEFINED_VAL;
     bool remapped = false;
-    std::optional<std::string> sw_template_id;
 
     friend bool operator<(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
         VTR_ASSERT(lhs.remapped == rhs.remapped);

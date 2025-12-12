@@ -515,10 +515,6 @@ class RRGraphView {
         return node_storage_.edge_source_node(id, iedge);
     }
 
-    inline const std::optional<std::string>& edge_sw_template_id(RREdgeId edge) const {
-        return node_storage_.edge_sw_template_id(edge);
-    }
-
     /** @brief Check if the edge is a configurable edge 
      * @note A configurable edge represents a programmable switch between routing resources, which could be 
      *  - a multiplexer

@@ -72,7 +72,6 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.create_edge_in_cache(connection.src_node(),
                                               connection.sink_node(),
                                               rr_switch_id,
-                                              false,
-                                              std::make_optional(connection.sw_template_id()));
+                                              false);
     }
 }
