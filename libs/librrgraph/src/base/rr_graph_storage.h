@@ -485,10 +485,6 @@ class t_rr_graph_storage {
         return edge_source_node(edge_id(id, iedge));
     }
 
-    const std::optional<std::string>& edge_sw_template_id(RREdgeId edge) const {
-        return edge_sw_template_id_[edge];
-    }
-
     /** 
      * @brief Get the switch used for the specified edge. 
      */
@@ -631,7 +627,6 @@ class t_rr_graph_storage {
         edge_dest_node_.clear();
         edge_switch_.clear();
         edge_remapped_.clear();
-        edge_sw_template_id_.clear();
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
@@ -668,7 +663,6 @@ class t_rr_graph_storage {
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
         edge_remapped_.shrink_to_fit();
-        edge_sw_template_id_.shrink_to_fit();
     }
 
     /** @brief Append 1 more RR node to the RR graph.*/
@@ -836,8 +830,7 @@ class t_rr_graph_storage {
     void emplace_back_edge(RRNodeId src,
                            RRNodeId dest,
                            short edge_switch,
-                           bool remapped,
-                           std::optional<std::string> sw_template_id);
+                           bool remapped);
 
     /** @brief Adds a batch of edges.*/
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
@@ -937,7 +930,6 @@ class t_rr_graph_storage {
         array_rearrange(edge_src_node_, RRNodeId::INVALID());
         array_rearrange(edge_dest_node_, RRNodeId::INVALID());
         array_rearrange(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
-        array_rearrange(edge_sw_template_id_, std::nullopt);
         array_rearrange(edge_remapped_, false);
     }
 
@@ -1106,19 +1098,6 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, bool> edge_remapped_;
 
     /** @brief
-     * This vector stores the template ID corresponding to each edge.
-     * It is primarily used for the tileable RR Graph. In a tileable RR Graph,
-     * we have a limited set of unique switch block patterns that are
-     * instantiated across the FPGA array. Each edge in a pattern has an ID.
-     * This data structure stores the ID of the pattern edge associated with
-     * each RR edge (i.e., the instantiated edge).
-     *
-     * This information can be used for various analyses, such as identifying
-     * which edges within each pattern are used most or least frequently.
-    */
-    vtr::vector<RREdgeId, std::optional<std::string>> edge_sw_template_id_;
-
-    /** @brief
      * The following data structures are only used for tileable routing resource graph.
      * The tileable flag is set to true by tileable routing resource graph builder.
      * Bend start and end are used to store the bend information for each node.
@@ -1182,7 +1161,6 @@ class t_rr_graph_view {
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
         const vtr::array_view_id<RREdgeId, const short> edge_switch,
-        const vtr::array_view_id<RREdgeId, const std::optional<std::string>> edge_sw_template_id,
         const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx,
         const vtr::array_view_id<RRNodeId, const int16_t> node_bend_start,
         const vtr::array_view_id<RRNodeId, const int16_t> node_bend_end)
@@ -1195,7 +1173,6 @@ class t_rr_graph_view {
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
         , edge_switch_(edge_switch)
-        , edge_sw_template_id_(edge_sw_template_id)
         , virtual_clock_network_root_idx_(virtual_clock_network_root_idx)
         , node_bend_start_(node_bend_start)
         , node_bend_end_(node_bend_end) {}
@@ -1384,10 +1361,6 @@ class t_rr_graph_view {
         return edge_switch_[edge];
     }
 
-    std::optional<std::string> edge_sw_template_id(RREdgeId edge) const {
-        return edge_sw_template_id_[edge];
-    }
-
   private:
     RREdgeId first_edge(RRNodeId id) const {
         return node_first_edge_[id];
@@ -1406,7 +1379,6 @@ class t_rr_graph_view {
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
-    vtr::array_view_id<RREdgeId, const std::optional<std::string>> edge_sw_template_id_;
     const std::unordered_map<std::string, RRNodeId>& virtual_clock_network_root_idx_;
 
     vtr::array_view_id<RRNodeId, const int16_t> node_bend_start_;

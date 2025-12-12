@@ -293,8 +293,7 @@ class RRGraphBuilder {
     void create_edge_in_cache(RRNodeId src,
                               RRNodeId dest,
                               RRSwitchId edge_switch,
-                              bool remapped,
-                              std::optional<std::string> sw_template_id_=std::nullopt);
+                              bool remapped);
 
     /** @brief Add a new edge to the cache of edges to be built 
      *  @note This will not add an edge to storage! You need to call build_edges() after all the edges are cached! */
@@ -340,9 +339,8 @@ class RRGraphBuilder {
     inline void emplace_back_edge(RRNodeId src,
                                   RRNodeId dest,
                                   short edge_switch,
-                                  bool remapped,
-                                  std::optional<std::string> sw_template_id=std::nullopt) {
-        node_storage_.emplace_back_edge(src, dest, edge_switch, remapped, sw_template_id);
+                                  bool remapped) {
+        node_storage_.emplace_back_edge(src, dest, edge_switch, remapped);
     }
     /** @brief Append 1 more RR node to the RR graph. */
     inline void emplace_back() {
