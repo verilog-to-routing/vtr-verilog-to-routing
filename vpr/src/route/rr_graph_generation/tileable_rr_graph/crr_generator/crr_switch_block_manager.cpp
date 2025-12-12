@@ -16,7 +16,8 @@ static std::string get_switch_block_name(size_t x, size_t y) {
     return "SB_" + std::to_string(x) + "__" + std::to_string(y) + "_";
 }
 
-SwitchBlockManager::SwitchBlockManager(int log_verbosity) : log_verbosity_(log_verbosity) {}
+SwitchBlockManager::SwitchBlockManager(int log_verbosity)
+    : log_verbosity_(log_verbosity) {}
 
 void SwitchBlockManager::initialize(const std::string& sb_maps_file,
                                     const std::string& sb_templates_dir) {

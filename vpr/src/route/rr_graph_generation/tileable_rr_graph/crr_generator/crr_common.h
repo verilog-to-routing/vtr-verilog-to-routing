@@ -46,8 +46,8 @@ inline e_sw_template_dir get_sw_template_dir(const std::string& name) {
     }
 }
 constexpr vtr::array<e_sw_template_dir, const char*, (size_t)e_sw_template_dir::NUM_SIDES> template_side_name = {"LEFT", "RIGHT",
-                                                                                                                   "TOP", "BOTTOM",
-                                                                                                                   "IPIN", "OPIN"};
+                                                                                                                 "TOP", "BOTTOM",
+                                                                                                                 "IPIN", "OPIN"};
 
 /**
  * @brief Connection class

@@ -109,9 +109,9 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
             // a sink of the connection.
             if (source_node_type == e_rr_type::IPIN) {
                 int delay_ps = get_connection_delay_ps(cell.as_string(),
-                                                        rr_node_typename[source_node_type],
-                                                        sink_node,
-                                                        source_node);
+                                                       rr_node_typename[source_node_type],
+                                                       sink_node,
+                                                       source_node);
 
                 tile_connections.emplace_back(source_node, sink_node, delay_ps, sw_template_id);
             } else {
@@ -120,10 +120,10 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
                     segment_length = rr_graph_.node_length(sink_node);
                 }
                 int delay_ps = get_connection_delay_ps(cell.as_string(),
-                                                        rr_node_typename[sink_node_type],
-                                                        source_node,
-                                                        sink_node,
-                                                        segment_length);
+                                                       rr_node_typename[sink_node_type],
+                                                       source_node,
+                                                       sink_node,
+                                                       segment_length);
 
                 tile_connections.emplace_back(sink_node, source_node, delay_ps, sw_template_id);
             }
@@ -455,10 +455,10 @@ Direction CRRConnectionBuilder::get_direction_for_side(e_sw_template_dir side,
                                                        bool is_vertical) const {
     if (is_vertical) {
         return (side == e_sw_template_dir::RIGHT || side == e_sw_template_dir::TOP) ? Direction::DEC
-                                                                                      : Direction::INC;
+                                                                                    : Direction::INC;
     } else {
         return (side == e_sw_template_dir::RIGHT || side == e_sw_template_dir::TOP) ? Direction::INC
-                                                                                      : Direction::DEC;
+                                                                                    : Direction::DEC;
     }
 }
 

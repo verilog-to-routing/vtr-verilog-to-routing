@@ -40,7 +40,7 @@ struct SBKeyParts {
     int row;
     int col;
 };
-}
+} // namespace
 
 // Parse the key to extract filename, row, and column
 static SBKeyParts parse_sb_key(const std::string& key) {
