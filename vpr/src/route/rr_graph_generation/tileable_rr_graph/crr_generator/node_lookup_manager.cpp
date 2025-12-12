@@ -16,8 +16,8 @@ void NodeLookupManager::initialize() {
     VTR_LOG("Initializing NodeLookupManager for %d x %d grid with %zu nodes\n",
             fpga_grid_x_, fpga_grid_y_, static_cast<size_t>(rr_graph_.num_nodes()));
 
-    // Clear existing data
-    clear();
+    // Make sure lookup is not initialized
+    VTR_ASSERT(column_lookup_.empty() && row_lookup_.empty());
 
     // Initialize lookup structures
     column_lookup_.resize(fpga_grid_x_ + 1);
