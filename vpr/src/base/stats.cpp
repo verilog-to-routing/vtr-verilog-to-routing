@@ -244,8 +244,9 @@ void write_sb_count_stats(const Netlist<>& net_list,
                 RRNodeId sink_node = rt_node.inode;
                 std::vector<RREdgeId> edges = rr_graph.find_edges(src_node, sink_node);
                 VTR_ASSERT(edges.size() == 1);
-                const std::optional<std::string>& sb_id = rr_graph.edge_sw_template_id(edges[0]);
-                if (!sb_id) {
+                RRSwitchId rr_switch_id = rr_graph.edge_switch(edges[0]);
+                const std::string& sw_template_id = rr_graph.rr_switch_inf(rr_switch_id).template_id;
+                if (sw_template_id.empty()) {
                     continue;
                 }
                 if (sb_count.find(*sb_id) == sb_count.end()) {
