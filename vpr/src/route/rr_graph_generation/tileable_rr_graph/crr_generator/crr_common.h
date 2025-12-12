@@ -27,22 +27,22 @@ enum class e_sw_template_dir { LEFT = 0,
                                NUM_SIDES };
 
 inline e_sw_template_dir get_sw_template_dir(const std::string& name) {
-    switch (name) {
-        case "LEFT":
-            return e_sw_template_dir::LEFT;
-        case "RIGHT":
-            return e_sw_template_dir::RIGHT;
-        case "TOP":
-            return e_sw_template_dir::TOP;
-        case "BOTTOM":
-            return e_sw_template_dir::BOTTOM;
-        case "IPIN":
-            return e_sw_template_dir::IPIN;
-        case "OPIN":
-            return e_sw_template_dir::OPIN;
-        default:
-            VTR_ASSERT_MSG(false, "Invalid switch template direction name");
-            return e_sw_template_dir::NUM_SIDES;
+    if (name == "LEFT") {
+        return e_sw_template_dir::LEFT;
+    } else if (name == "RIGHT") {
+        return e_sw_template_dir::RIGHT;
+    } else if (name == "TOP") {
+        return e_sw_template_dir::TOP;
+    } else if (name == "BOTTOM") {
+        return e_sw_template_dir::BOTTOM;
+    } else if (name == "IPIN") {
+        return e_sw_template_dir::IPIN;
+    } else if (name == "OPIN") {
+        return e_sw_template_dir::OPIN;
+    } else {
+        std::string error_message = "Invalid switch template direction name: " + name;
+        VTR_ASSERT_MSG(false, error_message.c_str());
+        return e_sw_template_dir::NUM_SIDES;
     }
 }
 constexpr vtr::array<e_sw_template_dir, const char*, (size_t)e_sw_template_dir::NUM_SIDES> template_side_name = {"LEFT", "RIGHT",

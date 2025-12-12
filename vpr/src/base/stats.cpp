@@ -249,10 +249,10 @@ void write_sb_count_stats(const Netlist<>& net_list,
                 if (sw_template_id.empty()) {
                     continue;
                 }
-                if (sb_count.find(*sb_id) == sb_count.end()) {
-                    sb_count[*sb_id] = 0;
+                if (sb_count.find(sw_template_id) == sb_count.end()) {
+                    sb_count[sw_template_id] = 0;
                 }
-                sb_count[*sb_id]++;
+                sb_count[sw_template_id]++;
             }
         }
     }
