@@ -84,7 +84,7 @@ library (VTRPrimitives) {
      *
      *  INPUTS:
      *      datain
-     *  OUPUTS:
+     *  OUTPUTS:
      *      dataout
      */
     cell (fpga_interconnect) {
@@ -125,7 +125,7 @@ library (VTRPrimitives) {
      *          The LUT mask that defines the output of the LUT as a function
      *          of the input. mask[0] is the output if all the inputs are 0, and
      *          mask[2^k - 1] is the output if all the inputs are 1.
-     *  OUPUTS:
+     *  OUTPUTS:
      *      out
      */
     cell (LUT_4) {
@@ -171,7 +171,7 @@ library (VTRPrimitives) {
      *          The LUT mask that defines the output of the LUT as a function
      *          of the input. mask[0] is the output if all the inputs are 0, and
      *          mask[2^k - 1] is the output if all the inputs are 1.
-     *  OUPUTS:
+     *  OUTPUTS:
      *      out
      */
     cell (LUT_5) {
@@ -217,7 +217,7 @@ library (VTRPrimitives) {
      *          The LUT mask that defines the output of the LUT as a function
      *          of the input. mask[0] is the output if all the inputs are 0, and
      *          mask[2^k - 1] is the output if all the inputs are 1.
-     *  OUPUTS:
+     *  OUTPUTS:
      *      out
      */
     cell (LUT_6) {
@@ -262,7 +262,7 @@ library (VTRPrimitives) {
      *          edge.
      *      clock:
      *          The clock signal for the DFF.
-     *  OUPUTS:
+     *  OUTPUTS:
      *      Q:
      *          The current value stored in the latch.
      *      QN:

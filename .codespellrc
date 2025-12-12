@@ -7,6 +7,10 @@ skip = ./build,
        *.log,
        *.vqm,
        *.blif,
+       *.xml,
+       *.pm,
+       # Special case: Pearl scripts are not being maintained.
+       *.pl,
        # External projects that do not belong to us.
        ./libs/EXTERNAL,
        ./parmys,
@@ -16,8 +20,11 @@ skip = ./build,
        ./ace2,
        ./blifexplorer,
        ./verilog_preprocessor,
-       # WIP spelling cleanups.
-       ./vtr_flow,
+       ./vtr_flow/scripts/perl_libs,
+       ./vtr_flow/scripts/benchtracker,
+       # Large testing directories.
+       ./vtr_flow/benchmarks,
+       ./vtr_flow/tasks,
        # Temporary as we wait for some PRs to merge.
        *_graph_uxsdcxx_capnp.h,
        ./vpr/src/route/rr_graph_generation/rr_graph.cpp,
