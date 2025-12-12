@@ -1,5 +1,11 @@
 #pragma once
 
+/**
+ * @file crr_connection_builder.h
+ * @brief Implements functions used to retrieve source and sink Node IDs
+ * which should be connected together based on switch block templates.
+ */
+
 #include "rr_graph_view.h"
 #include "physical_types.h"
 

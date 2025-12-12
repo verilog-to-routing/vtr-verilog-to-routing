@@ -4,13 +4,17 @@
 #include "physical_types.h"
 #include "crr_connection_builder.h"
 
-static t_arch_switch_inf create_crr_switch(const int delay_ps) {
-    std::string switch_name;
+static std::string get_crr_switch_name(const int delay_ps) {
     if (delay_ps == 0) {
-        switch_name = "sw_zero";
+        return "sw_zero";
     } else {
-        switch_name = "sw_" + std::to_string(delay_ps);
+        return "sw_" + std::to_string(delay_ps);
     }
+}
+
+static t_arch_switch_inf create_crr_switch(const int delay_ps) {
+    std::string switch_name = get_crr_switch_name(delay_ps);
+
     t_arch_switch_inf arch_switch_inf;
     arch_switch_inf.set_type(e_switch_type::MUX);
     arch_switch_inf.name = switch_name;
@@ -28,14 +32,9 @@ static t_arch_switch_inf create_crr_switch(const int delay_ps) {
 }
 
 static RRSwitchId find_or_create_crr_switch_id(const int delay_ps) {
-    auto& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
-    std::string switch_name;
+    std::vector<t_arch_switch_inf>& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
+    std::string switch_name = get_crr_switch_name(delay_ps);
     int found_sw_id = -1;
-    if (delay_ps == 0) {
-        switch_name = "sw_zero";
-    } else {
-        switch_name = "sw_" + std::to_string(delay_ps);
-    }
     for (int sw_id = 0; sw_id < (int)all_sw_inf.size(); sw_id++) {
         if (all_sw_inf[sw_id].name == switch_name) {
             found_sw_id = sw_id;

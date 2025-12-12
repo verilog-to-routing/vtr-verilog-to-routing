@@ -396,8 +396,10 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
                 y_low = y - tap + 1;
                 break;
             default:
-                x_high = x_low = x;
-                y_high = y_low = y;
+                x_high = x;
+                x_low = x;
+                y_high = y;
+                y_low = y;
                 break;
         }
     } else {
@@ -427,8 +429,10 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
                 y_low = y - seg_length + tap;
                 break;
             default:
-                x_high = x_low = x;
-                y_high = y_low = y;
+                x_high = x;
+                x_low = x;
+                y_high = y;
+                y_low = y;
                 break;
         }
     }
