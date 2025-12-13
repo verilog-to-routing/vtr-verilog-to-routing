@@ -8,6 +8,7 @@
 class PlaceDelayModel;
 struct t_placer_opts;
 struct t_router_opts;
+struct t_crr_opts;
 struct t_det_routing_arch;
 struct t_segment_inf;
 struct t_chan_width_dist;
@@ -20,6 +21,7 @@ class PlacementDelayModelCreator {
 
     static std::unique_ptr<PlaceDelayModel> create_delay_model(const t_placer_opts& placer_opts,
                                                                const t_router_opts& router_opts,
+                                                               const t_crr_opts& crr_opts,
                                                                const Netlist<>& net_list,
                                                                t_det_routing_arch& det_routing_arch,
                                                                const std::vector<t_segment_inf>& segment_inf,

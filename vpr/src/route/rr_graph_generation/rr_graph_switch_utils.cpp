@@ -116,6 +116,8 @@ void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
     rr_graph_builder.rr_switch()[rr_switch_idx].name = arch_sw_inf.at(arch_switch_idx).name;
     rr_graph_builder.rr_switch()[rr_switch_idx].power_buffer_type = arch_sw_inf.at(arch_switch_idx).power_buffer_type;
     rr_graph_builder.rr_switch()[rr_switch_idx].power_buffer_size = arch_sw_inf.at(arch_switch_idx).power_buffer_size;
+
+    rr_graph_builder.rr_switch()[rr_switch_idx].template_id = arch_sw_inf.at(arch_switch_idx).template_id;
 }
 
 t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_sw_inf,
@@ -145,6 +147,8 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
     rr_switch_inf.name = arch_sw_inf.name;
     rr_switch_inf.power_buffer_type = arch_sw_inf.power_buffer_type;
     rr_switch_inf.power_buffer_size = arch_sw_inf.power_buffer_size;
+
+    rr_switch_inf.template_id = arch_sw_inf.template_id;
 
     rr_switch_inf.intra_tile = arch_sw_inf.intra_tile;
 

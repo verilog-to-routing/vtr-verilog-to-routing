@@ -12,6 +12,7 @@
  *
  */
 
+#include <string>
 #include "rr_graph_storage.h"
 #include "rr_spatial_lookup.h"
 #include "metadata_storage.h"
@@ -289,7 +290,10 @@ class RRGraphBuilder {
 
     /** @brief Add a new edge to the cache of edges to be built 
      *  @note This will not add an edge to storage. You need to call build_edges() after all the edges are cached. */
-    void create_edge_in_cache(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped);
+    void create_edge_in_cache(RRNodeId src,
+                              RRNodeId dest,
+                              RRSwitchId edge_switch,
+                              bool remapped);
 
     /** @brief Add a new edge to the cache of edges to be built 
      *  @note This will not add an edge to storage! You need to call build_edges() after all the edges are cached! */
@@ -332,7 +336,10 @@ class RRGraphBuilder {
      * remap the arch switch id to rr switch id, the edge switch id of this edge shouldn't be changed. For example, when the intra-cluster graph
      * is built and the rr-graph related to global resources are read from a file, this parameter is true since the intra-cluster switches are
      * also listed in rr-graph file. So, we use that list to use the rr switch id instead of passing arch switch id for intra-cluster edges.*/
-    inline void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped) {
+    inline void emplace_back_edge(RRNodeId src,
+                                  RRNodeId dest,
+                                  short edge_switch,
+                                  bool remapped) {
         node_storage_.emplace_back_edge(src, dest, edge_switch, remapped);
     }
     /** @brief Append 1 more RR node to the RR graph. */
@@ -401,6 +408,16 @@ class RRGraphBuilder {
         return node_storage_.count_rr_switches(arch_switch_inf, arch_switch_fanins);
     }
 
+    /**
+     * @brief Unlock storage; required to modify an routing resource graph after edge is read
+     * @note This function is used by OpenFPGA and currently doesn't have any use in VPR code.
+     */
+    inline void unlock_storage() {
+        node_storage_.edges_read_ = false;
+        node_storage_.partitioned_ = false;
+        node_storage_.clear_node_first_edge();
+    }
+
     /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
      * when adding a large number of nodes/edge/switches/segments,
@@ -419,7 +436,6 @@ class RRGraphBuilder {
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
-
 
     /** @brief This function resize rr_switch to accommodate size RR Switch. */
     inline void resize_switches(size_t size) {

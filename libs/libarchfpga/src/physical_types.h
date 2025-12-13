@@ -1799,6 +1799,12 @@ struct t_arch_switch_inf {
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
     float power_buffer_size = 0.;
 
+    // The template ID of the switch. This is metadata stored for each switch to
+    // simplify certain analyses. For example, when generating the CRR graph, the
+    // template ID is used to determine which switch in the template is used most
+    // or least frequently.
+    std::string template_id = "";
+
     bool intra_tile = false;
 
   public:

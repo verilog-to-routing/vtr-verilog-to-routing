@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <optional>
+
 #include "physical_types.h"
 #include "librrgraph_types.h"
 #include "rr_graph_fwd.h"

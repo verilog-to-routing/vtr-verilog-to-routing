@@ -63,6 +63,7 @@
  */
 
 #include "metadata_storage.h"
+#include "rr_graph_fwd.h"
 #include "rr_node.h"
 #include "physical_types.h"
 #include "rr_node_types.h"
