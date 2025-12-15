@@ -1,5 +1,13 @@
 #pragma once
 
+/**
+ * @file crr_switch_block_manager.h
+ * @brief Manages switch block configurations and switch template file processing
+ *
+ * This class handles reading YAML configuration files, processing switch template files
+ * containing switch block data, and managing switch block patterns.
+ */
+
 #include <unordered_map>
 #include <vector>
 

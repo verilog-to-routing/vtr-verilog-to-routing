@@ -24,75 +24,65 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
     VTR_LOG("Initializing SwitchBlockManager with maps file: %s\n", sb_maps_file.c_str());
 
     // Load YAML configuration
-    try {
-        YAML::Node config = YAML::LoadFile(sb_maps_file);
-        validate_yaml_structure(config);
+    YAML::Node config = YAML::LoadFile(sb_maps_file);
+    validate_yaml_structure(config);
 
-        if (!config["SB_MAPS"]) {
-            VTR_LOG_ERROR("SB_MAPS section not found in YAML file\n");
-        }
-
-        YAML::Node sb_maps = config["SB_MAPS"];
-        VTR_LOG_DEBUG("Found SB_MAPS section with %zu entries\n", sb_maps.size());
-
-        // Process each switch block mapping
-        std::unordered_set<std::string> unique_files;
-        for (const auto& item : sb_maps) {
-            std::string pattern = item.first.as<std::string>();
-
-            std::string sw_template_file = item.second.as<std::string>();
-            if (item.second.IsNull()) {
-                sw_template_file = "";
-            }
-
-            std::string full_path = std::filesystem::path(sb_templates_dir) / sw_template_file;
-            if (sw_template_file.empty()) {
-                full_path = "";
-            }
-
-            // Handle escaped asterisks (replace \* with *)
-            std::regex escaped_asterisk(R"(\\\*)");
-            pattern = std::regex_replace(pattern, escaped_asterisk, "*");
-
-            ordered_switch_block_patterns_.push_back(pattern);
-            switch_block_to_file_[pattern] = full_path;
-            if (!full_path.empty()) {
-                unique_files.insert(full_path);
-            }
-        }
-
-        for (const auto& full_path : unique_files) {
-            if (std::filesystem::exists(full_path)) {
-                try {
-                    VTR_LOG_DEBUG("Attempting to read switch template file: %s\n", full_path.c_str());
-                    DataFrame df = processor_.read_csv(full_path);
-                    df = processor_.process_dataframe(std::move(df), NUM_EMPTY_ROWS,
-                                                      NUM_EMPTY_COLS);
-                    file_cache_[full_path] = std::move(df);
-                    VTR_LOG_DEBUG("Processed %zu connections in %s file\n",
-                                  file_cache_[full_path].connections,
-                                  std::filesystem::path(full_path).filename().string().c_str());
-                } catch (const std::exception& e) {
-                    VTR_LOG_ERROR("Failed to read required switch template file '%s': %s\n", full_path.c_str(), e.what());
-                }
-            } else {
-                VTR_LOG_ERROR("Required switch template file not found: %s\n", full_path.c_str());
-            }
-        }
-
-        // Map patterns to loaded DataFrames
-        for (const auto& [pattern, full_path] : switch_block_to_file_) {
-            if (file_cache_.find(full_path) != file_cache_.end()) {
-                dataframes_[pattern] = &file_cache_[full_path];
-            }
-        }
-
-        print_statistics();
-    } catch (const YAML::Exception& e) {
-        VTR_LOG_ERROR("Failed to parse YAML file %s: %s\n", sb_maps_file.c_str(), e.what());
-    } catch (const std::exception& e) {
-        VTR_LOG_ERROR("Failed to initialize SwitchBlockManager: %s\n", e.what());
+    if (!config["SB_MAPS"]) {
+        VTR_LOG_ERROR("SB_MAPS section not found in YAML file\n");
     }
+
+    YAML::Node sb_maps = config["SB_MAPS"];
+    VTR_LOG_DEBUG("Found SB_MAPS section with %zu entries\n", sb_maps.size());
+
+    // Process each switch block mapping
+    std::unordered_set<std::string> unique_files;
+    for (const auto& item : sb_maps) {
+        std::string pattern = item.first.as<std::string>();
+
+        std::string sw_template_file = item.second.as<std::string>();
+        if (item.second.IsNull()) {
+            sw_template_file = "";
+        }
+
+        std::string full_path = std::filesystem::path(sb_templates_dir) / sw_template_file;
+        if (sw_template_file.empty()) {
+            full_path = "";
+        }
+
+        // Handle escaped asterisks (replace \* with *)
+        std::regex escaped_asterisk(R"(\\\*)");
+        pattern = std::regex_replace(pattern, escaped_asterisk, "*");
+
+        ordered_switch_block_patterns_.push_back(pattern);
+        switch_block_to_file_[pattern] = full_path;
+        if (!full_path.empty()) {
+            unique_files.insert(full_path);
+        }
+    }
+
+    for (const auto& full_path : unique_files) {
+        if (std::filesystem::exists(full_path)) {
+            VTR_LOGV(log_verbosity_ > 1, "Attempting to read switch template file: %s\n", full_path.c_str());
+            DataFrame df = processor_.read_csv(full_path);
+            df = processor_.process_dataframe(std::move(df), NUM_EMPTY_ROWS,
+                                                NUM_EMPTY_COLS);
+            file_cache_[full_path] = std::move(df);
+            VTR_LOGV(log_verbosity_ > 1, "Processed %zu connections in %s file\n",
+                     file_cache_[full_path].connections,
+                     std::filesystem::path(full_path).filename().string().c_str());
+        } else {
+            VTR_LOG_ERROR("Required switch template file not found: %s\n", full_path.c_str());
+        }
+    }
+
+    // Map patterns to loaded DataFrames
+    for (const auto& [pattern, full_path] : switch_block_to_file_) {
+        if (file_cache_.find(full_path) != file_cache_.end()) {
+            dataframes_[pattern] = &file_cache_[full_path];
+        }
+    }
+
+    print_statistics();
 }
 
 std::string SwitchBlockManager::get_pattern_file_name(const std::string& pattern) const {
