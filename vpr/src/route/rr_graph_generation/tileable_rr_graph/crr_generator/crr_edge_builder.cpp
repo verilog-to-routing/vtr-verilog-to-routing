@@ -32,11 +32,16 @@ static t_arch_switch_inf create_crr_switch(const int delay_ps, const std::string
     return arch_switch_inf;
 }
 
-static RRSwitchId find_or_create_crr_switch_id(const int delay_ps, const std::string& sw_template_id) {
+static RRSwitchId find_or_create_crr_switch_id(const int delay_ps,
+                                               const std::string& sw_template_id) {
+
     std::map<int, t_arch_switch_inf>& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
+
     int found_sw_id = -1;
-    for (int sw_id = 0; sw_id < (int)all_sw_inf.size(); sw_id++) {
-        if (all_sw_inf[sw_id].template_id == sw_template_id) {
+
+    // Iterate over map entries (O(n), no accidental inserts)
+    for (const auto& [sw_id, sw_inf] : all_sw_inf) {
+        if (sw_inf.template_id == sw_template_id) {
             found_sw_id = sw_id;
             break;
         }
@@ -44,10 +49,13 @@ static RRSwitchId find_or_create_crr_switch_id(const int delay_ps, const std::st
 
     if (found_sw_id == -1) {
         t_arch_switch_inf new_arch_switch_inf = create_crr_switch(delay_ps, sw_template_id);
-        found_sw_id = (int)all_sw_inf.size();
-        all_sw_inf.insert(std::make_pair(found_sw_id, new_arch_switch_inf));
+
+        found_sw_id = static_cast<int>(all_sw_inf.size());
+        all_sw_inf.emplace(found_sw_id, std::move(new_arch_switch_inf));
+
         VTR_LOG("Created new CRR switch: delay=%d ps, template id=%s\n", delay_ps, sw_template_id.c_str());
     }
+
     return RRSwitchId(found_sw_id);
 }
 

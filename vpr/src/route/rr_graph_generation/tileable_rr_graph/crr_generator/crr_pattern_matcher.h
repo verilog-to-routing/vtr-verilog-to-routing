@@ -1,3 +1,12 @@
+#pragma once
+
+/**
+ * @file crr_pattern_matcher.h
+ * @brief Helper class used by the CRR Generator to determine which switch block pattern
+ * should be applied to each tile. It does so by finding the first matching pattern
+ * for each location.
+ */
+
 #include <string>
 #include <string_view>
 #include <regex>
