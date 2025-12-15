@@ -191,11 +191,10 @@ class DataFrameProcessor {
      * @param df DataFrame to process
      * @param merge_rows_count Number of rows to merge
      * @param merge_cols_count Number of columns to merge
-     * @return Processed DataFrame
      */
-    DataFrame process_dataframe(DataFrame df,
-                                int merge_rows_count = NUM_EMPTY_ROWS,
-                                int merge_cols_count = NUM_EMPTY_COLS);
+    void process_dataframe(DataFrame& df,
+                           int merge_rows_count = NUM_EMPTY_ROWS,
+                           int merge_cols_count = NUM_EMPTY_COLS);
 
     /**
      * @brief Update switch delay min/max based on DataFrame content

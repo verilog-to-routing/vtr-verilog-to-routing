@@ -64,8 +64,9 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
         if (std::filesystem::exists(full_path)) {
             VTR_LOGV(log_verbosity_ > 1, "Attempting to read switch template file: %s\n", full_path.c_str());
             DataFrame df = processor_.read_csv(full_path);
-            df = processor_.process_dataframe(std::move(df), NUM_EMPTY_ROWS,
-                                                NUM_EMPTY_COLS);
+            processor_.process_dataframe(df,
+                        NUM_EMPTY_ROWS,
+                        NUM_EMPTY_COLS);
             file_cache_[full_path] = std::move(df);
             VTR_LOGV(log_verbosity_ > 1, "Processed %zu connections in %s file\n",
                      file_cache_[full_path].connections,
@@ -118,7 +119,7 @@ std::vector<std::string> SwitchBlockManager::get_all_patterns() const {
 
 std::string SwitchBlockManager::find_matching_pattern(size_t x, size_t y) const {
     std::string sw_name = get_switch_block_name(x, y);
-    for (const auto& pattern : ordered_switch_block_patterns_) {
+    for (const std::string& pattern : ordered_switch_block_patterns_) {
         if (CRRPatternMatcher::matches_pattern(sw_name, pattern)) {
             return pattern;
         }

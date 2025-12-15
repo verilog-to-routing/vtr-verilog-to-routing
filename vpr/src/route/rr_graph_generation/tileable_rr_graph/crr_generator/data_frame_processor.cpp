@@ -235,9 +235,9 @@ std::vector<std::string> DataFrameProcessor::parse_csv_line(const std::string& l
     return tokens;
 }
 
-DataFrame DataFrameProcessor::process_dataframe(DataFrame df,
-                                                int merge_rows_count,
-                                                int merge_cols_count) {
+void DataFrameProcessor::process_dataframe(DataFrame& df,
+                                           int merge_rows_count,
+                                           int merge_cols_count) {
     VTR_LOG_DEBUG("Processing dataframe with merge_rows=%d, merge_cols=%d\n",
                   merge_rows_count, merge_cols_count);
 
