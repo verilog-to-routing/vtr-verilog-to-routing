@@ -132,7 +132,7 @@ source wire entering the switch block from the *left* side. The starting PTC
 
    (2 - 1) * 4 * 2 = 8
 
-Thus, the PTC sequence for this L4 wire is (it increases by 2 since the odd PTC numbers are used for wires comming from the other side):
+Thus, the PTC sequence for this L4 wire is (it increases by 2 since the odd PTC numbers are used for wires coming from the other side):
 
 .. code-block:: none
 
