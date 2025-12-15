@@ -256,8 +256,6 @@ void DataFrameProcessor::process_dataframe(DataFrame& df,
                                                  df.cols());
 
     VTR_LOG_DEBUG("Processed dataframe with %zu connections\n", df.connections);
-
-    return df;
 }
 
 void DataFrameProcessor::update_switch_delays(const DataFrame& df,

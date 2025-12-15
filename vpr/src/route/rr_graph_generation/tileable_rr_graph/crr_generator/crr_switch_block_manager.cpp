@@ -65,8 +65,8 @@ void SwitchBlockManager::initialize(const std::string& sb_maps_file,
             VTR_LOGV(log_verbosity_ > 1, "Attempting to read switch template file: %s\n", full_path.c_str());
             DataFrame df = processor_.read_csv(full_path);
             processor_.process_dataframe(df,
-                        NUM_EMPTY_ROWS,
-                        NUM_EMPTY_COLS);
+                                         NUM_EMPTY_ROWS,
+                                         NUM_EMPTY_COLS);
             file_cache_[full_path] = std::move(df);
             VTR_LOGV(log_verbosity_ > 1, "Processed %zu connections in %s file\n",
                      file_cache_[full_path].connections,

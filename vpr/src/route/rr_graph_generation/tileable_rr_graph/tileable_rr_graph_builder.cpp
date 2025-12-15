@@ -361,7 +361,7 @@ static void remove_dangling_chan_nodes(const DeviceGrid& grid,
                                  NUM_2D_SIDES);
     }
 
-    // Update other data structures realated to lookup after removing dangling chan nodes
+    // Update other data structures related to lookup after removing dangling chan nodes
     for (size_t node_index = 0; node_index < rr_nodes.size(); ++node_index) {
         RRNodeId node = RRNodeId(node_index);
         // Set track numbers as a node may have multiple ptc

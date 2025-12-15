@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <variant>
 
 #include "crr_common.h"
 namespace crrgenerator {
@@ -17,14 +18,16 @@ namespace crrgenerator {
 /**
  * @brief Represents a cell in the dataframe
  */
- struct Cell {
+struct Cell {
     using Value = std::variant<std::monostate, std::string, int64_t>;
 
     Value value;
 
     Cell() = default;
-    explicit Cell(const std::string& v) : value(v) {}
-    explicit Cell(int64_t v) : value(v) {}
+    explicit Cell(const std::string& v)
+        : value(v) {}
+    explicit Cell(int64_t v)
+        : value(v) {}
 
     bool is_empty() const {
         return std::holds_alternative<std::monostate>(value);
