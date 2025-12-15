@@ -1,5 +1,13 @@
 #pragma once
 
+/**
+ * @file data_frame_processor.h
+ * @brief Simple dataframe implementation for processing switch template data
+ *
+ * This class provides functions for processing switch template files
+ * containing switch block configuration data.
+ */
+
 #include <string>
 #include <vector>
 
@@ -9,38 +17,49 @@ namespace crrgenerator {
 /**
  * @brief Represents a cell in the dataframe
  */
-struct Cell {
-    enum class Type { EMPTY,
-                      STRING,
-                      INTEGER };
+ struct Cell {
+    using Value = std::variant<std::monostate, std::string, int64_t>;
 
-    Type type = Type::EMPTY;
-    std::string string_value;
-    int64_t int_value = 0;
+    Value value;
 
     Cell() = default;
-    explicit Cell(const std::string& value)
-        : type(Type::STRING)
-        , string_value(value) {}
-    explicit Cell(int64_t value)
-        : type(Type::INTEGER)
-        , int_value(value) {}
+    explicit Cell(const std::string& v) : value(v) {}
+    explicit Cell(int64_t v) : value(v) {}
 
-    bool is_empty() const { return type == Type::EMPTY; }
-    bool is_string() const { return type == Type::STRING; }
-    bool is_integer() const { return type == Type::INTEGER; }
-    bool is_number() const { return is_integer(); }
+    bool is_empty() const {
+        return std::holds_alternative<std::monostate>(value);
+    }
+
+    bool is_string() const {
+        return std::holds_alternative<std::string>(value);
+    }
+
+    bool is_integer() const {
+        return std::holds_alternative<int64_t>(value);
+    }
+
+    bool is_number() const {
+        return is_integer();
+    }
 
     int64_t as_int() const {
-        if (is_integer()) return int_value;
-        if (is_string()) return std::stoll(string_value);
+        if (auto p = std::get_if<int64_t>(&value)) {
+            return *p;
+        }
+        if (auto p = std::get_if<std::string>(&value)) {
+            return std::stoll(*p);
+        }
         return 0;
     }
 
     std::string as_string() const {
-        if (is_string()) return string_value;
-        if (is_integer()) return std::to_string(int_value);
-        return "";
+        if (auto p = std::get_if<std::string>(&value)) {
+            return *p;
+        }
+        if (auto p = std::get_if<int64_t>(&value)) {
+            return std::to_string(*p);
+        }
+        return {};
     }
 };
 
