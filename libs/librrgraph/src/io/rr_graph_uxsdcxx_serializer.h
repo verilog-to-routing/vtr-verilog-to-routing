@@ -546,6 +546,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return sw->name.c_str();
     }
 
+    inline void set_switch_template_id(const char* template_id, t_rr_switch_inf*& sw) final {
+        sw->template_id = template_id;
+    }
+    inline const char* get_switch_template_id(const t_rr_switch_inf*& sw) final {
+        return sw->template_id.c_str();
+    }
+
     inline void set_switch_type(uxsd::enum_switch_type type, t_rr_switch_inf*& sw) final {
         sw->set_type(from_uxsd_switch_type(type));
     }
