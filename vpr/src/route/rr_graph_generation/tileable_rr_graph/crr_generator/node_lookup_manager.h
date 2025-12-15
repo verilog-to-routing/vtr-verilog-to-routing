@@ -1,5 +1,15 @@
 #pragma once
 
+/**
+ * @file node_lookup_manager.h
+ * @brief Manages efficient node lookup and indexing for CRR graphs
+ *
+ * This class creates spatial indexes for nodes to enable fast lookup
+ * by coordinates, type, and other attributes.
+ * @note Eventually, this class should be removed and the lookup already created for
+ * RR graph should be used.
+ */
+
 #include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
 

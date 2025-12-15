@@ -4,6 +4,7 @@
 
 #include "vtr_log.h"
 #include "vtr_assert.h"
+#include "vtr_time.h"
 
 namespace crrgenerator {
 
@@ -13,8 +14,7 @@ NodeLookupManager::NodeLookupManager(const RRGraphView& rr_graph, size_t fpga_gr
     , fpga_grid_y_(fpga_grid_y) {}
 
 void NodeLookupManager::initialize() {
-    VTR_LOG("Initializing NodeLookupManager for %d x %d grid with %zu nodes\n",
-            fpga_grid_x_, fpga_grid_y_, static_cast<size_t>(rr_graph_.num_nodes()));
+    vtr::ScopedStartFinishTimer timer("Initialize NodeLookupManager");
 
     // Make sure lookup is not initialized
     VTR_ASSERT(column_lookup_.empty() && row_lookup_.empty());
