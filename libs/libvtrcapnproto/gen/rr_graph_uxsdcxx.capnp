@@ -4,9 +4,9 @@
 #
 # Cmdline: uxsdcxx/uxsdcap.py /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
 # Input file: /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: e14523c72a5db9cc83592d3baaf45780
+# md5sum of input file: 45774433f1b54981c349fecadf578b11
 
-@0xef4b0a4204785218;
+@0xe2c2faca29085645;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -116,9 +116,10 @@ struct Sizing {
 struct Switch {
 	id @0 :Int32;
 	name @1 :Text;
-	type @2 :SwitchType;
-	timing @3 :Timing;
-	sizing @4 :Sizing;
+	templateId @2 :Text;
+	type @3 :SwitchType;
+	timing @4 :Timing;
+	sizing @5 :Sizing;
 }
 
 struct Switches {
