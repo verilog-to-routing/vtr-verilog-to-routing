@@ -329,11 +329,15 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
 
     // Building CRR Graph
     std::unique_ptr<crrgenerator::CRRConnectionBuilder> crr_connection_builder;
-    crrgenerator::SwitchBlockManager sb_manager(route_verbosity);
-    crrgenerator::NodeLookupManager node_lookup(rr_graph, grids.width(), grids.height());
+    std::unique_ptr<crrgenerator::SwitchBlockManager> sb_manager;
+    std::unique_ptr<crrgenerator::NodeLookupManager> node_lookup;
     if (build_crr_edges) {
-        sb_manager.initialize(crr_opts.sb_maps, crr_opts.sb_templates);
-        node_lookup.initialize();
+        sb_manager = std::make_unique<crrgenerator::SwitchBlockManager>(route_verbosity,
+                                                                        crr_opts.sb_maps,
+                                                                        crr_opts.sb_templates);
+        node_lookup = std::make_unique<crrgenerator::NodeLookupManager>(rr_graph,
+                                                                        grids.width(),
+                                                                        grids.height());
         crr_connection_builder = std::make_unique<crrgenerator::CRRConnectionBuilder>(rr_graph,
                                                                                       node_lookup,
                                                                                       sb_manager);

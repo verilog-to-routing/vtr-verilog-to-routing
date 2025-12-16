@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <string>
 #include <iomanip>
+#include <tuple>
 
 #include "physical_types.h"
 #include "physical_types_util.h"
@@ -269,11 +270,11 @@ void write_sb_count_stats(const Netlist<>& net_list,
     }
 
     // Group sb_count entries by filename
-    std::unordered_map<std::string, std::vector<std::pair<int, std::pair<int, int>>>> file_groups;
+    std::unordered_map<std::string, std::vector<std::tuple<int, int, int>>> file_groups;
 
     for (const auto& [sb_id, count] : sb_count) {
         SBKeyParts parts = parse_sb_key(sb_id);
-        file_groups[parts.filename].push_back({parts.row, {parts.col, count}});
+        file_groups[parts.filename].push_back({parts.row, parts.col, count});
     }
 
     // Process each file
@@ -292,8 +293,8 @@ void write_sb_count_stats(const Netlist<>& net_list,
         // Find maximum row and column needed
         int max_row = 0, max_col = 0;
         for (const auto& entry : entries) {
-            max_row = std::max(max_row, entry.first);
-            max_col = std::max(max_col, entry.second.first);
+            max_row = std::max(max_row, std::get<0>(entry));
+            max_col = std::max(max_col, std::get<1>(entry));
         }
 
         // Expand data structure if needed
@@ -309,9 +310,9 @@ void write_sb_count_stats(const Netlist<>& net_list,
 
         // Update values from sb_count
         for (const auto& entry : entries) {
-            int row = entry.first;
-            int col = entry.second.first;
-            int count = entry.second.second;
+            int row = std::get<0>(entry);
+            int col = std::get<1>(entry);
+            int count = std::get<2>(entry);
             data[row][col] = std::to_string(count);
         }
 

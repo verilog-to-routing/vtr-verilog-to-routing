@@ -23,6 +23,13 @@ void routing_stats(const Netlist<>& net_list,
                    e_directionality directionality,
                    bool is_flat);
 
+/**
+ * @brief Writes the number of times each switch in template file is used to
+ * a file with the same name as the template file in the given directory.
+ * @param net_list The netlist
+ * @param sb_map_dir The directory containing switch block template files
+ * @param sb_count_dir The directory to write the switchbox count statistics to
+ */
 void write_sb_count_stats(const Netlist<>& net_list,
                           const std::string& sb_map_dir,
                           const std::string& sb_count_dir);
