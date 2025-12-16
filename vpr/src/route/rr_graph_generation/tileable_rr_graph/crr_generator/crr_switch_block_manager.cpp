@@ -16,11 +16,10 @@ static std::string get_switch_block_name(size_t x, size_t y) {
     return "SB_" + std::to_string(x) + "__" + std::to_string(y) + "_";
 }
 
-SwitchBlockManager::SwitchBlockManager(int log_verbosity)
-    : log_verbosity_(log_verbosity) {}
-
-void SwitchBlockManager::initialize(const std::string& sb_maps_file,
-                                    const std::string& sb_templates_dir) {
+SwitchBlockManager::SwitchBlockManager(int log_verbosity,
+                                       const std::string& sb_maps_file,
+                                       const std::string& sb_templates_dir)
+    : log_verbosity_(log_verbosity) {
     VTR_LOG("Initializing SwitchBlockManager with maps file: %s\n", sb_maps_file.c_str());
 
     // Load YAML configuration

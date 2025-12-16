@@ -25,15 +25,15 @@ namespace crrgenerator {
  */
 class SwitchBlockManager {
   public:
-    SwitchBlockManager(int log_verbosity);
-
     /**
-     * @brief Initialize the manager with configuration file
+     * @brief Constructor
+     * @param log_verbosity Verbosity level for logging messages
      * @param sb_maps_file Path to the YAML configuration file
      * @param sb_templates_dir Directory containing switch template files
      */
-    void initialize(const std::string& sb_maps_file,
-                    const std::string& sb_templates_dir);
+    SwitchBlockManager(int log_verbosity,
+                       const std::string& sb_maps_file,
+                       const std::string& sb_templates_dir);
 
     /**
      * @brief Get the switch template file name for a given pattern
