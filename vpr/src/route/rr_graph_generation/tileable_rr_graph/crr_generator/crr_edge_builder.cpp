@@ -4,6 +4,11 @@
 #include "physical_types.h"
 #include "crr_connection_builder.h"
 
+/**
+ * @brief Get the name of a CRR switch
+ * @param delay_ps Delay in picoseconds
+ * @return Name of the switch
+ */
 static std::string get_crr_switch_name(const int delay_ps) {
     if (delay_ps == 0) {
         return "sw_zero";
@@ -12,6 +17,12 @@ static std::string get_crr_switch_name(const int delay_ps) {
     }
 }
 
+/**
+ * @brief Create an architecture switch for CRR
+ * @param delay_ps Delay in picoseconds
+ * @param sw_template_id Template ID of the switch
+ * @return CRR switch
+ */
 static t_arch_switch_inf create_crr_switch(const int delay_ps, const std::string& sw_template_id) {
     std::string switch_name = get_crr_switch_name(delay_ps);
 
@@ -32,6 +43,12 @@ static t_arch_switch_inf create_crr_switch(const int delay_ps, const std::string
     return arch_switch_inf;
 }
 
+/**
+ * @brief Find or create a CRR switch ID
+ * @param delay_ps Delay in picoseconds
+ * @param sw_template_id Template ID of the switch
+ * @return CRR switch ID
+ */
 static RRSwitchId find_or_create_crr_switch_id(const int delay_ps,
                                                const std::string& sw_template_id) {
 

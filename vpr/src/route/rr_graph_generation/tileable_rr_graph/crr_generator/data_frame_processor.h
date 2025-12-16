@@ -78,28 +78,84 @@ class DataFrame {
     DataFrame(size_t rows, size_t cols);
 
     // Access methods
+    /**
+     * @brief Get a cell at a specific row and column
+     * @param row Row index
+     * @param col Column index
+     * @return Cell at the specified row and column
+     */
     Cell& at(size_t row, size_t col);
     const Cell& at(size_t row, size_t col) const;
     Cell& operator()(size_t row, size_t col) { return at(row, col); }
     const Cell& operator()(size_t row, size_t col) const { return at(row, col); }
 
     // Dimensions
+    /**
+     * @brief Get the number of rows in the dataframe
+     * @return Number of rows
+     */
     size_t rows() const { return rows_; }
+    /**
+     * @brief Get the number of columns in the dataframe
+     * @return Number of columns
+     */
     size_t cols() const { return cols_; }
+    /**
+     * @brief Get the shape of the dataframe
+     * @return Pair of rows and columns
+     */
     std::pair<size_t, size_t> shape() const { return {rows_, cols_}; }
 
     // Resize operations
+    /**
+     * @brief Resize the dataframe
+     * @param rows Number of rows
+     * @param cols Number of columns
+     */
     void resize(size_t rows, size_t cols);
+    /**
+     * @brief Clear the dataframe
+     */
     void clear();
 
     // Row/column operations
+    /**
+     * @brief Get a row from the dataframe
+     * @param row Row index
+     * @return Row of cells
+     */
     std::vector<Cell> get_row(size_t row) const;
+    /**
+     * @brief Get a column from the dataframe
+     * @param col Column index
+     * @return Column of cells
+     */
     std::vector<Cell> get_column(size_t col) const;
+    /**
+     * @brief Set a row in the dataframe
+     */
     void set_row(size_t row, const std::vector<Cell>& values);
+    /**
+     * @brief Set a column in the dataframe
+     * @param col Column index
+     * @param values Values to set
+     */
     void set_column(size_t col, const std::vector<Cell>& values);
 
     // Statistics and counting
+    /**
+     * @brief Count the number of non-empty cells in the dataframe
+     * @return Number of non-empty cells
+     */
     size_t count_non_empty() const;
+    /**
+     * @brief Count the number of non-empty cells in a range of the dataframe
+     * @param start_row Start row index
+     * @param start_col Start column index
+     * @param end_row End row index
+     * @param end_col End column index
+     * @return Number of non-empty cells in the range
+     */
     size_t count_non_empty_in_range(size_t start_row, size_t start_col, size_t end_row, size_t end_col) const;
 
     // Iteration support
