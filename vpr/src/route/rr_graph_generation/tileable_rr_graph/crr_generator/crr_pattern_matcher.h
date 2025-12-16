@@ -68,6 +68,8 @@ class CRRPatternMatcher {
             int end = parts[1]; // end is NOT exclusive as per your specification
             int step = parts[2];
 
+            if (step == 0) return false;
+
             if (value < start || value > end) return false;
             if ((value - start) % step != 0) return false;
 

@@ -81,7 +81,6 @@ void NodeLookupManager::print_statistics() const {
         auto [min_row, max_row] =
             std::minmax_element(row_counts.begin(), row_counts.end());
         VTR_LOG("Nodes per row: min=%d, max=%d, avg=%f\n", *min_row, *max_row,
-                *max_row,
                 std::accumulate(row_counts.begin(), row_counts.end(), 0.0) / row_counts.size());
     }
 }
