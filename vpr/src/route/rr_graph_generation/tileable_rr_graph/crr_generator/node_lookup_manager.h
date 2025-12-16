@@ -36,11 +36,6 @@ class NodeLookupManager {
     NodeLookupManager(const RRGraphView& rr_graph, size_t fpga_grid_x, size_t fpga_grid_y);
 
     /**
-     * @brief Initialize lookup tables from RR graph
-     */
-    void initialize();
-
-    /**
      * @brief Get nodes in a specific column
      * @param x Column coordinate
      * @return Map of hash to node for nodes in column

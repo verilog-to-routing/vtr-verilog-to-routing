@@ -11,9 +11,7 @@ namespace crrgenerator {
 NodeLookupManager::NodeLookupManager(const RRGraphView& rr_graph, size_t fpga_grid_x, size_t fpga_grid_y)
     : rr_graph_(rr_graph)
     , fpga_grid_x_(fpga_grid_x)
-    , fpga_grid_y_(fpga_grid_y) {}
-
-void NodeLookupManager::initialize() {
+    , fpga_grid_y_(fpga_grid_y) {
     vtr::ScopedStartFinishTimer timer("Initialize NodeLookupManager");
 
     // Make sure lookup is not initialized
