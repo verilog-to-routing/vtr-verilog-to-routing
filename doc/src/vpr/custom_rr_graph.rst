@@ -19,6 +19,17 @@ This is a YAML file that specifies which switch block template should be used fo
 * ``SB_1__*_: [sb_template.csv]`` - All tiles with x coordinate 1 use switch block template ``sb_template.csv``
 * ``SB_[7,20]__[2:32:3]_: [sb_template.csv]`` - Tiles with x equal to 7 or 20, and y coordinates from 2 to 32 (inclusive) with step 3 use switch block template ``sb_template.csv``
 
+Below is an example of a switch block map file where there is no switch block at the perimeter, and DSP blocks are placed from block 2 to 10 (inclusive) with a step of 2. For all other locations, the same switch block template is used.
+
+.. code-block:: yaml
+
+   SB_MAPS:
+   SB_0__0_: null
+   SB_1__: sb_perimeter.csv
+   SB1: sb_perimeter.csv
+   SB[2:10:2]: sb_dsp.csv
+   SB*_: sb_main.csv
+
 **Important:** The order in which patterns are defined matters, as the first matching pattern is used.
 
 Switch Block Template Files

@@ -34,6 +34,8 @@
  * @brief Remove dangling chan nodes (chan nodes with no incoming edges) from the rr_graph
  * @param grid The device grid
  * @param rr_graph_builder The rr_graph builder
+ * 
+ * @note This is a very expensive operation, so it should be called only when necessary
  */
 static void remove_dangling_chan_nodes(const DeviceGrid& grid,
                                        RRGraphBuilder& rr_graph_builder);
