@@ -32,7 +32,7 @@ static t_arch_switch_inf create_crr_switch(const int delay_ps, const std::string
     arch_switch_inf.R = 0.;
     arch_switch_inf.Cin = 0.;
     arch_switch_inf.Cout = 0;
-    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, delay_ps);
+    arch_switch_inf.set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, static_cast<float>(delay_ps)*1e-12);
     arch_switch_inf.power_buffer_type = POWER_BUFFER_TYPE_NONE;
     arch_switch_inf.mux_trans_size = 0.;
     arch_switch_inf.buf_size_type = e_buffer_size::ABSOLUTE;

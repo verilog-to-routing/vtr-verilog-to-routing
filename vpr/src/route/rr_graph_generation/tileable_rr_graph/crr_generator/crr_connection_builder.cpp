@@ -7,6 +7,7 @@
 #include <algorithm>
 
 #include "vtr_log.h"
+#include "vtr_util.h"
 #include "vtr_assert.h"
 #include "rr_node_types.h"
 
@@ -131,10 +132,7 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
     }
 
     // Uniqueify the connections
-    std::sort(tile_connections.begin(), tile_connections.end());
-    tile_connections.erase(std::unique(tile_connections.begin(),
-                                       tile_connections.end()),
-                           tile_connections.end());
+    vtr::uniquify(tile_connections);
     tile_connections.shrink_to_fit();
 
     VTR_LOG_DEBUG("Generated %zu connections for location (%zu, %zu)\n",
