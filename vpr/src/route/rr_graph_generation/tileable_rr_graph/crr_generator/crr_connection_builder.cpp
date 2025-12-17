@@ -45,8 +45,7 @@ void CRRConnectionBuilder::initialize(int fpga_grid_x,
     // Total locations is the number of locations on the FPGA grid minus the 4
     // corner locations.
     int number_of_tiles = fpga_grid_x_ * fpga_grid_y_;
-    VTR_ASSERT(number_of_tiles > 4);
-    total_locations_ = static_cast<size_t>(number_of_tiles) - 4;
+    total_locations_ = static_cast<size_t>(number_of_tiles);
     processed_locations_ = 0;
 }
 
@@ -303,11 +302,6 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
                                                     std::string& prev_seg_type,
                                                     int& prev_ptc_number,
                                                     bool is_vertical) const {
-    // Check grid boundaries
-    if ((info.side == e_sw_template_dir::RIGHT && x == fpga_grid_x_) || (info.side == e_sw_template_dir::TOP && y == fpga_grid_y_)) {
-        return RRNodeId::INVALID();
-    }
-
     int seg_length = std::stoi(
         info.seg_type.substr(1)); // Extract number from "L1", "L4", etc.
 

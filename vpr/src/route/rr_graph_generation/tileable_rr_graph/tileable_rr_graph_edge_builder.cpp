@@ -319,6 +319,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   const bool& concat_wire,
                                   const bool& wire_opposite_side,
                                   const int route_verbosity) {
+    vtr::ScopedStartFinishTimer timer("Build RR Graph Edges");
     bool build_crr_edges = !crr_opts.sb_templates.empty();
     size_t num_edges_to_create = 0;
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
@@ -342,15 +343,15 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                                                                       *node_lookup,
                                                                                       *sb_manager,
                                                                                       route_verbosity);
-        crr_connection_builder->initialize(grids.width() - 2,
-                                           grids.height() - 2,
+        crr_connection_builder->initialize(grids.width(),
+                                           grids.height(),
                                            crr_opts.annotated_rr_graph);
     }
 
     /* Go Switch Block by Switch Block */
     for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
         for (size_t iy = 0; iy <= gsb_range.y(); ++iy) {
-            //vpr_printf(TIO_MESSAGE_INFO, "Building edges for GSB[%lu][%lu]\n", ix, iy);
+            VTR_LOG("Building edges for GSB[%lu][%lu]\n", ix, iy);
 
             vtr::Point<size_t> gsb_coord(ix, iy);
             /* Create a GSB object */
