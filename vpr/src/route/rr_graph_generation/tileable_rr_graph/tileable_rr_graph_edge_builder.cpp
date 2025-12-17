@@ -332,9 +332,9 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     std::unique_ptr<crrgenerator::SwitchBlockManager> sb_manager;
     std::unique_ptr<crrgenerator::NodeLookupManager> node_lookup;
     if (build_crr_edges) {
-        sb_manager = std::make_unique<crrgenerator::SwitchBlockManager>(route_verbosity,
-                                                                        crr_opts.sb_maps,
-                                                                        crr_opts.sb_templates);
+        sb_manager = std::make_unique<crrgenerator::SwitchBlockManager>(crr_opts.sb_maps,
+                                                                        crr_opts.sb_templates,
+                                                                        route_verbosity);
         node_lookup = std::make_unique<crrgenerator::NodeLookupManager>(rr_graph,
                                                                         grids.width(),
                                                                         grids.height());
@@ -378,7 +378,8 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                     build_crr_gsb_edges(rr_graph_builder,
                                         rr_node_driver_switches,
                                         rr_gsb,
-                                        *crr_connection_builder);
+                                        *crr_connection_builder,
+                                        route_verbosity);
                 }
             } else {
                 sb_conn = build_gsb_track_to_track_map(rr_graph,

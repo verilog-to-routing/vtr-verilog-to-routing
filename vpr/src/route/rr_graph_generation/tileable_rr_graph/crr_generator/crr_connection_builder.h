@@ -47,7 +47,6 @@ class CRRConnectionBuilder {
 
   private:
     // Info from config
-    int verbosity_;
     int fpga_grid_x_;
     int fpga_grid_y_;
     bool is_annotated_;
@@ -56,6 +55,7 @@ class CRRConnectionBuilder {
     const RRGraphView& rr_graph_;
     const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
+    int verbosity_;
 
     // Processing state
     std::atomic<size_t> processed_locations_{0};

@@ -31,9 +31,9 @@ class SwitchBlockManager {
      * @param sb_maps_file Path to the YAML configuration file
      * @param sb_templates_dir Directory containing switch template files
      */
-    SwitchBlockManager(int log_verbosity,
-                       const std::string& sb_maps_file,
-                       const std::string& sb_templates_dir);
+    SwitchBlockManager(const std::string& sb_maps_file,
+                       const std::string& sb_templates_dir,
+                       const int log_verbosity);
 
     /**
      * @brief Get the switch template file name for a given pattern
