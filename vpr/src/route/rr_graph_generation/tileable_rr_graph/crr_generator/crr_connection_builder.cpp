@@ -27,10 +27,12 @@ static bool is_integer(const std::string& s) {
 
 CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
                                            const NodeLookupManager& node_lookup,
-                                           const SwitchBlockManager& sb_manager)
+                                           const SwitchBlockManager& sb_manager,
+                                           const int verbosity)
     : rr_graph_(rr_graph)
     , node_lookup_(node_lookup)
-    , sb_manager_(sb_manager) {}
+    , sb_manager_(sb_manager)
+    , verbosity_(verbosity) {}
 
 void CRRConnectionBuilder::initialize(int fpga_grid_x,
                                       int fpga_grid_y,
@@ -60,7 +62,7 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
     if (pattern.empty()) {
         // If no pattern is found, it means that no switch block is defined for this location
         // Thus, we return an empty vector of connections.
-        VTR_LOG_DEBUG("No pattern found for switch block at (%zu, %zu)\n", x, y);
+        VTR_LOGV(verbosity_ > 1, "No pattern found for switch block at (%zu, %zu)\n", x, y);
         return;
     }
 
@@ -70,8 +72,8 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
         return;
     }
 
-    VTR_LOG("Processing switch block with pattern '%s' at (%zu, %zu)\n",
-            pattern.c_str(), x, y);
+    VTR_LOGV(verbosity_ > 1, "Processing switch block with pattern '%s' at (%zu, %zu)\n",
+             pattern.c_str(), x, y);
 
     // Get combined nodes for this location
     auto combined_nodes = node_lookup_.get_combined_nodes(x, y);
@@ -135,8 +137,8 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
     vtr::uniquify(tile_connections);
     tile_connections.shrink_to_fit();
 
-    VTR_LOG_DEBUG("Generated %zu connections for location (%zu, %zu)\n",
-                  tile_connections.size(), x, y);
+    VTR_LOGV(verbosity_ > 1, "Generated %zu connections for location (%zu, %zu)\n",
+             tile_connections.size(), x, y);
 }
 
 std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x, size_t tile_y) const {
@@ -347,8 +349,8 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
     if (it != node_lookup.end()) {
         return it->second;
     } else {
-        VTR_LOG_DEBUG("Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
-                      seg_sequence.c_str(), x_low, y_low, x_high, y_high);
+        VTR_LOGV(verbosity_ > 1, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
+                 seg_sequence.c_str(), x_low, y_low, x_high, y_high);
         return RRNodeId::INVALID();
     }
 }
@@ -525,8 +527,8 @@ void CRRConnectionBuilder::update_progress() {
     if (current % std::max(size_t(1), total_locations_ / 20) == 0 || current == total_locations_) {
         double percentage =
             (static_cast<double>(current) / total_locations_) * 100.0;
-        VTR_LOG("Connection building progress: %zu/%zu (%.1f%%)\n", current,
-                total_locations_, percentage);
+        VTR_LOGV(verbosity_ > 1, "Connection building progress: %zu/%zu (%.1f%%)\n", current,
+                 total_locations_, percentage);
     }
 }
 

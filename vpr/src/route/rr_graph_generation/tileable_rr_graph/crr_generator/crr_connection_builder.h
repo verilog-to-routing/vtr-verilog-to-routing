@@ -24,7 +24,8 @@ class CRRConnectionBuilder {
   public:
     CRRConnectionBuilder(const RRGraphView& rr_graph,
                          const NodeLookupManager& node_lookup,
-                         const SwitchBlockManager& sb_manager);
+                         const SwitchBlockManager& sb_manager,
+                         const int verbosity);
 
     /**
      * @brief Initialize the connection builder
@@ -46,6 +47,7 @@ class CRRConnectionBuilder {
 
   private:
     // Info from config
+    int verbosity_;
     int fpga_grid_x_;
     int fpga_grid_y_;
     bool is_annotated_;

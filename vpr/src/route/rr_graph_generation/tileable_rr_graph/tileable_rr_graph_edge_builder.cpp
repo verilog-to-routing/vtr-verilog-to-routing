@@ -340,7 +340,8 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                                                         grids.height());
         crr_connection_builder = std::make_unique<crrgenerator::CRRConnectionBuilder>(rr_graph,
                                                                                       *node_lookup,
-                                                                                      *sb_manager);
+                                                                                      *sb_manager,
+                                                                                      route_verbosity);
         crr_connection_builder->initialize(grids.width() - 2,
                                            grids.height() - 2,
                                            crr_opts.annotated_rr_graph);
