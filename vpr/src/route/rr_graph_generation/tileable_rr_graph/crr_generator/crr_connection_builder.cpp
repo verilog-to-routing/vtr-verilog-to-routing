@@ -68,7 +68,7 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
 
     const DataFrame* df = sb_manager_.get_switch_block_dataframe(pattern);
     if (df == nullptr) {
-        VTR_LOG_WARN("No dataframe found for pattern '%s' at (%zu, %zu)\n", pattern.c_str(), x, y);
+        VTR_LOGV(verbosity_ > 1, "No dataframe found for pattern '%s' at (%zu, %zu)\n", pattern.c_str(), x, y);
         return;
     }
 
