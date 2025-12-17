@@ -125,7 +125,7 @@ def generate_xlsx(largest_run_path):
 
 
 def parse_script_params(script_params):
-    """Helper function to parse the script params values from earch row in
+    """Helper function to parse the script params values from each row in
     the parse_results.txt"""
 
     parsed_params = {key: "" for key in PARAMS_DICT}

@@ -38,7 +38,7 @@ jobs:
     name: 'B: Building VTR Release'
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -79,7 +79,7 @@ jobs:
     name: 'B: Building VTR Release With Odin'
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -134,7 +134,7 @@ jobs:
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: ${{ matrix.with_submodules }}
       # NOTE: We usually do not need sub-modules. We do not check sub-modules
@@ -188,7 +188,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       # NOTE: We do not need sub-modules. This only verifies the tests, does not run them.
 
     - name: 'Run test suite verification'
@@ -204,7 +204,7 @@ jobs:
     needs: [BuildVTR]
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -247,7 +247,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -369,7 +369,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -456,7 +456,7 @@ jobs:
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -534,7 +534,7 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -581,7 +581,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.12.3
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: 'true'
 
@@ -620,7 +620,7 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -660,7 +660,7 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -705,7 +705,7 @@ jobs:
       CXX: ${{ matrix.CXX }}
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -736,7 +736,7 @@ jobs:
       CC: gcc-11
       CXX: g++-11
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 

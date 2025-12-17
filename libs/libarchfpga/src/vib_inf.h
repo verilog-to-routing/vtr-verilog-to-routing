@@ -60,7 +60,7 @@ struct t_from_or_to_inf {
 struct t_first_stage_mux_inf {
     std::string mux_name;
     std::vector<std::vector<std::string>> from_tokens;
-    std::vector<t_from_or_to_inf> froms;
+    std::vector<t_from_or_to_inf> from_infos;
 };
 
 struct t_second_stage_mux_inf : t_first_stage_mux_inf {

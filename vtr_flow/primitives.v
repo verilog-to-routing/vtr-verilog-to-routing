@@ -7,13 +7,13 @@
 //If you wish to do back-annotated timing simulation you will need
 //to link with this file during simulation.
 //
-//To ensure currect result when performing back-annoatation with 
+//To ensure correct result when performing back-annoatation with 
 //Modelsim see the notes at the end of this comment.
 //
 //Specifying Timing Edges
 //=======================
 //To perform timing back-annotation the simulator must know the delay 
-//dependancies (timing edges) between the ports on each primitive.
+//dependencies (timing edges) between the ports on each primitive.
 //
 //During back-annotation the simulator will attempt to annotate SDF delay
 //values onto the timing edges.  It should give a warning if was unable
@@ -33,7 +33,7 @@
 //      (in[1] => out[1]) = "";
 //  endspecify
 //
-//This states that there are the following timing edges (dependancies):
+//This states that there are the following timing edges (dependencies):
 //  * from in[0] to out[0]
 //  * from in[1] to out[1]
 //
@@ -62,7 +62,7 @@
 //      (in *> out) = "";
 //  endspecify
 //
-//states that there are the following timing edges (dependancies):
+//states that there are the following timing edges (dependencies):
 //  * from in[0] to out[0]
 //  * from in[0] to out[1]
 //  * from in[0] to out[2]
@@ -91,11 +91,11 @@
 //This forces it to apply specify statements using multi-bit operands to
 //each bit of the operand (i.e. according to the Verilog standard).
 //
-//Confirming back-annotation is occuring correctly
+//Confirming back-annotation is occurring correctly
 //------------------------------------------------
 //
 //Another useful option is '+sdf_verbose' which produces extra output about
-//SDF annotation, which can be used to verify annotation occured correctly.
+//SDF annotation, which can be used to verify annotation occurred correctly.
 //
 //For example:
 //

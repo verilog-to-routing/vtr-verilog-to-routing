@@ -760,7 +760,7 @@ def create_job(
 
 def ret_expected_min_w(circuit, arch, golden_results, script_params=None):
     """
-    Retrive the expected minimum channel width from the golden results.
+    Retrieve the expected minimum channel width from the golden results.
     """
     script_params = load_script_param(script_params)
     golden_metrics = golden_results.metrics(arch, circuit, script_params)
@@ -771,7 +771,7 @@ def ret_expected_min_w(circuit, arch, golden_results, script_params=None):
 
 def ret_expected_vpr_status(arch, circuit, golden_results, script_params=None):
     """
-    Retrive the expected VPR status from the golden_results.
+    Retrieve the expected VPR status from the golden_results.
     """
     script_params = load_script_param(script_params)
     golden_metrics = golden_results.metrics(arch, circuit, script_params)
@@ -851,7 +851,7 @@ def find_task_config_file(task_name):
 
     base_dirs = []
     if PurePath(task_name).is_absolute():
-        # Only check the root path since the path is aboslute
+        # Only check the root path since the path is absolute
         base_dirs.append("/")
     else:
         # Not absolute path, so check from the current directory first

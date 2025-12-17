@@ -1841,11 +1841,11 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     VTR_ASSERT(vib->get_pbtype_name() == phy_type->name);
     const std::vector<t_first_stage_mux_inf> first_stages = vib->get_first_stages();
     for (size_t i_first_stage = 0; i_first_stage < first_stages.size(); i_first_stage++) {
-        std::vector<t_from_or_to_inf> froms = first_stages[i_first_stage].froms;
+        const std::vector<t_from_or_to_inf>& from_infos = first_stages[i_first_stage].from_infos;
         RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MUX, i_first_stage);
         VTR_ASSERT(to_node.is_valid());
         VTR_ASSERT(rr_gsb.is_mux_node(to_node));
-        for (auto from : froms) {
+        for (auto from : from_infos) {
             RRNodeId from_node;
             if (from.from_type == e_multistage_mux_from_or_to_type::PB) {
 
@@ -1943,8 +1943,8 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     /* Second stages*/
     const std::vector<t_second_stage_mux_inf> second_stages = vib->get_second_stages();
     for (size_t i_second_stage = 0; i_second_stage < second_stages.size(); i_second_stage++) {
-        std::vector<t_from_or_to_inf> froms = second_stages[i_second_stage].froms;
-        std::vector<t_from_or_to_inf> tos = second_stages[i_second_stage].to;
+        const std::vector<t_from_or_to_inf>& from_infos = second_stages[i_second_stage].from_infos;
+        const std::vector<t_from_or_to_inf>& tos = second_stages[i_second_stage].to;
 
         std::vector<RRNodeId> to_nodes;
         for (auto to : tos) {
@@ -2029,7 +2029,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
         }
 
         std::vector<RRNodeId> from_nodes;
-        for (auto from : froms) {
+        for (auto from : from_infos) {
             RRNodeId from_node;
             if (from.from_type == e_multistage_mux_from_or_to_type::PB) {
 
