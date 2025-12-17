@@ -50,26 +50,27 @@ void CRRConnectionBuilder::initialize(int fpga_grid_x,
     processed_locations_ = 0;
 }
 
-void CRRConnectionBuilder::build_connections_for_location(size_t x,
-                                                          size_t y,
-                                                          std::vector<Connection>& tile_connections) const {
-
+std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(size_t x,
+                                                                             size_t y) const {
+    std::vector<Connection> tile_connections;
     // Find matching switch block pattern
     std::string pattern = sb_manager_.find_matching_pattern(x, y);
-    std::string sw_block_file_name = sb_manager_.get_pattern_file_name(pattern);
-    tile_connections.clear();
-
     if (pattern.empty()) {
         // If no pattern is found, it means that no switch block is defined for this location
         // Thus, we return an empty vector of connections.
-        VTR_LOGV(verbosity_ > 1, "No pattern found for switch block at (%zu, %zu)\n", x, y);
-        return;
+        VTR_LOG_ERROR("No pattern found for switch block at (%zu, %zu)\n", x, y);
+        return {};
+    }
+    std::string sw_block_file_name = sb_manager_.get_pattern_file_name(pattern);
+    if (sw_block_file_name.empty()) {
+        VTR_LOGV(verbosity_ > 1, "No switch block is associated with the pattern '%s' at (%zu, %zu)\n", pattern.c_str(), x, y);
+        return {};
     }
 
     const DataFrame* df = sb_manager_.get_switch_block_dataframe(pattern);
     if (df == nullptr) {
-        VTR_LOGV(verbosity_ > 1, "No dataframe found for pattern '%s' at (%zu, %zu)\n", pattern.c_str(), x, y);
-        return;
+        VTR_LOG_ERROR("No dataframe found for pattern '%s' at (%zu, %zu)\n", pattern.c_str(), x, y);
+        return {};
     }
 
     VTR_LOGV(verbosity_ > 1, "Processing switch block with pattern '%s' at (%zu, %zu)\n",
@@ -139,11 +140,12 @@ void CRRConnectionBuilder::build_connections_for_location(size_t x,
 
     VTR_LOGV(verbosity_ > 1, "Generated %zu connections for location (%zu, %zu)\n",
              tile_connections.size(), x, y);
+
+    return tile_connections;
 }
 
 std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x, size_t tile_y) const {
-    std::vector<Connection> tile_connections;
-    build_connections_for_location(tile_x, tile_y, tile_connections);
+    std::vector<Connection> tile_connections = build_connections_for_location(tile_x, tile_y);
 
     return tile_connections;
 }

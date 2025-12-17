@@ -62,9 +62,8 @@ class CRRConnectionBuilder {
     size_t total_locations_{0};
 
     // Connection building methods
-    void build_connections_for_location(size_t x,
-                                        size_t y,
-                                        std::vector<Connection>& tile_connections) const;
+    std::vector<Connection> build_connections_for_location(size_t x,
+                                                           size_t y) const;
 
     // Node processing methods
     std::map<size_t, RRNodeId> get_tile_source_nodes(int x,
