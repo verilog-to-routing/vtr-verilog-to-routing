@@ -50,7 +50,8 @@ static t_arch_switch_inf create_crr_switch(const int delay_ps, const std::string
  * @return CRR switch ID
  */
 static RRSwitchId find_or_create_crr_switch_id(const int delay_ps,
-                                               const std::string& sw_template_id) {
+                                               const std::string& sw_template_id,
+                                               const int verbosity) {
 
     std::map<int, t_arch_switch_inf>& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
 
@@ -70,7 +71,7 @@ static RRSwitchId find_or_create_crr_switch_id(const int delay_ps,
         found_sw_id = static_cast<int>(all_sw_inf.size());
         all_sw_inf.emplace(found_sw_id, std::move(new_arch_switch_inf));
 
-        VTR_LOG("Created new CRR switch: delay=%d ps, template id=%s\n", delay_ps, sw_template_id.c_str());
+        VTR_LOGV(verbosity > 1, "Created new CRR switch: delay=%d ps, template id=%s\n", delay_ps, sw_template_id.c_str());
     }
 
     return RRSwitchId(found_sw_id);
@@ -79,7 +80,8 @@ static RRSwitchId find_or_create_crr_switch_id(const int delay_ps,
 void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                          const RRGSB& rr_gsb,
-                         const crrgenerator::CRRConnectionBuilder& connection_builder) {
+                         const crrgenerator::CRRConnectionBuilder& connection_builder,
+                         const int verbosity) {
     size_t gsb_x = rr_gsb.get_sb_x();
     size_t gsb_y = rr_gsb.get_sb_y();
 
@@ -91,7 +93,9 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
         if (delay_ps == -1) {
             rr_switch_id = rr_node_driver_switches[connection.sink_node()];
         } else {
-            rr_switch_id = find_or_create_crr_switch_id(delay_ps, connection.sw_template_id());
+            rr_switch_id = find_or_create_crr_switch_id(delay_ps,
+                                                        connection.sw_template_id(),
+                                                        verbosity);
         }
         VTR_ASSERT(rr_switch_id != RRSwitchId::INVALID());
         rr_graph_builder.create_edge_in_cache(connection.src_node(),
