@@ -1414,7 +1414,6 @@ struct t_analysis_opts {
 struct t_crr_opts {
     std::string sb_maps;
     std::string sb_templates;
-    int crr_num_threads;
     bool preserve_input_pin_connections;
     bool preserve_output_pin_connections;
     bool annotated_rr_graph;
