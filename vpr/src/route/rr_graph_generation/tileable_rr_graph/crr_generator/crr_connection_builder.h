@@ -143,9 +143,6 @@ class CRRConnectionBuilder {
                                 RRNodeId sink_node,
                                 int segment_length = -1) const;
 
-    // Validation and bounds checking
-    bool is_valid_grid_location(int x, int y) const;
-
     // Progress tracking
     void update_progress();
 };

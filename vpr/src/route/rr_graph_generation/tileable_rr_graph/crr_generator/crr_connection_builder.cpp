@@ -513,11 +513,6 @@ int CRRConnectionBuilder::get_connection_delay_ps(const std::string& cell_value,
     }
 }
 
-bool CRRConnectionBuilder::is_valid_grid_location(int x,
-                                                  int y) const {
-    return x >= 1 && x <= fpga_grid_x_ && y >= 1 && y <= fpga_grid_y_;
-}
-
 void CRRConnectionBuilder::update_progress() {
     size_t current = processed_locations_.fetch_add(1) + 1;
     if (current % std::max(size_t(1), total_locations_ / 20) == 0 || current == total_locations_) {
