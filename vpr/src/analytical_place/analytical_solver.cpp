@@ -19,6 +19,7 @@
 #include "atom_netlist_fwd.h"
 #include "device_grid.h"
 #include "flat_placement_types.h"
+#include "net_cost_handler.h"
 #include "partial_placement.h"
 #include "ap_netlist.h"
 #include "place_delay_model.h"
@@ -1174,6 +1175,22 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         triplet_list_z.resize(total_num_pins_in_netlist);
     }
 
+    // Compute a normalization term for the per-dimension channel factors. This
+    // is simply the inverse of the average of the per-dimension channel factors
+    // for a bounding box the size of the device. This resolves to being the
+    // average channel width of the entire device.
+    // TODO: This can be moved to the constructor.
+    t_bb device_bb;
+    device_bb.xmin = 0;
+    device_bb.xmax = device_grid_width_ - 1;
+    device_bb.ymin = 0;
+    device_bb.ymax = device_grid_height_ - 1;
+    device_bb.layer_min = 0;
+    device_bb.layer_max = device_grid_num_layers_ - 1;
+    double chan_fac_norm_x = 1.0 / chan_cost_handler_.get_chanx_cost_fac(device_bb);
+    double chan_fac_norm_y = 1.0 / chan_cost_handler_.get_chany_cost_fac(device_bb);
+    double chan_fac_norm = (chan_fac_norm_x + chan_fac_norm_y) / 2.0;
+
     for (APNetId net_id : netlist_.nets()) {
         if (netlist_.net_is_ignored(net_id))
             continue;
@@ -1185,32 +1202,28 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         // ====================================================================
         // In the objective there is are wirelength connections and timing
         // connections, trade-off between the weight of each type of connection.
-        double wl_net_w = (1.0f - ap_timing_tradeoff_) * net_weights_[net_id];
+        double wl_net_w = (1.0f - ap_timing_tradeoff_) * net_weights_[net_id] * wirelength_crossing_count(num_pins);
 
         // Find the bounding blocks
         APNetBounds net_bounds = get_unique_net_bounds(net_id, p_placement, netlist_);
 
-        // Compute the channel cost factors due to routing damand.
-        double chanx_cost_fac = 1.0;
-        double chany_cost_fac = 1.0;
-        double chanz_cost_fac = 1.0;
-        if (iteration != 0) {
-            // Create a bounding box around the net using the net bounds. This is
-            // use to get the per-dimension cost terms.
-            // TODO: Investigate using the legalized solution from the prior iteration.
-            t_bb net_bb;
-            net_bb.xmin = p_placement.block_x_locs[net_bounds.min_x_blk];
-            net_bb.xmax = p_placement.block_x_locs[net_bounds.max_x_blk];
-            net_bb.ymin = p_placement.block_y_locs[net_bounds.min_y_blk];
-            net_bb.ymax = p_placement.block_y_locs[net_bounds.max_y_blk];
-            net_bb.layer_min = p_placement.block_layer_nums[net_bounds.min_z_blk];
-            net_bb.layer_min = p_placement.block_layer_nums[net_bounds.max_z_blk];
+        // Create a bounding box around the net using the net bounds. This is
+        // used to get the per-dimension cost terms.
+        // TODO: Investigate using the legalized solution from the prior iteration.
+        t_bb net_bb;
+        net_bb.xmin = p_placement.block_x_locs[net_bounds.min_x_blk];
+        net_bb.xmax = p_placement.block_x_locs[net_bounds.max_x_blk];
+        net_bb.ymin = p_placement.block_y_locs[net_bounds.min_y_blk];
+        net_bb.ymax = p_placement.block_y_locs[net_bounds.max_y_blk];
+        net_bb.layer_min = p_placement.block_layer_nums[net_bounds.min_z_blk];
+        net_bb.layer_min = p_placement.block_layer_nums[net_bounds.max_z_blk];
 
-            chanx_cost_fac = chan_cost_handler_.get_chanx_cost_fac(net_bb);
-            chany_cost_fac = chan_cost_handler_.get_chany_cost_fac(net_bb);
-            if (is_multi_die())
-                chanz_cost_fac = chan_cost_handler_.get_chanz_cost_fac(net_bb);
-        }
+        // Compute the channel cost factors due to routing damand.
+        double chanx_cost_fac = chan_cost_handler_.get_chanx_cost_fac(net_bb) * chan_fac_norm;
+        double chany_cost_fac = chan_cost_handler_.get_chany_cost_fac(net_bb) * chan_fac_norm;
+        double chanz_cost_fac = 1.0;
+        if (is_multi_die())
+            chanz_cost_fac = chan_cost_handler_.get_chanz_cost_fac(net_bb) * chan_fac_norm;
 
         // Get the per-dimension, wirelength net weights.
         double wl_net_w_x = wl_net_w * chanx_cost_fac;
