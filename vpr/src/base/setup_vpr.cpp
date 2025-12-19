@@ -386,7 +386,7 @@ static void setup_switches(const t_arch& Arch,
     }
 
     /* Delayless switch for connecting sinks and sources with their pins. */
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_type(SwitchType::MUX);
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_type(e_switch_type::MUX);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].name = std::string(VPR_DELAYLESS_SWITCH_NAME);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].Cin = 0.;
@@ -394,7 +394,7 @@ static void setup_switches(const t_arch& Arch,
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].mux_trans_size = 0.;
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size_type = BufferSize::ABSOLUTE;
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size_type = e_buffer_size::ABSOLUTE;
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size = 0.;
     VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
     VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch.delayless_switch].configurable(), "Delayless switch expected to be configurable");
@@ -533,7 +533,6 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
     RouterOpts->flat_routing = Options.flat_routing;
     RouterOpts->has_choke_point = Options.router_opt_choke_points;
-    RouterOpts->custom_3d_sb_fanin_fanout = Options.custom_3d_sb_fanin_fanout;
     RouterOpts->with_timing_analysis = Options.timing_analysis;
 
     RouterOpts->verify_route_file_switch_id = Options.verify_route_file_switch_id;

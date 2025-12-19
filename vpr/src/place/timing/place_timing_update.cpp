@@ -15,12 +15,12 @@
 /* Routines local to place_timing_update.cpp */
 static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities& place_crit,
-                                      PlacerState& placer_state,
+                                      const PlacerState& placer_state,
                                       ClusterNetId net,
                                       int ipin);
 
 static double sum_td_net_cost(ClusterNetId net,
-                              PlacerState& placer_state);
+                              const PlacerState& placer_state);
 
 static double sum_td_costs(const PlacerState& placer_state);
 
@@ -248,7 +248,7 @@ bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks,
  *
  * In particular, we can not simply calculate the incremental delta's caused by changed
  * connection timing costs and adjust the timing cost. Due to limited precision, the results
- * of floating point math operations are order dependant and we would get a different result.
+ * of floating point math operations are order dependent and we would get a different result.
  *
  * To get around this, we calculate the timing costs hierarchically, to ensure that we
  * calculate the sum with the same order of operations as comp_td_costs().
@@ -353,7 +353,7 @@ void comp_td_costs(const PlaceDelayModel* delay_model,
  */
 static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities& place_crit,
-                                      PlacerState& placer_state,
+                                      const PlacerState& placer_state,
                                       ClusterNetId net,
                                       int ipin) {
     const auto& p_timing_ctx = placer_state.timing();
@@ -377,7 +377,7 @@ static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
 
 ///@brief Returns the timing cost of the specified 'net' based on the values in connection_timing_cost.
 static double sum_td_net_cost(ClusterNetId net,
-                              PlacerState& placer_state) {
+                              const PlacerState& placer_state) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& p_timing_ctx = placer_state.timing();
     auto& connection_timing_cost = p_timing_ctx.connection_timing_cost;

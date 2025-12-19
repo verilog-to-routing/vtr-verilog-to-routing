@@ -14,6 +14,7 @@
 #include "side_manager.h"
 
 #include "vpr_utils.h"
+#include "physical_types_util.h"
 #include "rr_graph_view_util.h"
 #include "tileable_rr_graph_utils.h"
 #include "rr_graph_builder_utils.h"
@@ -220,11 +221,11 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
     size_t actual_from_track = from_track % num_to_tracks;
 
     switch (switch_block_type) {
-        case SUBSET: /* NB:  Global routing uses SUBSET too */
+        case e_switch_block_type::SUBSET: /* NB:  Global routing uses SUBSET too */
             to_tracks = get_to_track_list(Fs, actual_from_track, num_to_tracks);
             /* Finish, we return */
             return to_tracks;
-        case UNIVERSAL:
+        case e_switch_block_type::UNIVERSAL:
             if ((from_side == LEFT)
                 || (from_side == RIGHT)) {
                 /* For the prev_side, to_track is from_track
@@ -257,7 +258,7 @@ static std::vector<size_t> get_switch_block_to_track_id(const e_switch_block_typ
             /* Finish, we return */
             return to_tracks;
             /* End switch_block_type == UNIVERSAL case. */
-        case WILTON:
+        case e_switch_block_type::WILTON:
             /* See S. Wilton Phd thesis, U of T, 1996 p. 103 for details on following. */
             if (from_side == LEFT) {
                 if (to_side == RIGHT) { /* CHANX to CHANX */
@@ -394,7 +395,7 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
  * Build the track_to_track_map[from_side][0..chan_width-1][to_side][track_indices]
  * based on the existing routing resources in the General Switch Block (GSB)
  * The track_indices is the indices of tracks that the node at from_side and [0..chan_width-1] will drive
- * IMPORTANT: the track_indices are the indicies in the GSB context, but not the rr_graph!!!
+ * IMPORTANT: the track_indices are the indices in the GSB context, but not the rr_graph!!!
  * We separate the connections into two groups:
  * Group 1: the routing tracks start from this GSB
  *          We will apply switch block patterns (SUBSET, UNIVERSAL, WILTON)
@@ -563,7 +564,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
         std::vector<RRNodeId> rr_nodes;
         switch (side) {
             case TOP: /* TOP = 0 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.y() == grids.height() - 2) {
 
                     break;
@@ -599,7 +600,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 
                 break;
             case RIGHT: /* RIGHT = 1 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.x() == grids.width() - 2) {
 
                     break;
@@ -634,7 +635,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 }
                 break;
             case BOTTOM: /* BOTTOM = 2 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.y() == 0) {
 
                     break;
@@ -669,7 +670,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 }
                 break;
             case LEFT: /* BOTTOM = 2 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.x() == 0) {
 
                     break;
@@ -1543,7 +1544,7 @@ t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
 
             int grid_type_index = grids.get_physical_type(ipin_node_phy_tile_loc)->index;
             /* Get Fc of the ipin */
-            /* skip Fc = 0 or unintialized, those pins are in the <directlist> */
+            /* skip Fc = 0 or uninitialized, those pins are in the <directlist> */
             bool skip_conn2track = true;
             std::vector<int> ipin_Fc_out;
             for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
@@ -1624,7 +1625,7 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
             int grid_type_index = grids.get_physical_type(opin_node_phy_tile_loc)->index;
 
             /* Get Fc of the ipin */
-            /* skip Fc = 0 or unintialized, those pins are in the <directlist> */
+            /* skip Fc = 0 or uninitialized, those pins are in the <directlist> */
             bool skip_conn2track = true;
             std::vector<int> opin_Fc_out;
             for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
@@ -1721,56 +1722,94 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
         }
 
         /* get every opin in the range */
-        for (int opin = min_index; opin <= max_index; ++opin) {
-            int offset = opin - min_index;
+        for (int relative_opin = min_index; relative_opin <= max_index; ++relative_opin) {
+            int offset = relative_opin - min_index;
+            //Capacity location determined by pin number relative to pins per capacity instance
+            for (int z : clb_to_clb_directs[i].from_sub_tiles) {
+                int opin = get_physical_pin_from_capacity_location(grid_type, relative_opin, z);
+                VTR_ASSERT(z >= 0 && z < grid_type->capacity);
 
-            if ((to_grid_coordinate.x() < grids.width() - 1)
-                && (to_grid_coordinate.y() < grids.height() - 1)) {
-                int ipin = UNDEFINED;
-                if (clb_to_clb_directs[i].to_clb_pin_start_index
-                    > clb_to_clb_directs[i].to_clb_pin_end_index) {
-                    if (true == swap) {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
+                if ((to_grid_coordinate.x() < grids.width() - 1)
+                    && (to_grid_coordinate.y() < grids.height() - 1)) {
+                    int relative_ipin = UNDEFINED;
+                    if (clb_to_clb_directs[i].to_clb_pin_start_index
+                        > clb_to_clb_directs[i].to_clb_pin_end_index) {
+                        if (swap) {
+                            relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
+                        } else {
+                            relative_ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
+                        }
                     } else {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
+                        if (swap) {
+                            relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
+                        } else {
+                            relative_ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
+                        }
                     }
-                } else {
-                    if (true == swap) {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
-                    } else {
-                        ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
+
+                    /* Get the pin index in the rr_graph */
+                    t_physical_tile_loc from_tile_loc(from_grid_coordinate.x(), from_grid_coordinate.y(), layer);
+                    t_physical_tile_loc to_tile_loc(to_grid_coordinate.x(), to_grid_coordinate.y(), layer);
+
+                    /* Find the side of grid pins, the pin location should be unique!
+                     * Pin location is required by searching a node in rr_graph
+                     */
+                    std::vector<e_side> opin_grid_side = find_grid_pin_sides(grids, layer, from_grid_coordinate.x() + grid_type->pin_width_offset[opin], from_grid_coordinate.y() + grid_type->pin_height_offset[opin], opin);
+                    if (1 != opin_grid_side.size()) {
+                        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "[Arch LINE %d] From pin (index=%d) of direct connection '%s' does not exist on any side of the programmable block '%s'.\n", directs[i].line, opin, directs[i].from_pin.c_str());
                     }
+
+                    /* directs[i].sub_tile_offset is added to from_capacity(z) to get the target_capacity */
+                    int to_subtile_cap = z + directs[i].sub_tile_offset;
+                    /* If the destination subtile is out of range, there is no qualified IPINs */
+                    if (to_subtile_cap < 0 || to_subtile_cap >= to_grid_type->capacity) {
+                        continue;
+                    }
+                    /* Iterate over all sub_tiles to get the sub_tile which the target_cap belongs to. */
+                    const t_sub_tile* to_sub_tile = nullptr;
+                    for (const t_sub_tile& sub_tile : to_grid_type->sub_tiles) {
+                        if (sub_tile.capacity.is_in_range(to_subtile_cap)) {
+                            to_sub_tile = &sub_tile;
+                            break;
+                        }
+                    }
+                    VTR_ASSERT(to_sub_tile != nullptr);
+                    // Check if the to port is the one from the subtile, if not, pass as this is not the destination
+                    bool port_match = false;
+                    for (auto to_sub_tile_port : to_sub_tile->ports) {
+                        if (std::string(to_sub_tile_port.name) == clb_to_clb_directs[i].to_port) {
+                            port_match = true;
+                            break;
+                        }
+                    }
+                    if (!port_match) continue;
+                    if (relative_ipin >= to_sub_tile->num_phy_pins) continue;
+                    // If this block has capacity > 1 then the pins of z position > 0 are offset
+                    // by the number of pins per capacity instance
+                    int ipin = get_physical_pin_from_capacity_location(to_grid_type, relative_ipin, to_subtile_cap);
+                    std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x() + to_grid_type->pin_width_offset[ipin], to_grid_coordinate.y() + to_grid_type->pin_height_offset[ipin], ipin);
+                    if (1 != ipin_grid_side.size()) {
+                        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "[Arch LINE %d] To pin (index=%d) of direct connection '%s' does not exist on any side of the programmable block '%s'.\n", directs[i].line, relative_ipin, directs[i].to_pin.c_str());
+                    }
+
+                    RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
+                                                                             from_grid_coordinate.x() + grid_type->pin_width_offset[opin],
+                                                                             from_grid_coordinate.y() + grid_type->pin_height_offset[opin],
+                                                                             e_rr_type::OPIN, opin, opin_grid_side[0]);
+                    RRNodeId ipin_node_id = rr_graph.node_lookup().find_node(layer,
+                                                                             to_grid_coordinate.x() + to_grid_type->pin_width_offset[ipin],
+                                                                             to_grid_coordinate.y() + to_grid_type->pin_height_offset[ipin],
+                                                                             e_rr_type::IPIN, ipin, ipin_grid_side[0]);
+
+                    // add edges to the opin_node */
+                    if (!opin_node_id) {
+                        VTR_ASSERT(opin_node_id);
+                    }
+                    if (!ipin_node_id) {
+                        VTR_ASSERT(opin_node_id);
+                    }
+                    rr_graph_builder.create_edge_in_cache(opin_node_id, ipin_node_id, RRSwitchId(clb_to_clb_directs[i].switch_index), false);
                 }
-
-                /* Get the pin index in the rr_graph */
-                t_physical_tile_loc from_tile_loc(from_grid_coordinate.x(), from_grid_coordinate.y(), layer);
-                int from_grid_width_ofs = grids.get_width_offset(from_tile_loc);
-                int from_grid_height_ofs = grids.get_height_offset(from_tile_loc);
-                t_physical_tile_loc to_tile_loc(to_grid_coordinate.x(), to_grid_coordinate.y(), layer);
-                int to_grid_width_ofs = grids.get_width_offset(to_tile_loc);
-                int to_grid_height_ofs = grids.get_height_offset(to_tile_loc);
-
-                /* Find the side of grid pins, the pin location should be unique!
-                 * Pin location is required by searching a node in rr_graph
-                 */
-                std::vector<e_side> opin_grid_side = find_grid_pin_sides(grids, layer, from_grid_coordinate.x(), from_grid_coordinate.y(), opin);
-                VTR_ASSERT(1 == opin_grid_side.size());
-
-                std::vector<e_side> ipin_grid_side = find_grid_pin_sides(grids, layer, to_grid_coordinate.x(), to_grid_coordinate.y(), ipin);
-                VTR_ASSERT(1 == ipin_grid_side.size());
-
-                RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
-                                                                         from_grid_coordinate.x() - from_grid_width_ofs,
-                                                                         from_grid_coordinate.y() - from_grid_height_ofs,
-                                                                         e_rr_type::OPIN, opin, opin_grid_side[0]);
-                RRNodeId ipin_node_id = rr_graph.node_lookup().find_node(layer,
-                                                                         to_grid_coordinate.x() - to_grid_width_ofs,
-                                                                         to_grid_coordinate.y() - to_grid_height_ofs,
-                                                                         e_rr_type::IPIN, ipin, ipin_grid_side[0]);
-
-                /* add edges to the opin_node */
-                VTR_ASSERT(opin_node_id && ipin_node_id);
-                rr_graph_builder.create_edge_in_cache(opin_node_id, ipin_node_id, RRSwitchId(clb_to_clb_directs[i].switch_index), false);
             }
         }
     }
@@ -1796,11 +1835,11 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     VTR_ASSERT(vib->get_pbtype_name() == phy_type->name);
     const std::vector<t_first_stage_mux_inf> first_stages = vib->get_first_stages();
     for (size_t i_first_stage = 0; i_first_stage < first_stages.size(); i_first_stage++) {
-        std::vector<t_from_or_to_inf> froms = first_stages[i_first_stage].froms;
+        const std::vector<t_from_or_to_inf>& from_infos = first_stages[i_first_stage].from_infos;
         RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MUX, i_first_stage);
         VTR_ASSERT(to_node.is_valid());
         VTR_ASSERT(rr_gsb.is_mux_node(to_node));
-        for (auto from : froms) {
+        for (auto from : from_infos) {
             RRNodeId from_node;
             if (from.from_type == e_multistage_mux_from_or_to_type::PB) {
 
@@ -1898,8 +1937,8 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     /* Second stages*/
     const std::vector<t_second_stage_mux_inf> second_stages = vib->get_second_stages();
     for (size_t i_second_stage = 0; i_second_stage < second_stages.size(); i_second_stage++) {
-        std::vector<t_from_or_to_inf> froms = second_stages[i_second_stage].froms;
-        std::vector<t_from_or_to_inf> tos = second_stages[i_second_stage].to;
+        const std::vector<t_from_or_to_inf>& from_infos = second_stages[i_second_stage].from_infos;
+        const std::vector<t_from_or_to_inf>& tos = second_stages[i_second_stage].to;
 
         std::vector<RRNodeId> to_nodes;
         for (auto to : tos) {
@@ -1984,7 +2023,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
         }
 
         std::vector<RRNodeId> from_nodes;
-        for (auto from : froms) {
+        for (auto from : from_infos) {
             RRNodeId from_node;
             if (from.from_type == e_multistage_mux_from_or_to_type::PB) {
 

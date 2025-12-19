@@ -59,7 +59,7 @@ def parse_args():
         "--force",
         default=False,
         action="store_true",
-        help="Run extraction step even if directores etc. already exist",
+        help="Run extraction step even if directories etc. already exist",
     )
     parser.add_argument(
         "--device_family",
@@ -321,6 +321,7 @@ def extract_callback(members, args):
             print(tarinfo.name)
             yield tarinfo
 
+
 def get_benchmark_subdirs(args):
     """
     Decide which benchmark subdirectories to use depending on version
@@ -330,6 +331,7 @@ def get_benchmark_subdirs(args):
         return ["titanium", "titan23", "other_benchmarks"]
     else:
         return ["titan_new", "titan23", "other_benchmarks"]
+
 
 def compare_versions(version1, version2):
     """

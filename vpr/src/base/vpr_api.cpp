@@ -1062,8 +1062,8 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             print_switch_usage();
         }
 
-        //Update interactive graphics
-        update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
+        // Update interactive graphics
+        update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), e_pic_type::ROUTING, timing_info);
     }
 
     return route_status;
@@ -1500,7 +1500,6 @@ void vpr_analysis(const Netlist<>& net_list,
                   vpr_setup.RoutingArch.R_minW_pmos,
                   Arch.grid_logic_tile_area,
                   vpr_setup.RoutingArch.directionality,
-                  vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
                   is_flat);
 
     if (vpr_setup.TimingEnabled) {

@@ -80,7 +80,7 @@ class RRSpatialLookup {
      *   @param layer specifies which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
      *   @param (xlow, ylow) is the lower left corner of the grid location range to search within the FPGA
      *   @param (xhigh, yhigh) is the top right corner of the grid location range to search within the FPGA
-     *   @param rr_type specifies the type of resource,
+     *   @param type specifies the type of resource,
      *   @param ptc gives a unique number of resources of that type (e.g. CHANX) at that (layer,x,y).
      *
      *   @return nodes A vector of unique nodes within the given bounds which meet the given parameters
@@ -102,7 +102,7 @@ class RRSpatialLookup {
      *
      *   @param layer specified which FPGA die the node is located at (e.g. multi-die(3D) FPGA)
      *   @param (x, y) is the coordinate of the routing channel within the FPGA
-     *   @param rr_type specifies the type of routing channel, either x-direction or y-direction
+     *   @param type specifies the type of routing channel, either x-direction or y-direction
      *
      * @note 
      * - Return an empty list if there are no routing channel at the given (layer,x,y) location
@@ -289,6 +289,6 @@ class RRSpatialLookup {
 
     /* -- Internal data storage -- */
   private:
-    /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional array mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
+    /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional array where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
     t_rr_node_indices rr_node_indices_;
 };

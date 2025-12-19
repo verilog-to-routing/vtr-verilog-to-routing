@@ -100,7 +100,7 @@ def vtr_command_argparser(prog=None):
         default=None,
         metavar="TEMP_DIR",
         dest="alt_tasks_dir",
-        help="Alternate directory to run the tasks in (will be created if non-existant)",
+        help="Alternate directory to run the tasks in (will be created if non-existent)",
     )
 
     parser.add_argument(
@@ -422,7 +422,6 @@ def check_two_files(
     for (arch, circuit, script_params), _ in first_results.all_metrics().items():
         first_primary_keys.append((arch, circuit, script_params))
 
-
     # Warn about any elements in first result file that are not found in second result file
     for arch, circuit, script_params in first_primary_keys:
         if second_results.metrics(arch, circuit, script_params) is None:
@@ -443,9 +442,11 @@ def check_two_files(
                     "/".join(str((Path(config.config_dir).parent)).split("/")[-3:])
                 )
             )
-            print("Required case {}/{} missing from {} results: {}".format(
+            print(
+                "Required case {}/{} missing from {} results: {}".format(
                     arch, circuit, first_name, first_results_filepath
-                ))
+                )
+            )
             num_qor_failures += 1
             continue
 
@@ -513,7 +514,7 @@ def summarize_qor(configs, alt_tasks_dir=None):
 
 
 def calc_geomean(args, configs):
-    """caclulate and ouput the geomean values to the geomean file"""
+    """calculate and output the geomean values to the geomean file"""
     first = False
     task_path = Path(find_task_dir(configs[0], args.alt_tasks_dir))
     if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file():

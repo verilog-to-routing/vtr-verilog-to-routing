@@ -208,7 +208,7 @@ class t_pack_high_fanout_thresholds {
     explicit t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
     t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
-    ///@brief Returns the high fanout threshold of the specifi  ed block
+    ///@brief Returns the high fanout threshold of the specified block
     int get_threshold(std::string_view block_type_name) const;
 
     ///@brief Returns a string describing high fanout thresholds for different block types
@@ -383,12 +383,13 @@ enum class e_sched_type {
 };
 /* Annealing schedule */
 
-enum pic_type {
+/// Specifies what is shown on screen
+enum class e_pic_type {
     NO_PICTURE,
     PLACEMENT,
+    ANALYTICAL_PLACEMENT,
     ROUTING
 };
-/* What's on screen? */
 
 enum pfreq {
     PLACE_NEVER,
@@ -859,7 +860,7 @@ enum class e_place_bounding_box_mode {
  *
  * Supports the method is_timing_driven(), which allows flexible updates
  * to the placer algorithms if more timing driven placement strategies
- * are added in tht future. This method is used across various placement
+ * are added in the future. This method is used across various placement
  * setup files, and it can be useful for major placer routines as well.
  *
  * More methods can be added to this class if the placement strategies
@@ -1313,8 +1314,8 @@ struct t_router_opts {
     enum e_route_type route_type;
     int fixed_channel_width;
     int min_channel_width_hint; ///<Hint to binary search of what the minimum channel width is
-    enum e_router_algorithm router_algorithm;
-    enum e_base_cost_type base_cost_type;
+    e_router_algorithm router_algorithm;
+    e_base_cost_type base_cost_type;
     float astar_fac;
     float astar_offset;
     float router_profiler_astar_fac;
@@ -1374,8 +1375,6 @@ struct t_router_opts {
 
     bool flat_routing;
     bool has_choke_point;
-
-    int custom_3d_sb_fanin_fanout = 1;
 
     bool with_timing_analysis;
 
@@ -1493,14 +1492,6 @@ struct t_det_routing_arch {
     /// Keeps track of the type of architecture switch that connects
     /// wires from another die to ipins in different die
     int wire_to_arch_ipin_switch_between_dice = -1;
-
-    /// keeps track of the type of RR graph switch
-    /// that connects wires to ipins in the RR graph
-    int wire_to_rr_ipin_switch;
-
-    /// keeps track of the type of RR graph switch that connects wires
-    /// from another die to ipins in different die in the RR graph
-    int wire_to_rr_ipin_switch_between_dice = -1;
 
     /// Resistance (in Ohms) of a minimum width nmos transistor.
     /// Used only in the FPGA area model.
@@ -1664,5 +1655,3 @@ class RouteStatus {
 };
 
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
-
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;

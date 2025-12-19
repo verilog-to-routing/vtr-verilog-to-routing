@@ -28,3 +28,9 @@ struct t_rr_edge_info {
 };
 
 typedef std::vector<t_rr_edge_info> t_rr_edge_info_set;
+
+/// @brief Sorts and removes duplicate RR edges in-place.
+inline void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
+    std::stable_sort(rr_edges_to_create.begin(), rr_edges_to_create.end());
+    rr_edges_to_create.erase(std::unique(rr_edges_to_create.begin(), rr_edges_to_create.end()), rr_edges_to_create.end());
+}

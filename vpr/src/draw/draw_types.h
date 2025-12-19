@@ -31,6 +31,7 @@
 #include "ezgl/rectangle.hpp"
 #include "ezgl/color.hpp"
 #include "ezgl/application.hpp"
+#include "draw_color.h"
 
 /// @brief Whether to draw routed nets or flylines (direct lines between sources and sinks).
 enum e_draw_nets {
@@ -91,7 +92,7 @@ enum e_draw_net_type {
 };
 
 /// Chanx to chany or vice versa?
-enum e_chan_edge_dir {
+enum class e_chan_edge_dir {
     FROM_X_TO_Y,
     FROM_Y_TO_X
 };
@@ -123,6 +124,14 @@ enum class e_edge_type {
     CHAN_TO_CHAN, // channel to channel
     NUM_EDGE_TYPES
 };
+
+/// Maps edge types to the color with which they are visualized
+inline const vtr::array<e_edge_type, ezgl::color, (size_t)e_edge_type::NUM_EDGE_TYPES> EDGE_COLOR_MAP{
+    ezgl::LIGHT_PINK,
+    ezgl::MEDIUM_PURPLE,
+    ezgl::PINK,
+    ezgl::PURPLE,
+    blk_DARKGREEN};
 
 /**
  * @brief Structure used to hold data passed into the toggle checkbox callback function.
@@ -157,6 +166,8 @@ struct t_draw_layer_display {
     int alpha = 255;
 };
 
+struct PartialPlacement;
+
 /**
  * @brief Structure used to store variables related to highlighting/drawing
  * 
@@ -170,7 +181,7 @@ struct t_draw_layer_display {
  */
 struct t_draw_state {
     ///@brief What to draw on the screen (ROUTING, PLACEMENT, NO_PICTURE)
-    pic_type pic_on_screen = NO_PICTURE;
+    e_pic_type pic_on_screen = e_pic_type::NO_PICTURE;
 
     ///@brief Whether to draw nets or not
     bool show_nets = false;
@@ -396,6 +407,19 @@ struct t_draw_state {
      * @brief Stores a reference to NoC link bandwidth utilization to be used in the graphics codes.
      */
     std::optional<std::reference_wrapper<const vtr::vector<NocLinkId, double>>> noc_link_bandwidth_usages_ref_;
+
+    /**
+     * @brief Stores a temporary reference to the Analytical Placement partial placement (best placement).
+     * @details This is set by the AP global placer just before drawing and cleared immediately after.
+     *          Only a reference is stored to avoid copying and lifetime issues.
+     */
+    std::optional<std::reference_wrapper<const PartialPlacement>> ap_partial_placement_ref_;
+
+  public:
+    // Set/clear/get the AP partial placement reference used during AP drawing
+    void set_ap_partial_placement_ref(const PartialPlacement& p) { ap_partial_placement_ref_ = std::cref(p); }
+    void clear_ap_partial_placement_ref() { ap_partial_placement_ref_.reset(); }
+    const PartialPlacement* get_ap_partial_placement_ref() const { return ap_partial_placement_ref_ ? &ap_partial_placement_ref_->get() : nullptr; }
 };
 
 /* For each cluster type, this structure stores drawing
@@ -424,7 +448,7 @@ struct t_draw_coords {
      * to (tile_x[device_ctx.grid.width()-1]+tile_width, tile_y[device_ctx.grid.height()-1]+tile_width) in
      * the upper right corner.
      */
-    float *tile_x, *tile_y;
+    std::vector<float> tile_x, tile_y;
 
     ///@brief Half-width or Half-height of a pin. Set when init_draw_coords is called
     float pin_size;
@@ -447,10 +471,10 @@ struct t_draw_coords {
     }
 
     ///@brief returns tile width
-    float get_tile_width();
+    float get_tile_width() const;
 
     ///@brief returns tile width
-    float get_tile_height();
+    float get_tile_height() const;
 
     ///@brief returns bounding box for given pb in given clb
     ezgl::rectangle get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);

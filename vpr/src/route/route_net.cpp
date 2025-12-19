@@ -98,13 +98,10 @@ void setup_net(int itry,
 void update_rr_base_costs(int fanout) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    float factor;
-    size_t index;
-
     /* Other reasonable values for factor include fanout and 1 */
-    factor = sqrt(fanout);
+    float factor = sqrt(fanout);
 
-    for (index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
+    for (size_t index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
         if (device_ctx.rr_indexed_data[RRIndexedDataId(index)].T_quadratic > 0.) { /* pass transistor */
             device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost * factor;
         } else {

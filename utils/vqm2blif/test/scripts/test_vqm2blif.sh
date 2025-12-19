@@ -26,7 +26,7 @@
 
 # Finally, the generated blif files have the extension ".test.blif", so please do not name any other files with this extension
 
-## usefule functions ##
+## useful functions ##
 # prints information regarding how to use the script
 print_usage() 
 {
@@ -41,9 +41,9 @@ print_usage()
     echo ""
     echo "Optional Arguments:"
     echo "-h, --help            show the usage of the test script"
-    echo "-vqm2blif_location    specify the vqm2blif program executable (defalt: \$VTR_ROOT/build/utils/vqm2blif/vqm2blif"
-    echo "-netlists             specify the netlists used to evalute the vqm2blif program (default: \$VTR_ROOT/utils/vqm2blif/test/netlists/"
-    echo "-arch                 specify the architecture file that will be used to evalute the vqm2blif program" 
+    echo "-vqm2blif_location    specify the vqm2blif program executable (default: \$VTR_ROOT/build/utils/vqm2blif/vqm2blif"
+    echo "-netlists             specify the netlists used to evaluate the vqm2blif program (default: \$VTR_ROOT/utils/vqm2blif/test/netlists/"
+    echo "-arch                 specify the architecture file that will be used to evaluate the vqm2blif program" 
     echo "                      (default: \$VTR_ROOT/vtr_flow/arch/titan/stratixiv_arch.timing.xml)"    
     echo "-create_golden        creates a set of \"golden\" .blif netlists using the vqm2blif program. The generated netlists will have the same"
     echo "                      name as the provided .vqm netlists with the extension \"golden.blif\". The generated netlists can be found in the same"
@@ -61,7 +61,7 @@ VTR_ROOT_DIR="$(dirname "$0")/../../../../"
 # location of the vqm program directory
 VQM_PROGRAM="$VTR_ROOT_DIR/build/utils/vqm2blif/vqm2blif"
 
-# location of the deafult architecture file used when testing the vqm2blif program
+# location of the default architecture file used when testing the vqm2blif program
 ARCH_FILE="$(dirname "$0")/../../../../vtr_flow/arch/titan/stratixiv_arch.timing.xml"
 
 # location of the default folder where all the test netlists are located (basic becnchmak tests)
@@ -152,7 +152,7 @@ echo "VQM2BLIF Program Check"
 echo "----------------------"
 
 
-# start by going through the user supplied directory and identify all the .vqm files. We will recursively go throught the directory and identify these .vqm files. We assume that any file found is going to be a test file.
+# start by going through the user supplied directory and identify all the .vqm files. We will recursively go through the directory and identify these .vqm files. We assume that any file found is going to be a test file.
 find $TEST_FOLDER -name "*.vqm" -print0 | while read -d $'\0' vqm_file
 do
     # "create_golden" related variables
@@ -186,7 +186,7 @@ do
 
     # now we need to run the vqm to blif program.
     # we only care about any outputs related to errors, so ignore standard output.
-    # We are running this process in a seperate sub shell to make sure that unwanted error messags are not reported in the terminal
+    # We are running this process in a separate sub shell to make sure that unwanted error messages are not reported in the terminal
     # we have two cases, one for testing and one for generating a golden set of outputs
     if [ $GEN_GOLDEN -eq 0 ]; then
 

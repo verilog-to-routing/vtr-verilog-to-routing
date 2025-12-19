@@ -103,7 +103,7 @@ where:
 
     * ``<vdd>``: Supply voltage in Volts.
 
-    * ``<temp>``: Operating temperature, in Celcius.
+    * ``<temp>``: Operating temperature, in Celsius.
 
 
 .. _power_ace:
@@ -128,7 +128,7 @@ This ativity information consists of two values:
 
 The default tool used to perform activity estimation in VTR is ACE 2.0 :cite:`lamoureux_activity_estimation`.
 This tool was originally designed to work with the (now obsolete) Berkeley SIS tool
-ACE 2.0 was modifed to use ABC, and is included in the VTR package here::
+ACE 2.0 was modified to use ABC, and is included in the VTR package here::
 
     $VTR_ROOT/ace2
 
@@ -148,7 +148,7 @@ where
 User’s may with to use their own activity estimation tool.
 The produced activity file must contain one line for each net in the BLIF file, in the following format::
 
-    <net name> <signal probability> <transistion density>
+    <net name> <signal probability> <transition density>
 
 .. _power_arch_modeling:
 
@@ -160,7 +160,7 @@ The following section describes the architectural assumptions made by the power 
 Complex Blocks
 ~~~~~~~~~~~~~~
 
-The VTR architecture description language supports a hierarchichal description of blocks. In the architecture file, each block is described as a ``pb_type``, which may includes one or more children of type ``pb_type``, and interconnect structures to connect them.
+The VTR architecture description language supports a hierarchical description of blocks. In the architecture file, each block is described as a ``pb_type``, which may includes one or more children of type ``pb_type``, and interconnect structures to connect them.
 
 The power estimation algorithm traverses this hierarchy recursively, and performs power estimation for each ``pb_type``.
 The power model supports multiple power estimation methods, and the user specifies the desired method in the architecture file:
@@ -249,7 +249,7 @@ The wire and buffer attributes can be set using the following options.
 If no options are set, it is assumed that the wire capacitance is zero, and there are no buffers present.
 Keep in mind that the port construct allows for multiple pins per port.
 These attributes will be applied to each pin in the port.
-If necessary, the user can seperate a port into multiple ports with different wire/buffer properties.
+If necessary, the user can separate a port into multiple ports with different wire/buffer properties.
 
 * ``wire_capacitance=1.0e-15``: The absolute capacitance of the wire, in Farads.
 
@@ -476,7 +476,7 @@ In order to determine the wire length that connects a parent entity to its child
 In this figure, the square on the left represents the area used by the transistors of the interconnect multiplexers.
 It is assumed that all connections from parent to child will pass through this area.
 Real wire lengths could me more or less than this estimate; some pins in the parent may be directly adjacent to child entities, or they may have to traverse a distance greater than just the interconnect area.
-Unfortuantely, a more rigorous estimation would require some information about the transistor layout.
+Unfortunately, a more rigorous estimation would require some information about the transistor layout.
 
 .. _fig_power_local_interconnect:
 

@@ -1,7 +1,7 @@
 #include "vtr_version.h"
 
 //This file is automatically processed by CMAKE and replaces
-//the values between ampersand's with the releveant CMAKE variable
+//the values between ampersand's with the relevant CMAKE variable
 //before being compiled.
 namespace vtr {
     const char* VERSION = "@VTR_VERSION@";

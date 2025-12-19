@@ -2,7 +2,7 @@ include(GNUInstallDirs)
 
 if(NOT MSCV)
     # These flags generate noisy but non-bug warnings when using lib kj,
-    # supress them.
+    # suppress them.
     set(WARN_FLAGS_TO_DISABLE
         -Wno-undef
         -Wno-non-virtual-dtor

@@ -146,7 +146,7 @@ struct DSPInfo {
 };
 
 // stores relevant information for a given FPGA device
-// currently, just storing the strings used to idenitify luts and dff primitives and their ports within the vqm netlist
+// currently, just storing the strings used to identify luts and dff primitives and their ports within the vqm netlist
 // add additional parameters as needed
 struct DeviceInfo {
     std::string lut_type_name;
@@ -183,11 +183,11 @@ string generate_opname (t_node* vqm_node, const LogicalModels& arch_models, stri
 void generate_opname_ram (t_node* vqm_node, const LogicalModels& arch_models, string& mode_hash, string device); //mode-hash for RAM blocks
 
 string generate_opname_stratixiv (t_node* vqm_node, const LogicalModels& arch_models); //mode-hash for Stratix IV
-void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, string& mode_hash); //mode-hash for Stratix IV DSP Multiplers
+void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, string& mode_hash); //mode-hash for Stratix IV DSP Multipliers
 void generate_opname_stratixiv_dsp_out (t_node* vqm_node, string& mode_hash); //mode-hash for Stratix IV DSP Output (MAC)
 
 string generate_opname_stratix10 (t_node* vqm_node, const LogicalModels& arch_models); //mode-hash for Stratix 10
-void generate_opname_stratix10_dsp (t_node* vqm_node, string& mode_hash, bool dsp_mode); //mode-hash for Stratix 10 DSP fixed point Multiplers
+void generate_opname_stratix10_dsp (t_node* vqm_node, string& mode_hash, bool dsp_mode); //mode-hash for Stratix 10 DSP fixed point Multipliers
 void generate_opname_stratix10_lut (t_node* vqm_node, string& mode_hash); //mode-hash for Stratix 10 LUTs
 void remap_lut_ports(t_node* vqm_node); // remaps the input ports of the LUT atom to the ports [dataa-datae]
 

@@ -60,7 +60,7 @@ struct t_from_or_to_inf {
 struct t_first_stage_mux_inf {
     std::string mux_name;
     std::vector<std::vector<std::string>> from_tokens;
-    std::vector<t_from_or_to_inf> froms;
+    std::vector<t_from_or_to_inf> from_infos;
 };
 
 struct t_second_stage_mux_inf : t_first_stage_mux_inf {
@@ -168,7 +168,7 @@ class VibInf {
 };
 
 /************************* VIB_GRID ***********************************/
-/* Describe different VIB type on different locations by immitating t_grid_loc_def. */
+/* Describe different VIB type on different locations by imitating t_grid_loc_def. */
 
 struct t_vib_grid_loc_spec {
     t_vib_grid_loc_spec(std::string start, std::string end, std::string repeat, std::string incr)
@@ -210,7 +210,7 @@ struct t_vib_grid_loc_def {
                       // the largest priority wins.
 
     t_vib_grid_loc_spec x; //Horizontal location specification
-    t_vib_grid_loc_spec y; //Veritcal location specification
+    t_vib_grid_loc_spec y; //Vertical location specification
 };
 
 struct t_vib_layer_def {

@@ -48,11 +48,8 @@ class RRGraphBuilder {
     /** @brief Return a writable object for the meta data on the edge */
     MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata();
     
-    /** @brief Return a writable object fo the incoming edge storage */
+    /** @brief Return a writable object for the incoming edge storage */
     vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edge_storage();
-    
-    /** @brief Return a writable object of the node ptc storage (for tileable routing resource graph) */
-    vtr::vector<RRNodeId, std::vector<short>>& node_ptc_storage();
 
     /** @brief Return the size for rr_node_metadata */
     inline size_t rr_node_metadata_size() const {
@@ -154,7 +151,7 @@ class RRGraphBuilder {
      *   - valid geometry information: xlow/ylow/xhigh/yhigh
      *   - a valid node type
      *   - a valid node ptc number
-     *   - a valid side (applicable to OPIN and IPIN nodes only
+     *   - a valid side (applicable to OPIN and IPIN nodes only)
      */
     void add_node_to_all_locs(RRNodeId node);
 
@@ -238,11 +235,10 @@ class RRGraphBuilder {
         node_storage_.set_node_ptc_num(id, new_ptc_num);
     }
 
-    /** @brief set the layer number at which RRNodeId is located at */
-    inline void set_node_layer(RRNodeId id, int layer){
-        node_storage_.set_node_layer(id, layer);
+    /// @brief Set the layer range where the given node spans.
+    inline void set_node_layer(RRNodeId id, char layer_low, char layer_high){
+        node_storage_.set_node_layer(id, layer_low, layer_high);
     }
-
 
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
     inline void set_node_pin_num(RRNodeId id, int new_pin_num) {
@@ -280,11 +276,8 @@ class RRGraphBuilder {
         node_storage_.set_node_mux_num(id, new_mux_num);
     }
 
-    /** @brief Add a list of ptc number in string (split by comma) to a given node. This function is used by rr graph reader only. */
-    void set_node_ptc_nums(RRNodeId node, const std::string& ptc_str);
-
-    /** @brief With a given node, output ptc numbers into a string (use comma as delima). This function is used by rr graph writer only. */
-    std::string node_ptc_nums_to_string(RRNodeId node) const;
+    /** @brief Add a list of ptc numbers to a given node. This function is used by rr graph reader only. */
+    void set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers);
 
     /** @brief Identify if a node contains multiple ptc numbers. It is used for tileable RR Graph and mainly used by I/O reader only. */
     bool node_contain_multiple_ptc(RRNodeId node) const;
@@ -352,6 +345,18 @@ class RRGraphBuilder {
     inline void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
         node_storage_.alloc_and_load_edges(rr_edges_to_create);
     }
+    
+    /** @brief Removes a given list of RREdgeIds from the RR Graph.
+     * This method does not preserve the order of edges. If you're
+     * calling it after partition_edges has been called, you will
+     * need to call partition_edges again.
+     * This operation is O(#Edges to be removed) and should not be called frequently.
+     *
+     * @param rr_edges_to_remove list of RREdgeIds to be removed
+     */
+    inline void remove_edges(std::vector<RREdgeId>& rr_edges_to_remove) {
+        node_storage_.remove_edges(rr_edges_to_remove);
+    }
 
     /** @brief Overrides the associated switch for a given edge by
      *         updating the edge to use the passed in switch. */
@@ -378,12 +383,12 @@ class RRGraphBuilder {
         node_storage_.add_node_side(id, new_side);
     }
 
-    /** @brief It maps arch_switch_inf indicies to rr_switch_inf indicies. */
+    /** @brief It maps arch_switch_inf indices to rr_switch_inf indices. */
     inline void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin) {
         node_storage_.remap_rr_node_switch_indices(switch_fanin);
     }
 
-    /** @brief Marks that edge switch values are rr switch indicies*/
+    /** @brief Marks that edge switch values are rr switch indices*/
     inline void mark_edges_as_rr_switch_ids() {
         node_storage_.mark_edges_as_rr_switch_ids();
     }
@@ -394,13 +399,6 @@ class RRGraphBuilder {
         const std::vector<t_arch_switch_inf>& arch_switch_inf,
         t_arch_switch_fanin& arch_switch_fanins) {
         return node_storage_.count_rr_switches(arch_switch_inf, arch_switch_fanins);
-    }
-
-    /** @brief Unlock storage; required to modify an routing resource graph after edge is read */
-    inline void unlock_storage() {
-        node_storage_.edges_read_ = false;
-        node_storage_.partitioned_ = false;
-        node_storage_.clear_node_first_edge();
     }
 
     /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.
@@ -417,17 +415,13 @@ class RRGraphBuilder {
     inline void reserve_switches(size_t num_switches) {
         this->rr_switch_inf_.reserve(num_switches);
     }
-    /** @brief This function resize node storage to accomidate size RR nodes. */
+    /** @brief This function resize node storage to accommodate size RR nodes. */
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
     }
-    /** @brief This function resize node ptc nums. Only used by RR graph I/O reader and writers. */
-    inline void resize_node_ptc_nums(size_t size) {
-        node_tilable_track_nums_.resize(size);
-    }
 
 
-    /** @brief This function resize rr_switch to accomidate size RR Switch. */
+    /** @brief This function resize rr_switch to accommodate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);
     }
@@ -527,29 +521,6 @@ class RRGraphBuilder {
      * By default, it is empty! Call build_in_edges() to construct it.
      */
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
-
-    /** 
-     * @brief Extra ptc number for each routing resource node. 
-     * @note This is required by tileable routing resource graphs. The first index is the node id, and
-     * the second index is is the relative distance from the starting point of the node.
-     * @details 
-     * In a tileable routing architecture, routing tracks, e.g., CHANX and CHANY, follow a staggered organization.
-     * Hence, a routing track may appear in different routing channels, representing different ptc/track id.
-     * Here is an illustrative example of a X-direction routing track (CHANX) in INC direction, which is organized in staggered way.
-     *    
-     *  Coord(x,y) (1,0)   (2,0)   (3,0)     (4,0)       Another track (node)
-     *  ptc=0     ------>                              ------>
-     *                   \                            /
-     *  ptc=1             ------>                    /
-     *                           \                  /
-     *  ptc=2                     ------>          / 
-     *                                   \        /
-     *  ptc=3                             ------->
-     *           ^                               ^
-     *           |                               |
-     *     starting point                   ending point
-     */
-    vtr::vector<RRNodeId, std::vector<short>> node_tilable_track_nums_;
 
     /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */

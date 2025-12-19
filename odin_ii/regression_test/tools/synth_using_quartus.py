@@ -19,8 +19,8 @@ if __name__ == "__main__":
 
     # print sys.argv
     if len(sys.argv) != 2:
-        print "Take our Verilog benchmarks and synthesize them using QIS (Quartus)"
-        print "Usage: GenQuartusBlifs.py <Verilog Source Dir>"
+        print("Take our Verilog benchmarks and synthesize them using QIS (Quartus)")
+        print("Usage: GenQuartusBlifs.py <Verilog Source Dir>")
         sys.exit(0)
 
     projNames = map(odin.trimDotV, filter(odin.isVerilog, os.listdir(sys.argv[1])))
@@ -68,11 +68,11 @@ if __name__ == "__main__":
 
     process = subprocess.Popen(clean, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     (out, err) = process.communicate()
-    print out + "\n"
+    print(out + "\n")
 
     process = subprocess.Popen(create, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     (out, err) = process.communicate()
-    print out + "\n"
+    print(out + "\n")
 
     process = subprocess.Popen(move, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
     (out, err) = process.communicate()

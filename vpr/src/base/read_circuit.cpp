@@ -155,7 +155,7 @@ static void show_circuit_stats(const AtomNetlist& netlist, const LogicalModels& 
         LogicalModelId blk_model_id = netlist.block_model(blk_id);
         std::string blk_model_name = models.get_model(blk_model_id).name;
         ++block_type_counts[blk_model_name];
-        // If this block is a LUT, also count the occurences of this size of LUT
+        // If this block is a LUT, also count the occurrences of this size of LUT
         // for more logging information.
         if (blk_model_id == names_model_id) {
             // May have zero (no input LUT) or one input port

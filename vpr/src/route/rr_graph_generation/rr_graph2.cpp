@@ -88,15 +88,11 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int to_y,
                                    const e_rr_type to_chan_type,
                                    const int switch_override,
-                                   const int custom_3d_sb_fanin_fanout,
-                                   const int delayless_switch,
                                    const t_sb_connection_map& sb_conn_map,
-                                   vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
                                    t_rr_edge_info_set& rr_edges_to_create,
-                                   t_rr_edge_info_set& des_3d_rr_edges_to_create,
                                    int& edge_count);
 
-/*
+/**
  * @brief Figures out the edges that should connect the given wire segment to the given channel segment, adds these edges to 'rr_edge_to_create'
  *
  *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
@@ -124,49 +120,9 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const e_side from_side,
                                  const e_side to_side,
                                  const int swtich_override,
-                                 const int custom_3d_sb_fanin_fanout,
-                                 const int delayless_switch,
                                  const t_sb_connection_map& sb_conn_map,
-                                 vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
                                  RRNodeId from_rr_node,
-                                 t_rr_edge_info_set& rr_edges_to_create,
-                                 t_rr_edge_info_set& des_3d_rr_edges_to_create);
-
-/**
- * @brief checks if a specific switch block edge is crossing any layer to create 3D custom switch blocks
- *
- *  @param src_side switch block edge source side
- *  @param dest_side switch block edge destination side
- *
- * @return true if the connection going to another layer, false otherwise.
- */
-static bool is_sb_conn_layer_crossing(e_side src_side, e_side dest_side);
-
-/**
- * @brief finds corresponding RR nodes for a 3D SB edge and fill 3D custom switch block information (offset to correct extra CHANX nodes, source tracks, ..)
- *
- *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
- *  @param x x-coordinate of both src and dest wires
- *  @param y y-coordinate of both src and dest wires
- *  @param from_wire from wire index within channel width
- *  @param from_wire_layer from wire layer-coordinate
- *  @param from_wire_type from wire type (CHANX/CHANY)
- *  @param to_wire to wire index within channel width
- *  @param to_wire_layer to wire layer-coordinate
- *  @param to_wire_type to wire type (CHANX/CHANY)
- *  @param curr_switchblocks_offset number of extra nodes that has already been added to the current switch block
- *
- * @ returns whether both source track RR node and destination RR node exist
- */
-static bool check_3d_SB_RRnodes(RRGraphBuilder& rr_graph_builder,
-                                int x,
-                                int y,
-                                int from_wire,
-                                int from_wire_layer,
-                                e_rr_type from_wire_type,
-                                int to_wire,
-                                int to_wire_layer,
-                                e_rr_type to_wire_type);
+                                 t_rr_edge_info_set& rr_edges_to_create);
 
 static int vpr_to_phy_track(const int itrack,
                             const int chan_num,
@@ -287,7 +243,7 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const int max_len,
                                                       const std::vector<t_segment_inf>& segment_inf,
                                                       const bool use_full_seg_groups,
-                                                      const enum e_directionality directionality) {
+                                                      const e_directionality directionality) {
     /* Allocates and loads the seg_details data structure.  Max_len gives the   *
      * maximum length of a segment (dimension of array).  The code below tries  *
      * to:                                                                      *
@@ -815,14 +771,12 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
 }
 
 bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_details* seg_details) {
-    int length, ofs, start_seg;
+    int length = seg_details[track].length();
 
-    length = seg_details[track].length();
+    // Make sure they gave us correct start
+    int start_seg = get_seg_start(seg_details, track, chan, seg);
 
-    /* Make sure they gave us correct start */
-    start_seg = get_seg_start(seg_details, track, chan, seg);
-
-    ofs = seg - start_seg;
+    int ofs = seg - start_seg;
 
     VTR_ASSERT(ofs >= 0);
     VTR_ASSERT(ofs < length);
@@ -1036,84 +990,6 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
     }
 }
 
-static bool is_sb_conn_layer_crossing(e_side src_side, e_side dest_side) {
-    if (src_side < NUM_2D_SIDES && dest_side < NUM_2D_SIDES) {
-        return false;
-    }
-
-    if (src_side == dest_side) {
-        return false;
-    }
-
-    return true;
-}
-
-static bool check_3d_SB_RRnodes(RRGraphBuilder& rr_graph_builder,
-                                int x,
-                                int y,
-                                int from_wire,
-                                int from_wire_layer,
-                                e_rr_type from_wire_type,
-                                int to_wire,
-                                int to_wire_layer,
-                                e_rr_type to_wire_type) {
-    RRNodeId from_inode = rr_graph_builder.node_lookup().find_node(from_wire_layer, x, y, from_wire_type, from_wire);
-    RRNodeId to_inode = rr_graph_builder.node_lookup().find_node(to_wire_layer, x, y, to_wire_type, to_wire);
-
-    if (from_inode && to_inode) {
-        return true;
-    }
-
-    return false;
-}
-
-vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_map* sb_conn_map,
-                                                               const int custom_3d_sb_fanin_fanout,
-                                                               RRGraphBuilder& rr_graph_builder) {
-    const auto& grid_ctx = g_vpr_ctx.device().grid;
-    vtr::NdMatrix<int, 2> extra_nodes_per_switchblocks{{grid_ctx.width(), grid_ctx.height()}, 0};
-
-    for (size_t y = 0; y < grid_ctx.height(); y++) {
-        for (size_t x = 0; x < grid_ctx.width(); x++) {
-            for (int layer = 0; layer < (int)grid_ctx.get_num_layers(); layer++) {
-
-                int num_of_3d_conn = 0;
-                for (e_side from_side : TOTAL_3D_SIDES) {
-                    for (e_side to_side : TOTAL_3D_SIDES) {
-                        if (!is_sb_conn_layer_crossing(from_side, to_side)) { // this connection is not crossing any layer
-                            continue;
-                        }
-
-                        SwitchblockLookupKey sb_coord(x, y, layer, from_side, to_side);
-                        if (sb_conn_map->count(sb_coord) > 0) {
-                            std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
-                            for (const t_switchblock_edge& iconn : conn_vector) {
-                                // check if both from_node and to_node exists in the rr-graph
-                                // CHANY -> CHANX connection
-                                if (check_3d_SB_RRnodes(rr_graph_builder, x, y, iconn.from_wire,
-                                                        iconn.from_wire_layer, e_rr_type::CHANY,
-                                                        iconn.to_wire, iconn.to_wire_layer,
-                                                        e_rr_type::CHANX)) {
-                                    num_of_3d_conn++;
-                                }
-                                // CHANX -> CHANY connection
-                                if (check_3d_SB_RRnodes(rr_graph_builder, x, y, iconn.from_wire,
-                                                        iconn.from_wire_layer, e_rr_type::CHANX,
-                                                        iconn.to_wire, iconn.to_wire_layer,
-                                                        e_rr_type::CHANY)) {
-                                    num_of_3d_conn++;
-                                }
-                            }
-                        }
-                    }
-                }
-                extra_nodes_per_switchblocks[x][y] += ((num_of_3d_conn + custom_3d_sb_fanin_fanout - 1) / custom_3d_sb_fanin_fanout);
-            }
-        }
-    }
-    return extra_nodes_per_switchblocks;
-}
-
 int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       int layer,
                       int seg,
@@ -1124,11 +1000,11 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       t_rr_edge_info_set& rr_edges_to_create,
                       const t_track_to_pin_lookup& track_to_pin_lookup,
                       const t_chan_seg_details* seg_details,
-                      enum e_rr_type chan_type,
+                      e_rr_type chan_type,
                       int chan_length,
                       int wire_to_ipin_switch,
                       int wire_to_pin_between_dice_switch,
-                      enum e_directionality directionality) {
+                      e_directionality directionality) {
     /*
      * Adds the fan-out edges from wire segment at (chan, seg, track) to adjacent
      * blocks along the wire's length
@@ -1229,22 +1105,18 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const DeviceGrid& grid,
                         const int Fs_per_side,
                         t_sblock_pattern& sblock_pattern,
-                        vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
                         RRNodeId from_rr_node,
                         t_rr_edge_info_set& rr_edges_to_create,
-                        t_rr_edge_info_set& des_3d_rr_edges_to_create,
                         const t_chan_seg_details* from_seg_details,
                         const t_chan_seg_details* to_seg_details,
                         const t_chan_details& to_chan_details,
-                        const enum e_directionality directionality,
-                        const int custom_3d_sb_fanin_fanout,
-                        const int delayless_switch,
+                        const e_directionality directionality,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                         const t_sb_connection_map* sb_conn_map) {
     int to_chan, to_sb;
     std::vector<int> conn_tracks;
     bool from_is_sblock, is_behind, Fs_clipped;
-    enum e_side to_side;
+    e_side to_side;
 
     /* check whether a custom switch block will be used */
     bool custom_switch_block = false;
@@ -1369,8 +1241,8 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 if (Direction::DEC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
                                                       to_type, from_side_a, to_side,
-                                                      switch_override, custom_3d_sb_fanin_fanout, delayless_switch,
-                                                      *sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
+                                                      switch_override,
+                                                      *sb_conn_map, from_rr_node, rr_edges_to_create);
                 }
             } else {
                 if (BI_DIRECTIONAL == directionality) {
@@ -1407,8 +1279,8 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 if (Direction::INC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(rr_graph_builder, layer, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side,
-                                                      switch_override, custom_3d_sb_fanin_fanout, delayless_switch,
-                                                      *sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
+                                                      switch_override,
+                                                      *sb_conn_map, from_rr_node, rr_edges_to_create);
                 }
             } else {
                 if (BI_DIRECTIONAL == directionality) {
@@ -1519,12 +1391,8 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const int to_y,
                                    const e_rr_type to_chan_type,
                                    const int switch_override,
-                                   const int custom_3d_sb_fanin_fanout,
-                                   const int delayless_switch,
                                    const t_sb_connection_map& sb_conn_map,
-                                   vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
                                    t_rr_edge_info_set& rr_edges_to_create,
-                                   t_rr_edge_info_set& des_3d_rr_edges_to_create,
                                    int& edge_count) {
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -1540,84 +1408,27 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
             if (sb_edge.from_wire != from_wire) continue;
 
             int to_wire = sb_edge.to_wire;
-            int to_layer = sb_edge.to_wire_layer;
             // Get the index of the switch connecting the two wires
             int src_switch = sb_edge.switch_ind;
-            // Get the index of the switch connecting the two wires in two layers
-            int src_switch_betwen_layers = sb_edge.switch_ind_between_layers;
 
-            if (to_layer == layer) { // track-to-track connection within the same layer
-                RRNodeId to_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
+            RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer, to_x, to_y, to_chan_type, to_wire);
 
-                if (!to_node) {
-                    continue;
-                }
+            if (!to_node) {
+                continue;
+            }
 
-                // Apply any switch overrides
-                if (should_apply_switch_override(switch_override)) {
-                    src_switch = switch_override;
-                }
+            // Apply any switch overrides
+            if (should_apply_switch_override(switch_override)) {
+                src_switch = switch_override;
+            }
 
-                rr_edges_to_create.emplace_back(from_rr_node, to_node, src_switch, false);
+            rr_edges_to_create.emplace_back(from_rr_node, to_node, src_switch, false);
+            ++edge_count;
+
+            if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
+                // Add reverse edge since bidirectional
+                rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch, false);
                 ++edge_count;
-
-                if (device_ctx.arch_switch_inf[src_switch].directionality() == BI_DIRECTIONAL) {
-                    // Add reverse edge since bidirectional
-                    rr_edges_to_create.emplace_back(to_node, from_rr_node, src_switch, false);
-                    ++edge_count;
-                }
-            } else { // track-to_track connection crossing layer
-                VTR_ASSERT(to_layer != layer);
-                // Check if current connection is valid, since switch block pattern is very general,
-                // we might see invalid layer in connection, so we just skip those
-                if ((layer < 0 || layer >= (int)device_ctx.grid.get_num_layers())
-                    || (to_layer < 0 || to_layer >= (int)device_ctx.grid.get_num_layers())) {
-                    continue;
-                }
-
-                if (tile_x != to_x || tile_y != to_y) {
-                    continue;
-                }
-
-                // In order to connect two tracks in different layers, we need to follow these three steps:
-                // 1) connect "from_tracks" to CHANZ node in the same switch block
-                // 2) connect CHANZ node located in from_layer to another CHANZ node located in to_layer
-                // 3) connect CHANZ node located in to_layer to "to_track"
-                // +-------------+        +-------------+         +--------------+         +--------------+
-                // | from_wire   | -----> | CHANZ node  | ------> | CHANZ node   | ------> | to_wire      |
-                // | (src_layer) |        | (src_layer) |         | (dest_layer) |         | (dest_layer) |
-                // +-------------+        +-------------+         +--------------+         +--------------+
-
-                const int chanz_track_num = num_of_3d_conns_custom_SB[tile_x][tile_y] / custom_3d_sb_fanin_fanout;
-                RRNodeId src_chanz_node = rr_graph_builder.node_lookup().find_node(layer, tile_x, tile_y, e_rr_type::CHANZ, chanz_track_num);
-                RRNodeId sink_chanz_node = rr_graph_builder.node_lookup().find_node(to_layer, tile_x, tile_y, e_rr_type::CHANZ, chanz_track_num);
-                RRNodeId sink_track_node = rr_graph_builder.node_lookup().find_node(to_layer, to_x, to_y, to_chan_type, to_wire);
-
-                if (!src_chanz_node || !sink_chanz_node || !sink_track_node) {
-                    continue;
-                }
-
-                // Apply any switch overrides
-                if (should_apply_switch_override(switch_override)) {
-                    src_switch = switch_override;
-                }
-
-                // Add edge between source node at from layer to intermediate node
-                rr_edges_to_create.emplace_back(from_rr_node, src_chanz_node, delayless_switch, false);
-                ++edge_count;
-
-                // Add edge between intermediate node to destination node at to layer
-                // might add the same edge more than once, but redundant edges will be removed before updating the RR graph
-                des_3d_rr_edges_to_create.emplace_back(sink_chanz_node, sink_track_node, src_switch_betwen_layers, false);
-                ++edge_count;
-
-                // We only add the following edge between intermediate nodes once for the first 3D connection for each pair of intermediate nodes
-                if (num_of_3d_conns_custom_SB[tile_x][tile_y] % custom_3d_sb_fanin_fanout == 0) {
-                    rr_edges_to_create.emplace_back(src_chanz_node, sink_chanz_node, delayless_switch, false);
-                    ++edge_count;
-                }
-
-                num_of_3d_conns_custom_SB[tile_x][tile_y]++;
             }
         }
     }
@@ -1632,13 +1443,9 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const e_side from_side,
                                  const e_side to_side,
                                  const int switch_override,
-                                 const int custom_3d_sb_fanin_fanout,
-                                 const int delayless_switch,
                                  const t_sb_connection_map& sb_conn_map,
-                                 vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
                                  RRNodeId from_rr_node,
-                                 t_rr_edge_info_set& rr_edges_to_create,
-                                 t_rr_edge_info_set& des_3d_rr_edges_to_create) {
+                                 t_rr_edge_info_set& rr_edges_to_create) {
     int edge_count = 0;
     int to_x, to_y;
     int tile_x, tile_y;
@@ -1671,36 +1478,10 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                            to_y,
                            to_chan_type,
                            switch_override,
-                           custom_3d_sb_fanin_fanout,
-                           delayless_switch,
                            sb_conn_map,
-                           num_of_3d_conns_custom_SB,
                            rr_edges_to_create,
-                           des_3d_rr_edges_to_create,
                            edge_count);
 
-    // Check sb_conn_map for connections between two layers
-    for (e_side to_another_die_side : {ABOVE, UNDER}) {
-        get_switchblocks_edges(rr_graph_builder,
-                               tile_x,
-                               tile_y,
-                               layer,
-                               from_side,
-                               from_wire,
-                               from_rr_node,
-                               to_another_die_side,
-                               to_x,
-                               to_y,
-                               to_chan_type,
-                               switch_override,
-                               custom_3d_sb_fanin_fanout,
-                               delayless_switch,
-                               sb_conn_map,
-                               num_of_3d_conns_custom_SB,
-                               rr_edges_to_create,
-                               des_3d_rr_edges_to_create,
-                               edge_count);
-    }
     return edge_count;
 }
 

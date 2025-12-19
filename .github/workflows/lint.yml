@@ -1,0 +1,28 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  spelling:
+    name: Check Spelling
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v6
+
+      - name: Install Requirements
+        run: |
+          python3 -m pip install --upgrade pip
+          # NOTE: There is nothing special about this version. We just need to
+          #       fix it to something.
+          pip install codespell==2.4.1
+
+      - name: Check Spelling
+        run: codespell

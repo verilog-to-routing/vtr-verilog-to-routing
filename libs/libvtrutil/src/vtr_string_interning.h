@@ -19,7 +19,7 @@
  * 
  *  Interned strings (interned_string) that come from the same internment
  *  object (string_internment) can safely be checked for equality and hashed
- *  without touching the underlying string.  Lexigraphical comparisons (e.g. <)
+ *  without touching the underlying string.  Lexicographical comparisons (e.g. <)
  *  requires reconstructing the string.
  * 
  *  Basic usage:
@@ -75,7 +75,7 @@ typedef StrongId<interned_string_tag> StringId;
  * Number of bytes to represent the StringId.  This implies a maximum number of unique strings available equal to (1 << (kBytesPerId*CHAR_BIT)).
  */
 constexpr size_t kBytesPerId = 3;
-///@brief Maximum number of splits to accomidate before just interning the entire string.
+///@brief Maximum number of splits to accommodate before just interning the entire string.
 constexpr size_t kMaxParts = 3;
 ///@brief Number of bytes to represent the number of splits present in an interned string.
 constexpr size_t kSizeSize = 1;
@@ -90,7 +90,7 @@ static_assert((1 << (CHAR_BIT * kSizeSize)) > kMaxParts, "Size of size data is t
  * This object is much heavier memory wise than interned_string, so do not
  * store these.
  * 
- * This iterator only accomidates the forward_iterator concept.
+ * This iterator only accommodates the forward_iterator concept.
  * 
  * Do no construct this iterator directly.  Use either
  * bound_interned_string::begin/end or interned_string;:begin/end.
@@ -407,7 +407,7 @@ class string_internment {
 
     // FIXME: This storage scheme does store 2x memory for the strings storage,
     // however it does avoid having to be concerned with what happens when
-    // strings_ resizes, so for a simplier initial implementation, this is the
+    // strings_ resizes, so for a simpler initial implementation, this is the
     // approach taken.
     vtr::vector<StringId, std::string> strings_;
     std::string temporary_;

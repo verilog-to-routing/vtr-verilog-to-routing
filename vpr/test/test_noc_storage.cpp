@@ -49,7 +49,7 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
         // add router to the golden vector
         golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y, 0, DUMMY_LATENCY);
 
-        // add tje router to the noc
+        // add the router to the noc
         test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0, DUMMY_LATENCY);
     }
 
@@ -101,7 +101,7 @@ TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
         // add router to the golden vector
         golden_set.emplace_back(router_number, router_grid_position_x, router_grid_position_y, 0, DUMMY_LATENCY);
 
-        // add tje router to the noc
+        // add the router to the noc
         test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0, DUMMY_LATENCY);
     }
 
@@ -149,7 +149,7 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
         // determine the current router parameters
         router_id = router_number;
 
-        // add tje router to the noc
+        // add the router to the noc
         test_noc.add_router(router_id,
                             curr_router_x_pos,
                             curr_router_y_pos,
@@ -238,7 +238,7 @@ TEST_CASE("test_router_link_list", "[vpr_noc]") {
         // determine the current router parameters
         router_id = router_number;
 
-        // add tje router to the noc
+        // add the router to the noc
         test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos, 0, DUMMY_LATENCY);
     }
 
@@ -312,7 +312,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         // determine the current router parameters
         router_id = router_number;
 
-        // add tje router to the noc
+        // add the router to the noc
         test_noc.add_router(router_id,
                             curr_router_x_pos,
                             curr_router_y_pos,

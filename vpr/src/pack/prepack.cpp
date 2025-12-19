@@ -16,6 +16,7 @@
 #include <cstring>
 #include <map>
 #include <queue>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -42,7 +43,8 @@ static void free_list_of_pack_patterns(std::vector<t_pack_patterns>& list_of_pac
 static void free_pack_pattern(t_pack_patterns* pack_pattern);
 
 static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_node,
-                                                    std::unordered_map<std::string, int>& pattern_names);
+                                                    std::unordered_map<std::string, int>& pattern_names,
+                                                    std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block);
 
 static void forward_infer_pattern(t_pb_graph_pin* pb_graph_pin);
 
@@ -56,13 +58,15 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
 static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansion_edge,
                                                   t_pack_patterns& packing_pattern,
                                                   int* L_num_blocks,
-                                                  const bool make_root_of_chain);
+                                                  const bool make_root_of_chain,
+                                                  std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block);
 
 static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansion_edge,
                                                    t_pack_patterns& packing_pattern,
                                                    t_pb_graph_pin* destination_pin,
                                                    t_pack_pattern_block* destination_block,
-                                                   int* L_num_blocks);
+                                                   int* L_num_blocks,
+                                                   std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block);
 
 static int compare_pack_pattern(const t_pack_patterns* pattern_a, const t_pack_patterns* pattern_b);
 
@@ -153,10 +157,14 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
     int L_num_blocks;
     t_pb_graph_edge* expansion_edge;
 
+    // Use this map to keep track of the last primitive from each pb_graph_node
+    // that was added to a packing pattern.
+    std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*> last_added_pattern_block;
+
     /* alloc and initialize array of packing patterns based on architecture complex blocks */
     std::unordered_map<std::string, int> pattern_names;
     for (const t_logical_block_type& type : logical_block_types) {
-        discover_pattern_names_in_pb_graph_node(type.pb_graph_head, pattern_names);
+        discover_pattern_names_in_pb_graph_node(type.pb_graph_head, pattern_names, last_added_pattern_block);
     }
 
     std::vector<t_pack_patterns> packing_patterns = alloc_and_init_pattern_list_from_hash(pattern_names);
@@ -174,7 +182,8 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
             packing_patterns[i].base_cost = 0;
             // use the found expansion edge to build the pack pattern
             backward_expand_pack_pattern_from_edge(expansion_edge,
-                                                   packing_patterns[i], nullptr, nullptr, &L_num_blocks);
+                                                   packing_patterns[i], nullptr, nullptr, &L_num_blocks,
+                                                   last_added_pattern_block);
             packing_patterns[i].num_blocks = L_num_blocks;
 
             /* Default settings: A section of a netlist must match all blocks in a pack
@@ -214,11 +223,11 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
 
 /**
  * Locate all pattern names
- * Side-effect: set all pb_graph_node temp_scratch_pad field to NULL
  *				For cases where a pattern inference is "obvious", mark it as obvious.
  */
 static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_node,
-                                                    std::unordered_map<std::string, int>& pattern_names) {
+                                                    std::unordered_map<std::string, int>& pattern_names,
+                                                    std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block) {
     /* Iterate over all edges to discover if an edge in current physical block belongs to a pattern
      * If edge does, then record the name of the pattern in a hash table */
 
@@ -226,7 +235,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
         return;
     }
 
-    pb_graph_node->temp_scratch_pad = nullptr;
+    last_added_pattern_block[pb_graph_node] = nullptr;
 
     for (int i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (int j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
@@ -330,7 +339,7 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
     for (int i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
         for (int j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
             for (int k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                discover_pattern_names_in_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[i][j][k], pattern_names);
+                discover_pattern_names_in_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[i][j][k], pattern_names, last_added_pattern_block);
             }
         }
     }
@@ -484,7 +493,8 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
 static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansion_edge,
                                                   t_pack_patterns& packing_pattern,
                                                   int* L_num_blocks,
-                                                  bool make_root_of_chain) {
+                                                  bool make_root_of_chain,
+                                                  std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block) {
     int i, j, k;
     int iport, ipin, iedge;
     bool found; /* Error checking, ensure only one fan-out for each pattern net */
@@ -517,8 +527,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
             /* This is the destination node */
             found = true;
 
-            // the temp_scratch_pad points to the last primitive from this pb_graph_node that was added to a packing pattern.
-            const auto& destination_pb_temp = (t_pack_pattern_block*)destination_pb_graph_node->temp_scratch_pad;
+            // Keep track of the last primitive from this pb_graph_node that was added to a packing pattern.
+            const t_pack_pattern_block* destination_pb_temp = last_added_pattern_block[destination_pb_graph_node];
             // if this pb_graph_node (primitive) is not added to the packing pattern already, add it and expand all its edges
             if (destination_pb_temp == nullptr || destination_pb_temp->pattern_index != curr_pattern_index) {
                 // a primitive that belongs to this pack pattern is found: 1) create a new pattern block,
@@ -528,7 +538,7 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                 packing_pattern.base_cost += compute_primitive_base_cost(destination_pb_graph_node);
                 destination_block->block_id = *L_num_blocks;
                 (*L_num_blocks)++;
-                destination_pb_graph_node->temp_scratch_pad = (void*)destination_block;
+                last_added_pattern_block[destination_pb_graph_node] = destination_block;
                 destination_block->pattern_index = curr_pattern_index;
                 destination_block->pb_type = destination_pb_graph_node->pb_type;
 
@@ -539,7 +549,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                             backward_expand_pack_pattern_from_edge(destination_pb_graph_node->input_pins[iport][ipin].input_edges[iedge],
                                                                    packing_pattern,
                                                                    &destination_pb_graph_node->input_pins[iport][ipin],
-                                                                   destination_block, L_num_blocks);
+                                                                   destination_block, L_num_blocks,
+                                                                   last_added_pattern_block);
                         }
                     }
                 }
@@ -549,7 +560,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                     for (ipin = 0; ipin < destination_pb_graph_node->num_output_pins[iport]; ipin++) {
                         for (iedge = 0; iedge < destination_pb_graph_node->output_pins[iport][ipin].num_output_edges; iedge++) {
                             forward_expand_pack_pattern_from_edge(destination_pb_graph_node->output_pins[iport][ipin].output_edges[iedge],
-                                                                  packing_pattern, L_num_blocks, false);
+                                                                  packing_pattern, L_num_blocks, false,
+                                                                  last_added_pattern_block);
                         }
                     }
                 }
@@ -561,14 +573,14 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                             backward_expand_pack_pattern_from_edge(destination_pb_graph_node->clock_pins[iport][ipin].input_edges[iedge],
                                                                    packing_pattern,
                                                                    &destination_pb_graph_node->clock_pins[iport][ipin],
-                                                                   destination_block, L_num_blocks);
+                                                                   destination_block, L_num_blocks, last_added_pattern_block);
                         }
                     }
                 }
             }
 
             // if this pb_graph_node (primitive) should be added to the pack pattern blocks
-            if (((t_pack_pattern_block*)destination_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index) {
+            if (last_added_pattern_block[destination_pb_graph_node]->pattern_index == curr_pattern_index) {
                 // if this pb_graph_node is known to be the root of the chain, update the root block and root pin
                 if (make_root_of_chain == true) {
                     packing_pattern.chain_root_pins = {{expansion_edge->output_pins[i]}};
@@ -584,7 +596,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                     forward_expand_pack_pattern_from_edge(expansion_edge->output_pins[i]->output_edges[j],
                                                           packing_pattern,
                                                           L_num_blocks,
-                                                          make_root_of_chain);
+                                                          make_root_of_chain,
+                                                          last_added_pattern_block);
                 } else {
                     for (k = 0; k < expansion_edge->output_pins[i]->output_edges[j]->num_pack_patterns; k++) {
                         if (expansion_edge->output_pins[i]->output_edges[j]->pack_pattern_indices[k] == curr_pattern_index) {
@@ -603,7 +616,8 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
                             forward_expand_pack_pattern_from_edge(expansion_edge->output_pins[i]->output_edges[j],
                                                                   packing_pattern,
                                                                   L_num_blocks,
-                                                                  make_root_of_chain);
+                                                                  make_root_of_chain,
+                                                                  last_added_pattern_block);
                         }
                     } // End for pack patterns of output edge
                 }
@@ -622,7 +636,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                    t_pack_patterns& packing_pattern,
                                                    t_pb_graph_pin* destination_pin,
                                                    t_pack_pattern_block* destination_block,
-                                                   int* L_num_blocks) {
+                                                   int* L_num_blocks,
+                                                   std::unordered_map<t_pb_graph_node*, t_pack_pattern_block*>& last_added_pattern_block) {
     int i, j, k;
     int iport, ipin, iedge;
     bool found; /* Error checking, ensure only one fan-out for each pattern net */
@@ -658,13 +673,13 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             found = true;
 
             /* If this pb_graph_node is part not of the current pattern index, put it in and expand all its edges */
-            source_block = (t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad;
+            source_block = last_added_pattern_block[source_pb_graph_node];
             if (source_block == nullptr || source_block->pattern_index != curr_pattern_index) {
                 source_block = new t_pack_pattern_block();
                 source_block->block_id = *L_num_blocks;
                 (*L_num_blocks)++;
                 packing_pattern.base_cost += compute_primitive_base_cost(source_pb_graph_node);
-                source_pb_graph_node->temp_scratch_pad = (void*)source_block;
+                last_added_pattern_block[source_pb_graph_node] = source_block;
                 source_block->pattern_index = curr_pattern_index;
                 source_block->pb_type = source_pb_graph_node->pb_type;
 
@@ -680,7 +695,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                                    packing_pattern,
                                                                    &source_pb_graph_node->input_pins[iport][ipin],
                                                                    source_block,
-                                                                   L_num_blocks);
+                                                                   L_num_blocks,
+                                                                   last_added_pattern_block);
                         }
                     }
                 }
@@ -692,7 +708,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                             forward_expand_pack_pattern_from_edge(source_pb_graph_node->output_pins[iport][ipin].output_edges[iedge],
                                                                   packing_pattern,
                                                                   L_num_blocks,
-                                                                  false);
+                                                                  false,
+                                                                  last_added_pattern_block);
                         }
                     }
                 }
@@ -705,15 +722,16 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                                    packing_pattern,
                                                                    &source_pb_graph_node->clock_pins[iport][ipin],
                                                                    source_block,
-                                                                   L_num_blocks);
+                                                                   L_num_blocks,
+                                                                   last_added_pattern_block);
                         }
                     }
                 }
             }
 
             if (destination_pin != nullptr) {
-                VTR_ASSERT(((t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad)->pattern_index == curr_pattern_index);
-                source_block = (t_pack_pattern_block*)source_pb_graph_node->temp_scratch_pad;
+                VTR_ASSERT(last_added_pattern_block[source_pb_graph_node]->pattern_index == curr_pattern_index);
+                source_block = last_added_pattern_block[source_pb_graph_node];
                 pack_pattern_connection = new t_pack_pattern_connections();
                 pack_pattern_connection->from_block = source_block;
                 pack_pattern_connection->from_pin = expansion_edge->input_pins[i];
@@ -750,7 +768,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                     forward_expand_pack_pattern_from_edge(expansion_edge,
                                                           packing_pattern,
                                                           L_num_blocks,
-                                                          true);
+                                                          true,
+                                                          last_added_pattern_block);
                 }
                 // this input pin of the expansion edge has a driving pin
             } else {
@@ -762,7 +781,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                                packing_pattern,
                                                                destination_pin,
                                                                destination_block,
-                                                               L_num_blocks);
+                                                               L_num_blocks,
+                                                               last_added_pattern_block);
                         // if pattern shouldn't be inferred
                     } else {
                         // check if this input pin edge is annotated with the current pattern
@@ -775,7 +795,8 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
                                                                        packing_pattern,
                                                                        destination_pin,
                                                                        destination_block,
-                                                                       L_num_blocks);
+                                                                       L_num_blocks,
+                                                                       last_added_pattern_block);
                             }
                         }
                     }
@@ -1119,11 +1140,12 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     // Iterate through all sink blocks and check whether any of them
     // is compatible with the block specified in the pack pattern.
     bool connected_to_latch = false;
-    LogicalModelId latch_model_id = LogicalModels::MODEL_LATCH_ID;
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
     for (const auto& sink_pin_id : net_sinks) {
         auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
-        if (atom_nlist.block_model(sink_block_id) == latch_model_id) {
+        // If the sink block has a clock, it is considered stateful (e.g., a latch or flip-flop).
+        // Mark this so we can later decide whether to drop the block based on the net’s fanout.
+        if (!atom_nlist.block_is_combinational(sink_block_id)) {
             connected_to_latch = true;
         }
         if (primitive_type_feasible(sink_block_id, to_pb_type)) {
@@ -1480,7 +1502,7 @@ static void expand_search(const t_pb_graph_pin* input_pin, std::queue<t_pb_graph
     // iterate over all output edges at this pin
     for (int iedge = 0; iedge < input_pin->num_output_edges; iedge++) {
         const auto& pin_edge = input_pin->output_edges[iedge];
-        // if this edge is not anotated with this pattern and its pattern cannot be inferred, ignore it.
+        // if this edge is not annotated with this pattern and its pattern cannot be inferred, ignore it.
         if (!pin_edge->annotated_with_pattern(pattern_index) && !pin_edge->infer_pattern) {
             continue;
         }

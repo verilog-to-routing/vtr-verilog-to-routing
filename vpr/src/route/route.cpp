@@ -342,9 +342,9 @@ bool route(const Netlist<>& net_list,
 
         //Update graphics
         if (itry == 1) {
-            update_screen(first_iteration_priority, ("Initial Route: " + iteration_msg).c_str(), ROUTING, timing_info);
+            update_screen(first_iteration_priority, ("Initial Route: " + iteration_msg).c_str(), e_pic_type::ROUTING, timing_info);
         } else {
-            update_screen(ScreenUpdatePriority::MINOR, ("Route: " + iteration_msg).c_str(), ROUTING, timing_info);
+            update_screen(ScreenUpdatePriority::MINOR, ("Route: " + iteration_msg).c_str(), e_pic_type::ROUTING, timing_info);
         }
 
         if (router_opts.save_routing_per_iteration) {

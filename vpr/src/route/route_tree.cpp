@@ -291,7 +291,7 @@ RouteTree::update_unbuffered_ancestors_C_downstream(RouteTreeNode& from_node) {
 
     /* Having set the value of C_downstream_addition, we must check whether the parent switch
      * is a buffered or unbuffered switch with the if statement below. If the parent switch is
-     * a buffered switch, then the parent node's downsteam capacitance is increased by the
+     * a buffered switch, then the parent node's downstream capacitance is increased by the
      * value of the parent switch's internal capacitance in the if statement below.
      * Correspondingly, the ancestors' downstream capacitance will be updated by the same
      * value through the while loop. Otherwise, if the parent switch is unbuffered, then
@@ -330,19 +330,18 @@ void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     RRNodeId inode = from_node.inode;
-    float Tdel, Tchild;
 
     /* Assuming the downstream connections are, on average, connected halfway
      * along a wire segment's length.  See discussion in net_delay.cpp if you want
      * to change this.                                                           */
-    Tdel = Tarrival + 0.5 * from_node.C_downstream * rr_graph.node_R(inode);
+    float Tdel = Tarrival + 0.5 * from_node.C_downstream * rr_graph.node_R(inode);
     from_node.Tdel = Tdel;
 
     /* Now expand the children of this node to load their Tdel values */
     for (RouteTreeNode& child : from_node._child_nodes()) {
         RRSwitchId iswitch = child.parent_switch;
 
-        Tchild = Tdel + rr_graph.rr_switch_inf(iswitch).R * child.C_downstream;
+        float Tchild = Tdel + rr_graph.rr_switch_inf(iswitch).R * child.C_downstream;
         Tchild += rr_graph.rr_switch_inf(iswitch).Tdel; /* Intrinsic switch delay. */
         load_route_tree_Tdel(child, Tchild);
     }
@@ -541,7 +540,7 @@ RouteTree::add_subtree_from_heap(RTExploredNode* hptr, int target_net_pin_index,
 
     /* build a path, looking up rr nodes and switches from rr_node_route_inf */
     new_branch_inodes.push_back(sink_inode);
-    while (!_rr_node_to_rt_node.count(new_inode)) {
+    while (!_rr_node_to_rt_node.contains(new_inode)) {
         new_branch_inodes.push_back(new_inode);
         new_branch_iswitches.push_back(new_iswitch);
         edge = route_ctx.rr_node_route_inf[new_inode].prev_edge;
@@ -605,7 +604,7 @@ void RouteTree::add_non_configurable_nodes(RouteTreeNode* rt_node,
                                            bool is_flat) {
     RRNodeId rr_node = rt_node->inode;
 
-    if (visited.count(rr_node) && reached_by_non_configurable_edge)
+    if (visited.contains(rr_node) && reached_by_non_configurable_edge)
         return;
 
     visited.insert(rr_node);
@@ -618,7 +617,7 @@ void RouteTree::add_non_configurable_nodes(RouteTreeNode* rt_node,
         VTR_ASSERT(!rr_graph.edge_is_configurable(rr_node, iedge));
         RRNodeId to_rr_node = rr_graph.edge_sink_node(rr_node, iedge);
 
-        if (_rr_node_to_rt_node.count(to_rr_node)) // TODO: not 100% sure about this
+        if (_rr_node_to_rt_node.contains(to_rr_node)) // TODO: not 100% sure about this
             continue;
 
         RRSwitchId edge_switch(rr_graph.edge_switch(rr_node, iedge));

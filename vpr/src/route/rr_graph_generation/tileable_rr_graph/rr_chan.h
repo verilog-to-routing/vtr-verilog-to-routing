@@ -15,7 +15,7 @@
  *
  * Note : 
  *  - This is a collection of rr_nodes from the RRGraph Object 
- *    It does not rebuild or contruct any connects between rr_nodes
+ *    It does not rebuild or construct any connects between rr_nodes
  *    It is just an annotation on an existing RRGraph
  *   -------------   ------
  *  |             | |      |

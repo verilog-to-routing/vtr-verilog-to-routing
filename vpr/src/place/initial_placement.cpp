@@ -1713,7 +1713,7 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
         // Normalize the macro size to be a number between 0 and 1.
         float normalized_macro_size = macro_size / static_cast<float>(max_macro_size);
 
-        // Compute the cost. Clusters wth a higher cost will be placed first.
+        // Compute the cost. Clusters with a higher cost will be placed first.
         // Cost is proportional to macro size since larger macros are more
         // challenging to place and should be placed earlier if possible.
         // Cost is inversly proportional to standard deviation, since clusters
@@ -1725,7 +1725,7 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
         // If the cluster is constrained, compute how much area its constrained
         // region takes up. This will be used to place "more constrained" blocks
         // first.
-        // TODO: The cluster constrained area can be incorperated into the cost
+        // TODO: The cluster constrained area can be incorporated into the cost
         //       somehow.
         ClusterBlockId macro_head_blk = pl_macro.members[0].blk_index;
         if (is_cluster_constrained(macro_head_blk)) {
@@ -1840,7 +1840,7 @@ static inline bool place_blocks_min_displacement(std::vector<ClusterBlockId>& cl
             }
 
             // The find_nearest_compatible_loc function above should only return
-            // a location which can legally accomodate the macro (if it found a
+            // a location which can legally accommodate the macro (if it found a
             // location). Double check these to be safe.
             VTR_ASSERT_SAFE(!blk_loc_registry.grid_blocks().block_at_location(centroid_loc));
             VTR_ASSERT_SAFE(macro_can_be_placed(pl_macro, centroid_loc, false, blk_loc_registry));

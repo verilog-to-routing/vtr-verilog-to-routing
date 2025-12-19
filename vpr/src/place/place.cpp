@@ -154,8 +154,8 @@ static void update_screen_debug();
 
 //Performs a major (i.e. interactive) placement screen update.
 //This function with no arguments is useful for calling from a debugger to
-//look at the intermediate implemetnation state.
+//look at the intermediate implementation state.
 static void update_screen_debug() {
-    update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", PLACEMENT, nullptr);
+    update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", e_pic_type::PLACEMENT, nullptr);
 }
 #endif

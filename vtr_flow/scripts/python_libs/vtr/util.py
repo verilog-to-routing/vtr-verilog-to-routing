@@ -114,7 +114,7 @@ class CommandRunner:
         Arguments
         =========
             cmd: list of tokens that form the command to be run
-            log_filename: the log fiel name for the command's output. Default: derived from command
+            log_filename: the log filename for the command's output. Default: derived from command
             temp_dir: The directory to run the command in. Default: None (uses object default).
             expected_return_code: The expected return code from the command.
             If the actula return code does not match, will generate an exception. Default: 0
@@ -283,7 +283,7 @@ def pretty_print_table(file, border=False):
 
 def write_tab_delimitted_csv(filepath, rows):
     """
-    Write out the data provied in a tab-delimited CSV format
+    Write out the data provided in a tab-delimited CSV format
 
     filepath: The filepath to write the data to
     rows: An iterable of dictionary-like elements; each element
@@ -320,7 +320,7 @@ def write_tab_delimitted_csv(filepath, rows):
 
 def load_tab_delimited_csv(filepath):
     """
-    loads a tab delimted csv as a list of ordered dictionaries
+    loads a tab delimited csv as a list of ordered dictionaries
     """
     data = []
     with open(filepath) as file:
@@ -404,7 +404,7 @@ def load_config_lines(filepath, allow_includes=True):
         @include "another_file.txt"
 
     will cause the specified file to be included in-line.
-    The @included filename is interpretted as relative to the directory
+    The @included filename is interpreted as relative to the directory
     containing filepath.
 
     Returns a list of lines

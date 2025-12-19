@@ -251,8 +251,7 @@ static void check_source(const Netlist<>& net_list,
     /* First node_block for net is the source */
     ParentBlockId blk_id = net_list.net_driver_block(net_id);
 
-    t_block_loc blk_loc;
-    blk_loc = get_block_loc(blk_id, is_flat);
+    t_block_loc blk_loc = get_block_loc(blk_id, is_flat);
     if (blk_loc.loc.x != i || blk_loc.loc.y != j) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net SOURCE is in wrong location (%d,%d).\n", i, j);
@@ -304,8 +303,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
         return false;
     }
 
-    /* Now we know the rr graph says these two nodes are adjacent.  Double  *
-     * check that this makes sense, to verify the rr graph.                 */
+    // Now we know the rr graph says these two nodes are adjacent. Double
+    // check that this makes sense, to verify the rr graph.
     VTR_ASSERT(reached);
 
     int num_adj = 0;
@@ -313,14 +312,14 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
     auto from_rr = RRNodeId(from_node);
     auto to_rr = RRNodeId(to_node);
     e_rr_type from_type = rr_graph.node_type(from_rr);
-    int from_layer = rr_graph.node_layer(from_rr);
+    int from_layer = rr_graph.node_layer_low(from_rr);
     int from_xlow = rr_graph.node_xlow(from_rr);
     int from_ylow = rr_graph.node_ylow(from_rr);
     int from_xhigh = rr_graph.node_xhigh(from_rr);
     int from_yhigh = rr_graph.node_yhigh(from_rr);
     int from_ptc = rr_graph.node_ptc_num(from_rr);
     e_rr_type to_type = rr_graph.node_type(to_rr);
-    int to_layer = rr_graph.node_layer(to_rr);
+    int to_layer = rr_graph.node_layer_low(to_rr);
     int to_xlow = rr_graph.node_xlow(to_rr);
     int to_ylow = rr_graph.node_ylow(to_rr);
     int to_xhigh = rr_graph.node_xhigh(to_rr);
@@ -531,7 +530,6 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          bool is_flat) {
     /* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
      * legal routing if subblocks connect to OPINs directly.                    */
-    e_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -550,7 +548,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
 
                 /* Now check that node is an OPIN of the right type. */
 
-                rr_type = rr_graph.node_type(RRNodeId(inode));
+                e_rr_type rr_type = rr_graph.node_type(RRNodeId(inode));
                 if (rr_type != e_rr_type::OPIN) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "in check_locally_used_opins: block #%lu (%s)\n"
@@ -741,24 +739,24 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
             //It is OK if there is an unused reverse/forward edge provided the
             //forward/reverse edge is used.
             std::vector<t_node_edge> dedupped_difference;
-            std::copy_if(difference.begin(), difference.end(),
-                         std::back_inserter(dedupped_difference),
-                         [&](t_node_edge forward_edge) {
-                             VTR_ASSERT_MSG(!routing_edges.count(forward_edge), "Difference should not contain used routing edges");
+            std::ranges::copy_if(difference,
+                                 std::back_inserter(dedupped_difference),
+                                 [&](t_node_edge forward_edge) {
+                                     VTR_ASSERT_MSG(!routing_edges.contains(forward_edge), "Difference should not contain used routing edges");
 
-                             t_node_edge reverse_edge = {forward_edge.to_node, forward_edge.from_node};
+                                     t_node_edge reverse_edge = {forward_edge.to_node, forward_edge.from_node};
 
-                             //Check whether the reverse edge was used
-                             if (rr_edges.count(reverse_edge) && routing_edges.count(reverse_edge)) {
-                                 //The reverse edge exists in the set of rr_edges, and was used
-                                 //by the routing.
-                                 //
-                                 //We can therefore safely ignore the fact that this (forward) edge is un-used
-                                 return false; //Drop from difference
-                             } else {
-                                 return true; //Keep, this edge should have been used
-                             }
-                         });
+                                     //Check whether the reverse edge was used
+                                     if (rr_edges.contains(reverse_edge) && routing_edges.contains(reverse_edge)) {
+                                         //The reverse edge exists in the set of rr_edges, and was used
+                                         //by the routing.
+                                         //
+                                         //We can therefore safely ignore the fact that this (forward) edge is un-used
+                                         return false; //Drop from difference
+                                     } else {
+                                         return true; //Keep, this edge should have been used
+                                     }
+                                 });
 
             //At this point only valid missing node pairs are in the set
             if (!dedupped_difference.empty()) {

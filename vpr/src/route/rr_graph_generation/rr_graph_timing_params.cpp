@@ -8,7 +8,7 @@
 
 /****************** Subroutine definitions *********************************/
 
-void add_rr_graph_C_from_switches(float C_ipin_cblock) {
+void add_rr_graph_C_from_switches() {
     /* This routine finishes loading the C elements of the rr_graph. It assumes *
      * that when you call it the CHANX and CHANY nodes have had their C set to  *
      * their metal capacitance, and everything else has C set to 0.  The graph  *
@@ -57,9 +57,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
             for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
                 to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
-
+                switch_index = rr_graph.edge_switch(rr_id, iedge);
                 if (to_rr_type == e_rr_type::CHANX || to_rr_type == e_rr_type::CHANY) {
-                    switch_index = rr_graph.edge_switch(rr_id, iedge);
                     Cin = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cin;
                     Cout = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout;
                     buffered = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered();
@@ -100,18 +99,19 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                 }
                 /* End edge to CHANX or CHANY node. */
                 else if (to_rr_type == e_rr_type::IPIN) {
+                    float ipin_c = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cin;
                     if (INCLUDE_TRACK_BUFFERS) {
                         /* Implements sharing of the track to connection box buffer.
                          * Such a buffer exists at every segment of the wire at which
                          * at least one logic block input connects. */
                         icblock = seg_index_of_cblock(rr_graph, from_rr_type, to_node);
                         if (cblock_counted[icblock] == false) {
-                            rr_node_C[inode] += C_ipin_cblock;
+                            rr_node_C[inode] += ipin_c;
                             cblock_counted[icblock] = true;
                         }
                     } else {
                         /* No track buffer. Simply add the capacitance onto the wire */
-                        rr_node_C[inode] += C_ipin_cblock;
+                        rr_node_C[inode] += ipin_c;
                     }
                 }
             } /* End loop over all edges of a node. */
@@ -174,7 +174,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
     Couts_to_add = new float[rr_graph.num_nodes()];
     for (size_t i = 0; i < rr_graph.num_nodes(); i++)
         Couts_to_add[i] = 0;
-    for (const RRNodeId& inode : rr_graph.nodes()) {
+    for (const RRNodeId inode : rr_graph.nodes()) {
         for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); iedge++) {
             switch_index = rr_graph.edge_switch(inode, iedge);
             to_node = size_t(rr_graph.edge_sink_node(inode, iedge));
@@ -187,13 +187,13 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
             }
         }
     }
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
         rr_node_C[(size_t)rr_id] += Couts_to_add[(size_t)rr_id];
     }
 
-    //Create the final flywieghted t_rr_rc_data
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id], mutable_device_ctx.rr_rc_data)));
+    // Create the final flywieghted t_rr_rc_data
+    for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
+        mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, find_create_rr_rc_data(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id], mutable_device_ctx.rr_rc_data));
     }
 
     delete[] Couts_to_add;

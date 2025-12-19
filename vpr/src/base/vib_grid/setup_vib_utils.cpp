@@ -5,7 +5,7 @@
 static void process_from_or_to_tokens(const std::vector<std::string> tokens,
                                       const std::vector<t_physical_tile_type>& physical_tile_types,
                                       const std::vector<t_segment_inf> segments,
-                                      std::vector<t_from_or_to_inf>& froms);
+                                      std::vector<t_from_or_to_inf>& from_infos);
 
 static void parse_pin_name(const char* src_string,
                            int* start_pin_index,
@@ -16,7 +16,7 @@ static void parse_pin_name(const char* src_string,
 static void process_from_or_to_tokens(const std::vector<std::string> tokens,
                                       const std::vector<t_physical_tile_type>& physical_tile_types,
                                       const std::vector<t_segment_inf> segments,
-                                      std::vector<t_from_or_to_inf>& froms) {
+                                      std::vector<t_from_or_to_inf>& from_infos) {
     for (int i_token = 0; i_token < (int)tokens.size(); i_token++) {
         std::string curr_token = tokens[i_token];
         const char* Token_char = curr_token.c_str();
@@ -25,7 +25,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> tokens,
             t_from_or_to_inf from_inf;
             from_inf.type_name = splitted_tokens[0];
             from_inf.from_type = e_multistage_mux_from_or_to_type::MUX;
-            froms.push_back(from_inf);
+            from_infos.push_back(from_inf);
         } else if (splitted_tokens.size() == 2) {
             std::string from_type_name = splitted_tokens[0];
             e_multistage_mux_from_or_to_type from_type;
@@ -83,7 +83,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> tokens,
                         from_inf.from_type = from_type;
                         from_inf.type_index = i_phy_type;
                         from_inf.phy_pin_index = all_sub_tile_to_tile_pin_indices[i];
-                        froms.push_back(from_inf);
+                        from_infos.push_back(from_inf);
                     }
                 }
             }
@@ -102,7 +102,7 @@ static void process_from_or_to_tokens(const std::vector<std::string> tokens,
                         from_inf.type_index = i_seg_type;
                         from_inf.seg_dir = dir;
                         from_inf.seg_index = seg_index;
-                        froms.push_back(from_inf);
+                        from_infos.push_back(from_inf);
                     }
 
                     break;
@@ -217,7 +217,7 @@ void setup_vib_inf(const std::vector<t_physical_tile_type>& physical_tile_types,
         for (t_first_stage_mux_inf& first_stage : first_stages) {
             std::vector<std::vector<std::string>>& from_tokens = first_stage.from_tokens;
             for (const std::vector<std::string>& from_token : from_tokens) {
-                process_from_or_to_tokens(from_token, physical_tile_types, segments, first_stage.froms);
+                process_from_or_to_tokens(from_token, physical_tile_types, segments, first_stage.from_infos);
             }
         }
         vib_inf.set_first_stages(first_stages);
@@ -235,7 +235,7 @@ void setup_vib_inf(const std::vector<t_physical_tile_type>& physical_tile_types,
 
             std::vector<std::vector<std::string>> from_tokens = second_stage.from_tokens;
             for (const std::vector<std::string>& from_token : from_tokens) {
-                process_from_or_to_tokens(from_token, physical_tile_types, segments, second_stage.froms);
+                process_from_or_to_tokens(from_token, physical_tile_types, segments, second_stage.from_infos);
             }
         }
         vib_inf.set_second_stages(second_stages);
