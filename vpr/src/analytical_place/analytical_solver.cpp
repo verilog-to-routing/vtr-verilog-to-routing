@@ -1211,12 +1211,15 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         // used to get the per-dimension cost terms.
         // TODO: Investigate using the legalized solution from the prior iteration.
         t_bb net_bb;
-        net_bb.xmin = p_placement.block_x_locs[net_bounds.min_x_blk];
-        net_bb.xmax = p_placement.block_x_locs[net_bounds.max_x_blk];
-        net_bb.ymin = p_placement.block_y_locs[net_bounds.min_y_blk];
-        net_bb.ymax = p_placement.block_y_locs[net_bounds.max_y_blk];
-        net_bb.layer_min = p_placement.block_layer_nums[net_bounds.min_z_blk];
-        net_bb.layer_min = p_placement.block_layer_nums[net_bounds.max_z_blk];
+        net_bb.xmin = std::clamp<int>(p_placement.block_x_locs[net_bounds.min_x_blk], 0, device_grid_width_ - 1);
+        net_bb.xmax = std::clamp<int>(p_placement.block_x_locs[net_bounds.max_x_blk], 0, device_grid_width_ - 1);
+        net_bb.ymin = std::clamp<int>(p_placement.block_y_locs[net_bounds.min_y_blk], 0, device_grid_height_ - 1);
+        net_bb.ymax = std::clamp<int>(p_placement.block_y_locs[net_bounds.max_y_blk], 0, device_grid_height_ - 1);
+        net_bb.layer_min = std::clamp<int>(p_placement.block_layer_nums[net_bounds.min_z_blk], 0, device_grid_num_layers_ - 1);
+        net_bb.layer_max = std::clamp<int>(p_placement.block_layer_nums[net_bounds.max_z_blk], 0, device_grid_num_layers_ - 1);
+        VTR_ASSERT_SAFE(net_bb.xmin <= net_bb.xmax);
+        VTR_ASSERT_SAFE(net_bb.ymin <= net_bb.ymax);
+        VTR_ASSERT_SAFE(net_bb.layer_min <= net_bb.layer_max);
 
         // Compute the channel cost factors due to routing damand.
         double chanx_cost_fac = chan_cost_handler_.get_chanx_cost_fac(net_bb) * chan_fac_norm;
