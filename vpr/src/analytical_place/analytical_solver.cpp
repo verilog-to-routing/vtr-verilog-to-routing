@@ -1190,6 +1190,33 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         // Find the bounding blocks
         APNetBounds net_bounds = get_unique_net_bounds(net_id, p_placement, netlist_);
 
+        // Compute the channel cost factors due to routing damand.
+        double chanx_cost_fac = 1.0;
+        double chany_cost_fac = 1.0;
+        double chanz_cost_fac = 1.0;
+        if (iteration != 0) {
+            // Create a bounding box around the net using the net bounds. This is
+            // use to get the per-dimension cost terms.
+            // TODO: Investigate using the legalized solution from the prior iteration.
+            t_bb net_bb;
+            net_bb.xmin = p_placement.block_x_locs[net_bounds.min_x_blk];
+            net_bb.xmax = p_placement.block_x_locs[net_bounds.max_x_blk];
+            net_bb.ymin = p_placement.block_y_locs[net_bounds.min_y_blk];
+            net_bb.ymax = p_placement.block_y_locs[net_bounds.max_y_blk];
+            net_bb.layer_min = p_placement.block_layer_nums[net_bounds.min_z_blk];
+            net_bb.layer_min = p_placement.block_layer_nums[net_bounds.max_z_blk];
+
+            chanx_cost_fac = chan_cost_handler_.get_chanx_cost_fac(net_bb);
+            chany_cost_fac = chan_cost_handler_.get_chany_cost_fac(net_bb);
+            if (is_multi_die())
+                chanz_cost_fac = chan_cost_handler_.get_chanz_cost_fac(net_bb);
+        }
+
+        // Get the per-dimension, wirelength net weights.
+        double wl_net_w_x = wl_net_w * chanx_cost_fac;
+        double wl_net_w_y = wl_net_w * chany_cost_fac;
+        double wl_net_w_z = wl_net_w * chanz_cost_fac;
+
         // Add an edge from every block to their bounds (ignoring the bounds
         // themselves for now).
         // FIXME: If one block has multiple pins, it may connect to the bounds
@@ -1197,32 +1224,25 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         for (APPinId pin_id : netlist_.net_pins(net_id)) {
             APBlockId blk_id = netlist_.pin_block(pin_id);
             if (blk_id != net_bounds.max_x_blk && blk_id != net_bounds.min_x_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
-                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w_x, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w_x, p_placement.block_x_locs, triplet_list_x, b_x);
             }
             if (blk_id != net_bounds.max_y_blk && blk_id != net_bounds.min_y_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
-                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w_y, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w_y, p_placement.block_y_locs, triplet_list_y, b_y);
             }
             if (is_multi_die() && blk_id != net_bounds.max_z_blk && blk_id != net_bounds.min_z_blk) {
-                // For multi-die FPGAs, we apply extra weight in the layer dimension
-                // since moving between layers tends to cost more wiring than moving
-                // within the same layer.
-                double multidie_net_w = wl_net_w * layer_distance_cost_fac_;
-                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, multidie_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
-                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, multidie_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
+                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, wl_net_w_z, p_placement.block_layer_nums, triplet_list_z, b_z);
+                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, wl_net_w_z, p_placement.block_layer_nums, triplet_list_z, b_z);
             }
         }
 
         // Connect the bounds to each other. Its just easier to put these here
         // instead of in the for loop above.
-        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
-        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w_x, p_placement.block_x_locs, triplet_list_x, b_x);
+        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w_y, p_placement.block_y_locs, triplet_list_y, b_y);
         if (is_multi_die()) {
-            // See comment above. For multi-die FPGAs, we apply an extra factor
-            // to the cost.
-            double multidie_net_w = wl_net_w * layer_distance_cost_fac_;
-            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, multidie_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
+            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, wl_net_w_z, p_placement.block_layer_nums, triplet_list_z, b_z);
         }
 
         // ====================================================================
@@ -1283,11 +1303,11 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 double timing_net_w = ap_timing_tradeoff_ * net_weights_[net_id] * timing_slope_fac_ * (1.0 + crit);
 
                 add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_x * delay_x_norm,
+                                         2 /*num_pins*/, timing_net_w * d_delay_x * delay_x_norm * chanx_cost_fac,
                                          p_placement.block_x_locs, triplet_list_x, b_x);
 
                 add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm,
+                                         2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm * chany_cost_fac,
                                          p_placement.block_y_locs, triplet_list_y, b_y);
             }
         }

@@ -10,7 +10,9 @@
 #include <memory>
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
+#include "chan_cost_handler.h"
 #include "device_grid.h"
+#include "globals.h"
 #include "place_delay_model.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
@@ -531,16 +533,6 @@ class B2BSolver : public AnalyticalSolver {
     ///        number, the solver will focus more on timing and less on wirelength.
     static constexpr double timing_slope_fac_ = 0.75;
 
-    /// @brief For most FPGA architectures, the cost of moving horizontally is
-    ///        equivalent to the cost moving vertically (i.e. moving in increasing
-    ///        x-dimension has the same cost as moving the same amount in the
-    ///        y-dimension). However, for 3D FPGAs, moving between layers is
-    ///        much more expensive than moving in the x or y dimension. We account
-    ///        for this by adding a cost penalty factor to the "z"-dimension.
-    /// TODO: This cost factor was randomly selected because it felt ok. Should
-    ///       choose a better factor that is chosen empirically.
-    static constexpr double layer_distance_cost_fac_ = 10.0;
-
   public:
     B2BSolver(const APNetlist& ap_netlist,
               const DeviceGrid& device_grid,
@@ -555,7 +547,11 @@ class B2BSolver : public AnalyticalSolver {
                            ap_timing_tradeoff,
                            log_verbosity)
         , pre_cluster_timing_manager_(pre_cluster_timing_manager)
-        , place_delay_model_(place_delay_model) {}
+        , place_delay_model_(place_delay_model)
+        , chan_cost_handler_(g_vpr_ctx.device().rr_chanx_width,
+                             g_vpr_ctx.device().rr_chany_width,
+                             g_vpr_ctx.device().rr_graph,
+                             device_grid) {}
 
     /**
      * @brief Perform an iteration of the B2B solver, storing the result into
@@ -804,6 +800,9 @@ class B2BSolver : public AnalyticalSolver {
     /// @brief The place delay model used for calculating the delay between
     ///        two tiles on the FPGA. Used for computing the timing terms.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
+
+    /// @brief Manager class for getting the cost factors in the x, y, and z dimensions.
+    ChanCostHandler chan_cost_handler_;
 };
 
 #endif // EIGEN_INSTALLED
