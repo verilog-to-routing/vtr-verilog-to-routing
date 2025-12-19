@@ -721,7 +721,7 @@ class B2BSolver : public AnalyticalSolver {
      *        placement object for the given dimension.
      *
      * Note: The dim_soln may be modified if it is found that the solution is
-     *       imposible (e.g. has negative positions).
+     *       impossible (e.g. has negative positions).
      *
      *  @param dim_soln
      *      The solution of the linear system for a given dimension.
@@ -770,6 +770,7 @@ class B2BSolver : public AnalyticalSolver {
     // for the next call to solve.
     vtr::vector<APBlockId, double> block_x_locs_solved;
     vtr::vector<APBlockId, double> block_y_locs_solved;
+    // NOTE: For speed, this vector is unused if a device has only one die.
     vtr::vector<APBlockId, double> block_z_locs_solved;
 
     // The following are the legalized solution coming into the analytical solver
@@ -777,6 +778,7 @@ class B2BSolver : public AnalyticalSolver {
     // blocks during the solver.
     vtr::vector<APBlockId, double> block_x_locs_legalized;
     vtr::vector<APBlockId, double> block_y_locs_legalized;
+    // NOTE: For speed, this vector is unused if a device has only one die.
     vtr::vector<APBlockId, double> block_z_locs_legalized;
 
     /// @brief The total number of CG iterations that this solver has performed
