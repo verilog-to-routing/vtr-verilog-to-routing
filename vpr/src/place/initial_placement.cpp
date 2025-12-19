@@ -661,7 +661,7 @@ static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_
             float proj_x = std::clamp<float>(centroid.x, rect.xmin(), rect.xmax() + 0.999);
             float proj_y = std::clamp<float>(centroid.y, rect.ymin(), rect.ymax() + 0.999);
             float proj_layer = std::clamp<float>(centroid.layer, region.get_layer_range().first,
-                                                                 region.get_layer_range().second + 0.999);
+                                                 region.get_layer_range().second + 0.999);
             float dx = std::abs(proj_x - centroid.x);
             float dy = std::abs(proj_y - centroid.y);
             float dlayer = std::abs(proj_layer - centroid.layer);

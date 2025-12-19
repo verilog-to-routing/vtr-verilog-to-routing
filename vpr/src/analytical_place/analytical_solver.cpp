@@ -800,9 +800,9 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
     }
 }
 
-Eigen::VectorXd B2BSolver::solve_linear_system(Eigen::SparseMatrix<double> &A,
-                                               Eigen::VectorXd &b,
-                                               Eigen::VectorXd &guess) {
+Eigen::VectorXd B2BSolver::solve_linear_system(Eigen::SparseMatrix<double>& A,
+                                               Eigen::VectorXd& b,
+                                               Eigen::VectorXd& guess) {
     // Set up the system of equation solver.
     Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg;
     cg.compute(A);
@@ -1330,8 +1330,8 @@ void B2BSolver::update_linear_system_with_anchors(unsigned iteration) {
     }
 }
 
-void B2BSolver::store_solution_into_placement(Eigen::VectorXd &dim_soln,
-                                              vtr::vector<APBlockId, double> &block_dim_locs,
+void B2BSolver::store_solution_into_placement(Eigen::VectorXd& dim_soln,
+                                              vtr::vector<APBlockId, double>& block_dim_locs,
                                               double dim_max_pos) {
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         // Since we are capping the number of iterations, the solver may not

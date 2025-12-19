@@ -712,9 +712,9 @@ class B2BSolver : public AnalyticalSolver {
      * @brief Solves the linear system of equations using the connectivity
      *        matrix (A), the constant vector (b), and a guess for the solution.
      */
-    Eigen::VectorXd solve_linear_system(Eigen::SparseMatrix<double> &A,
-                                        Eigen::VectorXd &b,
-                                        Eigen::VectorXd &guess);
+    Eigen::VectorXd solve_linear_system(Eigen::SparseMatrix<double>& A,
+                                        Eigen::VectorXd& b,
+                                        Eigen::VectorXd& guess);
 
     /**
      * @brief Store the solutions from the linear system into the partial
@@ -732,8 +732,8 @@ class B2BSolver : public AnalyticalSolver {
      *      x-dimension, this would be the width of the device. This is used to
      *      ensure that the positions do not go off device.
      */
-    void store_solution_into_placement(Eigen::VectorXd &dim_soln,
-                                       vtr::vector<APBlockId, double> &block_dim_locs,
+    void store_solution_into_placement(Eigen::VectorXd& dim_soln,
+                                       vtr::vector<APBlockId, double>& block_dim_locs,
                                        double dim_max_pos);
 
     /**
