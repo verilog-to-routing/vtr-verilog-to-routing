@@ -216,7 +216,7 @@ jobs:
       run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release.tar.gz
 
@@ -391,7 +391,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release.tar.gz
 
@@ -478,7 +478,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release-with-odin.tar.gz
 
@@ -597,7 +597,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Download Build Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: build-release.tar.gz
 
@@ -636,7 +636,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release-with-odin.tar.gz
 
@@ -672,7 +672,7 @@ jobs:
       run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release.tar.gz
 
