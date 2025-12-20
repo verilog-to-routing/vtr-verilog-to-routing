@@ -316,11 +316,9 @@ def load_parse_patterns(parse_config_filepath):
     parse_patterns = OrderedDict()
 
     for line in load_config_lines(parse_config_filepath):
-
         components = line.split(";")
 
         if len(components) == 3 or len(components) == 4:
-
             name = components[0]
             filepath = components[1]
             regex_str = components[2]
@@ -426,7 +424,7 @@ def load_parse_results(parse_results_filepath):
     if not Path(parse_results_filepath).exists():
         return parse_results
 
-    with open(parse_results_filepath, 'r', encoding='utf-8') as file:
+    with open(parse_results_filepath, "r", encoding="utf-8") as file:
         for lineno, row in enumerate(file):
             if row[0] == "+":
                 row = row[1:]
@@ -525,7 +523,7 @@ def determine_min_w(log_filename):
     determines the minimum width.
     """
     min_w_regex = re.compile(r"\s*Best routing used a channel width factor of (?P<min_w>\d+).")
-    with open(log_filename, 'r', encoding='utf-8') as file:
+    with open(log_filename, "r", encoding="utf-8") as file:
         for line in file:
             match = min_w_regex.match(line)
             if match:

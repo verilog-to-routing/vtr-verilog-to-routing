@@ -210,7 +210,7 @@ def main():
 
         # Ignore consider-using-f-string.
         # Many Python scripts in this repo use .format instead of f-strings.
-        # TODO: Replace all uses of .format with f-strings.
+        # We should replace these in the future.
         ignore_list.append("C0209")
 
         # Build pylint command

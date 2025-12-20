@@ -250,10 +250,9 @@ def process_vpr_output(vpr_output_file):
     # datastructure below stors the placement data in a dictionary
     placement_data = {}
 
-    with open(vpr_output_file, 'r', encoding='utf-8') as open_file:
+    with open(vpr_output_file, "r", encoding="utf-8") as open_file:
         # process each line from the VPR output
         for line in open_file:
-
             # we only care about three lines where the
             # placement costs, noc costs and
             # placement times are located
@@ -531,7 +530,7 @@ def run_vpr_command_and_store_output(vpr_output_file, vpr_run_command):
     """
 
     # create the file that will store the VPR output
-    with open(vpr_output_file, "w", encoding='utf-8') as vpr_output:
+    with open(vpr_output_file, "w", encoding="utf-8") as vpr_output:
         # run VPR. Will timeout after 10 hours (should be good for any design)
         subprocess.run(vpr_run_command, check=True, stdout=vpr_output, timeout=36000)
 
@@ -564,7 +563,6 @@ def process_vpr_runs(run_args, num_of_seeds, route):
     latency_weight = float(run_args[0][1][12])
 
     for single_run_args in run_args:
-
         # get the placement metrics for the current run
         curr_vpr_place_data = process_vpr_output(vpr_output_file=single_run_args[0])
 
@@ -631,7 +629,7 @@ def print_results(parsed_data, design_file, user_args):
     results_file_name = (os.path.splitext(user_args.flow_file))[-2]
     results_file_name = (results_file_name.split("/"))[-1]
     results_file_name = os.path.join(os.getcwd(), results_file_name + ".txt")
-    with open(results_file_name, "w+", encoding='utf-8') as results_file:
+    with open(results_file_name, "w+", encoding="utf-8") as results_file:
         # write out placement info individually in separate lines
         results_file.write("Design File: {0}\n".format(design_file))
         results_file.write("Flows File: {0}\n".format(user_args.flow_file))
@@ -654,7 +652,6 @@ def execute_vpr_and_process_output(vpr_command_list, num_of_seeds, num_of_thread
     run_args = []
 
     for single_vpr_command in vpr_command_list:
-
         # generate VPR output file_name
         # the constants represent the positions of the variables in the command list
         design_file_name = single_vpr_command[2]
@@ -682,7 +679,6 @@ def execute_vpr_and_process_output(vpr_command_list, num_of_seeds, num_of_thread
 
 
 if __name__ == "__main__":
-
     try:
         # Load the arguments
         args = noc_test_command_line_parser().parse_args(sys.argv[1:])
@@ -707,7 +703,6 @@ if __name__ == "__main__":
         for single_design, single_design_flows_file, single_design_name in zip(
             design_files_in_dir, design_flow_files_in_dir, design_names_in_dir
         ):
-
             # generate all the vpr commands
             vpr_commands = gen_vpr_run_command(
                 design_file=single_design,

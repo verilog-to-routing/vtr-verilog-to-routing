@@ -506,7 +506,7 @@ def get_max_memory_usage(temp_dir):
 
 def get_memory_usage(logfile):
     """Extracts the memory usage from the *.out log files"""
-    with open(logfile, "r", encoding='utf-8') as fpmem:
+    with open(logfile, "r", encoding="utf-8") as fpmem:
         for line in fpmem.readlines():
             if "Maximum resident set size" in line:
                 return int(line.split()[-1])
