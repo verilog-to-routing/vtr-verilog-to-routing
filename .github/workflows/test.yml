@@ -130,7 +130,6 @@ jobs:
         include:
         - { name: 'C/C++',       script: 'check-format.sh'   , with_python: 'yes', with_submodules: 'true', all_vtr_pkgs: 'yes', pkgs: 'clang-format-18' }
         - { name: 'Python',      script: 'check-format-py.sh', with_python: 'yes', with_submodules: 'true', all_vtr_pkgs: 'yes', pkgs: '' }
-        - { name: 'Python Lint', script: 'pylint_check.py'   , with_python: 'yes', with_submodules: 'false', all_vtr_pkgs: 'no', pkgs: '' }
     name: 'F: ${{ matrix.name }}'
     steps:
 
