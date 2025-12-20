@@ -221,6 +221,9 @@ def main():
         # see https://stackoverflow.com/q/21833872
         cmd.append("--variable-rgx=[a-z][a-z0-9_]{0,40}$")
 
+        # Increase the max number of positional arguments.
+        cmd.append("--max-positional-arguments=30")
+
         # Run pylint and check output
         process = subprocess.run(cmd, check=False, stdout=subprocess.PIPE)
         if process.returncode:

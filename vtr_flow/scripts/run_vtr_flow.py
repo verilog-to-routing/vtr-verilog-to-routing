@@ -797,6 +797,7 @@ def except_vtr_error(error, expect_fail, verbose):
     error_status = None
     actual_error = None
     exit_status = None
+    return_status = None
     if isinstance(error, vtr.CommandError):
         # An external command failed
         return_status = 1
