@@ -74,7 +74,7 @@ jobs:
 
       # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
       #       to v4, need to upgrade the machine to support node20.
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
