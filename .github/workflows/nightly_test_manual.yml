@@ -109,7 +109,7 @@ jobs:
 
     - name: Upload regression results
       if: success() || failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: nightly_test_results
         path: |
@@ -131,7 +131,7 @@ jobs:
 
     - name: Upload golden results
       if: success() || failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: nightly_tests_golden
         path: |
