@@ -101,7 +101,7 @@ jobs:
       if: ${{ !cancelled() }}
       # TODO: This runnner is running on a self-hosted CPU. In order to upgrade
       #       to v4, need to upgrade the machine to support node20.
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v6
       with:
         name: ${{matrix.test}}_test_results
         path: |
