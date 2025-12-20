@@ -154,7 +154,7 @@ jobs:
     #       Ubuntu 24.04 (3.12.3); however that version has some linting errors.
     #         - The version of Pylint in requirements.txt is not compatible with
     #           python version 3.12.3. Pylint needs to be updated to move to this version.
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       if: ${{ matrix.with_python == 'yes' }}
       with:
         python-version: 3.10.10
@@ -184,7 +184,7 @@ jobs:
     name: 'Verify Test Suites'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
@@ -243,7 +243,7 @@ jobs:
       COMMON_CMAKE_PARAMS: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
@@ -365,7 +365,7 @@ jobs:
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
@@ -452,7 +452,7 @@ jobs:
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
@@ -531,7 +531,7 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
     - uses: actions/checkout@v6
@@ -578,7 +578,7 @@ jobs:
     needs: [BuildVTR]
     steps:
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12.3
       - uses: actions/checkout@v6
@@ -617,7 +617,7 @@ jobs:
     needs: [BuildVTRWithOdin]
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
     - uses: actions/checkout@v6
@@ -657,7 +657,7 @@ jobs:
     needs: [BuildVTR]
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
     - uses: actions/checkout@v6
