@@ -222,17 +222,17 @@ def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_
         job.qor_parse_command()[0] = work_dir
         if job.parse_command():
             parse_filepath = str(PurePath(work_dir) / flow_metrics_basename)
-            with open(parse_filepath, "w+") as parse_file:
+            with open(parse_filepath, "w+", encoding='utf-8') as parse_file:
                 with redirect_stdout(parse_file):
                     parse_vtr_flow(job.parse_command())
         if job.second_parse_command():
             parse_filepath = str(PurePath(work_dir) / SECOND_PARSE_FILE)
-            with open(parse_filepath, "w+") as parse_file:
+            with open(parse_filepath, "w+", encoding='utf-8') as parse_file:
                 with redirect_stdout(parse_file):
                     parse_vtr_flow(job.second_parse_command())
         if job.qor_parse_command():
             parse_filepath = str(PurePath(work_dir) / QOR_PARSE_FILE)
-            with open(parse_filepath, "w+") as parse_file:
+            with open(parse_filepath, "w+", encoding='utf-8') as parse_file:
                 with redirect_stdout(parse_file):
                     parse_vtr_flow(job.qor_parse_command())
         max_arch_len = max(max_arch_len, len(job.arch()))
@@ -249,7 +249,7 @@ def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_
 def parse_files(config_jobs, run_dir, flow_metrics_basename=FIRST_PARSE_FILE):
     """Parse the result files from the give jobs"""
     task_parse_results_filepath = str(PurePath(run_dir) / flow_metrics_basename)
-    with open(task_parse_results_filepath, "w") as out_f:
+    with open(task_parse_results_filepath, "w", encoding='utf-8') as out_f:
 
         # Start the header
 
@@ -262,7 +262,7 @@ def parse_files(config_jobs, run_dir, flow_metrics_basename=FIRST_PARSE_FILE):
             # which we prefix to each line of the task result file
             job_parse_results_filepath = Path(job.work_dir(run_dir)) / flow_metrics_basename
             if job_parse_results_filepath.exists():
-                with open(job_parse_results_filepath) as in_f:
+                with open(job_parse_results_filepath, 'r', encoding='utf-8') as in_f:
                     lines = in_f.readlines()
                     assert len(lines) == 2
                     if header:
@@ -451,6 +451,7 @@ def check_two_files(
             continue
 
         first_fail = True
+        # pylint: disable-next=consider-using-dict-items
         for metric in pass_requirements.keys():
 
             if not metric in second_metrics:

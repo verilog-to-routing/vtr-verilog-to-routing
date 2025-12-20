@@ -208,9 +208,10 @@ def main():
         # Pylint checks to ignore
         ignore_list = []
 
-        # Ignore function argument indenting, which is currently incompabile with black
-        # https://github.com/psf/black/issues/48
-        ignore_list.append("C0330")
+        # Ignore consider-using-f-string.
+        # Many Python scripts in this repo use .format instead of f-strings.
+        # TODO: Replace all uses of .format with f-strings.
+        ignore_list.append("C0209")
 
         # Build pylint command
         cmd = ["pylint", path, "-s", "n"]

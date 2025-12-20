@@ -15,7 +15,7 @@ def identify_top_module(file_list):
     """Identify the file containing the top module definition."""
     top_module_regex = re.compile(r"module\s+top\s*\(")
     for file in file_list:
-        with open(file, "r") as f:
+        with open(file, "r", encoding='utf-8') as f:
             for line in f:
                 if top_module_regex.search(line):
                     return file
@@ -27,10 +27,10 @@ def create_flattened_file(top_file, file_list):
     current_dir = os.path.basename(os.getcwd())
     output_file_name = f"flattened_{current_dir}.sv"
 
-    with open(output_file_name, "w") as output_file:
+    with open(output_file_name, "w", encoding='utf-8') as output_file:
         if top_file:
             # Write the top module first
-            with open(top_file, "r") as top_module:
+            with open(top_file, "r", encoding='utf-8') as top_module:
                 output_file.write(f"// Content from {top_file}\n")
                 output_file.write(top_module.read())
                 output_file.write("\n\n")
@@ -38,7 +38,7 @@ def create_flattened_file(top_file, file_list):
         # Write the rest of the files
         for file in file_list:
             if file != top_file:
-                with open(file, "r") as verilog_file:
+                with open(file, "r", encoding='utf-8') as verilog_file:
                     output_file.write(f"// Content from {file}\n")
                     output_file.write(verilog_file.read())
                     output_file.write("\n\n")

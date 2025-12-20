@@ -61,8 +61,10 @@ def parse_results(input_path):
         sys.exit(1)
 
     # Read the parse_results.txt file and write to full_res.csv
-    with open(os.path.join(largest_run_path, "parse_results.txt"), "r") as txt_file, open(
-        full_res_csv_path, "w", newline=""
+    with open(
+        os.path.join(largest_run_path, "parse_results.txt"), "r", encoding='utf-8'
+    ) as txt_file, open(
+        full_res_csv_path, "w", newline="", encoding='utf-8'
     ) as csv_file:
         reader = csv.reader(txt_file, delimiter="\t")
         writer = csv.writer(csv_file)
@@ -241,7 +243,7 @@ def main():
         os.makedirs(os.path.dirname(config_path), exist_ok=True)
 
         # Append the lines to the config file
-        with open(config_path, "a") as file:
+        with open(config_path, "a", encoding='utf-8') as file:
             file.writelines(lines)
 
         print(f"Appended lines to {config_path}")

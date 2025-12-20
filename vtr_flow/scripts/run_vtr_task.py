@@ -405,10 +405,10 @@ def create_run_script(job, work_dir):
     Path(work_dir).mkdir(parents=True)
     run_script_file = Path(work_dir) / "vtr_flow.sh"
     template = str(paths.flow_template_path)
-    with open(template, "r") as in_file:
+    with open(template, "r", encoding='utf-8') as in_file:
         template_string = in_file.readlines()
         template_string = "".join(template_string)
-        with open(run_script_file, "w+") as out_file:
+        with open(run_script_file, "w+", encoding='utf-8') as out_file:
             print(
                 template_string.format(
                     estimated_time=runtime_estimate,
@@ -486,7 +486,7 @@ def run_vtr_flow_process(queue, run_dirs, job, script) -> None:
     out = None
     vtr_flow_out = str(PurePath(work_dir) / "vtr_flow.out")
 
-    with open(vtr_flow_out, "w+") as out_file:
+    with open(vtr_flow_out, "w+", encoding='utf-8') as out_file:
         with redirect_stdout(out_file):
             if script == "run_vtr_flow.py":
                 out = run_vtr_flow(job.run_command(), str(paths.run_vtr_flow_path))
@@ -497,7 +497,7 @@ def run_vtr_flow_process(queue, run_dirs, job, script) -> None:
                     stdout=out_file,
                 )
 
-    with open(vtr_flow_out, "r") as out_file:
+    with open(vtr_flow_out, "r", encoding='utf-8') as out_file:
         for line in out_file.readlines():
             print(line, end="")
 
