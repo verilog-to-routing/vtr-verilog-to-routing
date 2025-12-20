@@ -96,7 +96,7 @@ class ChanCostHandler {
             return 1.0;
 
         int bb_num_tiles = (bb.xmax - bb.xmin + 1) * (bb.ymax - bb.ymin + 1);
-        return bb_num_tiles / static_cast<float>(num_inter_dir_conn);
+        return static_cast<double>(bb_num_tiles) / num_inter_dir_conn;
     }
 
   private:

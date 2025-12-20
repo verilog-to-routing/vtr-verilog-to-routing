@@ -6,6 +6,7 @@
  */
 
 #include "chan_cost_handler.h"
+#include <cmath>
 #include "rr_graph_view.h"
 
 ChanCostHandler::ChanCostHandler(const std::vector<int>& rr_chanx_width,
@@ -84,7 +85,7 @@ ChanCostHandler::ChanCostHandler(const std::vector<int>& rr_chanx_width,
         acc_tile_num_inter_die_conn_ = vtr::PrefixSum2D<int>(grid.width(),
                                                              grid.height(),
                                                              [&](size_t x, size_t y) {
-                                                                 return (int)tile_num_inter_die_conn[x][y];
+                                                                 return static_cast<int>(std::round(tile_num_inter_die_conn[x][y]));
                                                              });
     }
 }

@@ -659,17 +659,18 @@ void B2BSolver::initialize_placement_least_dense(PartialPlacement& p_placement) 
     size_t rows = std::ceil(device_grid_height_ / gap);
 
     // Spread the blocks at these grid coordinates.
+    size_t current_row_idx = 0;
     for (size_t d = 0; d < device_grid_num_layers_; d++) {
         for (size_t r = 0; r <= rows; r++) {
             for (size_t c = 0; c <= cols; c++) {
-                size_t i = r * cols + c;
-                if (i >= num_moveable_blocks_)
+                if (current_row_idx >= num_moveable_blocks_)
                     break;
-                APRowId row_id = APRowId(i);
+                APRowId row_id = APRowId(current_row_idx);
                 APBlockId blk_id = row_id_to_blk_id_[row_id];
                 p_placement.block_x_locs[blk_id] = c * gap;
                 p_placement.block_y_locs[blk_id] = r * gap;
                 p_placement.block_layer_nums[blk_id] = d;
+                current_row_idx++;
             }
         }
     }
@@ -1172,7 +1173,7 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
     triplet_list_y.reserve(total_num_pins_in_netlist);
     std::vector<Eigen::Triplet<double>> triplet_list_z;
     if (is_multi_die()) {
-        triplet_list_z.resize(total_num_pins_in_netlist);
+        triplet_list_z.reserve(total_num_pins_in_netlist);
     }
 
     // Compute a normalization term for the per-dimension channel factors. This

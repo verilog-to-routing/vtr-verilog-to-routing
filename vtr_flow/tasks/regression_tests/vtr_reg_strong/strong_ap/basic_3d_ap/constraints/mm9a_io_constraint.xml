@@ -58,8 +58,8 @@
         </partition>
         <partition name="p_46-47">
             <add_region subtile="-1" layer_low="1" layer_high="1" x_low="9" x_high="9" y_low="6" y_high="6" />
-            <add_atom name_pattern="out:p_44" />
-            <add_atom name_pattern="out:p_45" />
+            <add_atom name_pattern="out:p_46" />
+            <add_atom name_pattern="out:p_47" />
         </partition>
         <partition name="p_48">
             <add_region subtile="-1" layer_low="1" layer_high="1" x_low="9" x_high="9" y_low="8" y_high="8" />
