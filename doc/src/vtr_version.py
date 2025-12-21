@@ -49,7 +49,6 @@ def get_vtr_version_info():
     patch = None
     prerelease = None
     try:
-
         major_regex = re.compile(r".*VTR_VERSION_MAJOR (?P<major>\d+)")
         minor_regex = re.compile(r".*VTR_VERSION_MINOR (?P<minor>\d+)")
         patch_regex = re.compile(r".*VTR_VERSION_PATCH (?P<patch>\d+)")
@@ -57,7 +56,6 @@ def get_vtr_version_info():
 
         with open(root_cmakelists) as f:
             for line in f:
-
                 match = major_regex.match(line)
                 if match:
                     major = match.group("major")

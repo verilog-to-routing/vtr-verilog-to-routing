@@ -79,7 +79,6 @@ def main():
 
 
 def load_subtree_config(config_path):
-
     config = OrderedDict()
 
     tree = ET.parse(config_path)
@@ -95,7 +94,6 @@ def load_subtree_config(config_path):
         external_url = None
         default_external_ref = None
         for attrib, value in child.attrib.items():
-
             if attrib == "name":
                 name = value
             elif attrib == "internal_path":

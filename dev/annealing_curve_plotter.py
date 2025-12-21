@@ -49,7 +49,6 @@ def extract_annealing_log(log):
     # Gather data lines until '# Placement took' is encountered
     data_lines = []
     for line in log:
-
         # Reached the end of the placement section
         if line.startswith("# Placement took"):
             break
@@ -98,7 +97,6 @@ def extract_fields(header):
 
 
 def main():
-
     # Parse arguments
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -163,7 +161,6 @@ def main():
         # Parse the data,
         data = {c.name: [] for c in columns}
         for line in annealing_log:
-
             # Split fields, convert to floats
             fields = [float(f) for f in line.split()]
 
