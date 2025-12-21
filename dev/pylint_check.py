@@ -222,6 +222,9 @@ def main():
         cmd.append("--variable-rgx=[a-z][a-z0-9_]{0,40}$")
 
         # Increase the max number of positional arguments.
+        # Many legacy functions in this codebase use 25+ positional arguments.
+        # We should refactor these functions to use fewer parameters or
+        # configuration objects in the future.
         cmd.append("--max-positional-arguments=30")
 
         # Run pylint and check output
