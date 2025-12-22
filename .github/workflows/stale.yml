@@ -8,7 +8,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v9
+      - uses: actions/stale@v10
         with:
           # Set default number of days before being marked stale to 100 years
           # This will be overriden by "days-before-issue-stale" and "days-before-pr-stale"

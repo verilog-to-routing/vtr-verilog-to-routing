@@ -194,7 +194,6 @@ def add_model_timing(arch):
     default_models = frozenset([".input", ".output", ".latch", ".names"])
     primitive_timing_specs = {}
     for prim_pb in prim_pbs:
-
         blif_model = prim_pb.attrib["blif_model"]
 
         if blif_model in default_models:
@@ -254,7 +253,7 @@ def add_model_timing(arch):
 
 def upgrade_fc_overrides(arch):
     """
-    Convets the legacy block <fc> pin and segment override specifications,
+    Converts the legacy block <fc> pin and segment override specifications,
     to the new unified format.
     """
     fc_tags = arch.findall(".//fc")
@@ -271,7 +270,6 @@ def upgrade_fc_overrides(arch):
         ), "Can only have pin or seg overrides (not both)"
 
         for old_pin_override in old_fc_pin_overrides:
-
             port = old_pin_override.attrib["name"]
             fc_type = old_pin_override.attrib["fc_type"]
             fc_val = old_pin_override.attrib["fc_val"]
@@ -287,7 +285,6 @@ def upgrade_fc_overrides(arch):
             changed = True
 
         for old_seg_override in old_fc_seg_overrides:
-
             seg_name = old_seg_override.attrib["name"]
             in_val = old_seg_override.attrib["in_val"]
             out_val = old_seg_override.attrib["out_val"]
@@ -305,7 +302,6 @@ def upgrade_fc_overrides(arch):
             clocks = pb_type.findall("./clock")
 
             for input in inputs + clocks:
-
                 new_attrib = OrderedDict()
                 new_attrib["port_name"] = input.attrib["name"]
                 new_attrib["segment_name"] = seg_name
@@ -315,7 +311,6 @@ def upgrade_fc_overrides(arch):
                 fc_override = ET.SubElement(fc_tag, "fc_override", attrib=new_attrib)
 
             for output in outputs:
-
                 new_attrib = OrderedDict()
                 new_attrib["port_name"] = output.attrib["name"]
                 new_attrib["segment_name"] = seg_name
@@ -516,7 +511,6 @@ def upgrade_device_layout(arch):
                 col_empty_spec.tail = "\n" + 2 * INDENT
 
             elif loc_type == "fill":
-
                 comment = ET.Comment("Fill with '{}'".format(type_name))
                 device_auto.append(comment)
                 comment.tail = "\n" + 2 * INDENT
@@ -599,9 +593,7 @@ def upgrade_pinlocations(arch):
             height = int(pb_type.attrib["height"])
 
         if width == 1:
-
             if pinlocations.attrib["pattern"] == "custom":
-
                 for loc in pinlocations:
                     if loc.tag is ET.Comment:
                         continue
@@ -703,7 +695,7 @@ def upgrade_connection_block_input_switch(arch):
 
         # Comment the switch
         comment = ET.Comment(
-            "switch {} resistance set to yeild for 4x minimum drive strength buffer".format(
+            "switch {} resistance set to yield for 4x minimum drive strength buffer".format(
                 switch_name
             )
         )
@@ -741,7 +733,6 @@ def upgrade_switch_types(arch):
     assert switchlist_tag is not None
 
     for switch_tag in switchlist_tag.findall("./switch"):
-
         switch_type = switch_tag.attrib["type"]
 
         if switch_type in ["buffered", "pass_trans"]:
@@ -932,7 +923,6 @@ def add_missing_comb_model_internal_timing_edges(arch):
     model_tags = arch.findall("./models/model")
 
     for model_tag in model_tags:
-
         input_clock_tags = model_tag.findall("./input_ports/port[@is_clock='1']")
         if len(input_clock_tags) > 0:
             continue  # Sequential primitive -- no change
@@ -953,7 +943,6 @@ def add_missing_comb_model_internal_timing_edges(arch):
             output_port_names.append(output_port_tag.attrib["name"])
 
         for input_port_tag in input_port_tags:
-
             assert "combinational_sink_ports" not in input_port_tag
 
             input_port_tag.attrib["combinational_sink_ports"] = " ".join(output_port_names)

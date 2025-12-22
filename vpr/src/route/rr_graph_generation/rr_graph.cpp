@@ -276,7 +276,6 @@ static void build_rr_graph(e_graph_type graph_type,
                            const std::vector<t_direct_inf>& directs,
                            const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
                            const std::vector<t_layer_def>& interposer_inf,
-                           RRSwitchId& wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings,
                            const int route_verbosity);
@@ -341,13 +340,13 @@ void create_rr_graph(e_graph_type graph_type,
                              device_ctx.arch,
                              &mutable_device_ctx.chan_width,
                              router_opts.base_cost_type,
-                             &det_routing_arch.wire_to_rr_ipin_switch,
                              det_routing_arch.read_rr_graph_filename.c_str(),
                              &mutable_device_ctx.loaded_rr_graph_filename,
                              router_opts.read_rr_edge_metadata,
                              router_opts.do_check_rr_graph,
                              echo_enabled,
                              echo_file_name,
+                             router_opts.route_verbosity,
                              is_flat);
                 if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
                     mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
@@ -376,7 +375,6 @@ void create_rr_graph(e_graph_type graph_type,
                                directs,
                                device_ctx.arch->scatter_gather_patterns,
                                device_ctx.arch->grid_layout().layers,
-                               det_routing_arch.wire_to_rr_ipin_switch,
                                is_flat,
                                Warnings,
                                router_opts.route_verbosity);
@@ -396,7 +394,6 @@ void create_rr_graph(e_graph_type graph_type,
                                                det_routing_arch.R_minW_pmos,
                                                router_opts.base_cost_type,
                                                directs,
-                                               det_routing_arch.wire_to_rr_ipin_switch,
                                                det_routing_arch.shrink_boundary,  // Shrink to the smallest boundary, no routing wires for empty zone
                                                det_routing_arch.perimeter_cb,     // Now I/O or any programmable blocks on perimeter can have full cb access (both cbx and cby)
                                                det_routing_arch.through_channel,  // Allow/Prohibit through tracks across multi-height and multi-width grids
@@ -475,6 +472,7 @@ void create_rr_graph(e_graph_type graph_type,
                        det_routing_arch.write_rr_graph_filename.c_str(),
                        echo_enabled,
                        echo_file_name,
+                       router_opts.route_verbosity,
                        is_flat);
     }
 }
@@ -543,7 +541,6 @@ static void build_rr_graph(e_graph_type graph_type,
                            const std::vector<t_direct_inf>& directs,
                            const std::vector<t_scatter_gather_pattern>& scatter_gather_patterns,
                            const std::vector<t_layer_def>& interposer_inf,
-                           RRSwitchId& wire_to_rr_ipin_switch,
                            bool is_flat,
                            int* Warnings,
                            const int route_verbosity) {
@@ -958,9 +955,7 @@ static void build_rr_graph(e_graph_type graph_type,
                                  g_vpr_ctx.mutable_device().switch_fanin_remap,
                                  device_ctx.all_sw_inf,
                                  R_minW_nmos,
-                                 R_minW_pmos,
-                                 wire_to_arch_ipin_switch,
-                                 wire_to_rr_ipin_switch);
+                                 R_minW_pmos);
 
     // Partition the rr graph edges for efficient access to configurable/non-configurable
     // edge subsets. Must be done after RR switches have been allocated
@@ -969,7 +964,7 @@ static void build_rr_graph(e_graph_type graph_type,
     // Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
 
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, wire_to_rr_ipin_switch, base_cost_type);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type);
 
     const VibDeviceGrid vib_grid;
     check_rr_graph(device_ctx.rr_graph,
@@ -1089,14 +1084,11 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
                                  delayless_switch);
 
     t_arch_switch_fanin switch_fanin_remap;
-    RRSwitchId dummy_sw_id;
     alloc_and_load_rr_switch_inf(rr_graph_builder,
                                  switch_fanin_remap,
                                  sw_map,
                                  det_routing_arch.R_minW_nmos,
-                                 det_routing_arch.R_minW_pmos,
-                                 det_routing_arch.wire_to_arch_ipin_switch,
-                                 dummy_sw_id);
+                                 det_routing_arch.R_minW_pmos);
     rr_graph_builder.partition_edges();
 }
 
@@ -1104,7 +1096,6 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         const std::vector<t_segment_inf>& segment_inf_x,
                         const std::vector<t_segment_inf>& segment_inf_y,
                         const std::vector<t_segment_inf>& segment_inf_z,
-                        RRSwitchId wire_to_rr_ipin_switch,
                         e_base_cost_type base_cost_type) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const RRGraphView& rr_graph = device_ctx.rr_graph;
@@ -1113,9 +1104,9 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data = mutable_device_ctx.rr_indexed_data;
     bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
-    add_rr_graph_C_from_switches(rr_graph.rr_switch_inf(wire_to_rr_ipin_switch).Cin);
+    add_rr_graph_C_from_switches();
     alloc_and_load_rr_indexed_data(rr_graph, grid, segment_inf, segment_inf_x, segment_inf_y, segment_inf_z,
-                                   rr_indexed_data, wire_to_rr_ipin_switch, base_cost_type, echo_enabled, echo_file_name);
+                                   rr_indexed_data, base_cost_type, echo_enabled, echo_file_name);
     //load_rr_index_segments(segment_inf.size());
 }
 

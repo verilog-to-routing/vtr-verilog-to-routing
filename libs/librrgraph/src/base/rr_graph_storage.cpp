@@ -63,6 +63,10 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
 void t_rr_graph_storage::remove_edges(std::vector<RREdgeId>& rr_edges_to_remove) {
     VTR_ASSERT(!edges_read_);
 
+    if (rr_edges_to_remove.empty()) {
+        return;
+    }
+
     size_t starting_edge_count = edge_dest_node_.size();
 
     // Sort and make sure all edge indices are unique
@@ -178,12 +182,12 @@ bool t_rr_graph_storage::verify_first_edges() const {
 
 void t_rr_graph_storage::init_fan_in() {
     //Reset all fan-ins to zero
-    edges_read_ = true;
+    node_fan_in_.clear();
     node_fan_in_.resize(node_storage_.size(), 0);
     node_fan_in_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
-    for(const auto& edge_id : edge_dest_node_.keys()) {
-        node_fan_in_[edge_dest_node_[edge_id]] += 1;
+    for(const auto& [_, dest_node] : edge_dest_node_.pairs()) {
+        node_fan_in_[dest_node] += 1;
     }
 }
 
@@ -625,6 +629,44 @@ void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction
     node_storage_[id].dir_side_.direction = new_direction;
 }
 
+void t_rr_graph_storage::set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers) {
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    VTR_ASSERT(!ptc_numbers.empty());
+    // The default VTR RR graph generator assigns only one PTC number per node, which is
+    // stored in the node_ptc_ field of rr_graph_storage. However, when the tileable RR
+    // graph is used, CHANX/CHANY nodes can have multiple PTC numbers.
+    // 
+    // To satisfy VPR's requirements, we store the PTC number for offset = 0 in the
+    // node_ptc_ field, and store all PTC numbers assigned to the node in the
+    // node_tileable_track_nums_ field.
+    set_node_ptc_num(node, ptc_numbers[0]);
+    if (ptc_numbers.size() > 1) {
+        VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
+        node_tilable_track_nums_[node].resize(ptc_numbers.size());
+        for (size_t iptc = 0; iptc < ptc_numbers.size(); iptc++) {
+            node_tilable_track_nums_[node][iptc] = ptc_numbers[iptc];
+        }
+    }
+}
+
+void t_rr_graph_storage::add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id) {
+    VTR_ASSERT(size_t(node) < node_storage_.size());
+    VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY,
+                   "Track number valid only for CHANX/CHANY RR nodes");
+
+    size_t node_length = std::abs(node_xhigh(node) - node_xlow(node))
+                       + std::abs(node_yhigh(node) - node_ylow(node))
+                       + 1;
+    VTR_ASSERT(node_offset < node_length);
+
+    if (node_length != node_tilable_track_nums_[node].size()) {
+        node_tilable_track_nums_[node].resize(node_length);
+    }
+
+    node_tilable_track_nums_[node][node_offset] = track_id;
+}
+
 void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
     if (node_type(id) != e_rr_type::IPIN && node_type(id) != e_rr_type::OPIN) {
         VTR_LOG_ERROR("Attempted to set RR node 'side' for non-pin type '%s'", node_type_string(id));
@@ -649,6 +691,87 @@ void t_rr_graph_storage::set_virtual_clock_network_root_idx(RRNodeId virtual_clo
         // If no name is available, throw a VtrError indicating the absence of the attribute name for the virtual sink node.
         throw vtr::VtrError(vtr::string_fmt("Attribute name is not specified for virtual sink node '%u'\n", size_t(virtual_clock_network_root_idx)), __FILE__, __LINE__);
     }
+}
+
+void t_rr_graph_storage::remove_nodes(std::vector<RRNodeId> nodes_to_remove) {
+    VTR_ASSERT(!edges_read_);
+    VTR_ASSERT(!partitioned_);
+    // To remove the nodes, we first sort them in ascending order. This makes it easy 
+    // to calculate the offset by which other node IDs need to be adjusted. 
+    // For example, after sorting the nodes to be removed, if a node ID falls between 
+    // the first and second element, its ID should be reduced by 1. 
+    // If a node ID is larger than the last element, its ID should be reduced by 
+    // the total number of nodes being removed.
+    std::sort(nodes_to_remove.begin(), nodes_to_remove.end());
+    
+    // Iterate over the nodes to be removed and adjust the IDs of nodes 
+    // that fall between them. 
+    for (size_t removal_idx = 0; removal_idx < nodes_to_remove.size(); ++removal_idx) {
+        size_t start_rr_node_index = size_t(nodes_to_remove[removal_idx]) + 1;
+        size_t end_rr_node_index = (removal_idx == nodes_to_remove.size() - 1) ? node_storage_.size() : size_t(nodes_to_remove[removal_idx + 1]);
+        for (size_t node_idx = start_rr_node_index; node_idx < end_rr_node_index; ++node_idx) {
+            RRNodeId old_node = RRNodeId(node_idx);
+            // New node index is equal to the old nodex index minus the number of nodes being removed before it.
+            RRNodeId new_node = RRNodeId(node_idx-(removal_idx+1));
+            node_storage_[new_node] = node_storage_[old_node];
+            node_ptc_[new_node] = node_ptc_[old_node];
+            node_layer_[new_node] = node_layer_[old_node];
+            node_name_[new_node] = node_name_[old_node];
+            if (is_tileable_) {
+                node_bend_start_[new_node] = node_bend_start_[old_node];
+                node_bend_end_[new_node] = node_bend_end_[old_node];
+                node_tilable_track_nums_[new_node] = node_tilable_track_nums_[old_node];
+            }
+        }
+    }
+
+    // Now that the data structures are adjusted, we can shrink the size of them
+    size_t num_nodes_to_remove = nodes_to_remove.size();
+    VTR_ASSERT(num_nodes_to_remove <= node_storage_.size());
+    node_storage_.erase(node_storage_.end()-num_nodes_to_remove, node_storage_.end());
+    node_ptc_.erase(node_ptc_.end()-num_nodes_to_remove, node_ptc_.end());
+    node_layer_.erase(node_layer_.end()-num_nodes_to_remove, node_layer_.end());
+    // After shifting the IDs of nodes that are not removed to the left, the last
+    // `num_nodes_to_remove` node IDs become invalid (their names have already been
+    // updated for other nodes). Therefore, the corresponding entries in `node_name_`
+    // must be removed.
+    for (size_t node_index = node_name_.size()-num_nodes_to_remove; node_index < node_name_.size(); ++node_index) {
+        RRNodeId node = RRNodeId(node_index);
+        node_name_.erase(node);
+    }
+    if (is_tileable_) {
+        node_bend_start_.erase(node_bend_start_.end()-num_nodes_to_remove, node_bend_start_.end());
+        node_bend_end_.erase(node_bend_end_.end()-num_nodes_to_remove, node_bend_end_.end());
+        node_tilable_track_nums_.erase(node_tilable_track_nums_.end()-num_nodes_to_remove, node_tilable_track_nums_.end());
+    }
+
+    std::vector<RREdgeId> removed_edges;
+    // This function iterates over edge_src_node_ and edge_dest_node_ to remove
+    // entries where either endpoint of an edge is in the nodes_to_remove list.
+    // It also updates the node IDs of the remaining edges, since node IDs have
+    // been shifted.
+    auto adjust_edges = [&nodes_to_remove, &removed_edges](vtr::vector<RREdgeId, RRNodeId>& edge_nodes) {
+        for (auto [edge_id, node] : edge_nodes.pairs()) {
+            // Find insertion point in the sorted vector
+            auto node_it = std::lower_bound(nodes_to_remove.begin(), nodes_to_remove.end(), node);
+    
+            if (node_it != nodes_to_remove.end() && *node_it == node) {
+                // Node exists in nodes_to_remove, mark edge for removal
+                removed_edges.push_back(edge_id);
+            } else {
+                // If the node is not in the nodes_to_remove list, update the node ID of the edge
+                // by finding how many nodes are there in nodes_to_remove before the node.
+                size_t node_offset = std::distance(nodes_to_remove.begin(), node_it);
+                size_t new_node_index = size_t(node) - node_offset;
+                edge_nodes[edge_id] = RRNodeId(new_node_index);
+            }
+        }
+    };
+
+    adjust_edges(edge_src_node_);
+    adjust_edges(edge_dest_node_);
+
+    remove_edges(removed_edges);
 }
 
 int t_rr_graph_view::node_ptc_num(RRNodeId id) const {

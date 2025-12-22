@@ -22,7 +22,6 @@ class Job:
 
 
 def parse_args():
-
     parser = argparse.ArgumentParser("Helper script to submit VTR task jobs to a SLURM scheduler")
 
     parser.add_argument(
@@ -82,7 +81,6 @@ def main():
 
     jobs = []
     for script in scripts:
-
         time_minutes, mem_mb = get_resource_estimates(script)
 
         time_minutes = max(time_minutes, args.min_time)
@@ -96,7 +94,6 @@ def main():
     # TODO: could batch jobs here
 
     for job in jobs:
-
         job_name = None
         match = JOB_INFO_REGEX.match(job.script)
         if match:
@@ -132,7 +129,6 @@ def submit_sbatch(
     submit_dir=None,
     job_name=None,
 ):
-
     cwd = os.getcwd()
 
     if submit_dir:
@@ -178,7 +174,6 @@ def get_resource_estimates(filepath):
 
     with open(filepath) as f:
         for line in f:
-
             match = TIME_EST_REGEX.match(line)
             if match:
                 time_sec = float(match.groupdict()["time_sec"])

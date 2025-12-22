@@ -1,5 +1,5 @@
 		-------------------------------------
-			VQM to BLIF Convertor
+			VQM to BLIF Converter
 		-------------------------------------
 
   Created By:	S. Whitty
@@ -238,7 +238,7 @@ Architecture file containing the constinuent primitives of the circuit [e.g. ../
 
    -multiclock_primitives
         By default the tool will attempt to identify netlist primitives with multiple clocks, and then
-        drop the extra clocks from the primtive.  This is a work-around for VPR, since VPR currently 
+        drop the extra clocks from the primitive.  This is a work-around for VPR, since VPR currently 
         does not support multiple clocks per primitive.
 
         If this option is provided, the tool will keep (i.e. not drop) extra clocks from netlist primitives.
@@ -256,7 +256,7 @@ Architecture file containing the constinuent primitives of the circuit [e.g. ../
 VII. VQM GENERATION
 ------------------------
     NOTE: If using VQM2BLIF as part of Titan, see scripts/titan_flow.py and scripts/q2_flow.tcl as
-          they automate this process.  This section is maintained for referrence.
+          they automate this process.  This section is maintained for reference.
 
 	This method uses a Linux Shell environment to generate a VQM file using Quartus II. Other methods, 
 such as using a Windows environment or the Quartus II GUI, are not covered here.
@@ -319,7 +319,7 @@ IX. LUT RECOGNITION
 BLIF netlist has low-level WYSIWYG blackboxes that do not have any configurability; their functionality
 is predetermined and static and only their connectivity can be varied. A VQM primitive, on the other hand,
 has associated parameter information that defines lower-level functionality than that which is explicitly 
-described. Thus, this convertor must bridge the gap between these two levels. For most blocks, (e.g. RAMs,
+described. Thus, this converter must bridge the gap between these two levels. For most blocks, (e.g. RAMs,
 DSPs, etc.) this involves approximating the configuration by appending a code to the name of the block
 to essentially split the single initial type of block into multiple similar but differently-functioning
 ones. 

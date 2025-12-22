@@ -564,6 +564,9 @@ class t_rr_graph_storage {
 
             node_bend_end_.reserve(node_storage_.capacity());
             node_bend_end_.resize(node_storage_.size());
+
+            node_tilable_track_nums_.reserve(node_storage_.capacity());
+            node_tilable_track_nums_.resize(node_storage_.size());
         }
     }
 
@@ -577,6 +580,7 @@ class t_rr_graph_storage {
         if (is_tileable_) {
             node_bend_start_.reserve(size);
             node_bend_end_.reserve(size);
+            node_tilable_track_nums_.reserve(size);
         }
     }
 
@@ -590,6 +594,7 @@ class t_rr_graph_storage {
         if (is_tileable_) {
             node_bend_start_.resize(size);
             node_bend_end_.resize(size);
+            node_tilable_track_nums_.resize(size);
         }
     }
 
@@ -614,6 +619,7 @@ class t_rr_graph_storage {
         node_layer_.clear();
         node_bend_start_.clear();
         node_bend_end_.clear();
+        node_tilable_track_nums_.clear();
         node_name_.clear();
         virtual_clock_network_root_idx_.clear();
         edge_src_node_.clear();
@@ -623,7 +629,6 @@ class t_rr_graph_storage {
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
-        is_tileable_ = false;
     }
 
     /** @brief
@@ -652,7 +657,7 @@ class t_rr_graph_storage {
         node_layer_.shrink_to_fit();
         node_bend_start_.shrink_to_fit();
         node_bend_end_.shrink_to_fit();
-
+        node_tilable_track_nums_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
@@ -669,6 +674,7 @@ class t_rr_graph_storage {
         if (is_tileable_) {
             node_bend_start_.emplace_back();
             node_bend_end_.emplace_back();
+            node_tilable_track_nums_.emplace_back();
         }
     }
 
@@ -699,6 +705,33 @@ class t_rr_graph_storage {
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, Direction new_direction);
 
+    /**
+     * @brief Set the ptc numbers for a node.
+     * @param node The node id
+     * @param ptc_numbers The ptc numbers vector to be set for the node.
+     */
+    void set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers);
+
+    /**
+     * @brief Add a track number to a node.
+     * @param node The node id
+     * @param node_offset The offset of the node from the beginning of the node.
+     * @param track_id The track number (ptc number) of the node at the given offset.
+     */
+    void add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id);
+
+    bool node_contain_multiple_ptc(RRNodeId node) const {
+        if (node_tilable_track_nums_.empty()) {
+            return false;
+        } else {
+            return node_tilable_track_nums_[node].size() > 1;
+        }
+    }
+
+    const std::vector<short>& node_tilable_track_nums(RRNodeId node) const {
+        return node_tilable_track_nums_[node];
+    }
+
     /** @brief
      * Add a side to the node attributes
      * This is the function to use when you just add a new side WITHOUT resetting side attributes
@@ -711,6 +744,20 @@ class t_rr_graph_storage {
      * @param virtual_clock_network_root_idx The node ID of the virtual sink for the clock network.
      */
     void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx);
+
+    /**
+     * @brief Removes a given list of RRNodes from the RR Graph
+     * This method should be called before partition_edges has been called.
+     * If init_fan_in has been called, you need to call it again after removing the nodes.
+     * @note This a very expensive method, so should be called only when necessary. It is better
+     * to not add nodes in the first place, instead of relying on this method to remove nodes.
+     * 
+     * @note This operation is O(|V| + |E|·log k), where k is the number of nodes to remove,
+     * and should not be called frequently.
+     *
+     * @param nodes_to_remove list of RRNodes to be removed
+     */
+    void remove_nodes(std::vector<RRNodeId> nodes_to_remove);
 
     /****************
      * Edge methods *
@@ -961,6 +1008,29 @@ class t_rr_graph_storage {
      * loop of either the placer or router.
      */
     vtr::vector<RRNodeId, t_rr_node_ptc_data> node_ptc_;
+
+    /** 
+     * @brief Extra ptc number for each routing resource node. 
+     * @note This is required by tileable routing resource graphs. The first index is the node id, and
+     * the second index is is the relative distance from the starting point of the node.
+     * @details 
+     * In a tileable routing architecture, routing tracks, e.g., CHANX and CHANY, follow a staggered organization.
+     * Hence, a routing track may appear in different routing channels, representing different ptc/track id.
+     * Here is an illustrative example of a X-direction routing track (CHANX) in INC direction, which is organized in staggered way.
+     *    
+     *  Coord(x,y) (1,0)   (2,0)   (3,0)     (4,0)       Another track (node)
+     *  ptc=0     ------>                              ------>
+     *                   \                            /
+     *  ptc=1             ------>                    /
+     *                           \                  /
+     *  ptc=2                     ------>          / 
+     *                                   \        /
+     *  ptc=3                             ------->
+     *           ^                               ^
+     *           |                               |
+     *     starting point                   ending point
+     */
+    vtr::vector<RRNodeId, std::vector<short>> node_tilable_track_nums_;
 
     /** @brief
      * This array stores the first edge of each RRNodeId.  Not that the length

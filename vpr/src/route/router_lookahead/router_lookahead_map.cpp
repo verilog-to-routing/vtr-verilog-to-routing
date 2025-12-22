@@ -626,7 +626,7 @@ static util::Cost_Entry get_nearby_cost_entry(int from_layer_num, int x, int y, 
     /* compute the slope from x,y to 0,0 and then move towards 0,0 by one unit to get the coordinates
      * of the cost entry to be copied */
 
-    //VTR_ASSERT(x > 0 || y > 0); //Asertion fails in practise. TODO: debug
+    //VTR_ASSERT(x > 0 || y > 0); //Assertion fails in practise. TODO: debug
 
     float slope;
     if (x == 0) {
@@ -757,8 +757,7 @@ static void compute_tile_lookahead(std::unordered_map<int, util::t_ipin_primitiv
                          g_vpr_ctx.device().rr_rc_data,
                          rr_graph_builder.rr_segments(),
                          rr_graph_builder.rr_switch(),
-                         rr_graph_builder.node_in_edge_storage(),
-                         rr_graph_builder.node_ptc_storage()};
+                         rr_graph_builder.node_in_edge_storage()};
 
     util::t_ipin_primitive_sink_delays pin_delays = util::compute_intra_tile_dijkstra(rr_graph,
                                                                                       physical_tile,
@@ -902,7 +901,7 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
 }
 
 //
-// When writing capnp targetted serialization, always allow compilation when
+// When writing capnp targeted serialization, always allow compilation when
 // VTR_ENABLE_CAPNPROTO=OFF.  Generally this means throwing an exception
 // instead.
 //

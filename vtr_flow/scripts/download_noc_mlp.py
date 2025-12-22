@@ -20,7 +20,7 @@ import errno
 
 class ExtractionError(Exception):
     """
-    Raised when extracting the downlaoded file fails
+    Raised when extracting the downloaded file fails
     """
 
 
@@ -55,7 +55,7 @@ def parse_args():
         "--force",
         default=False,
         action="store_true",
-        help="Run extraction step even if directores etc. already exist",
+        help="Run extraction step even if directories etc. already exist",
     )
     parser.add_argument(
         "--full_archive",

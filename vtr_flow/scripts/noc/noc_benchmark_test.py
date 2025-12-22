@@ -5,7 +5,6 @@
 """
 
 from concurrent.futures import ThreadPoolExecutor
-from distutils.log import error
 import os
 from pathlib import Path
 import sys
@@ -41,7 +40,7 @@ POST_ROUTED_WIRE_LENGTH_SEGMENTS = "Post Route WL (segments): "
 POST_ROUTED_FREQ = "Post Route Freq (MHz): "
 ROUTE_TIME = "Route Time (s): "
 
-# phrases to identify lines that contain palcement data
+# phrases to identify lines that contain placement data
 PLACEMENT_COST_PHRASE = "Placement cost:"
 NOC_PLACEMENT_COST_PHRASE = "NoC Placement Costs."
 PLACEMENT_TIME = "# Placement took"
@@ -87,8 +86,8 @@ def noc_test_command_line_parser(prog=None):
 
                 Run the NoC driven placement on a design located at
                 ./noc_test_circuits (design should be in .blif format).
-                Where we want to run 5 seeds (5 seperate runs)
-                using 3 threads (running 3 seperate runs of VPR in parallel).
+                Where we want to run 5 seeds (5 separate runs)
+                using 3 threads (running 3 separate runs of VPR in parallel).
                 For more information on all options run program with '-help'
                 parameter.
 
@@ -120,7 +119,7 @@ def noc_test_command_line_parser(prog=None):
         "-arch_file",
         default="",
         type=str,
-        help="The architecture file the NoC benchamrk designs are placed on",
+        help="The architecture file the NoC benchmark designs are placed on",
     )
 
     parser.add_argument("-vpr_executable", default="", type=str, help="The executable file of VPR")
@@ -248,42 +247,39 @@ def process_vpr_output(vpr_output_file):
     log after after.
     """
 
-    open_file = open(vpr_output_file)
-
-    # datastrcuture below stors the palcement data in a disctionary
+    # datastructure below stors the placement data in a dictionary
     placement_data = {}
 
-    # process each line from the VPR output
-    for line in open_file:
+    with open(vpr_output_file, "r", encoding="utf-8") as open_file:
+        # process each line from the VPR output
+        for line in open_file:
+            # we only care about three lines where the
+            # placement costs, noc costs and
+            # placement times are located
+            # and post route info
+            # so identify those lines below
+            if PLACEMENT_COST_PHRASE in line:
+                process_placement_costs(placement_data, line)
 
-        # we only care about three lines where the
-        # placement costs, noc costs and
-        # placement times are located
-        # and post route info
-        # so identify those lines below
-        if PLACEMENT_COST_PHRASE in line:
-            process_placement_costs(placement_data, line)
+            if POST_PLACE_CRITICAL_PATH_DELAY_PHRASE in line:
+                process_placement_cpd(placement_data, line)
 
-        if POST_PLACE_CRITICAL_PATH_DELAY_PHRASE in line:
-            process_placement_cpd(placement_data, line)
+            if NOC_PLACEMENT_COST_PHRASE in line:
+                process_noc_placement_costs(placement_data, line)
 
-        if NOC_PLACEMENT_COST_PHRASE in line:
-            process_noc_placement_costs(placement_data, line)
+            if PLACEMENT_TIME in line:
+                process_placement_time(placement_data, line)
 
-        if PLACEMENT_TIME in line:
-            process_placement_time(placement_data, line)
+            if POST_ROUTED_WIRE_LENGTH_SEGMENTS_PHRASE in line:
+                process_post_route_wirelength(placement_data, line)
 
-        if POST_ROUTED_WIRE_LENGTH_SEGMENTS_PHRASE in line:
-            process_post_route_wirelength(placement_data, line)
+            if POST_ROUTED_FREQ_PHRASE in line:
+                process_post_route_freq(placement_data, line)
 
-        if POST_ROUTED_FREQ_PHRASE in line:
-            process_post_route_freq(placement_data, line)
-
-        if ROUTE_TIME_PHRASE in line:
-            process_route_time(placement_data, line)
+            if ROUTE_TIME_PHRASE in line:
+                process_route_time(placement_data, line)
 
     # close and delete the output file
-    open_file.close()
     os.remove(vpr_output_file)
 
     return placement_data
@@ -291,7 +287,7 @@ def process_vpr_output(vpr_output_file):
 
 def process_placement_costs(placement_data, line_with_data):
     """
-    Given a string which contains palcement data. Extract the total
+    Given a string which contains placement data. Extract the total
     placement cost and wirelength cost.
     """
 
@@ -300,7 +296,7 @@ def process_placement_costs(placement_data, line_with_data):
 
     # quick check that the regex worked properly
     if (found_placement_metrics is None) or (found_placement_metrics.lastindex != 3):
-        raise Exception("Placement cost not written out correctly")
+        raise ValueError("Placement cost not written out correctly")
 
     # we know the order of the different placement costs
     # as they are found within the extracted metric list above.
@@ -308,7 +304,7 @@ def process_placement_costs(placement_data, line_with_data):
     # 1st element is the overall placement cost, second element is the
     # placement bb cost and the third element is the placement td cost.
     #
-    # Covert them to floats and store them (we don't care about the td cost so # ignore it)
+    # Convert them to floats and store them (we don't care about the td cost so # ignore it)
     placement_data[PLACE_COST] = float(found_placement_metrics.group(1))
     placement_data[PLACE_BB_COST] = float(found_placement_metrics.group(2))
 
@@ -324,7 +320,7 @@ def process_placement_cpd(placement_data, line_with_data):
 
     # quick check that the regex worked properly
     if (found_placement_metrics is None) or (found_placement_metrics.lastindex != 1):
-        raise Exception("Placement cpd not written out correctly")
+        raise ValueError("Placement cpd not written out correctly")
 
     # there should be only one element, since we are only grabbing the placement critical path delay
     placement_data[PLACE_CPD] = float(found_placement_metrics.group(1))
@@ -344,7 +340,7 @@ def process_noc_placement_costs(placement_data, line_with_data):
 
     # quick check that the regex worked properly
     if (found_placement_metrics is None) or (found_placement_metrics.lastindex != 3):
-        raise Exception("Placement noc cost not written out correctly")
+        raise ValueError("Placement noc cost not written out correctly")
 
     # we know the order of the different noc placement costs as they are found
     # within the extracted metric list above.
@@ -368,7 +364,7 @@ def process_placement_time(placement_data, line_with_data):
 
     # quick check that the regex worked properly
     if (found_placement_metrics is None) or (found_placement_metrics.lastindex != 1):
-        raise Exception("Placement time not written out correctly")
+        raise ValueError("Placement time not written out correctly")
 
     # there should be only one element, since we are only grabbing the placement time
     placement_data[PLACE_TIME] = float(found_placement_metrics.group(1))
@@ -385,7 +381,7 @@ def process_post_route_wirelength(placement_data, line_with_data):
 
     # check if regex worked correctly
     if (found_routing_metrics is None) or (found_routing_metrics.lastindex != 1):
-        raise Exception("Routed wirelength not written out correctly")
+        raise ValueError("Routed wirelength not written out correctly")
 
     # there should be only one element, since we are only grabbing the routeed wirelength
     placement_data[POST_ROUTED_WIRE_LENGTH_SEGMENTS] = float(found_routing_metrics.group(1))
@@ -402,7 +398,7 @@ def process_post_route_freq(placement_data, line_with_data):
 
     # check if regex worked correctly
     if (found_routing_metrics is None) or (found_routing_metrics.lastindex != 1):
-        raise Exception("Routed frequency not written out correctly")
+        raise ValueError("Routed frequency not written out correctly")
 
     # there should be only one element, since we are only grabbing the routed frequency
     placement_data[POST_ROUTED_FREQ] = float(found_routing_metrics.group(1))
@@ -419,7 +415,7 @@ def process_route_time(placement_data, line_with_data):
 
     # check if regex worked correctly
     if (found_routing_metrics is None) or (found_routing_metrics.lastindex != 1):
-        raise Exception("Routing time not written out correctly")
+        raise ValueError("Routing time not written out correctly")
 
     # there should be only one element, since we are only grabbing the route time
     placement_data[ROUTE_TIME] = float(found_routing_metrics.group(1))
@@ -446,10 +442,10 @@ def check_for_constraints_file(design_file):
 
 def gen_vpr_run_command(design_file, design_flows_file, user_args):
     """
-    Generate a seperate VPR run commands each with a unique placement
+    Generate a separate VPR run commands each with a unique placement
     seed value. The number of commands generated is equal to the number
     of seeds the user requested to run.
-    For each run we generate seperate '.net' files. This was needed
+    For each run we generate separate '.net' files. This was needed
     since a single net file caused failures when multiple concurrent
     VPR runs tried accessing the file during placement.
     """
@@ -534,11 +530,9 @@ def run_vpr_command_and_store_output(vpr_output_file, vpr_run_command):
     """
 
     # create the file that will store the VPR output
-    vpr_output = open(vpr_output_file, "w")
-    # run VPR. Will timeout after 10 hours (should be good for any design)
-    subprocess.run(vpr_run_command, check=True, stdout=vpr_output, timeout=36000)
-    # close the output file
-    vpr_output.close()
+    with open(vpr_output_file, "w", encoding="utf-8") as vpr_output:
+        # run VPR. Will timeout after 10 hours (should be good for any design)
+        subprocess.run(vpr_run_command, check=True, stdout=vpr_output, timeout=36000)
 
 
 def process_vpr_runs(run_args, num_of_seeds, route):
@@ -569,7 +563,6 @@ def process_vpr_runs(run_args, num_of_seeds, route):
     latency_weight = float(run_args[0][1][12])
 
     for single_run_args in run_args:
-
         # get the placement metrics for the current run
         curr_vpr_place_data = process_vpr_output(vpr_output_file=single_run_args[0])
 
@@ -620,7 +613,7 @@ def process_vpr_runs(run_args, num_of_seeds, route):
         place_param: value / num_of_seeds for place_param, value in vpr_average_place_data.items()
     }
 
-    # need to divide the NoC latency cost by the weighting to conver it to
+    # need to divide the NoC latency cost by the weighting to convert it to
     # physical latency
     vpr_average_place_data[NOC_LATENCY_COST] = (
         vpr_average_place_data[NOC_LATENCY_COST] / latency_weight
@@ -636,17 +629,14 @@ def print_results(parsed_data, design_file, user_args):
     results_file_name = (os.path.splitext(user_args.flow_file))[-2]
     results_file_name = (results_file_name.split("/"))[-1]
     results_file_name = os.path.join(os.getcwd(), results_file_name + ".txt")
-    results_file = open(results_file_name, "w+")
+    with open(results_file_name, "w+", encoding="utf-8") as results_file:
+        # write out placement info individually in separate lines
+        results_file.write("Design File: {0}\n".format(design_file))
+        results_file.write("Flows File: {0}\n".format(user_args.flow_file))
 
-    # write out placement info individually in seperate lines
-    results_file.write("Design File: {0}\n".format(design_file))
-    results_file.write("Flows File: {0}\n".format(user_args.flow_file))
-
-    results_file.write("------------ Place & Route Info ------------\n")
-    for metric, value in parsed_data.items():
-        results_file.write("{0}: {1}\n".format(metric, value))
-
-    results_file.close()
+        results_file.write("------------ Place & Route Info ------------\n")
+        for metric, value in parsed_data.items():
+            results_file.write("{0}: {1}\n".format(metric, value))
 
 
 def execute_vpr_and_process_output(vpr_command_list, num_of_seeds, num_of_threads, route):
@@ -662,9 +652,8 @@ def execute_vpr_and_process_output(vpr_command_list, num_of_seeds, num_of_thread
     run_args = []
 
     for single_vpr_command in vpr_command_list:
-
         # generate VPR output file_name
-        # the constants represent the positions of the variabels in the command list
+        # the constants represent the positions of the variables in the command list
         design_file_name = single_vpr_command[2]
         seed_val = single_vpr_command[18]
         vpr_out_file = "{0}.{1}.vpr.out".format(design_file_name, seed_val)
@@ -690,7 +679,6 @@ def execute_vpr_and_process_output(vpr_command_list, num_of_seeds, num_of_thread
 
 
 if __name__ == "__main__":
-
     try:
         # Load the arguments
         args = noc_test_command_line_parser().parse_args(sys.argv[1:])
@@ -715,7 +703,6 @@ if __name__ == "__main__":
         for single_design, single_design_flows_file, single_design_name in zip(
             design_files_in_dir, design_flow_files_in_dir, design_names_in_dir
         ):
-
             # generate all the vpr commands
             vpr_commands = gen_vpr_run_command(
                 design_file=single_design,

@@ -107,7 +107,7 @@ void ClockRib::set_metal_layer(MetalLayer metal_layer) {
 void ClockRib::set_initial_wire_location(int start_x, int end_x, int y) {
     if (end_x <= start_x) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Clock Network wire cannot have negtive or zero length. "
+                        "Clock Network wire cannot have negative or zero length. "
                         "Wire end: %d < wire start: %d\n",
                         end_x, start_x);
     }
@@ -202,7 +202,7 @@ size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
             unsigned drive_x = x_start + drive_.offset;
             unsigned x_end = x_start + x_chan_wire_.length;
 
-            // Adjust for boundry conditions
+            // Adjust for boundary conditions
             int x_offset = 0;
             if ((x_start == 0) ||               // CHANX wires left boundry
                 (x_start + repeat_.x == x_end)) // Avoid overlap
@@ -210,7 +210,7 @@ size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
                 x_offset = 1;
             }
             if (x_end > grid.width() - 2) {
-                x_end = grid.width() - 2; // CHANX wires right boundry
+                x_end = grid.width() - 2; // CHANX wires right boundary
             }
 
             // Dont create rib if drive point is not reachable
@@ -256,7 +256,7 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
             unsigned drive_x = x_start + drive_.offset;
             unsigned x_end = x_start + x_chan_wire_.length;
 
-            // Adjust for boundry conditions
+            // Adjust for boundary conditions
             int x_offset = 0;
             if ((x_start == 0) ||               // CHANX wires left boundry
                 (x_start + repeat_.x == x_end)) // Avoid overlap
@@ -264,14 +264,14 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
                 x_offset = 1;
             }
             if (x_end > grid.width() - 2) {
-                x_end = grid.width() - 2; // CHANX wires right boundry
+                x_end = grid.width() - 2; // CHANX wires right boundary
             }
 
             // Dont create rib if drive point is not reachable
             if (drive_x > grid.width() - 2 || drive_x >= x_end || drive_x <= (x_start + x_offset)) {
                 vtr::printf_warning(__FILE__, __LINE__,
                                     "A rib part of clock network '%s' was not"
-                                    " created becuase the drive point is not reachable. "
+                                    " created because the drive point is not reachable. "
                                     "This can lead to an unroutable architecture.\n",
                                     clock_name_.c_str());
                 continue;
@@ -281,7 +281,7 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
             if ((x_start + x_offset) >= x_end) {
                 vtr::printf_warning(__FILE__, __LINE__,
                                     "Rib start '%d' and end '%d' values are "
-                                    "not sucessive for clock network '%s' due to not meeting boundry conditions."
+                                    "not successive for clock network '%s' due to not meeting boundary conditions."
                                     " This can lead to an unroutable architecture.\n",
                                     (x_start + x_offset), x_end, clock_name_.c_str());
                 continue;
@@ -441,7 +441,7 @@ void ClockSpine::set_metal_layer(MetalLayer metal_layer) {
 void ClockSpine::set_initial_wire_location(int start_y, int end_y, int x) {
     if (end_y <= start_y) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "Clock Network wire cannot have negtive or zero length. "
+                        "Clock Network wire cannot have negative or zero length. "
                         "Wire end: %d < wire start: %d\n",
                         end_y, start_y);
     }
@@ -536,15 +536,15 @@ size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
             unsigned drive_y = y_start + drive.offset;
             unsigned y_end = y_start + y_chan_wire.length;
 
-            // Adjust for boundry conditions
+            // Adjust for boundary conditions
             unsigned y_offset = 0;
-            if ((y_start == 0) ||              // CHANY wires bottom boundry, start above the LB
+            if ((y_start == 0) ||              // CHANY wires bottom boundary, start above the LB
                 (y_start + repeat.y == y_end)) // Avoid overlap
             {
                 y_offset = 1;
             }
             if (y_end > grid.height() - 2) {
-                y_end = grid.height() - 2; // CHANY wires top boundry, dont go above the LB
+                y_end = grid.height() - 2; // CHANY wires top boundary, dont go above the LB
             }
 
             // Dont create spine if drive point is not reachable
@@ -584,22 +584,22 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
             unsigned drive_y = y_start + drive.offset;
             unsigned y_end = y_start + y_chan_wire.length;
 
-            // Adjust for boundry conditions
+            // Adjust for boundary conditions
             unsigned y_offset = 0;
-            if ((y_start == 0) ||              // CHANY wires bottom boundry, start above the LB
+            if ((y_start == 0) ||              // CHANY wires bottom boundary, start above the LB
                 (y_start + repeat.y == y_end)) // Avoid overlap
             {
                 y_offset = 1;
             }
             if (y_end > grid.height() - 2) {
-                y_end = grid.height() - 2; // CHANY wires top boundry, dont go above the LB
+                y_end = grid.height() - 2; // CHANY wires top boundary, dont go above the LB
             }
 
             // Dont create spine if drive point is not reachable
             if (drive_y > grid.width() - 2 || drive_y >= y_end || drive_y <= (y_start + y_offset)) {
                 vtr::printf_warning(__FILE__, __LINE__,
                                     "A spine part of clock network '%s' was not"
-                                    " created becuase the drive point is not reachable. "
+                                    " created because the drive point is not reachable. "
                                     "This can lead to an unroutable architecture.\n",
                                     clock_name_.c_str());
                 continue;
@@ -609,7 +609,7 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
             if ((y_start + y_offset) >= y_end) {
                 vtr::printf_warning(__FILE__, __LINE__,
                                     "Spine start '%d' and end '%d' values are "
-                                    "not sucessive for clock network '%s' due to not meeting boundry conditions."
+                                    "not successive for clock network '%s' due to not meeting boundary conditions."
                                     " This can lead to an unroutable architecture.\n",
                                     (y_start + y_offset), y_end, clock_name_.c_str());
                 continue;
@@ -753,7 +753,7 @@ void ClockSpine::map_relative_seg_indices(const t_unified_to_parallel_seg_index&
  *********************************************************************************/
 
 /*
- * ClockHtree (member funtions)
+ * ClockHtree (member functions)
  */
 
 //TODO: Implement clock Htree generation code

@@ -36,7 +36,7 @@ void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
         set_max_distance_thresholds_from_strings(max_dist_ths, logical_block_types);
     }
 
-    // Set the initilized flag to true.
+    // Set the initialized flag to true.
     is_initialized_ = true;
 
     // Log the max distance thresholds for each logical block type. This is

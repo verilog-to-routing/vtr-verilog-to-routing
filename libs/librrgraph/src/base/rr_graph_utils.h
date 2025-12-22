@@ -124,3 +124,17 @@ bool chanxy_chanz_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RRNodeId
 
 bool chan_same_type_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RRNodeId node2);
 
+/**
+ * @brief Parse the ptc numbers string into a vector of integers.
+ * @param ptc_str The ptc numbers string in the format of "ptc1,ptc2,ptc3,...ptcn".
+ * @return A vector of integers representing the ptc numbers.
+ */
+std::vector<int> parse_ptc_numbers(const std::string& ptc_str);
+
+/**
+ * @brief Convert the ptc numbers of a node to a string.
+ * @param rr_graph The routing resource graph
+ * @param node The node id
+ * @return A string representing the ptc numbers of the node in the format of "ptc1,ptc2,ptc3,...ptcn".
+ */
+std::string node_ptc_number_to_string(const RRGraphView& rr_graph, RRNodeId node);

@@ -16,3 +16,6 @@
 [submodule "libs/EXTERNAL/yosys-slang"]
 	path = libs/EXTERNAL/yosys-slang
 	url = https://github.com/povik/yosys-slang.git
+[submodule "libs/EXTERNAL/libsdcparse"]
+	path = libs/EXTERNAL/libsdcparse
+	url = https://github.com/verilog-to-routing/libsdcparse.git

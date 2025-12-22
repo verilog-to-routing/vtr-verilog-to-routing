@@ -506,7 +506,7 @@ def get_max_memory_usage(temp_dir):
 
 def get_memory_usage(logfile):
     """Extracts the memory usage from the *.out log files"""
-    with open(logfile, "r") as fpmem:
+    with open(logfile, "r", encoding="utf-8") as fpmem:
         for line in fpmem.readlines():
             if "Maximum resident set size" in line:
                 return int(line.split()[-1])
@@ -518,7 +518,7 @@ def get_memory_usage(logfile):
 
 def vtr_command_main(arg_list, prog=None):
     """
-    Running VTR with the specified arguemnts.
+    Running VTR with the specified arguments.
     """
     start = datetime.now()
     # Load the arguments
@@ -593,7 +593,7 @@ def vtr_command_main(arg_list, prog=None):
             error, args.expect_fail, args.verbose
         )
 
-    except KeyboardInterrupt as error:
+    except KeyboardInterrupt:
         print("{} received keyboard interrupt".format(prog))
         exit_status = 4
         return_status = exit_status
@@ -797,6 +797,7 @@ def except_vtr_error(error, expect_fail, verbose):
     error_status = None
     actual_error = None
     exit_status = None
+    return_status = None
     if isinstance(error, vtr.CommandError):
         # An external command failed
         return_status = 1

@@ -214,7 +214,6 @@ def display_qor(reg_test):
         return 1
     print_header("{} QoR Results".format(reg_test))
     with (test_dir / "qor_geomean.txt").open("r") as results:
-
         # create list of desired values, their unit and how to display them.
         data = OrderedDict()
         data["revision"] = ["", "{}"]
