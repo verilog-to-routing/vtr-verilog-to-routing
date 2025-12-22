@@ -1,6 +1,14 @@
 
 #pragma once
 
+/**
+ * @file rr_graph_sg.h
+ * @brief Functions for constructing 3D and non-3D scatter–gather routing resources.
+ *
+ * Defines helper routines for adding CHANZ nodes, scatter–gather (SG) links,
+ * and their OPIN/CHAN connectivity to the RR graph.
+ */
+
 #include <vector>
 #include "rr_types.h"
 #include "rr_edge.h"
@@ -24,6 +32,13 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
                                 const std::vector<t_bottleneck_link>& interdie_3d_links,
                                 int const_index_offset);
 
+/**
+ * @brief Adds CHANZ edges for 3D inter-die wires.
+ *
+ * Connects CHANX/CHANY wires to CHANZ nodes based on the provided
+ * connectivity specification and assigns the correct switch for each edge. Edges are
+ * stored for deferred creation.
+ */
 void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
                             int x_coord,
                             int y_coord,
@@ -32,6 +47,14 @@ void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
                             const std::vector<t_bottleneck_link>& interdie_3d_links,
                             t_rr_edge_info_set& interdie_3d_rr_edges_to_create);
 
+/**
+ * @brief Connects OPINs on a specific side of a grid tile to CHANZ nodes in adjacent switch blocks.
+ *
+ * This function identifies the two switch blocks adjacent to the specified side of a tile
+ * and creates edges from the tile's output pins (OPINs) to the appropriate CHANZ nodes.
+ * It uses the provided Fc_out and Fc_zofs to distribute connections and ensure correct
+ * balance across the parallel segments.
+ */
 void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
                                    int layer,
                                    int x,
@@ -44,6 +67,13 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links);
 
+/**
+ * @brief Connects all OPINs of a grid tile to CHANZ nodes located at the same (x, y) coordinate.
+ *
+ * This function collects all output pins (OPINs) across all sides of a tile and
+ * creates edges to CHANZ nodes residing specifically at the tile's own (x, y) location.
+ * These CHANZ nodes are inside the switch-block located in the top-right corner of the tile.
+ */
 void add_edges_opin_chanz_per_block(const RRGraphView& rr_graph,
                                     int layer,
                                     int x,

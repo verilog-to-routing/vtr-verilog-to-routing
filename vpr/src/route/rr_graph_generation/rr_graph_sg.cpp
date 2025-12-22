@@ -19,7 +19,7 @@ static void collect_chanz_nodes_for_seg(const RRSpatialLookup& node_lookup,
                                         int seg_index,
                                         std::vector<std::pair<RRNodeId, short>>& out_nodes);
 
-/// @brief Pick the next CHANZ node from the less-used side and update Fc_zofs.
+/// @brief Pick the next CHANZ node from the less-used switch-block and update Fc_zofs.
 static std::pair<RRNodeId, short> next_chanz_node_for_seg(const std::array<t_physical_tile_loc, 2>& sb_locs,
                                                           int seg_index,
                                                           vtr::NdMatrix<int, 3>& Fc_zofs,
@@ -196,6 +196,8 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
     // Two switch-block location adjacent to this channel segment
     std::array<t_physical_tile_loc, 2> adjacent_sb_loc;
 
+    // Compute the two switch-block locations adjacent to this channel segment
+    // OPIN-CHANZ edges enter one of these SBs.
     switch (side) {
         case TOP:
             adjacent_sb_loc[0] = {x, y, layer};
@@ -279,8 +281,8 @@ void add_edges_opin_chanz_per_block(const RRGraphView& rr_graph,
     std::vector<RRNodeId> opin_nodes = node_lookup.find_grid_nodes_at_all_sides(layer, x, y, e_rr_type::OPIN);
     std::ranges::stable_sort(opin_nodes, std::less<>{}, [](RRNodeId id) noexcept { return size_t(id); });
     // Remove adjacent duplicates
-    auto [unique_end, _] = std::ranges::unique(opin_nodes);
-    opin_nodes.erase(unique_end, opin_nodes.end());
+    auto redundants = std::ranges::unique(opin_nodes);
+    opin_nodes.erase(redundants.begin(), redundants.end());
 
     std::vector<std::pair<RRNodeId, short>> selected_chanz_nodes;
 
