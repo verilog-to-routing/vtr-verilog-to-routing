@@ -1,5 +1,13 @@
 #pragma once
 
+/**
+ * @file rr_graph_opin_chan_edges.h
+ * @brief Builds OPIN --> CHAN edges in the RR graph.
+ *
+ * Adds all connections from block output pins (OPINs) to routing tracks
+ * (CHANX/CHANY). Also inserts direct CLB-to-CLB connections and 3D connections.
+ */
+
 #include <vector>
 #include "rr_types.h"
 #include "rr_graph_type.h"
