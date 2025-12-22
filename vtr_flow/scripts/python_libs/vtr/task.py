@@ -400,12 +400,10 @@ def find_longest_task_description(configs):
             if config.script_params_list_add:
                 for param in config.script_params_list_add:
                     arch_circuit_len = len(str(PurePath(arch) / circuit / "common_" / param))
-                    if arch_circuit_len > longest:
-                        longest = arch_circuit_len
+                    longest = max(longest, arch_circuit_len)
             else:
                 arch_circuit_len = len(str(PurePath(arch) / circuit / "common"))
-                if arch_circuit_len > longest:
-                    longest = arch_circuit_len
+                longest = max(longest, arch_circuit_len)
     return longest
 
 
