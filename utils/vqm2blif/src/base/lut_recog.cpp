@@ -4,7 +4,7 @@
 *	S. Whitty
 *	October 27th, 2011
 *
-* This file determines the ability of the vqm2blif convertor to recognize and subsequently
+* This file determines the ability of the vqm2blif converter to recognize and subsequently
 * elaborate a VQM Primitive that represents a LUT into a corresponding BLIF ".names" structure.
 *
 *		BACKGROUND

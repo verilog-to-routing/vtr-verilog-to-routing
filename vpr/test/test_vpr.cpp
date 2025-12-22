@@ -168,6 +168,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
                        kRrGraphFile,
                        echo_enabled,
                        echo_file_name,
+                       vpr_setup.RouterOpts.route_verbosity,
                        false);
         vpr_free_all(arch, vpr_setup);
     }
@@ -290,6 +291,7 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                            rr_graph_filename.c_str(),
                            echo_enabled,
                            echo_file_name,
+                           vpr_setup.RouterOpts.route_verbosity,
                            false);
 
             vpr_free_all(arch, vpr_setup);
@@ -334,6 +336,7 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                            overridden_rr_graph_filename.c_str(),
                            echo_enabled,
                            echo_file_name,
+                           vpr_setup.RouterOpts.route_verbosity,
                            false);
 
             vpr_free_all(arch, vpr_setup);

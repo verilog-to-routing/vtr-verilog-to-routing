@@ -59,11 +59,11 @@ void verify_hard_block_type_name(string curr_hard_block_type_name){
 
     // naming rules have 2 main conditions:
     // Condition 1: the first charatcer must be a lowercase/uppercase alphabetical character. Or the first character can be a underscore.
-    // Condition 2: The remaning characters must be a lowercase/uppercase alphabetical character, or a underscore, or a single digit number or the '$' character
+    // Condition 2: The remaining characters must be a lowercase/uppercase alphabetical character, or a underscore, or a single digit number or the '$' character
     // the rules above are checked with the identifier below 
     std::regex verilog_VHDL_naming_rules_one ("^[a-zA-Z_][a-zA-Z_\\$0-9]*[a-zA-Z_\\$0-9]$");
 
-    // verilog names can also contain any characters, as long as they are escaped with a '\' at the start of the identifer. For example, \reset-
+    // verilog names can also contain any characters, as long as they are escaped with a '\' at the start of the identifier. For example, \reset-
     // we check this using the identifier below
     std::regex verilog_VHDL_naming_rules_two ("[\\](.*)", std::regex_constants::extended); // need std::regex_constants::extended as it supports '\\' character
 
@@ -197,14 +197,14 @@ string append_index_to_str (string busname, int index){
 //============================================================================================
 
 string get_wire_name(t_pin_def* net, int index){
-/* Constructs a wire name based on its indeces and width.
+/* Constructs a wire name based on its indices and width.
  * If index == -1, the entire net is used (multiple wires if the net is a bus).
  * net->indexed indicates whether the net is declared as a bus or just a wire.
  */
 	if (net->indexed == T_FALSE){
 		return (string)net->name;
 	} else if (index == -1) {
-		//a wire must only be 1-bit wide!! Check right and left indeces.
+		//a wire must only be 1-bit wide!! Check right and left indices.
 		VTR_ASSERT(net->left == net->right);
 		return append_index_to_str((string)net->name, net->left);
 	} else {
@@ -384,7 +384,7 @@ void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, string& mode_hash) {
         //If ANY of the input ports are registered, we model all input ports as registered
         if(dataa_input_reg || datab_input_reg || signa_input_reg || signb_input_reg) {
 
-            //In the unsual case of only some inputs being registered, print a warning to the user
+            //In the unusual case of only some inputs being registered, print a warning to the user
             //if(verbose_mode) {
                 //if(!dataa_input_reg || !datab_input_reg || !signa_input_reg || !signb_input_reg) {
                     //cout << "Warning: DSP " << vqm_node->type << " '" << vqm_node->name << "' has only some inputs registered.";
@@ -815,7 +815,7 @@ void generate_opname_stratix10_dsp (t_node* vqm_node, string& mode_hash, bool ds
     //
     // Provided that an input/outputs clock parameter value is 'none', then it is combinational (doesn't use the register)
     //
-    // The boolean variable dsp_mode indicates wether the dsp block is in fixed point mode (dsp_mode = 0) or floating point mode (dsp_mode = 1)
+    // The boolean variable dsp_mode indicates whether the dsp block is in fixed point mode (dsp_mode = 0) or floating point mode (dsp_mode = 1)
     if(dsp_mode == 0)
         VTR_ASSERT(strcmp(vqm_node->type, "fourteennm_mac") == 0);
     else
@@ -1054,7 +1054,7 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
     t_node_parameter* port_a_dataout_clear = NULL;
     t_node_parameter* port_b_dataout_clear = NULL;
 
-    //We need to save the ram data and address widths, to identfy the RAM type (singel port, rom, simple dual port, true dual port)
+    //We need to save the ram data and address widths, to identify the RAM type (single port, rom, simple dual port, true dual port)
     t_node_parameter* port_a_data_width = NULL;
     t_node_parameter* port_a_addr_width = NULL;
     t_node_parameter* port_a_addr2_width = NULL;
@@ -1242,7 +1242,7 @@ RamInfo get_ram_info(const t_node* vqm_node, string device) {
     }
 
     if(clk0_port) {
-        //Not pre-processed, so remap the clocks ourselvs
+        //Not pre-processed, so remap the clocks ourselves
         VTR_ASSERT(!clk_portain);
         VTR_ASSERT(!clk_portaout);
         VTR_ASSERT(!clk_portbin);
@@ -1518,7 +1518,7 @@ DSPInfo get_dsp_info(const t_node* vqm_node) {
 
         for (auto const& param : clock_param){
 
-    //         set the new register-based clock ports to one of the three clock signals based on the corrosponding parameters 
+    //         set the new register-based clock ports to one of the three clock signals based on the corresponding parameters 
             if (param.second) {
                 if (param.second->value.string_value == std::string("0")){
                     VTR_ASSERT(clk_port[0]);

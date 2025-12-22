@@ -103,7 +103,7 @@ def vtr_command_argparser(prog=None):
         default=None,
         metavar="TEMP_DIR",
         dest="alt_tasks_dir",
-        help="Alternate directory to run the tasks in (will be created if non-existant)",
+        help="Alternate directory to run the tasks in (will be created if non-existent)",
     )
 
     parser.add_argument(
@@ -427,7 +427,7 @@ def create_run_script(job, work_dir):
 
 
 def ret_expected_runtime(job, work_dir):
-    """Returns the expected run-time (in seconds) of the specified run, or -1 if unkown"""
+    """Returns the expected run-time (in seconds) of the specified run, or -1 if unknown"""
     seconds = -1
     golden_results = load_parse_results(
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")
@@ -443,7 +443,7 @@ def ret_expected_runtime(job, work_dir):
 
 
 def ret_expected_memory(job, work_dir):
-    """Returns the expected memory usage (in bytes) of the specified run, or -1 if unkown"""
+    """Returns the expected memory usage (in bytes) of the specified run, or -1 if unknown"""
     memory_kib = -1
     golden_results = load_parse_results(
         str(Path(work_dir).parent.parent.parent.parent / "config/golden_results.txt")

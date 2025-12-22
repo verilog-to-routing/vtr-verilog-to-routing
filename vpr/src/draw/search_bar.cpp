@@ -508,7 +508,7 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
  * Correlation between key length and time is shaky; there might be some correlation to
  * how many strings are similar to it. All tests are performed with the key "1" - pretty common
  * Tests are searched three times then average
- * MODEL 1: EARCH + TSENG.BLIF
+ * MODEL 1: EArch + TSENG.BLIF
  * NETS         1483
  * NET SRCH.    19392
  * BLOCKS       1835

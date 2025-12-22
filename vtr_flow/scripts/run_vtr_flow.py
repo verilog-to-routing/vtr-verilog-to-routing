@@ -518,7 +518,7 @@ def get_memory_usage(logfile):
 
 def vtr_command_main(arg_list, prog=None):
     """
-    Running VTR with the specified arguemnts.
+    Running VTR with the specified arguments.
     """
     start = datetime.now()
     # Load the arguments

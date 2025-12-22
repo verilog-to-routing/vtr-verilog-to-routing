@@ -197,7 +197,7 @@ bool sort_hard_blocks_by_valid_connections(t_hard_block, t_hard_block);
 
 /**
  * @details This function is the main controller and executes all the
- *          processing steps involved in indentifying new types of hard 
+ *          processing steps involved in identifying new types of hard 
  *          blocks within the design and adding them to the netlist. 
  * 
  *          The following steps are performed:
@@ -262,7 +262,7 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
 
     /*
         We catch any errors that occur during the procedure of reading the
-        netlist and inserting custom hard blocks whereever necessary. 
+        netlist and inserting custom hard blocks wherever necessary. 
         All the errors in this step are related to the provided .vqm netlist file, so once we catch the error, we append the netlist file location
         and throw another error to force program termination.
     */
@@ -311,7 +311,7 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
  *          within the list. The ports and their indexing is stored.
  * 
  * @param main_arch This contains all the information regarding the FPGA
- *                  architeture that the design will be mapped to.
+ *                  architecture that the design will be mapped to.
  * 
  * @param hard_block_type_names A list of the hard block names that need
  *                              to be properly added to the netlist.
@@ -553,7 +553,7 @@ static void create_hard_block_port_info_structure(t_hard_block_recog* storage_of
  *          The port information for all new types of hard blocks
  *          can be found within the FPGA architecture. For each hard block,
  *          the ports info can be found in a structure called 't_model_ports'
- *          (found in 'logic_types.h'). The ports are arranged in a linked lsit
+ *          (found in 'logic_types.h'). The ports are arranged in a linked list
  *          structure.
  * 
  *          THis function goes through the 't_model_ports' and stores them
@@ -569,7 +569,7 @@ static void create_hard_block_port_info_structure(t_hard_block_recog* storage_of
  *          store ports in the form of a 't_node_port_association' array. 
  *          Additionally, for ports that are bussed, initially, they were 
  *          represented as a single 't_model_port' structure with the size
- *          of the port included, whereas they need to be seperated into
+ *          of the port included, whereas they need to be separated into
  *          individual ports (which is also done here). 
  * 
  * @param storage_of_hard_block_info This is a data structure of type
@@ -648,11 +648,11 @@ static t_array_ref* convert_hard_block_model_port_to_hard_block_node_port(t_mode
     //create memory to store the port array
     port_array = create_and_initialize_t_array_ref_struct();
     
-    // if a port is a bus, we need to create seperate port structures for each and every signal of the bus
+    // if a port is a bus, we need to create separate port structures for each and every signal of the bus
     for (int port_index = 0; port_index < port_size; port_index++)
     {
         // hard blocks will not have indexed wire assignments 
-        // doesnt do anything different I think
+        // doesn't do anything different I think
         curr_hard_block_node_port = create_unconnected_node_port_association(curr_hard_block_model_port_name, port_index, PORT_WIRE_NOT_INDEXED);
 
         // store the newly created specific port index within the entire port
@@ -842,7 +842,7 @@ static int find_hard_block_instance(t_hard_block_recog* module_hard_block_node_r
     /* if we previously found a module node that represented a different port of the same hard block instance, we would have already created the node to represent the hard block instance.
 
     Search the current list of already created hard block instances for the hard block instance the current node is a part (remember that the current node represents a port for a hard block).
-    We are using hard block names to idetify each instance.*/
+    We are using hard block names to identify each instance.*/
     curr_hard_block_instance_index_ref = module_hard_block_node_refs_and_info->hard_block_instance_name_to_index.find(curr_hard_block_instance_name);
 
     // now check the search result to see whether the hard block instance the current node is a part of was already created (if it exists in our internal list)
@@ -856,7 +856,7 @@ static int find_hard_block_instance(t_hard_block_recog* module_hard_block_node_r
     else
     {
         // if we are here then the the hard block instance the current node is a port of already exists. 
-        //so we store its index to identify it from all the other hard block instaces found in the netlist (all hard block instances are stored in a vector within 't_hard_block_recog')
+        //so we store its index to identify it from all the other hard block instances found in the netlist (all hard block instances are stored in a vector within 't_hard_block_recog')
         hard_block_instance_index = curr_hard_block_instance_index_ref->second;
     }
 
@@ -982,7 +982,7 @@ static void assign_net_to_hard_block_instance_port(t_node* curr_module_node, t_p
 
     port_to_assign_index = identify_port_index_within_hard_block_type_port_array(&(curr_hard_block_type_port_info->second), curr_module_node_info, curr_module_node);
 
-    // assign the net to the crresponding hard block instance port //
+    // assign the net to the corresponding hard block instance port //
     handle_net_assignment(curr_module_node, curr_hard_block_instance, port_to_assign_index, curr_module_node_port_connected_to_hard_block_instance_net, curr_module_node_info);
 
     return;
@@ -1148,7 +1148,7 @@ static int identify_port_index_within_hard_block_type_port_array(t_hard_block_po
     index:         0           1           2            3
     port_array: port_1[0]  port_1[1]   port_1[2]    port_1[2]
 
-    Now if we want the index of port_1[1], the base port index would be 0, then we need to increment by 1. This is why the increment is requried.
+    Now if we want the index of port_1[1], the base port index would be 0, then we need to increment by 1. This is why the increment is required.
 
     If the port is not vectored, the increment value would be 0. So the case is handled
     */
@@ -1158,13 +1158,13 @@ static int identify_port_index_within_hard_block_type_port_array(t_hard_block_po
    // now we check whether the port index is within the port range //
 
    // if the port size of the current port (using internal mapping structure found in the hard block port info struct)
-   // this should result in a valid value as we already verfied whether the port exists
+   // this should result in a valid value as we already verified whether the port exists
    found_port_size = curr_hard_block_type_port_info->port_name_to_port_size.find(curr_module_node_info->hard_block_port_name);
 
    // calculate port end index
    port_end_index = found_port_start_index->second + (found_port_size->second - 1);
 
-   // verify if the current port index is out of ranged by chekcing if it is larger than the maximum index for the port
+   // verify if the current port index is out of ranged by checking if it is larger than the maximum index for the port
    if (identified_port_index > port_end_index)
    {
        // port index is out of range, so throw an error and indicate it to the user
@@ -1217,7 +1217,7 @@ static void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_h
 
     t_node_port_association* port_to_assign = curr_hard_block_instance->hard_block_instance_node_reference->array_of_ports[port_to_assign_index];
 
-    // need to check whether the current port was previouly assigned to a net
+    // need to check whether the current port was previously assigned to a net
     if ((port_to_assign->associated_net) == NULL)
     {
         // port was not assigned to a net previously //
@@ -1232,7 +1232,7 @@ static void handle_net_assignment(t_node* curr_module_node, t_hard_block* curr_h
     }
     else
     {
-        // the port was already assigned previouly, this is an error, since we cannot have multiple nets connected to the same port
+        // the port was already assigned previously, this is an error, since we cannot have multiple nets connected to the same port
         // so report an error
         throw vtr::VtrError("The vqm netlist node '" + curr_module_node_name + "' represents a port: '" + curr_module_node_info->hard_block_port_name +"' within hard block model: '" + curr_module_node_info->hard_block_type + "'. But this port was already represented previously, therefore the current netlist node is a duplication of the port. A port can only have one netlist node representing it.");
     }
@@ -1459,14 +1459,14 @@ static int store_new_hard_block_instance_info(t_hard_block_recog* module_hard_bl
     // since we added the new hard block instance (t_hard_block struct) at the end of vector, the index will be the last position with the list
     new_hard_block_instance_index = module_hard_block_node_refs_and_info->hard_block_instances.size() - 1;
 
-    /* now create a mapping between the new hard block instance name and the index it is located in with the list of all hard block instances, so we can find it quicly using just the hard block instance name*/
+    /* now create a mapping between the new hard block instance name and the index it is located in with the list of all hard block instances, so we can find it quickly using just the hard block instance name*/
     module_hard_block_node_refs_and_info->hard_block_instance_name_to_index.insert(std::pair<std::string,int>(curr_module_node_info->hard_block_name,new_hard_block_instance_index));
 
     return new_hard_block_instance_index;
 }
 
 /**
- * @details Given an arbritary array of pointers, this function
+ * @details Given an arbitrary array of pointers, this function
  *          stores the array and its properties into a 
  *          't_array_ref' structure.
  * 
@@ -1519,7 +1519,7 @@ static t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_no
 {
     std::string curr_module_node_name = curr_module_node->name;
 
-    // container to hold all the names of the different hierachy levels found for the current node in the netlist(refer to 'split_node_name function' for more info)
+    // container to hold all the names of the different hierarchy levels found for the current node in the netlist(refer to 'split_node_name function' for more info)
     std::vector<std::string> components_of_module_node_name;
 
     int index_of_node_name_component_with_hard_block_type_info = 0;
@@ -1530,8 +1530,8 @@ static t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_no
 
     split_node_name(curr_module_node_name, &components_of_module_node_name, VQM_NODE_NAME_DELIMITER);
 
-    // if the node name does not have atleast two hierarhcy levels, then it cannot be a hard block port so we cannot extract any more information.
-    // a hard block port in the vqm netlist must have atleast the port information and the next top level block name it is connected to. As shown below:
+    // if the node name does not have at least two hierarchy levels, then it cannot be a hard block port so we cannot extract any more information.
+    // a hard block port in the vqm netlist must have at least the port information and the next top level block name it is connected to. As shown below:
     // For example, \router:test_noc_router|payload[8]~QIC_DANGLING_PORT_I is a hard block payload port connected to a router block.
     // \Add0~9_I is not a hard block port
     if ((components_of_module_node_name.size()) >= 2)
@@ -1579,10 +1579,10 @@ static t_parsed_hard_block_port_info extract_hard_block_port_info_from_module_no
  * 
  * @param original_node_name The name of a node within the module (netlist).
  *  
- * @param node_name_components A list of strings that are seperated components 
+ * @param node_name_components A list of strings that are separated components 
  *                             of the original_node_name string.
  *  
- * @param delimiter A character that will be used to seperate the
+ * @param delimiter A character that will be used to separate the
  *                  original_node_name string above into multiple
  *                  pieces.
  * 
@@ -1605,7 +1605,7 @@ static void split_node_name(std::string original_node_name, std::vector<std::str
 
     }
 
-    // since the last component (the port info is not follwed by a delimiter we need to handle it here and store it)
+    // since the last component (the port info is not followed by a delimiter we need to handle it here and store it)
     node_name_components->push_back(original_node_name.substr(start_of_current_node_name_component, end_of_current_node_name_component - start_of_current_node_name_component));
 
     return;
@@ -1646,7 +1646,7 @@ static std::string identify_hard_block_type(std::vector<std::string>* hard_block
         /* If a node belongs to a hard block, then the hard block name is
          generally followed by  a colon operator, which is why need to append it.
          for a 'router' block we can expect something like this:
-         \router:test_noc_router|sc_flit[8]~reg0_I, where router is follwed by :
+         \router:test_noc_router|sc_flit[8]~reg0_I, where router is followed by :
 
          This also helps ignore invalid cases where a block instantiation has
          a hard block name within it, even though the block is not of that hard
@@ -1673,11 +1673,11 @@ static std::string identify_hard_block_type(std::vector<std::string>* hard_block
 
 /**
  * @details Given a list of strings, this function combines the strings
- *          together using a delimitter and generates a combined string.
+ *          together using a delimiter and generates a combined string.
  *          
  * @param node_name_components A list of strings that will be combined
  *                             together to generate a single string output.
- * @param delimiter A character that will be used to seperate the list elements
+ * @param delimiter A character that will be used to separate the list elements
  *                  above in the generated string output.
  * 
  */
@@ -1735,7 +1735,7 @@ static std::string construct_hard_block_name(std::vector<std::string>*node_name_
  */
 static void identify_hard_block_port_name_and_index (t_parsed_hard_block_port_info* curr_hard_block_port, std::string curr_node_name_component)
 {   
-    // identifer to check whether the port defined in the current node name is a bus (ex. payload[1]~QIC_DANGLING_PORT_I)
+    // identifier to check whether the port defined in the current node name is a bus (ex. payload[1]~QIC_DANGLING_PORT_I)
     std::regex port_is_a_bus ("(.*)[[]([0-9]*)\\]~(?:.*)");
 
     // identifier to check whether the current port defined in the current node name isn't a bus (ex. value~9490_I)

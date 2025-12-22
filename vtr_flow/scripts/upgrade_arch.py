@@ -254,7 +254,7 @@ def add_model_timing(arch):
 
 def upgrade_fc_overrides(arch):
     """
-    Convets the legacy block <fc> pin and segment override specifications,
+    Converts the legacy block <fc> pin and segment override specifications,
     to the new unified format.
     """
     fc_tags = arch.findall(".//fc")
@@ -703,7 +703,7 @@ def upgrade_connection_block_input_switch(arch):
 
         # Comment the switch
         comment = ET.Comment(
-            "switch {} resistance set to yeild for 4x minimum drive strength buffer".format(
+            "switch {} resistance set to yield for 4x minimum drive strength buffer".format(
                 switch_name
             )
         )

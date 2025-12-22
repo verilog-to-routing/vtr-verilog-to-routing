@@ -58,7 +58,7 @@ def parse_args():
         "--force",
         default=False,
         action="store_true",
-        help="Run extraction step even if directores etc. already exist",
+        help="Run extraction step even if directories etc. already exist",
     )
 
     parser.add_argument("--mirror", default="google", choices=["google"], help="Download mirror")

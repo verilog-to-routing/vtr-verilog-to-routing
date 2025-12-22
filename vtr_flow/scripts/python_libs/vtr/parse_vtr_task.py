@@ -100,7 +100,7 @@ def vtr_command_argparser(prog=None):
         default=None,
         metavar="TEMP_DIR",
         dest="alt_tasks_dir",
-        help="Alternate directory to run the tasks in (will be created if non-existant)",
+        help="Alternate directory to run the tasks in (will be created if non-existent)",
     )
 
     parser.add_argument(
@@ -514,7 +514,7 @@ def summarize_qor(configs, alt_tasks_dir=None):
 
 
 def calc_geomean(args, configs):
-    """caclulate and ouput the geomean values to the geomean file"""
+    """calculate and output the geomean values to the geomean file"""
     first = False
     task_path = Path(find_task_dir(configs[0], args.alt_tasks_dir))
     if len(configs) > 1 or (task_path.parent / "task_list.txt").is_file():

@@ -59,7 +59,7 @@ def parse_args():
         "--force",
         default=False,
         action="store_true",
-        help="Run extraction step even if directores etc. already exist",
+        help="Run extraction step even if directories etc. already exist",
     )
 
     parser.add_argument(
@@ -114,7 +114,7 @@ def main():
         print("File corrupt:", e)
         sys.exit(2)
     except ExtractionError as e:
-        print("Failed to extrac :", e)
+        print("Failed to extract :", e)
         sys.exit(3)
 
     sys.exit(0)

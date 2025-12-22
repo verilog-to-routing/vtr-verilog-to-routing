@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 040903603053940a1b24392c38663b59
+ * Cmdline: uxsdcxx/uxsdcxx.py /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: e14523c72a5db9cc83592d3baaf45780
  */
 
 #include <functional>
@@ -536,8 +536,11 @@ public:
 	 *     <xs:attribute name="tool_name" type="xs:string" />
 	 *     <xs:attribute name="tool_version" type="xs:string" />
 	 *     <xs:attribute name="tool_comment" type="xs:string" />
+	 *     <xs:attribute name="schema_file_id" type="xs:unsignedLong" />
 	 *   </xs:complexType>
 	*/
+	virtual inline unsigned long get_rr_graph_schema_file_id(typename ContextTypes::RrGraphReadContext &ctx) = 0;
+	virtual inline void set_rr_graph_schema_file_id(unsigned long schema_file_id, typename ContextTypes::RrGraphWriteContext &ctx) = 0;
 	virtual inline const char * get_rr_graph_tool_comment(typename ContextTypes::RrGraphReadContext &ctx) = 0;
 	virtual inline void set_rr_graph_tool_comment(const char * tool_comment, typename ContextTypes::RrGraphWriteContext &ctx) = 0;
 	virtual inline const char * get_rr_graph_tool_name(typename ContextTypes::RrGraphReadContext &ctx) = 0;

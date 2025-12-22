@@ -1,6 +1,6 @@
 /*********************************************************************************************
 *	lut_recog.h
-* Header file allowing the vqm2blif convertor to recognize certain VQM primitives as LUTs
+* Header file allowing the vqm2blif converter to recognize certain VQM primitives as LUTs
 * so it can elaborate them into the BLIF standard ".names" structure. 
 *
 * For more, see lut_recog.cpp

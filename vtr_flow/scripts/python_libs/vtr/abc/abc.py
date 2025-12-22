@@ -353,7 +353,7 @@ def run_lec(
             The reference netlist to be commpared to
 
         implementation_netlist :
-            The implemeted netlist to compare to the reference netlist
+            The implemented netlist to compare to the reference netlist
 
 
     Other Parameters
@@ -419,8 +419,8 @@ def run_lec(
 
 def check_abc_lec_status(output):
     """
-    Reads abc_lec output and determines if the files were equivelent and
-    if there were errors when preforming lec.
+    Reads abc_lec output and determines if the files were equivalent and
+    if there were errors when performing lec.
     """
     equivalent = None
     errored = False

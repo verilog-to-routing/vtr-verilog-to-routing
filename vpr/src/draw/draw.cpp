@@ -508,7 +508,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
         for (size_t x_loc = 0; x_loc < grid.width() - 1; x_loc++) {
             for (size_t y_loc = 0; y_loc < grid.height() - 1; y_loc++) {
 
-                // Get all chanx nodes at location (x_loc, y_loc), find largest ptc_num accross all nodes
+                // Get all chanx nodes at location (x_loc, y_loc), find largest ptc_num across all nodes
                 std::vector<RRNodeId> chanx_nodes = rr_graph.node_lookup().find_channel_nodes(layer, x_loc, y_loc, e_rr_type::CHANX);
                 int max_chanx_ptc_num = 0;
                 if (!chanx_nodes.empty()) {
@@ -535,14 +535,14 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     size_t j = 0;
     for (size_t i = 0; i < grid.width() - 1; i++) {
         draw_coords->tile_x[i] = i * draw_coords->get_tile_width() + j;
-        j += max_chany_ptc_nums[i] + 1; // N wires need N+1 units of space
+        j += max_chany_ptc_nums[i] + 2; // N wires need N + 1 units of space, plus one more since max ptc_num of 0 means 1 wire in the channel
     }
     draw_coords->tile_x[grid.width() - 1] = (grid.width() - 1) * draw_coords->get_tile_width() + j;
 
     j = 0;
     for (size_t i = 0; i < grid.height() - 1; ++i) {
         draw_coords->tile_y[i] = i * draw_coords->get_tile_width() + j;
-        j += max_chanx_ptc_nums[i] + 1;
+        j += max_chanx_ptc_nums[i] + 2;
     }
     draw_coords->tile_y[grid.height() - 1] = (grid.height() - 1) * draw_coords->get_tile_width() + j;
 
