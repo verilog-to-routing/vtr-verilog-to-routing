@@ -255,10 +255,9 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
             for (int i = 0; i < fc; i++) {
 
                 auto [chanz_node_id, switch_id] = next_chanz_node_for_seg(adjacent_sb_loc, seg_index, Fc_zofs,
-                                                                            selected_chanz_nodes0, selected_chanz_nodes1);
+                                                                          selected_chanz_nodes0, selected_chanz_nodes1);
 
                 rr_edges_to_create.emplace_back(opin_node_id, chanz_node_id, switch_id, false);
-
             }
         }
     }

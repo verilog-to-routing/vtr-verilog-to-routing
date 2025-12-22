@@ -988,7 +988,6 @@ static void dijkstra_flood_to_wires(int itile,
     int ptc = rr_graph.node_ptc_num(node);
     int root_layer_num = rr_graph.node_layer_low(node);
 
-
     // Perform Dijkstra from the SOURCE/OPIN of interest, stopping at the first
     // reachable wires (i.e. until we hit the inter-block routing network), or a SINK
     // (via a direct-connect).
