@@ -69,7 +69,7 @@ There should be a directory containing the pattern files specified in the switch
 * **Rows** represent source nodes
 * **Columns** represent sink nodes
 * An **'x' mark** at an intersection indicates that the source and sink nodes are connected. The delay for that connections is retrieved from the sitch type specified in the architecture file.
-* A **number** at an intersection indicates that the nodes are connected with the switch delay specified by that number
+* A **number** at an intersection indicates that the nodes are connected with the switch delay specified by that number (in ps)
 
 **Note:** The pattern currently only supports uni-directional segments. Therefore, wires can only be driven from their starting point.
 
