@@ -434,14 +434,14 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
     }
 
     // Calculate truncation
-    truncated = (std::max(x_low, 1) - x_low) - (x_high - std::min(x_high, fpga_grid_x_));
-    truncated += (std::max(y_low, 1) - y_low) - (y_high - std::min(y_high, fpga_grid_y_));
+    truncated = (std::max(x_low, 1) - x_low) - (x_high - std::min(x_high, fpga_grid_x_ - 2));
+    truncated += (std::max(y_low, 1) - y_low) - (y_high - std::min(y_high, fpga_grid_y_ - 2));
 
     // Apply grid boundaries
     x_low = std::max(x_low, 1);
     y_low = std::max(y_low, 1);
-    x_high = std::min(x_high, fpga_grid_x_);
-    y_high = std::min(y_high, fpga_grid_y_);
+    x_high = std::min(x_high, fpga_grid_x_ - 2);
+    y_high = std::min(y_high, fpga_grid_y_ - 2);
 
     // Calculate physical length
     physical_length = (x_high - x_low) + (y_high - y_low) + 1;
