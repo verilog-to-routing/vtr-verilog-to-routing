@@ -7,6 +7,17 @@ class RRGraphBuilder;
 struct t_chan_width;
 struct t_bottleneck_link;
 
+/**
+ * @brief Top-level routine that iterates over the FPGA grid to create all routing resource
+ * edges between channel segments (CHANX and CHANY).
+ *
+ * This function traverses every tile in the device grid across all layers, calling
+ * build_rr_chan() to identify and create edges for horizontal and vertical tracks.
+ * It handles the creation of:
+ * - Inter-track connections (Switch Blocks).
+ * - Wire-to-IPIN connections (Connection Blocks).
+ * - Inter-die 3D routing links for multi-layer architectures.
+ */
 void add_chan_chan_edges(RRGraphBuilder& rr_graph_builder,
                          size_t num_seg_types_x,
                          size_t num_seg_types_y,
