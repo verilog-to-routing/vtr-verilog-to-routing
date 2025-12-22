@@ -256,6 +256,11 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     AtomBlockId seed_atom = seed_mol.atom_block_ids[seed_mol.root];
     const auto seed_pb = cluster_legalizer.atom_pb_lookup().atom_pb(seed_atom);
     cluster_gain_stats.is_memory = seed_pb->pb_graph_node->pb_type->class_type == MEMORY_CLASS;
+    
+    if (cluster_gain_stats.is_memory) {
+        cluster_gain_stats.logical_ram_id = prepacker_.group_id_of(seed_atom);
+        // VTR_LOG("Cluster Gain Stats: Current cluster id of %zu is a memory cluster and part of a logical ram of %zu.\n", cluster_id, cluster_gain_stats.logical_ram_id);
+    }
 
     // Return the cluster gain stats.
     return cluster_gain_stats;
@@ -414,8 +419,17 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
                 AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
                 if (!cluster_legalizer.is_atom_clustered(blk_id)) {
                     if (cluster_gain_stats.sharing_gain.count(blk_id) == 0) {
-                        cluster_gain_stats.marked_blocks.push_back(blk_id);
-                        cluster_gain_stats.sharing_gain[blk_id] = 1;
+                        if (cluster_gain_stats.is_memory) {
+                            //Add only the same logical memory atoms.
+                            size_t blk_logical_ram_group_id = prepacker_.group_id_of(blk_id);
+                            if (cluster_gain_stats.logical_ram_id == blk_logical_ram_group_id) {
+                                cluster_gain_stats.marked_blocks.push_back(blk_id);
+                                cluster_gain_stats.sharing_gain[blk_id] = 1;
+                            }
+                        } else {
+                            cluster_gain_stats.marked_blocks.push_back(blk_id);
+                            cluster_gain_stats.sharing_gain[blk_id] = 1;
+                        }
                     } else {
                         cluster_gain_stats.sharing_gain[blk_id]++;
                     }

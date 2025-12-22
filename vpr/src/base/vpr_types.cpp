@@ -189,6 +189,14 @@ t_pack_high_fanout_thresholds::t_pack_high_fanout_thresholds(const std::vector<s
         } else {
             VTR_LOG_WARN("Unable to identify logic block type to apply default packer high fanout thresholds; this may result in denser packing than desired\n");
         }
+
+        //Trying the max number for memories.
+        constexpr int MEM_HIGH_FANOUT_THRESHOLD = std::numeric_limits<int>::max();
+        for (const t_logical_block_type& logical_type : device_ctx.logical_block_types) {
+            if (pb_type_contains_memory_pbs(logical_type.pb_type)) {
+                set(logical_type.name, MEM_HIGH_FANOUT_THRESHOLD);
+            }
+        }
     } else {
         //Process user specified overrides
 

@@ -119,6 +119,11 @@ struct ClusterGainStats {
     ///        of the seed.
     bool is_memory = false;
 
+    /// @brief The logical ram group id of this cluster. It is set to -1 for
+    ///        non-memory clusters.
+    ///        TODO: Change this with a "LogicalRAMGroupId" when you create.          
+    size_t logical_ram_id = -1;
+
     /// @brief List of feasible block and its gain pairs.
     ///        The list is maintained in heap structure with the highest gain block
     ///        at the front.
