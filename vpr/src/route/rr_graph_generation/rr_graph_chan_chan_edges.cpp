@@ -10,6 +10,10 @@
 #include "build_scatter_gathers.h"
 #include "globals.h"
 
+//
+// Static function declarations
+//
+
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           int layer,
                           int x_coord,
@@ -177,6 +181,10 @@ static void get_switch_type(bool is_from_sb,
                             short switch_types[2]);
 
 static bool should_apply_switch_override(int switch_override);
+
+//
+// Static function definitions
+//
 
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
  * node properties such as cost, occupancy and capacity */
@@ -1072,6 +1080,10 @@ static bool should_apply_switch_override(int switch_override) {
     }
     return false;
 }
+
+//
+// Non-static function definitions
+//
 
 void add_chan_chan_edges(RRGraphBuilder& rr_graph_builder,
                          size_t num_seg_types_x,
