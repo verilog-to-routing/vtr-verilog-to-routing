@@ -24,11 +24,12 @@ Below is an example of a switch block map file where there is no switch block at
 .. code-block:: yaml
 
    SB_MAPS:
-   SB_0__0_: null
-   SB_1__: sb_perimeter.csv
-   SB1: sb_perimeter.csv
-   SB[2:10:2]: sb_dsp.csv
-   SB*_: sb_main.csv
+      SB_0__*_: null
+      SB_*__0_: null
+      SB_1__*_: sb_perimeter.csv
+      SB_*__1_: sb_perimeter.csv
+      SB_[2:10:2]__*_: sb_dsp.csv
+      SB_*__*_: sb_main.csv
 
 **Important:** The order in which patterns are defined matters, as the first matching pattern is used.
 
