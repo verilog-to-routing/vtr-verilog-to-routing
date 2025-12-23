@@ -2,6 +2,11 @@
  Architecture file translated from ifar repository N04K04L01.FC15FO25.AREA1DELAY1.CMOS90NM.BPTM
 
  Simple architecture file consisting of clusters of 4 BLEs, each BLE contains a 4-LUT+FF pair.  Delay models from 90nm PTM.
+
+  This file defines a 3D architecture where output pins (OPINs) connect to CHANZ wires to reach other layers.
+    - OPIN-to-CHANZ connectivity is set via <fc_override> under each subtile.
+    - CHANZ wires use a dedicated segment type.
+    - A scatter-gather pattern is used, but the gather part is empty. This ensures CHANZ wires are driven only by OPINs and not by other routing wires.
 -->
 <architecture>
   <!-- 
@@ -224,7 +229,8 @@
   <scatter_gather_list>
     <sg_pattern name="name" type="unidir">
       <gather>
-        <!-- Gather 30 connections from the end of L4 wires at all four sides of a switchblock location -->
+        <!-- We gather OPINs, whose fc CHANZ wires is specified with <fc_override> tag under each subtile.
+        Here, we connect zero wires to CHANZ wires. -->
         <wireconn num_conns="0" from_type="L1" from_switchpoint="1" side="rltb"/>
       </gather>
       <scatter>
