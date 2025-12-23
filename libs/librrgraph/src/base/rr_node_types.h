@@ -8,6 +8,7 @@
 #include <map>
 #include <cstdint>
 
+#include "vpr_error.h"
 #include "vtr_range.h"
 #include "vtr_array.h"
 #include "vtr_ndmatrix.h"
@@ -74,8 +75,7 @@ inline e_rr_type get_rr_type(const std::string& type_name) {
     } else if (type_name == "MUX") {
         return e_rr_type::MUX;
     } else {
-        std::string error_message = "Invalid RR type name: " + type_name;
-        VTR_ASSERT_MSG(false, error_message.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid RR type name: %s\n", type_name.c_str());
         return e_rr_type::NUM_RR_TYPES;
     }
 }

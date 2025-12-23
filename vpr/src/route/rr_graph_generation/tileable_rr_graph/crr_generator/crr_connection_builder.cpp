@@ -57,7 +57,7 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
     if (pattern.empty()) {
         // If no pattern is found, it means that no switch block is defined for this location
         // Thus, we return an empty vector of connections.
-        VTR_LOG_ERROR("No pattern found for switch block at (%zu, %zu)\n", x, y);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No pattern found for switch block at (%zu, %zu)\n", x, y);
         return {};
     }
     std::string sw_block_file_name = sb_manager_.get_pattern_file_name(pattern);
@@ -68,7 +68,7 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
 
     const DataFrame* df = sb_manager_.get_switch_block_dataframe(pattern);
     if (df == nullptr) {
-        VTR_LOG_ERROR("No dataframe found for pattern '%s' at (%zu, %zu)\n", pattern.c_str(), x, y);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No dataframe found for pattern '%s' at (%zu, %zu)\n", pattern.c_str(), x, y);
         return {};
     }
 

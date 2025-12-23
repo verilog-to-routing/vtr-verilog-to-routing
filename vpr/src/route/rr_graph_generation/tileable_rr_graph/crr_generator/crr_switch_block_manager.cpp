@@ -5,6 +5,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include "vpr_error.h"
 #include "crr_switch_block_manager.h"
 #include "crr_pattern_matcher.h"
 
@@ -27,7 +28,7 @@ SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
     validate_yaml_structure(config);
 
     if (!config["SB_MAPS"]) {
-        VTR_LOG_ERROR("SB_MAPS section not found in YAML file\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "SB_MAPS section not found in YAML file\n");
     }
 
     YAML::Node sb_maps = config["SB_MAPS"];
@@ -71,7 +72,7 @@ SwitchBlockManager::SwitchBlockManager(const std::string& sb_maps_file,
                      file_cache_[full_path].connections,
                      std::filesystem::path(full_path).filename().string().c_str());
         } else {
-            VTR_LOG_ERROR("Required switch template file not found: %s\n", full_path.c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Required switch template file not found: %s\n", full_path.c_str());
         }
     }
 
@@ -150,15 +151,15 @@ size_t SwitchBlockManager::get_total_connections() const {
 
 void SwitchBlockManager::validate_yaml_structure(const YAML::Node& root) {
     if (!root.IsMap()) {
-        VTR_LOG_ERROR("YAML root must be a map\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "YAML root must be a map\n");
     }
 
     if (!root["SB_MAPS"]) {
-        VTR_LOG_ERROR("Required 'SB_MAPS' section not found in YAML\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Required 'SB_MAPS' section not found in YAML\n");
     }
 
     if (!root["SB_MAPS"].IsMap()) {
-        VTR_LOG_ERROR("'SB_MAPS' must be a map\n");
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "'SB_MAPS' must be a map\n");
     }
 }
 

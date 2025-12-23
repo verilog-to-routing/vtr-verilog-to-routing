@@ -1,6 +1,7 @@
 #include "data_frame_processor.h"
 
 #include "vtr_log.h"
+#include "vpr_error.h"
 
 #include <algorithm>
 #include <fstream>
@@ -48,14 +49,14 @@ void DataFrame::clear() {
 
 std::vector<Cell> DataFrame::get_row(size_t row) const {
     if (row >= rows_) {
-        VTR_LOG_ERROR("Row index out of range: %zu - max %zu", row, rows_);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Row index out of range: %zu - max %zu", row, rows_);
     }
     return data_[row];
 }
 
 std::vector<Cell> DataFrame::get_column(size_t col) const {
     if (col >= cols_) {
-        VTR_LOG_ERROR("Column index out of range: %zu - max %zu", col, cols_);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Column index out of range: %zu - max %zu", col, cols_);
     }
 
     std::vector<Cell> column;
@@ -68,7 +69,7 @@ std::vector<Cell> DataFrame::get_column(size_t col) const {
 
 void DataFrame::set_row(size_t row, const std::vector<Cell>& values) {
     if (row >= rows_) {
-        VTR_LOG_ERROR("Row index out of range: %zu - max %zu", row, rows_);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Row index out of range: %zu - max %zu", row, rows_);
     }
 
     for (size_t col = 0; col < std::min(values.size(), cols_); ++col) {
@@ -78,7 +79,7 @@ void DataFrame::set_row(size_t row, const std::vector<Cell>& values) {
 
 void DataFrame::set_column(size_t col, const std::vector<Cell>& values) {
     if (col >= cols_) {
-        VTR_LOG_ERROR("Column index out of range: %zu - max %zu", col, cols_);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Column index out of range: %zu - max %zu", col, cols_);
     }
 
     for (size_t row = 0; row < std::min(values.size(), rows_); ++row) {
@@ -112,7 +113,7 @@ size_t DataFrame::count_non_empty_in_range(size_t start_row, size_t start_col, s
 
 void DataFrame::validate_bounds(size_t row, size_t col) const {
     if (row >= rows_ || col >= cols_) {
-        VTR_LOG_ERROR("DataFrame index out of range: %zu,%zu - max %zu,%zu\n", row, col, rows_, cols_);
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "DataFrame index out of range: %zu,%zu - max %zu,%zu\n", row, col, rows_, cols_);
     }
 }
 
@@ -126,7 +127,7 @@ DataFrame DataFrameProcessor::read_csv(const std::string& filename) {
     try {
         std::ifstream file(filename);
         if (!file.is_open()) {
-            VTR_LOG_ERROR("Failed to open CSV file: %s\n", filename.c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to open CSV file: %s\n", filename.c_str());
             return DataFrame();
         }
 
@@ -143,7 +144,7 @@ DataFrame DataFrameProcessor::read_csv(const std::string& filename) {
         file.close();
 
         if (lines.empty()) {
-            VTR_LOG_ERROR("CSV file appears to be empty: %s\n", filename.c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "CSV file appears to be empty: %s\n", filename.c_str());
             return DataFrame();
         }
 
@@ -187,7 +188,7 @@ DataFrame DataFrameProcessor::read_csv(const std::string& filename) {
         return df;
 
     } catch (const std::exception& e) {
-        VTR_LOG_ERROR("Error reading CSV file %s: %s\n", filename.c_str(), e.what());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Error reading CSV file %s: %s\n", filename.c_str(), e.what());
         return DataFrame();
     }
 }
@@ -336,7 +337,7 @@ void DataFrameProcessor::merge_columns(DataFrame& df, const std::vector<size_t>&
 
 void DataFrameProcessor::validate_csv_file(const std::string& filename) {
     if (!std::filesystem::exists(filename)) {
-        VTR_LOG_ERROR("CSV file does not exist: %s\n", filename.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "CSV file does not exist: %s\n", filename.c_str());
     }
 
     // Check file extension
@@ -344,7 +345,7 @@ void DataFrameProcessor::validate_csv_file(const std::string& filename) {
     std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
 
     if (extension != ".csv") {
-        VTR_LOG_ERROR("Unsupported file format: %s. Expected .csv\n", extension.c_str());
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unsupported file format: %s. Expected .csv\n", extension.c_str());
     }
 }
 
