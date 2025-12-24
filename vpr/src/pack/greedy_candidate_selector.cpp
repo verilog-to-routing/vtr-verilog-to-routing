@@ -259,6 +259,7 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     
     if (cluster_gain_stats.is_memory) {
         cluster_gain_stats.logical_ram_id = prepacker_.group_id_of(seed_atom);
+        cluster_gain_stats.candidates_propose_limit = 3000;
         // VTR_LOG("Cluster Gain Stats: Current cluster id of %zu is a memory cluster and part of a logical ram of %zu.\n", cluster_id, cluster_gain_stats.logical_ram_id);
     }
 
@@ -804,6 +805,9 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_an
 
     cluster_gain_stats.explore_transitive_fanout = true;                                  /* If no legal molecules found, enable exploration of molecules two hops away */
     cluster_gain_stats.candidates_propose_limit = packer_opts_.feasible_block_array_size; // set the limit of candidates to propose
+    if (cluster_gain_stats.is_memory) {
+        cluster_gain_stats.candidates_propose_limit = 3000;
+    }
 
     for (AtomBlockId blk_id : cluster_gain_stats.marked_blocks) {
         // Get the molecule that contains this block.
@@ -830,6 +834,9 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
     //TODO: For now, only done by fan-out; should also consider fan-in
     cluster_gain_stats.explore_transitive_fanout = false;
     cluster_gain_stats.candidates_propose_limit = std::min(packer_opts_.feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE); // set the limit of candidates to propose
+    if (cluster_gain_stats.is_memory) {
+        cluster_gain_stats.candidates_propose_limit = 3000;
+    }
 
     /* First time finding transitive fanout candidates therefore alloc and load them */
     load_transitive_fanout_candidates(cluster_gain_stats,
@@ -862,6 +869,9 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
 
     AtomNetId net_id = cluster_gain_stats.tie_break_high_fanout_net;
     cluster_gain_stats.candidates_propose_limit = std::min(packer_opts_.feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE); // set the limit of candidates to propose
+    if (cluster_gain_stats.is_memory) {
+        cluster_gain_stats.candidates_propose_limit = 3000;
+    }
 
     int count = 0;
     for (AtomPinId pin_id : atom_netlist_.net_pins(net_id)) {
@@ -904,6 +914,9 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
      */
     AttractGroupId grp_id = cluster_gain_stats.attraction_grp_id;
     cluster_gain_stats.candidates_propose_limit = packer_opts_.feasible_block_array_size; // set the limit of candidates to propose
+    if (cluster_gain_stats.is_memory) {
+        cluster_gain_stats.candidates_propose_limit = 3000;
+    }
     if (grp_id == AttractGroupId::INVALID()) {
         return;
     }
