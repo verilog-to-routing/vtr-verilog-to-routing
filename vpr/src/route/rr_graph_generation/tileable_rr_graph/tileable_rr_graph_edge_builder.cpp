@@ -351,7 +351,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
     /* Go Switch Block by Switch Block */
     for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
         for (size_t iy = 0; iy <= gsb_range.y(); ++iy) {
-            VTR_LOG("Building edges for GSB[%lu][%lu]\n", ix, iy);
+            VTR_LOGV(route_verbosity > 1, "Building edges for GSB[%lu][%lu]\n", ix, iy);
 
             vtr::Point<size_t> gsb_coord(ix, iy);
             /* Create a GSB object */
