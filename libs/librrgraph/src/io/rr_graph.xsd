@@ -136,6 +136,7 @@
          xs:simpleType "switch_type" defined above.
     -->
     <xs:attribute name="type" type="switch_type"/>
+    <xs:attribute name="template_id" type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="segment_timing">
