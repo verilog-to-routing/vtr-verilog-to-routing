@@ -16,12 +16,14 @@
 /**
  * @brief Builds edges for a CRR GSB
  * @param rr_graph_builder The RR graph builder
+ * @param num_edges_to_create The number of edges created
  * @param rr_node_driver_switches The driver switches for each RR node
  * @param rr_gsb The GSB for which edges are to be built
  * @param connection_builder The connection builder to use to get the connections at each tile
  * @param verbosity The verbosity level of the log
  */
 void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
+                         size_t& num_edges_to_create,
                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                          const RRGSB& rr_gsb,
                          const crrgenerator::CRRConnectionBuilder& connection_builder,

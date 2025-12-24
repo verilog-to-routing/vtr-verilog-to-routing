@@ -376,6 +376,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
             if (build_crr_edges) {
                 build_crr_gsb_edges(rr_graph_builder,
+                                    num_edges_to_create,
                                     rr_node_driver_switches,
                                     rr_gsb,
                                     *crr_connection_builder,

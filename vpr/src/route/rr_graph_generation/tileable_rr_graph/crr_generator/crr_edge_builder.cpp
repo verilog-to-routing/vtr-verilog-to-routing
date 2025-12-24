@@ -78,6 +78,7 @@ static RRSwitchId find_or_create_crr_switch_id(const int delay_ps,
 }
 
 void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
+                         size_t& num_edges_to_create,
                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                          const RRGSB& rr_gsb,
                          const crrgenerator::CRRConnectionBuilder& connection_builder,
@@ -102,5 +103,6 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
                                               connection.sink_node(),
                                               rr_switch_id,
                                               false);
+        num_edges_to_create++;
     }
 }
