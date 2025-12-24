@@ -225,6 +225,15 @@ void write_sb_count_stats(const Netlist<>& net_list,
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
     std::unordered_map<std::string, int> sb_count;
 
+    // Check if the sb_count_dir exists and is a director
+    // If not, create it
+    if (!fs::exists(sb_count_dir)) {
+        fs::create_directories(sb_count_dir);
+    }
+    if (!fs::is_directory(sb_count_dir)) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "sb_count_dir is not a directory: %s\n", sb_count_dir.c_str());
+    }
+
     for (ParentNetId net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) {
             const vtr::optional<RouteTree>& tree = route_ctx.route_trees[net_id];
