@@ -419,17 +419,19 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
                 AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
                 if (!cluster_legalizer.is_atom_clustered(blk_id)) {
                     if (cluster_gain_stats.sharing_gain.count(blk_id) == 0) {
-                        if (cluster_gain_stats.is_memory) {
-                            //Add only the same logical memory atoms.
-                            size_t blk_logical_ram_group_id = prepacker_.group_id_of(blk_id);
-                            if (cluster_gain_stats.logical_ram_id == blk_logical_ram_group_id) {
-                                cluster_gain_stats.marked_blocks.push_back(blk_id);
-                                cluster_gain_stats.sharing_gain[blk_id] = 1;
-                            }
-                        } else {
-                            cluster_gain_stats.marked_blocks.push_back(blk_id);
-                            cluster_gain_stats.sharing_gain[blk_id] = 1;
-                        }
+                        // if (cluster_gain_stats.is_memory) {
+                        //     //Add only the same logical memory atoms.
+                        //     size_t blk_logical_ram_group_id = prepacker_.group_id_of(blk_id);
+                        //     if (cluster_gain_stats.logical_ram_id == blk_logical_ram_group_id) {
+                        //         cluster_gain_stats.marked_blocks.push_back(blk_id);
+                        //         cluster_gain_stats.sharing_gain[blk_id] = 1;
+                        //     }
+                        // } else {
+                        //     cluster_gain_stats.marked_blocks.push_back(blk_id);
+                        //     cluster_gain_stats.sharing_gain[blk_id] = 1;
+                        // }
+                        cluster_gain_stats.marked_blocks.push_back(blk_id);
+                        cluster_gain_stats.sharing_gain[blk_id] = 1;
                     } else {
                         cluster_gain_stats.sharing_gain[blk_id]++;
                     }
@@ -809,6 +811,11 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_an
     }
 
     for (AtomBlockId blk_id : cluster_gain_stats.marked_blocks) {
+        // If this is memory cluster and block is not in the same logical
+        // memory, do not add this block as candidate.
+        if (cluster_gain_stats.is_memory && prepacker_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
+            continue;
+        }
         // Get the molecule that contains this block.
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
         // Add the molecule as a candidate if the molecule is not clustered and
@@ -841,6 +848,11 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
 
     /* Only consider candidates that pass a very simple legality check */
     for (const auto& transitive_candidate : cluster_gain_stats.transitive_fanout_candidates) {
+        // If this is memory cluster and block is not in the same logical
+        // memory, do not add this block as candidate.
+        if (cluster_gain_stats.is_memory && prepacker_.group_id_of(transitive_candidate.first) != cluster_gain_stats.logical_ram_id) {
+            continue;
+        }
         PackMoleculeId molecule_id = transitive_candidate.second;
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
             add_molecule_to_pb_stats_candidates(molecule_id,
@@ -873,6 +885,11 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
         }
 
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
+        // If this is memory cluster and block is not in the same logical
+        // memory, do not add this block as candidate.
+        if (cluster_gain_stats.is_memory && prepacker_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
+            continue;
+        }
 
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
@@ -933,6 +950,11 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
 
     if (num_available_atoms < attraction_group_num_atoms_threshold_) {
         for (AtomBlockId atom_id : available_atoms) {
+            // If this is memory cluster and block is not in the same logical
+            // memory, do not add this block as candidate.
+            if (cluster_gain_stats.is_memory && prepacker_.group_id_of(atom_id) != cluster_gain_stats.logical_ram_id) {
+                continue;
+            }
             //Only consider molecules that are unpacked and of the correct type
             PackMoleculeId molecule_id = prepacker_.get_atom_molecule(atom_id);
             if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
@@ -953,6 +975,12 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
         int selected_atom = rng_.irand(num_available_atoms - 1);
 
         AtomBlockId blk_id = available_atoms[selected_atom];
+
+        // If this is memory cluster and block is not in the same logical
+        // memory, do not add this block as candidate.
+        if (cluster_gain_stats.is_memory && prepacker_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
+            continue;
+        }
 
         //Only consider molecules that are unpacked and of the correct type
         PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
