@@ -1,4 +1,4 @@
-#BLIF OUTPUT: /home/talaeikh/thesis_results/stratix10_final/benchmarks/other_benchmarks/picosoc/stratix10/quartus2_proj/netlists/picosoc_symbiflow_stratixiv_arch_timing_adapted_param_lut.blif
+#BLIF OUTPUT: /home/talaeikh/temp21/benchmarks/other_benchmarks/picosoc/stratix10/quartus2_proj/netlists/picosoc_symbiflow_stratix10_arch_timing.blif
 
 #MAIN MODEL
 
@@ -37729,111 +37729,48 @@
 
 #SUBCKT MODELS
 
-.model fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5}
+.model fourteennm_lcell_comb5
 .inputs \
-    clk_portbout \
-    clk_portbin \
-    clk_portaout \
-    clk_portain \
-    eccencparity[0] \
-    eccencparity[1] \
-    eccencparity[2] \
-    eccencparity[3] \
-    eccencparity[4] \
-    eccencparity[5] \
-    eccencparity[6] \
-    eccencparity[7] \
-    eccencbypass \
-    portb_dataout_sclr \
-    portb_dataout_aclr \
-    ena_portbout \
-    ena_portbin \
-    ena_portaout \
-    ena_portain \
-    portbaddrstall \
-    portbre \
-    portbaddr[0] \
-    portbaddr[1] \
-    portbaddr[2] \
-    portbaddr[3] \
-    portbaddr[4] \
-    portaaddrstall \
-    portabyteenamasks[0] \
-    portabyteenamasks[1] \
-    portabyteenamasks[2] \
-    portabyteenamasks[3] \
-    portabyteenamasks[4] \
-    portabyteenamasks[5] \
-    portabyteenamasks[6] \
-    portabyteenamasks[7] \
-    portawe \
-    portaaddr[0] \
-    portaaddr[1] \
-    portaaddr[2] \
-    portaaddr[3] \
-    portaaddr[4] \
-    portadatain
+    cin \
+    datae \
+    datad \
+    datac \
+    datab \
+    dataa
 .outputs \
-    portbdataout \
-    eccstatus[0] \
-    eccstatus[1]
+    cout \
+    sumout \
+    combout
 .blackbox
 .end
 
-.model fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{8}.port_b_address_width{8}
+.model fourteennm_lcell_comb6
 .inputs \
-    clk_portbout \
-    clk_portbin \
-    clk_portaout \
-    clk_portain \
-    eccencparity[0] \
-    eccencparity[1] \
-    eccencparity[2] \
-    eccencparity[3] \
-    eccencparity[4] \
-    eccencparity[5] \
-    eccencparity[6] \
-    eccencparity[7] \
-    eccencbypass \
-    portb_dataout_sclr \
-    portb_dataout_aclr \
-    ena_portbout \
-    ena_portbin \
-    ena_portaout \
-    ena_portain \
-    portbaddrstall \
-    portbre \
-    portbaddr[0] \
-    portbaddr[1] \
-    portbaddr[2] \
-    portbaddr[3] \
-    portbaddr[4] \
-    portbaddr[5] \
-    portbaddr[6] \
-    portbaddr[7] \
-    portaaddrstall \
-    portabyteenamasks[0] \
-    portabyteenamasks[1] \
-    portabyteenamasks[2] \
-    portabyteenamasks[3] \
-    portabyteenamasks[4] \
-    portabyteenamasks[5] \
-    portabyteenamasks[6] \
-    portabyteenamasks[7] \
-    portawe \
-    portaaddr[0] \
-    portaaddr[1] \
-    portaaddr[2] \
-    portaaddr[3] \
-    portaaddr[4] \
-    portaaddr[5] \
-    portaaddr[6] \
-    portaaddr[7] \
-    portadatain
+    cin \
+    datah \
+    datag \
+    dataf \
+    datae \
+    datad \
+    datac \
+    datab \
+    dataa
 .outputs \
-    portbdataout \
-    eccstatus[0] \
-    eccstatus[1]
+    cout \
+    sumout \
+    combout
+.blackbox
+.end
+
+.model fourteennm_ff
+.inputs \
+    d \
+    sclr \
+    clrn \
+    ena \
+    clk
+.outputs \
+    q
 .blackbox
 .end
 
@@ -37900,47 +37837,110 @@
 .blackbox
 .end
 
-.model fourteennm_ff
+.model fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{8}.port_b_address_width{8}
 .inputs \
-    d \
-    sclr \
-    clrn \
-    ena \
-    clk
+    clk_portbout \
+    clk_portbin \
+    clk_portaout \
+    clk_portain \
+    eccencparity[0] \
+    eccencparity[1] \
+    eccencparity[2] \
+    eccencparity[3] \
+    eccencparity[4] \
+    eccencparity[5] \
+    eccencparity[6] \
+    eccencparity[7] \
+    eccencbypass \
+    portb_dataout_sclr \
+    portb_dataout_aclr \
+    ena_portbout \
+    ena_portbin \
+    ena_portaout \
+    ena_portain \
+    portbaddrstall \
+    portbre \
+    portbaddr[0] \
+    portbaddr[1] \
+    portbaddr[2] \
+    portbaddr[3] \
+    portbaddr[4] \
+    portbaddr[5] \
+    portbaddr[6] \
+    portbaddr[7] \
+    portaaddrstall \
+    portabyteenamasks[0] \
+    portabyteenamasks[1] \
+    portabyteenamasks[2] \
+    portabyteenamasks[3] \
+    portabyteenamasks[4] \
+    portabyteenamasks[5] \
+    portabyteenamasks[6] \
+    portabyteenamasks[7] \
+    portawe \
+    portaaddr[0] \
+    portaaddr[1] \
+    portaaddr[2] \
+    portaaddr[3] \
+    portaaddr[4] \
+    portaaddr[5] \
+    portaaddr[6] \
+    portaaddr[7] \
+    portadatain
 .outputs \
-    q
+    portbdataout \
+    eccstatus[0] \
+    eccstatus[1]
 .blackbox
 .end
 
-.model fourteennm_lcell_comb6
+.model fourteennm_ram_block.opmode{dual_port}.output_type{comb}.port_a_address_width{5}.port_b_address_width{5}
 .inputs \
-    cin \
-    datah \
-    datag \
-    dataf \
-    datae \
-    datad \
-    datac \
-    datab \
-    dataa
+    clk_portbout \
+    clk_portbin \
+    clk_portaout \
+    clk_portain \
+    eccencparity[0] \
+    eccencparity[1] \
+    eccencparity[2] \
+    eccencparity[3] \
+    eccencparity[4] \
+    eccencparity[5] \
+    eccencparity[6] \
+    eccencparity[7] \
+    eccencbypass \
+    portb_dataout_sclr \
+    portb_dataout_aclr \
+    ena_portbout \
+    ena_portbin \
+    ena_portaout \
+    ena_portain \
+    portbaddrstall \
+    portbre \
+    portbaddr[0] \
+    portbaddr[1] \
+    portbaddr[2] \
+    portbaddr[3] \
+    portbaddr[4] \
+    portaaddrstall \
+    portabyteenamasks[0] \
+    portabyteenamasks[1] \
+    portabyteenamasks[2] \
+    portabyteenamasks[3] \
+    portabyteenamasks[4] \
+    portabyteenamasks[5] \
+    portabyteenamasks[6] \
+    portabyteenamasks[7] \
+    portawe \
+    portaaddr[0] \
+    portaaddr[1] \
+    portaaddr[2] \
+    portaaddr[3] \
+    portaaddr[4] \
+    portadatain
 .outputs \
-    cout \
-    sumout \
-    combout
-.blackbox
-.end
-
-.model fourteennm_lcell_comb5
-.inputs \
-    cin \
-    datae \
-    datad \
-    datac \
-    datab \
-    dataa
-.outputs \
-    cout \
-    sumout \
-    combout
+    portbdataout \
+    eccstatus[0] \
+    eccstatus[1]
 .blackbox
 .end

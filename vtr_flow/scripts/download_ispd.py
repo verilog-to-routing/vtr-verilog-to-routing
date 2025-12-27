@@ -59,7 +59,7 @@ def parse_args():
         "--force",
         default=False,
         action="store_true",
-        help="Run extraction step even if directores etc. already exist",
+        help="Run extraction step even if directories etc. already exist",
     )
 
     parser.add_argument(
@@ -70,7 +70,6 @@ def parse_args():
 
 
 def main():
-
     args = parse_args()
 
     try:
@@ -114,7 +113,7 @@ def main():
         print("File corrupt:", e)
         sys.exit(2)
     except ExtractionError as e:
-        print("Failed to extrac :", e)
+        print("Failed to extract :", e)
         sys.exit(3)
 
     sys.exit(0)
@@ -154,7 +153,6 @@ def verify(tar_gz_filename, md5_url):
 
 
 def md5_matches(filename_to_check, reference_md5):
-
     local_md5 = hashlib.md5()
     with open(filename_to_check, "rb") as f:
         # Read in chunks to avoid reading the whole file into memory

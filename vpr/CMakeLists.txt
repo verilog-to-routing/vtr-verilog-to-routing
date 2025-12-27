@@ -119,6 +119,7 @@ target_link_libraries(libvpr
                       libpugixml
                       librrgraph
                       ZLIB::ZLIB
+                      yaml-cpp::yaml-cpp
 )
 
 if(VPR_USE_SERVER)

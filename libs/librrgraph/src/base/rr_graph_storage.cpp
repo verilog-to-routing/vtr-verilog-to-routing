@@ -18,7 +18,10 @@ void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_remapped_.reserve(num_edges);
 }
 
-void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped) {
+void t_rr_graph_storage::emplace_back_edge(RRNodeId src,
+                                           RRNodeId dest,
+                                           short edge_switch,
+                                           bool remapped) {
     // Cannot mutate edges once edges have been read!
     VTR_ASSERT(!edges_read_);
     edge_src_node_.emplace_back(src);

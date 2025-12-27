@@ -420,6 +420,7 @@ void create_rr_graph(e_graph_type graph_type,
                      t_det_routing_arch& det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
+                     const t_crr_opts& crr_opts,
                      const std::vector<t_direct_inf>& directs,
                      int* Warnings,
                      bool is_flat) {
@@ -460,6 +461,7 @@ void create_rr_graph(e_graph_type graph_type,
                              router_opts.do_check_rr_graph,
                              echo_enabled,
                              echo_file_name,
+                             router_opts.route_verbosity,
                              is_flat);
                 if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
                     mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
@@ -497,6 +499,7 @@ void create_rr_graph(e_graph_type graph_type,
                 build_tileable_unidir_rr_graph(block_types,
                                                grid,
                                                nodes_per_chan,
+                                               crr_opts,
                                                det_routing_arch.switch_block_type,
                                                det_routing_arch.Fs,
                                                det_routing_arch.switch_block_subtype,
@@ -514,6 +517,7 @@ void create_rr_graph(e_graph_type graph_type,
                                                det_routing_arch.opin2all_sides,   // Allow opin of grid to directly drive routing tracks at all sides of a switch block
                                                det_routing_arch.concat_wire,      // Allow end-point tracks to be wired to a starting point track on the opposite in a switch block.It means a wire can be continued in the same direction to another wire
                                                det_routing_arch.concat_pass_wire, // Allow passing tracks to be wired to the routing tracks in the same direction in a switch block. It means that a pass wire can jump in the same direction to another
+                                               router_opts.route_verbosity,
                                                Warnings);
             }
         }
@@ -586,6 +590,7 @@ void create_rr_graph(e_graph_type graph_type,
                        det_routing_arch.write_rr_graph_filename.c_str(),
                        echo_enabled,
                        echo_file_name,
+                       router_opts.route_verbosity,
                        is_flat);
     }
 }

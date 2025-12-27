@@ -20,6 +20,7 @@
 bool route(const Netlist<>& net_list,
            int width_fac,
            const t_router_opts& router_opts,
+           const t_crr_opts& crr_opts,
            const t_analysis_opts& analysis_opts,
            t_det_routing_arch& det_routing_arch,
            std::vector<t_segment_inf>& segment_inf,

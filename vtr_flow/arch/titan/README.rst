@@ -103,7 +103,7 @@ Adding Support for New Architectures
 Support can be added for additional Quartus II supported FPGA architectures 
 (Cyclone III, Stratix II etc), by defining models for the architecture's VQM
 primitives.  Good places to look for this information include:
-   * Altera's Quartus Univeristy Interface Program (QUIP) documentation
+   * Altera's Quartus University Interface Program (QUIP) documentation
    * The 'fv_lib' directory under a Quartus installation
 
 For more details see vqm_to_blif's README.txt

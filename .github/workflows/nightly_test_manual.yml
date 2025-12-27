@@ -39,7 +39,7 @@ jobs:
         rm -rf ./.??* || true
 
     # Checkout the VTR repo.
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -109,7 +109,7 @@ jobs:
 
     - name: Upload regression results
       if: success() || failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: nightly_test_results
         path: |
@@ -131,7 +131,7 @@ jobs:
 
     - name: Upload golden results
       if: success() || failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: nightly_tests_golden
         path: |
@@ -142,11 +142,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 

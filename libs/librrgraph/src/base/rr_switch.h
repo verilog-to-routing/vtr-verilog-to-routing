@@ -31,6 +31,12 @@ struct t_rr_switch_inf {
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_UNDEFINED;
     float power_buffer_size = 0.;
 
+    // The template ID of the switch. This is metadata stored for each switch to
+    // simplify certain analyses. For example, when generating the CRR graph, the
+    // template ID is used to determine which switch in the template is used most
+    // or least frequently.
+    std::string template_id = "";
+
     /// Indicate whether this rr_switch is a switch type used inside clusters.
     /// These switch types are not specified in the architecture description file
     /// and are added when flat router is enabled.

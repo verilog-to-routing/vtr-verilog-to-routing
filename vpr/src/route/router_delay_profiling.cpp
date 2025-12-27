@@ -238,6 +238,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
 
 void alloc_routing_structs(const t_chan_width& chan_width,
                            const t_router_opts& router_opts,
+                           const t_crr_opts& crr_opts,
                            t_det_routing_arch& det_routing_arch,
                            const std::vector<t_segment_inf>& segment_inf,
                            const std::vector<t_direct_inf>& directs,
@@ -264,6 +265,7 @@ void alloc_routing_structs(const t_chan_width& chan_width,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
+                    crr_opts,
                     directs,
                     &warnings,
                     is_flat);
