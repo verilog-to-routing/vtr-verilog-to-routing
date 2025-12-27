@@ -806,9 +806,6 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_an
 
     cluster_gain_stats.explore_transitive_fanout = true;                                  /* If no legal molecules found, enable exploration of molecules two hops away */
     cluster_gain_stats.candidates_propose_limit = packer_opts_.feasible_block_array_size; // set the limit of candidates to propose
-    if (cluster_gain_stats.is_memory) {
-        cluster_gain_stats.candidates_propose_limit = 3000;
-    }
 
     for (AtomBlockId blk_id : cluster_gain_stats.marked_blocks) {
         // If this is memory cluster and block is not in the same logical
