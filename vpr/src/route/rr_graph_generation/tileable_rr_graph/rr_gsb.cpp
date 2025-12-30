@@ -963,7 +963,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
         /* In this part, we only sort routing track nodes. IPIN nodes will be handled later */
         if (e_rr_type::CHANX != rr_graph.node_type(src_node) && e_rr_type::CHANY != rr_graph.node_type(src_node)) {
-          continue;
+            continue;
         }
         /* The driver routing channel node can be either an input or an output to the GSB.
          * Just try to find a qualified one. */
