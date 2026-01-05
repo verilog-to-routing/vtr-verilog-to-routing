@@ -27,6 +27,7 @@ class MapLookahead : public RouterLookahead {
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
     int route_verbosity_;
+    bool has_interposer_cuts_;
 
   protected:
     float get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
