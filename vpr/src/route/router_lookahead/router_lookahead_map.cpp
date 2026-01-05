@@ -164,11 +164,15 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
                                                                 int segment_index,
                                                                 int chan_index);
 
+static float get_expected_interposer_cost();
+
 /******** Interface class member function definitions ********/
 MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity)
     : det_routing_arch_(det_routing_arch)
     , is_flat_(is_flat)
-    , route_verbosity_(route_verbosity) {}
+    , route_verbosity_(route_verbosity) {
+    has_interposer_cuts_ = g_vpr_ctx.device().grid.has_interposer_cuts();
+}
 
 float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
     const auto& device_ctx = g_vpr_ctx.device();
@@ -383,6 +387,9 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         return std::make_pair(0., 0.);
     }
 
+    if (has_interposer_cuts_) {
+        expected_delay_cost += get_expected_interposer_cost();
+    }
 
     VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                         vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
@@ -891,6 +898,10 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
             }
         }
     }
+}
+
+static float get_expected_interposer_cost() {
+    return 0;
 }
 
 //
