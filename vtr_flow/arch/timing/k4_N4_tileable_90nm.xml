@@ -56,6 +56,13 @@
       <!--Fill with 'clb'-->
       <fill type="clb" priority="10"/>
     </auto_layout>
+    <fixed_layout name="extra_small" width="40" height="40">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+    </fixed_layout>
   </layout>
   <device>
     <sizing R_minW_nmos="4220.930176" R_minW_pmos="11207.599609"/>
