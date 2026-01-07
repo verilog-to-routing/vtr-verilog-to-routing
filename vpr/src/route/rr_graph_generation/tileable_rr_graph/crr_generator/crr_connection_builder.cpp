@@ -433,15 +433,31 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
         }
     }
 
+    // VPR don't allow routing tracks on parameter of the device. Depending on the channel type, min_x/y are different.
+    int min_x = 0;
+    int min_y = 0;
+    int max_x = fpga_grid_x_ - 2;
+    int max_y = fpga_grid_y_ - 2;
+    bool is_chanx = info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT;
+
+    if (is_chanx) {
+        min_x = 1;
+        min_y = 0;
+    } else {
+        min_x = 0;
+        min_y = 1;
+    }
+
+
     // Calculate truncation
-    truncated = (std::max(x_low, 1) - x_low) - (x_high - std::min(x_high, fpga_grid_x_ - 2));
-    truncated += (std::max(y_low, 1) - y_low) - (y_high - std::min(y_high, fpga_grid_y_ - 2));
+    truncated = (std::max(x_low, min_x) - x_low) - (x_high - std::min(x_high, max_x));
+    truncated += (std::max(y_low, min_y) - y_low) - (y_high - std::min(y_high, max_y));
 
     // Apply grid boundaries
-    x_low = std::max(x_low, 1);
-    y_low = std::max(y_low, 1);
-    x_high = std::min(x_high, fpga_grid_x_ - 2);
-    y_high = std::min(y_high, fpga_grid_y_ - 2);
+    x_low = std::max(x_low, min_x);
+    y_low = std::max(y_low, min_y);
+    x_high = std::min(x_high, max_x);
+    y_high = std::min(y_high, max_y);
 
     // Calculate physical length
     physical_length = (x_high - x_low) + (y_high - y_low) + 1;
