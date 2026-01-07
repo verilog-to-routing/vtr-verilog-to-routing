@@ -448,7 +448,6 @@ void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info
         min_y = 1;
     }
 
-
     // Calculate truncation
     truncated = (std::max(x_low, min_x) - x_low) - (x_high - std::min(x_high, max_x));
     truncated += (std::max(y_low, min_y) - y_low) - (y_high - std::min(y_high, max_y));
