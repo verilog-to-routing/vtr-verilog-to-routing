@@ -831,7 +831,8 @@ void RRGSB::add_mux_node(const RRNodeId& mux_node) {
 
 void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
                                     const e_side& chan_side,
-                                    const size_t& track_id) {
+                                    const size_t& track_id,
+                                    const bool reorder_incoming_edges) {
     std::unordered_map<size_t, std::unordered_map<size_t, RREdgeId>> from_grid_edge_map;
     std::unordered_map<size_t, std::unordered_map<size_t, RREdgeId>> from_track_edge_map;
 
@@ -891,21 +892,43 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
         edge_counter++;
     }
 
-    /* Store the sorted edge */
-    for (size_t side = 0; side < get_num_sides(); ++side) {
-        /* Edges from grid outputs are the 1st part */
-        for (size_t opin_id = 0; opin_id < opin_node_[side].size(); ++opin_id) {
-            if ((0 < from_grid_edge_map.count(side))
-                && (0 < from_grid_edge_map.at(side).count(opin_id))) {
-                chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_grid_edge_map[side][opin_id]);
+    if (reorder_incoming_edges) {
+        /* Store the sorted edge */
+        for (size_t side = 0; side < get_num_sides(); ++side) {
+            /* Edges from grid outputs are the 1st part */
+            for (size_t opin_id = 0; opin_id < opin_node_[side].size(); ++opin_id) {
+                if ((0 < from_grid_edge_map.count(side))
+                    && (0 < from_grid_edge_map.at(side).count(opin_id))) {
+                    chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_grid_edge_map[side][opin_id]);
+                }
             }
         }
+        for (size_t side = 0; side < get_num_sides(); ++side) {
+            /* Edges from routing tracks are the 2nd part */
+            for (size_t itrack = 0; itrack < chan_node_[side].get_chan_width(); ++itrack) {
+                if ((0 < from_track_edge_map.count(side))
+                    && (0 < from_track_edge_map.at(side).count(itrack))) {
+                    chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_track_edge_map[side][itrack]);
+                }
+            }
+        }
+    } else {
+        /* Store the sorted edge */
+        for (size_t side = 0; side < get_num_sides(); ++side) {
+            /* Edges from grid outputs are the 1st part */
+            for (size_t opin_id = 0; opin_id < opin_node_[side].size(); ++opin_id) {
+                if ((0 < from_grid_edge_map.count(side))
+                    && (0 < from_grid_edge_map.at(side).count(opin_id))) {
+                    chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_grid_edge_map[side][opin_id]);
+                }
+            }
 
-        /* Edges from routing tracks are the 2nd part */
-        for (size_t itrack = 0; itrack < chan_node_[side].get_chan_width(); ++itrack) {
-            if ((0 < from_track_edge_map.count(side))
-                && (0 < from_track_edge_map.at(side).count(itrack))) {
-                chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_track_edge_map[side][itrack]);
+            /* Edges from routing tracks are the 2nd part */
+            for (size_t itrack = 0; itrack < chan_node_[side].get_chan_width(); ++itrack) {
+                if ((0 < from_track_edge_map.count(side))
+                    && (0 < from_track_edge_map.at(side).count(itrack))) {
+                    chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_track_edge_map[side][itrack]);
+                }
             }
         }
     }
@@ -913,7 +936,7 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
     VTR_ASSERT(edge_counter == chan_node_in_edges_[size_t(chan_side)][track_id].size());
 }
 
-void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph) {
+void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph, const bool reorder_incoming_edges) {
     /* Allocate here, as sort edge is optional, we do not allocate when adding nodes */
     chan_node_in_edges_.resize(get_num_sides());
 
@@ -925,7 +948,7 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph) {
             /* Only sort the output nodes and bypass passing wires */
             if ((OUT_PORT == chan_node_direction_[side][track_id])
                 && (false == is_sb_node_passing_wire(rr_graph, side_manager.get_side(), track_id))) {
-                sort_chan_node_in_edges(rr_graph, side_manager.get_side(), track_id);
+                sort_chan_node_in_edges(rr_graph, side_manager.get_side(), track_id, reorder_incoming_edges);
             }
         }
     }
