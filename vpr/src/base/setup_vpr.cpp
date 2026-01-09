@@ -488,6 +488,7 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->reorder_rr_graph_nodes_algorithm = Options.reorder_rr_graph_nodes_algorithm;
     RouterOpts->reorder_rr_graph_nodes_threshold = Options.reorder_rr_graph_nodes_threshold;
     RouterOpts->reorder_rr_graph_nodes_seed = Options.reorder_rr_graph_nodes_seed;
+    RouterOpts->reorder_incoming_edges = Options.reorder_incoming_edges;
 
     RouterOpts->initial_pres_fac = Options.initial_pres_fac;
     RouterOpts->base_cost_type = Options.base_cost_type;

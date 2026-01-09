@@ -1385,6 +1385,7 @@ struct t_router_opts {
     e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
     int reorder_rr_graph_nodes_threshold = 0;
     int reorder_rr_graph_nodes_seed = 1;
+    bool reorder_incoming_edges;
 
     bool generate_router_lookahead_report;
 };

@@ -2830,6 +2830,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument<bool, ParseOnOff>(args.reorder_incoming_edges, "--reorder_incoming_edges")
+        .help("Reorder incoming edges of rr_graph nodes so drivers of type OPIN are at the beginning of the list")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_grp.add_argument<bool, ParseOnOff>(args.flat_routing, "--flat_routing")
         .help("Enable VPR's flat routing (routing the nets from the source primitive to the destination primitive)")
         .default_value("off")

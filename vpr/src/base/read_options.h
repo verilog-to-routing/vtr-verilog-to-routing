@@ -230,6 +230,7 @@ struct t_options {
     argparse::ArgValue<e_rr_node_reorder_algorithm> reorder_rr_graph_nodes_algorithm;
     argparse::ArgValue<int> reorder_rr_graph_nodes_threshold;
     argparse::ArgValue<int> reorder_rr_graph_nodes_seed;
+    argparse::ArgValue<bool> reorder_incoming_edges;
     argparse::ArgValue<bool> flat_routing;
     argparse::ArgValue<bool> router_opt_choke_points;
     argparse::ArgValue<int> route_verbosity;
