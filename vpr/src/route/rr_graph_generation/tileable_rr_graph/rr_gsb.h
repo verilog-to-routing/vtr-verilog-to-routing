@@ -196,7 +196,7 @@ class RRGSB {
     void add_mux_node(const RRNodeId& mux_node);
 
     /* Sort all the incoming edges for routing channel rr_node */
-    void sort_chan_node_in_edges(const RRGraphView& rr_graph);
+    void sort_chan_node_in_edges(const RRGraphView& rr_graph, const bool reorder_incoming_edges = false);
     /* Sort all the incoming edges for input pin rr_node */
     void sort_ipin_node_in_edges(const RRGraphView& rr_graph);
     /* Build the lists of opin node for connection blocks. This is required after adding all the nodes */
@@ -221,7 +221,8 @@ class RRGSB {
     /* Sort all the incoming edges for one channel rr_node */
     void sort_chan_node_in_edges(const RRGraphView& rr_graph,
                                  const e_side& chan_side,
-                                 const size_t& track_id);
+                                 const size_t& track_id,
+                                 const bool reorder_incoming_edges);
 
     /* Sort all the incoming edges for one input pin rr_node */
     void sort_ipin_node_in_edges(const RRGraphView& rr_graph,
