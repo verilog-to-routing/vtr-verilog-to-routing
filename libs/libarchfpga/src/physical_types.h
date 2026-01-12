@@ -2049,10 +2049,13 @@ struct t_arch {
     /// @brief Returns the grid layout specified by the --device command-line option.
     const t_grid_def& grid_layout() const;
 
-    // the layout that is chosen to be used with command line options
-    // It is used to generate custom SB for a specific locations within the device
-    // If the layout is not specified in the command line options, this variable will be set to "auto"
+    /// The layout that is chosen to be used with command line options
+    /// It is used to generate custom SB for a specific locations within the device
+    /// If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout;
+
+    /// Specifies how OPINs are connected to CHANZ wires.
+    e_3d_opin_connectivity_type opin_chanz_connectivity_type = e_3d_opin_connectivity_type::UNDEFINED;
 
     t_clock_arch_spec clock_arch; // Clock related data types
 
