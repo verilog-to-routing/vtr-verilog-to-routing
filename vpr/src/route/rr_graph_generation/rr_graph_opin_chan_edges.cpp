@@ -663,6 +663,8 @@ void add_opin_chan_edges(RRGraphBuilder& rr_graph_builder,
                          bool* Fc_clipped) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
+    e_3d_opin_connectivity_type opin_chanz_connectivity = g_vpr_ctx.device().arch->opin_chanz_connectivity_type;
+
     t_rr_edge_info_set rr_edges_to_create;
 
     // These are data structures used by the unidir opin mapping. They are used
@@ -697,15 +699,27 @@ void add_opin_chan_edges(RRGraphBuilder& rr_graph_builder,
                         }
                     }
 
-                    add_edges_opin_chanz_per_side(rr_graph,
-                                                  layer, i, j,
-                                                  side,
-                                                  Fc_out,
-                                                  seg_index_map,
-                                                  num_seg_types,
-                                                  Fc_zofs,
-                                                  rr_edges_to_create,
-                                                  interdie_3d_links);
+                    if (opin_chanz_connectivity == e_3d_opin_connectivity_type::PER_SIDE) {
+                        add_edges_opin_chanz_per_side(rr_graph,
+                                                      layer, i, j,
+                                                      side,
+                                                      Fc_out,
+                                                      seg_index_map,
+                                                      num_seg_types,
+                                                      Fc_zofs,
+                                                      rr_edges_to_create,
+                                                      interdie_3d_links);
+                    }
+                }
+
+                if (opin_chanz_connectivity == e_3d_opin_connectivity_type::PER_BLOCK) {
+                    add_edges_opin_chanz_per_block(rr_graph,
+                                                   layer, i, j,
+                                                   Fc_out,
+                                                   seg_index_map,
+                                                   num_seg_types,
+                                                   rr_edges_to_create,
+                                                   interdie_3d_links[i][j]);
                 }
 
                 // Create the actual OPIN->CHANX/CHANY edges
