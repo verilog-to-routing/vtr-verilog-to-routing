@@ -901,8 +901,8 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
         for (size_t side = 0; side < get_num_sides(); ++side) {
             /* Edges from grid outputs are the 1st part */
             for (size_t opin_id = 0; opin_id < opin_node_[side].size(); ++opin_id) {
-                if ((0 < from_grid_edge_map.contains(side))
-                    && (0 < from_grid_edge_map.at(side).contains(opin_id))) {
+                if ((from_grid_edge_map.contains(side))
+                    && (from_grid_edge_map.at(side).contains(opin_id))) {
                     chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_grid_edge_map[side][opin_id]);
                 }
             }
@@ -910,8 +910,8 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
         for (size_t side = 0; side < get_num_sides(); ++side) {
             /* Edges from routing tracks are the 2nd part */
             for (size_t itrack = 0; itrack < chan_node_[side].get_chan_width(); ++itrack) {
-                if ((0 < from_track_edge_map.contains(side))
-                    && (0 < from_track_edge_map.at(side).contains(itrack))) {
+                if ((from_track_edge_map.contains(side))
+                    && (from_track_edge_map.at(side).contains(itrack))) {
                     chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_track_edge_map[side][itrack]);
                 }
             }
@@ -922,16 +922,16 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
         for (size_t side = 0; side < get_num_sides(); ++side) {
             /* Edges from grid outputs are the 1st part */
             for (size_t opin_id = 0; opin_id < opin_node_[side].size(); ++opin_id) {
-                if ((0 < from_grid_edge_map.contains(side))
-                    && (0 < from_grid_edge_map.at(side).contains(opin_id))) {
+                if ((from_grid_edge_map.contains(side))
+                    && (from_grid_edge_map.at(side).contains(opin_id))) {
                     chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_grid_edge_map[side][opin_id]);
                 }
             }
 
             /* Edges from routing tracks are the 2nd part */
             for (size_t itrack = 0; itrack < chan_node_[side].get_chan_width(); ++itrack) {
-                if ((0 < from_track_edge_map.contains(side))
-                    && (0 < from_track_edge_map.at(side).contains(itrack))) {
+                if ((from_track_edge_map.contains(side))
+                    && (from_track_edge_map.at(side).contains(itrack))) {
                     chan_node_in_edges_[size_t(chan_side)][track_id].push_back(from_track_edge_map[side][itrack]);
                 }
             }
@@ -1077,7 +1077,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
     /* Store the sorted edge */
     for (size_t iside = 0; iside < NUM_2D_SIDES; ++iside) {
         for (size_t itrack = 0; itrack < chan_node_[iside].get_chan_width(); ++itrack) {
-            if (0 < from_track_edge_map[iside].contains(itrack)) {
+            if (from_track_edge_map[iside].contains(itrack)) {
                 ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_track_edge_map[iside][itrack]);
             }
         }
@@ -1085,7 +1085,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
 
     for (e_side iside : {TOP, RIGHT, BOTTOM, LEFT}) {
         for (size_t ipin = 0; ipin < get_num_opin_nodes(iside); ++ipin) {
-            if (0 < from_opin_edge_map[size_t(iside)].contains(ipin)) {
+            if (from_opin_edge_map[size_t(iside)].contains(ipin)) {
                 ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_opin_edge_map[size_t(iside)][ipin]);
             }
         }
