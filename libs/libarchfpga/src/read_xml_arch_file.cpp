@@ -2926,8 +2926,8 @@ static void process_device(pugi::xml_node node,
     cur = get_single_child(node, "area", loc_data);
     expect_only_attributes(cur, {"grid_logic_tile_area"}, loc_data);
     arch.grid_logic_tile_area = get_attribute(cur, "grid_logic_tile_area",
-                                               loc_data, ReqOpt::OPTIONAL)
-                                     .as_float(0);
+                                              loc_data, ReqOpt::OPTIONAL)
+                                    .as_float(0);
 
     // <chan_width_distr> tag
     cur = get_single_child(node, "chan_width_distr", loc_data, ReqOpt::OPTIONAL);

@@ -81,5 +81,5 @@ enum class e_3d_opin_connectivity_type {
      *  [ CLB ] <----- (All OPINs route here) --/
      * @endcode
      */
-    PER_BLOCK  ///< All OPINs connect to a single switch block at the top-right of the block.
+    PER_BLOCK
 };

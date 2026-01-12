@@ -188,7 +188,7 @@ bool has_opin_chanz_connectivity(const std::vector<vtr::Matrix<int>>& Fc_out,
         }
 
         for (const t_physical_tile_type& physical_tile_type : device_ctx.physical_tile_types) {
-            for (int pin_number : physical_tile_type.num_pins()) {
+            for (int pin_number = 0; pin_number < physical_tile_type.num_pins; pin_number++) {
                 if (Fc_out[physical_tile_type.index][pin_number][iseg] > 0) {
                     return true;
                 }
