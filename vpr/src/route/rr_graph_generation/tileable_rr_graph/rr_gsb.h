@@ -196,7 +196,7 @@ class RRGSB {
     void add_mux_node(const RRNodeId& mux_node);
 
     /* Sort all the incoming edges for routing channel rr_node */
-    void sort_chan_node_in_edges(const RRGraphView& rr_graph);
+    void sort_chan_node_in_edges(const RRGraphView& rr_graph, const bool reorder_incoming_edges = false);
     /* Sort all the incoming edges for input pin rr_node */
     void sort_ipin_node_in_edges(const RRGraphView& rr_graph);
     /* Build the lists of opin node for connection blocks. This is required after adding all the nodes */
@@ -218,10 +218,18 @@ class RRGSB {
     void clear_one_side(const e_side& node_side);
 
   private: /* Private Mutators: edge sorting */
-    /* Sort all the incoming edges for one channel rr_node */
+    /**
+     * Sort all the incoming edges for one channel rr_node
+     * @param rr_graph: the rr_graph
+     * @param chan_side: the side of the channel
+     * @param track_id: the track id of the channel
+     * @param reorder_incoming_edges: whether to reorder the incoming edges so that the edges from OPINs are put first.
+     *                                This is required to generate correct bitstream for some FPGA devices.
+     */
     void sort_chan_node_in_edges(const RRGraphView& rr_graph,
                                  const e_side& chan_side,
-                                 const size_t& track_id);
+                                 const size_t track_id,
+                                 const bool reorder_incoming_edges);
 
     /* Sort all the incoming edges for one input pin rr_node */
     void sort_ipin_node_in_edges(const RRGraphView& rr_graph,
