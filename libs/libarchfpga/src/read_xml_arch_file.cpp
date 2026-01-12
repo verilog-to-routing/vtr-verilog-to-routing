@@ -300,16 +300,28 @@ static void process_switch_block_locations(pugi::xml_node switchblock_locations,
                                            const pugiutil::loc_data& loc_data);
 
 static e_fc_value_type string_to_fc_value_type(std::string_view str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
+
+/// Takes in node pointing to <chan_width_distr> and loads all the child type objects.
 static void process_chan_width_distr(pugi::xml_node node,
-                                     t_arch* arch,
+                                     t_arch& arch,
                                      const pugiutil::loc_data& loc_data);
-static void process_chan_width_distr_dir(pugi::xml_node node, t_chan* chan, const pugiutil::loc_data& loc_data);
+
+/// Takes in node within <chan_width_distr> and loads all the child type objects.
+static void process_chan_width_distr_dir(pugi::xml_node node,
+                                         t_chan* chan,
+                                         const pugiutil::loc_data& loc_data);
+
 static void process_models(pugi::xml_node node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void process_model_ports(pugi::xml_node port_group, t_model& model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void process_layout(pugi::xml_node node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
 static t_grid_def process_grid_layout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 static void process_block_type_locs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
-static void process_device(pugi::xml_node node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
+
+/// Takes in node pointing to <device> and loads all the child type objects.
+static void process_device(pugi::xml_node node,
+                           t_arch& arch,
+                           t_default_fc_spec& arch_def_fc,
+                           const pugiutil::loc_data& loc_data);
 
 /**
  * @brief Parses tags related to tileable rr graph under <device> tag in the architecture file.
@@ -463,7 +475,7 @@ void xml_read_arch(std::string_view arch_file,
 
         // Process device
         next = get_single_child(architecture, "device", loc_data);
-        process_device(next, arch, arch_def_fc, loc_data);
+        process_device(next, *arch, arch_def_fc, loc_data);
 
         // Process switches
         next = get_single_child(architecture, "switchlist", loc_data);
@@ -2884,12 +2896,14 @@ static void process_block_type_locs(t_grid_def& grid_def,
     }
 }
 
-/* Takes in node pointing to <device> and loads all the
- * child type objects. */
-static void process_device(pugi::xml_node node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data) {
+static void process_device(pugi::xml_node node,
+                           t_arch& arch,
+                           t_default_fc_spec& arch_def_fc,
+                           const pugiutil::loc_data& loc_data) {
+
     bool custom_switch_block = false;
 
-    //Warn that <timing> is no longer supported
+    // Warn that <timing> is no longer supported
     //TODO: eventually remove
     try {
         expect_child_node_count(node, "timing", 0, loc_data);
@@ -2900,18 +2914,18 @@ static void process_device(pugi::xml_node node, t_arch* arch, t_default_fc_spec&
         archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
     }
 
-    expect_only_children(node, {"sizing", "area", "chan_width_distr", "switch_block", "connection_block", "default_fc"}, loc_data);
+    expect_only_children(node, {"sizing", "area", "chan_width_distr", "switch_block", "connection_block", "default_fc", "opin_chanz_connectivity"}, loc_data);
 
-    //<sizing> tag
+    // <sizing> tag
     pugi::xml_node cur = get_single_child(node, "sizing", loc_data);
     expect_only_attributes(cur, {"R_minW_nmos", "R_minW_pmos"}, loc_data);
-    arch->R_minW_nmos = get_attribute(cur, "R_minW_nmos", loc_data).as_float();
-    arch->R_minW_pmos = get_attribute(cur, "R_minW_pmos", loc_data).as_float();
+    arch.R_minW_nmos = get_attribute(cur, "R_minW_nmos", loc_data).as_float();
+    arch.R_minW_pmos = get_attribute(cur, "R_minW_pmos", loc_data).as_float();
 
-    //<area> tag
+    // <area> tag
     cur = get_single_child(node, "area", loc_data);
     expect_only_attributes(cur, {"grid_logic_tile_area"}, loc_data);
-    arch->grid_logic_tile_area = get_attribute(cur, "grid_logic_tile_area",
+    arch.grid_logic_tile_area = get_attribute(cur, "grid_logic_tile_area",
                                                loc_data, ReqOpt::OPTIONAL)
                                      .as_float(0);
 
@@ -2925,7 +2939,7 @@ static void process_device(pugi::xml_node node, t_arch* arch, t_default_fc_spec&
     // <connection_block> tag
     cur = get_single_child(node, "connection_block", loc_data);
     expect_only_attributes(cur, {"input_switch_name", "input_inter_die_switch_name"}, loc_data);
-    arch->ipin_cblock_switch_name = get_attribute(cur, "input_switch_name", loc_data).as_string();
+    arch.ipin_cblock_switch_name = get_attribute(cur, "input_switch_name", loc_data).as_string();
 
     // <switch_block> tag
     cur = get_single_child(node, "switch_block", loc_data);
@@ -2933,23 +2947,38 @@ static void process_device(pugi::xml_node node, t_arch* arch, t_default_fc_spec&
     const char* prop = get_attribute(cur, "type", loc_data).value();
     // Parse attribute 'type', representing the major connectivity pattern for switch blocks
     if (strcmp(prop, "wilton") == 0) {
-        arch->sb_type = e_switch_block_type::WILTON;
+        arch.sb_type = e_switch_block_type::WILTON;
     } else if (strcmp(prop, "universal") == 0) {
-        arch->sb_type = e_switch_block_type::UNIVERSAL;
+        arch.sb_type = e_switch_block_type::UNIVERSAL;
     } else if (strcmp(prop, "subset") == 0) {
-        arch->sb_type = e_switch_block_type::SUBSET;
+        arch.sb_type = e_switch_block_type::SUBSET;
     } else if (strcmp(prop, "custom") == 0) {
-        arch->sb_type = e_switch_block_type::CUSTOM;
+        arch.sb_type = e_switch_block_type::CUSTOM;
         custom_switch_block = true;
     } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
                        vtr::string_fmt("Unknown property %s for switch block type x\n", prop).c_str());
     }
 
-    ReqOpt custom_switchblock_reqd = BoolToReqOpt(!custom_switch_block);
-    arch->Fs = get_attribute(cur, "fs", loc_data, custom_switchblock_reqd).as_int(3);
+    // <opin_chanz_connectivity> tag
+    cur = get_single_child(node, "opin_chanz_connectivity", loc_data);
+    expect_only_attributes(cur, {"type"}, loc_data);
+    if (cur != nullptr) {
+        const std::string_view opin_chanz_connectivity_type = get_attribute(cur, "type", loc_data).value();
+        if (opin_chanz_connectivity_type == "per_side") {
+            arch.opin_chanz_connectivity_type = e_3d_opin_connectivity_type::PER_SIDE;
+        } else if (opin_chanz_connectivity_type == "per_block") {
+            arch.opin_chanz_connectivity_type = e_3d_opin_connectivity_type::PER_BLOCK;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(cur),
+                           vtr::string_fmt("Unknown property %s for OPIN-CHANZ connectivity type. \n", prop).c_str());
+        }
+    }
 
-    process_tileable_device_parameters(arch, loc_data);
+    ReqOpt custom_switchblock_reqd = BoolToReqOpt(!custom_switch_block);
+    arch.Fs = get_attribute(cur, "fs", loc_data, custom_switchblock_reqd).as_int(3);
+
+    process_tileable_device_parameters(&arch, loc_data);
 
     cur = get_single_child(node, "default_fc", loc_data, ReqOpt::OPTIONAL);
     if (cur) {
@@ -2988,23 +3017,21 @@ static void process_tileable_device_parameters(t_arch* arch, const pugiutil::loc
     arch->sub_fs = get_attribute(cur, "sub_fs", loc_data, BoolToReqOpt(false)).as_int(arch->Fs);
 }
 
-/* Takes in node pointing to <chan_width_distr> and loads all the
- * child type objects. */
 static void process_chan_width_distr(pugi::xml_node node,
-                                     t_arch* arch,
+                                     t_arch& arch,
                                      const pugiutil::loc_data& loc_data) {
     expect_only_children(node, {"x", "y"}, loc_data);
 
     pugi::xml_node cur = get_single_child(node, "x", loc_data);
-    process_chan_width_distr_dir(cur, &arch->Chans.chan_x_dist, loc_data);
+    process_chan_width_distr_dir(cur, &arch.Chans.chan_x_dist, loc_data);
 
     cur = get_single_child(node, "y", loc_data);
-    process_chan_width_distr_dir(cur, &arch->Chans.chan_y_dist, loc_data);
+    process_chan_width_distr_dir(cur, &arch.Chans.chan_y_dist, loc_data);
 }
 
-/* Takes in node within <chan_width_distr> and loads all the
- * child type objects. */
-static void process_chan_width_distr_dir(pugi::xml_node node, t_chan* chan, const pugiutil::loc_data& loc_data) {
+static void process_chan_width_distr_dir(pugi::xml_node node,
+                                         t_chan* chan,
+                                         const pugiutil::loc_data& loc_data) {
 
     ReqOpt hasXpeak, hasWidth, hasDc;
     hasXpeak = hasWidth = hasDc = ReqOpt::OPTIONAL;
