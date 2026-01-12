@@ -2961,7 +2961,7 @@ static void process_device(pugi::xml_node node,
     }
 
     // <opin_chanz_connectivity> tag
-    cur = get_single_child(node, "opin_chanz_connectivity", loc_data);
+    cur = get_single_child(node, "opin_chanz_connectivity", loc_data, ReqOpt::OPTIONAL);
     expect_only_attributes(cur, {"type"}, loc_data);
     if (cur != nullptr) {
         const std::string_view opin_chanz_connectivity_type = get_attribute(cur, "type", loc_data).value();
