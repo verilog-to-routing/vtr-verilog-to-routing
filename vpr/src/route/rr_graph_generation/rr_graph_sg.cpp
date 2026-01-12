@@ -175,6 +175,31 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
     }
 }
 
+bool has_opin_chanz_connectivity(const std::vector<vtr::Matrix<int>>& Fc_out,
+                                 int num_seg_types,
+                                 const t_unified_to_parallel_seg_index& seg_index_map) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    for (int iseg = 0; iseg < num_seg_types; iseg++) {
+        // Only interested in segments that exist on the Z-axis (3D connections)
+        int seg_index = get_parallel_seg_index(iseg, seg_index_map, e_parallel_axis::Z_AXIS);
+        if (seg_index < 0) {
+            continue;
+        }
+
+        for (const t_physical_tile_type& physical_tile_type : device_ctx.physical_tile_types) {
+            for (int pin_number : physical_tile_type.num_pins()) {
+                if (Fc_out[physical_tile_type.index][pin_number][iseg] > 0) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    // No connections between OPINs and Z-axis segments were found
+    return false;
+}
+
 void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
                                    int layer,
                                    int x,
@@ -220,7 +245,7 @@ void add_edges_opin_chanz_per_side(const RRGraphView& rr_graph,
             break;
 
         default:
-            VTR_ASSERT_SAFE(false);
+            VTR_ASSERT(false);
     }
 
     const int grid_width = grid.width();

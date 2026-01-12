@@ -664,6 +664,8 @@ void add_opin_chan_edges(RRGraphBuilder& rr_graph_builder,
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
     e_3d_opin_connectivity_type opin_chanz_connectivity = g_vpr_ctx.device().arch->opin_chanz_connectivity_type;
+    bool has_opin_chanz_edges = has_opin_chanz_connectivity(Fc_out, num_seg_types, seg_index_map);
+    VTR_ASSERT(!has_opin_chanz_edges || opin_chanz_connectivity != e_3d_opin_connectivity_type::UNDEFINED);
 
     t_rr_edge_info_set rr_edges_to_create;
 

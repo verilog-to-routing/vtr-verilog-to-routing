@@ -47,6 +47,11 @@ void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
                             const std::vector<t_bottleneck_link>& interdie_3d_links,
                             t_rr_edge_info_set& interdie_3d_rr_edges_to_create);
 
+/// @brief Checks if any OPIN connects to a Z-axis (3D) routing channel.
+bool has_opin_chanz_connectivity(const std::vector<vtr::Matrix<int>>& Fc_out,
+                                 int num_seg_types,
+                                 const t_unified_to_parallel_seg_index& seg_index_map);
+
 /**
  * @brief Connects OPINs on a specific side of a grid tile to CHANZ nodes in adjacent switch blocks.
  *
