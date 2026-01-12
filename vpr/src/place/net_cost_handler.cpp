@@ -90,7 +90,11 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
                                bool cube_bb)
     : cube_bb_(cube_bb)
     , placer_state_(placer_state)
-    , placer_opts_(placer_opts) {
+    , placer_opts_(placer_opts)
+    , chan_cost_handler_(g_vpr_ctx.device().rr_chanx_width,
+                         g_vpr_ctx.device().rr_chany_width,
+                         g_vpr_ctx.device().rr_graph,
+                         g_vpr_ctx.device().grid) {
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
@@ -133,99 +137,6 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
      * been recomputed. */
     bb_update_status_.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
-
-    alloc_and_load_chan_w_factors_for_place_cost_();
-}
-
-void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
-    const auto& device_ctx = g_vpr_ctx.device();
-
-    const size_t grid_height = device_ctx.grid.height();
-    const size_t grid_width = device_ctx.grid.width();
-
-    // These arrays contain accumulative channel width between channel zero and
-    // the channel specified by the given index. The accumulated channel width
-    // is inclusive, meaning that it includes both channel zero and channel `idx`.
-    // To compute the total channel width between channels 'low' and 'high', use the
-    // following formula:
-    //      acc_chan?_width_[high] - acc_chan?_width_[low - 1]
-    // This returns the total number of tracks between channels 'low' and 'high',
-    // including tracks in these channels.
-    acc_chanx_width_ = vtr::PrefixSum1D<int>(grid_height, [&](size_t y) noexcept {
-        int chan_x_width = device_ctx.rr_chanx_width[y];
-
-        // If the number of tracks in a channel is zero, two consecutive elements take the same
-        // value. This can lead to a division by zero in get_chanxy_cost_fac_(). To avoid this
-        // potential issue, we assume that the channel width is at least 1.
-        if (chan_x_width == 0) {
-            return 1;
-        }
-
-        return chan_x_width;
-    });
-
-    acc_chany_width_ = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
-        int chan_y_width = device_ctx.rr_chany_width[x];
-
-        // to avoid a division by zero
-        if (chan_y_width == 0) {
-            return 1;
-        }
-
-        return chan_y_width;
-    });
-
-    if (is_multi_layer_) {
-        alloc_and_load_for_fast_vertical_cost_update_();
-    }
-}
-
-void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    const size_t grid_height = device_ctx.grid.height();
-    const size_t grid_width = device_ctx.grid.width();
-
-    vtr::NdMatrix<float, 2> tile_num_inter_die_conn({grid_width, grid_height}, 0.);
-
-    /*
-     * Step 1: iterate over the rr-graph, recording how many edges go between layers at each (x,y) location
-     * in the device. We count all these edges, regardless of which layers they connect. Then we divide by
-     * the number of layers - 1 to get the average cross-layer edge count per (x,y) location -- this mirrors
-     * what we do for the horizontal and vertical channels where we assume the channel width doesn't change
-     * along the length of the channel. It lets us be more memory-efficient for 3D devices, and could be revisited
-     * if someday we have architectures with widely varying connectivity between different layers in a stack.
-     */
-
-    /* To calculate the accumulative number of inter-die connections we first need to get the number of
-     * inter-die connection per location. To be able to work for the cases that RR Graph is read instead
-     * of being made from the architecture file, we calculate this number by iterating over the RR graph. Once
-     * tile_num_inter_die_conn is populated, we can start populating acc_tile_num_inter_die_conn_.
-     */
-
-    for (const RRNodeId node : rr_graph.nodes()) {
-        if (rr_graph.node_type(node) == e_rr_type::CHANZ) {
-            int x = rr_graph.node_xlow(node);
-            int y = rr_graph.node_ylow(node);
-            VTR_ASSERT_SAFE(x == rr_graph.node_xhigh(node) && y == rr_graph.node_yhigh(node));
-            tile_num_inter_die_conn[x][y]++;
-        }
-    }
-
-    int num_layers = device_ctx.grid.get_num_layers();
-    for (size_t x = 0; x < device_ctx.grid.width(); x++) {
-        for (size_t y = 0; y < device_ctx.grid.height(); y++) {
-            tile_num_inter_die_conn[x][y] /= (num_layers - 1);
-        }
-    }
-
-    // Step 2: Calculate prefix sum of the inter-die connectivity up to and including the channel at (x, y).
-    acc_tile_num_inter_die_conn_ = vtr::PrefixSum2D<int>(grid_width,
-                                                         grid_height,
-                                                         [&](size_t x, size_t y) {
-                                                             return (int)tile_num_inter_die_conn[x][y];
-                                                         });
 }
 
 std::pair<double, double> NetCostHandler::comp_bb_cost(e_cost_methods method) const {
@@ -1336,12 +1247,13 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
      * chan?_place_cost_fac_ objects can handle -1 indices internally.
      */
 
-    double ncost;
-    const auto [chanx_cost_fac, chany_cost_fac] = get_chanxy_cost_fac_(bb);
-    ncost = (bb.xmax - bb.xmin + 1) * chanx_cost_fac;
+    double chanx_cost_fac = chan_cost_handler_.get_chanx_cost_fac(bb);
+    double chany_cost_fac = chan_cost_handler_.get_chany_cost_fac(bb);
+    double ncost = (bb.xmax - bb.xmin + 1) * chanx_cost_fac;
     ncost += (bb.ymax - bb.ymin + 1) * chany_cost_fac;
     if (is_multi_layer_) {
-        ncost += (bb.layer_max - bb.layer_min) * get_chanz_cost_factor_(bb);
+        double chanz_cost_fac = chan_cost_handler_.get_chanz_cost_fac(bb);
+        ncost += (bb.layer_max - bb.layer_min) * chanz_cost_fac;
     }
 
     ncost *= crossing;
@@ -1381,7 +1293,8 @@ double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_
          * chan?_place_cost_fac_ objects can handle -1 indices internally.
          */
 
-        const auto [chanx_cost_fac, chany_cost_fac] = get_chanxy_cost_fac_(bb[layer_num]);
+        double chanx_cost_fac = chan_cost_handler_.get_chanx_cost_fac(bb[layer_num]);
+        double chany_cost_fac = chan_cost_handler_.get_chany_cost_fac(bb[layer_num]);
         ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * chanx_cost_fac;
         ncost += (bb[layer_num].ymax - bb[layer_num].ymin + 1) * chany_cost_fac;
         ncost *= crossing;
@@ -1440,23 +1353,6 @@ double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) co
     }
 
     return ncost;
-}
-
-float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
-    int num_inter_dir_conn = acc_tile_num_inter_die_conn_.get_sum(bb.xmin,
-                                                                  bb.ymin,
-                                                                  bb.xmax,
-                                                                  bb.ymax);
-
-    float z_cost_factor;
-    if (num_inter_dir_conn == 0) {
-        return 1.0f;
-    } else {
-        int bb_num_tiles = (bb.xmax - bb.xmin + 1) * (bb.ymax - bb.ymin + 1);
-        z_cost_factor = bb_num_tiles / static_cast<float>(num_inter_dir_conn);
-    }
-
-    return z_cost_factor;
 }
 
 double NetCostHandler::recompute_bb_cost_() {

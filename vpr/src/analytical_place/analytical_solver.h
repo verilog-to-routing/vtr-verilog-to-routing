@@ -10,7 +10,9 @@
 #include <memory>
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
+#include "chan_cost_handler.h"
 #include "device_grid.h"
+#include "globals.h"
 #include "place_delay_model.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
@@ -545,7 +547,11 @@ class B2BSolver : public AnalyticalSolver {
                            ap_timing_tradeoff,
                            log_verbosity)
         , pre_cluster_timing_manager_(pre_cluster_timing_manager)
-        , place_delay_model_(place_delay_model) {}
+        , place_delay_model_(place_delay_model)
+        , chan_cost_handler_(g_vpr_ctx.device().rr_chanx_width,
+                             g_vpr_ctx.device().rr_chany_width,
+                             g_vpr_ctx.device().rr_graph,
+                             device_grid) {}
 
     /**
      * @brief Perform an iteration of the B2B solver, storing the result into
@@ -699,15 +705,41 @@ class B2BSolver : public AnalyticalSolver {
     void update_linear_system_with_anchors(unsigned iteration);
 
     /**
-     * @brief Store the x and y solutions in Eigen's vectors into the partial
-     *        placement object.
-     *
-     * Note: The x_soln and y_soln may be modified if it is found that the
-     *       solution is impossible (i.e. has negative positions).
+     * @brief Solves the linear system of equations using the connectivity
+     *        matrix (A), the constant vector (b), and a guess for the solution.
      */
-    void store_solution_into_placement(Eigen::VectorXd& x_soln,
-                                       Eigen::VectorXd& y_soln,
-                                       PartialPlacement& p_placement);
+    Eigen::VectorXd solve_linear_system(Eigen::SparseMatrix<double>& A,
+                                        Eigen::VectorXd& b,
+                                        Eigen::VectorXd& guess);
+
+    /**
+     * @brief Store the solutions from the linear system into the partial
+     *        placement object for the given dimension.
+     *
+     * Note: The dim_soln may be modified if it is found that the solution is
+     *       impossible (e.g. has negative positions).
+     *
+     *  @param dim_soln
+     *      The solution of the linear system for a given dimension.
+     *  @param block_dim_locs
+     *      The block locations in the partial placement for the dimension.
+     *  @param dim_max_pos
+     *      The maximum position allowed for the dimension. For example, for the
+     *      x-dimension, this would be the width of the device. This is used to
+     *      ensure that the positions do not go off device.
+     */
+    void store_solution_into_placement(Eigen::VectorXd& dim_soln,
+                                       vtr::vector<APBlockId, double>& block_dim_locs,
+                                       double dim_max_pos);
+
+    /**
+     * @brief Does the FPGA that the AP flow is currently targeting have more
+     *        than one die. Having multiple dies would imply that the solver
+     *        needs to add another dimension to solve for.
+     */
+    inline bool is_multi_die() const {
+        return device_grid_num_layers_ > 1;
+    }
 
     // The following are variables used to store the system of equations to be
     // solved in the x and y dimensions. The equations are of the form:
@@ -720,22 +752,30 @@ class B2BSolver : public AnalyticalSolver {
     Eigen::SparseMatrix<double> A_sparse_x;
     /// @brief The coefficient / connectivity matrix for the y dimension.
     Eigen::SparseMatrix<double> A_sparse_y;
+    /// @brief The coefficient / connectivity matrix for the z dimension (layer dimension).
+    Eigen::SparseMatrix<double> A_sparse_z;
     /// @brief The constant vector in the x dimension.
     Eigen::VectorXd b_x;
     /// @brief The constant vector in the y dimension.
     Eigen::VectorXd b_y;
+    /// @brief The constant vector in the z dimension (layer dimension).
+    Eigen::VectorXd b_z;
 
     // The following is the solution of the previous iteration of this solver.
     // They are updated at the end of solve() and are used as the starting point
     // for the next call to solve.
     vtr::vector<APBlockId, double> block_x_locs_solved;
     vtr::vector<APBlockId, double> block_y_locs_solved;
+    // NOTE: For speed, this vector is unused if a device has only one die.
+    vtr::vector<APBlockId, double> block_z_locs_solved;
 
     // The following are the legalized solution coming into the analytical solver
     // (other than the first iteration). These are stored to be used as anchor
     // blocks during the solver.
     vtr::vector<APBlockId, double> block_x_locs_legalized;
     vtr::vector<APBlockId, double> block_y_locs_legalized;
+    // NOTE: For speed, this vector is unused if a device has only one die.
+    vtr::vector<APBlockId, double> block_z_locs_legalized;
 
     /// @brief The total number of CG iterations that this solver has performed
     ///        so far. This can be a useful metric for the amount of work the
@@ -760,6 +800,9 @@ class B2BSolver : public AnalyticalSolver {
     /// @brief The place delay model used for calculating the delay between
     ///        two tiles on the FPGA. Used for computing the timing terms.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
+
+    /// @brief Manager class for getting the cost factors in the x, y, and z dimensions.
+    ChanCostHandler chan_cost_handler_;
 };
 
 #endif // EIGEN_INSTALLED
