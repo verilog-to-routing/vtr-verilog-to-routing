@@ -1437,7 +1437,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
     }
 }
 
-static std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
+std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 

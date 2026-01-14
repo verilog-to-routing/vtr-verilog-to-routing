@@ -22,15 +22,20 @@
  */
 
 #include <cmath>
+#include <cstddef>
 #include <vector>
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
+#include "device_grid.h"
 #include "physical_types_util.h"
+#include "rr_graph_view.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
 #include "vtr_math.h"
 #include "vtr_assert.h"
+#include "vtr_ndmatrix.h"
+#include "vtr_prefix_sum.h"
 #include "vtr_time.h"
 #include "router_lookahead_map.h"
 #include "router_lookahead_map_utils.h"
@@ -164,7 +169,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
                                                                 int segment_index,
                                                                 int chan_index);
 
-static float get_expected_interposer_cost();
+static float get_expected_interposer_cost(RRNodeId from_node, RRNodeId to_node, const RRGraphView& rr_graph, const std::vector<vtr::PrefixSum2D<float>>& interposer_delay_costs);
 
 /******** Interface class member function definitions ********/
 MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity)
@@ -388,7 +393,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     }
 
     if (has_interposer_cuts_) {
-        expected_delay_cost += get_expected_interposer_cost();
+        expected_delay_cost += get_expected_interposer_cost(from_node, to_node, rr_graph, interposer_delay_costs_);
     }
 
     VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
@@ -408,6 +413,28 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 
+static void compute_interposer_delay_matrix(std::vector<vtr::PrefixSum2D<float>>& interposer_delay_costs, const DeviceGrid& grid) {
+    auto [layer_size, x_size, y_size] = grid.dim_sizes();
+    std::vector<vtr::NdMatrix<float, 2>> delay_matrix;
+    for(size_t i = 0; i < layer_size; i++) {
+        delay_matrix.push_back(vtr::NdMatrix<float, 2>({x_size, y_size}));
+        delay_matrix[0].fill(0);
+    }
+
+    // todo: delay matrix here
+    const std::vector<std::vector<int>> vertical_interposer_cuts = grid.get_vertical_interposer_cuts();
+    for (size_t layer = 0; layer < vertical_interposer_cuts.size(); layer++){ 
+        for (int interposer_x_loc : vertical_interposer_cuts[layer]) {
+
+        }
+    }
+
+    for (size_t layer = 0; layer < layer_size; layer++) {
+        interposer_delay_costs.emplace_back(delay_matrix[layer]);
+    }
+
+}
+
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
 
@@ -421,6 +448,9 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 
     min_chann_global_cost_map(chann_distance_based_min_cost);
     min_opin_distance_cost_map(src_opin_delays, opin_distance_based_min_cost);
+
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
+    compute_interposer_delay_matrix(interposer_delay_costs_, grid);
 }
 
 void MapLookahead::compute_intra_tile() {
@@ -900,7 +930,17 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
     }
 }
 
-static float get_expected_interposer_cost() {
+// add interposer func here
+
+static float get_expected_interposer_cost(RRNodeId from_node, RRNodeId to_node, const RRGraphView& rr_graph, const std::vector<vtr::PrefixSum2D<float>>& interposer_delay_costs) {
+    // todo: do something with the layers heres, maybe minimum cost across all layers?
+    // int from_layer = rr_graph.node_layer_low(from_node);
+    int to_layer = rr_graph.node_layer_low(to_node);
+
+    auto [from_x, from_y] = util::get_adjusted_rr_position(from_node);
+    auto [to_x, to_y] = util::get_adjusted_rr_position(to_node);
+
+    // interposer_delay_costs[to_layer].get_difference(from_x, from_y, to_x, to_y);
     return 0;
 }
 
