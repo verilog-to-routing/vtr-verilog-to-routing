@@ -1316,11 +1316,7 @@ static void free_routing() {
 static void free_noc() {}
 
 static bool is_pack_only(const t_vpr_setup& vpr_setup) {
-    return vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP &&
-        vpr_setup.PlacerOpts.doPlacement == e_stage_action::SKIP &&
-        vpr_setup.APOpts.doAP == e_stage_action::SKIP &&
-        vpr_setup.RouterOpts.doRouting == e_stage_action::SKIP &&
-        vpr_setup.AnalysisOpts.doAnalysis == e_stage_action::SKIP;
+    return vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP && vpr_setup.PlacerOpts.doPlacement == e_stage_action::SKIP && vpr_setup.APOpts.doAP == e_stage_action::SKIP && vpr_setup.RouterOpts.doRouting == e_stage_action::SKIP && vpr_setup.AnalysisOpts.doAnalysis == e_stage_action::SKIP;
 }
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
