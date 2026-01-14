@@ -123,6 +123,9 @@ static void free_circuit();
  * with OpenFPGA which takes it seriously. */
 static void unset_port_equivalences(DeviceContext& device_ctx);
 
+/* @brief Check if packer is the only stage to be performed */
+static bool is_pack_only(const t_vpr_setup& vpr_setup);
+
 /* Local subroutines end */
 
 ///@brief Display general VPR information
@@ -457,7 +460,9 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    vpr_create_device(vpr_setup, arch);
+    bool pack_only = is_pack_only(vpr_setup);
+
+    vpr_create_device(vpr_setup, arch, pack_only);
     // If packing is not skipped, cluster netlist contain valid information, so
     // we can print the resource usage and device utilization
     if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
@@ -533,7 +538,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     return route_status.success();
 }
 
-void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pack_only) {
     vtr::ScopedStartFinishTimer timer("Create Device");
     vpr_create_device_grid(vpr_setup, arch);
 
@@ -541,7 +546,7 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     vpr_setup_noc(vpr_setup, arch);
 
-    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
+    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH && !pack_only) {
         // The RR graph built by this function should contain only the intra-cluster resources.
         // If the flat router is used, additional resources are added when routing begins.
         vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width, false);
@@ -1309,6 +1314,10 @@ static void free_routing() {
  * @brief handles the deletion of NoC related data structures.
  */
 static void free_noc() {}
+
+static bool is_pack_only(const t_vpr_setup& vpr_setup) {
+    return vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP && vpr_setup.PlacerOpts.doPlacement == e_stage_action::SKIP && vpr_setup.APOpts.doAP == e_stage_action::SKIP && vpr_setup.RouterOpts.doRouting == e_stage_action::SKIP && vpr_setup.AnalysisOpts.doAnalysis == e_stage_action::SKIP;
+}
 
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {

@@ -132,7 +132,7 @@ void vpr_analysis(const Netlist<>& net_list,
 /* Device creating */
 
 ///@brief Create the device (grid + rr graph)
-void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch);
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch, const bool pack_only = false);
 
 /// @brief Print architecture resources
 void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch);
