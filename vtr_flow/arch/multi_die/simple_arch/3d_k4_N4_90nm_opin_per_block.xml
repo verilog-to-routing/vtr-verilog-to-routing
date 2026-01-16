@@ -73,10 +73,10 @@
       <!--Fill with 'clb'-->
       <fill type="clb" priority="10"/>
     </auto_layout>
-    <fixed_layout name="FPGA3D" width="10" height="10">
+    <fixed_layout name="FPGA3D" width="11" height="11">
       <layer die="1">
-        <perimeter type="io" priority="100"/>
-        <corners type="EMPTY" priority="101"/>
+        <region type="EMPTY" priority="101" startx="2" endx="W-3" starty="2" endy="H-3" />
+        <region type="io" priority="100" startx="1" endx="W-2" starty="1" endy="H-2" />
         <fill type="EMPTY" priority="99"/>
       </layer>
       <layer die="0">
