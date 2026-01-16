@@ -2960,6 +2960,9 @@ static void process_device(pugi::xml_node node,
                        vtr::string_fmt("Unknown property %s for switch block type x\n", prop).c_str());
     }
 
+    ReqOpt custom_switchblock_reqd = BoolToReqOpt(!custom_switch_block);
+    arch.Fs = get_attribute(cur, "fs", loc_data, custom_switchblock_reqd).as_int(3);
+
     // <opin_chanz_connectivity> tag
     cur = get_single_child(node, "opin_chanz_connectivity", loc_data, ReqOpt::OPTIONAL);
     expect_only_attributes(cur, {"type"}, loc_data);
@@ -2974,9 +2977,6 @@ static void process_device(pugi::xml_node node,
                            vtr::string_fmt("Unknown property %s for OPIN-CHANZ connectivity type. \n", prop).c_str());
         }
     }
-
-    ReqOpt custom_switchblock_reqd = BoolToReqOpt(!custom_switch_block);
-    arch.Fs = get_attribute(cur, "fs", loc_data, custom_switchblock_reqd).as_int(3);
 
     process_tileable_device_parameters(&arch, loc_data);
 
