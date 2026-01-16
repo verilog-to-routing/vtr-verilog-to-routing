@@ -1104,7 +1104,7 @@ struct ParseRouteBBUpdate {
 
 struct ParseRouterLookahead {
     ConvertedValue<e_router_lookahead> from_str(std::string str) {
-        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+        std::ranges::transform(str, str.begin(), ::tolower);
         ConvertedValue<e_router_lookahead> conv_value;
         if (str == "classic")
             conv_value.set_value(e_router_lookahead::CLASSIC);

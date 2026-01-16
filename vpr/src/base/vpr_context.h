@@ -252,6 +252,8 @@ struct DeviceContext : public Context {
     vtr::NdMatrix<int, 3> rr_chanx_segment_width;
     /// Stores the number of CHANY wire segments in each routing channel segment at [layer][x][y]
     vtr::NdMatrix<int, 3> rr_chany_segment_width;
+    /// Stores the number of CHANZ wire segments along Z-axis at each (x, y) location.
+    vtr::NdMatrix<int, 2> rr_chanz_segment_width;
 
     /// Stores the maximum channel segment width in each horizontal channel
     std::vector<int> rr_chanx_width;

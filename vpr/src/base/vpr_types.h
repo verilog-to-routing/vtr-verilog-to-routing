@@ -1500,10 +1500,6 @@ struct t_det_routing_arch {
     /// Keeps track of the type of architecture switch that connects wires to ipins
     int wire_to_arch_ipin_switch;
 
-    /// Keeps track of the type of architecture switch that connects
-    /// wires from another die to ipins in different die
-    int wire_to_arch_ipin_switch_between_dice = -1;
-
     /// Resistance (in Ohms) of a minimum width nmos transistor.
     /// Used only in the FPGA area model.
     float R_minW_nmos;

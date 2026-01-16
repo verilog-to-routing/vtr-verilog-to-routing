@@ -695,6 +695,22 @@ The tags within the ``<device>`` tag are:
     This defines the default Fc specification, if it is not specified within a ``<fc>`` tag inside a top-level complex block.
     The attributes have the same meaning as the :ref:`\<fc\> tag attributes <arch_fc>`.
 
+.. arch:tag:: <opin_chanz_connectivity type="{per_side | per_block}"/>
+
+    :req_param type:
+        Specifies how Output Pins (OPINs) connect to CHANZ (inter-layer) nodes via switch blocks in 3D architectures.
+
+        * ``per_side``: Each side's OPINs connect to the two Switch Blocks at the corners of that side.
+        * ``per_block``: All OPINs from all four sides connect exclusively to the Top-Right Switch Block.
+
+    :required: Required for architectures utilizing OPIN-to-CHANZ connectivity.
+
+    Defines the connectivity pattern between the block output pins and the Z-direction routing channels.
+
+    .. note::
+        This tag must be defined in architectures where there is OPIN-CHANZ connectivity.
+        If OPINs are not connected to CHANZ, or if the architecture is 2D, this tag does not impact the RR-graph generation.
+
 .. _arch_switches:
 
 Switches
