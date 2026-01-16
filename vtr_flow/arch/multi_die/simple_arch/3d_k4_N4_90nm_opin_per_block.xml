@@ -95,6 +95,7 @@
     </chan_width_distr>
     <switch_block type="wilton" fs="3"/>
     <connection_block input_switch_name="ipin_cblock" input_inter_die_switch_name="inter_die_ipin_cblock"/>
+    <opin_chanz_connectivity type="per_block"/>
   </device>
   <switchlist>
     <switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="6.244000e-11" mux_trans_size="1.835460" buf_size="10.498600"/>
