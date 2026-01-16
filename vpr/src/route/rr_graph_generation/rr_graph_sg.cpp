@@ -325,6 +325,13 @@ void add_edges_opin_chanz_per_block(const RRGraphView& rr_graph,
             }
         }
 
+        // Check for empty selected nodes vector to avoid modulo by zero
+        if (selected_chanz_nodes.empty()) {
+            VTR_LOG_WARN("No CHANZ nodes found for layer %d at (%d, %d) for segment type %d. Skipping edge creation.\n",
+                         layer, x, y, iseg);
+            continue; // Skip to the next 'iseg'
+        }
+
         int chanz_idx = 0;
         for (RRNodeId opin_node_id : opin_nodes) {
             int pin_number = rr_graph.node_pin_num(opin_node_id);
