@@ -191,7 +191,6 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     acc_chan_width_.y = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
         int chan_y_width = device_ctx.chan_width.y_list[x];
 
-
         // to avoid a division by zero
         if (chan_y_width == 0) {
             return 1;
@@ -1816,7 +1815,6 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
             }
         }
     }
-
 
     const ChannelMetric<vtr::NdMatrix<int, 3>>& chan_width = device_ctx.rr_chan_segment_width;
 

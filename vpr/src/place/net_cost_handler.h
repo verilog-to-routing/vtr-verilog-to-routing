@@ -35,8 +35,6 @@ enum class e_cost_methods {
     CHECK
 };
 
-
-
 class NetCostHandler {
   public:
     NetCostHandler() = delete;
@@ -71,7 +69,6 @@ class NetCostHandler {
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
     std::tuple<double, double, double> comp_bb_cong_cost(e_cost_methods method);
-
 
     /**
      * @brief Find all the nets and pins affected by this swap and update costs.

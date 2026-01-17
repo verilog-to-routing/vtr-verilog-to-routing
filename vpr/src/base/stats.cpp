@@ -481,7 +481,6 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
     VTR_LOG("\n");
 }
 
-
 static void write_channel_occupancy_table(std::string_view filename,
                                           const vtr::NdMatrix<int, 3>& occupancy,
                                           const vtr::NdMatrix<int, 3>& capacity) {
