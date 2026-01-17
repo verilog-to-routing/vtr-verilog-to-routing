@@ -786,7 +786,7 @@ struct t_packer_opts {
     std::string sdc_file_name;
     std::string output_file;
     bool timing_driven;
-    enum e_cluster_seed cluster_seed_type;
+    e_cluster_seed cluster_seed_type;
     float timing_gain_weight;
     float connection_gain_weight;
     float target_device_utilization;
@@ -998,7 +998,7 @@ struct t_placer_opts {
     float congestion_factor;
     /// Start using congestion cost when (current rlim / initial rlim) drops below this value.
     float congestion_rlim_trigger_ratio;
-    /// Nets with average channel usage (withing their bounding box) above this threshold
+    /// Nets with average channel usage (within their bounding box) above this threshold
     /// are predicted to face some congestion in the routing stage.
     float congestion_chan_util_threshold;
 
@@ -1006,7 +1006,7 @@ struct t_placer_opts {
     int place_chan_width;
 
     /// Are pins FREE or fixed randomly.
-    enum e_pad_loc_type pad_loc_type;
+    e_pad_loc_type pad_loc_type;
 
     /// File that specifies locations of locked down (constrained) blocks for placement. Empty string means no constraints file.
     std::string constraints_file;
@@ -1262,7 +1262,7 @@ struct t_router_opts {
     /// Linear distance a route can go outside the net bounding box.
     int bb_factor;
     /// GLOBAL or DETAILED.
-    enum e_route_type route_type;
+    e_route_type route_type;
     /// Only attempt to route the design once, with the channel width given.
     /// If this variable is == NO_FIXED_CHANNEL_WIDTH, do a binary search on channel width.
     int fixed_channel_width;
@@ -1305,13 +1305,13 @@ struct t_router_opts {
     e_stage_action doRouting;
     /// the configuration to be used by the routing failure predictor,
     /// how aggressive the threshold used to judge and abort routings deemed unroutable
-    enum e_routing_failure_predictor routing_failure_predictor;
-    enum e_routing_budgets_algorithm routing_budgets_algorithm;
+    e_routing_failure_predictor routing_failure_predictor;
+    e_routing_budgets_algorithm routing_budgets_algorithm;
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
-    enum e_clock_modeling clock_modeling; ///<How clock pins and nets should be handled
-    bool two_stage_clock_routing;         ///<How clock nets on dedicated networks should be routed
+    e_clock_modeling clock_modeling; ///<How clock pins and nets should be handled
+    bool two_stage_clock_routing;    ///<How clock nets on dedicated networks should be routed
     int high_fanout_threshold;
     float high_fanout_max_slope;
     int router_debug_net;
@@ -1419,11 +1419,11 @@ struct t_noc_opts {
  */
 struct t_det_routing_arch {
     /// Should the tracks be uni-directional or bi-directional?
-    enum e_directionality directionality;
+    e_directionality directionality;
     int Fs;
 
     /// Pattern of switches at each switch block. I assume Fs is always 3.
-    enum e_switch_block_type switch_block_type;
+    e_switch_block_type switch_block_type;
 
     /// A vector of custom switch block descriptions that is used with
     /// the CUSTOM switch block type. See comment at top of SRC/route/build_switchblocks.c
@@ -1438,7 +1438,7 @@ struct t_det_routing_arch {
     int sub_fs;
 
     /// Subtype of switch blocks.
-    enum e_switch_block_type switch_block_subtype;
+    e_switch_block_type switch_block_subtype;
 
     /// Allow connection blocks to appear around the perimeter programmable block (mainly I/Os)
     bool perimeter_cb;
