@@ -10,7 +10,8 @@
 class ExtendedMapLookahead : public RouterLookahead {
   public:
     ExtendedMapLookahead(bool is_flat, int route_verbosity)
-        : is_flat_(is_flat), route_verbosity_(route_verbosity) {}
+        : is_flat_(is_flat)
+        , route_verbosity_(route_verbosity) {}
 
   private:
     bool is_flat_;

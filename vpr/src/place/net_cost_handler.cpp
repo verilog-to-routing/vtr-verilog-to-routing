@@ -167,15 +167,14 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     const size_t grid_height = device_ctx.grid.height();
     const size_t grid_width = device_ctx.grid.width();
 
-    /* These arrays contain accumulative channel width between channel zero and
-     * the channel specified by the given index. The accumulated channel width
-     * is inclusive, meaning that it includes both channel zero and channel `idx`.
-     * To compute the total channel width between channels 'low' and 'high', use the
-     * following formula:
-     *      acc_chan?_width_[high] - acc_chan?_width_[low - 1]
-     * This returns the total number of tracks between channels 'low' and 'high',
-     * including tracks in these channels.
-     */
+    // These arrays contain accumulative channel width between channel zero and
+    // the channel specified by the given index. The accumulated channel width
+    // is inclusive, meaning that it includes both channel zero and channel `idx`.
+    // To compute the total channel width between channels 'low' and 'high', use the
+    // following formula:
+    //      acc_chan?_width_[high] - acc_chan?_width_[low - 1]
+    // This returns the total number of tracks between channels 'low' and 'high',
+    // including tracks in these channels.
     acc_chan_width_.x = vtr::PrefixSum1D<int>(grid_height, [&](size_t y) noexcept {
         int chan_x_width = device_ctx.chan_width.x_list[y];
 
@@ -191,6 +190,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
 
     acc_chan_width_.y = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
         int chan_y_width = device_ctx.chan_width.y_list[x];
+
 
         // to avoid a division by zero
         if (chan_y_width == 0) {
@@ -223,28 +223,18 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
      * if someday we have architectures with widely varying connectivity between different layers in a stack.
      */
 
-    /*
-     * To calculate the accumulative number of inter-die connections we first need to get the number of
+    /* To calculate the accumulative number of inter-die connections we first need to get the number of
      * inter-die connection per location. To be able to work for the cases that RR Graph is read instead
      * of being made from the architecture file, we calculate this number by iterating over the RR graph. Once
-     * tile_num_inter_die_conn is populated, we can start populating acc_tile_num_inter_die_conn_. First,
-     * we populate the first row and column. Then, we iterate over the rest of blocks and get the number of
-     * inter-die connections by adding up the number of inter-die block at that location + the accumulation
-     * for the  block below and  left to it. Then, since the accumulated number of inter-die connection to
-     * the block on the lower left connection of the block is added twice, that part needs to be removed.
+     * tile_num_inter_die_conn is populated, we can start populating acc_tile_num_inter_die_conn_.
      */
-    for (const RRNodeId src_rr_node : rr_graph.nodes()) {
-        for (const t_edge_size rr_edge_idx : rr_graph.edges(src_rr_node)) {
-            const RRNodeId sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
-            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
-                // We assume that the nodes driving the inter-layer connection or being driven by it
-                // are not stretched across multiple tiles
-                int src_x = rr_graph.node_xhigh(src_rr_node);
-                int src_y = rr_graph.node_yhigh(src_rr_node);
-                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
 
-                tile_num_inter_die_conn[src_x][src_y]++;
-            }
+    for (const RRNodeId node : rr_graph.nodes()) {
+        if (rr_graph.node_type(node) == e_rr_type::CHANZ) {
+            int x = rr_graph.node_xlow(node);
+            int y = rr_graph.node_ylow(node);
+            VTR_ASSERT_SAFE(x == rr_graph.node_xhigh(node) && y == rr_graph.node_yhigh(node));
+            tile_num_inter_die_conn[x][y]++;
         }
     }
 
@@ -533,7 +523,7 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
     bb_coord_new.ymax = source_pin_loc.y;
     bb_coord_new.layer_max = source_pin_loc.layer_num;
 
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+    for (size_t layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
     }
 
@@ -1150,9 +1140,11 @@ static void update_bb_pin_sink_count(const t_physical_tile_loc& pin_old_loc,
                                      vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
                                      bool is_output_pin) {
     VTR_ASSERT_SAFE(curr_layer_pin_sink_count[pin_old_loc.layer_num] > 0 || is_output_pin);
-    for (int layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
+
+    for (size_t layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
         bb_pin_sink_count_new[layer_num] = curr_layer_pin_sink_count[layer_num];
     }
+
     if (!is_output_pin) {
         bb_pin_sink_count_new[pin_old_loc.layer_num] -= 1;
         bb_pin_sink_count_new[pin_new_loc.layer_num] += 1;
@@ -1251,7 +1243,7 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     int ymax_edge = 1;
     int layer_max_edge = 1;
 
-    for (int layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
+    for (size_t layer_num = 0; layer_num < grid.get_num_layers(); layer_num++) {
         num_sink_pin_layer[layer_num] = 0;
     }
 
@@ -1307,8 +1299,8 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     coords.ymax = ymax;
     coords.layer_min = layer_min;
     coords.layer_max = layer_max;
-    VTR_ASSERT_DEBUG(layer_min >= 0 && layer_min < device_ctx.grid.get_num_layers());
-    VTR_ASSERT_DEBUG(layer_max >= 0 && layer_max < device_ctx.grid.get_num_layers());
+    VTR_ASSERT_DEBUG(layer_min >= 0 && layer_min < (int)device_ctx.grid.get_num_layers());
+    VTR_ASSERT_DEBUG(layer_max >= 0 && layer_max < (int)device_ctx.grid.get_num_layers());
 
     num_on_edges.xmin = xmin_edge;
     num_on_edges.xmax = xmax_edge;
@@ -1496,7 +1488,7 @@ double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) co
     const vtr::NdMatrixProxy<int, 1> net_layer_pin_sink_count = num_sink_pin_layer_[size_t(net_id)];
 
     double ncost = 0.;
-    VTR_ASSERT_SAFE((int)bb.size() == g_vpr_ctx.device().grid.get_num_layers());
+    VTR_ASSERT_SAFE(bb.size() == g_vpr_ctx.device().grid.get_num_layers());
 
     for (size_t layer_num = 0; layer_num < bb.size(); layer_num++) {
         VTR_ASSERT_SAFE(net_layer_pin_sink_count[layer_num] != UNDEFINED);
@@ -1633,7 +1625,7 @@ void NetCostHandler::update_move_nets() {
 
         set_ts_bb_coord_(net_id);
 
-        for (int layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
+        for (size_t layer_num = 0; layer_num < g_vpr_ctx.device().grid.get_num_layers(); layer_num++) {
             num_sink_pin_layer_[size_t(net_id)][layer_num] = ts_layer_sink_pin_count_[size_t(net_id)][layer_num];
         }
 
@@ -1825,15 +1817,12 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
         }
     }
 
-    // Channel width is computed only once and reused in later calls.
-    if (chan_width_.x.empty()) {
-        VTR_ASSERT(chan_width_.y.empty());
-        std::tie(chan_width_.x, chan_width_.y) = calculate_channel_width();
-    }
+
+    const ChannelMetric<vtr::NdMatrix<int, 3>>& chan_width = device_ctx.rr_chan_segment_width;
 
     VTR_ASSERT(chan_util_.x.size() == chan_util_.y.size());
-    VTR_ASSERT(chan_util_.x.size() == chan_width_.x.size());
-    VTR_ASSERT(chan_util_.y.size() == chan_width_.y.size());
+    VTR_ASSERT(chan_util_.x.size() == chan_width.x.size());
+    VTR_ASSERT(chan_util_.y.size() == chan_width.y.size());
 
     // Normalize channel utilizations by dividing by the corresponding channel widths.
     // If a channel does not exist (i.e., its width is zero), we set its utilization to 1
@@ -1841,17 +1830,17 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     for (size_t layer = 0; layer < num_layers; ++layer) {
         for (size_t x = 0; x < grid_width; ++x) {
             for (size_t y = 0; y < grid_height; ++y) {
-                if (chan_width_.x[layer][x][y] > 0) {
-                    chan_util_.x[layer][x][y] /= chan_width_.x[layer][x][y];
+                if (chan_width.x[layer][x][y] > 0) {
+                    chan_util_.x[layer][x][y] /= chan_width.x[layer][x][y];
                 } else {
-                    VTR_ASSERT_SAFE(chan_width_.x[layer][x][y] == 0);
+                    VTR_ASSERT_SAFE(chan_width.x[layer][x][y] == 0);
                     chan_util_.x[layer][x][y] = 1.;
                 }
 
-                if (chan_width_.y[layer][x][y] > 0) {
-                    chan_util_.y[layer][x][y] /= chan_width_.y[layer][x][y];
+                if (chan_width.y[layer][x][y] > 0) {
+                    chan_util_.y[layer][x][y] /= chan_width.y[layer][x][y];
                 } else {
-                    VTR_ASSERT_SAFE(chan_width_.y[layer][x][y] == 0);
+                    VTR_ASSERT_SAFE(chan_width.y[layer][x][y] == 0);
                     chan_util_.y[layer][x][y] = 1.;
                 }
             }
@@ -1886,7 +1875,7 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     return cong_cost;
 }
 
-const ChannelData<vtr::NdMatrix<double, 3>>& NetCostHandler::get_chan_util() const {
+const ChannelMetric<vtr::NdMatrix<double, 3>>& NetCostHandler::get_chan_util() const {
     return chan_util_;
 }
 

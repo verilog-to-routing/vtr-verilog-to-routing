@@ -12,7 +12,7 @@ Additional SDC examples are shown in :ref:`sdc_examples`.
 
 Default Timing Constraints
 --------------------------
-If no timing constriants are specified, VPR assumes default constraints based on the type of circuit being analyzed.
+If no timing constraints are specified, VPR assumes default constraints based on the type of circuit being analyzed.
 
 Combinational Circuits
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -58,5 +58,5 @@ Optimizes all clocks, including I/O clocks, to run as fast as possible.
     set_output_delay -clock virtual_io_clock -max 0 [get_ports {*}]
 
 Where ``clk`` and ``clk2`` are the netlist clocks in the design.
-This is similarily extended if there are more than two netlist clocks.
+This is similarly extended if there are more than two netlist clocks.
 

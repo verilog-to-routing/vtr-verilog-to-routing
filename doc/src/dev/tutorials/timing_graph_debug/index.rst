@@ -67,7 +67,7 @@ where the first line of each entry is the type of timing information (e.g. data 
 the second line indicates the related launching and capture clocks (with ``*`` acting as a wildcard) and the relevant timing graph node which originated the value,
 and the third line is the actual time value (in seconds).
 
-The edges in the timing graph are also annoated with their Edge IDs and delays.
+The edges in the timing graph are also annotated with their Edge IDs and delays.
 Special edges related to setup/hold (``tsu``, ``thld``) and clock-to-q delays (``tcq``) of sequential elements (e.g. Flip-Flops) are also labeled and drawn with different colors.
 
 

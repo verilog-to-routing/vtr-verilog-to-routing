@@ -1,9 +1,10 @@
 #pragma once
 
 #include <vector>
+#include <string_view>
+
 #include "rr_node_types.h"
 #include "vtr_ndmatrix.h"
-#include "vtr_string_view.h"
 
 /* AA: This structure stores the track connections for each physical pin. Note that num_pins refers to the # of logical pins for a tile and 
  * we use the relative x and y location (0...width and 0...height of the tile) and the side of that unit tile to locate the physical pin. 
@@ -143,10 +144,8 @@ class t_chan_seg_details {
     int index() const { return seg_detail_->index; }
     int abs_index() const { return seg_detail_->abs_index; }
 
-    const vtr::string_view type_name() const {
-        return vtr::string_view(
-            seg_detail_->type_name.data(),
-            seg_detail_->type_name.size());
+    const std::string_view type_name() const {
+        return seg_detail_->type_name;
     }
 
   public: //Modifiers

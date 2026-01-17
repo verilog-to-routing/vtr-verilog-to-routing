@@ -123,6 +123,9 @@ static void free_circuit();
  * with OpenFPGA which takes it seriously. */
 static void unset_port_equivalences(DeviceContext& device_ctx);
 
+/* @brief Check if packer is the only stage to be performed */
+static bool is_pack_only(const t_vpr_setup& vpr_setup);
+
 /* Local subroutines end */
 
 ///@brief Display general VPR information
@@ -297,6 +300,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->APOpts,
              &vpr_setup->RouterOpts,
              &vpr_setup->AnalysisOpts,
+             &vpr_setup->CRROpts,
              &vpr_setup->NocOpts,
              &vpr_setup->ServerOpts,
              vpr_setup->RoutingArch,
@@ -456,7 +460,9 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    vpr_create_device(vpr_setup, arch);
+    bool pack_only = is_pack_only(vpr_setup);
+
+    vpr_create_device(vpr_setup, arch, pack_only);
     // If packing is not skipped, cluster netlist contain valid information, so
     // we can print the resource usage and device utilization
     if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
@@ -532,7 +538,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     return route_status.success();
 }
 
-void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pack_only) {
     vtr::ScopedStartFinishTimer timer("Create Device");
     vpr_create_device_grid(vpr_setup, arch);
 
@@ -540,7 +546,7 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     vpr_setup_noc(vpr_setup, arch);
 
-    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
+    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH && !pack_only) {
         // The RR graph built by this function should contain only the intra-cluster resources.
         // If the flat router is used, additional resources are added when routing begins.
         vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width, false);
@@ -879,6 +885,7 @@ void vpr_place(const Netlist<>& net_list,
     try_place(net_list,
               vpr_setup.PlacerOpts,
               vpr_setup.RouterOpts,
+              vpr_setup.CRROpts,
               vpr_setup.AnalysisOpts,
               vpr_setup.NocOpts,
               arch.Chans,
@@ -1062,8 +1069,8 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             print_switch_usage();
         }
 
-        //Update interactive graphics
-        update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
+        // Update interactive graphics
+        update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), e_pic_type::ROUTING, timing_info);
     }
 
     return route_status;
@@ -1095,6 +1102,7 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
     status = route(net_list,
                    fixed_channel_width,
                    vpr_setup.RouterOpts,
+                   vpr_setup.CRROpts,
                    vpr_setup.AnalysisOpts,
                    vpr_setup.RoutingArch,
                    vpr_setup.Segments,
@@ -1127,6 +1135,7 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
                                               net_list,
                                               vpr_setup.PlacerOpts,
                                               router_opts,
+                                              vpr_setup.CRROpts,
                                               vpr_setup.AnalysisOpts,
                                               vpr_setup.NocOpts,
                                               vpr_setup.FileNameOpts,
@@ -1207,6 +1216,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     det_routing_arch,
                     vpr_setup.Segments,
                     router_opts,
+                    vpr_setup.CRROpts,
                     arch.directs,
                     &warnings,
                     is_flat);
@@ -1305,6 +1315,10 @@ static void free_routing() {
  */
 static void free_noc() {}
 
+static bool is_pack_only(const t_vpr_setup& vpr_setup) {
+    return vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP && vpr_setup.PlacerOpts.doPlacement == e_stage_action::SKIP && vpr_setup.APOpts.doAP == e_stage_action::SKIP && vpr_setup.RouterOpts.doRouting == e_stage_action::SKIP && vpr_setup.AnalysisOpts.doAnalysis == e_stage_action::SKIP;
+}
+
 void vpr_free_vpr_data_structures(t_arch& Arch,
                                   t_vpr_setup& vpr_setup) {
     free_all_lb_type_rr_graph(vpr_setup.PackerRRGraph);
@@ -1349,6 +1363,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_ap_opts* APOpts,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
+                   t_crr_opts* CRROpts,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
                    t_det_routing_arch& RoutingArch,
@@ -1372,6 +1387,7 @@ void vpr_setup_vpr(t_options* Options,
              APOpts,
              RouterOpts,
              AnalysisOpts,
+             CRROpts,
              NocOpts,
              ServerOpts,
              RoutingArch,
@@ -1500,8 +1516,13 @@ void vpr_analysis(const Netlist<>& net_list,
                   vpr_setup.RoutingArch.R_minW_pmos,
                   Arch.grid_logic_tile_area,
                   vpr_setup.RoutingArch.directionality,
-                  vpr_setup.RoutingArch.wire_to_rr_ipin_switch,
                   is_flat);
+
+    if (!vpr_setup.CRROpts.sb_count_dir.empty()) {
+        write_sb_count_stats(net_list,
+                             vpr_setup.CRROpts.sb_templates,
+                             vpr_setup.CRROpts.sb_count_dir);
+    }
 
     if (vpr_setup.TimingEnabled) {
         //Load the net delays

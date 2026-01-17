@@ -60,6 +60,9 @@ class FullLegalizer {
      */
     virtual void legalize(const PartialPlacement& p_placement) = 0;
 
+    /// @brief Update drawing data structure for current placement
+    void update_drawing_data_structures();
+
   protected:
     /// @brief The AP Netlist to fully legalize the flat placement of.
     const APNetlist& ap_netlist_;
@@ -137,9 +140,6 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
  *
  * After cluster creation, each cluster is placed by the initial placer at the
  * grid location nearest to the centroid of its atoms.
- *
- * TODO: Refer to the FPT 2025 Triple-AP paper if accepted.
- *
  */
 class FlatRecon : public FullLegalizer {
   public:
@@ -329,7 +329,7 @@ class NaiveFullLegalizer : public FullLegalizer {
  *
  * In the Packer, the flat-placement can provide more context for the clusters
  * to pull in atoms that want to be near the other atoms in the cluster, and
- * repell atoms that are far apart. This can potentially make better clusters
+ * repel atoms that are far apart. This can potentially make better clusters
  * than a Packer that does not know that information.
  *
  * In the Placer, the flat-placement can help decide where clusters of atoms

@@ -143,7 +143,7 @@ class array_view {
  *
  * The main use of this container is to behave like a std::span which is
  * indexed by a vtr::StrongId instead of size_t. It assumes that K is explicitly 
- * convertable to size_t 
+ * convertible to size_t 
  * (i.e. via operator size_t()), and can be explicitly constructed from a size_t.
  */
 template<typename K, typename V>
@@ -200,7 +200,7 @@ class array_view_id : private array_view<V> {
 
   public:
     /**
-     * @brief Iterator class which is convertable to the key_type
+     * @brief Iterator class which is convertible to the key_type
      *
      * This allows end-users to call the parent class's keys() member
      * to iterate through the keys with a range-based for loop
@@ -220,7 +220,7 @@ class array_view_id : private array_view<V> {
         /**
          * @brief Note
          *
-         * vtr::vector assumes that the key time is convertable to size_t and
+         * vtr::vector assumes that the key time is convertible to size_t and
          * that all the underlying IDs are zero-based and contiguous. That means
          * we can just increment the underlying Id to build the next key.
          */

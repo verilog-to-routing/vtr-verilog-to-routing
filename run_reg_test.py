@@ -214,7 +214,6 @@ def display_qor(reg_test):
         return 1
     print_header("{} QoR Results".format(reg_test))
     with (test_dir / "qor_geomean.txt").open("r") as results:
-
         # create list of desired values, their unit and how to display them.
         data = OrderedDict()
         data["revision"] = ["", "{}"]
@@ -376,7 +375,7 @@ def parse_single_test(task_lists, check=True, calculate=True, create=False):
 
 
 def print_header(heading, divider="=", print_first_line=True):
-    """Print heading formated in the center of two lines"""
+    """Print heading formatted in the center of two lines"""
     if print_first_line:
         print(divider * len(heading) * 2)
     print(" " * int((len(heading) / 2)), end="")

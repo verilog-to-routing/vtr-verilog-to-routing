@@ -39,7 +39,7 @@
 template<typename T_key, typename T_sort>
 class LazyPopUniquePriorityQueue {
   public:
-    /**  @brief The custom comparsion struct for sorting the items in the priority queue.
+    /**  @brief The custom comparison struct for sorting the items in the priority queue.
      *          A less than comparison will put the item with the highest sort value to the front of the queue.
      *          A greater than comparison will put the item with the lowest sort value to the front of the queue.
      */
@@ -56,7 +56,7 @@ class LazyPopUniquePriorityQueue {
     /// @brief The set to store the keys that are in the queue. This is used to ensure uniqueness
     std::unordered_set<T_key> content_set;
 
-    /// @brief The set to store the delete pending item from the queue refered by the key.
+    /// @brief The set to store the delete pending item from the queue referred by the key.
     std::unordered_set<T_key> delete_pending_set;
 
     /**

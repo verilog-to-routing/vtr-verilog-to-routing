@@ -236,8 +236,6 @@ bool highlight_rr_nodes(RRNodeId hit_node) {
         VTR_LOG("%s\n", describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, node, draw_state->is_flat).c_str());
     }
 
-    
-
     //Show info about *only* hit node to graphics
     std::string info = describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, hit_node, draw_state->is_flat);
     sprintf(message, "Selected %s", info.c_str());
@@ -271,7 +269,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
             t_physical_tile_loc tile_loc = {
                 rr_graph.node_xlow(rr_node_id),
                 rr_graph.node_ylow(rr_node_id),
-                rr_graph.node_layer(rr_node_id)};
+                rr_graph.node_layer_low(rr_node_id)};
             t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type(tile_loc);
             int width_offset = device_ctx.grid.get_width_offset(tile_loc);
             int height_offset = device_ctx.grid.get_height_offset(tile_loc);
@@ -497,7 +495,7 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
 /**
  * @brief Turns on autocomplete
  *
- * This function enables the auto-complete fuctionality for the search bar.
+ * This function enables the auto-complete functionality for the search bar.
  * Normally, this is pretty simple, but the idea is to have auto-complete appear as soon
  * as the user hits the "Enter" key. To accomplish this, a fake Gdk event is created
  * to simulate the user hitting a key.
@@ -510,13 +508,12 @@ GdkEvent simulate_keypress(char key, GdkWindow* window) {
  * Correlation between key length and time is shaky; there might be some correlation to
  * how many strings are similar to it. All tests are performed with the key "1" - pretty common
  * Tests are searched three times then average
- * MODEL 1: EARCH + TSENG.BLIF
+ * MODEL 1: EArch + TSENG.BLIF
  * NETS         1483
  * NET SRCH.    19392
  * BLOCKS       1835
  * BLOCK SRCH.  21840
  * For second model (much larger, much longer CPU times) observed large dropoff in times from one char to two chars (about 2 times faster) but after stayed consistent
- * Maybe when I ahve more time, will make a cute graph or something, no time right now
  * MODEL 2: Strativix arch + MES_NOC (TITAN)
  * NETS         577696
  * NET SRCH.    4.93438e+06

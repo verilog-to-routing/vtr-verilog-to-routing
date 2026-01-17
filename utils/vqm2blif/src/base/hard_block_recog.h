@@ -56,12 +56,12 @@
 #define HARD_BLOCK_WITH_NO_PORTS 0
 #define DEFAULT_PORT_INDEX 0
 
-// unique identifier that seperates a hard block type name (module name), from the specific instance name
+// unique identifier that separates a hard block type name (module name), from the specific instance name
 #define HARD_BLOCK_TYPE_NAME_SEPERATOR ":"
 
 // a node name in reference to a hard block port (dffeas and stratic_lcell blocks) in the vqm netlist file consists of multiple hierarchy levels.
 // for example we can have the following name: \router_interconnect:test_router_interconnect|router:noc_router|id[2]~QIC_DANGLING_PORT_I (this has 3 hierarchy levels)
-// each level of hierarchy (module within module) is seperated by the delimiter character defined below. The last level of hierarchy is the output net of the block 
+// each level of hierarchy (module within module) is separated by the delimiter character defined below. The last level of hierarchy is the output net of the block 
 #define VQM_NODE_NAME_DELIMITER "|"
 
 // a port that is a bus is a vectored port. So a single port name with multiple indices.
@@ -84,7 +84,7 @@
 
 
 /*
-*   The port information (in an array) for an arbritary user defined
+*   The port information (in an array) for an arbitrary user defined
 *   hard block in the design is stored in s_hard_block_port_info. Then a 
 *   mapping is provided which can       
 *   help identify the specific location within the port array 
@@ -135,10 +135,10 @@ typedef struct s_hard_block
 
 /*
 *   Below is the main data structure used for hard block
-*   identification and creation. This data strcuture contains
+*   identification and creation. This data structure contains
 *   the names and port info of every type of user defined hard blocks. It
 *   also stores all hard blocks that were instantiated within
-*   the user design and an accompanying data strcuture to quickly identify
+*   the user design and an accompanying data structure to quickly identify
 *   a specific hard block instance. All functions will primarily interact
 *   with this data structure.
 */
@@ -188,7 +188,7 @@ typedef struct s_hard_block_recog
 *   (for more info refer to 'hard_block_recog.cpp'). The generated names found  
 *   in the .vqm file for the two previous blocks contain a lot of information 
 *   about the hard block. The structure below is used to store the information, 
-*   which includes the hard block name, hard block type, the specfic hard 
+*   which includes the hard block name, hard block type, the specific hard 
 *   block port and if the port is a bus, then the specific index.
 */
 typedef struct s_parsed_hard_block_port_info

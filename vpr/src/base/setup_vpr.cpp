@@ -86,6 +86,7 @@ static void setup_switches(const t_arch& Arch,
                            t_det_routing_arch& RoutingArch,
                            const std::vector<t_arch_switch_inf>& arch_switches);
 static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts);
+static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts);
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
 /**
@@ -127,6 +128,7 @@ void SetupVPR(const t_options* options,
               t_ap_opts* apOpts,
               t_router_opts* routerOpts,
               t_analysis_opts* analysisOpts,
+              t_crr_opts* crrOpts,
               t_noc_opts* nocOpts,
               t_server_opts* serverOpts,
               t_det_routing_arch& routingArch,
@@ -179,6 +181,7 @@ void SetupVPR(const t_options* options,
     setup_anneal_sched(*options, &placerOpts->anneal_sched);
     setup_router_opts(*options, routerOpts);
     setup_analysis_opts(*options, *analysisOpts);
+    setup_crr_opts(*options, *crrOpts);
     setup_power_opts(*options, powerOpts, arch);
     setup_noc_opts(*options, nocOpts);
     setup_server_opts(*options, serverOpts);
@@ -410,7 +413,7 @@ static void setup_switches(const t_arch& Arch,
     }
 
     // Delayless switch for connecting sinks and sources with their pins.
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_type(SwitchType::MUX);
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_type(e_switch_type::MUX);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].name = std::string(VPR_DELAYLESS_SWITCH_NAME);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].Cin = 0.;
@@ -418,7 +421,7 @@ static void setup_switches(const t_arch& Arch,
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].mux_trans_size = 0.;
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size_type = BufferSize::ABSOLUTE;
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size_type = e_buffer_size::ABSOLUTE;
     device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size = 0.;
     VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
     VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch.delayless_switch].configurable(), "Delayless switch expected to be configurable");
@@ -551,7 +554,6 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
     RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
     RouterOpts->flat_routing = Options.flat_routing;
     RouterOpts->has_choke_point = Options.router_opt_choke_points;
-    RouterOpts->custom_3d_sb_fanin_fanout = Options.custom_3d_sb_fanin_fanout;
     RouterOpts->with_timing_analysis = Options.timing_analysis;
 
     RouterOpts->verify_route_file_switch_id = Options.verify_route_file_switch_id;
@@ -730,6 +732,7 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->placer_debug_net = Options.placer_debug_net;
 
     PlacerOpts->place_auto_init_t_scale = Options.place_auto_init_t_scale.value();
+    PlacerOpts->anneal_init_t_estimator = Options.place_init_t_estimator.value();
 }
 
 static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts) {
@@ -754,6 +757,16 @@ static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analy
     analysis_opts.write_timing_summary = Options.write_timing_summary;
     analysis_opts.skip_sync_clustering_and_routing_results = Options.skip_sync_clustering_and_routing_results;
     analysis_opts.generate_net_timing_report = Options.generate_net_timing_report;
+}
+
+static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts) {
+    crr_opts.sb_maps = Options.sb_maps;
+    crr_opts.sb_templates = Options.sb_templates;
+    crr_opts.preserve_input_pin_connections = Options.preserve_input_pin_connections;
+    crr_opts.preserve_output_pin_connections = Options.preserve_output_pin_connections;
+    crr_opts.annotated_rr_graph = Options.annotated_rr_graph;
+    crr_opts.remove_dangling_nodes = Options.remove_dangling_nodes;
+    crr_opts.sb_count_dir = Options.sb_count_dir;
 }
 
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {

@@ -1,3 +1,5 @@
+.. _vpr_command_line_usage:
+
 Command-line Options
 ====================
 .. program:: vpr
@@ -142,7 +144,7 @@ Graphics Options
 
 .. option:: --graphics_commands <string>
 
-    A set of semi-colon seperated graphics commands.
+    A set of semi-colon separated graphics commands.
     Graphics commands must be surrounded by quotation marks (e.g. --graphics_commands "save_graphics place.png;")
 
     * save_graphics <file>
@@ -218,7 +220,7 @@ General Options
     Controls how many parallel workers VPR may use:
 
     * ``1`` implies VPR will execute serially,
-    * ``>1`` implies VPR may execute in parallel with up to the specified concurency
+    * ``>1`` implies VPR may execute in parallel with up to the specified concurrency
     * ``0`` implies VPR may execute with up to the maximum concurrency supported by the host machine
 
     If this option is not specified it may be set from the ``VPR_NUM_WORKERS`` environment variable; otherwise the default is used.
@@ -251,8 +253,8 @@ General Options
 
     Checks that any intermediate files loaded (e.g. previous packing/placement/routing) are consistent with the current netlist/architecture.
 
-    If set to ``on`` will error if any files in the upstream dependancy have been modified.
-    If set to ``off`` will warn if any files in the upstream dependancy have been modified.
+    If set to ``on`` will error if any files in the upstream dependency have been modified.
+    If set to ``off`` will warn if any files in the upstream dependency have been modified.
 
     **Default:** ``on``
 
@@ -315,7 +317,7 @@ General Options
 
     Controls whether VPR enforces some consistency checks strictly (as errors) or treats them as warnings.
 
-    Usually these checks indicate an issue with either the targetted architecture, or consistency issues with VPR's internal data structures/algorithms (possibly harming optimization quality).
+    Usually these checks indicate an issue with either the targeted architecture, or consistency issues with VPR's internal data structures/algorithms (possibly harming optimization quality).
     In specific circumstances on specific architectures these checks may be too restrictive and can be turned off.
 
     .. warning:: Exercise extreme caution when turning this option off -- be sure you completely understand why the issue is being flagged, and why it is OK to treat as a warning instead of an error.
@@ -472,7 +474,7 @@ Use the options below to override this default naming behaviour.
     The ``sub_tile`` is a clustered placement construct: which cluster-level
     location at a given (x, y, layer) should these atoms go at (relevant when
     multiple clusters can be stacked there). A sub-tile of -1 may be used when
-    the sub-tile of an atom is unkown (allowing the packing algorithm to choose
+    the sub-tile of an atom is unknown (allowing the packing algorithm to choose
     any sub-tile at the given (x, y, layer) location).
 
     .. warning::
@@ -512,7 +514,7 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
     Usually buffer LUTS are introduced in BLIF circuits by upstream tools in order to rename signals (like ``assign`` statements in Verilog).
     Absorbing these buffers reduces the number of LUTs required to implement the circuit.
 
-    Ocassionally buffer LUTs are inserted for other purposes, and this option can be used to preserve them.
+    Occasionally buffer LUTs are inserted for other purposes, and this option can be used to preserve them.
     Disabling buffer absorption can also improve the matching between the input and post-synthesis netlist/SDF.
 
     **Default**: ``on``
@@ -574,7 +576,7 @@ By default VPR will remove buffer LUTs, and iteratively sweep the netlist to rem
 Packing Options
 ^^^^^^^^^^^^^^^
 AAPack is the packing algorithm built into VPR.
-AAPack takes as input a technology-mapped blif netlist consisting of LUTs, flip-flops, memories, mulitpliers, etc and outputs a .net formatted netlist composed of more complex logic blocks.
+AAPack takes as input a technology-mapped blif netlist consisting of LUTs, flip-flops, memories, multipliers, etc and outputs a .net formatted netlist composed of more complex logic blocks.
 The logic blocks available on the FPGA are specified through the FPGA architecture file.
 For people not working on CAD, you can probably leave all the options to their default values.
 
@@ -590,7 +592,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     Unrelated clustering can increase packing density (decreasing the number of blocks required to implement the circuit), but can significantly impact routability.
 
-    When set to ``auto`` VPR automatically decides whether to enable unrelated clustring based on the targetted device and achieved packing density.
+    When set to ``auto`` VPR automatically decides whether to enable unrelated clustring based on the targeted device and achieved packing density.
 
     **Default**:  ``auto``
 
@@ -648,7 +650,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     Controls how the packer selects the block type to which a primitive will be mapped if it can potentially map to multiple block types.
 
-     * ``on``  : Try to balance block type utilization by picking the block type with the (currenty) lowest utilization.
+     * ``on``  : Try to balance block type utilization by picking the block type with the (currently) lowest utilization.
      * ``off`` : Do not try to balance block type utilization
      * ``auto``: Dynamically enabled/disabled (based on density)
 
@@ -840,6 +842,18 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``1.0``
 
+.. option:: --anneal_auto_init_t_estimator {cost_variance, equilibrium}
+
+   Controls which estimation method is used when selecting the starting temperature
+   for the automatic annealing schedule.
+
+   The options for estimators are:
+
+   * ``cost_variance``: Estimates the initial temperature using the variance of cost after a set of trial swaps. The initial temperature is set to a value proportional to the variance.
+   * ``equilibrium``: Estimates the initial temperature by trying to predict the equilibrium temperature for the initial placement (i.e. the temperature that would result in no change in cost).
+
+    **Default** ``equilibrium``
+
 .. option:: --init_t <float>
 
     The starting temperature of the anneal for the manual annealing schedule.
@@ -899,7 +913,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 .. option:: --place_bounding_box_mode {auto_bb | cube_bb | per_layer_bb}
 
     Specifies the type of the wirelength estimator used during placement. For single layer architectures, cube_bb (a 3D bounding box) is always used (and is the same as per_layer_bb).
-    For 3D architectures, cube_bb is appropriate if you can cross between layers at switch blocks, while if you can only cross between layers at output pins per_layer_bb (one bouding box per layer) is more accurate and appropriate.
+    For 3D architectures, cube_bb is appropriate if you can cross between layers at switch blocks, while if you can only cross between layers at output pins per_layer_bb (one bounding box per layer) is more accurate and appropriate.
 
     ``auto_bb``: The bounding box type is determined automatically based on the cross-layer connections.
 
@@ -1349,7 +1363,7 @@ Analytical Placement is generally split into three stages:
    thought of as the number of bits stored. This target density parameter lowers
    the mass capacity of tiles.
 
-   When this option is set ot auto, VPR will select good values for the
+   When this option is set to auto, VPR will select good values for the
    target density of tiles.
 
    reasonable values are between 0.0 and 1.0, with negative values not being allowed.
@@ -1602,7 +1616,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     The algorithm is robust to incorrect hints (i.e. it continues to binary search), so the hint does not need to be precise.
 
-    This option may ocassionally produce a different minimum channel width due to the different initialization.
+    This option may occasionally produce a different minimum channel width due to the different initialization.
 
     .. seealso:: :option:`--verify_binary_search`
 
@@ -1610,7 +1624,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     Force the router to check that the channel width determined by binary search is the minimum.
 
-    The binary search ocassionally may not find the minimum channel width (e.g. due to router sub-optimality, or routing pattern issues at a particular channel width).
+    The binary search occasionally may not find the minimum channel width (e.g. due to router sub-optimality, or routing pattern issues at a particular channel width).
 
     This option attempts to verify the minimum by routing at successively lower channel widths until two consecutive routing failures are observed.
 
@@ -1632,7 +1646,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     Incrementally re-route nets with fanout above the specified threshold.
 
-    This attempts to re-use the legal (i.e. non-congested) parts of the routing tree for high fanout nets, with the aim of reducing router execution time.
+    This attempts to reuse the legal (i.e. non-congested) parts of the routing tree for high fanout nets, with the aim of reducing router execution time.
 
     To disable, set value to a value higher than the largest fanout of any net.
 
@@ -1722,7 +1736,7 @@ The following options are only valid when the router is in timing-driven mode (t
     Sets how aggressive the directed search used by the timing-driven router is.
     It is a subtractive adjustment to the lookahead heuristic.
 
-    Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.
+    Values between 0 and 1e-9 are reasonable; higher values may increase quality at the expense of run-time.
 
     **Default:** ``0.0``
 
@@ -1730,7 +1744,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     Controls the directedness of the timing-driven router's exploration when doing router delay profiling of an architecture.
     The router delay profiling step is currently used to calculate the place delay matrix lookup.
-    Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time.
+    Values between 1 and 2 are reasonable; higher values trade some quality for reduced run-time.
 
     **Default:** ``1.2``
 
@@ -2288,7 +2302,7 @@ Analysis Options
 
             Global nets are unrouted nets, and their route trees happen to be null.
 
-            Finally, is interesting to note that the consecutive channel components may not seem to connect. There are two types of occurences:
+            Finally, is interesting to note that the consecutive channel components may not seem to connect. There are two types of occurrences:
 
             1. The preceding channel's ending coordinates extend past the following channel's starting coordinates (example from a different path):
 
@@ -2364,7 +2378,7 @@ The following options are used to enable power estimation in VPR.
 
 .. option:: --activity_file <file>
 
-    File containing signal activites for all of the nets in the circuit.  The file must be in the format::
+    File containing signal activities for all of the nets in the circuit.  The file must be in the format::
 
         <net name1> <signal probability> <transition density>
         <net name2> <signal probability> <transition density>

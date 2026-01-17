@@ -67,11 +67,11 @@ inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
     if (dir == Direction::DEC) {
         x = rr_graph.node_xhigh(inode);
         y = rr_graph.node_yhigh(inode);
-        z = rr_graph.node_layer(inode);
+        z = rr_graph.node_layer_high(inode);
     } else {
         x = rr_graph.node_xlow(inode);
         y = rr_graph.node_ylow(inode);
-        z = rr_graph.node_layer(inode);
+        z = rr_graph.node_layer_low(inode);
     }
 
     return x >= bb.xmin && x <= bb.xmax && y >= bb.ymin && y <= bb.ymax && z >= bb.layer_min && z <= bb.layer_max;

@@ -19,7 +19,7 @@
  * 
  *  Interned strings (interned_string) that come from the same internment
  *  object (string_internment) can safely be checked for equality and hashed
- *  without touching the underlying string.  Lexigraphical comparisons (e.g. <)
+ *  without touching the underlying string.  Lexicographical comparisons (e.g. <)
  *  requires reconstructing the string.
  * 
  *  Basic usage:
@@ -49,10 +49,11 @@
 #include <cstdint>
 #include <algorithm>
 #include <array>
+#include <string_view>
 
 #include "vtr_strong_id.h"
-#include "vtr_string_view.h"
 #include "vtr_vector.h"
+#include "vtr_hash.h"
 
 namespace vtr {
 
@@ -74,7 +75,7 @@ typedef StrongId<interned_string_tag> StringId;
  * Number of bytes to represent the StringId.  This implies a maximum number of unique strings available equal to (1 << (kBytesPerId*CHAR_BIT)).
  */
 constexpr size_t kBytesPerId = 3;
-///@brief Maximum number of splits to accomidate before just interning the entire string.
+///@brief Maximum number of splits to accommodate before just interning the entire string.
 constexpr size_t kMaxParts = 3;
 ///@brief Number of bytes to represent the number of splits present in an interned string.
 constexpr size_t kSizeSize = 1;
@@ -89,7 +90,7 @@ static_assert((1 << (CHAR_BIT * kSizeSize)) > kMaxParts, "Size of size data is t
  * This object is much heavier memory wise than interned_string, so do not
  * store these.
  * 
- * This iterator only accomidates the forward_iterator concept.
+ * This iterator only accommodates the forward_iterator concept.
  * 
  * Do no construct this iterator directly.  Use either
  * bound_interned_string::begin/end or interned_string;:begin/end.
@@ -132,7 +133,7 @@ class interned_string_iterator {
         std::fill(parts_.begin(), parts_.end(), StringId());
         part_idx_ = size_t(-1);
         str_idx_ = size_t(-1);
-        view_ = vtr::string_view();
+        view_ = std::string_view();
     }
 
     const string_internment* internment_;
@@ -140,7 +141,7 @@ class interned_string_iterator {
     std::array<StringId, kMaxParts> parts_;
     size_t part_idx_;
     size_t str_idx_;
-    vtr::string_view view_;
+    std::string_view view_;
 };
 
 ///@brief == operator
@@ -346,7 +347,7 @@ class string_internment {
      * If interned_string is ever called with two strings of the same value,
      * the interned_string will be equal.
      */
-    interned_string intern_string(vtr::string_view view) {
+    interned_string intern_string(std::string_view view) {
         size_t num_parts = 1;
         for (const auto& c : view) {
             if (c == kSplitChar) {
@@ -381,12 +382,10 @@ class string_internment {
 
     /**
      * @brief Retrieve a string part based on id.
-     *
      * This method should not generally be called directly.
      */
-    vtr::string_view get_string(StringId id) const {
-        auto& str = strings_[id];
-        return vtr::string_view(str.data(), str.size());
+    std::string_view get_string(StringId id) const {
+        return strings_[id];
     }
 
     ///@brief Number of unique string parts stored.
@@ -395,7 +394,7 @@ class string_internment {
     }
 
   private:
-    StringId intern_one_string(vtr::string_view view) {
+    StringId intern_one_string(std::string_view view) {
         temporary_.assign(view.begin(), view.end());
         StringId next_id(strings_.size());
         auto result = string_to_id_.insert(std::make_pair(temporary_, next_id));
@@ -408,7 +407,7 @@ class string_internment {
 
     // FIXME: This storage scheme does store 2x memory for the strings storage,
     // however it does avoid having to be concerned with what happens when
-    // strings_ resizes, so for a simplier initial implementation, this is the
+    // strings_ resizes, so for a simpler initial implementation, this is the
     // approach taken.
     vtr::vector<StringId, std::string> strings_;
     std::string temporary_;

@@ -42,7 +42,7 @@ void basic_button_setup(ezgl::application* app) {
     gtk_button_set_label(search, "Search");
     g_signal_connect(search, "clicked", G_CALLBACK(search_and_highlight), app);
 
-    //button for save graphcis, created in main.ui
+    //button for save graphics, created in main.ui
     GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
     g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
                      app);
@@ -246,7 +246,7 @@ void search_setup(ezgl::application* app) {
     gtk_entry_completion_set_match_func(wildcardComp, (GtkEntryCompletionMatchFunc)customMatchingFunction, NULL, NULL);
 }
 
-/*
+/**
  * @brief connects critical path button to its cbk fn
  *
  * @param app ezgl application
@@ -255,7 +255,7 @@ void crit_path_button_setup(ezgl::application* app) {
 
     t_draw_state* draw_state = get_draw_state_vars();
 
-     //Toggle Critical Path
+    // Toggle Critical Path
     GtkSwitch* toggle_nets_switch = GTK_SWITCH(app->get_object("ToggleCritPath"));
     g_signal_connect(toggle_nets_switch, "state-set", G_CALLBACK(toggle_crit_path_cbk), app);
 
@@ -265,14 +265,14 @@ void crit_path_button_setup(ezgl::application* app) {
     setup_checkbox_button("ToggleCritPathDelays", app, &draw_state->show_crit_path_delays);
 }
 
-/*
+/**
  * @brief Hides or displays critical path routing / routing delay UI elements
  *
  * @param app ezgl app
  */
 void hide_crit_path_routing(ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
-    bool state = draw_state->setup_timing_info && draw_state->pic_on_screen == ROUTING && draw_state->show_crit_path;
+    bool state = draw_state->setup_timing_info && draw_state->pic_on_screen == e_pic_type::ROUTING && draw_state->show_crit_path;
 
     gtk_widget_set_sensitive(GTK_WIDGET(app->get_object("ToggleCritPathRouting")), state);
 }
@@ -283,7 +283,7 @@ void hide_draw_routing(ezgl::application* app) {
 
     // Enable the option to draw routing only during the routing stage
     int route_item_index = get_item_index_by_text(toggle_nets, "Routing");
-    if (draw_state->pic_on_screen == PLACEMENT) {
+    if (draw_state->pic_on_screen == e_pic_type::PLACEMENT) {
         if (route_item_index != -1) {
             gtk_combo_box_text_remove(toggle_nets, route_item_index);
         }

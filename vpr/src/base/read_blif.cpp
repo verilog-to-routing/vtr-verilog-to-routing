@@ -217,7 +217,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         VTR_ASSERT(q_model_port->size == 1);
         VTR_ASSERT(clk_model_port->is_clock);
 
-        //We set the initital value as a single entry in the 'truth_table' field
+        //We set the initial value as a single entry in the 'truth_table' field
         AtomNetlist::TruthTable truth_table(1);
         truth_table[0].push_back(to_vtr_logic_value(init));
 
@@ -244,9 +244,14 @@ struct BlifAllocCallback : public blifparse::Callback {
         VTR_ASSERT(ports.size() == nets.size());
 
         LogicalModelId blk_model_id = models_.get_model_by_name(subckt_model);
+        if (!blk_model_id.is_valid()) {
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
+                      "Subckt instantiates model '%s', but no such model exists in the architecture file.",
+                      subckt_model.c_str());
+        }
         const t_model& blk_model = models_.get_model(blk_model_id);
 
-        //We name the subckt based on the net it's first output pin drives
+        //We name the subckt based on the net its first output pin drives
         std::string subckt_name;
         for (size_t i = 0; i < ports.size(); ++i) {
             const t_model_ports* model_port = find_model_port(blk_model, ports[i]);
@@ -269,8 +274,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
 
         //The name for every block should be unique, check that there is no name conflict
-        AtomBlockId blk_id = curr_model().find_block(subckt_name);
-        if (blk_id) {
+        if (AtomBlockId blk_id = curr_model().find_block(subckt_name)) {
             LogicalModelId conflicting_model = curr_model().block_model(blk_id);
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
                       "Duplicate blocks named '%s' found in netlist."
@@ -279,7 +283,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         }
 
         //Create the block
-        blk_id = curr_model().create_block(subckt_name, blk_model_id);
+        AtomBlockId blk_id = curr_model().create_block(subckt_name, blk_model_id);
         set_curr_block(blk_id);
 
         for (size_t i = 0; i < ports.size(); ++i) {
@@ -357,7 +361,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         //however we must defer that until all the net drivers
         //and sinks have been created (otherwise they may not
         //be properly merged depending on where the .conn is
-        //delcared).
+        //declared).
         //
         //As a result we record the nets to merge and do the actual merging at
         //the end of the .model
@@ -527,7 +531,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         return std::make_pair(trimmed_signal_name, bit_index);
     }
 
-    ///@brief Retieves a reference to the currently active .model
+    ///@brief Retrieves a reference to the currently active .model
     AtomNetlist& curr_model() {
         if (blif_models_.empty() || ended_) {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Expected .model");
@@ -630,7 +634,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 };
 
 vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
-    vtr::LogicValue new_val = vtr::LogicValue::UNKOWN;
+    vtr::LogicValue new_val = vtr::LogicValue::UNKNOWN;
     switch (val) {
         case blifparse::LogicValue::TRUE:
             new_val = vtr::LogicValue::TRUE;
@@ -641,8 +645,8 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
         case blifparse::LogicValue::DONT_CARE:
             new_val = vtr::LogicValue::DONT_CARE;
             break;
-        case blifparse::LogicValue::UNKOWN:
-            new_val = vtr::LogicValue::UNKOWN;
+        case blifparse::LogicValue::UNKNOWN:
+            new_val = vtr::LogicValue::UNKNOWN;
             break;
         default:
             VTR_ASSERT_OPT_MSG(false, "Unknown logic value");

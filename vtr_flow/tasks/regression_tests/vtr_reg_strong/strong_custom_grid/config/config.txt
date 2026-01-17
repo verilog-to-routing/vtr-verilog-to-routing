@@ -12,7 +12,6 @@ archs_dir=arch/custom_grid
 circuit_list_add=raygentop.v
 
 # Add architectures to list to sweep
-arch_list_add=fixed_grid.xml
 arch_list_add=column_io.xml
 arch_list_add=multiwidth_blocks.xml
 arch_list_add=non_column.xml

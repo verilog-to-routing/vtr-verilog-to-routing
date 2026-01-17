@@ -27,7 +27,7 @@
 
 /************************* Defines **********************************/
 
-/* This controlls the level of accuracy used for transition density
+/* This controls the level of accuracy used for transition density
  * calculations of internal LUT nodes.  The more detailed model
  * looks at SRAM values in deciding if toggles on the inputs will
  * toggle the internal nets.  The fast method uses only signal

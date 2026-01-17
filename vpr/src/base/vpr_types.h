@@ -208,7 +208,7 @@ class t_pack_high_fanout_thresholds {
     explicit t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
     t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
-    ///@brief Returns the high fanout threshold of the specifi  ed block
+    ///@brief Returns the high fanout threshold of the specified block
     int get_threshold(std::string_view block_type_name) const;
 
     ///@brief Returns a string describing high fanout thresholds for different block types
@@ -342,7 +342,7 @@ class t_pb {
 ///@brief Representation of intra-logic block routing
 struct t_pb_route {
     AtomNetId atom_net_id;                        ///<which net in the atom netlist uses this pin
-    int driver_pb_pin_id = UNDEFINED;                  ///<The pb_pin id of the pb_pin that drives this pin
+    int driver_pb_pin_id = UNDEFINED;             ///<The pb_pin id of the pb_pin that drives this pin
     std::vector<int> sink_pb_pin_ids;             ///<The pb_pin id's of the pb_pins driven by this node
     const t_pb_graph_pin* pb_graph_pin = nullptr; ///<The graph pin associated with this node
 };
@@ -384,10 +384,11 @@ enum class e_sched_type {
     USER_SCHED
 };
 
-// What's on screen?
-enum pic_type {
+/// Specifies what is shown on screen
+enum class e_pic_type {
     NO_PICTURE,
     PLACEMENT,
+    ANALYTICAL_PLACEMENT,
     ROUTING
 };
 
@@ -859,7 +860,7 @@ enum class e_place_bounding_box_mode {
  *
  * Supports the method is_timing_driven(), which allows flexible updates
  * to the placer algorithms if more timing driven placement strategies
- * are added in tht future. This method is used across various placement
+ * are added in the future. This method is used across various placement
  * setup files, and it can be useful for major placer routines as well.
  *
  * More methods can be added to this class if the placement strategies
@@ -967,11 +968,18 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+/**
+ * @brief Enumeration of the different initial temperature estimators available
+ *        for the placer.
+ */
+enum class e_anneal_init_t_estimator {
+    COST_VARIANCE, ///<Estimate the initial temperature using the variance in cost of a set of trial swaps.
+    EQUILIBRIUM,   ///<Estimate the initial temperature by predicting the equilibrium temperature for the initial placement.
+};
+
 enum class e_move_type;
 
-/**
- * @brief Various options for the placer.
- */
+/// @brief Various options for the placer.
 struct t_placer_opts {
     /// Controls which placement algorithm is used.
     t_place_algorithm place_algorithm;
@@ -1111,6 +1119,8 @@ struct t_placer_opts {
 
     /// When the annealer is using the automatic schedule, this option scales the initial temperature selected.
     float place_auto_init_t_scale;
+
+    e_anneal_init_t_estimator anneal_init_t_estimator;
 };
 
 /******************************************************************
@@ -1256,15 +1266,16 @@ struct t_router_opts {
     /// Only attempt to route the design once, with the channel width given.
     /// If this variable is == NO_FIXED_CHANNEL_WIDTH, do a binary search on channel width.
     int fixed_channel_width;
+
     /// Hint to binary search of what the minimum channel width is
     int min_channel_width_hint;
     /// TIMING_DRIVEN or PARALLEL.  Selects the desired routing algorithm.
-    enum e_router_algorithm router_algorithm;
+    e_router_algorithm router_algorithm;
 
     /// Specifies how to compute the base cost of each type of rr_node.
     /// DELAY_NORMALIZED -> base_cost = "demand" x average delay to route past 1 CLB.
     /// DEMAND_ONLY -> expected demand of this node (old breadth-first costs).
-    enum e_base_cost_type base_cost_type;
+    e_base_cost_type base_cost_type;
 
     /// Factor (alpha) used to weight expected future costs to target in the timing_driven router.
     /// astar_fac = 0 leads to an essentially breadth-first search,
@@ -1336,8 +1347,6 @@ struct t_router_opts {
     bool flat_routing;
     bool has_choke_point;
 
-    int custom_3d_sb_fanin_fanout = 1;
-
     bool with_timing_analysis;
 
     /// Whether to verify the switch IDs in the route file with the RR Graph.
@@ -1370,6 +1379,17 @@ struct t_analysis_opts {
 
     e_timing_update_type timing_update_type;
     bool skip_sync_clustering_and_routing_results;
+};
+
+/// Stores CRR specific options
+struct t_crr_opts {
+    std::string sb_maps;
+    std::string sb_templates;
+    bool preserve_input_pin_connections;
+    bool preserve_output_pin_connections;
+    bool annotated_rr_graph;
+    bool remove_dangling_nodes;
+    std::string sb_count_dir;
 };
 
 /// Stores NoC specific options, when supplied as an input by the user
@@ -1454,14 +1474,6 @@ struct t_det_routing_arch {
     /// Keeps track of the type of architecture switch that connects
     /// wires from another die to ipins in different die
     int wire_to_arch_ipin_switch_between_dice = -1;
-
-    /// keeps track of the type of RR graph switch
-    /// that connects wires to ipins in the RR graph
-    int wire_to_rr_ipin_switch;
-
-    /// keeps track of the type of RR graph switch that connects wires
-    /// from another die to ipins in different die in the RR graph
-    int wire_to_rr_ipin_switch_between_dice = -1;
 
     /// Resistance (in Ohms) of a minimum width nmos transistor.
     /// Used only in the FPGA area model.
@@ -1585,6 +1597,7 @@ struct t_vpr_setup {
     t_ap_opts APOpts;               ///<Options for analytical placer
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
+    t_crr_opts CRROpts;             ///<CRR options
     t_noc_opts NocOpts;             ///<Options for the NoC
     t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture
@@ -1625,5 +1638,3 @@ class RouteStatus {
 };
 
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
-
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;

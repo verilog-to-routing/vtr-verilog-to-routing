@@ -43,7 +43,7 @@ class NoCPlacementCheckpoint {
     void save_checkpoint(double cost, const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
     /**
-     * @brief Loads the save checkpoint into global placement data structues.
+     * @brief Loads the save checkpoint into global placement data structures.
      *
      *  @param costs Used to load NoC related costs for the checkpoint
      *  @param blk_loc_registry To be updated with the save checkpoint for NoC router locations.

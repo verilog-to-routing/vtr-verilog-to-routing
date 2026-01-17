@@ -196,12 +196,12 @@ The layer tag is an optional tag to specify multi-die FPGAs. If not specified, a
         <fixed_layout name="3D-FPGA" width="device_width" height="device_height">
             <!-- First die (base die) -->
             <layer die="0"/>
-                <!-- Specifiy base die Grid layout (e.g., fill with Network-on-Chips) -->
+                <!-- Specify base die Grid layout (e.g., fill with Network-on-Chips) -->
                 <fill type="NoC">
             </layer>
             <!-- Second die (upper die) -->
             <layer die="1">
-                <!-- Specifiy upper die Grid layout (e.g., fill with logic blocks) -->
+                <!-- Specify upper die Grid layout (e.g., fill with logic blocks) -->
                 <fill type="LAB">
             </layer>
         </fixed_layout>
@@ -493,16 +493,16 @@ Grid Location Tags
 
     .. note:: ``endx`` and ``endy`` are included in the region
 
-    If ``repeatx`` is specified the region will be repeated wherever :math:`x = startx + k_1*repeatx`, is satisified for any positive integer :math:`k_1`.
+    If ``repeatx`` is specified the region will be repeated wherever :math:`x = startx + k_1*repeatx`, is satisfied for any positive integer :math:`k_1`.
 
-    If ``repeaty`` is specified the region will be repeated wherever :math:`y = starty + k_2*repeaty`, is satisified for any positive integer :math:`k_2`.
+    If ``repeaty`` is specified the region will be repeated wherever :math:`y = starty + k_2*repeaty`, is satisfied for any positive integer :math:`k_2`.
 
 
     Example:
 
     .. code-block:: xml
 
-        <!-- Fill RAMs withing the rectangular region bounded by (1,1) and (5,4) -->
+        <!-- Fill RAMs within the rectangular region bounded by (1,1) and (5,4) -->
         <region type="RAM" startx="1" endx="5" starty="1" endy="4" priority="4"/>
 
     .. figure:: region_single_fpga_grid.*
@@ -513,7 +513,7 @@ Grid Location Tags
 
     .. code-block:: xml
 
-        <!-- Create RAMs every 2nd column withing the rectangular region bounded
+        <!-- Create RAMs every 2nd column within the rectangular region bounded
              by (1,1) and (5,4) -->
         <region type="RAM" startx="1" endx="5" starty="1" endy="4" incrx="2" priority="4"/>
 
@@ -581,6 +581,33 @@ Grid Layout Example
 
     Example FPGA grid
 
+
+.. arch:tag:: <interposer_cut x="int" y="int"/>
+
+    :opt_param x: Specifies the x-coordinate of a vertical interposer cut.
+    :opt_param y: Specifies the y-coordinate of a horizontal interposer cut.
+
+    .. note:: Exactly one of the ``x`` or ``y`` attributes must be specified.
+
+    Defines an interposer cut for modelling 2.5D interposer-based architectures. An interposer cut will cut all connections at location 'loc' along the axis 'dim' Leaving the two sides completely unconnected.
+    To reconnect the two sides, this tag can have multiple <interdie_wire> tags as children to specify the connection between the two sides.
+
+.. arch:tag:: <interdie_wire sg_name="string" sg_link="string" offset_start="expr" offset_end="expr" offset_increment="expr" num="int"/>
+
+    :req_param sg_name: Name of the scatter-gather pattern to be used for the interdie connection.
+    :req_param sg_link: Name of the scatter-gather link to be used for the interdie connection.
+    :req_param offset_start: Starting point of scatter-gather instantiations.
+    :req_param offset_end: Ending point of scatter-gather instantiations
+    :req_param offset_increment: Increment/distance between scatter-gather instantiations.
+    :req_param num: Number of scatter-gather instantiations per switchblock location.
+
+    Defines the interdie wiring between the two sides of the cut. Connectivity is defined using scatter-gather patterns. Starting at 'offset_start' from location of the cut and moving by 'offset_increment' until we reach the location of 'offset_end' away from the cut, 'num' scatter-gather patterns defined by 'sg_name' and 'sg_link' will be instantiated.
+    Note that these offset points always define the starting point of the scatter-gather pattern's sg_link. offset_start, offset_end and offset_increment can be integer values or expressions involving W and H (device width and height.)
+
+    .. figure:: scatter_gather_images/interposer_diagram.png
+        
+        An example of how specifying interposers in VTR works. Connections between the two sides of a cut are first severed after which the two sides are reconnected using scatter_gather patterns. In this example the length of the sg_link wire used is 3. Note that there are 'num' of each pattern at each switchblock location.
+
 .. _arch_device_info:
 
 FPGA Device Information
@@ -623,7 +650,7 @@ The tags within the ``<device>`` tag are:
 
     Used for an area estimate of the amount of area taken by all the functional blocks.
 
-    .. note:: This value can be overriden for specific ``<pb_type>`` s with the ``area`` attribute.
+    .. note:: This value can be overridden for specific ``<pb_type>`` s with the ``area`` attribute.
 
 
 .. arch:tag:: <switch_block type="{wilton | subset | universal | custom}" fs="int"/>
@@ -723,7 +750,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
         Since multiplexers and tristate buffers are modeled as a       
         parallel stream of pass transistors feeding into a buffer,     
         we would expect an additional "internal capacitance" to arise when the    
-        pass transistor is enabled and the signal must propogate to    
+        pass transistor is enabled and the signal must propagate to    
         the buffer. See diagram of one stream below:: 
         
             Pass Transistor                                          
@@ -845,7 +872,7 @@ Physical Tiles
 --------------
 
 The content within the ``<tiles>`` describes the physical tiles available in the FPGA.
-Each tile type is specified with the ``<tile>`` tag withing the ``<tiles>`` tag.
+Each tile type is specified with the ``<tile>`` tag within the ``<tiles>`` tag.
 
 Tile
 ~~~~
@@ -908,7 +935,7 @@ The following tags are common to all ``<tile>`` tags:
     .. arch:tag:: <input name="string" num_pins="int" equivalent="{none|full}" is_non_clock_global="{true|false}"/>
 
         Defines an input port.
-        Multple input ports are described using multiple ``<input>`` tags.
+        Multiple input ports are described using multiple ``<input>`` tags.
 
         :req_param name: Name of the input port.
         :req_param num_pins: Number of pins the input port has.
@@ -924,7 +951,7 @@ The following tags are common to all ``<tile>`` tags:
 
                 Input pins can not be swapped by the router. (Generates a unique SINK rr-node for each block input port pin.)
 
-            * ``full``: All input pins are considered logically equivalent (e.g. due to logical equivalance or a full-crossbar within the cluster).
+            * ``full``: All input pins are considered logically equivalent (e.g. due to logical equivalence or a full-crossbar within the cluster).
 
                 All input pins can be swapped without limitation by the router. (Generates a single SINK rr-node shared by all input port pins.)
 
@@ -942,7 +969,7 @@ The following tags are common to all ``<tile>`` tags:
     .. arch:tag:: <output name="string" num_pins="int" equivalent="{none|full|instance}"/>
 
         Defines an output port.
-        Multple output ports are described using multiple ``<output>`` tags
+        Multiple output ports are described using multiple ``<output>`` tags
 
         :req_param name: Name of the output port.
         :req_param num_pins: Number of pins the output port has.
@@ -1072,7 +1099,7 @@ The following tags are common to all ``<tile>`` tags:
 
         .. arch:tag:: <fc_override fc_type="{frac|abs}" fc_val="{int|float}", port_name="{string}" segment_name="{string}">
 
-            Allows :math:`F_c` values to be overriden on a port or wire/segment type basis.
+            Allows :math:`F_c` values to be overridden on a port or wire/segment type basis.
 
             :req_param fc_type:
                 Indicates how the override :math:`F_c` value should be interpreted.
@@ -1414,7 +1441,7 @@ The following tags are common to all <pb_type> tags:
 .. arch:tag:: <input name="string" num_pins="int" equivalent="{none|full}" is_non_clock_global="{true|false}"/>
 
     Defines an input port.
-    Multple input ports are described using multiple ``<input>`` tags.
+    Multiple input ports are described using multiple ``<input>`` tags.
 
     :req_param name: Name of the input port.
     :req_param num_pins: Number of pins the input port has.
@@ -1432,7 +1459,7 @@ The following tags are common to all <pb_type> tags:
 
             Input pins can not be swapped by the router. (Generates a unique SINK rr-node for each block input port pin.)
 
-        * ``full``: All input pins are considered logically equivalent (e.g. due to logical equivalance or a full-crossbar within the cluster).
+        * ``full``: All input pins are considered logically equivalent (e.g. due to logical equivalence or a full-crossbar within the cluster).
 
             All input pins can be swapped without limitation by the router. (Generates a single SINK rr-node shared by all input port pins.)
 
@@ -1450,7 +1477,7 @@ The following tags are common to all <pb_type> tags:
 .. arch:tag:: <output name="string" num_pins="int" equivalent="{none|full|instance}"/>
 
     Defines an output port.
-    Multple output ports are described using multiple ``<output>`` tags
+    Multiple output ports are described using multiple ``<output>`` tags
 
     :req_param name: Name of the output port.
     :req_param num_pins: Number of pins the output port has.
@@ -1481,7 +1508,7 @@ The following tags are common to all <pb_type> tags:
 .. arch:tag:: <clock name="string" num_pins="int" equivalent="{none|full}"/>
 
     Describes a clock port.
-    Multple clock ports are described using multiple ``<clock>`` tags.
+    Multiple clock ports are described using multiple ``<clock>`` tags.
     *See above descriptions on inputs*
 
 .. arch:tag:: <mode name="string" disable_packing="bool">
@@ -1940,7 +1967,7 @@ The ``<router>`` tag and its contents are described below.
         be an approximate value.
 
     :req_param connections:
-        Specifies a list of numbers seperated by spaces which are the user IDs supplied to other
+        Specifies a list of numbers separated by spaces which are the user IDs supplied to other
         ``<router>`` tags. This describes how the current physical Noc router
         that this tag is identifying is connected to the other physical NoC routers on the device.
     
@@ -1975,16 +2002,16 @@ Wire Segments
 The content within the ``<segmentlist>`` tag consists of a group of ``<segment>`` tags.
 The ``<segment>`` tag and its contents are described below.
 
-.. arch:tag:: <segment axis="{x|y}" name="unique_name" length="int" type="{bidir|unidir}" res_type="{GCLK|GENERAL}" freq="float" Rmetal="float" Cmetal="float">content</segment>
+.. arch:tag:: <segment axis="{x|y|z}" name="unique_name" length="int" type="{bidir|unidir}" res_type="{GCLK|GENERAL}" freq="float" Rmetal="float" Cmetal="float">content</segment>
 
 
     :opt_param axis:
-        Specifies if the given segment applies to either x or y channels only. If this tag is not given, it is assumed that the given segment
-        description applies to both x-directed and y-directed channels.
+        Specifies if the given segment applies to x, y, or z channels only. If this tag is not given, it is assumed that the given segment
+        description applies to both x-directed and y-directed channels (and not to z-directed channels).
 
         .. note:: It is required that both x and y segment axis details are given or that at least one segment within ``segmentlist`` 
             is specified without the ``axis`` tag (i.e. at least one segment applies to both x-directed and y-directed 
-            chanels). 
+            channels). For 3-d architectures, it is required that at least one wire segment with `axis="z"` is defined.
 
     :req_param name:
         A unique alphanumeric name to identify this segment type.
@@ -2113,7 +2140,7 @@ Both methods should not be used in tandem.
 
 .. _clock_power_format:
 
-Specifing Clocking Purely for Power Estimation
+Specifying Clocking Purely for Power Estimation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The clocking configuration is specified with ``<clock>`` tags within the ``<clocks>`` section.
@@ -2130,7 +2157,7 @@ The clocking configuration is specified with ``<clock>`` tags within the ``<cloc
 
 .. _clock_architecture_format:
 
-Specifing a Clock Architecture
+Specifying a Clock Architecture
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The element ``<clocknetworks>`` contains three sub-elements that collectively describe the clock architecture: the wiring parameters ``<metal_layers>``, the clock distribution ``<clock_network>``, and the clock connectivity ``<clock_routing>``.
@@ -2203,7 +2230,7 @@ Clock Architecture Tags
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``<metal_layers>`` element describes the per unit length electrical parameters, resistance (``Rmetal``) and capacitance (``Cmetel``), used to implement the clock distribution wires.
-Wires are modeled soley based on ``Rmetal`` and ``Cmetal`` parameters which are derived from the physical implementation of the metal layer width and spacing.
+Wires are modeled solely based on ``Rmetal`` and ``Cmetal`` parameters which are derived from the physical implementation of the metal layer width and spacing.
 There can be one or more wiring implementation options (metal layer, width and spacing) that are used by the later clock network specification and each is described in a separate ``<metal_layer>`` sub-element.
 The syntax of the wiring electrical information is:
 
@@ -2223,8 +2250,8 @@ The high-level start tag for a clock network is as follows:
     :req_param num_inst: which describes the number of parallel instances of the clock distribution types described in the ``<clock_network>`` sub-elements.
 
     .. note::
-        Many paramters used in the following clock architecture tags take an espression (``expr``) as an argument simular to :ref:`grid_expressions`.
-        However, only a subset of special variables are suported: ``W`` (device width) and ``H`` (device height).
+        Many parameters used in the following clock architecture tags take an espression (``expr``) as an argument similar to :ref:`grid_expressions`.
+        However, only a subset of special variables are supported: ``W`` (device width) and ``H`` (device height).
 
     The supported clock distribution types are ``<spine>`` and ``<rib>``.
     *Spines* are used to describe vertical clock distribution wires.
@@ -2265,10 +2292,10 @@ The high-level start tag for a clock network is as follows:
             * ``tap`` --  Tap points are where it can drive a routing switch or buffer to send a signal to a different ``clock_network`` or logicblock.
         :opt_param xoffset: (Only for ``rib`` network) Offset from the ``startx`` of a rib network.
         :opt_param yoffset: (Only for ``spine`` network) Offset from the ``starty`` of a spine network.
-        :opt_param xinc: (Only for rib ``tap`` points) Descibes the repeat factor of a series of evenly spaced tap points.
-        :opt_param yinc: (Only for spine ``tap`` points) Descibes the repeat factor of a series of evenly spaced tap points.
+        :opt_param xinc: (Only for rib ``tap`` points) Describes the repeat factor of a series of evenly spaced tap points.
+        :opt_param yinc: (Only for spine ``tap`` points) Describes the repeat factor of a series of evenly spaced tap points.
         :req_param buffer:
-            (Required only for ``drive`` points) A reference to a pre-defined routing switch; specfied by ``<switch>`` tag, see Section :ref:`arch_switches`.
+            (Required only for ``drive`` points) A reference to a pre-defined routing switch; specified by ``<switch>`` tag, see Section :ref:`arch_switches`.
             This switch will be used at the drive point.
             The clock architecture generator uses two of these buffers to drive the two portions of this ``clock_network`` wire when it is split at the drive point, see Figures :numref:`rib_visual` and :numref:`spine_visual`.
 
@@ -2310,7 +2337,7 @@ The tap element and its attribute sare as follows:
 
     .. note::
 
-        ``locationx`` and ``locationy`` describe an (x,y) grid loction where all the wires passing this location source the source the clock network connection depending on the ``fc_val``
+        ``locationx`` and ``locationy`` describe an (x,y) grid location where all the wires passing this location source the source the clock network connection depending on the ``fc_val``
 
 For more information you may wish to consult :cite:`mustafa_masc` which introduces the clock modeling language.
 
@@ -2337,6 +2364,8 @@ Direct Inter-block Connections
 The content within the ``<directlist>`` tag consists of a group of ``<direct>`` tags.
 The ``<direct>`` tag and its contents are described below.
 
+.. note:: ``from_pin`` and ``to_pin`` only support big endian! For example, ``clb.out[8:0]``
+
 .. arch:tag:: <direct name="string" from_pin="string" to_pin="string" x_offset="int" y_offset="int" z_offset="int" switch_name="string" from_side="{left|right|top|bottom}" to_side="{left|right|top|bottom}"/>
 
     :req_param name: is a unique alphanumeric string to name the connection.
@@ -2356,12 +2385,89 @@ The ``<direct>`` tag and its contents are described below.
     The ``from_side`` and ``to_side`` options can usually be left unspecified.
     However they can be used to explicitly control how direct connections to physically equivalent pins (which may appear on multiple sides) are handled.
 
-    **Example:**
-    Consider a carry chain where the ``cout`` of each CLB drives the ``cin`` of the CLB immediately below it, using the delay-less switch one would enter the following:
+**Example: Inter-tile connection**
+Consider a carry chain where the ``cout`` of each CLB drives the ``cin`` of the CLB immediately below it, using the delay-less switch one would enter the following:
 
-    .. code-block:: xml
+.. code-block:: xml
 
-        <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+    <direct name="adder_carry" from_pin="clb.cout" to_pin="clb.cin" x_offset="0" y_offset="-1" z_offset="0"/>
+
+**Example: Inner-tile feedback**
+
+Consider a feedback connection where the ``out`` of each CLB drives the ``in`` of the CLB in the same location, using the connection block switch one would enter the following:
+
+.. code-block:: xml
+
+    <direct name="feedback" from_pin="clb.out" to_pin="clb.in" x_offset="0" y_offset="0" z_offset="0" switch_name="cb_mux"/>
+
+**Example: Cross-sub-tile connection**
+
+In this example, a tile ``cim8_1k`` is defined, under which there are two types of sub-tiles:
+
+- ``mult_8``: the first sub-tile
+- ``memory``: the second, and the third sub-tile
+
+.. code-block:: xml
+
+    <tile name="cim8_1k" height="2" area="396000">
+      <sub_tile name="mult_8" capacity="1">
+        <equivalent_sites>
+          <site pb_type="mult_8" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="a" num_pins="8"/>
+        <input name="b" num_pins="8"/>
+        <output name="out" num_pins="16"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="out" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="left"/>
+          <loc side="top"/>
+          <loc side="right" yoffset="0">mult_8.a[0:2] mult_8.b[0:2] mult_8.out[0:5]</loc>
+          <loc side="right" yoffset="1">mult_8.a[3:5] mult_8.b[3:5] mult_8.out[6:10]</loc>
+          <loc side="bottom">mult_8.a[6:7] mult_8.b[6:7] mult_8.out[11:15]</loc>
+        </pinlocations>
+      </sub_tile>
+      <sub_tile name="memory" capacity="2">
+        <equivalent_sites>
+          <site pb_type="memory"/>
+        </equivalent_sites>
+        <input name="waddr" num_pins="7"/>
+        <input name="raddr" num_pins="7"/>
+        <input name="data_in" num_pins="8"/>
+        <input name="wen" num_pins="1"/>
+        <input name="ren" num_pins="1"/>
+        <output name="data_out" num_pins="8"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="clk" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="data_in" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="left" yoffset="0">memory.clk memory.waddr[0:0] memory.raddr[0:0] memory.data_in[0:0] memory.data_out[0:0]</loc>
+          <loc side="left" yoffset="1">memory.waddr[1:1] memory.raddr[1:1] memory.data_in[1:1] memory.data_out[1:1]</loc>
+          <loc side="top" yoffset="1">memory.waddr[2:2] memory.raddr[2:2] memory.data_in[2:2] memory.data_out[2:2] memory.waddr[3:3] memory.raddr[3:3] memory.data_in[3:3] memory.data_out[3:3]</loc>
+          <loc side="right" yoffset="0">memory.waddr[4:4] memory.raddr[4:4] memory.data_in[4:4] memory.data_out[4:4]</loc>
+          <loc side="right" yoffset="1">memory.waddr[5:5] memory.raddr[5:5] memory.data_in[5:5] memory.data_out[5:5]</loc>
+          <loc side="bottom" yoffset="0">memory.wen memory.waddr[6:6] memory.raddr[6:6] memory.data_in[6:6] memory.data_out[6:6] memory.ren memory.data_in[7:7] memory.data_out[7:7]</loc>
+        </pinlocations>
+      </sub_tile>
+    </tile>
+
+As shown in :numref:`fig_example_subtile_direct_connection`, consider a connection where the ``out`` of a sub tile ``mult_8`` of tile ``cim8_1k`` drives the ``data_in`` of the sub tile ``memory`` of tile ``cim8_1k`` with an offset, using the delayless switch one would enter the following:
+
+.. code-block:: xml
+
+    <direct name="cim_direct0" from_pin="cim8_1k.out[7:0]" to_pin="cim8_1k.data_in[7:0]" x_offset="0" y_offset="0" z_offset="1"/>
+    <direct name="cim_direct1" from_pin="cim8_1k.out[15:8]" to_pin="cim8_1k.data_in[7:0]" x_offset="0" y_offset="0" z_offset="2"/>
+
+.. _fig_example_subtile_direct_connection:
+
+.. figure:: ./example_subtile_direct_connection.png
+   :width: 60%
+   :alt: Example of direct connections across sub-tiles
+
+   Example of direct connections across sub-tiles
 
 .. _custom_switch_blocks:
 
@@ -2574,7 +2680,7 @@ The full format is documented below.
     :opt_param to_order:
         Specifies the order in which ``to_switchpoint``s are selected when creating edges.
 
-        .. note:: See ``from_switchpoint_order`` for value descritpions.
+        .. note:: See ``from_switchpoint_order`` for value descriptions.
 
     :opt_param switch_override:
 
@@ -2636,7 +2742,7 @@ Scatter-Gather Patterns
 
 The content under the ``<scatter_gather_list>`` tag consists of one or more ``<sg_pattern>`` tags that are used to specify a scatter-gather pattern.
 Scatter-gather patterns can be used to specify multi-level switch patterns, rather than the direct wire-to-wire switch patterns of conventional switch blocks.
-These additional switches, wires and/or muxes will be added to the architecture, augmenting wires created using segment specifications and swiches created using switch box specifications.
+These additional switches, wires and/or muxes will be added to the architecture, augmenting wires created using segment specifications and switches created using switch box specifications.
 The number of any additional wires or muxes created by scatter-gather specifications will not vary with routing channel width.
 
 .. figure:: scatter_gather_images/scattergather_diagram.svg
@@ -2644,7 +2750,7 @@ The number of any additional wires or muxes created by scatter-gather specificat
     Overview of how scatter-gather patterns work. First, connections from a switchblock location are selected according to the specification.
     These selected connection are then muxed and passed through the scatter-gather node, which is typically a wire segment. The scatter-gather node then fans out or scatters in another switchblock location.
 
-.. note:: Scatter-Gather patterns are work in progress and experimental. Currently, VPR does not support this specification and using this tag would not result in any modifications to the RR-Graph.
+.. note:: Scatter-Gather patterns are only supported for uni-directional 3D and uni-directional 2D architectures. Bidirectional sg_links are not currently supported.
 
 When instantiated, a scatter-gather pattern gathers connections from a switchblock and passes the connection through a multiplexer and the scatter-gather node which is typically a wire segment, then scatters or fans out somewhere else in the device. These patterns can be used to define 3D switchblocks. An example is shown below:
 

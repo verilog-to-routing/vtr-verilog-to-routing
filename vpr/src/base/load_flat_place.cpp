@@ -187,10 +187,10 @@ FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_pa
 }
 
 /* ingests and legalizes a flat placement file  */
-bool load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
+bool load_flat_placement(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     VTR_LOG("load_flat_placement(); when implemented, this function:");
     VTR_LOG("\n\tLoads flat placement file: %s, ", vpr_setup.FileNameOpts.FlatPlaceFile.c_str());
-    VTR_LOG("\n\tArch id: %s, ", arch.architecture_id);
+    VTR_LOG("\n\tArch id: %s, ", arch.architecture_id.c_str());
     VTR_LOG("\n\tPrints clustered netlist file: %s, ", vpr_setup.FileNameOpts.NetFile.c_str());
     VTR_LOG("\n\tPrints fix clusters file: %s\n", vpr_setup.FileNameOpts.write_constraints_file.c_str());
 
@@ -259,7 +259,7 @@ void log_flat_placement_reconstruction_info(
         VTR_ASSERT(flat_placement_info.blk_layer[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS);
         VTR_ASSERT(flat_placement_info.blk_sub_tile[atom_blk_id] != FlatPlacementInfo::UNDEFINED_SUB_TILE);
 
-         // Get the (x, y, layer) position of the block.
+        // Get the (x, y, layer) position of the block.
         float blk_x = flat_placement_info.blk_x_pos[atom_blk_id];
         float blk_y = flat_placement_info.blk_y_pos[atom_blk_id];
         float blk_layer = flat_placement_info.blk_layer[atom_blk_id];

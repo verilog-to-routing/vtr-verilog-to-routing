@@ -3,7 +3,7 @@
 * This file contains useful structures and functions used by vqm2blif.cpp to
 * parse a VQM netlist in order to output a corresponding BLIF netlist.
 *
-*			VQM to BLIF Convertor V.1.0
+*			VQM to BLIF Converter V.1.0
 *
 * Author:	S. Whitty
 *		May 20, 2011
@@ -102,7 +102,7 @@ typedef struct s_blif_subckt{
  *	If a port is left open, it will be mapped to the "hbpad" t_node_port_association.
  *	NOTE: Must map the port's name (string) because a port may be a bus, with multiple
  *	wires having the same portname. All assignments in BLIF must be 1-bit wide, so these
- *	buses must be flattened and mapped independantly.
+ *	buses must be flattened and mapped independently.
  */
  
 typedef struct s_blif_model{

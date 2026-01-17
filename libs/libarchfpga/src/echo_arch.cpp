@@ -23,7 +23,7 @@ static void PrintPb_types_recPower(FILE* Echo,
                                    const char* tabs);
 
 /* Output the data from architecture data so user can verify it
- * was interpretted correctly. */
+ * was interpreted correctly. */
 void EchoArch(const char* EchoFile,
               const std::vector<t_physical_tile_type>& PhysicalTileTypes,
               const std::vector<t_logical_block_type>& LogicalBlockTypes,
@@ -101,10 +101,10 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //Layout
     fprintf(Echo, "*************************************************\n");
     for (const auto& grid_layout : arch->grid_layouts) {
-        if (grid_layout.grid_type == GridDefType::AUTO) {
+        if (grid_layout.grid_type == e_grid_def_type::AUTO) {
             fprintf(Echo, "Layout: '%s' Type: auto Aspect_Ratio: %f\n", grid_layout.name.c_str(), grid_layout.aspect_ratio);
         } else {
-            VTR_ASSERT(grid_layout.grid_type == GridDefType::FIXED);
+            VTR_ASSERT(grid_layout.grid_type == e_grid_def_type::FIXED);
             fprintf(Echo, "Layout: '%s' Type: fixed Width: %d Height %d\n", grid_layout.name.c_str(), grid_layout.width, grid_layout.height);
         }
     }
@@ -123,25 +123,25 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     fprintf(Echo, "\tChannel Width Distribution:\n");
 
     switch (arch->Chans.chan_x_dist.type) {
-        case (UNIFORM):
+        case e_stat::UNIFORM:
             fprintf(Echo, "\t\tx: type uniform peak %e\n",
                     arch->Chans.chan_x_dist.peak);
             break;
-        case (GAUSSIAN):
+        case e_stat::GAUSSIAN:
             fprintf(Echo,
                     "\t\tx: type gaussian peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_x_dist.peak, arch->Chans.chan_x_dist.width,
                     arch->Chans.chan_x_dist.xpeak, arch->Chans.chan_x_dist.dc);
             break;
-        case (PULSE):
+        case e_stat::PULSE:
             fprintf(Echo,
                     "\t\tx: type pulse peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_x_dist.peak, arch->Chans.chan_x_dist.width,
                     arch->Chans.chan_x_dist.xpeak, arch->Chans.chan_x_dist.dc);
             break;
-        case (DELTA):
+        case e_stat::DELTA:
             fprintf(Echo,
                     "\t\tx: distr dleta peak %e \
 						  Xpeak %e dc %e\n",
@@ -154,25 +154,25 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     }
 
     switch (arch->Chans.chan_y_dist.type) {
-        case (UNIFORM):
+        case e_stat::UNIFORM:
             fprintf(Echo, "\t\ty: type uniform peak %e\n",
                     arch->Chans.chan_y_dist.peak);
             break;
-        case (GAUSSIAN):
+        case e_stat::GAUSSIAN:
             fprintf(Echo,
                     "\t\ty: type gaussian peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_y_dist.peak, arch->Chans.chan_y_dist.width,
                     arch->Chans.chan_y_dist.xpeak, arch->Chans.chan_y_dist.dc);
             break;
-        case (PULSE):
+        case e_stat::PULSE:
             fprintf(Echo,
                     "\t\ty: type pulse peak %e \
 						  width %e Xpeak %e dc %e\n",
                     arch->Chans.chan_y_dist.peak, arch->Chans.chan_y_dist.width,
                     arch->Chans.chan_y_dist.xpeak, arch->Chans.chan_y_dist.dc);
             break;
-        case (DELTA):
+        case e_stat::DELTA:
             fprintf(Echo,
                     "\t\ty: distr dleta peak %e \
 						  Xpeak %e dc %e\n",
@@ -185,13 +185,13 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     }
 
     switch (arch->sb_type) {
-        case (WILTON):
+        case e_switch_block_type::WILTON:
             fprintf(Echo, "\tSwitch Block: type wilton fs %d\n", arch->Fs);
             break;
-        case (UNIVERSAL):
+        case (e_switch_block_type::UNIVERSAL):
             fprintf(Echo, "\tSwitch Block: type universal fs %d\n", arch->Fs);
             break;
-        case (SUBSET):
+        case e_switch_block_type::SUBSET:
             fprintf(Echo, "\tSwitch Block: type subset fs %d\n", arch->Fs);
             break;
         default:
@@ -201,7 +201,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     fprintf(Echo, "\tInput Connect Block Switch Name Within a Same Die: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_within_die].c_str());
 
     //if there is more than one layer available, print the connection block switch name that is used for connection between two dice
-    for (const auto& layout : arch->grid_layouts) {
+    for (const t_grid_def& layout : arch->grid_layouts) {
         int num_layers = (int)layout.layers.size();
         if (num_layers > 1) {
             fprintf(Echo, "\tInput Connect Block Switch Name Between Two Dice: %s\n", arch->ipin_cblock_switch_name[ipin_cblock_switch_index_between_dice].c_str());
@@ -217,16 +217,16 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //It always consists of 10 alphanumeric digits, a decimal
     //and a sign
     for (int i = 0; i < (int)arch->switches.size(); i++) {
-        if (arch->switches[i].type() == SwitchType::MUX) {
+        if (arch->switches[i].type() == e_switch_type::MUX) {
             fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->switches[i].name.c_str());
-        } else if (arch->switches[i].type() == SwitchType::TRISTATE) {
+        } else if (arch->switches[i].type() == e_switch_type::TRISTATE) {
             fprintf(Echo, "\tSwitch[%d]: name %s type tristate\n", i + 1, arch->switches[i].name.c_str());
-        } else if (arch->switches[i].type() == SwitchType::SHORT) {
+        } else if (arch->switches[i].type() == e_switch_type::SHORT) {
             fprintf(Echo, "\tSwitch[%d]: name %s type short\n", i + 1, arch->switches[i].name.c_str());
-        } else if (arch->switches[i].type() == SwitchType::BUFFER) {
+        } else if (arch->switches[i].type() == e_switch_type::BUFFER) {
             fprintf(Echo, "\tSwitch[%d]: name %s type buffer\n", i + 1, arch->switches[i].name.c_str());
         } else {
-            VTR_ASSERT(arch->switches[i].type() == SwitchType::PASS_GATE);
+            VTR_ASSERT(arch->switches[i].type() == e_switch_type::PASS_GATE);
             fprintf(Echo, "\tSwitch[%d]: name %s type pass_gate\n", i + 1, arch->switches[i].name.c_str());
         }
         fprintf(Echo, "\t\t\t\tR %e Cin %e Cout %e\n", arch->switches[i].R,
@@ -257,14 +257,6 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
             //wire_switch == arch_opin_switch
             fprintf(Echo, "\t\t\t\ttype unidir mux_name for within die connections: %s\n",
                     arch->switches[seg.arch_wire_switch].name.c_str());
-            //if there is more than one layer available, print the segment switch name that is used for connection between two dice
-            for (const auto& layout : arch->grid_layouts) {
-                int num_layers = (int)layout.layers.size();
-                if (num_layers > 1) {
-                    fprintf(Echo, "\t\t\t\ttype unidir mux_name for between two dice connections: %s\n",
-                            arch->switches[seg.arch_inter_die_switch].name.c_str());
-                }
-            }
         } else { //Should be bidir
             fprintf(Echo, "\t\t\t\ttype bidir wire_switch %s arch_opin_switch %s\n",
                     arch->switches[seg.arch_wire_switch].name.c_str(),
@@ -405,12 +397,12 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
             for (int j = 0; j < pb_type->modes[i].num_interconnect; j++) {
                 fprintf(Echo, "%s\t\tinterconnect %d %s %s\n", tabs.c_str(),
                         pb_type->modes[i].interconnect[j].type,
-                        pb_type->modes[i].interconnect[j].input_string,
-                        pb_type->modes[i].interconnect[j].output_string);
+                        pb_type->modes[i].interconnect[j].input_string.c_str(),
+                        pb_type->modes[i].interconnect[j].output_string.c_str());
                 for (const t_pin_to_pin_annotation& annotation : pb_type->modes[i].interconnect[j].annotations) {
                     fprintf(Echo, "%s\t\t\tannotation %s %s %d: %s\n", tabs.c_str(),
-                            annotation.input_pins,
-                            annotation.output_pins,
+                            annotation.input_pins.c_str(),
+                            annotation.output_pins.c_str(),
                             annotation.format,
                             annotation.annotation_entries[0].second.c_str());
                 }
@@ -428,7 +420,7 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
     } else { /*leaf pb with unknown model*/
         /*LUT(names) already handled, it naturally has 2 modes.
          * I/O has no annotations to be displayed
-         * All other library or user models may have delays specificied, e.g. Tsetup and Tcq
+         * All other library or user models may have delays specified, e.g. Tsetup and Tcq
          * Display the additional information*/
         std::string pb_type_model_name = models.get_model(pb_type->model_id).name;
         if (pb_type_model_name != LogicalModels::MODEL_NAMES
@@ -436,9 +428,9 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
             && pb_type_model_name != LogicalModels::MODEL_OUTPUT) {
             for (const t_pin_to_pin_annotation& annotation : pb_type->annotations) {
                 fprintf(Echo, "%s\t\t\tannotation %s %s %s %d: %s\n", tabs.c_str(),
-                        annotation.clock,
-                        annotation.input_pins,
-                        annotation.output_pins,
+                        annotation.clock.c_str(),
+                        annotation.input_pins.c_str(),
+                        annotation.output_pins.c_str(),
                         annotation.format,
                         annotation.annotation_entries[0].second.c_str());
             }
@@ -641,7 +633,7 @@ static void PrintPb_types_recPower(FILE* Echo,
                         pb_type->pb_type_power->absolute_power_per_instance.dynamic);
             break;
         default:
-            fprintf(Echo, "%s\tpower method: error has occcured\n", tabs);
+            fprintf(Echo, "%s\tpower method: error has occcurred\n", tabs);
             break;
     }
 }

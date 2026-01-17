@@ -127,7 +127,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      */
 
     /**
-     * @brief Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
+     * @brief Returns the AtomPortId of the specified port if it exists or AtomPortId::INVALID() if not
      * @note This method is typically more efficient than searching by name
      *
      *   @param blk_id The   ID of the block who's ports will be checked

@@ -12,7 +12,7 @@ import shutil
 import csv
 from datetime import datetime
 
-# generate images wihtout having a window appear
+# generate images without having a window appear
 import matplotlib
 
 matplotlib.use("Agg")
@@ -58,7 +58,6 @@ def plot_results(param_names, param_options, results, params):
         os.mkdir(directory)
 
     with Chdir(directory):
-
         export_results_to_csv(param_names, results, params)
 
         x = results.keys()

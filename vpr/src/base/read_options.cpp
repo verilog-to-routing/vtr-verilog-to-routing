@@ -6,6 +6,7 @@
 #include "argparse.hpp"
 
 #include "ap_flow_enums.h"
+#include "vpr_types.h"
 #include "vtr_log.h"
 #include "vtr_path.h"
 #include "vtr_util.h"
@@ -719,6 +720,44 @@ struct ParsePlaceAgentSpace {
 
     std::vector<std::string> default_choices() {
         return {"move_type", "move_block_type"};
+    }
+};
+
+struct ParsePlaceInitTEstimator {
+    ConvertedValue<e_anneal_init_t_estimator> from_str(const std::string& str) {
+        ConvertedValue<e_anneal_init_t_estimator> conv_value;
+        if (str == "cost_variance")
+            conv_value.set_value(e_anneal_init_t_estimator::COST_VARIANCE);
+        else if (str == "equilibrium")
+            conv_value.set_value(e_anneal_init_t_estimator::EQUILIBRIUM);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_anneal_init_t_estimator (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_anneal_init_t_estimator val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_anneal_init_t_estimator::COST_VARIANCE:
+                conv_value.set_value("cost_variance");
+                break;
+            case e_anneal_init_t_estimator::EQUILIBRIUM:
+                conv_value.set_value("equilibrium");
+                break;
+            default: {
+                std::stringstream msg;
+                msg << "Unknown e_anneal_init_t_estimator type.";
+                conv_value.set_error(msg.str());
+            }
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"cost_variance", "equilibrium"};
     }
 };
 
@@ -1562,7 +1601,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
-            "A set of semi-colon seperated graphics commands. \n"
+            "A set of semi-colon separated graphics commands. \n"
             "Commands must be surrounded by quotation marks (e.g. --graphics_commands \"save_graphics place.png\")\n"
             "   Commands:\n"
             "      * save_graphics <file>\n"
@@ -2028,7 +2067,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "is used as a guide, the legalizer may not follow this if it must fill "
             "the tile more."
             "\n"
-            "When this option is set ot auto, VPR will select good values for the "
+            "When this option is set to auto, VPR will select good values for the "
             "target density of tiles."
             "\n"
             "This option is similar to appack_max_dist_th, where a regex string "
@@ -2135,7 +2174,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     pack_grp.add_argument(args.connection_gain_weight, "--connection_gain_weight")
         .help(
             "Parameter that weights the absorption of small nets vs signal sharing."
-            " 0.0 focuses solely on sharing, 1.0 solely on small net absoprtion."
+            " 0.0 focuses solely on sharing, 1.0 solely on small net absorption."
             " Only meaningful if --connection_driven_clustering=on")
         .default_value("0.9")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2303,6 +2342,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "of the initial placement, this may improve or hurt the quality of the final "
             "placement.")
         .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_anneal_init_t_estimator, ParsePlaceInitTEstimator>(args.place_init_t_estimator, "--anneal_auto_init_t_estimator")
+        .help(
+            "Controls which estimation method is used when selecting the starting temperature "
+            "for the automatic annealing schedule.\n"
+            "\n"
+            "The options for estimators are:\n"
+            "\tcost_variance: Estimates the initial temperature using the variance "
+            "of cost after a set of trial swaps.\n"
+            "\tequilibrium: Estimates the initial temperature by trying to "
+            "predict the equilibrium temperature for the initial placement "
+            "(i.e. the temperature that would result in no change in cost).")
+        .default_value("equilibrium")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_init_t, "--init_t")
@@ -2666,7 +2719,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_timing_grp.add_argument(args.place_tsu_abs_margin, "--place_tsu_abs_margin")
         .help(
-            "Specifies an absolute offest added to cell setup times used by the placer."
+            "Specifies an absolute offset added to cell setup times used by the placer."
             " This effectively controls whether the placer should try to achieve extra margin on setup paths."
             " For example a value of 500e-12 corresponds to requesting an extra 500ps of setup margin.")
         .default_value("0.0")
@@ -2849,19 +2902,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Controls the verbosity of routing's output. Higher values produce more output (useful for debugging routing problems)")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
-    route_grp.add_argument(args.custom_3d_sb_fanin_fanout, "--custom_3d_sb_fanin_fanout")
-        .help(
-            "Specifies the number of tracks that can drive a 3D switch block connection"
-            "and the number of tracks that can be driven by a 3D switch block connection")
-        .default_value("1")
-        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
         .help(
             "Controls the directedness of the timing-driven router's exploration."
-            " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
+            " Values between 1 and 2 are reasonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2869,7 +2916,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Controls the directedness of the timing-driven router's exploration."
             " It is a subtractive adjustment to the lookahead heuristic."
-            " Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.")
+            " Values between 0 and 1e-9 are reasonable; higher values may increase quality at the expense of run-time.")
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2878,7 +2925,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls the directedness of the timing-driven router's exploration"
             " when doing router delay profiling of an architecture."
             " The router delay profiling step is currently used to calculate the place delay matrix lookup."
-            " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
+            " Values between 1 and 2 are reasonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -3232,7 +3279,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "'--echo_file on' is set:\n"
             " * -1: All nodes are dumped into the DOT file\n"
             " * >= 0: Only the transitive fanin/fanout of the node is dumped (easier to view)\n"
-            " * a string: Interpretted as a VPR pin name which is converted to a node id, and dumped as above\n")
+            " * a string: Interpreted as a VPR pin name which is converted to a node id, and dumped as above\n")
         .default_value("-1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -3285,6 +3332,43 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "for every routed connection in the design.\n"
             "The report is saved as 'report_net_timing.csv'.")
         .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    auto& crr_grp = parser.add_argument_group("CRR options");
+
+    crr_grp.add_argument(args.sb_maps, "--sb_maps")
+        .help("Switch block map file that specifies the switch block template used for each location")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument(args.sb_templates, "--sb_templates")
+        .help("Directory containing the switch block templates")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument<bool, ParseOnOff>(args.preserve_input_pin_connections, "--preserve_input_pin_connections")
+        .help("If it set to on, the input pin connections will be generated by the default flow and not from the CRR template")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument<bool, ParseOnOff>(args.preserve_output_pin_connections, "--preserve_output_pin_connections")
+        .help("If it set to on, the output pin connections will be generated by the default flow and not from the CRR template")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument<bool, ParseOnOff>(args.annotated_rr_graph, "--annotated_rr_graph")
+        .help("Whether the generated CRR should be annotated with delay")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument<bool, ParseOnOff>(args.remove_dangling_nodes, "--remove_dangling_nodes")
+        .help("Whether the generated CRR should remove CHANX and CHANY nodes that have no fan-in")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument(args.sb_count_dir, "--sb_count_dir")
+        .help("Directory to store csv files showing how many times each switch specified in the switch block templates is used")
+        .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");

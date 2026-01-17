@@ -2,7 +2,7 @@
 
 For general guidance on contributing to VTR see [Submitting Code to VTR](CONTRIBUTING.md#submitting-code-to-vtr).
 
-The actual machanics of submitting code are outlined below.
+The actual mechanics of submitting code are outlined below.
 
 However they differ slightly depending on whether you are:
  * an **internal developer** (i.e. you have commit access to the main VTR repository at `github.com/verilog-to-routing/vtr-verilog-to-routing`) or, 
@@ -149,7 +149,7 @@ To provide quick context, some VTR developers also tag the first line with the m
 ## Commit Structure
 Generally, you should strive to keep commits atomic (i.e. they do one logical change to the code).
 This often means keeping commits small and focused in what they change.
-Of course, a large number of miniscule commits is also unhelpful (overwhelming and difficult to see the structure), and sometimes things can only be done in large changes -- so use your judgement.
+Of course, a large number of minuscule commits is also unhelpful (overwhelming and difficult to see the structure), and sometimes things can only be done in large changes -- so use your judgement.
 A reasonable rule of thumb is to try and ensure VTR will still compile after each commit.
 
 For those familiar with history re-writing features in git (e.g. rebase) you can sometimes use these to clean-up your commit history after the fact.
@@ -627,7 +627,7 @@ stratixiv_arch.timing.xml	cholesky_mc_stratixiv_arch_timing.blif  	0208312     	
 ```
 
 ### Example: NoC Benchmarks QoR Measurements
-NoC benchmarks currently include synthetic and MLP benchmarks. Synthetic benchmarks have various NoC traffic patters,
+NoC benchmarks currently include synthetic and MLP benchmarks. Synthetic benchmarks have various NoC traffic patterns,
 bandwidth utilization, and latency requirements. High-quality NoC router placement solutions for these benchmarks are
 known. By comparing the known solutions with NoC router placement results, the developer can evaluate the sanity of 
 the NoC router placement algorithm. MLP benchmarks are the only realistic netlists included in this benchmark set.
@@ -702,7 +702,7 @@ The following table provides details on available Koios settings in VTR flow:
 
 For more information refer to the [Koios benchmark home page](vtr_flow/benchmarks/verilog/koios/README.md).
 
-To make running all the koios benchmarks easier, especially with thos circuits scattered between different tasks, there is an overall task list that runs all the 40 circuits of Koios as follows (this will run all the circuits with complex DSP functionality enabled. If you want to disable the complex DSP, edit the file to point to the `koios_*_no_hb` tasks):
+To make running all the koios benchmarks easier, especially with those circuits scattered between different tasks, there is an overall task list that runs all the 40 circuits of Koios as follows (this will run all the circuits with complex DSP functionality enabled. If you want to disable the complex DSP, edit the file to point to the `koios_*_no_hb` tasks):
 
 ```shell
 $ ../scripts/run_vtr_task.py -l koios_task_list.txt 
@@ -1099,7 +1099,7 @@ Introduce a test case using the `TEST_CASE` macro, and include a name and a tag.
 #include "catch2/catch_test_macros.hpp"
 
 // To choose a tag (written with square brackets "[tag]"), see examples from when you run ./test_vpr
-// --list-tests in the tester exectuable directory, as shown earlier. A good default tag name is the name
+// --list-tests in the tester executable directory, as shown earlier. A good default tag name is the name
 // of the tester: in this case, [vpr].
 TEST_CASE("a_vpr_test_name", "[vpr]") {
   int x = 0;
@@ -1467,7 +1467,7 @@ exists on a different branch).
    commit.
 
 5. Recreate the local changes from step 2 above, such that the library builds
-   without issue; preferrably in a concise way such that the library can be
+   without issue; preferably in a concise way such that the library can be
    easily updated in the future.
 
 ## Adding a new Subtree

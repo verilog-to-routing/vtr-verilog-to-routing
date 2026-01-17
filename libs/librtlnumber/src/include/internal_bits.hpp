@@ -3,7 +3,7 @@
  *            Alexandrea Demmings (alexandrea.demmings@unb.ca, lxdemmings@gmail.com) and
  *             Dr. Kenneth B. Kent (ken@unb.ca)
  *             for the Reconfigurable Computing Research Lab at the
- *              Univerity of New Brunswick in Fredericton, New Brunswick, Canada
+ *              University of New Brunswick in Fredericton, New Brunswick, Canada
  */
 
 #ifndef INTERNAL_BITS_HPP
@@ -837,7 +837,7 @@ class VNumber {
     std::string to_vstring(char input_base) {
         std::string out = "";
         char base = tolower(input_base);
-        bool upercase = (base != input_base);
+        bool uppercase = (base != input_base);
         if (this->has_unknown() && (base == 'o' || base == 'h' || base == 'd')) {
             // hot swap to binary since that is all we can print
             base = 'b';
@@ -845,17 +845,17 @@ class VNumber {
 
         switch (base) {
             case 'b':
-                return this->to_string(false, upercase);
+                return this->to_string(false, uppercase);
             case 'z':
-                return this->to_string(false, upercase);
+                return this->to_string(false, uppercase);
             case 'u':
                 return this->to_Ustring(false);
             case 'o':
-                return this->to_log2radix(3, false, upercase);
+                return this->to_log2radix(3, false, uppercase);
             case 'd':
-                return this->to_base10(false, upercase);
+                return this->to_base10(false, uppercase);
             case 'h':
-                return this->to_log2radix(4, false, upercase);
+                return this->to_log2radix(4, false, uppercase);
             case 's':
                 return this->bitstring.to_printable();
             case 'c':

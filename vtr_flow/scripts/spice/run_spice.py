@@ -10,7 +10,7 @@ from subprocess import Popen, PIPE, STDOUT
 my_dir = ""
 
 if len(sys.argv) < 9:
-    print (
+    print(
         "Usage: spice.py <tech_file> <tech_size> <Vdd> <P/N> <temp> <activity [hz]> <component_type> <size> <nmos_size>"
     )
     sys.exit()
@@ -37,7 +37,7 @@ if activity == "h":
 elif activity == "z":
     na = 1
 else:
-    print ("Invalid activity type\n")
+    print("Invalid activity type\n")
     sys.exit()
 
 base_dir = os.path.join(my_dir)
@@ -99,12 +99,12 @@ p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, cwd=temp_dir)
 stdout, stderr = p.communicate()
 
 if re.search("error", stdout):
-    print "Error"
+    print("Error")
 
 else:
     m = re.search("^\s*power=\s*(\S*).*$", stdout, re.MULTILINE)
     if m:
-        print m.group(1)
+        print(m.group(1))
 
 
 # f = open("~/spice_modeling/" + sys.argv[1] + ".spx")

@@ -11,23 +11,11 @@
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
-/**
- * @brief Goes through 3D custom switch blocks and counts how many connections are crossing dice for each switch block.
- *
- *  @param sb_conn_map switch block permutation map
- *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
- *
- * @return number of die-crossing connection for each unique (x, y) location within the grid ([0..grid.width-1][0..grid.height-1])
- */
-vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_map* sb_conn_map,
-                                                               const int custom_3d_sb_fanin_fanout,
-                                                               RRGraphBuilder& rr_graph_builder);
-
 std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const int max_len,
                                                       const std::vector<t_segment_inf>& segment_inf,
                                                       const bool use_full_seg_groups,
-                                                      const enum e_directionality directionality);
+                                                      const e_directionality directionality);
 
 void alloc_and_load_chan_details(const DeviceGrid& grid,
                                  const t_chan_width& nodes_per_chan,
@@ -113,11 +101,11 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                       t_rr_edge_info_set& rr_edges_to_create,
                       const t_track_to_pin_lookup& track_to_pin_lookup,
                       const t_chan_seg_details* seg_details,
-                      enum e_rr_type chan_type,
+                      e_rr_type chan_type,
                       int chan_length,
                       int wire_to_ipin_switch,
                       int wire_to_pin_between_dice_switch,
-                      enum e_directionality directionality);
+                      e_directionality directionality);
 
 int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const int layer,
@@ -132,16 +120,12 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const DeviceGrid& grid,
                         const int Fs_per_side,
                         t_sblock_pattern& sblock_pattern,
-                        vtr::NdMatrix<int, 2>& num_of_3d_conns_custom_SB,
                         RRNodeId from_rr_node,
                         t_rr_edge_info_set& rr_edges_to_create,
-                        t_rr_edge_info_set& des_3d_rr_edges_to_create,
                         const t_chan_seg_details* from_seg_details,
                         const t_chan_seg_details* to_seg_details,
                         const t_chan_details& to_chan_details,
-                        const enum e_directionality directionality,
-                        const int custom_3d_sb_fanin_fanout,
-                        const int delayless_switch,
+                        const e_directionality directionality,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                         const t_sb_connection_map* sb_conn_map);
 

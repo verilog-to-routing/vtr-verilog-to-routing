@@ -110,7 +110,7 @@ vtr::vector<RRNodeId, RTExploredNode> SerialConnectionRouter<Heap>::timing_drive
         // we do not specify a target node.
         //
         // By setting the target_node to INVALID in combination with the NoOp router
-        // lookahead we can re-use the node exploration code from the regular router
+        // lookahead we can reuse the node exploration code from the regular router
         RRNodeId target_node = RRNodeId::INVALID();
 
         timing_driven_expand_cheapest(inode,
@@ -241,7 +241,7 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
                                                                   const t_bb& bounding_box,
                                                                   RRNodeId target_node,
                                                                   const t_bb& target_bb) {
-    VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
+    VTR_ASSERT(bounding_box.layer_max < (int)g_vpr_ctx.device().grid.get_num_layers());
 
     const RRNodeId& from_node = current.index;
 
@@ -255,8 +255,8 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
                        " (to node location %d,%d,%d x %d,%d,%d outside of expanded"
                        " net bounding box %d,%d,%d x %d,%d,%d)\n",
                        from_node, size_t(from_edge), size_t(to_node),
-                       this->rr_graph_->node_xlow(to_node), this->rr_graph_->node_ylow(to_node), this->rr_graph_->node_layer(to_node),
-                       this->rr_graph_->node_xhigh(to_node), this->rr_graph_->node_yhigh(to_node), this->rr_graph_->node_layer(to_node),
+                       this->rr_graph_->node_xlow(to_node), this->rr_graph_->node_ylow(to_node), this->rr_graph_->node_layer_low(to_node),
+                       this->rr_graph_->node_xhigh(to_node), this->rr_graph_->node_yhigh(to_node), this->rr_graph_->node_layer_low(to_node),
                        bounding_box.xmin, bounding_box.ymin, bounding_box.layer_min,
                        bounding_box.xmax, bounding_box.ymax, bounding_box.layer_max);
         return; /* Node is outside (expanded) bounding box. */
@@ -273,7 +273,7 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
             // IPIN's of the target block should be contained within it's bounding box
             int to_xlow = this->rr_graph_->node_xlow(to_node);
             int to_ylow = this->rr_graph_->node_ylow(to_node);
-            int to_layer = this->rr_graph_->node_layer(to_node);
+            int to_layer = this->rr_graph_->node_layer_low(to_node);
             int to_xhigh = this->rr_graph_->node_xhigh(to_node);
             int to_yhigh = this->rr_graph_->node_yhigh(to_node);
             if (to_xlow < target_bb.xmin

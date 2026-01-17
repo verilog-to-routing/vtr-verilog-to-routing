@@ -22,15 +22,14 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   e_graph_type graph_type,
                   const t_arch* arch,
                   t_chan_width* chan_width,
-                  const enum e_base_cost_type base_cost_type,
-                  int* wire_to_rr_ipin_switch,
-                  int* wire_to_rr_ipin_switch_between_dice,
+                  const e_base_cost_type base_cost_type,
                   const char* read_rr_graph_name,
                   std::string* loaded_rr_graph_filename,
                   bool read_edge_metadata,
                   bool do_check_rr_graph,
                   bool echo_enabled,
                   const char* echo_file_name,
+                  const int route_verbosity,
                   bool is_flat);
 
 /**

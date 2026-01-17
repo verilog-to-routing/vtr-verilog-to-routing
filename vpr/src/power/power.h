@@ -170,7 +170,7 @@ struct t_power_mux_volt_pair {
     float v_out_max;
 };
 
-/* Buffer information for a given buffer stength */
+/* Buffer information for a given buffer strength */
 struct t_power_buffer_strength_inf {
     float stage_gain;
 
@@ -234,8 +234,8 @@ struct t_power_commonly_used {
     float INV_1X_C;
     float INV_2X_C;
 
-    /* Component Callibrations Array [0..POWER_COMPONENT_MAX_NUM-1] */
-    PowerSpicedComponent** component_callibration;
+    /* Component Calibrations Array [0..POWER_COMPONENT_MAX_NUM-1] */
+    PowerSpicedComponent** component_calibration;
 
     /* Subthreshold leakages */
     float NMOS_1X_st_leakage;

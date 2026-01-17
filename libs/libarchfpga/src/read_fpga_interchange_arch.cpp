@@ -242,28 +242,28 @@ static t_port get_generic_port(t_arch* arch,
 }
 
 /** @brief Returns true if a given port name exists in the given complex block */
-static bool block_port_exists(t_pb_type* pb_type, std::string port_name) {
+static bool block_port_exists(t_pb_type* pb_type, std::string_view port_name) {
     for (int iport = 0; iport < pb_type->num_ports; iport++) {
         const t_port port = pb_type->ports[iport];
 
-        if (std::string(port.name) == port_name)
+        if (port.name == port_name)
             return true;
     }
 
     return false;
 }
 
-/** @brief Returns a pack pattern given it's name, input and output strings */
-static t_pin_to_pin_annotation get_pack_pattern(std::string pp_name, std::string input, std::string output) {
+/** @brief Returns a pack pattern given its name, input and output strings */
+static t_pin_to_pin_annotation get_pack_pattern(std::string_view pp_name, std::string_view input, std::string_view output) {
     t_pin_to_pin_annotation pp;
 
     pp.type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
     pp.format = E_ANNOT_PIN_TO_PIN_CONSTANT;
-    pp.annotation_entries.push_back({E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME, pp_name});
-    pp.input_pins = vtr::strdup(input.c_str());
-    pp.output_pins = vtr::strdup(output.c_str());
+    pp.annotation_entries.push_back({E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME, pp_name.data()});
+    pp.input_pins = input;
+    pp.output_pins = output;
 
-    pp.clock = nullptr;
+    pp.clock.clear();
 
     return pp;
 }
@@ -285,7 +285,7 @@ struct ArchReader {
         set_arch_file_name(arch_file);
 
         for (std::string str : ar_.getStrList()) {
-            auto interned_string = arch_->strings.intern_string(vtr::string_view(str.c_str()));
+            auto interned_string = arch_->strings.intern_string(str);
             arch_->interned_strings.push_back(interned_string);
         }
     }
@@ -1216,8 +1216,8 @@ struct ArchReader {
                 ostr = std::string(pb_type->name) + ".in[" + std::to_string(j) + "]";
                 name = istr + "_to_" + ostr;
 
-                ic->input_string = vtr::strdup(istr.c_str());
-                ic->output_string = vtr::strdup(ostr.c_str());
+                ic->input_string = istr;
+                ic->output_string = ostr;
                 ic->name = vtr::strdup(name.c_str());
             }
 
@@ -1231,8 +1231,8 @@ struct ArchReader {
             ostr = std::string(parent->name) + "." + lut_bel.output_pin;
             name = istr + "_to_" + ostr;
 
-            ic->input_string = vtr::strdup(istr.c_str());
-            ic->output_string = vtr::strdup(ostr.c_str());
+            ic->input_string = istr;
+            ic->output_string = ostr;
             ic->name = vtr::strdup(name.c_str());
         }
     }
@@ -1267,14 +1267,12 @@ struct ArchReader {
         mode->interconnect = new t_interconnect[mode->num_interconnect];
         t_interconnect* ic = &mode->interconnect[0];
 
-        std::string istr, ostr, name;
+        std::string istr = std::string(pb_type->name) + ".in";
+        std::string ostr = std::string(pb_type->name) + ".out";
+        std::string name = "passthrough";
 
-        istr = std::string(pb_type->name) + ".in";
-        ostr = std::string(pb_type->name) + ".out";
-        name = "passthrough";
-
-        ic->input_string = vtr::strdup(istr.c_str());
-        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->input_string = istr;
+        ic->output_string = ostr;
         ic->name = vtr::strdup(name.c_str());
 
         ic->type = COMPLETE_INTERC;
@@ -1329,8 +1327,8 @@ struct ArchReader {
         ostr = std::string(lut->name) + ".in";
         name = istr + "_to_" + ostr;
 
-        ic->input_string = vtr::strdup(istr.c_str());
-        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->input_string = istr;
+        ic->output_string = ostr;
         ic->name = vtr::strdup(name.c_str());
 
         // Output
@@ -1343,8 +1341,8 @@ struct ArchReader {
         ostr = std::string(pb_type->name) + ".out";
         name = istr + "_to_" + ostr;
 
-        ic->input_string = vtr::strdup(istr.c_str());
-        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->input_string = istr;
+        ic->output_string = ostr;
         ic->name = vtr::strdup(name.c_str());
     }
 
@@ -1458,15 +1456,15 @@ struct ArchReader {
         o_ic->type = DIRECT_INTERC;
         o_ic->parent_mode_index = 0;
         o_ic->parent_mode = omode;
-        o_ic->input_string = vtr::strdup(opad_istr.c_str());
-        o_ic->output_string = vtr::strdup(opad_ostr.c_str());
+        o_ic->input_string = opad_istr;
+        o_ic->output_string = opad_ostr;
 
         i_ic->name = vtr::strdup(i_ic_name.c_str());
         i_ic->type = DIRECT_INTERC;
         i_ic->parent_mode_index = 0;
         i_ic->parent_mode = imode;
-        i_ic->input_string = vtr::strdup(ipad_istr.c_str());
-        i_ic->output_string = vtr::strdup(ipad_ostr.c_str());
+        i_ic->input_string = ipad_istr.c_str();
+        i_ic->output_string = ipad_ostr.c_str();
 
         omode->interconnect[0] = *o_ic;
         imode->interconnect[0] = *i_ic;
@@ -1611,8 +1609,8 @@ struct ArchReader {
                 ic->type = DIRECT_INTERC;
                 ic->parent_mode_index = idx;
                 ic->parent_mode = mode;
-                ic->input_string = vtr::strdup(istr.c_str());
-                ic->output_string = vtr::strdup(ostr.c_str());
+                ic->input_string = istr;
+                ic->output_string = ostr;
             }
 
             create_ports(leaf, pins, name);
@@ -1667,8 +1665,8 @@ struct ArchReader {
         ic->type = ic_type;
         ic->parent_mode_index = idx;
         ic->parent_mode = mode;
-        ic->input_string = vtr::strdup(istr.c_str());
-        ic->output_string = vtr::strdup(ostr.c_str());
+        ic->input_string = istr;
+        ic->output_string = ostr;
     }
 
     /** @brief Processes all the ports of a given complex block.
@@ -1787,8 +1785,8 @@ struct ArchReader {
 
             VTR_ASSERT(names.insert(ic_name).second);
             ic->name = vtr::strdup(ic_name.c_str());
-            ic->input_string = vtr::strdup(input.c_str());
-            ic->output_string = vtr::strdup(outputs_str.c_str());
+            ic->input_string = input;
+            ic->output_string = outputs_str;
         }
 
         // Checks and, in case, adds all the necessary pack patterns to the marked interconnects
@@ -2144,8 +2142,8 @@ struct ArchReader {
             ic->type = DIRECT_INTERC;
             ic->parent_mode_index = 0;
             ic->parent_mode = mode;
-            ic->input_string = vtr::strdup(istr.c_str());
-            ic->output_string = vtr::strdup(ostr.c_str());
+            ic->input_string = istr;
+            ic->output_string = ostr;
 
             count++;
         }
@@ -2244,7 +2242,7 @@ struct ArchReader {
             grid_def.width += 2;
             grid_def.height += 2;
 
-            grid_def.grid_type = GridDefType::FIXED;
+            grid_def.grid_type = e_grid_def_type::FIXED;
 
             if (name == "auto") {
                 // At the moment, the interchange specifies fixed-layout only architectures,
@@ -2306,7 +2304,7 @@ struct ArchReader {
         /*
          * The generic architecture data is not currently available in the interchange format
          * therefore, for a very initial implementation, the values are taken from the ones
-         * used primarly in the Xilinx series7 devices, generated using SymbiFlow.
+         * used primarily in the Xilinx series7 devices, generated using SymbiFlow.
          *
          * As the interchange format develops further, with possibly more details, this function can
          * become dynamic, allowing for different parameters for the different architectures.
@@ -2317,18 +2315,18 @@ struct ArchReader {
         arch_->R_minW_nmos = 6065.520020;
         arch_->R_minW_pmos = 18138.500000;
         arch_->grid_logic_tile_area = 14813.392;
-        arch_->Chans.chan_x_dist.type = UNIFORM;
+        arch_->Chans.chan_x_dist.type = e_stat::UNIFORM;
         arch_->Chans.chan_x_dist.peak = 1;
         arch_->Chans.chan_x_dist.width = 0;
         arch_->Chans.chan_x_dist.xpeak = 0;
         arch_->Chans.chan_x_dist.dc = 0;
-        arch_->Chans.chan_y_dist.type = UNIFORM;
+        arch_->Chans.chan_y_dist.type = e_stat::UNIFORM;
         arch_->Chans.chan_y_dist.peak = 1;
         arch_->Chans.chan_y_dist.width = 0;
         arch_->Chans.chan_y_dist.xpeak = 0;
         arch_->Chans.chan_y_dist.dc = 0;
         arch_->ipin_cblock_switch_name.push_back(std::string("generic"));
-        arch_->sb_type = WILTON;
+        arch_->sb_type = e_switch_block_type::WILTON;
         arch_->Fs = 3;
         default_fc_.specified = true;
         default_fc_.in_value_type = e_fc_value_type::FRACTIONAL;
@@ -2368,15 +2366,15 @@ struct ArchReader {
             t_arch_switch_inf* as = &arch_->switches[i];
 
             R = Cin = Cint = Cout = Tdel = 0.0;
-            SwitchType type;
+            e_switch_type type;
 
             if (i == 0) {
                 switch_name = "short";
-                type = SwitchType::SHORT;
+                type = e_switch_type::SHORT;
                 R = 0.0;
             } else if (i == 1) {
                 switch_name = "generic";
-                type = SwitchType::MUX;
+                type = e_switch_type::MUX;
                 R = 0.0;
             } else {
                 auto entry = pip_timing_models_list[i - 2];
@@ -2404,7 +2402,7 @@ struct ArchReader {
                 name << "Tdel" << std::scientific << Tdel;
 
                 switch_name = name.str() + std::to_string(i);
-                type = entry.first ? SwitchType::MUX : SwitchType::PASS_GATE;
+                type = entry.first ? e_switch_type::MUX : e_switch_type::PASS_GATE;
             }
 
             /* Should never happen */
@@ -2415,7 +2413,7 @@ struct ArchReader {
 
             as->name = switch_name;
             as->set_type(type);
-            as->mux_trans_size = as->type() == SwitchType::MUX ? 1 : 0;
+            as->mux_trans_size = as->type() == e_switch_type::MUX ? 1 : 0;
 
             as->R = R;
             as->Cin = Cin;
@@ -2423,13 +2421,13 @@ struct ArchReader {
             as->Cinternal = Cint;
             as->set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, Tdel);
 
-            if (as->type() == SwitchType::SHORT || as->type() == SwitchType::PASS_GATE) {
-                as->buf_size_type = BufferSize::ABSOLUTE;
+            if (as->type() == e_switch_type::SHORT || as->type() == e_switch_type::PASS_GATE) {
+                as->buf_size_type = e_buffer_size::ABSOLUTE;
                 as->buf_size = 0;
                 as->power_buffer_type = POWER_BUFFER_TYPE_ABSOLUTE_SIZE;
                 as->power_buffer_size = 0.;
             } else {
-                as->buf_size_type = BufferSize::AUTO;
+                as->buf_size_type = e_buffer_size::AUTO;
                 as->buf_size = 0.;
                 as->power_buffer_type = POWER_BUFFER_TYPE_AUTO;
             }
@@ -2529,7 +2527,7 @@ void FPGAInterchangeReadArch(const char* FPGAInterchangeDeviceFile,
 
     auto device_reader = message_reader.getRoot<DeviceResources::Device>();
 
-    arch->architecture_id = vtr::strdup(vtr::secure_digest_file(FPGAInterchangeDeviceFile).c_str());
+    arch->architecture_id = vtr::secure_digest_file(FPGAInterchangeDeviceFile);
 
     ArchReader reader(arch, device_reader, FPGAInterchangeDeviceFile, PhysicalTileTypes, LogicalBlockTypes);
     reader.read_arch();
