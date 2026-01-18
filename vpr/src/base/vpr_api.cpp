@@ -546,7 +546,8 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, const bool pa
 
     vpr_setup_noc(vpr_setup, arch);
 
-    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH && !pack_only) {
+    if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH
+        && !(pack_only && vpr_setup.RoutingArch.write_rr_graph_filename.empty())) {
         // The RR graph built by this function should contain only the intra-cluster resources.
         // If the flat router is used, additional resources are added when routing begins.
         vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width, false);
@@ -1316,8 +1317,7 @@ static void free_routing() {
 static void free_noc() {}
 
 static bool is_pack_only(const t_vpr_setup& vpr_setup) {
-    return vpr_setup.RoutingArch.write_rr_graph_filename.empty()
-           && vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP
+    return vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP
            && vpr_setup.PlacerOpts.doPlacement == e_stage_action::SKIP
            && vpr_setup.APOpts.doAP == e_stage_action::SKIP
            && vpr_setup.RouterOpts.doRouting == e_stage_action::SKIP
