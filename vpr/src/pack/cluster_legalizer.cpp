@@ -139,6 +139,7 @@ static void free_pb_stats_recursive(t_pb* pb) {
  */
 static bool check_cluster_floorplanning(AtomBlockId atom_blk_id,
                                         PartitionRegion& cluster_pr,
+                                        t_logical_block_type_ptr cluster_type,
                                         const UserPlaceConstraints& constraints,
                                         int log_verbosity,
                                         bool& cluster_pr_needs_update) {
@@ -157,6 +158,21 @@ static bool check_cluster_floorplanning(AtomBlockId atom_blk_id,
 
     // Get the Atom and Cluster Partition Regions
     const PartitionRegion& atom_pr = constraints.get_partition_pr(part_id);
+
+    std::unordered_set<t_logical_block_type_ptr> constrained_block_types;
+    for (const auto& region : atom_pr.get_regions()) {
+        auto region_rect = region.get_rect();
+        for (int x = region_rect.xmin(); x <= region_rect.xmax(); x++) {
+            for (int y = region_rect.ymin(); y <= region_rect.ymax(); y++) {
+                auto physical_block_type = g_vpr_ctx.device().grid.get_physical_type({x, y, 0});
+                for (const auto& sub_tile : physical_block_type->sub_tiles) {
+                    constrained_block_types.insert(sub_tile.equivalent_sites.begin(), sub_tile.equivalent_sites.end());
+                }
+            }
+        }
+    }
+    if (!constrained_block_types.contains(cluster_type))
+        return false;
 
     // If the Cluster's PartitionRegion is empty, then this atom's PR becomes
     // the Cluster's new PartitionRegion.
@@ -1173,6 +1189,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         bool cluster_pr_needs_update = false;
         bool block_pack_floorplan_status = check_cluster_floorplanning(atom_blk_id,
                                                                        new_cluster_pr,
+                                                                       cluster.type,
                                                                        floorplanning_ctx.constraints,
                                                                        log_verbosity_,
                                                                        cluster_pr_needs_update);
