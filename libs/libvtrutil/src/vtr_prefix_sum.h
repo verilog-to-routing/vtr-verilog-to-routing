@@ -7,6 +7,7 @@
  *          sums over regions of an unchanging grid of values.
  */
 
+#include <cstddef>
 #include <functional>
 #include <vector>
 #include "vtr_assert.h"
@@ -276,6 +277,13 @@ class PrefixSum2D {
     /// @brief Checks if the prefix sum is initialized or it is empty.
     bool empty() const {
         return prefix_sum_.empty();
+    }
+
+    T get_elem(size_t x, size_t y) const {
+        VTR_ASSERT_SAFE_MSG(x < prefix_sum_.dim_size(0) - 1, "x out of range");
+        VTR_ASSERT_SAFE_MSG(y < prefix_sum_.dim_size(1) - 1, "y out of range");
+
+        return prefix_sum_[x + 1][y + 1];
     }
 
   private:

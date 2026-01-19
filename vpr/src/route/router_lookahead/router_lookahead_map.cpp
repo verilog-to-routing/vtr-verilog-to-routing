@@ -21,14 +21,20 @@
  * if there are multiple possibilities).
  */
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <limits>
 #include <vector>
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
 #include "device_grid.h"
 #include "physical_types_util.h"
+#include "route_common.h"
+#include "rr_graph_fwd.h"
 #include "rr_graph_view.h"
+#include "rr_node_types.h"
+#include "rr_spatial_lookup.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "globals.h"
@@ -169,7 +175,7 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
                                                                 int segment_index,
                                                                 int chan_index);
 
-static float get_expected_interposer_cost(RRNodeId from_node, RRNodeId to_node, const RRGraphView& rr_graph, const std::vector<vtr::PrefixSum2D<float>>& interposer_delay_costs);
+static float get_expected_interposer_cost(RRNodeId from_node, RRNodeId to_node, const RRGraphView& rr_graph, const std::vector<vtr::NdMatrix<float, 2>>& interposer_delay_costs);
 
 /******** Interface class member function definitions ********/
 MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity)
@@ -413,26 +419,65 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 
-static void compute_interposer_delay_matrix(std::vector<vtr::PrefixSum2D<float>>& interposer_delay_costs, const DeviceGrid& grid) {
+static std::vector<vtr::NdMatrix<float, 2>> compute_interposer_delay_matrix(const DeviceGrid& grid, const RRGraphView& rr_graph) {
     auto [layer_size, x_size, y_size] = grid.dim_sizes();
-    std::vector<vtr::NdMatrix<float, 2>> delay_matrix;
-    for(size_t i = 0; i < layer_size; i++) {
-        delay_matrix.push_back(vtr::NdMatrix<float, 2>({x_size, y_size}));
-        delay_matrix[0].fill(0);
-    }
 
-    // todo: delay matrix here
-    const std::vector<std::vector<int>> vertical_interposer_cuts = grid.get_vertical_interposer_cuts();
-    for (size_t layer = 0; layer < vertical_interposer_cuts.size(); layer++){ 
-        for (int interposer_x_loc : vertical_interposer_cuts[layer]) {
+    std::vector<vtr::NdMatrix<float, 2>> delay_matrix(layer_size, vtr::NdMatrix<float, 2>({x_size, y_size}));
 
+    const auto& horizontal_interposer_cuts = grid.get_horizontal_interposer_cuts();
+    const auto& vertical_interposer_cuts = grid.get_vertical_interposer_cuts();
+
+    for (size_t layer = 0; layer < layer_size; layer_size++) {
+        const auto& hor_interposer = horizontal_interposer_cuts[layer];
+        const auto& ver_interposer = vertical_interposer_cuts[layer];
+
+        vtr::NdMatrix<float, 2> interposer_delays({ver_interposer.size() + 1, hor_interposer.size() + 1});
+        interposer_delays.fill(0.0f);
+
+        auto get_channel_min_delay = [&rr_graph](int layer, int x_loc, int y_loc, e_rr_type chan_type) {
+            float channel_delay = std::numeric_limits<float>::max();
+            std::vector<RRNodeId> nodes = rr_graph.node_lookup().find_channel_nodes(layer, x_loc, y_loc, chan_type);
+            for (RRNodeId node : nodes) {
+                std::vector<RREdgeId> in_edges = rr_graph.node_in_edges(node);
+                for (RREdgeId in_edge : in_edges) {
+                    float node_cost = get_rr_node_delay_cost(node, in_edge);
+                    channel_delay = std::min(node_cost, channel_delay);
+                }
+            }
+            return channel_delay;
+        };
+
+        for (size_t vertical_interposer_index = 0; vertical_interposer_index < ver_interposer.size(); vertical_interposer_index++) {
+            int x_loc = ver_interposer[vertical_interposer_index];
+            float interposer_delay = std::numeric_limits<float>::max();
+            for (size_t y_loc = 0; y_loc < y_size; y_loc++) {
+                float min_channel_delay = get_channel_min_delay(layer, x_loc, y_loc, e_rr_type::CHANX);
+                interposer_delay = std::min(interposer_delay, min_channel_delay);
+            }
+            interposer_delays[vertical_interposer_index + 1][0] = interposer_delay;
         }
+
+        for (size_t horizontal_interposer_index = 0; horizontal_interposer_index < hor_interposer.size(); horizontal_interposer_index++) {
+            int y_loc = ver_interposer[horizontal_interposer_index];
+            float interposer_delay = std::numeric_limits<float>::max();
+            for (size_t x_loc = 0; x_loc < y_size; x_loc++) {
+                float min_channel_delay = get_channel_min_delay(layer, x_loc, y_loc, e_rr_type::CHANY);
+                interposer_delay = std::min(interposer_delay, min_channel_delay);
+            }
+            interposer_delays[0][horizontal_interposer_index + 1] = interposer_delay;
+        }
+
+        vtr::PrefixSum2D<float> reduced_interposer_delay_map(interposer_delays);
+        reduced_interposer_delay_map.get_elem(0, 1);
+
+        // todo: make the non-reduced version
+        vtr::NdMatrix<float, 2> interposer_delay_map({x_size, y_size});
+        interposer_delay_map.fill(0);
+
+        delay_matrix.push_back(std::move(interposer_delay_map));
     }
 
-    for (size_t layer = 0; layer < layer_size; layer++) {
-        interposer_delay_costs.emplace_back(delay_matrix[layer]);
-    }
-
+    return delay_matrix;
 }
 
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
@@ -450,7 +495,8 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     min_opin_distance_cost_map(src_opin_delays, opin_distance_based_min_cost);
 
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
-    compute_interposer_delay_matrix(interposer_delay_costs_, grid);
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    interposer_delay_costs_ = compute_interposer_delay_matrix(grid, rr_graph);
 }
 
 void MapLookahead::compute_intra_tile() {
@@ -932,7 +978,7 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
 
 // add interposer func here
 
-static float get_expected_interposer_cost(RRNodeId from_node, RRNodeId to_node, const RRGraphView& rr_graph, const std::vector<vtr::PrefixSum2D<float>>& interposer_delay_costs) {
+static float get_expected_interposer_cost(RRNodeId from_node, RRNodeId to_node, const RRGraphView& rr_graph, const std::vector<vtr::NdMatrix<float, 2>>& interposer_delay_costs) {
     // todo: do something with the layers heres, maybe minimum cost across all layers?
     // int from_layer = rr_graph.node_layer_low(from_node);
     int to_layer = rr_graph.node_layer_low(to_node);

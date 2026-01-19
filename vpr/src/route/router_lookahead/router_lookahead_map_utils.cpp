@@ -21,6 +21,7 @@
 #include "vtr_time.h"
 #include "route_common.h"
 #include "route_debug.h"
+#include "vtr_util.h"
 
 /**
  * We will profile delay/congestion using this many tracks for each wire type.
@@ -61,14 +62,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq);
 
-/**
- * @brief Computes the adjusted position of an RR graph node.
- * This function does not modify the position of the given node.
- * It only returns the computed adjusted position.
- * @param rr The ID of the node whose adjusted position is desired.
- * @return The adjusted position (x, y).
- */
-static std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
 
 /**
  * @brief Computes the adjusted location of a pin to match the position of
@@ -733,9 +726,8 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     // edge effects for shorter distances)
     std::vector<int> ref_increments{0, 1, longest_seg_length, longest_seg_length + 1};
 
-    // Uniquify the increments (avoid sampling the same locations repeatedly if they happen to overlap)
-    std::stable_sort(ref_increments.begin(), ref_increments.end());
-    ref_increments.erase(std::unique(ref_increments.begin(), ref_increments.end()), ref_increments.end());
+    // Uniquify the increments to avoid sampling the same locations repeatedly if they happen to overlap
+    vtr::uniquify(ref_increments);
 
     // Upper right non-corner
     const int target_x = device_ctx.grid.width() - 2;

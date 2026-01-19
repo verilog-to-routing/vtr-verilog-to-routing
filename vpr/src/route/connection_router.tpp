@@ -298,8 +298,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
     to->R_upstream += node_R;   //Node resistance
 
     //Calculate delay
-    float Rdel = to->R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
-    float Tdel = switch_Tdel + Rdel * node_C;
+    float Tdel = get_rr_node_delay_cost(to->index, to->prev_edge);
 
     //Depending on the switch used, the Tdel of the upstream node (from_node) may change due to
     //increased loading from the switch's internal capacitance.
