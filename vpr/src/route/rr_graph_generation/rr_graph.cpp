@@ -1421,6 +1421,17 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
     VTR_LOGV(route_verbosity > 1, "CHAN->CHAN type edge count:%d\n", num_edges);
 
+    // If there are any interposer cuts, remove the edges and shorten the wires that cross interposer cut lines.
+    if (grid.has_interposer_cuts()) {
+        std::vector<RREdgeId> interposer_edges = get_interposer_cut_edges_for_removal(rr_graph, grid);
+        rr_graph_builder.remove_edges(interposer_edges);
+
+        update_interposer_crossing_nodes_in_spatial_lookup_and_rr_graph_storage(rr_graph, grid, rr_graph_builder, sg_node_indices);
+    }
+
+    // Add 2D scatter-gather link edges (the nodes have already been created at this point).
+    // These links are mostly used for interposer-crossing connections, but could also be used for other things.
+    num_edges = 0;
     add_and_connect_non_3d_sg_links(rr_graph_builder,
                                     sg_links, sg_node_indices,
                                     chan_details_x, chan_details_y,
