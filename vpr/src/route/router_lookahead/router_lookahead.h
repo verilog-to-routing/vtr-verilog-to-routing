@@ -66,7 +66,8 @@ class RouterLookahead {
     virtual void write_intra_cluster(const std::string& file) const = 0;
 
     /**
-     * @brief Retrieve the minimum delay to a point on the "to_layer," which is dx and dy away, across all the OPINs on the physical tile identified by "physical_tile_idx."
+     * @brief Retrieve the minimum delay to a point on the "to_layer," which is dx and dy away,
+     *        across all the OPINs on the physical tile identified by "physical_tile_idx".
      * @param physical_tile_idx The index of the physical tile from which the cost is calculated
      * @param from_layer The layer that the tile is located on
      * @param to_layer The layer on which the destination is located

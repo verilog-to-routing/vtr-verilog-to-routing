@@ -276,7 +276,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                   scatter_loc.layer_num, scatter_loc.x, scatter_loc.y,
                                   scatter_wire_candidates.size());
 
-                    continue;
+                    // continue;
                 }
 
                 const bool is_3d_link = (sg_link.z_offset != 0);

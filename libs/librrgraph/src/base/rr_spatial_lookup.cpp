@@ -210,6 +210,18 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
     return nodes;
 }
 
+std::vector<RRNodeId> RRSpatialLookup::find_pin_nodes_at_side(int layer,
+                                                              int x,
+                                                              int y,
+                                                              e_rr_type pin_type,
+                                                              e_side side) const {
+    VTR_ASSERT(pin_type == e_rr_type::OPIN || pin_type == e_rr_type::IPIN);
+
+    std::vector<RRNodeId> nodes = find_nodes(layer,x, y, pin_type, side);
+    return nodes;
+
+}
+
 void RRSpatialLookup::reserve_nodes(int layer,
                                     int x,
                                     int y,
