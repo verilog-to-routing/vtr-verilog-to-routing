@@ -1431,6 +1431,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
     // Add 2D scatter-gather link edges (the nodes have already been created at this point).
     // These links are mostly used for interposer-crossing connections, but could also be used for other things.
+    num_edges = 0;
     add_and_connect_non_3d_sg_links(rr_graph_builder,
                                     sg_links, sg_node_indices,
                                     chan_details_x, chan_details_y,
