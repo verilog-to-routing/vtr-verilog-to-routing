@@ -52,7 +52,7 @@ template<typename T>
 struct ChannelMetric {
     T x;
     T y;
-    // TODO: add Z dimension
+    T z;
 };
 
 /**
@@ -263,10 +263,7 @@ struct DeviceContext : public Context {
 
     bool rr_graph_is_flat = false;
 
-    /*
-     * Clock Networks
-     */
-
+    // Clock Networks
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
     std::vector<std::unique_ptr<ClockConnection>> clock_connections;
 

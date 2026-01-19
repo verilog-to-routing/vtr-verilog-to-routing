@@ -45,6 +45,7 @@ int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
                   const int chan_num,
                   const int seg_num);
+
 int get_seg_end(const t_chan_seg_details* seg_details,
                 const int itrack,
                 const int istart,
@@ -61,73 +62,29 @@ bool is_sblock(const int chan,
                const int sb_seg,
                const int track,
                const t_chan_seg_details* seg_details,
-               const enum e_directionality directionality);
+               const e_directionality directionality);
 
-int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                               const int opin_layer,
-                               const int track_layer,
-                               const int i,
-                               const int j,
-                               const int ipin,
-                               RRNodeId from_rr_node,
-                               t_rr_edge_info_set& rr_edges_to_create,
-                               const t_pin_to_track_lookup& opin_to_track_map,
-                               const t_chan_details& chan_details_x,
-                               const t_chan_details& chan_details_y);
-
-int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
-                                const int opin_layer,
-                                const int track_layer,
-                                const int chan,
-                                const int seg,
-                                int Fc,
-                                const int seg_type_index,
-                                const e_rr_type chan_type,
-                                const t_chan_seg_details* seg_details,
-                                RRNodeId from_rr_node,
-                                t_rr_edge_info_set& rr_edges_to_create,
-                                vtr::NdMatrix<int, 3>& Fc_ofs,
-                                const int max_len,
-                                const t_chan_width& nodes_per_chan,
-                                bool* Fc_clipped);
-
-int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
-                      int layer,
-                      int seg,
-                      int chan,
-                      int track,
-                      int tracks_per_chan,
-                      RRNodeId from_rr_node,
-                      t_rr_edge_info_set& rr_edges_to_create,
-                      const t_track_to_pin_lookup& track_to_pin_lookup,
+/**
+ * @brief Identifies and labels all mux endpoints at a given channel segment coordinate.
+ *
+ * This routine scans all routing tracks within a channel segment (specified by
+ * 'chan_num' and 'seg_num') and collects the track indices corresponding to
+ * valid mux endpoints that can be driven by OPINs in that channel segment.
+ * The resulting list of eligible tracks is returned in natural (increasing) track order.
+ *
+ * @details If @p seg_type_index is UNDEFINED, all segment types are considered.
+ */
+void label_wire_muxes(const int chan_num,
+                      const int seg_num,
                       const t_chan_seg_details* seg_details,
-                      e_rr_type chan_type,
-                      int chan_length,
-                      int wire_to_ipin_switch,
-                      int wire_to_pin_between_dice_switch,
-                      e_directionality directionality);
-
-int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
-                        const int layer,
-                        const int from_chan,
-                        const int from_seg,
-                        const int from_track,
-                        const e_rr_type from_type,
-                        const int to_seg,
-                        const e_rr_type to_type,
-                        const int chan_len,
-                        const int max_chan_width,
-                        const DeviceGrid& grid,
-                        const int Fs_per_side,
-                        t_sblock_pattern& sblock_pattern,
-                        RRNodeId from_rr_node,
-                        t_rr_edge_info_set& rr_edges_to_create,
-                        const t_chan_seg_details* from_seg_details,
-                        const t_chan_seg_details* to_seg_details,
-                        const t_chan_details& to_chan_details,
-                        const e_directionality directionality,
-                        const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                        const t_sb_connection_map* sb_conn_map);
+                      const int seg_type_index,
+                      const int max_len,
+                      const enum Direction dir,
+                      const int max_chan_width,
+                      const bool check_cb,
+                      std::vector<int>& labels,
+                      int* num_wire_muxes,
+                      int* num_wire_muxes_cb_restricted);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
                                              const t_chan_width& nodes_per_chan);
@@ -141,10 +98,6 @@ void load_sblock_pattern_lookup(const int i,
                                 const int Fs,
                                 const enum e_switch_block_type switch_block_type,
                                 t_sblock_pattern& sblock_pattern);
-
-int get_parallel_seg_index(const int abs,
-                           const t_unified_to_parallel_seg_index& index_map,
-                           const e_parallel_axis parallel_axis);
 
 /**
  * @brief Assigns routing tracks to each segment type based on their frequencies and lengths.

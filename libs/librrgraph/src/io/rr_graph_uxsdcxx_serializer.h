@@ -272,8 +272,8 @@ struct RrGraphContextTypes : public uxsd::DefaultRrGraphContextTypes {
 class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
   public:
     RrGraphSerializer(
-        const e_graph_type graph_type,
-        const enum e_base_cost_type base_cost_type,
+        e_graph_type graph_type,
+        e_base_cost_type base_cost_type,
         bool do_check_rr_graph,
         const char* read_rr_graph_name,
         std::string* loaded_rr_graph_filename,
@@ -1174,6 +1174,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                         "switch_id %zu is larger than num_rr_switches %zu",
                         switch_id, rr_switch_inf_->size());
                 }
+
             }
         }
     }
@@ -2186,7 +2187,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     // Constant data for loads and writes.
     const e_graph_type graph_type_;
-    const enum e_base_cost_type base_cost_type_;
+    const e_base_cost_type base_cost_type_;
     const bool do_check_rr_graph_;
     const char* read_rr_graph_name_;
     const bool read_edge_metadata_;

@@ -78,24 +78,22 @@ static void setup_routing_arch(const t_arch& Arch, t_det_routing_arch& RoutingAr
 
 static void setup_timing(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 
-/**
- * @brief This loads up VPR's arch_switch_inf data by combining the switches
- *        from the arch file with the special switches that VPR needs.
- */
-static void setup_switches(const t_arch& Arch,
-                           t_det_routing_arch& RoutingArch,
+///@brief This loads up VPR's arch_switch_inf data by combining the switches
+///       from the arch file with the special switches that VPR needs.
+static void setup_switches(const t_arch& arch,
+                           t_det_routing_arch& routing_arch,
                            const std::vector<t_arch_switch_inf>& arch_switches);
+
 static void setup_analysis_opts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void setup_crr_opts(const t_options& Options, t_crr_opts& crr_opts);
 static void setup_power_opts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
 /**
  * @brief Identify which switch must be used for *track* to *IPIN* connections based on architecture file specification.
- * @param Arch Architecture file specification
- * @param wire_to_arch_ipin_switch Switch id that must be used when *track* and *IPIN* are located at the same die
- * @param wire_to_arch_ipin_switch_between_dice Switch id that must be used when *track* and *IPIN* are located at different dice.
+ * @param arch Architecture file specification
+ * @return Switch id that must be used to connect *track* and *IPIN* nodes.
  */
-static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice);
+static int find_ipin_cblock_switch_index(const t_arch& arch);
 
 // Fill the data structures used when flat_routing is enabled to speed-up routing
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
@@ -390,18 +388,18 @@ static void setup_timing(const t_options& Options, const bool TimingEnabled, t_t
     Timing->SDCFile = Options.SDCFile;
 }
 
-static void setup_switches(const t_arch& Arch,
-                           t_det_routing_arch& RoutingArch,
+static void setup_switches(const t_arch& arch,
+                           t_det_routing_arch& routing_arch,
                            const std::vector<t_arch_switch_inf>& arch_switches) {
     DeviceContext& device_ctx = g_vpr_ctx.mutable_device();
 
     int switches_to_copy = (int)arch_switches.size();
     int num_arch_switches = (int)arch_switches.size();
 
-    find_ipin_cblock_switch_index(Arch, RoutingArch.wire_to_arch_ipin_switch, RoutingArch.wire_to_arch_ipin_switch_between_dice);
+    routing_arch.wire_to_arch_ipin_switch = find_ipin_cblock_switch_index(arch);
 
     // Depends on device_ctx.num_arch_switches
-    RoutingArch.delayless_switch = num_arch_switches++;
+    routing_arch.delayless_switch = num_arch_switches++;
 
     // Alloc the list now that we know the final num_arch_switches value
     device_ctx.arch_switch_inf.resize(num_arch_switches);
@@ -413,31 +411,32 @@ static void setup_switches(const t_arch& Arch,
     }
 
     // Delayless switch for connecting sinks and sources with their pins.
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_type(e_switch_type::MUX);
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].name = std::string(VPR_DELAYLESS_SWITCH_NAME);
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].R = 0.;
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].Cin = 0.;
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].Cout = 0.;
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].mux_trans_size = 0.;
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size_type = e_buffer_size::ABSOLUTE;
-    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size = 0.;
-    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
-    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch.delayless_switch].configurable(), "Delayless switch expected to be configurable");
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].set_type(e_switch_type::MUX);
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].name = std::string(VPR_DELAYLESS_SWITCH_NAME);
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].R = 0.;
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].Cin = 0.;
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].Cout = 0.;
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].mux_trans_size = 0.;
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].buf_size_type = e_buffer_size::ABSOLUTE;
+    device_ctx.arch_switch_inf[routing_arch.delayless_switch].buf_size = 0.;
+    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[routing_arch.delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
+    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[routing_arch.delayless_switch].configurable(), "Delayless switch expected to be configurable");
 
-    device_ctx.all_sw_inf[RoutingArch.delayless_switch] = device_ctx.arch_switch_inf[RoutingArch.delayless_switch];
+    device_ctx.all_sw_inf[routing_arch.delayless_switch] = device_ctx.arch_switch_inf[routing_arch.delayless_switch];
 
-    RoutingArch.global_route_switch = RoutingArch.delayless_switch;
+    routing_arch.global_route_switch = routing_arch.delayless_switch;
 
-    device_ctx.delayless_switch_idx = RoutingArch.delayless_switch;
+    device_ctx.delayless_switch_idx = routing_arch.delayless_switch;
 
     // Warn about non-zero Cout values for the ipin switch, since these values have no effect.
+
     // VPR do not model the R/C's of block internal routing connection
     // Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
-    if (device_ctx.arch_switch_inf[RoutingArch.wire_to_arch_ipin_switch].Cout != 0.) {
+    if (device_ctx.arch_switch_inf[routing_arch.wire_to_arch_ipin_switch].Cout != 0.) {
         VTR_LOG_WARN("Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
-                     device_ctx.arch_switch_inf[RoutingArch.wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name[0].c_str());
+                     device_ctx.arch_switch_inf[routing_arch.wire_to_arch_ipin_switch].Cout, arch.ipin_cblock_switch_name.c_str());
     }
 }
 
@@ -820,30 +819,24 @@ static void setup_server_opts(const t_options& Options, t_server_opts* ServerOpt
     ServerOpts->port_num = Options.server_port_num;
 }
 
-static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {
-    for (int cb_switch_name_index = 0; cb_switch_name_index < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
-        int ipin_cblock_switch_index = UNDEFINED;
-        for (int iswitch = 0; iswitch < (int)Arch.switches.size(); ++iswitch) {
-            if (Arch.switches[iswitch].name == Arch.ipin_cblock_switch_name[cb_switch_name_index]) {
-                if (ipin_cblock_switch_index != UNDEFINED) {
-                    VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n",
-                                    Arch.ipin_cblock_switch_name[cb_switch_name_index].c_str());
-                } else {
-                    ipin_cblock_switch_index = iswitch;
-                }
+static int find_ipin_cblock_switch_index(const t_arch& arch) {
+    int ipin_cblock_switch_index = UNDEFINED;
+    for (size_t iswitch = 0; iswitch < arch.switches.size(); ++iswitch) {
+        if (arch.switches[iswitch].name == arch.ipin_cblock_switch_name) {
+            if (ipin_cblock_switch_index != UNDEFINED) {
+                VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n",
+                                arch.ipin_cblock_switch_name.c_str());
             }
-        }
-        if (ipin_cblock_switch_index == UNDEFINED) {
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n", Arch.ipin_cblock_switch_name[0].c_str());
-        }
-
-        //first index in Arch.ipin_cblock_switch_name is related to same die connections
-        if (cb_switch_name_index == 0) {
-            wire_to_arch_ipin_switch = ipin_cblock_switch_index;
-        } else {
-            wire_to_arch_ipin_switch_between_dice = ipin_cblock_switch_index;
+            ipin_cblock_switch_index = iswitch;
         }
     }
+
+    if (ipin_cblock_switch_index == UNDEFINED) {
+        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n",
+                        arch.ipin_cblock_switch_name.c_str());
+    }
+
+    return ipin_cblock_switch_index;
 }
 
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
