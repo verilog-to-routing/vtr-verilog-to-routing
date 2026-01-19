@@ -211,7 +211,6 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
 
 std::tuple<double, double, double> NetCostHandler::comp_bb_cong_cost(e_cost_methods method) {
     return comp_bb_cong_cost_functor_(method);
-
 }
 
 std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cost_methods method) {

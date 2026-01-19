@@ -1045,10 +1045,9 @@ static void alloc_and_init_channel_width() {
         } else if (rr_type == e_rr_type::CHANZ) {
             int x = rr_graph.node_xlow(node_id);
             int y = rr_graph.node_ylow(node_id);
-            for (int l = rr_graph.node_layer_low(node_id); l <= rr_graph.node_layer_high(node_id); l++ ) {
+            for (int l = rr_graph.node_layer_low(node_id); l <= rr_graph.node_layer_high(node_id); l++) {
                 chan_width.z[l][x][y]++;
             }
-
         }
     }
 
