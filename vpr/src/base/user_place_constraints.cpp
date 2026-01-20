@@ -1,4 +1,7 @@
 #include "user_place_constraints.h"
+#include <unordered_set>
+#include "physical_types.h"
+#include "vtr_assert.h"
 
 void UserPlaceConstraints::add_constrained_atom(AtomBlockId blk_id, PartitionId part_id) {
     auto got = constrained_atoms.find(blk_id);
@@ -59,6 +62,28 @@ const PartitionRegion& UserPlaceConstraints::get_partition_pr(PartitionId part_i
 
 PartitionRegion& UserPlaceConstraints::get_mutable_partition_pr(PartitionId part_id) {
     return partitions[part_id].get_mutable_part_region();
+}
+
+void UserPlaceConstraints::constrain_part_lb_type(PartitionId part_id, t_logical_block_type_ptr lb_type) {
+    auto it = constrained_part_lb_types_.find(part_id);
+
+    if (it == constrained_part_lb_types_.end()) {
+        constrained_part_lb_types_.insert({part_id, {lb_type}});
+    } else {
+        it->second.insert(lb_type);
+    }
+}
+
+bool UserPlaceConstraints::is_part_constrained_to_lb_types(PartitionId part_id) const {
+    return constrained_part_lb_types_.contains(part_id);
+}
+
+const std::unordered_set<t_logical_block_type_ptr>& UserPlaceConstraints::get_part_lb_type_constraints(PartitionId part_id) const {
+    auto it = constrained_part_lb_types_.find(part_id);
+
+    VTR_ASSERT_SAFE(it != constrained_part_lb_types_.end());
+
+    return it->second;
 }
 
 void print_placement_constraints(FILE* fp, const UserPlaceConstraints& constraints) {

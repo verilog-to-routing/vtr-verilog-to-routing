@@ -98,11 +98,19 @@ class UserPlaceConstraints {
      */
     PartitionRegion& get_mutable_partition_pr(PartitionId part_id);
 
+    void constrain_part_lb_type(PartitionId part_id, t_logical_block_type_ptr lb_type);
+
+    bool is_part_constrained_to_lb_types(PartitionId part_id) const;
+
+    const std::unordered_set<t_logical_block_type_ptr>& get_part_lb_type_constraints(PartitionId part_id) const;
+
   private:
     /**
      * Store all constrained atoms
      */
     std::unordered_map<AtomBlockId, PartitionId> constrained_atoms;
+
+    std::unordered_map<PartitionId, std::unordered_set<t_logical_block_type_ptr>> constrained_part_lb_types_;
 
     /**
      * Store all partitions
