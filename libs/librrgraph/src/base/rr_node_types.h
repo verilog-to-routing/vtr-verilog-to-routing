@@ -8,6 +8,7 @@
 #include <map>
 #include <cstdint>
 
+#include "vpr_error.h"
 #include "vtr_range.h"
 #include "vtr_array.h"
 #include "vtr_ndmatrix.h"
@@ -55,6 +56,29 @@ constexpr vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr
                                                                                                "IPIN", "OPIN",
                                                                                                "CHANX", "CHANY", "CHANZ",
                                                                                                "MUX"};
+
+inline e_rr_type get_rr_type(const std::string& type_name) {
+    if (type_name == "SOURCE") {
+        return e_rr_type::SOURCE;
+    } else if (type_name == "SINK") {
+        return e_rr_type::SINK;
+    } else if (type_name == "IPIN") {
+        return e_rr_type::IPIN;
+    } else if (type_name == "OPIN") {
+        return e_rr_type::OPIN;
+    } else if (type_name == "CHANX") {
+        return e_rr_type::CHANX;
+    } else if (type_name == "CHANY") {
+        return e_rr_type::CHANY;
+    } else if (type_name == "CHANZ") {
+        return e_rr_type::CHANZ;
+    } else if (type_name == "MUX") {
+        return e_rr_type::MUX;
+    } else {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid RR type name: %s\n", type_name.c_str());
+        return e_rr_type::NUM_RR_TYPES;
+    }
+}
 
 /**
  * @enum Direction

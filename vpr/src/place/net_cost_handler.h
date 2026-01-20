@@ -303,14 +303,6 @@ class NetCostHandler {
     void alloc_and_load_chan_w_factors_for_place_cost_();
 
     /**
-     * @brief Allocates and loads acc_tile_num_inter_die_conn_ which contains the accumulative number of inter-die
-     * connections.
-     *
-     * @details This is only useful for multi-die FPGAs.
-     */
-    void alloc_and_load_for_fast_vertical_cost_update_();
-
-    /**
      * @brief Calculate the new connection delay and timing cost of all the
      * sink pins affected by moving a specific pin to a new location. Also
      * calculates the total change in the timing cost.

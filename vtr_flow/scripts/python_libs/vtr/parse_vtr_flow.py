@@ -33,7 +33,7 @@ def parse_file_and_update_results(filename, patterns, results):
     if len(filepaths) == 1:
         assert Path(filepaths[0]).exists
 
-        with open(filepaths[0], "r") as file:
+        with open(filepaths[0], "r", encoding="utf-8") as file:
             for line in file:
                 for parse_pattern in patterns:
                     match = parse_pattern.regex().match(line)

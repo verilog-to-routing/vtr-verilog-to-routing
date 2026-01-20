@@ -20,6 +20,7 @@
 #include <numeric>
 #include <optional>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 /* Main structure describing one routing resource node.  Everything in       *
@@ -826,7 +827,10 @@ class t_rr_graph_storage {
      * of the node. Also, the information about switches is fly-weighted and are accessible with IDs. Thus,
      * the number of rr switch types can be higher than the number of arch switch types.
      */
-    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped);
+    void emplace_back_edge(RRNodeId src,
+                           RRNodeId dest,
+                           short edge_switch,
+                           bool remapped);
 
     /** @brief Adds a batch of edges.*/
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);

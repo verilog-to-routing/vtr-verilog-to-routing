@@ -51,3 +51,35 @@ struct t_scatter_gather_pattern {
     std::vector<t_sg_link> sg_links;
     std::vector<t_sg_location> sg_locations;
 };
+
+/// Defines how OPINs connect to CHANZ wires via switch blocks.
+enum class e_3d_opin_connectivity_type {
+    /// Default for 2D devices or 3D architectures without this type of connection.
+    UNDEFINED,
+
+    /**
+     * @brief Each side's OPINs connect to the two Switch Blocks at the corners of that side.
+     * * @code
+     *   (SB) Top-Left  <--- (Top OPINs)    ---> (SB) Top-Right
+     *         ^                                       ^
+     *         |                                       |
+     *   (Left OPINs)         [ CLB ]            (Right OPINs)
+     *         |                                       |
+     *         v                                       v
+     *   (SB) Bot-Left  <--- (Bottom OPINs) ---> (SB) Bot-Right
+     * @endcode
+     */
+    PER_SIDE,
+
+    /**
+     * @brief All OPINs from all four sides connect exclusively to the Top-Right Switch Block.
+     * This creates a high-congestion "exit point" for all signals in the tile.
+     * @code
+     *                                    (SB) Top-Right
+     *                                          ^
+     *                                          |
+     *  [ CLB ] <----- (All OPINs route here) --/
+     * @endcode
+     */
+    PER_BLOCK
+};

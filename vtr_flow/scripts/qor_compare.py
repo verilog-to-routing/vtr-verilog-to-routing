@@ -52,7 +52,6 @@ DEFAULT_KEYS = [
 
 
 def parse_args():
-
     parser = argparse.ArgumentParser(
         description="Utility script to generate spreadsheets comparing VTR metric files"
     )
@@ -124,7 +123,6 @@ def parse_args():
 
 
 def main():
-
     args = parse_args()
 
     wb = openpyxl.Workbook()
@@ -182,7 +180,6 @@ def main():
 
 
 def make_transpose(dest_sheet, ref_sheet):
-
     for ref_row in range(ref_sheet.min_row, ref_sheet.max_row + 1):
         for ref_col in range(ref_sheet.min_column, ref_sheet.max_column + 1):
             ref_cell = ref_sheet.cell(row=ref_row, column=ref_col)
@@ -196,11 +193,9 @@ def make_transpose(dest_sheet, ref_sheet):
 def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
     dest_row = 1
     for i, (ratio_name, cell_range) in enumerate(ratio_ranges.items()):
-
         dest_col = 1
 
         if i == 0:  # First range, copy headers
-
             dest_col += 1
             ratio_row = cell_range.min_row
             for j, ratio_col in enumerate(range(cell_range.min_col, cell_range.max_col + 1)):
@@ -239,7 +234,6 @@ def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
 
 
 def make_ratios(ratio_sheet, raw_sheets, keys, metrics):
-
     ref_sheet_title = list(raw_sheets.keys())[0]
 
     ref_sheet = raw_sheets[ref_sheet_title]  # Get the first raw sheet
@@ -264,7 +258,6 @@ def make_ratios(ratio_sheet, raw_sheets, keys, metrics):
 
 
 def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
-
     cell_range = CellRange(
         min_row=dest_row, max_row=dest_row, min_col=dest_col, max_col=dest_col, title=ws.title
     )
@@ -286,7 +279,6 @@ def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
 
         row_offset = 0
         for ref_row in range(2, ref_sheet.max_row + 1):
-
             ref_cell = ref_sheet.cell(row=ref_row, column=ref_col)
             raw_cell = raw_sheet.cell(row=ref_row, column=ref_col)
 
@@ -343,7 +335,6 @@ def link_sheet_header(dest_sheet, ref_sheet, row, values=None):
     # Copy header
     dest_col = 1
     for col in range(1, ref_sheet.max_column + 1):
-
         ref_cell = ref_sheet.cell(row=1, column=col)
 
         if values != None and ref_cell.value.strip() not in values:
@@ -357,7 +348,6 @@ def link_sheet_header(dest_sheet, ref_sheet, row, values=None):
 
 
 def dataframe_to_sheet(wb, df, sheet_name):
-
     # Add to sheet
     ws = wb.create_sheet(title=sheet_name)
     for row in dataframe_to_rows(df, index=False, header=True):
@@ -367,7 +357,6 @@ def dataframe_to_sheet(wb, df, sheet_name):
 
 
 def safe_sheet_title(raw_title):
-
     # Keep only file name and drop file path
     safe_title = raw_title.split("/")[-1]
 
@@ -389,7 +378,6 @@ def safe_sheet_title(raw_title):
 
 
 def get_task_result_files(task_name):
-
     task_path = os.path.join("..", "tasks", task_name)
     if not os.path.isdir(task_path):
         raise RuntimeError("Task is not found at {}".format(task_path))

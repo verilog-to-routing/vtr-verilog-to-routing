@@ -1410,6 +1410,17 @@ struct t_analysis_opts {
     bool skip_sync_clustering_and_routing_results;
 };
 
+/// Stores CRR specific options
+struct t_crr_opts {
+    std::string sb_maps;
+    std::string sb_templates;
+    bool preserve_input_pin_connections;
+    bool preserve_output_pin_connections;
+    bool annotated_rr_graph;
+    bool remove_dangling_nodes;
+    std::string sb_count_dir;
+};
+
 /// Stores NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
     bool noc;                                      ///<options to turn on hard NoC modeling & optimization
@@ -1488,10 +1499,6 @@ struct t_det_routing_arch {
 
     /// Keeps track of the type of architecture switch that connects wires to ipins
     int wire_to_arch_ipin_switch;
-
-    /// Keeps track of the type of architecture switch that connects
-    /// wires from another die to ipins in different die
-    int wire_to_arch_ipin_switch_between_dice = -1;
 
     /// Resistance (in Ohms) of a minimum width nmos transistor.
     /// Used only in the FPGA area model.
@@ -1615,6 +1622,7 @@ struct t_vpr_setup {
     t_ap_opts APOpts;               ///<Options for analytical placer
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
+    t_crr_opts CRROpts;             ///<CRR options
     t_noc_opts NocOpts;             ///<Options for the NoC
     t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture

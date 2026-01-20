@@ -119,28 +119,28 @@ class ClockNetwork {
 class ClockRib : public ClockNetwork {
   private:
     // start and end x and position in the y
-    Wire x_chan_wire;
-    WireRepeat repeat;
+    Wire x_chan_wire_;
+    WireRepeat repeat_;
 
     // offset in the x
-    RibDrive drive;
+    RibDrive drive_;
 
     // offset and incr in the x
-    RibTaps tap;
+    RibTaps tap_;
 
     // segment indices
-    int right_seg_idx = UNDEFINED;
-    int left_seg_idx = UNDEFINED;
-    int drive_seg_idx = UNDEFINED;
+    int right_seg_idx_ = UNDEFINED;
+    int left_seg_idx_ = UNDEFINED;
+    int drive_seg_idx_ = UNDEFINED;
 
   public:
     /** Constructor**/
     ClockRib() {} // default
     ClockRib(Wire wire1, WireRepeat repeat1, RibDrive drive1, RibTaps tap1)
-        : x_chan_wire(wire1)
-        , repeat(repeat1)
-        , drive(drive1)
-        , tap(tap1) {}
+        : x_chan_wire_(wire1)
+        , repeat_(repeat1)
+        , drive_(drive1)
+        , tap_(tap1) {}
     /*
      * Getters
      */

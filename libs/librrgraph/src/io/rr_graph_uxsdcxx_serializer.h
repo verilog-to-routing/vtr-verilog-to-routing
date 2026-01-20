@@ -272,8 +272,8 @@ struct RrGraphContextTypes : public uxsd::DefaultRrGraphContextTypes {
 class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
   public:
     RrGraphSerializer(
-        const e_graph_type graph_type,
-        const enum e_base_cost_type base_cost_type,
+        e_graph_type graph_type,
+        e_base_cost_type base_cost_type,
         bool do_check_rr_graph,
         const char* read_rr_graph_name,
         std::string* loaded_rr_graph_filename,
@@ -544,6 +544,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline const char* get_switch_name(const t_rr_switch_inf*& sw) final {
         return sw->name.c_str();
+    }
+
+    inline void set_switch_template_id(const char* template_id, t_rr_switch_inf*& sw) final {
+        sw->template_id = template_id;
+    }
+    inline const char* get_switch_template_id(const t_rr_switch_inf*& sw) final {
+        return sw->template_id.c_str();
     }
 
     inline void set_switch_type(uxsd::enum_switch_type type, t_rr_switch_inf*& sw) final {
@@ -1167,6 +1174,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                         "switch_id %zu is larger than num_rr_switches %zu",
                         switch_id, rr_switch_inf_->size());
                 }
+
             }
         }
     }
@@ -2179,7 +2187,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     // Constant data for loads and writes.
     const e_graph_type graph_type_;
-    const enum e_base_cost_type base_cost_type_;
+    const e_base_cost_type base_cost_type_;
     const bool do_check_rr_graph_;
     const char* read_rr_graph_name_;
     const bool read_edge_metadata_;

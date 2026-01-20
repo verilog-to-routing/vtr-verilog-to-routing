@@ -1,0 +1,4 @@
+# Strictly check that the number of edges and nodes in the RR Graph has not changed compared to the golden results.
+# Use only for tests that have a fixed channel width and device size
+num_rr_graph_nodes;Equal()
+num_rr_graph_edges;Equal()

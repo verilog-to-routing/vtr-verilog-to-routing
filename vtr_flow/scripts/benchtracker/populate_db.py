@@ -361,7 +361,6 @@ def load_next_task(params):
 
 # walk operations; all take params and run as arguments
 def check_result_exists(params, run):
-
     run_number = get_trailing_num(run)
     if not os.path.isfile(get_result_file(params, params.run_prefix, run_number)):
         parsed_call = params.parse_script.format(

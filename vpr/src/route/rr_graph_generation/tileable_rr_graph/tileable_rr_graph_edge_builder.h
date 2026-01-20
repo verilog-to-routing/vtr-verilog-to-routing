@@ -23,6 +23,7 @@
 void build_rr_graph_edges(const RRGraphView& rr_graph,
                           RRGraphBuilder& rr_graph_builder,
                           vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                          const t_crr_opts& crr_opts,
                           const DeviceGrid& grids,
                           const VibDeviceGrid& vib_grid,
                           const size_t& layer,
@@ -40,7 +41,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const bool& opin2all_sides,
                           const bool& concat_wire,
                           const bool& wire_opposite_side,
-                          const RRSwitchId& delayless_switch);
+                          const RRSwitchId& delayless_switch,
+                          const int route_verbosity);
 
 void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
                                        RRGraphBuilder& rr_graph_builder,
@@ -78,7 +80,8 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
 
 void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   RRGraphBuilder& rr_graph_builder,
-                                  vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                  const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                  const t_crr_opts& crr_opts,
                                   const DeviceGrid& grids,
                                   const size_t& layer,
                                   const vtr::Point<size_t>& device_chan_width,
@@ -94,4 +97,5 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   const bool& perimeter_cb,
                                   const bool& opin2all_sides,
                                   const bool& concat_wire,
-                                  const bool& wire_opposite_side);
+                                  const bool& wire_opposite_side,
+                                  const int route_verbosity);

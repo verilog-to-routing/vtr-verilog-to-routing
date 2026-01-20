@@ -70,7 +70,6 @@ def parse_args():
 
 
 def main():
-
     args = parse_args()
 
     try:
@@ -154,7 +153,6 @@ def verify(tar_gz_filename, md5_url):
 
 
 def md5_matches(filename_to_check, reference_md5):
-
     local_md5 = hashlib.md5()
     with open(filename_to_check, "rb") as f:
         # Read in chunks to avoid reading the whole file into memory

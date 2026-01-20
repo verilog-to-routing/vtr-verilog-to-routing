@@ -112,7 +112,8 @@ def download_url(filename, url):
     """
     Downloads the symbiflow release
     """
-    latest_package_url = request.urlopen(url).read().decode("utf-8")
+    with request.urlopen(url) as response:
+        latest_package_url = response.read().decode("utf-8")
     print("Downloading latest package:\n{}".format(latest_package_url))
     request.urlretrieve(latest_package_url, filename, reporthook=download_progress_callback)
 

@@ -19,7 +19,6 @@ from odin_script_util import isVerilog
 
 
 def main(argv=None):
-
     if argv is None:
         argv = sys.argv
 

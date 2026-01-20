@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
  * Input file: /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: e14523c72a5db9cc83592d3baaf45780
+ * md5sum of input file: 45774433f1b54981c349fecadf578b11
  */
 
 #include <functional>
@@ -200,11 +200,14 @@ public:
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
 	 *   
 	 *   <xs:attribute name="type" type="switch_type" />
+	 *   <xs:attribute name="template_id" type="xs:string" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_switch_id(typename ContextTypes::SwitchReadContext &ctx) = 0;
 	virtual inline const char * get_switch_name(typename ContextTypes::SwitchReadContext &ctx) = 0;
 	virtual inline void set_switch_name(const char * name, typename ContextTypes::SwitchWriteContext &ctx) = 0;
+	virtual inline const char * get_switch_template_id(typename ContextTypes::SwitchReadContext &ctx) = 0;
+	virtual inline void set_switch_template_id(const char * template_id, typename ContextTypes::SwitchWriteContext &ctx) = 0;
 	virtual inline enum_switch_type get_switch_type(typename ContextTypes::SwitchReadContext &ctx) = 0;
 	virtual inline void set_switch_type(enum_switch_type type, typename ContextTypes::SwitchWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::TimingWriteContext init_switch_timing(typename ContextTypes::SwitchWriteContext &ctx) = 0;

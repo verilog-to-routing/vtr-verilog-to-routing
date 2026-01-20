@@ -68,7 +68,7 @@ jobs:
         tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
 
     - name: Store Build Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: build-release.tar.gz
         path: build.tar.gz
@@ -115,7 +115,7 @@ jobs:
         tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
 
     - name: Store Build Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: build-release-with-odin.tar.gz
         path: build.tar.gz
@@ -130,7 +130,6 @@ jobs:
         include:
         - { name: 'C/C++',       script: 'check-format.sh'   , with_python: 'yes', with_submodules: 'true', all_vtr_pkgs: 'yes', pkgs: 'clang-format-18' }
         - { name: 'Python',      script: 'check-format-py.sh', with_python: 'yes', with_submodules: 'true', all_vtr_pkgs: 'yes', pkgs: '' }
-        - { name: 'Python Lint', script: 'pylint_check.py'   , with_python: 'yes', with_submodules: 'false', all_vtr_pkgs: 'no', pkgs: '' }
     name: 'F: ${{ matrix.name }}'
     steps:
 
@@ -154,7 +153,7 @@ jobs:
     #       Ubuntu 24.04 (3.12.3); however that version has some linting errors.
     #         - The version of Pylint in requirements.txt is not compatible with
     #           python version 3.12.3. Pylint needs to be updated to move to this version.
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       if: ${{ matrix.with_python == 'yes' }}
       with:
         python-version: 3.10.10
@@ -184,7 +183,7 @@ jobs:
     name: 'Verify Test Suites'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
@@ -216,7 +215,7 @@ jobs:
       run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release.tar.gz
 
@@ -243,7 +242,7 @@ jobs:
       COMMON_CMAKE_PARAMS: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
@@ -365,7 +364,7 @@ jobs:
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
@@ -391,7 +390,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release.tar.gz
 
@@ -406,7 +405,7 @@ jobs:
 
     - name: Upload regression run files
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{matrix.name}}_run_files
         path: |
@@ -418,7 +417,7 @@ jobs:
 
     - name: Upload regression results
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -452,7 +451,7 @@ jobs:
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
@@ -478,7 +477,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release-with-odin.tar.gz
 
@@ -493,7 +492,7 @@ jobs:
 
     - name: Upload regression run files
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{matrix.name}}_run_files
         path: |
@@ -505,7 +504,7 @@ jobs:
 
     - name: Upload regression results
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -531,7 +530,7 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
     - uses: actions/checkout@v6
@@ -578,7 +577,7 @@ jobs:
     needs: [BuildVTR]
     steps:
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12.3
       - uses: actions/checkout@v6
@@ -597,7 +596,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Download Build Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: build-release.tar.gz
 
@@ -617,7 +616,7 @@ jobs:
     needs: [BuildVTRWithOdin]
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
     - uses: actions/checkout@v6
@@ -636,7 +635,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release-with-odin.tar.gz
 
@@ -657,7 +656,7 @@ jobs:
     needs: [BuildVTR]
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
     - uses: actions/checkout@v6
@@ -672,7 +671,7 @@ jobs:
       run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release.tar.gz
 

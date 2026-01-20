@@ -29,6 +29,7 @@ void create_rr_graph(e_graph_type graph_type,
                      t_det_routing_arch& det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
+                     const t_crr_opts& crr_opts,
                      const std::vector<t_direct_inf>& directs,
                      int* Warnings,
                      bool is_flat);
@@ -53,16 +54,9 @@ std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physi
                                                        const int max_pins,
                                                        const std::vector<t_segment_inf>& segment_inf,
                                                        const std::vector<int>& sets_per_seg_type,
-                                                       const t_chan_width* nodes_per_chan,
                                                        const e_fc_type fc_type,
                                                        const e_directionality directionality,
                                                        bool* Fc_clipped,
                                                        bool is_flat);
 
 t_non_configurable_rr_sets identify_non_configurable_rr_sets();
-
-bool pins_connected(t_block_loc cluster_loc,
-                    t_physical_tile_type_ptr physical_type,
-                    t_logical_block_type_ptr logical_block,
-                    int from_pin_logical_num,
-                    int to_pin_logical_num);
