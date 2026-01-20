@@ -32,8 +32,6 @@ class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
 struct t_lb_router_data;
 
-bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_type, const AtomBlockId sibling_blk_id);
-
 // A special ID to identify the legalization clusters. This is separate from the
 // ClusterBlockId since this legalizer is not necessarily tied to the Clustered
 // netlist, but is used as a sub-routine to it.
@@ -613,3 +611,14 @@ class ClusterLegalizer {
     /// @brief A lookup table for the pin mapping of the intra-lb pb pins.
     IntraLbPbPinLookup intra_lb_pb_pin_lookup_;
 };
+
+/*
+ * @brief Check that the two atom blocks blk_id and sibling_blk_id (which should
+ *        both be memory slices) are feasible, in the sense that they have
+ *        precisely the same net connections (with the exception of nets in data
+ *        port classes).
+ *
+ * Note that this routine does not check pin feasibility against the cur_pb_type; so
+ * primitive_type_feasible() should also be called on blk_id before concluding it is feasible.
+ */
+bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_type, const AtomBlockId sibling_blk_id);

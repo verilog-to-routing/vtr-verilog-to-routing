@@ -311,15 +311,6 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
     return block_pack_status;
 }
 
-/*
- * @brief Check that the two atom blocks blk_id and sibling_blk_id (which should
- *        both be memory slices) are feasible, in the sense that they have
- *        precisely the same net connections (with the exception of nets in data
- *        port classes).
- *
- * Note that this routine does not check pin feasibility against the cur_pb_type; so
- * primitive_type_feasible() should also be called on blk_id before concluding it is feasible.
- */
 bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_type, const AtomBlockId sibling_blk_id) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const LogicalModels& models = g_vpr_ctx.device().arch->models;

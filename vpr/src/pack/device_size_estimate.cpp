@@ -228,7 +228,7 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
 
         for (PackMoleculeId mol_id : mol_ids) {
             auto ext = prepacker.calc_molecule_external_nets(
-                        mol_id, atom_ctx.netlist(), models);
+                        mol_id, atom_ctx.netlist());
             // We ignore ext.ext_clock_nets for now
 
             // Primitive demand of this molecule in this logical_type
@@ -443,7 +443,7 @@ std::map<t_logical_block_type_ptr, size_t> DeviceSizeEstimator::estimate_resourc
 
             // ----------------- Unique-net pin capacity part -----------------
             auto ext = prepacker.calc_molecule_external_nets(
-                mol_id, atom_ctx.netlist(), models);
+                mol_id, atom_ctx.netlist());
             // ignoring ext.ext_clock_nets for now
 
             int new_input_nets  = 0;

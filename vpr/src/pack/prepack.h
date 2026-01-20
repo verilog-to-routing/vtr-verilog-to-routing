@@ -52,40 +52,6 @@ enum class e_pack_pattern_molecule_type : bool {
     MOLECULE_FORCED_PACK  ///<more than one atom representing a packing pattern forming a large molecule
 };
 
-// // Each group: representative atom + pb_type (from its expected primitive)
-// struct LogicalRamGroup {
-//     AtomBlockId rep_blk;
-//     const t_pb_type* rep_pb_type; // primitive type used for the feasibility check
-//     std::vector<AtomBlockId> atoms;
-//     std::unordered_map<t_logical_block_type_ptr, int> candidate_capacity;
-//     float candidate_capacity_ratio;
-//     float candidate_area_ratio;
-//     std::vector<t_logical_block_type_ptr> candidate_types;
-//     int total_memory_slices = 0;
-//     int remaining_memory_slices = 0;
-//     t_logical_block_type_ptr pre_assigned_type = nullptr;
-//     t_logical_block_type_ptr last_selected_type = nullptr;
-//     bool is_output_registered = false;
-
-//     float max_atom_criticality = 0.0;
-
-
-//     // "Power-efficient RAM Mapping Algorithms for FPGA Embedded Memory Blocks" inspired elements
-//     t_logical_block_type_ptr type_init = nullptr;
-//     int area_init = 0;
-//     std::unordered_map<t_logical_block_type_ptr, int> area_type;
-//     int area_mem = 0;
-
-// };
-
-// // This is implemented only for 2 physical RAM type for now to try the usage of
-// // this idea. It can be extended to a general case if it works.
-// // Currently it is always defined to be M9K_cap / M144K_cap.
-// struct LogicalRamStats {
-//     float max_capacity_ratio = 0;
-//     float min_capacity_ratio = std::numeric_limits<float>::max();
-// };
-
 /**
  * @brief Represents a grouping of atom blocks that match a pack_pattern,
  *        these groups are intended to be placed as a single unit during packing
@@ -292,8 +258,7 @@ class Prepacker {
                                              const LogicalModels& models) const;
 
     t_molecule_external_nets calc_molecule_external_nets(PackMoleculeId molecule_id,
-                                                        const AtomNetlist& atom_nlist,
-                                                        const LogicalModels& models) const;
+                                                        const AtomNetlist& atom_nlist) const;
 
     /**
      * @brief Gets the largest number of blocks (atoms) that any molecule contains.
@@ -345,32 +310,7 @@ class Prepacker {
         return list_of_pack_patterns;
     }
 
-    // inline size_t group_id_of(AtomBlockId blk) const {
-    //     if (!blk) return SIZE_MAX;
-    //     if (size_t(blk) >= atom_to_group_.size()) return SIZE_MAX;
-    //     return atom_to_group_[blk];
-    // }
-
-    // inline LogicalRamGroup& group_by_id_mut(size_t gid) const {
-    //     VTR_ASSERT(gid < logical_ram_groups_.size());
-    //     return logical_ram_groups_[gid];
-    // }
-    // inline const LogicalRamGroup& group_by_id(size_t gid) const {
-    //     VTR_ASSERT(gid < logical_ram_groups_.size());
-    //     return logical_ram_groups_[gid];
-    // }
-
-    // inline LogicalRamStats get_overall_logical_ram_stats () const {
-    //     return logical_ram_stats_;
-    // }
-
-    // inline std::vector<LogicalRamGroup>& get_mutable_logical_rams () const {
-    //     return logical_ram_groups_;
-    // }
-
-    // inline const std::unordered_map<t_logical_block_type_ptr, int> get_final_candidate_usages () const {
-    //     return candidate_usages_final_;
-    // }
+    // TODO: Move below RamMapper instances to its own class. The prepacker might be free of Ram Mapping.
 
     // Attach a RamMapper AFTER it has been built externally
     void set_ram_mapper(RamMapper&& mapper) {
