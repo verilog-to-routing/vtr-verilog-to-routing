@@ -463,6 +463,16 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     bool pack_only = is_pack_only(vpr_setup);
 
     vpr_create_device(vpr_setup, arch, pack_only);
+
+    // Dump atom netlist
+    {
+        const auto& atom_netlist = g_vpr_ctx.atom().netlist();
+        std::ofstream atom_file("atom_netlist.txt");
+        for (auto blk_id : atom_netlist.blocks()) {
+            atom_file << atom_netlist.block_name(blk_id) << "\n";
+        }
+    }
+
     // If packing is not skipped, cluster netlist contain valid information, so
     // we can print the resource usage and device utilization
     if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
