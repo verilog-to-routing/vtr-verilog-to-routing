@@ -160,8 +160,12 @@ static bool check_cluster_floorplanning(AtomBlockId atom_blk_id,
     if (constraints.is_part_constrained_to_lb_types(part_id)) {
         // If it is, check if this cluster's type is valid.
         const auto& constrained_block_types = constraints.get_part_lb_type_constraints(part_id);
-        if (!constrained_block_types.contains(cluster_type))
+        if (!constrained_block_types.contains(cluster_type)) {
+            VTR_LOGV(log_verbosity > 3,
+                     "\t\t\t Intersect: Atom block %d failed lb-type constraint for cluster type %s\n",
+                     atom_blk_id, cluster_type->name.c_str());
             return false;
+        }
     }
 
     // Get the Atom and Cluster Partition Regions

@@ -1,9 +1,4 @@
 #pragma once
-
-#include "vtr_vector.h"
-#include "partition.h"
-#include "partition_region.h"
-
 /**
  * 
  * @brief This file defines the UserPlaceConstraints class used to store and read out data related to user-specified
@@ -32,6 +27,14 @@
  *
  *
  */
+
+#include <unordered_map>
+#include <unordered_set>
+
+#include "vtr_vector.h"
+#include "partition.h"
+#include "partition_region.h"
+#include "pack.h"
 
 class UserPlaceConstraints {
   public:
