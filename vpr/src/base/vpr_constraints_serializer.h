@@ -235,7 +235,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return logical_block_type->name.c_str();
     }
 
-    virtual inline void set_add_logical_block_name_pattern(const char * name_pattern, void*& /*ctx*/) final {
+    virtual inline void set_add_logical_block_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
         const DeviceContext& device_ctx = g_vpr_ctx.device();
         std::regex logical_block_name_regex = std::regex(name_pattern);
 
@@ -257,7 +257,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *   <xs:sequence>
      *     <xs:element maxOccurs="unbounded" name="add_atom" type="add_atom" />
      *     <xs:element maxOccurs="unbounded" name="add_region" type="add_region" />
-     FIXME: UPDATE!
+     * FIXME: UPDATE!
      *   </xs:sequence>
      *   <xs:attribute name="name" type="xs:string" use="required" />
      * </xs:complexType>
@@ -337,11 +337,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
     virtual inline void preallocate_partition_add_logical_block(void*& /*ctx*/, size_t /*size*/) final {}
 
-	virtual inline void* add_partition_add_logical_block(void*& /*ctx*/) final {
+    virtual inline void* add_partition_add_logical_block(void*& /*ctx*/) final {
         return nullptr;
     }
 
-	virtual inline void finish_partition_add_logical_block(void*& /*ctx*/) final {
+    virtual inline void finish_partition_add_logical_block(void*& /*ctx*/) final {
         PartitionId part_id(num_partitions_);
 
         for (auto lb_type : lb_types_) {
@@ -349,11 +349,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         }
     }
 
-	virtual inline size_t num_partition_add_logical_block(partition_info& part_info) final {
+    virtual inline size_t num_partition_add_logical_block(partition_info& part_info) final {
         return part_info.lb_types.size();
     }
 
-	virtual inline t_logical_block_type_ptr get_partition_add_logical_block(int n, partition_info& part_info) final {
+    virtual inline t_logical_block_type_ptr get_partition_add_logical_block(int n, partition_info& part_info) final {
         return part_info.lb_types[n];
     }
 
