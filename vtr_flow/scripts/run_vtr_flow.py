@@ -385,7 +385,7 @@ def vtr_command_argparser(prog=None):
         help="Tells VPR the amount of iterations allowed to obtain the critical path.",
     )
     vpr.add_argument(
-        "-fix_pins",
+        "--fix_pins",
         type=str,
         help="Controls how the placer handles I/O pads during placement.",
     )
@@ -426,7 +426,7 @@ def vtr_command_argparser(prog=None):
         help="Tells VPR to run routing stage",
     )
     vpr.add_argument(
-        "-sdc_file", default=None, type=str, help="Path to SDC timing constraints file."
+        "--sdc_file", default=None, type=str, help="Path to SDC timing constraints file."
     )
     vpr.add_argument(
         "-read_vpr_constraints", default=None, type=str, help="Path to vpr constraints file."
@@ -527,6 +527,10 @@ def vtr_command_main(arg_list, prog=None):
 
     assert args.temp_dir
     temp_dir = Path(args.temp_dir)
+    # Create an absolute path is it is not already provided.
+    # Parmys throws an error if an absolute path is not provided.
+    if not str(temp_dir).startswith("/"):
+        temp_dir = Path(os.getcwd() + "/" + args.temp_dir)
     # Specify how command should be run
     command_runner = vtr.CommandRunner(
         track_memory=args.track_memory_usage,
@@ -540,14 +544,17 @@ def vtr_command_main(arg_list, prog=None):
     exit_status = 0
     return_status = 0
     try:
+        # Create temp dir
+        os.makedirs(temp_dir, exist_ok=True)
+
         vpr_args = process_unknown_args(unknown_args)
         vpr_args = process_vpr_args(args, prog, temp_dir, vpr_args)
         if args.sdc_file:
-            sdc_file_copy = get_sdc_file(args.sdc_file, prog, temp_dir)
+            sdc_file_copy = get_sdc_file(args.sdc_file, temp_dir)
             vpr_args["sdc_file"] = Path(sdc_file_copy).name
         if args.read_vpr_constraints:
             vpr_constraint_file_copy = get_read_vpr_constraints(
-                args.read_vpr_constraints, prog, temp_dir
+                args.read_vpr_constraints, temp_dir
             )
             vpr_args["read_vpr_constraints"] = Path(vpr_constraint_file_copy).name
 
@@ -764,25 +771,24 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
     return vpr_args
 
 
-def get_sdc_file(sdc_file, prog, temp_dir):
+def get_sdc_file(sdc_file, temp_dir):
     """
     takes in the sdc_file and returns a path to that file if it exists.
     """
     if not sdc_file.startswith("/"):
-        sdc_file = Path(prog).parent.parent / sdc_file
+        sdc_file = os.getcwd() + "/" + str(sdc_file)
     sdc_file_name = Path(sdc_file).name
     sdc_file_copy = Path(temp_dir) / Path(sdc_file_name)
     shutil.copy(str(sdc_file), str(sdc_file_copy))
-
     return str(vtr.verify_file(sdc_file_copy, "sdc file"))
 
 
-def get_read_vpr_constraints(read_vpr_constraints, prog, temp_dir):
+def get_read_vpr_constraints(read_vpr_constraints, temp_dir):
     """
     takes in the read_vpr_constraints and returns a path to that file if it exists.
     """
     if not read_vpr_constraints.startswith("/"):
-        read_vpr_constraints = Path(prog).parent.parent / read_vpr_constraints
+        read_vpr_constraints = os.getcwd() + "/" + str(read_vpr_constraints)
     vpr_constraint_file_name = Path(read_vpr_constraints).name
     vpr_constraint_file_copy = Path(temp_dir) / Path(vpr_constraint_file_name)
     shutil.copy(str(read_vpr_constraints), str(vpr_constraint_file_copy))
