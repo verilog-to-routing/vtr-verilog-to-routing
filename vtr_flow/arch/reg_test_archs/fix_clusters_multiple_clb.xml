@@ -1,16 +1,16 @@
-<!-- 
+<!--
  Architecture file translated from ifar repository N04K04L01.FC15FO25.AREA1DELAY1.CMOS90NM.BPTM
 
  Simple architecture file consisting of clusters of 4 BLEs, each BLE contains a 4-LUT+FF pair.  Delay models from 90nm PTM.
 -->
 <architecture>
-  <!-- 
-       ODIN II specific config begins 
-       Describes the types of user-specified netlist blocks (in blif, this corresponds to 
+  <!--
+       ODIN II specific config begins
+       Describes the types of user-specified netlist blocks (in blif, this corresponds to
        ".model [type_of_block]") that this architecture supports.
 
-       Note: Basic LUTs, I/Os, and flip-flops are not included here as there are 
-       already special structures in blif (.names, .input, .output, and .latch) 
+       Note: Basic LUTs, I/Os, and flip-flops are not included here as there are
+       already special structures in blif (.names, .input, .output, and .latch)
        that describe them.
   -->
   <models>
@@ -101,7 +101,7 @@
       <clock name="clock" num_pins="1"/>
       <!-- IOs can operate as either inputs or outputs.
 	     Delays below come from Ian Kuon. They are small, so they should be interpreted as
-	     the delays to and from registers in the I/O (and generally I/Os are registered 
+	     the delays to and from registers in the I/O (and generally I/Os are registered
 	     today and that is when you timing analyze them.
 	     -->
       <mode name="inpad">
@@ -125,7 +125,7 @@
         </interconnect>
       </mode>
       <!-- Every input pin is driven by 15% of the tracks in a channel, every output pin is driven by 10% of the tracks in a channel -->
-      <!-- IOs go on the periphery of the FPGA, for consistency, 
+      <!-- IOs go on the periphery of the FPGA, for consistency,
           make it physically equivalent on all sides so that only one definition of I/Os is needed.
           If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
         -->

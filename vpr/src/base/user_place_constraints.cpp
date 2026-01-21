@@ -65,11 +65,16 @@ PartitionRegion& UserPlaceConstraints::get_mutable_partition_pr(PartitionId part
 }
 
 void UserPlaceConstraints::constrain_part_lb_type(PartitionId part_id, t_logical_block_type_ptr lb_type) {
-    auto it = constrained_part_lb_types_.find(part_id);
+    VTR_ASSERT_SAFE(part_id.is_valid());
+    VTR_ASSERT_SAFE(lb_type != nullptr);
 
+    auto it = constrained_part_lb_types_.find(part_id);
     if (it == constrained_part_lb_types_.end()) {
+        // If this partition is not already constrained, create a new entry.
         constrained_part_lb_types_.insert({part_id, {lb_type}});
     } else {
+        // If this partition is already constrained to a block type, add it
+        // to the set.
         it->second.insert(lb_type);
     }
 }

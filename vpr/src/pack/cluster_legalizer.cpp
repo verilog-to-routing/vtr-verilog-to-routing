@@ -156,14 +156,16 @@ static bool check_cluster_floorplanning(AtomBlockId atom_blk_id,
         return true;
     }
 
-    // Get the Atom and Cluster Partition Regions
-    const PartitionRegion& atom_pr = constraints.get_partition_pr(part_id);
-
+    // Check if the partition is constrained to any specific logical block types.
     if (constraints.is_part_constrained_to_lb_types(part_id)) {
-        const std::unordered_set<t_logical_block_type_ptr>& constrained_block_types = constraints.get_part_lb_type_constraints(part_id);
+        // If it is, check if this cluster's type is valid.
+        const auto& constrained_block_types = constraints.get_part_lb_type_constraints(part_id);
         if (!constrained_block_types.contains(cluster_type))
             return false;
     }
+
+    // Get the Atom and Cluster Partition Regions
+    const PartitionRegion& atom_pr = constraints.get_partition_pr(part_id);
 
     // If the Cluster's PartitionRegion is empty, then this atom's PR becomes
     // the Cluster's new PartitionRegion.

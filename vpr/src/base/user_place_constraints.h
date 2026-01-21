@@ -98,19 +98,40 @@ class UserPlaceConstraints {
      */
     PartitionRegion& get_mutable_partition_pr(PartitionId part_id);
 
+    /**
+     * @brief Constrain the atoms in the given partition to be within blocks of a specific type
+     *
+     *   @param part_id   The id of the partition being constrained
+     *   @param lb_type   The logical block type the partition is constrained to
+     */
     void constrain_part_lb_type(PartitionId part_id, t_logical_block_type_ptr lb_type);
 
+    /**
+     * @brief Check if a partition has logical block type constraints
+     *
+     *   @param part_id The id of the partition to check
+     *
+     *   @return True if the partition has logical block type constraints, false otherwise
+     */
     bool is_part_constrained_to_lb_types(PartitionId part_id) const;
 
+    /**
+     * @brief Return the set of logical block types a partition is constrained to
+     *
+     *   @param part_id The id of the partition whose type constraints are needed
+     */
     const std::unordered_set<t_logical_block_type_ptr>& get_part_lb_type_constraints(PartitionId part_id) const;
 
   private:
     /**
+     * Store logical block type constraints for each partition
+     */
+    std::unordered_map<PartitionId, std::unordered_set<t_logical_block_type_ptr>> constrained_part_lb_types_;
+
+    /**
      * Store all constrained atoms
      */
     std::unordered_map<AtomBlockId, PartitionId> constrained_atoms;
-
-    std::unordered_map<PartitionId, std::unordered_set<t_logical_block_type_ptr>> constrained_part_lb_types_;
 
     /**
      * Store all partitions
