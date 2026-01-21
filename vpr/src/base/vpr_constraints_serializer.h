@@ -244,14 +244,24 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         // Clear the temporary data for this partition.
         lb_types_.clear();
 
-        // Use regex to pattern match for all of the logical blocks matching this pattern.
+        // Try to look for an exact match for the name pattern.
         for (const t_logical_block_type& logical_block_type : device_ctx.logical_block_types) {
-            if (std::regex_search(logical_block_type.name, logical_block_name_regex)) {
+            if (logical_block_type.name == name_pattern) {
                 lb_types_.insert(&logical_block_type);
             }
         }
 
-        // If the pattern cannot be fonud, raise a warning.
+        // If an exact match for the name pattern cannot be found, assume that this is a regex pattern.
+        if (lb_types_.empty()) {
+            // Use regex to pattern match for all of the logical blocks matching this pattern.
+            for (const t_logical_block_type& logical_block_type : device_ctx.logical_block_types) {
+                if (std::regex_search(logical_block_type.name, logical_block_name_regex)) {
+                    lb_types_.insert(&logical_block_type);
+                }
+            }
+        }
+
+        // If the pattern cannot be found, raise a warning.
         if (lb_types_.empty()) {
             VTR_LOG_WARN("Logical block type %s was not found, skipping logical block type.\n", name_pattern);
         }
