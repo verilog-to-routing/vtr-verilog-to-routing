@@ -381,8 +381,8 @@ constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /// Annealing schedule enumeration
 enum class e_sched_type {
-    AUTO_SCHED,     ///< Computes initial temperature, exit criterion and temperature update rate from statistics computed during the annealing.
-    USER_SCHED      ///< The user has specified explicit numbers for the key annealing schedule parameters
+    AUTO_SCHED, ///< Computes initial temperature, exit criterion and temperature update rate from statistics computed during the annealing.
+    USER_SCHED  ///< The user has specified explicit numbers for the key annealing schedule parameters
 };
 
 /// Specifies what is shown on screen
