@@ -193,6 +193,7 @@ class SdcParseCallback : public sdcparse::Callback {
                     //        become rediculous. Need to fix this on the parser side. For now, we will
                     //        just ignore any targets which are not clock drivers (which matches VTR's)
                     //        original functionality.
+                    // FIXME: This also may need to take into account aliases. To confirm.
                     continue;
                 }
                 VTR_ASSERT(netlist_clock_drivers_.count(clock_pin) == 1);
@@ -232,15 +233,16 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     void create_generated_clock(const sdcparse::CreateGeneratedClock& /*cmd*/) override {
-        ++num_commands_;
+        num_commands_++;
         vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "create_generated_clock currently unsupported");
     }
 
     void set_io_delay(const sdcparse::SetIoDelay& cmd) override {
-        ++num_commands_;
+        num_commands_++;
 
         tatum::DomainId domain;
 
+        // TODO: This should be handled by the parser.
         if (cmd.clock_name == "*") {
             if (netlist_clock_drivers_.size() == 1) {
                 //Support non-standard wildcard clock name for set_input_delay/set_output_delay
@@ -335,7 +337,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     void set_clock_groups(const sdcparse::SetClockGroups& cmd) override {
-        ++num_commands_;
+        num_commands_++;
 
         if (cmd.type != sdcparse::ClockGroupsType::ASYNCHRONOUS
             && cmd.type != sdcparse::ClockGroupsType::EXCLUSIVE) {
@@ -365,7 +367,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     void set_false_path(const sdcparse::SetFalsePath& cmd) override {
-        ++num_commands_;
+        num_commands_++;
 
         auto from_clocks = get_clocks(cmd.from);
         auto to_clocks = get_clocks(cmd.to);
@@ -392,7 +394,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     void set_min_max_delay(const sdcparse::SetMinMaxDelay& cmd) override {
-        ++num_commands_;
+        num_commands_++;
 
         auto from_clocks = get_clocks(cmd.from);
         auto to_clocks = get_clocks(cmd.to);
@@ -428,7 +430,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     void set_multicycle_path(const sdcparse::SetMulticyclePath& cmd) override {
-        ++num_commands_;
+        num_commands_++;
 
         std::set<tatum::DomainId> from_clocks;
         std::set<tatum::DomainId> to_clocks;
@@ -508,7 +510,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     void set_clock_uncertainty(const sdcparse::SetClockUncertainty& cmd) override {
-        ++num_commands_;
+        num_commands_++;
 
         auto from_clocks = get_clocks(cmd.from);
         auto to_clocks = get_clocks(cmd.to);
@@ -545,7 +547,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     void set_clock_latency(const sdcparse::SetClockLatency& cmd) override {
-        ++num_commands_;
+        num_commands_++;
 
         if (cmd.type != sdcparse::ClockLatencyType::SOURCE) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_clock_latency only supports specifying -source latency");
@@ -577,7 +579,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     void set_disable_timing(const sdcparse::SetDisableTiming& cmd) override {
-        ++num_commands_;
+        num_commands_++;
 
         //Collect the specified pins
         auto from_pins = get_pins(cmd.from);
@@ -632,7 +634,7 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     void set_timing_derate(const sdcparse::SetTimingDerate& /*cmd*/) override {
-        ++num_commands_;
+        num_commands_++;
         vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "set_timing_derate currently unsupported");
     }
 
