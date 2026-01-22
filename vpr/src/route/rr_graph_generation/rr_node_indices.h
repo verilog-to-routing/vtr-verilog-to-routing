@@ -8,6 +8,8 @@
 #include "rr_graph_utils.h"
 #include "clustered_netlist_fwd.h"
 
+struct t_bottleneck_link;
+
 /**
  * @brief Allocates and populates data structures for efficient rr_node index lookups.
  *
@@ -32,16 +34,25 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
  * @brief Allocates extra nodes within the RR graph to support 3D custom switch blocks for multi-die FPGAs
  *
  * @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
- * @param nodes_per_chan number of tracks per channel (x, y)
- * @param grid The device grid representing the physical layout of tiles in the FPGA fabric.
- * @param extra_nodes_per_switchblock keeps how many extra length-0 CHANX node is required for each unique (x,y) location within the grid.
- * Number of these extra nodes are exactly the same for all layers. Hence, we only keep it for one layer. ([0..grid.width-1][0..grid.height-1)
+ * @param interdie_3d_links Specifies the 3-d inter-die wires that are to be added at each switch-block location.
  * @param index Pointer to the global RR node index counter; incremented as new RR nodes are assigned.
  */
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const DeviceGrid& grid,
-                                              const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
+                                              const vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links,
                                               int* index);
+
+/**
+ * @brief Allocates RR nodes for non-3D scatter–gather links.
+ *
+ * Creates RR node indices for each bottleneck link, assigns track numbers
+ * within CHANX/CHANY channels, and updates the RR graph lookup tables.
+ *
+ * @return A list of created RR node IDs paired with their track numbers.
+ */
+std::vector<std::pair<RRNodeId, int>> alloc_and_load_non_3d_sg_pattern_rr_node_indices(RRGraphBuilder& rr_graph_builder,
+                                                                                       const std::vector<t_bottleneck_link>& bottleneck_links,
+                                                                                       const t_chan_width& chan_width_inf,
+                                                                                       int& index);
 
 /**
  * @brief Allocates and loads RR node indices for a specific tile.
@@ -53,16 +64,12 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
  *
  * @param rr_graph_builder Reference to the RR graph builder with spatial lookup.
  * @param physical_tile Pointer to the physical tile type being processed.
- * @param layer Layer index of the tile in the device grid.
- * @param x X-coordinate of the tile's root position in the grid.
- * @param y Y-coordinate of the tile's root position in the grid.
+ * @param root_loc Tile's root position in the grid.
  * @param num_rr_nodes Pointer to the global RR node index counter (will be incremented).
  */
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                          t_physical_tile_type_ptr physical_tile,
-                                         int layer,
-                                         int x,
-                                         int y,
+                                         const t_physical_tile_loc& root_loc,
                                          int* num_rr_nodes);
 
 void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,

@@ -30,7 +30,7 @@
  * Array of pins:
  * The array of pins is an array of t_pin_def structures. The t_pin_def structure contains the name of a pin, or a wire,
  * the number of bits this pin, or wire, uses and a type. To specify the number of bits a pin uses, the left and the right index
- * of a pin are specified. When the wire contains only one bit, the left and right indicies are equal to 0. Examples:
+ * of a pin are specified. When the wire contains only one bit, the left and right indices are equal to 0. Examples:
  * a) input a;		-> (name = "a", left = 0, right = 0, type = PIN_INPUT)
  * b) output b[2:1];-> (name = "b", left = 2, right = 1, type = PIN_OUTPUT)
  * c) inout c[1:2];	-> (name = "c", left = 1, right = 2, type = PIN_INOUT)
@@ -66,7 +66,7 @@
  * NOTES/REVISIONS:
  * April 21, 2005 - Modified the t_node_port_association structure to include
  *					an index to the port wire. This allows for direct association
- *					between a wire an a particular port. This change was necessary to accomodate
+ *					between a wire an a particular port. This change was necessary to accommodate
  *					changes to the VQM file format, specifically to allow concat statements to be used
  *					as parameters in connection lists. (TC)
  * June 1, 2005 - Only one warning may be produced when compiling this DLL. It should be
@@ -83,7 +83,7 @@
 // from a DLL simpler. All files within this DLL are compiled with the VQM_DLL_EXPORTS
 // symbol defined on the command line. this symbol should not be defined on any project
 // that uses this DLL. This way any other project whose source files include this file see 
-// VQM_DLL_API functions as being imported from a DLL, wheras this DLL sees symbols
+// VQM_DLL_API functions as being imported from a DLL, whereas this DLL sees symbols
 // defined with this macro as being exported.
 
 #ifdef VQM_DLL_EXPORTS

@@ -9,7 +9,7 @@ std::ostream& operator<<(std::ostream& os, vtr::LogicValue val) {
         os << "1";
     else if (val == vtr::LogicValue::DONT_CARE)
         os << "-";
-    else if (val == vtr::LogicValue::UNKOWN)
+    else if (val == vtr::LogicValue::UNKNOWN)
         os << "x";
     else
         VTR_ASSERT(false);

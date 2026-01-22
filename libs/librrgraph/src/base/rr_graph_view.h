@@ -25,7 +25,10 @@
  * 5. A short (metal connection).
  * 
  * 
- * @note Despite the RRGraph containing millions of edges, there are only a few switch types. Therefore, all switch details, including R and C, are stored using a flyweight pattern (rr_switch_inf) rather than being directly embedded in the edge-related data of the RRGraph. Each edge stores the ID of its associated switch for easy lookup.
+ * @note Despite the RRGraph containing millions of edges, there are only a few switch types.
+ * Therefore, all switch details, including R and C, are stored using a flyweight pattern (rr_switch_inf)
+ * rather than being directly embedded in the edge-related data of the RRGraph.
+ * Each edge stores the ID of its associated switch for easy lookup.
  * 
  * 
  * \internal
@@ -60,11 +63,14 @@
  */
 
 #include "metadata_storage.h"
+#include "rr_graph_fwd.h"
 #include "rr_node.h"
 #include "physical_types.h"
+#include "rr_node_types.h"
 #include "rr_spatial_lookup.h"
 #include "vtr_geometry.h"
 #include "rr_graph_utils.h"
+#include "vtr_range.h"
 
 class RRGraphView {
     /* -- Constructors -- */
@@ -78,8 +84,7 @@ class RRGraphView {
                 const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                 const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-                const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges,
-                const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums);
+                const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the
@@ -91,7 +96,7 @@ class RRGraphView {
     void operator=(const RRGraphView&) = delete;
 
     /* -- Accessors -- */
-    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin'
+    /* TODO: The accessors may be turned into private later if they are replaceable by 'questionin'
      * kind of accessors
      */
   public:
@@ -225,10 +230,14 @@ class RRGraphView {
         return node_storage_.node_yhigh(node);
     }
 
-    /** @brief Return the layer num of a specified node.
-    */
-    inline short node_layer(RRNodeId node) const {
-        return node_storage_.node_layer(node);
+    /// @brief Returns the highest layer where a node is located at.
+    inline char node_layer_high(RRNodeId node) const {
+        return node_storage_.node_layer_high(node);
+    }
+
+    /// @brief Returns the lowest layer where a node is located at.
+    inline char node_layer_low(RRNodeId node) const {
+        return node_storage_.node_layer_low(node);
     }
     
     /** 
@@ -368,7 +377,6 @@ class RRGraphView {
         std::string coordinate_string = node_type_string(node);        //write the component's type as a routing resource node
         coordinate_string += ":" + std::to_string(size_t(node)) + " "; //add the index of the routing resource node
 
-        int node_layer_num = node_layer(node);
         if (node_type(node) == e_rr_type::OPIN || node_type(node) == e_rr_type::IPIN) {
             coordinate_string += "side: ("; //add the side of the routing resource node
             for (const e_side& node_side : TOTAL_2D_SIDES) {
@@ -382,12 +390,12 @@ class RRGraphView {
             // and the end to the lower coordinate
             start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start and end coordinates are the same for OPINs and IPINs
             start_y = std::to_string(node_yhigh(node)) + ",";
-            start_layer_str = std::to_string(node_layer_num) + ")";
+            start_layer_str = std::to_string(node_layer_low(node)) + ")";
         } else if (node_type(node) == e_rr_type::SOURCE || node_type(node) == e_rr_type::SINK) {
             // For SOURCE and SINK the starting and ending coordinate are identical, so just use start
             start_x = " (" + std::to_string(node_xhigh(node)) + ",";
             start_y = std::to_string(node_yhigh(node)) + ",";
-            start_layer_str = std::to_string(node_layer_num) + ")";
+            start_layer_str = std::to_string(node_layer_low(node)) + ")";
         } else if (node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY || node_type(node) == e_rr_type::CHANZ) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
@@ -401,19 +409,19 @@ class RRGraphView {
 
                 start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start coordinates have large value
                 start_y = std::to_string(node_yhigh(node)) + ",";
-                start_layer_str = std::to_string(node_layer_num) + ")";
+                start_layer_str = std::to_string(node_layer_high(node)) + ")";
                 end_x = " (" + std::to_string(node_xlow(node)) + ","; //end coordinates have smaller value
                 end_y = std::to_string(node_ylow(node)) + ",";
-                end_layer_str = std::to_string(node_layer_num) + ")";
+                end_layer_str = std::to_string(node_layer_low(node)) + ")";
             }
 
             else {                                                      // signal travels in increasing direction, stays at same point, or can travel both directions
                 start_x = " (" + std::to_string(node_xlow(node)) + ","; //start coordinates have smaller value
                 start_y = std::to_string(node_ylow(node)) + ",";
-                start_layer_str = std::to_string(node_layer_num) + ")";
+                start_layer_str = std::to_string(node_layer_low(node)) + ")";
                 end_x = " (" + std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
                 end_y = std::to_string(node_yhigh(node)) + ",";
-                end_layer_str = std::to_string(node_layer_num) + ")"; //layer number
+                end_layer_str = std::to_string(node_layer_high(node)) + ")"; //layer number
                 if (node_direction(node) == Direction::BIDIR) {
                     arrow = " <->"; //indicate that signal can travel both direction
                 }
@@ -430,6 +438,11 @@ class RRGraphView {
      */
     inline bool is_node_on_specific_side(RRNodeId node, e_side side) const {
         return node_storage_.is_node_on_specific_side(node, side);
+    }
+
+    /** @brief Get the sides where the node locates on. */
+    inline const std::vector<e_side> node_sides(RRNodeId node) const {
+        return node_storage_.node_sides(node);
     }
 
     /** @brief Return a string representing the side of a routing resource node. 
@@ -573,18 +586,29 @@ class RRGraphView {
      * @example
      * RRGraphView rr_graph; // A dummy rr_graph for a short example
      * RRNodeId node; // A dummy node for a short example
-     * for (RREdgeId edge : rr_graph.edges(node)) {
+     * for (t_edge_size edge : rr_graph.edges(node)) {
      *     // Do something with the edge
      * }
+     *
+     * @note Iterating on the range returned by this function will not give you an RREdgeId, but instead gives you the index among a node's outgoing edges
      */
-    inline edge_idx_range edges(const RRNodeId& id) const {
+    inline edge_idx_range edges(RRNodeId id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
+
+    /** @brief Returns a range of all edges in the RR Graph.
+     * This method does not depend on the edges begin correctly
+     * sorted and can be used before partition_edges is called.
+     */
+    inline vtr::StrongIdRange<RREdgeId> all_edges() const {
+        return node_storage_.all_edges();
+    }
+
 
     /**
      * @brief Return ID range for outgoing edges.
      */
-    inline edge_idx_range node_out_edges(const RRNodeId& id) const {
+    inline edge_idx_range node_out_edges(RRNodeId id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
@@ -801,8 +825,4 @@ class RRGraphView {
     /// A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
     /// By default, it is empty. Call build_in_edges() to construct it.
     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges_;
-
-    /// A list of extra ptc numbers for each routing resource node. This is only used for tileable architecture.
-    /// See details in RRGraphBuilder class
-    const vtr::vector<RRNodeId, std::vector<short>>& node_tileable_track_nums_;
 };

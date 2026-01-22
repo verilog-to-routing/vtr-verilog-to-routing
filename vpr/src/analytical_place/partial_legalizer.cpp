@@ -49,6 +49,9 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
+        case e_ap_partial_legalizer::Identity:
+            return std::make_unique<IdentityPartialLegalizer>(netlist,
+                                                              log_verbosity);
         case e_ap_partial_legalizer::FlowBased:
             return std::make_unique<FlowBasedLegalizer>(netlist,
                                                         density_manager,
@@ -621,7 +624,7 @@ void FlowBasedLegalizer::legalize(PartialPlacement& p_placement) {
         // We take the manhattan (L1) norm here since we only care about the total
         // amount of overfill in each dimension. For example, a bin that has a
         // supply of <1, 1> is just as overfilled as a bin of supply <0, 2>.
-        // The standard L2 norm would give more weigth to <0, 2>.
+        // The standard L2 norm would give more weight to <0, 2>.
         // NOTE: Although the supply should always be non-negative, we still
         //       take the absolute value in the norm for completeness.
         // TODO: This is a guess. Should investigate other norms.
@@ -1218,7 +1221,7 @@ void BiPartitioningPartialLegalizer::merge_overlapping_windows(
         // Add the lower and upper bound of the window into the map. Add a small
         // epsilon to exclude the border of the window. We do not care if two
         // windows share a border, only if they overlap.
-        // NOTE: This will add duplicates; however it ensures that the overlaping
+        // NOTE: This will add duplicates; however it ensures that the overlapping
         //       region is found in the lower algorithm.
         const SpreadingWindow& window = windows[i];
         x_sorted_windows.insert(std::make_pair(window.region.xmin() + epsilon, i));
@@ -1252,7 +1255,7 @@ void BiPartitioningPartialLegalizer::merge_overlapping_windows(
             // Get the lower and upper bounds in the spatial lookup. This will
             // give a list of all windows which could possibly overlap right now
             // (at least in the x dimension).
-            // NOTE: There may be duplicates; but thats ok since these checks
+            // NOTE: There may be duplicates; but that's ok since these checks
             //       are fast.
             auto lower = x_sorted_windows.lower_bound(region.xmin());
             auto upper = x_sorted_windows.upper_bound(region.xmax());
@@ -1910,7 +1913,7 @@ void BiPartitioningPartialLegalizer::move_blocks_out_of_windows(
         for (APBlockId blk_id : window.contained_blocks) {
             // Note: The blocks should have been removed from their original
             //       bins when they were put into the windows. There are asserts
-            //       within the denisty manager class which will verify this.
+            //       within the density manager class which will verify this.
             density_manager_->insert_block_into_bin(blk_id, bin_id);
         }
     }

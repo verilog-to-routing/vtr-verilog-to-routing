@@ -22,53 +22,53 @@
 /************************* STRUCTS **********************************/
 class PowerSpicedComponent;
 
-class PowerCallibSize {
+class PowerCalibSize {
   public:
     float transistor_size;
     float power;
     float factor;
 
-    PowerCallibSize(float size, float power_)
+    PowerCalibSize(float size, float power_)
         : transistor_size(size)
         , power(power_)
         , factor(0.) {
     }
-    bool operator<(const PowerCallibSize& rhs) {
+    bool operator<(const PowerCalibSize& rhs) {
         return transistor_size < rhs.transistor_size;
     }
 };
 
-class PowerCallibInputs {
+class PowerCalibInputs {
   public:
     PowerSpicedComponent* parent;
     int num_inputs;
-    std::vector<PowerCallibSize*> entries;
+    std::vector<PowerCalibSize*> entries;
     bool sorted;
 
-    PowerCallibInputs(PowerSpicedComponent* parent, float num_inputs);
-    ~PowerCallibInputs();
+    PowerCalibInputs(PowerSpicedComponent* parent, float num_inputs);
+    ~PowerCalibInputs();
 
     void add_size(float transistor_size, float power = 0.);
-    PowerCallibSize* get_entry_bound(bool lower, float transistor_size);
+    PowerCalibSize* get_entry_bound(bool lower, float transistor_size);
     void sort_me();
-    bool done_callibration;
-    void callibrate();
+    bool done_calibration;
+    void calibrate();
 };
 
 class PowerSpicedComponent {
   public:
     std::string name;
-    std::vector<PowerCallibInputs*> entries;
+    std::vector<PowerCalibInputs*> entries;
 
     /* Estimation function for this component */
     float (*component_usage)(int num_inputs, float transistor_size);
 
     bool sorted;
-    bool done_callibration;
+    bool done_calibration;
 
-    PowerCallibInputs* add_entry(int num_inputs);
-    PowerCallibInputs* get_entry(int num_inputs);
-    PowerCallibInputs* get_entry_bound(bool lower, int num_inputs);
+    PowerCalibInputs* add_entry(int num_inputs);
+    PowerCalibInputs* get_entry(int num_inputs);
+    PowerCalibInputs* get_entry_bound(bool lower, int num_inputs);
 
     PowerSpicedComponent(std::string component_name,
                          float (*usage_fn)(int num_inputs, float transistor_size));
@@ -79,7 +79,7 @@ class PowerSpicedComponent {
     void sort_me();
 
     //	void update_scale_factor(float (*fn)(float size));
-    void callibrate();
-    bool is_done_callibration();
+    void calibrate();
+    bool is_done_calibration();
     void print(FILE* fp);
 };

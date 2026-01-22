@@ -17,7 +17,6 @@
 #include <vector>
 #include "atom_lookup.h"
 #include "atom_netlist.h"
-#include "cad_types.h"
 #include "cluster_placement.h"
 #include "cluster_router.h"
 #include "globals.h"
@@ -315,7 +314,7 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
 /*
  * @brief Check that the two atom blocks blk_id and sibling_blk_id (which should
  *        both be memory slices) are feasible, in the sense that they have
- *        precicely the same net connections (with the exception of nets in data
+ *        precisely the same net connections (with the exception of nets in data
  *        port classes).
  *
  * Note that this routine does not check pin feasibility against the cur_pb_type; so
@@ -369,7 +368,7 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
                 //We can get the actual net provided the port exists
                 //
                 //Note that if the port did not exist, the net is left
-                //as invalid/disconneced
+                //as invalid/disconnected
                 if (blk_port_id) {
                     blk_net_id = atom_ctx.netlist().port_net(blk_port_id, ipin);
                 }
@@ -504,7 +503,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     }
     const t_pb_type* pb_type = pb_graph_node->pb_type;
 
-    /* Any pb_type under an mode, which is disabled for packing, should not be considerd for mapping
+    /* Any pb_type under an mode, which is disabled for packing, should not be considered for mapping
      * Early exit to flag failure
      */
     if (true == pb_type->parent_mode->disable_packing) {
@@ -673,7 +672,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* p
     for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
         const auto depth = cur_pb->pb_graph_node->pb_type->depth;
         const auto pin_class = pb_graph_pin->parent_pin_class[depth];
-        VTR_ASSERT(pin_class != OPEN);
+        VTR_ASSERT(pin_class != UNDEFINED);
 
         const auto driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
 

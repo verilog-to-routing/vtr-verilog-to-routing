@@ -22,13 +22,13 @@ namespace fasm {
 
 FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f, bool is_flat) : strings_(strings), os_(f),
     pb_graph_pin_lookup_from_index_by_type_(g_vpr_ctx.device().logical_block_types),
-    fasm_lut(strings->intern_string(vtr::string_view("fasm_lut"))),
-    fasm_features(strings->intern_string(vtr::string_view("fasm_features"))),
-    fasm_params(strings->intern_string(vtr::string_view("fasm_params"))),
-    fasm_prefix(strings->intern_string(vtr::string_view("fasm_prefix"))),
-    fasm_placeholders(strings->intern_string(vtr::string_view("fasm_placeholders"))),
-    fasm_type(strings->intern_string(vtr::string_view("fasm_type"))),
-    fasm_mux(strings->intern_string(vtr::string_view("fasm_mux"))),
+    fasm_lut(strings->intern_string("fasm_lut")),
+    fasm_features(strings->intern_string("fasm_features")),
+    fasm_params(strings->intern_string("fasm_params")),
+    fasm_prefix(strings->intern_string("fasm_prefix")),
+    fasm_placeholders(strings->intern_string("fasm_placeholders")),
+    fasm_type(strings->intern_string("fasm_type")),
+    fasm_mux(strings->intern_string("fasm_mux")),
     is_flat_(is_flat){
 }
 
@@ -118,7 +118,7 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
   /* No previous driver implies that this is either a top-level input pin
     * or a primitive output pin */
   int prev_node = iter->second.driver_pb_pin_id;
-  if(prev_node == OPEN) {
+  if(prev_node == fasm::UNDEFINED) {
     return;
   }
 

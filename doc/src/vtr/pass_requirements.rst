@@ -29,7 +29,7 @@ Each line of the file indicates a single metric, data type and allowable values 
 
 * **<requirement>**: The metric's pass requirement.
 
-    Valid requiremnt types are:
+    Valid requirement types are:
 
     * ``Equal()``: The metric value must exactly match the golden reference result.
     * ``Range(<min_ratio>,<max_ratio>)``: The metric value (normalized to the golden result) must be between ``<min_ratio>`` and ``<max_ratio>``.
@@ -53,6 +53,6 @@ Example File
 
     vpr_status;Equal()                      #Pass if precisely equal
     vpr_seconds;RangeAbs(0.80,1.40,2)       #Pass if within -20%, or +40%, or absolute value less than 2
-    num_pre_packed_nets;Range(0.90,1.10)    #Pass if withing +/-10%
+    num_pre_packed_nets;Range(0.90,1.10)    #Pass if within +/-10%
 
     %include "routing_metrics.txt"          #Import all pass requirements from the file 'routing_metrics.txt'

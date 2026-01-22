@@ -68,7 +68,7 @@ class NetCostHandler {
      *
      * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    std::pair<double, double> comp_bb_cost(e_cost_methods method);
+    std::pair<double, double> comp_bb_cost(e_cost_methods method) const;
 
     /**
      * @brief Find all the nets and pins affected by this swap and update costs.
@@ -301,14 +301,6 @@ class NetCostHandler {
      * call this routine before you do any placement cost determination.
      */
     void alloc_and_load_chan_w_factors_for_place_cost_();
-
-    /**
-     * @brief Allocates and loads acc_tile_num_inter_die_conn_ which contains the accumulative number of inter-die
-     * conntections.
-     *
-     * @details This is only useful for multi-die FPGAs.
-     */
-    void alloc_and_load_for_fast_vertical_cost_update_();
 
     /**
      * @brief Calculate the new connection delay and timing cost of all the

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <rr_graph_fwd.h>
 #include <vector>
 #include "netlist.h"
 #include "rr_graph_type.h"
@@ -14,26 +15,24 @@ class DeviceGrid;
  */
 void routing_stats(const Netlist<>& net_list,
                    bool full_stats,
-                   enum e_route_type route_type,
+                   e_route_type route_type,
                    std::vector<t_segment_inf>& segment_inf,
                    float R_minW_nmos,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
-                   enum e_directionality directionality,
-                   int wire_to_ipin_switch,
+                   e_directionality directionality,
                    bool is_flat);
 
 /**
- * @brief Calculates the routing channel width at each grid location.
- *
- * Iterates through all RR nodes and counts how many wires pass through each (x, y) location
- * for both horizontal (CHANX) and vertical (CHANY) channels.
- *
- * @return A pair of 3D matrices:
- *         - First: CHANX width per [layer][x][y]
- *         - Second: CHANY width per [layer][x][y]
+ * @brief Writes the number of times each switch in template file is used to
+ * a file with the same name as the template file in the given directory.
+ * @param net_list The netlist
+ * @param sb_map_dir The directory containing switch block template files
+ * @param sb_count_dir The directory to write the switchbox count statistics to
  */
-std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width();
+void write_sb_count_stats(const Netlist<>& net_list,
+                          const std::string& sb_map_dir,
+                          const std::string& sb_count_dir);
 
 void print_wirelen_prob_dist(bool is_flat);
 

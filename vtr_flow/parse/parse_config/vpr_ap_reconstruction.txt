@@ -1,0 +1,8 @@
+%include "vpr_standard.txt"
+
+post_fl_atom_err;vpr.out;\s*Percent of atoms misplaced from the flat placement: (.*)
+post_fl_total_disp;vpr.out;\s*Total displacement of initial placement from flat placement: (.*)
+post_fl_avg_disp;vpr.out;\s*Average atom displacement of initial placement from flat placement: (.*)
+post_fl_max_disp;vpr.out;\s*Max atom displacement of initial placement from flat placement: (.*)
+ap_fl_max_rss;vpr.out;AP Full Legalizer took .*max_rss (.*?) MiB
+num_total_clusters;vpr.out;^\s*Total\s+clusters\s*:\s*(\d+)

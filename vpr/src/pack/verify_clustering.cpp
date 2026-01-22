@@ -62,7 +62,7 @@ static unsigned check_clustering_atom_consistency(const ClusteredNetlist& clb_nl
         if (atoms_in_clb.find(atom_blk_id) == atoms_in_clb.end()) {
             VTR_LOG_ERROR(
                 "Atom block %zu is in clb %zu according to the atom lookup, "
-                "howeever it is not in the cluster according to the cluster.\n",
+                "however it is not in the cluster according to the cluster.\n",
                 size_t(atom_blk_id), size_t(atom_clb_blk_id));
             num_errors++;
         }
@@ -88,7 +88,7 @@ static unsigned check_clustering_atom_consistency(const ClusteredNetlist& clb_nl
             // clusters).
             if (atom_lookup.atom_clb(atom_blk_id) != clb_blk_id) {
                 VTR_LOG_ERROR(
-                    "Cluster block %zu constains atom block %zu which does "
+                    "Cluster block %zu contains atom block %zu which does "
                     "not appear to be in it according to the atom lookup.\n",
                     size_t(clb_blk_id), size_t(atom_blk_id));
                 num_errors++;
@@ -195,7 +195,7 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
                     size_t(atom_blk_id), size_t(atom_clb_blk_id));
                 num_errors++;
             }
-            // Make sure it is a primitve
+            // Make sure it is a primitive
             if (!atom_pb->is_primitive()) {
                 VTR_LOG_ERROR(
                     "Atom block %zu in cluster block %zu has a pb which is not "
@@ -406,7 +406,7 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
         // Return here since this error can cause serious issues below.
         return num_errors;
     }
-    // Check consistency between which clusters the atom's think thet are in and
+    // Check consistency between which clusters the atom's think they are in and
     // which atoms the clusters think they have.
     num_errors += check_clustering_atom_consistency(clb_nlist,
                                                     atom_nlist,

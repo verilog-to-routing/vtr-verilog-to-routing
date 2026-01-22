@@ -51,19 +51,19 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
             switch (node_type) {
                 case e_rr_type::OPIN:
                     // get the number of OPINs
-                    num_grid_rr_nodes += get_grid_num_pins(grids, layer, ix, iy, DRIVER, io_side);
+                    num_grid_rr_nodes += get_grid_num_pins(grids, layer, ix, iy, e_pin_type::DRIVER, io_side);
                     break;
                 case e_rr_type::IPIN:
                     // get the number of IPINs
-                    num_grid_rr_nodes += get_grid_num_pins(grids, layer, ix, iy, RECEIVER, io_side);
+                    num_grid_rr_nodes += get_grid_num_pins(grids, layer, ix, iy, e_pin_type::RECEIVER, io_side);
                     break;
                 case e_rr_type::SOURCE:
                     // SOURCE: number of classes whose type is DRIVER
-                    num_grid_rr_nodes += get_grid_num_classes(grids, layer, ix, iy, DRIVER);
+                    num_grid_rr_nodes += get_grid_num_classes(grids, layer, ix, iy, e_pin_type::DRIVER);
                     break;
                 case e_rr_type::SINK:
                     // SINK: number of classes whose type is RECEIVER
-                    num_grid_rr_nodes += get_grid_num_classes(grids, layer, ix, iy, RECEIVER);
+                    num_grid_rr_nodes += get_grid_num_classes(grids, layer, ix, iy, e_pin_type::RECEIVER);
                     break;
                 default:
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -93,7 +93,7 @@ static size_t estimate_num_mux_rr_nodes(const DeviceGrid& grids,
             size_t count = 0;
             for (size_t i_first_stage = 0; i_first_stage < vib->get_first_stages().size(); i_first_stage++) {
                 auto first_stage = vib->get_first_stages()[i_first_stage];
-                if (first_stage.froms.size() == 0) {
+                if (first_stage.from_infos.size() == 0) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "VIB first stage '%s' at (%d, %d) has no from!\n", first_stage.mux_name.c_str(), ix, iy);
                 }
@@ -463,7 +463,7 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                 SideManager side_manager(side);
                 // Find OPINs
                 // Configure pins by pins
-                std::vector<int> opin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), DRIVER, side_manager.get_side(),
+                std::vector<int> opin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), e_pin_type::DRIVER, side_manager.get_side(),
                                                                 width, height);
                 for (const int& pin_num : opin_list) {
                     // Create a new node and fill information
@@ -478,7 +478,7 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_graph_builder.set_node_pin_num(node, pin_num);
 
                     rr_graph_builder.set_node_capacity(node, 1);
-                    rr_graph_builder.set_node_layer(node, layer);
+                    rr_graph_builder.set_node_layer(node, layer, layer);
 
                     // cost index is a FIXED value for OPIN
                     rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(OPIN_COST_INDEX));
@@ -487,7 +487,7 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_node_driver_switches[node] = delayless_switch;
 
                     // RC data
-                    rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+                    rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
 
                 } // End of loading OPIN rr_nodes
             } // End of side enumeration
@@ -517,7 +517,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                 SideManager side_manager(side);
                 // Find IPINs
                 // Configure pins by pins
-                std::vector<int> ipin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), RECEIVER, side_manager.get_side(), width, height);
+                std::vector<int> ipin_list = get_grid_side_pins(grids, layer, grid_coordinate.x(), grid_coordinate.y(), e_pin_type::RECEIVER, side_manager.get_side(), width, height);
                 for (const int& pin_num : ipin_list) {
                     // Create a new node and fill information
                     RRNodeId node = rr_graph_builder.create_node(layer, grid_coordinate.x() + width, grid_coordinate.y() + height, e_rr_type::IPIN, pin_num, side);
@@ -531,7 +531,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_graph_builder.set_node_pin_num(node, pin_num);
 
                     rr_graph_builder.set_node_capacity(node, 1);
-                    rr_graph_builder.set_node_layer(node, layer);
+                    rr_graph_builder.set_node_layer(node, layer, layer);
 
                     // cost index is a FIXED value for OPIN
                     rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(IPIN_COST_INDEX));
@@ -540,7 +540,7 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_node_driver_switches[node] = wire_to_ipin_switch;
 
                     // RC data
-                    rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+                    rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
 
                 } // End of loading IPIN rr_nodes
             } // End of side enumeration
@@ -564,7 +564,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
     for (size_t iclass = 0; iclass < phy_tile_type->class_inf.size(); ++iclass) {
         // Set a SINK rr_node for the OPIN
-        if (DRIVER != phy_tile_type->class_inf[iclass].type) {
+        if (e_pin_type::DRIVER != phy_tile_type->class_inf[iclass].type) {
             continue;
         }
 
@@ -577,7 +577,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
                                               grid_coordinate.x() + phy_tile_type->width - 1,
                                               grid_coordinate.y() + phy_tile_type->height - 1);
         rr_graph_builder.set_node_class_num(node, iclass);
-        rr_graph_builder.set_node_layer(node, (int)layer);
+        rr_graph_builder.set_node_layer(node, layer, layer);
 
         // The capacity should be the number of pins in this class
         rr_graph_builder.set_node_capacity(node, phy_tile_type->class_inf[iclass].num_pins);
@@ -589,7 +589,7 @@ static void load_one_grid_source_nodes_basic_info(RRGraphBuilder& rr_graph_build
         rr_node_driver_switches[node] = delayless_switch;
 
         // RC data
-        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
 
     } // End of class enumeration
 }
@@ -610,7 +610,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     t_physical_tile_type_ptr phy_tile_type = grids.get_physical_type(tile_loc);
     for (size_t iclass = 0; iclass < phy_tile_type->class_inf.size(); ++iclass) {
         // Set a SINK rr_node for the OPIN
-        if (RECEIVER != phy_tile_type->class_inf[iclass].type) {
+        if (e_pin_type::RECEIVER != phy_tile_type->class_inf[iclass].type) {
             continue;
         }
 
@@ -623,7 +623,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                                               grid_coordinate.x() + phy_tile_type->width - 1,
                                               grid_coordinate.y() + phy_tile_type->height - 1);
         rr_graph_builder.set_node_class_num(node, iclass);
-        rr_graph_builder.set_node_layer(node, layer);
+        rr_graph_builder.set_node_layer(node, layer, layer);
 
         rr_graph_builder.set_node_capacity(node, 1);
 
@@ -637,7 +637,7 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
         rr_node_driver_switches[node] = delayless_switch;
 
         // RC data
-        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
 
     } // End of class enumeration
 }
@@ -663,7 +663,7 @@ static void load_one_grid_mux_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_mux_num(node, i_mux);
 
         rr_graph_builder.set_node_capacity(node, 1);
-        rr_graph_builder.set_node_layer(node, layer);
+        rr_graph_builder.set_node_layer(node, layer, layer);
 
         // cost index is a FIXED value for MUX
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(MUX_COST_INDEX));
@@ -672,7 +672,7 @@ static void load_one_grid_mux_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
         rr_node_driver_switches[node] = RRSwitchId(vib->get_switch_idx());
 
         // RC data
-        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+        rr_graph_builder.set_node_rc_index(node, find_create_rr_rc_data(0., 0., rr_rc_data));
     }
 }
 
@@ -841,13 +841,17 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             rr_node_track_ids[node].push_back(itrack);
 
             rr_graph_builder.set_node_capacity(node, 1);
-            rr_graph_builder.set_node_layer(node, layer);
+            rr_graph_builder.set_node_layer(node, layer, layer);
 
             // assign switch id
             size_t seg_id = chan_details.get_track_segment_id(itrack);
             e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? e_parallel_axis::X_AXIS : e_parallel_axis::Y_AXIS;
             size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
-            rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch);
+            if (Direction::DEC == chan_details.get_track_direction(itrack) && segment_infs[parallel_seg_id].arch_opin_switch_dec != -1) {
+                rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch_dec);
+            } else {
+                rr_node_driver_switches[node] = RRSwitchId(segment_infs[parallel_seg_id].arch_opin_switch);
+            }
 
             // Update chan_details with node_id
             chan_details.set_track_node_id(itrack, size_t(node));
@@ -896,7 +900,7 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             size_t parallel_seg_id = find_parallel_seg_index(seg_id, seg_index_map, wanted_axis);
             float node_R = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Rmetal;
             float node_C = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Cmetal;
-            rr_graph_builder.set_node_rc_index(rr_node_id, NodeRCIndex(find_create_rr_rc_data(node_R, node_C, rr_rc_data)));
+            rr_graph_builder.set_node_rc_index(rr_node_id, find_create_rr_rc_data(node_R, node_C, rr_rc_data));
 
             if (chan_details.is_track_start(itrack)) {
                 rr_graph_builder.set_node_bend_start(rr_node_id, chan_details.get_track_bend_start(itrack));

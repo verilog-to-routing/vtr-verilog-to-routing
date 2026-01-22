@@ -52,7 +52,7 @@ static void print_header(FILE *fpout) {
 	fprintf(fpout, "  - General purpose logic block: \n");
 	fprintf(fpout, "    K = 6, N = 10, fracturable 6 LUTs (can operate as one 6-LUT or two 5-LUTs with all 5 inputs shared) \n");
 	fprintf(fpout, "    with optionally registered outputs\n");
-	fprintf(fpout, "    Each 5-LUT has an arithemtic mode that converts it to a single-bit adder with both inputs driven by 4-LUTs (both 4-LUTs share all 4 inputs)\n");
+	fprintf(fpout, "    Each 5-LUT has an arithmetic mode that converts it to a single-bit adder with both inputs driven by 4-LUTs (both 4-LUTs share all 4 inputs)\n");
 	fprintf(fpout, "    Carry chain links to vertically adjacent logic blocks\n");
 	fprintf(fpout, "  - Memory size 32 Kbits, memory aspect ratios vary from a data width of 1 to data width of 64.  \n");
 	fprintf(fpout, "    Height = 6, found on every (8n+2)th column\n");
@@ -100,7 +100,7 @@ static void print_header(FILE *fpout) {
 	fprintf(fpout, "  & delay of the Stratix IV crossbar as a good approximation of our crossbar.\n");
 	fprintf(fpout, "\n");
 	fprintf(fpout, "  For LUTs, we include LUT \n");
-	fprintf(fpout, "  delays measured from Stratix IV which is dependant on the input used (ie. some \n");
+	fprintf(fpout, "  delays measured from Stratix IV which is dependent on the input used (ie. some \n");
 	fprintf(fpout, "  LUT inputs are faster than others).  The CAD tools at the time of VTR 7 does \n");
 	fprintf(fpout, "  not consider differences in LUT input delays.\n");
 	fprintf(fpout, "\n");

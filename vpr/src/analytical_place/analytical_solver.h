@@ -48,7 +48,7 @@ typedef vtr::StrongId<struct ap_row_id_tag, size_t> APRowId;
  * This provides functionality that all Analytical Solvers will use.
  *
  * It provides a standard interface that all Analytical Solvers must implement
- * so they can be used interchangably. This makes it very easy to test and
+ * so they can be used interchangeably. This makes it very easy to test and
  * compare different solvers.
  */
 class AnalyticalSolver {
@@ -90,7 +90,7 @@ class AnalyticalSolver {
     /**
      * @brief Print statistics on the analytical solver.
      *
-     * This is expected to be called after global placement to collect cummulative
+     * This is expected to be called after global placement to collect cumulative
      * information on how the solver performed.
      */
     virtual void print_statistics() = 0;
@@ -144,13 +144,17 @@ class AnalyticalSolver {
     ///        legalized.
     std::vector<APBlockId> disconnected_blocks_;
 
-    /// @brief The width of the device grid. Used for randomly generating points
-    ///        on the grid.
+    /// @brief The width of the device grid. Used for initializing the positions
+    ///        of blocks in the grid.
     size_t device_grid_width_;
 
-    /// @brief The height of the device grid. Used for randomly generating points
-    ///        on the grid.
+    /// @brief The height of the device grid. Used for initializing the positions
+    ///        of blocks in the grid.
     size_t device_grid_height_;
+
+    /// @brief The number of layers in the device grid. Used for initializing
+    ///        the positions of blocks in the grid.
+    size_t device_grid_num_layers_;
 
     /// @brief The AP timing tradeoff term used during global placement. Decides
     ///        how much the solver cares about timing vs wirelength.
@@ -172,6 +176,51 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          float ap_timing_tradeoff,
                                                          unsigned num_threads,
                                                          int log_verbosity);
+
+/**
+ * @brief An analytical solver which does not solve anything. This solver acts
+ *        like the identity matrix in a system of equations and just passes the
+ *        previous solution (from the partial legalizer) along. This solver
+ *        should only be used for testing.
+ *
+ * In the first iteration, the solver will initialize the positions of blocks
+ * to the center of the device.
+ */
+class IdentityAnalyticalSolver : public AnalyticalSolver {
+  public:
+    IdentityAnalyticalSolver(const APNetlist& netlist,
+                             const DeviceGrid& device_grid,
+                             const AtomNetlist& atom_netlist,
+                             float ap_timing_tradeoff,
+                             int log_verbosity)
+        : AnalyticalSolver(netlist,
+                           atom_netlist,
+                           device_grid,
+                           ap_timing_tradeoff,
+                           log_verbosity) {}
+
+    /**
+     * @brief "Solve" for the positions of the blocks given the current iteration
+     *        and the placement produced by the partial legalizer in the last
+     *        iteration.
+     *
+     * In this case, if the iteration is non-zero, the placement will not be
+     * modified. In the first iteration (iteration 0), the placement will be
+     * initialized to the center of the device.
+     */
+    void solve(unsigned iteration, PartialPlacement& p_placement) final;
+
+    /**
+     * @brief Net weights are not used by this solver, so this function goes unused.
+     */
+    void update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager) final;
+
+    /**
+     * @brief This solver does not do any real work, so it has no statistics to
+     *        report. Thus this function goes unused.
+     */
+    void print_statistics() final;
+};
 
 // The Eigen library is used to solve matrix equations in the following solvers.
 // The solver cannot be built if Eigen is not installed.
@@ -246,7 +295,7 @@ class QPHybridSolver : public AnalyticalSolver {
     void init_linear_system();
 
     /**
-     * @brief Intializes the guesses which will be used in the solver.
+     * @brief Initializes the guesses which will be used in the solver.
      *
      * The guesses will be used as starting points for the CG solver. The better
      * these guesses are, the faster the solver will converge.
@@ -424,7 +473,7 @@ class B2BSolver : public AnalyticalSolver {
     /// @brief Since the weights in the B2B model divide by the distance between
     ///        blocks and their bounds, that distance may get very very close to
     ///        0. This causes the weight matrix to become numerically unstable.
-    ///        We can gaurd against this by clamping the distance to not be smaller
+    ///        We can guard against this by clamping the distance to not be smaller
     ///        than some epsilon.
     ///        Decreasing this number may lead to more instability, but can yield
     ///        a higher quality solution.
@@ -436,14 +485,14 @@ class B2BSolver : public AnalyticalSolver {
     ///        solved solution HPWL).
     /// Decreasing this number toward zero would cause the B2B solver to run
     /// more iterations to try and reduce the HPWL further.
-    static constexpr double b2b_convergence_gap_fac_ = 0.001;
+    static constexpr double b2b_convergence_gap_fac_ = 0.0001;
 
     /// @brief The number of times the B2B loop should "converge" before stopping
     ///        the loop. Due to numerical inaccuracies, it is possible for the
     ///        HPWL to bounce up and down as it converges. Increasing this number
     ///        will allow more bounces which may get better quality; however
     ///        more iterations will need to be run.
-    static constexpr unsigned target_num_b2b_convergences_ = 2;
+    static constexpr unsigned target_num_b2b_convergences_ = 1;
 
     /// @brief Max number of bound update / solve iterations. Increasing this
     ///        number will yield better quality at the expense of runtime.
@@ -460,7 +509,7 @@ class B2BSolver : public AnalyticalSolver {
     ///        to prevent this behaviour and get good runtime.
     // TODO: Need to investigate this more to find a good number for this.
     // TODO: Should this be a proportion of the design size?
-    static constexpr unsigned max_cg_iterations_ = 150;
+    static constexpr unsigned max_cg_iterations_ = 100;
 
     // The following constants are used to configure the anchor weighting.
     // The weights of anchors grow exponentially each iteration by the following
@@ -654,7 +703,7 @@ class B2BSolver : public AnalyticalSolver {
      *        placement object.
      *
      * Note: The x_soln and y_soln may be modified if it is found that the
-     *       solution is imposible (i.e. has negative positions).
+     *       solution is impossible (i.e. has negative positions).
      */
     void store_solution_into_placement(Eigen::VectorXd& x_soln,
                                        Eigen::VectorXd& y_soln,

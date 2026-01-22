@@ -13,7 +13,7 @@ void SimpleDelayModel::compute(RouterDelayProfiler& route_profiler,
                                const t_placer_opts& /*placer_opts*/,
                                const t_router_opts& /*router_opts*/,
                                int /*longest_length*/) {
-    const auto& grid = g_vpr_ctx.device().grid;
+    const DeviceGrid& grid = g_vpr_ctx.device().grid;
     const size_t num_physical_tile_types = g_vpr_ctx.device().physical_tile_types.size();
     const size_t num_layers = grid.get_num_layers();
 
@@ -31,10 +31,8 @@ void SimpleDelayModel::compute(RouterDelayProfiler& route_profiler,
                 for (size_t dx = 0; dx < grid.width(); ++dx) {
                     for (size_t dy = 0; dy < grid.height(); ++dy) {
                         float min_delay = route_profiler.get_min_delay(physical_tile_type_idx,
-                                                                       from_layer,
-                                                                       to_layer,
-                                                                       dx,
-                                                                       dy);
+                                                                       from_layer, to_layer,
+                                                                       dx, dy);
                         delays_[physical_tile_type_idx][from_layer][to_layer][dx][dy] = min_delay;
                     }
                 }

@@ -26,6 +26,7 @@ static int get_longest_segment_length(const std::vector<t_segment_inf>& segment_
 std::unique_ptr<PlaceDelayModel>
 PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
                                                const t_router_opts& router_opts,
+                                               const t_crr_opts& crr_opts,
                                                const Netlist<>& net_list,
                                                t_det_routing_arch& det_routing_arch,
                                                const std::vector<t_segment_inf>& segment_inf,
@@ -36,14 +37,21 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
 
     t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
 
-    alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf, directs, is_flat);
+    alloc_routing_structs(chan_width,
+                          router_opts,
+                          crr_opts,
+                          det_routing_arch,
+                          segment_inf,
+                          directs,
+                          is_flat);
 
     const RouterLookahead* router_lookahead = get_cached_router_lookahead(det_routing_arch,
                                                                           router_opts.lookahead_type,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
                                                                           segment_inf,
-                                                                          is_flat);
+                                                                          is_flat,
+                                                                          router_opts.route_verbosity);
 
     RouterDelayProfiler route_profiler(net_list, router_lookahead, is_flat);
 

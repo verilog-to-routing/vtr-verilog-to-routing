@@ -5,7 +5,7 @@
 #include <limits>
 #include <string>
 
-// Platform indepedent way to file message to a file on disk.
+// Platform independent way to file message to a file on disk.
 void writeMessageToFile(const std::string& file,
         ::capnp::MessageBuilder* builder);
 

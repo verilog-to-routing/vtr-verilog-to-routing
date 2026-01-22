@@ -280,7 +280,7 @@ void remove_one_lut_nodes ( busvec* buses, std::unordered_map<std::string, int> 
 		- Srivatsan Srinivasan, September 2021:
 			- removed the function parameters "original_num_nodes" and "nodes". These values can be from the "module" parameter and are now assigned internally within this function.
 		- Srivatsan Srinivasan, August 2021:
-			- Moved the incrementing of the "oneluts_elim" variable to this fuction from the "remove_node" function. The purpose of this change was to localise any vairable attached to removing one lut nodes within this function. Additionally, now the "remove_node" function is generalized and is not limited to be only used by "remove_one_lut_nodes".
+			- Moved the incrementing of the "oneluts_elim" variable to this function from the "remove_node" function. The purpose of this change was to localise any variable attached to removing one lut nodes within this function. Additionally, now the "remove_node" function is generalized and is not limited to be only used by "remove_one_lut_nodes".
 */
 	oneluts_elim = 0;
 
@@ -639,7 +639,7 @@ void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, std::unorder
 
 	cout << "\t>> Verifying netlist...\n" ;
 
-	//Step 0: Construct child_count "matrix" corresponding to the net indeces. 
+	//Step 0: Construct child_count "matrix" corresponding to the net indices. 
 	//	The children of each net will be counted as the netlist is verified, 
 	//	then compared against the number of children stored in the net.
 	vector < vector <int> > child_count;
@@ -663,7 +663,7 @@ void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, std::unorder
 		for (int j = 0; (unsigned int)j < temp_bus->size(); j++){
 			temp_net = &(temp_bus->at(j));
 
-			VTR_ASSERT((temp_net->bus_index == i)&&(temp_net->wire_index == j));	//indeces must line up
+			VTR_ASSERT((temp_net->bus_index == i)&&(temp_net->wire_index == j));	//indices must line up
 			VTR_ASSERT(ref_pin == temp_net->pin);	//all nets in a common bus share a pin
 
 			if (temp_net->driver == CONST){
@@ -726,7 +726,7 @@ void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, std::unorder
 		VTR_ASSERT(temp_bus->size() > 0);
 		for (int j = 0; (unsigned int)j < temp_bus->size(); j++){
 			temp_net = &(temp_bus->at(j));
-			VTR_ASSERT((temp_net->bus_index == i)&&(temp_net->wire_index == j));	//indeces must line up
+			VTR_ASSERT((temp_net->bus_index == i)&&(temp_net->wire_index == j));	//indices must line up
 			VTR_ASSERT(child_count[i][j] == temp_net->num_children);
 		}
 	}
@@ -855,7 +855,7 @@ void reorganize_module_node_list(t_module* module)
 
 		Please refer to the example below:
 
-		Inital Node array:
+		Initial Node array:
              ------      ------                  ------      ------
             |LUT 1| --> |LUT 2| -->         --> |LUT 3| --> |LUT 4|
             ------      ------                  ------      ------
@@ -871,7 +871,7 @@ void reorganize_module_node_list(t_module* module)
 	Change Log:
 		- Srivatsan Srinivasan, August 2021:
 			- created this function to reorganize node arrays with gaps inside of them.
-			- Initially the feature provided by this function was embedded indide the "remove_one_lut_nodes" function. By creating a seperate function, we are now not restricted to only removing one-lut nodes. 
+			- Initially the feature provided by this function was embedded inside the "remove_one_lut_nodes" function. By creating a separate function, we are now not restricted to only removing one-lut nodes. 
 			- Now we can remove any types of nodes and then run this function to reorganize the node array.  
 */
 	// assign module related parameters

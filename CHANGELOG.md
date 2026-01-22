@@ -1,13 +1,13 @@
 # VTR Change Log
 <!-- 
 This file documents user-facing changes between releases of the VTR
-project. The goal is to concicely communicate to end users what is new
+project. The goal is to concisely communicate to end users what is new
 or has changed in a particular release. It should *NOT* just be a dump
 of the commit log, as that is far too detailed. Most code re-factoring
 does not warrant a change log entry unless it has a significant impact
 on the end users (e.g. substantial performance improvements).
 
-Each release's change log should include headings (where releveant) with
+Each release's change log should include headings (where relevant) with
 bullet points listing what was: 
   - added           (new feature)
   - changed         (change to existing feature behaviour)
@@ -16,7 +16,7 @@ bullet points listing what was:
   - removed         (previous features which have been removed)
 
 Changes which have landed in the master/trunk but not been released
-should be included in the 'Unreleased' section and moved to the releveant
+should be included in the 'Unreleased' section and moved to the relevant
 releases' section when released.
 
 In the case of release candidates (e.g. v8.0.0-rc1) the current
@@ -146,7 +146,7 @@ _The following are changes which have been implemented in the VTR master branch 
  * Improved a wide variety of error messages
  * Improved STA timing reports (more details, clearer format)
  * VPR now uses Tatum as its STA engine
- * VPR now detects missmatched architecture (.xml) and implementation (.net/.place/.route) files more robustly
+ * VPR now detects mismatched architecture (.xml) and implementation (.net/.place/.route) files more robustly
  * Improved router run-time and quality through incremental re-routing and improved handling of high-fanout nets
  * The timing edges within each netlist primitive must now be specified in the <models> section of the architecture file
  * All interconnect tags must have unique names in the architecture file
@@ -164,8 +164,8 @@ _The following are changes which have been implemented in the VTR master branch 
  * Various other changes since VTR 7
 
 ### Fixed
- * FPGA Architecture file tags can be in arbitary orders
- * SDC command arguments can be in arbitary orders
+ * FPGA Architecture file tags can be in arbitrary orders
+ * SDC command arguments can be in arbitrary orders
  * Numerous other fixes since VTR 7
 
 ### Removed
@@ -229,7 +229,7 @@ $ sudo docker run -it mohamedelgammal/vtr8:latest
  * Improved a wide variety of error messages
  * Improved STA timing reports (more details, clearer format)
  * VPR now uses Tatum as its STA engine
- * VPR now detects missmatched architecture (.xml) and implementation (.net/.place/.route) files more robustly
+ * VPR now detects mismatched architecture (.xml) and implementation (.net/.place/.route) files more robustly
  * Improved router run-time and quality through incremental re-routing and improved handling of high-fanout nets
  * The timing edges within each netlist primitive must now be specified in the <models> section of the architecture file
  * All interconnect tags must have unique names in the architecture file
@@ -245,8 +245,8 @@ $ sudo docker run -it mohamedelgammal/vtr8:latest
  * Various other changes since VTR 7
 
 ### Fixed
- * FPGA Architecture file tags can be in arbitary orders
- * SDC command arguments can be in arbitary orders
+ * FPGA Architecture file tags can be in arbitrary orders
+ * SDC command arguments can be in arbitrary orders
  * Numerous other fixes since VTR 7
 
 ### Deprecated

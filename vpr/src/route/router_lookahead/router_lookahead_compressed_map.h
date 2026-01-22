@@ -7,7 +7,7 @@
 
 class CompressedMapLookahead : public RouterLookahead {
   public:
-    explicit CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat);
+    explicit CompressedMapLookahead(const t_det_routing_arch& det_routing_arch, bool is_flat, int route_verbosity);
 
   private:
     //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
@@ -17,6 +17,7 @@ class CompressedMapLookahead : public RouterLookahead {
 
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
+    int route_verbosity_;
 
   protected:
     float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
@@ -36,7 +37,7 @@ class CompressedMapLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::read unimplemented");
     }
 
-    void read_intra_cluster(const std::string& /*file*/) {
+    void read_intra_cluster(const std::string& /*file*/) override {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::read_intra_cluster unimplemented");
     }
 

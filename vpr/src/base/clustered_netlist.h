@@ -223,7 +223,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      */
 
     /**
-     * @brief The intented use is to find the block id of a 
+     * @brief The intended use is to find the block id of a 
      *        hard block without knowing its name in the netlist. Instead
      *        a pattern can be created that we know the block's name will
      *        match to. Generally, we expect the pattern to be constructed
@@ -238,8 +238,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *        function can be used by just providing the string pattern as
      *        ".*test_ram.*". We know that the module name should be somewhere
      *        within the string, so the pattern we provide says that the netlist
-     *        name of the block contains arbritary characters then the module
-     *        name and then some other arbritary characters after.
+     *        name of the block contains arbitrary characters then the module
+     *        name and then some other arbitrary characters after.
      *        This pattern will then be used to match to the block in the
      *        netlist. The matched cluster block id is returned, and if no
      *        block matched to the input string then an invalid block id

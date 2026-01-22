@@ -60,7 +60,7 @@ def init_script_file(
     for circuit in circuit_list:
         file_extension = os.path.splitext(circuit)[-1]
         if file_extension not in FILE_TYPES:
-            raise vtr.VtrError("Inavlid input file type '{}'".format(file_extension))
+            raise vtr.VtrError("Invalid input file type '{}'".format(file_extension))
 
     # Update the config file
     vtr.file_replace(
@@ -251,6 +251,7 @@ def run(
     # set the parser
     if parmys_args["parser"] in YOSYS_PARSERS:
         os.environ["PARSER"] = parmys_args["parser"]
+        os.environ["PRIMITIVES"] = str(vtr.paths.vtr_primitives_path)
         del parmys_args["parser"]
     else:
         raise vtr.VtrError(

@@ -72,6 +72,12 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
 
     // Based on the solver type passed in, build the solver.
     switch (solver_type) {
+        case e_ap_analytical_solver::Identity:
+            return std::make_unique<IdentityAnalyticalSolver>(netlist,
+                                                              device_grid,
+                                                              atom_netlist,
+                                                              ap_timing_tradeoff,
+                                                              log_verbosity);
         case e_ap_analytical_solver::QP_Hybrid:
 #ifdef EIGEN_INSTALLED
             return std::make_unique<QPHybridSolver>(netlist,
@@ -126,6 +132,7 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
     , net_weights_(netlist.nets().size(), 1.0f)
     , device_grid_width_(device_grid.width())
     , device_grid_height_(device_grid.height())
+    , device_grid_num_layers_(device_grid.get_num_layers())
     , ap_timing_tradeoff_(ap_timing_tradeoff)
     , log_verbosity_(log_verbosity) {
 
@@ -165,6 +172,38 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
         current_row_id++;
         num_moveable_blocks_++;
     }
+}
+
+void IdentityAnalyticalSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
+    // If this is not the first iteration, return the partial placement (i.e.
+    // the previously partially legalized solution).
+    if (iteration != 0)
+        return;
+
+    // If this is the first iteration, we need to create a starting placement
+    // to act as the starting point.
+    // TODO: It may be convenient to create a class which creates the initial
+    //       placement. That way we can use different initial placements with
+    //       the identity solver not optimizing.
+    // Place all of the moveable blocks at the center of the device.
+    for (APBlockId blk_id : netlist_.blocks()) {
+        VTR_ASSERT_DEBUG(blk_id.is_valid());
+        if (netlist_.block_mobility(blk_id) != APBlockMobility::MOVEABLE)
+            continue;
+
+        p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
+        p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
+        p_placement.block_layer_nums[blk_id] = device_grid_num_layers_ / 2.0;
+    }
+}
+
+void IdentityAnalyticalSolver::update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager) {
+    (void)pre_cluster_timing_manager;
+    // Do nothing.
+}
+
+void IdentityAnalyticalSolver::print_statistics() {
+    // Do nothing.
 }
 
 #ifdef EIGEN_INSTALLED
@@ -211,7 +250,7 @@ static inline void add_connection_to_system(size_t src_row_id,
     // Verify that this is a valid block id.
     VTR_ASSERT_DEBUG(target_blk_id.is_valid());
     // The src_row_id is always a moveable block (rows in the matrix always
-    // coorespond to a moveable APBlock or a star node.
+    // correspond to a moveable APBlock or a star node.
     if (netlist.block_mobility(target_blk_id) == APBlockMobility::MOVEABLE) {
         // If the target is also moveable, update the coefficient matrix.
         size_t target_row_id = (size_t)blk_id_to_row_id[target_blk_id];
@@ -270,7 +309,7 @@ void QPHybridSolver::init_linear_system() {
     tripletList.reserve(num_nets);
 
     // Create the connections using a hybrid connection model of the star and
-    // clique connnection models.
+    // clique connection models.
     size_t star_node_offset = 0;
     for (APNetId net_id : netlist_.nets()) {
         if (netlist_.net_is_ignored(net_id))
@@ -415,7 +454,7 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     Eigen::SparseMatrix<double> A_sparse_diff = Eigen::SparseMatrix<double>(A_sparse);
     Eigen::VectorXd b_x_diff = Eigen::VectorXd(b_x);
     Eigen::VectorXd b_y_diff = Eigen::VectorXd(b_y);
-    // In the first iteration, the orginal linear system is used.
+    // In the first iteration, the original linear system is used.
     // In any other iteration, use the moveable APBlocks current placement as
     //                         anchor-points (fixed block positions).
     if (iteration != 0) {
@@ -561,7 +600,7 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         }
 
         // In the first iteration, we have no prior information.
-        // Run the intial placer to get a first guess.
+        // Run the initial placer to get a first guess.
         switch (initial_placement_ty_) {
             case e_initial_placement_type::LeastDense:
                 initialize_placement_least_dense(p_placement);
@@ -877,6 +916,17 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     VTR_ASSERT_SAFE_MSG(p_placement.block_layer_nums[driver_blk] == layer_num && p_placement.block_layer_nums[sink_blk] == layer_num,
                         "3D FPGAs not supported yet in the B2B solver");
 
+    // Special case: If the distance between the driver and sink is as large as
+    // the device, we cannot take the forward difference (since it will go off
+    // chip). We can still approximate the derivative by taking one tile step
+    // back and getting the central difference at that point. This avoids the
+    // boundary condition, which should be very rare to occur.
+    // TODO: Investigate better ways of doing this.
+    if ((int)flat_dx + 1 > (int)device_grid_width_ - 1)
+        flat_dx = device_grid_width_ - 2;
+    if ((int)flat_dy + 1 > (int)device_grid_height_ - 1)
+        flat_dy = device_grid_height_ - 2;
+
     // Get the physical tile location of the legalized driver block. The PlaceDelayModel
     // may use this position to determine the physical tile the wire is coming from.
     // When the placement is being solved, the driver may be moved to a physical tile
@@ -899,8 +949,10 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
 
     int tile_dx = sink_block_loc.x - driver_block_loc.x;
     int tile_dy = sink_block_loc.y - driver_block_loc.y;
-    VTR_ASSERT_SAFE(tile_dx < (int)device_grid_width_);
-    VTR_ASSERT_SAFE(tile_dy < (int)device_grid_height_);
+    // The following asserts are to protect the "delay" calls used for the forward
+    // difference calculations below.
+    VTR_ASSERT_SAFE(tile_dx + 1 < (int)device_grid_width_);
+    VTR_ASSERT_SAFE(tile_dy + 1 < (int)device_grid_height_);
 
     // Get the delay of a wire going from the given driver block location to the
     // given sink block location. This should only use the physical tile type of

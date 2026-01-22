@@ -209,7 +209,7 @@ AssignStatement:	TOKEN_ASSIGN Identifier '=' RValue ';'
                                     {
                                         target_wire_index = target_id->index;
                                     }
-                                    /* Iterate through all wires. The trick here is count the wire indicies
+                                    /* Iterate through all wires. The trick here is count the wire indices
                                      * from left to right (either in increasing or decreasing order as may be the case). */
                                     for(	wire_index = pin->left;
                                             ((pin->left > pin->right) ? (wire_index >= pin->right) : (wire_index <= pin->right));
@@ -747,7 +747,7 @@ PinType:	TOKEN_INPUT	{ $$ = $1; }
 
 int yyerror(t_parse_info* parse_info, const char *s)
 {
-	sprintf(most_recent_error, "%s occured at line %i: %s\r\n", s, yylineno, yytext);
+	sprintf(most_recent_error, "%s occurred at line %i: %s\r\n", s, yylineno, yytext);
 	return 0;
 }
 

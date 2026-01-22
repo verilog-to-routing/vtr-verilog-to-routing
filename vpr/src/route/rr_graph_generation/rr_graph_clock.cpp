@@ -130,14 +130,14 @@ std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
 
 int ClockRRGraphBuilder::get_and_increment_chanx_ptc_num() {
     // ptc_num is determined by the channel width
-    // The channel width lets the drawing engine how much to space the LBs appart
+    // The channel width lets the drawing engine how much to space the LBs apart
     int ptc_num = chan_width_.x_max + (chanx_ptc_idx_++);
     return ptc_num;
 }
 
 int ClockRRGraphBuilder::get_and_increment_chany_ptc_num() {
     // ptc_num is determined by the channel width
-    // The channel width lets the drawing engine how much to space the LBs appart
+    // The channel width lets the drawing engine how much to space the LBs apart
     int ptc_num = chan_width_.y_max + (chany_ptc_idx_++);
     return ptc_num;
 }

@@ -37,6 +37,7 @@ struct t_options {
     argparse::ArgValue<std::string> write_constraints_file;
     argparse::ArgValue<std::string> read_flat_place_file;
     argparse::ArgValue<std::string> write_flat_place_file;
+    argparse::ArgValue<std::string> write_legalized_flat_place_file;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;
     argparse::ArgValue<std::string> read_placement_delay_lookup;
@@ -106,6 +107,7 @@ struct t_options {
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
     argparse::ArgValue<std::vector<std::string>> ap_partial_legalizer_target_density;
     argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
+    argparse::ArgValue<std::vector<std::string>> appack_unrelated_clustering_args;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;
@@ -135,6 +137,7 @@ struct t_options {
     argparse::ArgValue<float> place_init_t;
     argparse::ArgValue<float> place_exit_t;
     argparse::ArgValue<float> place_alpha_t;
+    argparse::ArgValue<e_anneal_init_t_estimator> place_init_t_estimator;
     argparse::ArgValue<e_sched_type> anneal_sched_type;
     argparse::ArgValue<e_place_algorithm> place_algorithm;
     argparse::ArgValue<e_place_algorithm> place_quench_algorithm;
@@ -232,7 +235,6 @@ struct t_options {
     argparse::ArgValue<bool> flat_routing;
     argparse::ArgValue<bool> router_opt_choke_points;
     argparse::ArgValue<int> route_verbosity;
-    argparse::ArgValue<int> custom_3d_sb_fanin_fanout;
 
     // Timing-driven router options only
     argparse::ArgValue<float> astar_fac;
@@ -284,6 +286,15 @@ struct t_options {
     argparse::ArgValue<std::string> write_timing_summary;
     argparse::ArgValue<bool> skip_sync_clustering_and_routing_results;
     argparse::ArgValue<bool> generate_net_timing_report;
+
+    /* CRR options */
+    argparse::ArgValue<std::string> sb_maps;
+    argparse::ArgValue<std::string> sb_templates;
+    argparse::ArgValue<bool> preserve_input_pin_connections;
+    argparse::ArgValue<bool> preserve_output_pin_connections;
+    argparse::ArgValue<bool> annotated_rr_graph;
+    argparse::ArgValue<bool> remove_dangling_nodes;
+    argparse::ArgValue<std::string> sb_count_dir;
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);

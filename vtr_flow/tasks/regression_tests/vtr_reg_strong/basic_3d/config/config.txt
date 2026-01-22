@@ -1,0 +1,41 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif/4
+
+# Path to directory of architectures to use
+archs_dir=arch/multi_die/simple_arch
+
+# Add architectures to list to sweep
+arch_list_add=3d_k4_N4_90nm_opin_per_side.xml
+arch_list_add=3d_k4_N4_90nm_opin_per_block.xml
+
+# Add circuits to list to sweep
+# This is a sweep of blif files which pack to a density between 50% and 90% of
+# the max density on this device.
+circuit_list_add=s820.blif
+circuit_list_add=s838.1.blif
+circuit_list_add=bw.blif
+circuit_list_add=rd84.blif
+circuit_list_add=s832.blif
+circuit_list_add=mm9a.blif
+circuit_list_add=alu2.blif
+circuit_list_add=x1.blif
+circuit_list_add=t481.blif
+circuit_list_add=mm9b.blif
+circuit_list_add=styr.blif
+circuit_list_add=s953.blif
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_fixed_chan_width.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+script_params=-starting_stage vpr -track_memory_usage --device FPGA3D --route_chan_width 100
+

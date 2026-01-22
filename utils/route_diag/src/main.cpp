@@ -12,6 +12,7 @@
 
 #include <fstream>
 
+#include "vpr_types.h"
 #include "vtr_error.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
@@ -95,7 +96,8 @@ static void do_one_route(const Netlist<>& net_list,
                                                   router_opts.write_router_lookahead,
                                                   router_opts.read_router_lookahead,
                                                   segment_inf,
-                                                  is_flat);
+                                                  is_flat,
+                                                  router_opts.route_verbosity);
 
     SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
@@ -105,7 +107,8 @@ static void do_one_route(const Netlist<>& net_list,
             device_ctx.rr_rc_data,
             device_ctx.rr_graph.rr_switch(),
             g_vpr_ctx.mutable_routing().rr_node_route_inf,
-            is_flat);
+            is_flat,
+            router_opts.route_verbosity);
     enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
     bool found_path;
     RTExploredNode cheapest;
@@ -124,7 +127,7 @@ static void do_one_route(const Netlist<>& net_list,
         VTR_ASSERT(cheapest.index == sink_node);
 
         vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, router_opts.flat_routing);
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, UNDEFINED, nullptr, router_opts.flat_routing);
 
         //find delay
         float net_delay = rt_node_of_sink.value().Tdel;
@@ -160,7 +163,8 @@ static void profile_source(const Netlist<>& net_list,
                                                   router_opts.write_router_lookahead,
                                                   router_opts.read_router_lookahead,
                                                   segment_inf,
-                                                  is_flat);
+                                                  is_flat,
+                                                  router_opts.route_verbosity);
     RouterDelayProfiler profiler(net_list, router_lookahead.get(), is_flat);
 
     int start_x = 0;
@@ -170,7 +174,7 @@ static void profile_source(const Netlist<>& net_list,
 
     vtr::Matrix<float> delays({grid.width(), grid.height()},
             std::numeric_limits<float>::infinity());
-    vtr::Matrix<int> sink_nodes({grid.width(), grid.height()}, OPEN);
+    vtr::Matrix<int> sink_nodes({grid.width(), grid.height()}, UNDEFINED);
 
     for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
         for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
@@ -178,11 +182,11 @@ static void profile_source(const Netlist<>& net_list,
                 continue;
             }
 
-            auto best_sink_ptcs = get_best_classes(RECEIVER,
+            auto best_sink_ptcs = get_best_classes(e_pin_type::RECEIVER,
                                                    device_ctx.grid.get_physical_type({sink_x, sink_y, layer_num}));
             bool successfully_routed;
             for (int sink_ptc : best_sink_ptcs) {
-                VTR_ASSERT(sink_ptc != OPEN);
+                VTR_ASSERT(sink_ptc != UNDEFINED);
 
                 //TODO: should pass layer_num instead of 0 to node_lookup once the multi-die FPGAs support is completed
                 RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(0, sink_x, sink_y, e_rr_type::SINK, sink_ptc);
@@ -292,6 +296,7 @@ int main(int argc, const char **argv) {
 
         alloc_routing_structs(chan_width,
                               vpr_setup.RouterOpts,
+                              vpr_setup.CRROpts,
                               vpr_setup.RoutingArch,
                               vpr_setup.Segments,
                               Arch.directs,

@@ -33,7 +33,7 @@ struct PartialPlacement;
  *
  * This declares the functionality that all Global Placers will use. This
  * provides a standard interface for the global placers so they can be used
- * interchangably. This makes it very easy to test and compare different global
+ * interchangeably. This makes it very easy to test and compare different global
  * placers.
  */
 class GlobalPlacer {
@@ -127,12 +127,12 @@ class SimPLGlobalPlacer : public GlobalPlacer {
     ///        between the two bounds, normalized to the upper-bound, is smaller
     ///        than this number.
     ///        This number was empircally found to work well.
-    static constexpr double target_hpwl_relative_gap_ = 0.05;
+    static constexpr double target_hpwl_relative_gap_ = 0.01;
 
     /// @brief The solver which generates the lower-bound placement.
     std::unique_ptr<AnalyticalSolver> solver_;
 
-    /// @brief The denisty manager the partial legalizer will optimize over.
+    /// @brief The density manager the partial legalizer will optimize over.
     std::shared_ptr<FlatPlacementDensityManager> density_manager_;
 
     /// @brief The legalizer which generates the upper-bound placement.

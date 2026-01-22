@@ -8,10 +8,10 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/titan_blif/titan_new/stratix10
+circuits_dir=benchmarks/titan_blif/titanium/stratix10
 
 # Path to directory of SDCs to use
-sdc_dir=benchmarks/titan_blif/titan_new/stratix10
+sdc_dir=benchmarks/titan_blif/titanium/stratix10
 
 # Path to directory of architectures to use
 archs_dir=arch/titan

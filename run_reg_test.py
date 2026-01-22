@@ -200,7 +200,10 @@ def vtr_command_main(arg_list, prog=None):
     elif tests_run and total_num_func_failures != 0 or total_num_qor_failures != 0:
         print("Error: {} tests failed".format(total_num_func_failures + total_num_qor_failures))
 
-    sys.exit(total_num_func_failures + total_num_qor_failures)
+    # If the QoR parsing script throws an exception, it returns -1.
+    # This could potentially cancel a run failure and result in a false negative.
+    # Absolute value is taken to avoid that.
+    sys.exit(abs(total_num_func_failures) + abs(total_num_qor_failures))
 
 
 def display_qor(reg_test):
@@ -211,7 +214,6 @@ def display_qor(reg_test):
         return 1
     print_header("{} QoR Results".format(reg_test))
     with (test_dir / "qor_geomean.txt").open("r") as results:
-
         # create list of desired values, their unit and how to display them.
         data = OrderedDict()
         data["revision"] = ["", "{}"]
@@ -373,7 +375,7 @@ def parse_single_test(task_lists, check=True, calculate=True, create=False):
 
 
 def print_header(heading, divider="=", print_first_line=True):
-    """Print heading formated in the center of two lines"""
+    """Print heading formatted in the center of two lines"""
     if print_first_line:
         print(divider * len(heading) * 2)
     print(" " * int((len(heading) / 2)), end="")

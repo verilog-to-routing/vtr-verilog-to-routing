@@ -29,6 +29,7 @@ void print_clb_placement(const char* fname);
 void try_place(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
                const t_router_opts& router_opts,
+               const t_crr_opts& crr_opts,
                const t_analysis_opts& analysis_opts,
                const t_noc_opts& noc_opts,
                const t_chan_width_dist& chan_width_dist,
@@ -85,6 +86,7 @@ void try_place(const Netlist<>& net_list,
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = PlacementDelayModelCreator::create_delay_model(placer_opts,
                                                                            router_opts,
+                                                                           crr_opts,
                                                                            net_list,
                                                                            det_routing_arch,
                                                                            segment_inf,
@@ -155,6 +157,6 @@ static void update_screen_debug();
 //This function with no arguments is useful for calling from a debugger to
 //look at the intermediate implementation state.
 static void update_screen_debug() {
-    update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", PLACEMENT, nullptr);
+    update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", e_pic_type::PLACEMENT, nullptr);
 }
 #endif

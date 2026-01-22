@@ -86,7 +86,7 @@ void t_intra_cluster_placement_stats::move_primitive_to_inflight(int pb_type_ind
 void t_intra_cluster_placement_stats::insert_primitive_in_valid_primitives(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive) {
     int i;
     bool success = false;
-    int null_index = OPEN;
+    int null_index = UNDEFINED;
     t_cluster_placement_primitive* input_cluster_placement_primitive = cluster_placement_primitive.second;
 
     for (i = 0; i < num_pb_types && !success; i++) {
@@ -102,7 +102,7 @@ void t_intra_cluster_placement_stats::insert_primitive_in_valid_primitives(std::
         }
     }
     if (!success) {
-        VTR_ASSERT(null_index != OPEN);
+        VTR_ASSERT(null_index != UNDEFINED);
         valid_primitives[null_index].insert(cluster_placement_primitive);
     }
 }
@@ -207,7 +207,7 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
      * 4. Return NULL if not found
      */
 
-    // Intialize variables
+    // Initialize variables
     bool found_best = false;
     lowest_cost = std::numeric_limits<float>::max();
 

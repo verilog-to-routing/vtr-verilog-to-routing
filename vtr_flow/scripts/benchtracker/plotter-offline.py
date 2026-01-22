@@ -120,7 +120,7 @@ class Data_Collection:
 
     def transpose_overlay_axes(self, overlay_axis, y_type="raw"):
         if y_type == "gmean" and self.axis_cur_gmean_order == []:
-            print "**** CANNOT FILTER ON GMEAN YET. AXIS NOT SET ****"
+            print("**** CANNOT FILTER ON GMEAN YET. AXIS NOT SET ****")
         axis_cost_temp = (y_type == "gmean" and [self.axis_gmean_cost] or [self.axis_raw_cost])[0]
         axis_cost_temp = {k: (v + (k in overlay_axis)) for (k, v) in axis_cost_temp.items()}
         # NOTE: now axis_raw_cost is converted from dict to list of tuples, so that it is ordered by the cost value.
@@ -226,6 +226,7 @@ class UI:
             i.e.: y_sublist = y_raw_list[i]
         figure_name
     """
+
     # TODO: if some x,y series are all -1, then we should not create the figure
     def figure_traverser(
         self, y_sub_list, namemap, axis_left, xy_namemap, y_i, figure_name, plot_type="plot"
@@ -291,7 +292,7 @@ class UI:
                     plot_type,
                 )
         else:
-            print err_msg["choose plot to show"]
+            print(err_msg["choose plot to show"])
         plt.show()
 
 
@@ -303,37 +304,37 @@ filter_method = {"TEXT": "IN", "INTEGER": "BETWEEN", "REAL": "BETWEEN"}
 
 def db_connector():
     tasks = idb.list_tasks()
-    print "available tasks: "
+    print("available tasks: ")
     for i in range(len(tasks)):
-        print "[" + str(i) + "]: ", tasks[i]
+        print("[" + str(i) + "]: ", tasks[i])
     task_num = int(raw_input("which task to choose (input the index): "))
     available_choice = idb.describe_tasks([tasks[task_num]])
     available_name = [k.raw()[0] for k in available_choice]
     available_type = [k.raw()[1] for k in available_choice]
-    print "==========================================================="
-    print "available choices:"
-    print "\n".join(i for i in available_choice)
-    print "==========================================================="
+    print("===========================================================")
+    print("available choices:")
+    print("\n".join(i for i in available_choice))
+    print("===========================================================")
     while 1:
         x = raw_input("choose a x axis name: ")
         if x in available_name:
             break
-        print err_msg["choose axis"]
+        print(err_msg["choose axis"])
     while 1:
         y = raw_input("choose a y axis name: ")
         if y in available_name:
             break
-        print err_msg["choose axis"]
+        print(err_msg["choose axis"])
     filt_list = []
     filt_name_list = []
     cur_choice = None
-    print "==========================================================="
+    print("===========================================================")
     while 1:
         while 1:
             cur_choice = raw_input("choose filter name (enter empty string to exit): ")
             if (cur_choice in available_name) or (cur_choice == ""):
                 break
-            print err_msg["choose axis"]
+            print(err_msg["choose axis"])
         if cur_choice == "":
             break
         filt_name_list.append(cur_choice)
@@ -341,10 +342,10 @@ def db_connector():
         fname = cur_choice
         fmethod = filter_method[cur_type]
         param_range = idb.describe_param(cur_choice + " " + cur_type, "range", tasks[task_num])
-        print "available range: ", param_range
+        print("available range: ", param_range)
         frange = None
         if len(param_range) == 1:
-            print "set range to: ", param_range
+            print("set range to: ", param_range)
             frange = param_range
         else:
             cur_range = raw_input(
@@ -356,15 +357,15 @@ def db_connector():
             elif fmethod == "IN" and choice_fields != []:
                 frange = choice_fields
             elif choice_fields == []:
-                print "set range to: ", param_range
+                print("set range to: ", param_range)
                 frange = param_range
             else:
-                print err_msg["choose method"]
+                print(err_msg["choose method"])
         # filt_list.append(idb.Task_filter(fname, fmethod, frange))
         filt_list.append(frange[1])
     filt_list = [item for sublist in filt_list for item in sublist]
-    print "------"
-    print filt_list
+    print("------")
+    print(filt_list)
     data = idb.retrieve_data(x, y, filt_list, [tasks[task_num]])[1]
     return {"data": data, "filt_name_list": filt_name_list, "x": x, "y": y}
 
@@ -380,15 +381,44 @@ def main():
     filt_name_list = ret["filt_name_list"]
     data_collection = data_converter(data, ret["x"], ret["y"], filt_name_list)
 
-    print "########################################"
-    print "---- Description: ----\n" + ">>\n" + "VPR benchmark experiment should have 2 types of data: \n" + "parameter: settings in for the experiment (e.g.: fc, wire length, switch block ...)\n" + "metrics: measurements from the VPR output (e.g.: min chan width, critical path delay ...)\n" + ">>\n" + "Data passed into this plotter should have already been classified into 3 axes: \n" + "one [x] axis (chosen from parameter)\n" + "multiple [y] axis (chosen from metrics)\n" + "multiple [filter] axis (all the unchosen parameters)\n" + ">>\n" + "For example, if the experiment has: \n" + "[arch, circuit, wire length, switch block, fc, min chan width, critical path delay, area, total wire length]\n" + "and you choose fc as x axis, [min chan width, critical path delay, area, total wire length] as y axes,\n" + "then filter axes are the unchosen parameters, i.e.: arch, circuit, wire length, switch block. "
-    print "#########################################"
-    print "---- Usage ----\n" + ">>\n" + "1. choose overlay axes among the filter axes (overlay axes will become legend in a single plot)\n" + '2. choose whether to whether to calculate the geo mean over the overlay axis ("merge" function)\n' + "   (Notice: you can choose as many overlay axes as you like, but when you choose merge, it will only\n" + "    calculate the geo mean over the last overlay axis. So for example, if your overlay axes are [fc, circuit],\n" + "    the merge will only get geo mean over all the circuits rather that all the (circuit,fc) combination, and \n" + "    fc will still be overlaid in the merged plot.)\n" + '3. the data after geo mean calcultion will be referred to as "gmean", and the data before the geo mean will be \n' + '   referred to as "raw", you can switch the overlay axes for both gmean data and raw data, for as many times \n' + '   as you like. But once you "merge" on a new axis, the old gmean data will be replaced by the new one, and further\n' + "   operation will be acted on only the new gmean data."
+    print("########################################")
+    print(
+        "---- Description: ----\n"
+        + ">>\n"
+        + "VPR benchmark experiment should have 2 types of data: \n"
+        + "parameter: settings in for the experiment (e.g.: fc, wire length, switch block ...)\n"
+        + "metrics: measurements from the VPR output (e.g.: min chan width, critical path delay ...)\n"
+        + ">>\n"
+        + "Data passed into this plotter should have already been classified into 3 axes: \n"
+        + "one [x] axis (chosen from parameter)\n"
+        + "multiple [y] axis (chosen from metrics)\n"
+        + "multiple [filter] axis (all the unchosen parameters)\n"
+        + ">>\n"
+        + "For example, if the experiment has: \n"
+        + "[arch, circuit, wire length, switch block, fc, min chan width, critical path delay, area, total wire length]\n"
+        + "and you choose fc as x axis, [min chan width, critical path delay, area, total wire length] as y axes,\n"
+        + "then filter axes are the unchosen parameters, i.e.: arch, circuit, wire length, switch block. "
+    )
+    print("#########################################")
+    print(
+        "---- Usage ----\n"
+        + ">>\n"
+        + "1. choose overlay axes among the filter axes (overlay axes will become legend in a single plot)\n"
+        + '2. choose whether to whether to calculate the geo mean over the overlay axis ("merge" function)\n'
+        + "   (Notice: you can choose as many overlay axes as you like, but when you choose merge, it will only\n"
+        + "    calculate the geo mean over the last overlay axis. So for example, if your overlay axes are [fc, circuit],\n"
+        + "    the merge will only get geo mean over all the circuits rather that all the (circuit,fc) combination, and \n"
+        + "    fc will still be overlaid in the merged plot.)\n"
+        + '3. the data after geo mean calcultion will be referred to as "gmean", and the data before the geo mean will be \n'
+        + '   referred to as "raw", you can switch the overlay axes for both gmean data and raw data, for as many times \n'
+        + '   as you like. But once you "merge" on a new axis, the old gmean data will be replaced by the new one, and further\n'
+        + "   operation will be acted on only the new gmean data."
+    )
     while 1:
-        print ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
-        print "available axis to overlay: "
-        print "for the raw data", data_collection.axis_cur_raw_order
-        print "for the gmean data", data_collection.axis_cur_gmean_order
+        print(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
+        print("available axis to overlay: ")
+        print("for the raw data", data_collection.axis_cur_raw_order)
+        print("for the gmean data", data_collection.axis_cur_gmean_order)
         overlay_type = None
         overlay_axis = []
         if data_collection.y_gmean_list != []:
@@ -399,7 +429,7 @@ def main():
                 elif overlay_type == "raw":
                     break
                 else:
-                    print err_msg["choose overlay type"]
+                    print(err_msg["choose overlay type"])
         else:
             overlay_type = "raw"
         while 1:
@@ -425,7 +455,7 @@ def main():
                 ):
                     break
                 else:
-                    print err_msg["overlay axis"]
+                    print(err_msg["overlay axis"])
 
         data_collection.transpose_overlay_axes(overlay_axis, overlay_type)
         overlay_merge = 0
@@ -440,7 +470,7 @@ def main():
                     overlay_merge = 0
                     break
                 else:
-                    print err_msg["yes or no"]
+                    print(err_msg["yes or no"])
         ui = UI()
         if overlay_type == "raw":
             axis_left = [k for k in data_collection.axis_cur_raw_order if k not in overlay_axis]
@@ -459,7 +489,7 @@ def main():
             elif show_plot_type == "":
                 break
             else:
-                print err_msg["choose plot to show"]
+                print(err_msg["choose plot to show"])
 
 
 if __name__ == "__main__":

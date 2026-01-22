@@ -93,9 +93,9 @@ constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
 
 #define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
-#ifndef UNDEFINED
-#define UNDEFINED (-1)
-#endif
+
+// Used for illegal/undefined values of indices, where legal values should be greater or equal to zero
+constexpr int UNDEFINED = -1;
 
 ///@brief Router lookahead types.
 enum class e_router_lookahead {
@@ -107,6 +107,8 @@ enum class e_router_lookahead {
     COMPRESSED_MAP,
     ///@brief Lookahead with a more extensive node sampling method
     EXTENDED_MAP,
+    ///@brief Simple distance-based lookahead
+    SIMPLE,
     ///@brief A no-operation lookahead which always returns zero
     NO_OP
 };
@@ -206,7 +208,7 @@ class t_pack_high_fanout_thresholds {
     explicit t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
     t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
-    ///@brief Returns the high fanout threshold of the specifi  ed block
+    ///@brief Returns the high fanout threshold of the specified block
     int get_threshold(std::string_view block_type_name) const;
 
     ///@brief Returns a string describing high fanout thresholds for different block types
@@ -340,7 +342,7 @@ class t_pb {
 ///@brief Representation of intra-logic block routing
 struct t_pb_route {
     AtomNetId atom_net_id;                        ///<which net in the atom netlist uses this pin
-    int driver_pb_pin_id = OPEN;                  ///<The pb_pin id of the pb_pin that drives this pin
+    int driver_pb_pin_id = UNDEFINED;             ///<The pb_pin id of the pb_pin that drives this pin
     std::vector<int> sink_pb_pin_ids;             ///<The pb_pin id's of the pb_pins driven by this node
     const t_pb_graph_pin* pb_graph_pin = nullptr; ///<The graph pin associated with this node
 };
@@ -382,10 +384,11 @@ enum class e_sched_type {
     USER_SCHED
 };
 
-// What's on screen?
-enum pic_type {
+/// Specifies what is shown on screen
+enum class e_pic_type {
     NO_PICTURE,
     PLACEMENT,
+    ANALYTICAL_PLACEMENT,
     ROUTING
 };
 
@@ -432,12 +435,12 @@ struct t_bb {
         VTR_ASSERT(ymax_ >= ymin_);
         VTR_ASSERT(layer_max_ >= layer_min_);
     }
-    int xmin = OPEN;
-    int xmax = OPEN;
-    int ymin = OPEN;
-    int ymax = OPEN;
-    int layer_min = OPEN;
-    int layer_max = OPEN;
+    int xmin = UNDEFINED;
+    int xmax = UNDEFINED;
+    int ymin = UNDEFINED;
+    int ymax = UNDEFINED;
+    int layer_min = UNDEFINED;
+    int layer_max = UNDEFINED;
 };
 
 /**
@@ -457,11 +460,11 @@ struct t_2D_bb {
         VTR_ASSERT(layer_num_ >= 0);
     }
 
-    int xmin = OPEN;
-    int xmax = OPEN;
-    int ymin = OPEN;
-    int ymax = OPEN;
-    int layer_num = OPEN;
+    int xmin = UNDEFINED;
+    int xmax = UNDEFINED;
+    int ymin = UNDEFINED;
+    int ymax = UNDEFINED;
+    int layer_num = UNDEFINED;
 };
 
 /**
@@ -571,10 +574,10 @@ struct t_pl_loc {
         , sub_tile(sub_tile_loc)
         , layer(phy_loc.layer_num) {}
 
-    int x = OPEN;
-    int y = OPEN;
-    int sub_tile = OPEN;
-    int layer = OPEN;
+    int x = UNDEFINED;
+    int y = UNDEFINED;
+    int sub_tile = UNDEFINED;
+    int layer = UNDEFINED;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
         layer += rhs.layer;
@@ -675,6 +678,7 @@ struct t_file_name_opts {
     std::string write_constraints_file;
     std::string read_flat_place_file;
     std::string write_flat_place_file;
+    std::string write_legalized_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
 };
@@ -856,7 +860,7 @@ enum class e_place_bounding_box_mode {
  *
  * Supports the method is_timing_driven(), which allows flexible updates
  * to the placer algorithms if more timing driven placement strategies
- * are added in tht future. This method is used across various placement
+ * are added in the future. This method is used across various placement
  * setup files, and it can be useful for major placer routines as well.
  *
  * More methods can be added to this class if the placement strategies
@@ -964,6 +968,15 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+/**
+ * @brief Enumeration of the different initial temperature estimators available
+ *        for the placer.
+ */
+enum class e_anneal_init_t_estimator {
+    COST_VARIANCE, ///<Estimate the initial temperature using the variance in cost of a set of trial swaps.
+    EQUILIBRIUM,   ///<Estimate the initial temperature by predicting the equilibrium temperature for the initial placement.
+};
+
 enum class e_move_type;
 
 /**
@@ -1021,6 +1034,9 @@ enum class e_move_type;
  *   @param place_auto_init_t_scale
  *              When the annealer is using the automatic schedule, this option
  *              scales the initial temperature selected.
+ *   @param anneal_init_t_estimator
+ *              When the annealer is using the automatic schedule, this option
+ *              selects which estimator is used to select an initial temperature.
  */
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
@@ -1094,6 +1110,8 @@ struct t_placer_opts {
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
 
     float place_auto_init_t_scale;
+
+    e_anneal_init_t_estimator anneal_init_t_estimator;
 };
 
 /******************************************************************
@@ -1128,6 +1146,9 @@ struct t_placer_opts {
  *   @param appack_max_dist_th
  *              Array of string passed by the user to configure the max candidate
  *              distance thresholds.
+ *   @param appack_unrelated_clustering_args
+ *              Array of strings passed by the user to configure the unrelated
+ *              clustering parameters used by APPack.
  *   @param num_threads
  *              The number of threads the AP flow can use.
  *   @param log_verbosity
@@ -1154,6 +1175,8 @@ struct t_ap_opts {
     std::vector<std::string> ap_partial_legalizer_target_density;
 
     std::vector<std::string> appack_max_dist_th;
+
+    std::vector<std::string> appack_unrelated_clustering_args;
 
     unsigned num_threads;
 
@@ -1291,8 +1314,8 @@ struct t_router_opts {
     enum e_route_type route_type;
     int fixed_channel_width;
     int min_channel_width_hint; ///<Hint to binary search of what the minimum channel width is
-    enum e_router_algorithm router_algorithm;
-    enum e_base_cost_type base_cost_type;
+    e_router_algorithm router_algorithm;
+    e_base_cost_type base_cost_type;
     float astar_fac;
     float astar_offset;
     float router_profiler_astar_fac;
@@ -1353,8 +1376,6 @@ struct t_router_opts {
     bool flat_routing;
     bool has_choke_point;
 
-    int custom_3d_sb_fanin_fanout = 1;
-
     bool with_timing_analysis;
 
     /// Whether to verify the switch IDs in the route file with the RR Graph.
@@ -1387,6 +1408,17 @@ struct t_analysis_opts {
 
     e_timing_update_type timing_update_type;
     bool skip_sync_clustering_and_routing_results;
+};
+
+/// Stores CRR specific options
+struct t_crr_opts {
+    std::string sb_maps;
+    std::string sb_templates;
+    bool preserve_input_pin_connections;
+    bool preserve_output_pin_connections;
+    bool annotated_rr_graph;
+    bool remove_dangling_nodes;
+    std::string sb_count_dir;
 };
 
 /// Stores NoC specific options, when supplied as an input by the user
@@ -1467,18 +1499,6 @@ struct t_det_routing_arch {
 
     /// Keeps track of the type of architecture switch that connects wires to ipins
     int wire_to_arch_ipin_switch;
-
-    /// Keeps track of the type of architecture switch that connects
-    /// wires from another die to ipins in different die
-    int wire_to_arch_ipin_switch_between_dice = -1;
-
-    /// keeps track of the type of RR graph switch
-    /// that connects wires to ipins in the RR graph
-    int wire_to_rr_ipin_switch;
-
-    /// keeps track of the type of RR graph switch that connects wires
-    /// from another die to ipins in different die in the RR graph
-    int wire_to_rr_ipin_switch_between_dice = -1;
 
     /// Resistance (in Ohms) of a minimum width nmos transistor.
     /// Used only in the FPGA area model.
@@ -1602,6 +1622,7 @@ struct t_vpr_setup {
     t_ap_opts APOpts;               ///<Options for analytical placer
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
+    t_crr_opts CRROpts;             ///<CRR options
     t_noc_opts NocOpts;             ///<Options for the NoC
     t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture
@@ -1642,5 +1663,3 @@ class RouteStatus {
 };
 
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
-
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;

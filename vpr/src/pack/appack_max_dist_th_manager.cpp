@@ -2,7 +2,7 @@
  * @file
  * @author  Alex Singer
  * @date    May 2025
- * @breif   Definition of the max distance threshold manager class.
+ * @brief   Definition of the max distance threshold manager class.
  */
 
 #include "appack_max_dist_th_manager.h"
@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <vector>
 #include "ap_argparse_utils.h"
+#include "arch_util.h"
 #include "device_grid.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
@@ -17,14 +18,6 @@
 #include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-
-/**
- * @brief Recursive helper method to deduce if the given pb_type is or contains
- *        pb_types which are of the memory class.
- *
- * TODO: This should be a graph traversal instead of a recursive function.
- */
-static bool has_memory_pbs(const t_pb_type* pb_type);
 
 void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
                                   const std::vector<t_logical_block_type>& logical_block_types,
@@ -43,7 +36,7 @@ void APPackMaxDistThManager::init(const std::vector<std::string>& max_dist_ths,
         set_max_distance_thresholds_from_strings(max_dist_ths, logical_block_types);
     }
 
-    // Set the initilized flag to true.
+    // Set the initialized flag to true.
     is_initialized_ = true;
 
     // Log the max distance thresholds for each logical block type. This is
@@ -85,7 +78,7 @@ void APPackMaxDistThManager::auto_set_max_distance_thresholds(const std::vector<
             continue;
 
         // Find which type(s) this logical block type looks like.
-        bool has_memory = has_memory_pbs(lb_ty.pb_type);
+        bool has_memory = pb_type_contains_memory_pbs(lb_ty.pb_type);
         bool is_logic_block_type = (lb_ty.index == logic_block_type->index);
         bool is_io_block = pick_physical_type(&lb_ty)->is_io();
 
@@ -111,30 +104,6 @@ void APPackMaxDistThManager::auto_set_max_distance_thresholds(const std::vector<
             logical_block_dist_thresholds_[lb_ty.index] = max_distance_th_sum / static_cast<float>(block_category_count);
         }
     }
-}
-
-static bool has_memory_pbs(const t_pb_type* pb_type) {
-    if (pb_type == nullptr)
-        return false;
-
-    // Check if this pb_type is a memory class. If so return true. This acts as
-    // a base case for the recursion.
-    if (pb_type->class_type == e_pb_type_class::MEMORY_CLASS)
-        return true;
-
-    // Go through all modes of this pb_type and check if any of those modes'
-    // children have memory pb_types, if so return true.
-    for (int mode_idx = 0; mode_idx < pb_type->num_modes; mode_idx++) {
-        const t_mode& mode = pb_type->modes[mode_idx];
-        for (int child_idx = 0; child_idx < mode.num_pb_type_children; child_idx++) {
-            if (has_memory_pbs(&mode.pb_type_children[child_idx]))
-                return true;
-        }
-    }
-
-    // If this pb_type is not a memory and its modes do not have memory pbs in
-    // them, then this pb_type is not a memory.
-    return false;
 }
 
 void APPackMaxDistThManager::set_max_distance_thresholds_from_strings(

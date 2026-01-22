@@ -38,7 +38,7 @@
 #include "power_util.h"
 #include "power_lowlevel.h"
 #include "power_sizing.h"
-#include "power_callibrate.h"
+#include "power_calibrate.h"
 #include "power_cmos_tech.h"
 
 #include "physical_types.h"
@@ -118,7 +118,7 @@ void power_routing_init(const t_det_routing_arch& routing_arch);
  *  This function calculates the power of primitives (ff, lut, etc),
  *  by calling the appropriate primitive function.
  *  - power_usage: (Return value)
- *  - pb: The pysical block
+ *  - pb: The physical block
  *  - pb_graph_node: The physical block graph node
  *  - calc_dynamic: Calculate dynamic power? Otherwise ignore
  *  - calc_static: Calculate static power? Otherwise ignore
@@ -303,7 +303,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage* power_usage,
  * First checks if dynamic/static power is provided by user in arch file.  If not:
  * - Calculate power of all interconnect
  * - Call recursively for children
- * - If no children, must be a primitive.  Call primitive hander.
+ * - If no children, must be a primitive.  Call primitive handler.
  */
 static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node* pb_node, ClusterBlockId iblk) {
     t_power_usage power_usage_bufs_wires;
@@ -592,7 +592,7 @@ static void power_reset_tile_usage() {
 }
 
 /*
- * Calcultes the power usage of all tiles in the FPGA
+ * Calculates the power usage of all tiles in the FPGA
  */
 static void power_usage_blocks(t_power_usage* power_usage) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -605,38 +605,32 @@ static void power_usage_blocks(t_power_usage* power_usage) {
 
     t_logical_block_type_ptr logical_block;
 
-    /* Loop through all grid locations */
-    for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        for (int x = 0; x < (int)device_ctx.grid.width(); x++) {
-            for (int y = 0; y < (int)device_ctx.grid.height(); y++) {
-                auto physical_tile = device_ctx.grid.get_physical_type({x, y, layer_num});
-                int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
-                int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
+    // Loop through all grid locations
+    for (const t_physical_tile_loc tile_loc : device_ctx.grid.all_locations()) {
+        t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type(tile_loc);
+        int width_offset = device_ctx.grid.get_width_offset(tile_loc);
+        int height_offset = device_ctx.grid.get_height_offset(tile_loc);
 
-                if ((width_offset != 0)
-                    || (height_offset != 0)
-                    || is_empty_type(physical_tile)) {
-                    continue;
-                }
+        if (width_offset != 0 || height_offset != 0 || is_empty_type(physical_tile)) {
+            continue;
+        }
 
-                for (int z = 0; z < physical_tile->capacity; z++) {
-                    t_pb* pb = nullptr;
-                    t_power_usage pb_power;
+        for (int z = 0; z < physical_tile->capacity; z++) {
+            t_pb* pb = nullptr;
+            t_power_usage pb_power;
 
-                    ClusterBlockId iblk = place_ctx.grid_blocks().block_at_location({x, y, z, layer_num});
+            ClusterBlockId iblk = place_ctx.grid_blocks().block_at_location({tile_loc, z});
 
-                    if (iblk) {
-                        pb = cluster_ctx.clb_nlist.block_pb(iblk);
-                        logical_block = cluster_ctx.clb_nlist.block_type(iblk);
-                    } else {
-                        logical_block = pick_logical_type(physical_tile);
-                    }
-
-                    /* Calculate power of this CLB */
-                    power_usage_pb(&pb_power, pb, logical_block->pb_graph_head, iblk);
-                    power_add_usage(power_usage, &pb_power);
-                }
+            if (iblk) {
+                pb = cluster_ctx.clb_nlist.block_pb(iblk);
+                logical_block = cluster_ctx.clb_nlist.block_type(iblk);
+            } else {
+                logical_block = pick_logical_type(physical_tile);
             }
+
+            // Calculate power of this CLB
+            power_usage_pb(&pb_power, pb, logical_block->pb_graph_head, iblk);
+            power_add_usage(power_usage, &pb_power);
         }
     }
 }
@@ -828,7 +822,7 @@ static void power_usage_routing(t_power_usage* power_usage,
 
             for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rt_node.inode); edge_idx++) {
                 const auto& next_node_id = size_t(rr_graph.edge_sink_node(rt_node.inode, edge_idx));
-                if (next_node_id != size_t(OPEN)) {
+                if (next_node_id != size_t(UNDEFINED)) {
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
 
                     switch (rr_graph.node_type(RRNodeId(next_node_id))) {
@@ -985,7 +979,8 @@ static void power_usage_routing(t_power_usage* power_usage,
                 connectionbox_fanout = 0;
                 switchbox_fanout = 0;
                 for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
-                    if (rr_graph.edge_switch(rr_id, iedge) == routing_arch.wire_to_rr_ipin_switch) {
+                    RRNodeId edge_sink = rr_graph.edge_sink_node(rr_id, iedge);
+                    if (rr_graph.node_type(edge_sink) == e_rr_type::IPIN) {
                         connectionbox_fanout++;
                     } else if (rr_graph.edge_switch(rr_id, iedge) == routing_arch.delayless_switch) {
                         /* Do nothing */
@@ -1201,7 +1196,7 @@ void power_routing_init(const t_det_routing_arch& routing_arch) {
     rr_node_power = new t_rr_node_power[rr_graph.num_nodes()];
     for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
         rr_node_power[(size_t)rr_id] = t_rr_node_power();
-        rr_node_power[(size_t)rr_id].driver_switch_type = OPEN;
+        rr_node_power[(size_t)rr_id].driver_switch_type = UNDEFINED;
     }
 
     /* Initialize Mux Architectures */
@@ -1231,7 +1226,8 @@ void power_routing_init(const t_det_routing_arch& routing_arch) {
             case e_rr_type::CHANX:
             case e_rr_type::CHANY:
                 for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_node_idx); iedge++) {
-                    if (rr_graph.edge_switch(rr_node_idx, iedge) == routing_arch.wire_to_rr_ipin_switch) {
+                    RRNodeId edge_sink = rr_graph.edge_sink_node(rr_node_idx, iedge);
+                    if (rr_graph.node_type(edge_sink) == e_rr_type::IPIN) {
                         fanout_to_IPIN++;
                     } else if (rr_graph.edge_switch(rr_node_idx, iedge) != routing_arch.delayless_switch) {
                         fanout_to_seg++;
@@ -1267,7 +1263,7 @@ void power_routing_init(const t_det_routing_arch& routing_arch) {
     for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
         for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rr_node_idx); edge_idx++) {
             if (size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))) {
-                if (rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == OPEN) {
+                if (rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == UNDEFINED) {
                     rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type = rr_graph.edge_switch(rr_node_idx, edge_idx);
                 } else {
                     VTR_ASSERT(rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == rr_graph.edge_switch(rr_node_idx, edge_idx));
@@ -1337,8 +1333,8 @@ bool power_init(const char* power_out_filepath,
     /* Initialize sub-modules */
     power_components_init();
 
-    /* Perform callibration */
-    power_callibrate();
+    /* Perform calibration */
+    power_calibrate();
 
     /* Initialize routing information */
     power_routing_init(routing_arch);
@@ -1350,7 +1346,7 @@ bool power_init(const char* power_out_filepath,
     power_sizing_init();
 
     //power_print_spice_comparison();
-    //	power_print_callibration();
+    //	power_print_calibration();
 
     return error;
 }
@@ -1392,10 +1388,10 @@ bool power_uninit() {
         delete mux_info;
     }
     /* Free components */
-    for (int i = 0; i < POWER_CALLIB_COMPONENT_MAX; ++i) {
-        delete power_ctx.commonly_used->component_callibration[i];
+    for (int i = 0; i < POWER_CALIB_COMPONENT_MAX; ++i) {
+        delete power_ctx.commonly_used->component_calibration[i];
     }
-    delete[] power_ctx.commonly_used->component_callibration;
+    delete[] power_ctx.commonly_used->component_calibration;
 
     delete power_ctx.commonly_used;
 
@@ -1414,7 +1410,7 @@ bool power_uninit() {
 
 #if 0
 /**
- * Prints the power of all pb structures, in an xml format that matches the archicture file
+ * Prints the power of all pb structures, in an xml format that matches the architecture file
  */
 static void power_print_pb_usage_recursive(FILE * fp, t_pb_type * type,
 		int indent_level, float parent_power, float total_power) {
@@ -1583,7 +1579,7 @@ static const char* power_estimation_method_name(e_power_estimation_method power_
         case POWER_METHOD_SUM_OF_CHILDREN:
             return "Sum of Children";
         default:
-            return "Unkown";
+            return "Unknown";
     }
 }
 
@@ -1777,7 +1773,7 @@ e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, co
 
 /**
  * Prints the power usage for all components
- * - fp: File descripter to print out to
+ * - fp: File descriptor to print out to
  */
 static void power_print_breakdown_summary(FILE* fp) {
     power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, nullptr,

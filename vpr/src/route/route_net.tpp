@@ -161,7 +161,7 @@ inline NetResultFlags route_net(ConnectionRouterType& router,
             || route_constraints.get_route_model_by_net_name(net_name) == e_clock_modeling::DEDICATED_NETWORK) {
             std::string clock_network_name = "";
 
-            // If a user-specified routing constratins exists for the curret net get the clock network name
+            // If a user-specified routing constraints exists for the current net get the clock network name
             // from the constraints file, otherwise use the default clock network name
             if (route_constraints.has_routing_constraint(net_name)) {
                 clock_network_name = route_constraints.get_routing_network_name_by_net_name(net_name);
@@ -340,7 +340,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
                 net_list.net_name(net_id).c_str(),
                 size_t(net_id));
         if (f_router_debug) {
-            update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", ROUTING, nullptr);
+            update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", e_pic_type::ROUTING, nullptr);
         }
         router.reset_path_costs();
         out.success = false;
@@ -353,15 +353,15 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
     /* This is a special pre-route to a sink that does not correspond to any    *
      * netlist pin, but which can be reached from the global clock root drive   *
      * points. Therefore, we can set the net pin index of the sink node to      *
-     * OPEN (meaning illegal) as it is not meaningful for this sink.            */
+     * UNDEFINED (meaning illegal) as it is not meaningful for this sink.            */
     vtr::optional<const RouteTreeNode&> new_branch, new_sink;
-    std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest, OPEN, ((high_fanout) ? &spatial_rt_lookup : nullptr), is_flat);
+    std::tie(new_branch, new_sink) = tree.update_from_heap(&cheapest, UNDEFINED, ((high_fanout) ? &spatial_rt_lookup : nullptr), is_flat);
 
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(tree.root(), spatial_rt_lookup));
 
     if (f_router_debug) {
         std::string msg = vtr::string_fmt("Routed Net %zu connection to RR node %d successfully", size_t(net_id), sink_node);
-        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
+        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), e_pic_type::ROUTING, nullptr);
     }
 
     if (new_branch)
@@ -472,7 +472,7 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
                 net_list.net_name(net_id).c_str(),
                 size_t(net_id));
         if (f_router_debug) {
-            update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", ROUTING, nullptr);
+            update_screen(ScreenUpdatePriority::MAJOR, "Unable to route connection.", e_pic_type::ROUTING, nullptr);
         }
         flags.success = false;
         router.reset_path_costs();
@@ -488,7 +488,7 @@ inline NetResultFlags route_sink(ConnectionRouterType& router,
 
     if (f_router_debug) {
         std::string msg = vtr::string_fmt("Routed Net %zu connection %d to RR node %d successfully", size_t(net_id), itarget, sink_node);
-        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
+        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), e_pic_type::ROUTING, nullptr);
     }
 
     if (budgeting_inf.if_set() && cheapest.rcv_path_backward_delay != std::numeric_limits<float>::infinity() && cost_params.delay_budget) {

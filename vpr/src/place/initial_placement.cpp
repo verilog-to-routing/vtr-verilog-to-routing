@@ -415,18 +415,29 @@ static bool find_centroid_neighbor(ClusterBlockId block_id,
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int centroid_loc_layer_num = centroid_loc.layer;
+    VTR_ASSERT(centroid_loc_layer_num != UNDEFINED);
 
     //Determine centroid location in the compressed space of the current block
     auto compressed_centroid_loc = get_compressed_loc_approx(compressed_block_grid,
                                                              centroid_loc,
                                                              num_layers);
 
+    // If no compressed location can be found on this layer, return false.
+    // TODO: Maybe search in the layers above or below.
+    const t_physical_tile_loc& compressed_loc_on_layer = compressed_centroid_loc[centroid_loc.layer];
+    if (compressed_loc_on_layer.x == UNDEFINED || compressed_loc_on_layer.y == UNDEFINED) {
+        VTR_ASSERT_MSG(compressed_loc_on_layer.x == UNDEFINED && compressed_loc_on_layer.y == UNDEFINED,
+                       "When searching for a compressed location, and a location cannot be found "
+                       "both x and y should be OPEN.");
+        return false;
+    }
+
     //range limit (rlim) set a limit for the neighbor search in the centroid placement
     //the neighbor location should be within the defined range to calculated centroid location
     int first_rlim = rlim;
 
     auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
-                                                                compressed_centroid_loc[centroid_loc_layer_num],
+                                                                compressed_loc_on_layer,
                                                                 first_rlim);
 
     int delta_cx = search_range.xmax - search_range.xmin;
@@ -444,8 +455,8 @@ static bool find_centroid_neighbor(ClusterBlockId block_id,
     }
 
     //Block has not been placed yet, so the "from" coords will be (-1, -1)
-    int cx_from = OPEN;
-    int cy_from = OPEN;
+    int cx_from = UNDEFINED;
+    int cy_from = UNDEFINED;
     int layer_from = centroid_loc_layer_num;
 
     t_physical_tile_loc to_compressed_loc;
@@ -487,7 +498,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
     // For now, we put the macro in the same layer as the head block
     int head_layer_num = block_locs[head_blk].loc.layer;
     // If block is placed, we use the layer of the block. Otherwise, the layer will be determined later
-    if (head_layer_num == OPEN) {
+    if (head_layer_num == UNDEFINED) {
         find_layer = true;
     }
     std::vector<ClusterBlockId> connected_blocks_to_update;
@@ -526,7 +537,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
 
                 t_physical_tile_loc tile_loc = blk_loc_registry.get_coordinate_of_pin(sink_pin_id);
                 if (find_layer) {
-                    VTR_ASSERT(tile_loc.layer_num != OPEN);
+                    VTR_ASSERT(tile_loc.layer_num != UNDEFINED);
                     layer_count[tile_loc.layer_num]++;
                 }
                 acc_x += tile_loc.x;
@@ -546,7 +557,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
 
             t_physical_tile_loc tile_loc = blk_loc_registry.get_coordinate_of_pin(source_pin);
             if (find_layer) {
-                VTR_ASSERT(tile_loc.layer_num != OPEN);
+                VTR_ASSERT(tile_loc.layer_num != UNDEFINED);
                 layer_count[tile_loc.layer_num]++;
             }
             acc_x += tile_loc.x;
@@ -571,12 +582,42 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
     return connected_blocks_to_update;
 }
 
+/**
+ * @brief Helper method for getting the flat position of an atom relative to a
+ *        given offset.
+ *
+ * This method is useful for chained blocks where an atom may be a member of a
+ * chain with the given offset. This gives the atom's position relative to the
+ * head macro's tile location.
+ */
+static t_flat_pl_loc get_atom_relative_flat_loc(AtomBlockId atom_blk_id,
+                                                const t_pl_offset& offset,
+                                                const FlatPlacementInfo& flat_placement_info,
+                                                const DeviceGrid& device_grid) {
+    // Get the flat location of the atom and the offset.
+    t_flat_pl_loc atom_pos = flat_placement_info.get_pos(atom_blk_id);
+    t_flat_pl_loc flat_offset = t_flat_pl_loc((float)offset.x,
+                                              (float)offset.y,
+                                              (float)offset.layer);
+    // Get the position of the head macro of the chain that this atom is a part of.
+    atom_pos -= flat_offset;
+
+    // This may put the atom off device (due to the flat placement not being fully
+    // legal), so we clamp this to be within the device.
+    atom_pos.x = std::clamp(atom_pos.x, 0.0f, (float)device_grid.width() - 0.001f);
+    atom_pos.y = std::clamp(atom_pos.y, 0.0f, (float)device_grid.height() - 0.001f);
+    atom_pos.layer = std::clamp(atom_pos.layer, 0.0f, (float)device_grid.get_num_layers() - 0.001f);
+
+    return atom_pos;
+}
+
 // TODO: Should this return the unplaced_blocks_to_update_their_score?
 static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_macro,
                                                            const FlatPlacementInfo& flat_placement_info) {
     // Use the flat placement to compute the centroid of the given macro.
     // TODO: Instead of averaging, maybe use MODE (most frequently placed location).
-    float acc_weight = 0.f;
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    unsigned acc_weight = 0;
     t_flat_pl_loc centroid({0.0f, 0.0f, 0.0f});
     for (const t_pl_macro_member& member : pl_macro.members) {
         const auto& cluster_atoms = g_vpr_ctx.clustering().atoms_lookup[member.blk_index];
@@ -585,19 +626,19 @@ static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_
             VTR_ASSERT(flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS && flat_placement_info.blk_y_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS && flat_placement_info.blk_layer[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS && flat_placement_info.blk_sub_tile[atom_blk_id] != FlatPlacementInfo::UNDEFINED_SUB_TILE);
 
             // Accumulate the x, y, layer, and sub_tile for each atom in each
-            // member of the macro. Remove the offset so the centroid would be
-            // where the head macro should be placed to put the members in the
-            // correct place.
-            t_flat_pl_loc cluster_offset({(float)member.offset.x,
-                                          (float)member.offset.y,
-                                          (float)member.offset.layer});
-            centroid += flat_placement_info.get_pos(atom_blk_id);
-            centroid -= cluster_offset;
+            // member of the macro. The position should be relative to the head
+            // macro's position such that the centroid is where all blocks think
+            // the head macro should be.
+            t_flat_pl_loc atom_pos = get_atom_relative_flat_loc(atom_blk_id,
+                                                                member.offset,
+                                                                flat_placement_info,
+                                                                device_grid);
+            centroid += atom_pos;
             acc_weight++;
         }
     }
-    if (acc_weight > 0.f) {
-        centroid /= acc_weight;
+    if (acc_weight > 0) {
+        centroid /= static_cast<float>(acc_weight);
     }
 
     // If the root cluster is constrained, project the centroid onto its
@@ -661,8 +702,8 @@ static inline int get_first_available_sub_tile_at_grid_loc(const t_physical_tile
         }
     }
 
-    // If one cannot be found, return OPEN.
-    return OPEN;
+    // If one cannot be found, return UNDEFINED.
+    return UNDEFINED;
 }
 
 /**
@@ -697,35 +738,39 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     const int num_layers = device_grid.get_num_layers();
-    // This method does not support 3D FPGAs yet. The search performed will only
-    // traverse the same layer as the src_loc.
-    VTR_ASSERT(num_layers == 1);
-    constexpr int layer = 0;
-
-    // Get the closest (approximately) compressed location to the src location.
-    // This does not need to be perfect (in fact I do not think it is), but the
-    // closer it is, the faster the BFS will find the best solution.
-    t_physical_tile_loc src_grid_loc(src_flat_loc.x, src_flat_loc.y, src_flat_loc.layer);
-    const t_physical_tile_loc compressed_src_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx(src_grid_loc);
 
     // Weighted-BFS search the compressed grid for an empty compatible subtile.
-    size_t num_rows = compressed_block_grid.get_num_rows(layer);
-    size_t num_cols = compressed_block_grid.get_num_columns(layer);
-    vtr::NdMatrix<bool, 2> visited({num_cols, num_rows}, false);
+    std::vector<vtr::NdMatrix<bool, 2>> per_layer_visited(num_layers);
+    for (int layer = 0; layer < num_layers; layer++) {
+        size_t num_rows = compressed_block_grid.get_num_rows(layer);
+        size_t num_cols = compressed_block_grid.get_num_columns(layer);
+        per_layer_visited[layer].resize({num_cols, num_rows}, false);
+    }
     float best_dist = std::numeric_limits<float>::max();
-    t_pl_loc best_loc(OPEN, OPEN, OPEN, OPEN);
+    t_pl_loc best_loc(UNDEFINED, UNDEFINED, UNDEFINED, UNDEFINED);
 
+    // Get the closest (approximately) compressed location to the src location
+    // on each layer and enqueue them. We only want to enqueue locations onto
+    // layers that can feasibly implement this block.
+    // This does not need to be perfect (in fact I do not think it is), but the
+    // closer it is, the faster the BFS will find the best solution.
     std::queue<t_physical_tile_loc> loc_queue;
-    loc_queue.push(compressed_src_loc);
+    for (int layer_num : compressed_block_grid.get_layer_nums()) {
+        t_physical_tile_loc src_grid_loc(src_flat_loc.x, src_flat_loc.y, layer_num);
+        const t_physical_tile_loc compressed_src_loc = compressed_block_grid.grid_loc_to_compressed_loc_approx(src_grid_loc);
+        if (compressed_src_loc.x != UNDEFINED && compressed_src_loc.y != UNDEFINED)
+            loc_queue.push(compressed_src_loc);
+    }
+
     while (!loc_queue.empty()) {
         // Pop the top element off the queue.
         t_physical_tile_loc loc = loc_queue.front();
         loc_queue.pop();
 
         // If this location has already been visited, skip it.
-        if (visited[loc.x][loc.y])
+        if (per_layer_visited[loc.layer_num][loc.x][loc.y])
             continue;
-        visited[loc.x][loc.y] = true;
+        per_layer_visited[loc.layer_num][loc.x][loc.y] = true;
 
         // Get the minimum distance the cluster would need to move (relative to
         // its global placement solution) to be within the tile at the given
@@ -754,7 +799,7 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
         // (i.e. no tile exists there). This is fine, we just need to check for
         // them to ensure we never try to put a cluster there.
         bool is_valid_compressed_loc = false;
-        const auto& compressed_col_blk_map = compressed_block_grid.get_column_block_map(loc.x, layer);
+        const auto& compressed_col_blk_map = compressed_block_grid.get_column_block_map(loc.x, loc.layer_num);
         if (compressed_col_blk_map.count(loc.y) != 0)
             is_valid_compressed_loc = true;
 
@@ -766,7 +811,7 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
                                                                         blk_loc_registry,
                                                                         device_grid,
                                                                         compressed_block_grid);
-            if (new_sub_tile != OPEN) {
+            if (new_sub_tile != UNDEFINED) {
                 // If a sub-tile is available, set this to be the first sub-tile
                 // available and check if this site is legal for this macro.
                 // Note: We are using the fully legality check here to check for
@@ -796,6 +841,8 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
         // been visited. The code above checks for these cases to prevent extra
         // work and invalid lookups. This must be done this way to ensure that
         // the closest location can be found efficiently.
+        size_t num_rows = compressed_block_grid.get_num_rows(loc.layer_num);
+        size_t num_cols = compressed_block_grid.get_num_columns(loc.layer_num);
         if (loc.x > 0) {
             t_physical_tile_loc new_comp_loc = t_physical_tile_loc(loc.x - 1,
                                                                    loc.y,
@@ -836,7 +883,7 @@ static bool try_centroid_placement(ClusterBlockId block_id,
                                    vtr::RngContainer& rng) {
     auto& block_locs = blk_loc_registry.mutable_block_locs();
 
-    t_pl_loc centroid_loc(OPEN, OPEN, OPEN, OPEN);
+    t_pl_loc centroid_loc(UNDEFINED, UNDEFINED, UNDEFINED, UNDEFINED);
     std::vector<ClusterBlockId> unplaced_blocks_to_update_their_score;
 
     bool found_legal_subtile = false;
@@ -862,7 +909,7 @@ static bool try_centroid_placement(ClusterBlockId block_id,
         //        Also the location it returns will be on the chip and in the PR
         //        by construction. Could save time by skipping those checks if
         //        needed.
-        if (centroid_loc.x == OPEN) {
+        if (centroid_loc.x == UNDEFINED) {
             // If we cannot find a nearest block, fall back on the original
             // find_centroid_loc function.
             // FIXME: We should really just skip this block and come back
@@ -978,8 +1025,8 @@ static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(
     std::vector<t_grid_empty_locs_block_type> block_type_empty_locs;
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({0, OPEN, layer_num}).x;
-        int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({(int)grid.width() - 1, OPEN, layer_num}).x;
+        int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({0, UNDEFINED, layer_num}).x;
+        int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({(int)grid.width() - 1, UNDEFINED, layer_num}).x;
 
         //traverse all column and store their empty locations in block_type_empty_locs
         for (int x_loc = min_cx; x_loc <= max_cx; x_loc++) {
@@ -1121,12 +1168,12 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
         const auto [layer_low, layer_high] = regions[reg].get_layer_range();
 
         for (int layer_num = layer_low; layer_num <= layer_high; layer_num++) {
-            int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_rect.xmin(), OPEN, layer_num}).x;
-            int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_rect.xmax(), OPEN, layer_num}).x;
+            int min_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_rect.xmin(), UNDEFINED, layer_num}).x;
+            int max_cx = compressed_block_grid.grid_loc_to_compressed_loc_approx({reg_rect.xmax(), UNDEFINED, layer_num}).x;
 
             // There isn't any block of this type in this region
-            if (min_cx == OPEN) {
-                VTR_ASSERT(max_cx == OPEN);
+            if (min_cx == UNDEFINED) {
+                VTR_ASSERT(max_cx == UNDEFINED);
                 continue;
             }
 
@@ -1532,26 +1579,28 @@ bool place_one_block(const ClusterBlockId blk_id,
 static inline float get_flat_variance(const t_pl_macro& macro,
                                       const FlatPlacementInfo& flat_placement_info) {
 
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+
     // Find the flat centroid location of this macro. Then find the grid location
     // that this would be.
     t_flat_pl_loc centroid_flat_loc = find_centroid_loc_from_flat_placement(macro, flat_placement_info);
     t_physical_tile_loc centroid_grid_loc(centroid_flat_loc.x,
                                           centroid_flat_loc.y,
                                           centroid_flat_loc.layer);
+    VTR_ASSERT(is_loc_on_chip(centroid_grid_loc));
 
     // Compute the variance.
-    float num_atoms = 0;
+    unsigned num_atoms = 0;
     float variance = 0.0f;
     for (const t_pl_macro_member& member : macro.members) {
         const auto& cluster_atoms = g_vpr_ctx.clustering().atoms_lookup[member.blk_index];
         for (AtomBlockId atom_blk_id : cluster_atoms) {
             // Get the atom position, offset by the member offset. This translates
             // all atoms to be as if they are in the head position of the macro.
-            t_flat_pl_loc atom_pos = flat_placement_info.get_pos(atom_blk_id);
-            t_flat_pl_loc cluster_offset({(float)member.offset.x,
-                                          (float)member.offset.y,
-                                          (float)member.offset.layer});
-            atom_pos -= cluster_offset;
+            t_flat_pl_loc atom_pos = get_atom_relative_flat_loc(atom_blk_id,
+                                                                member.offset,
+                                                                flat_placement_info,
+                                                                device_grid);
 
             // Get the amount this atom needs to be displaced in order to be
             // within the same tile as the centroid.
@@ -1564,8 +1613,8 @@ static inline float get_flat_variance(const t_pl_macro& macro,
             num_atoms++;
         }
     }
-    if (num_atoms > 0.f) {
-        variance /= num_atoms;
+    if (num_atoms > 0) {
+        variance /= static_cast<float>(num_atoms);
     }
     return variance;
 }
@@ -1662,7 +1711,7 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
         // Normalize the macro size to be a number between 0 and 1.
         float normalized_macro_size = macro_size / static_cast<float>(max_macro_size);
 
-        // Compute the cost. Clusters wth a higher cost will be placed first.
+        // Compute the cost. Clusters with a higher cost will be placed first.
         // Cost is proportional to macro size since larger macros are more
         // challenging to place and should be placed earlier if possible.
         // Cost is inversly proportional to standard deviation, since clusters
@@ -1674,10 +1723,11 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
         // If the cluster is constrained, compute how much area its constrained
         // region takes up. This will be used to place "more constrained" blocks
         // first.
-        // TODO: The cluster constrained area can be incorperated into the cost
+        // TODO: The cluster constrained area can be incorporated into the cost
         //       somehow.
-        if (is_cluster_constrained(blk_id)) {
-            const PartitionRegion& pr = cluster_constraints[blk_id];
+        ClusterBlockId macro_head_blk = pl_macro.members[0].blk_index;
+        if (is_cluster_constrained(macro_head_blk)) {
+            const PartitionRegion& pr = cluster_constraints[macro_head_blk];
             float area = 0.0f;
             for (const Region& region : pr.get_regions()) {
                 const vtr::Rect<int> region_rect = region.get_rect();
@@ -1705,6 +1755,7 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
 /**
  * @brief Tries to place all of the given clusters as closed to their flat
  *        placement as possible (minimum displacement from flat placement).
+ *        Returns false if any clusters could not be placed.
  *
  * This function will place clusters in passes. In the first pass, it will try
  * to place clusters exactly where their global placement is (according to the
@@ -1713,7 +1764,7 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
  * Subsequent passes will then try to place clusters at exponentially farther
  * distances.
  */
-static inline void place_blocks_min_displacement(std::vector<ClusterBlockId>& clusters_to_place,
+static inline bool place_blocks_min_displacement(std::vector<ClusterBlockId>& clusters_to_place,
                                                  enum e_pad_loc_type pad_loc_type,
                                                  BlkLocRegistry& blk_loc_registry,
                                                  const PlaceMacros& place_macros,
@@ -1781,13 +1832,13 @@ static inline void place_blocks_min_displacement(std::vector<ClusterBlockId>& cl
 
             // If a location could not be found, add to list of unplaced blocks
             // and skip.
-            if (centroid_loc.x == OPEN) {
+            if (centroid_loc.x == UNDEFINED) {
                 unplaced_blocks.push_back(blk_to_place);
                 continue;
             }
 
             // The find_nearest_compatible_loc function above should only return
-            // a location which can legally accomodate the macro (if it found a
+            // a location which can legally accommodate the macro (if it found a
             // location). Double check these to be safe.
             VTR_ASSERT_SAFE(!blk_loc_registry.grid_blocks().block_at_location(centroid_loc));
             VTR_ASSERT_SAFE(macro_can_be_placed(pl_macro, centroid_loc, false, blk_loc_registry));
@@ -1841,28 +1892,30 @@ static inline void place_blocks_min_displacement(std::vector<ClusterBlockId>& cl
     if (clusters_to_place.size() > 0) {
         VTR_LOG("Unable to place all clusters.\n");
         VTR_LOG("Clusters left unplaced:\n");
+        // TODO: Increase the log verbosity of this.
         for (ClusterBlockId blk_id : clusters_to_place) {
             VTR_LOG("\t%s\n", cluster_netlist.block_name(blk_id).c_str());
         }
     }
 
-    // Check if anything has not been placed, if so just crash for now.
-    // TODO: Should fall back on the original initial placer. Unless there is a
-    //       bug in the code above, it could be that it is challenging to place
-    //       for this circuit.
-    VTR_ASSERT(clusters_to_place.size() == 0);
+    // Check if anything has not been placed, if so, signal to the calling function.
+    if (clusters_to_place.size() > 0)
+        return false;
+
+    return true;
 }
 
 /**
  * @brief Places all blocks in the clustered netlist as close to the global
- *        placement produced by the AP flow.
+ *        placement produced by the AP flow. Returns false if any blocks could
+ *        not be placed.
  *
  * This function places the blocks in stages. The goal of this stage-based
  * approach is to place clusters which are challenging to place first. Within
  * each stage, the clusters are ordered based on heuristics such that the most
  * impactful clusters get first dibs on placement.
  */
-static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
+static inline bool place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
                                        BlkLocRegistry& blk_loc_registry,
                                        const PlaceMacros& place_macros,
                                        const FlatPlacementInfo& flat_placement_info) {
@@ -1892,13 +1945,17 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
 
     if (constrained_clusters.size() > 0) {
         VTR_LOG("Placing constrained clusters...\n");
-        place_blocks_min_displacement(constrained_clusters,
-                                      pad_loc_type,
-                                      blk_loc_registry,
-                                      place_macros,
-                                      cluster_netlist,
-                                      flat_placement_info);
+        bool all_clusters_placed = place_blocks_min_displacement(constrained_clusters,
+                                                                 pad_loc_type,
+                                                                 blk_loc_registry,
+                                                                 place_macros,
+                                                                 cluster_netlist,
+                                                                 flat_placement_info);
         VTR_LOG("\n");
+        if (!all_clusters_placed) {
+            VTR_LOG("Could not place all constrained clusters, falling back on the non-AP initial placement.\n");
+            return false;
+        }
     }
 
     // 2. Get all of the large macros and place them next. Large macros have a
@@ -1924,13 +1981,17 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
 
     if (large_macro_clusters.size() > 0) {
         VTR_LOG("Placing clusters that are part of larger macros...\n");
-        place_blocks_min_displacement(large_macro_clusters,
-                                      pad_loc_type,
-                                      blk_loc_registry,
-                                      place_macros,
-                                      cluster_netlist,
-                                      flat_placement_info);
+        bool all_clusters_placed = place_blocks_min_displacement(large_macro_clusters,
+                                                                 pad_loc_type,
+                                                                 blk_loc_registry,
+                                                                 place_macros,
+                                                                 cluster_netlist,
+                                                                 flat_placement_info);
         VTR_LOG("\n");
+        if (!all_clusters_placed) {
+            VTR_LOG("Could not place all large macros, falling back on the non-AP initial placement.\n");
+            return false;
+        }
     }
 
     // 3. Place the rest of the clusters. These clusters will be unconstrained
@@ -1948,14 +2009,20 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
 
     if (clusters_to_place.size() > 0) {
         VTR_LOG("Placing general clusters...\n");
-        place_blocks_min_displacement(clusters_to_place,
-                                      pad_loc_type,
-                                      blk_loc_registry,
-                                      place_macros,
-                                      cluster_netlist,
-                                      flat_placement_info);
+        bool all_clusters_placed = place_blocks_min_displacement(clusters_to_place,
+                                                                 pad_loc_type,
+                                                                 blk_loc_registry,
+                                                                 place_macros,
+                                                                 cluster_netlist,
+                                                                 flat_placement_info);
         VTR_LOG("\n");
+        if (!all_clusters_placed) {
+            VTR_LOG("Could not place all clusters, falling back on the non-AP initial placement.\n");
+            return false;
+        }
     }
+
+    return true;
 }
 
 void initial_placement(const t_placer_opts& placer_opts,
@@ -1991,13 +2058,29 @@ void initial_placement(const t_placer_opts& placer_opts,
         }
 
         //Place all blocks
+        bool all_blocks_placed = false;
+
+        // First try to place all of the blocks using AP
         if (flat_placement_info.valid) {
-            place_all_blocks_ap(placer_opts.pad_loc_type,
-                                blk_loc_registry,
-                                place_macros,
-                                flat_placement_info);
-        } else {
-            //Assign scores to blocks and placement macros according to how difficult they are to place
+            all_blocks_placed = place_all_blocks_ap(placer_opts.pad_loc_type,
+                                                    blk_loc_registry,
+                                                    place_macros,
+                                                    flat_placement_info);
+
+            // If AP failed to place all of the blocks, reset the placement solution
+            // so we can fall back on the original initial placement algorithm.
+            if (!all_blocks_placed) {
+                blk_loc_registry.clear_all_grid_locs();
+                if (strlen(constraints_file) != 0) {
+                    read_constraints(constraints_file, blk_loc_registry);
+                }
+            }
+        }
+
+        // If all of the blocks have not been placed (i.e. AP is turned off or
+        // is disabled), try to place all of the clusters using heuristics.
+        if (!all_blocks_placed) {
+            // Assign scores to blocks and placement macros according to how difficult they are to place
             vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores(place_macros);
 
             place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type,

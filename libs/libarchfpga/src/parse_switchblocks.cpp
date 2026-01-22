@@ -34,21 +34,8 @@ using vtr::t_formula_data;
 /**** Function Declarations ****/
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
-/**
- * @brief Parses a wireconn node and returns a `t_wireconn_inf` structure.
- *
- * Determines whether the wireconn is in inline or multi-node format and dispatches
- * to the appropriate parsing subroutine.
- *
- * @param node             XML node representing the wireconn.
- * @param loc_data         Location data for error reporting.
- * @param switches         List of architecture switch definitions (used for switch overrides).
- * @return                 A `t_wireconn_inf` structure populated with parsed data.
- */
-static t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data, const std::vector<t_arch_switch_inf>& switches);
-
 //Process the desired order of a wireconn
-static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order);
+static void parse_switchpoint_order(std::string_view order, e_switch_point_order& switchpoint_order);
 
 /**
  * @brief Parses an inline `<wireconn>` node using its attributes.
@@ -60,11 +47,15 @@ static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchp
  * @param node             XML node containing inline wireconn attributes.
  * @param loc_data         Location data for error reporting.
  * @param switches         List of architecture switch definitions (used for switch overrides).
+ * @param can_skip_from_or_to Determines if the from or to attributes are optional or mandatory.
+ * <wireconn> tags for switch blocks require both from and to attributes while those for
+ * scatter-gather use one or the other.
  * @return                 A `t_wireconn_inf` structure populated with parsed data.
  */
 static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
                                             const pugiutil::loc_data& loc_data,
-                                            const std::vector<t_arch_switch_inf>& switches);
+                                            const std::vector<t_arch_switch_inf>& switches,
+                                            bool can_skip_from_or_to);
 
 /**
  * @brief Parses a multi-node `<wireconn>` definition with `<from>` and `<to>` children.
@@ -95,7 +86,7 @@ static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire
 static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn);
 
 /* Set connection from_side and to_side for custom switch block pattern*/
-static void set_switch_func_type(SBSideConnection& conn, const char* func_type);
+static void set_switch_func_type(SBSideConnection& conn, std::string_view func_type);
 
 /* parse switch_override in wireconn */
 static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const std::vector<t_arch_switch_inf>& switches);
@@ -137,49 +128,77 @@ void read_sb_wireconns(const std::vector<t_arch_switch_inf>& switches,
     }
 }
 
-static t_wireconn_inf parse_wireconn(pugi::xml_node node,
-                                     const pugiutil::loc_data& loc_data,
-                                     const std::vector<t_arch_switch_inf>& switches) {
+t_wireconn_inf parse_wireconn(pugi::xml_node node,
+                              const pugiutil::loc_data& loc_data,
+                              const std::vector<t_arch_switch_inf>& switches,
+                              bool can_skip_from_or_to) {
 
     size_t num_children = count_children(node, "from", loc_data, ReqOpt::OPTIONAL);
     num_children += count_children(node, "to", loc_data, ReqOpt::OPTIONAL);
 
+    t_wireconn_inf wireconn;
     if (num_children == 0) {
-        return parse_wireconn_inline(node, loc_data, switches);
+        wireconn = parse_wireconn_inline(node, loc_data, switches, can_skip_from_or_to);
     } else {
         VTR_ASSERT(num_children > 0);
-        return parse_wireconn_multinode(node, loc_data, switches);
+        wireconn = parse_wireconn_multinode(node, loc_data, switches);
     }
+
+    // Parse the optional "side" field of the <wireconn> tag
+    std::string sides_string = get_attribute(node, "side", loc_data, pugiutil::OPTIONAL).as_string();
+
+    if (sides_string.find_first_not_of("rtlbRTLB") != std::string::npos) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "Unknown side specified: %s\n", sides_string.c_str());
+    }
+    for (char side_char : sides_string) {
+        wireconn.sides.insert(CHAR_SIDE_MAP.at(side_char));
+    }
+
+    return wireconn;
 }
 
 static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
                                             const pugiutil::loc_data& loc_data,
-                                            const std::vector<t_arch_switch_inf>& switches) {
+                                            const std::vector<t_arch_switch_inf>& switches,
+                                            bool can_skip_from_or_to) {
 
     // Parse an inline wireconn definition, using attributes
-    expect_only_attributes(node, {"num_conns", "from_type", "to_type", "from_switchpoint", "to_switchpoint", "from_order", "to_order", "switch_override"}, loc_data);
+    expect_only_attributes(node,
+                           {"num_conns", "from_type", "to_type", "from_switchpoint",
+                            "to_switchpoint", "from_order", "to_order", "switch_override", "side"},
+                           loc_data);
 
     t_wireconn_inf wc;
+
+    ReqOpt from_to_required = can_skip_from_or_to ? ReqOpt::OPTIONAL : ReqOpt::REQUIRED;
 
     // get the connection style
     const char* char_prop = get_attribute(node, "num_conns", loc_data).value();
     parse_num_conns(char_prop, wc);
 
     // get from type
-    char_prop = get_attribute(node, "from_type", loc_data).value();
-    parse_comma_separated_wire_types(char_prop, wc.from_switchpoint_set);
+    char_prop = get_attribute(node, "from_type", loc_data, from_to_required).as_string();
+    if (*char_prop) { // if from_to_required is ReqOpt::REQUIRED, char_prop is definitely not null. Otherwise, it's optional and should be null checked.
+        parse_comma_separated_wire_types(char_prop, wc.from_switchpoint_set);
+    }
 
     // get to type
-    char_prop = get_attribute(node, "to_type", loc_data).value();
-    parse_comma_separated_wire_types(char_prop, wc.to_switchpoint_set);
+    char_prop = get_attribute(node, "to_type", loc_data, from_to_required).as_string();
+    if (*char_prop) {
+        parse_comma_separated_wire_types(char_prop, wc.to_switchpoint_set);
+    }
 
     // get the source wire point
-    char_prop = get_attribute(node, "from_switchpoint", loc_data).value();
-    parse_comma_separated_wire_points(char_prop, wc.from_switchpoint_set);
+    char_prop = get_attribute(node, "from_switchpoint", loc_data, from_to_required).as_string();
+    if (*char_prop) {
+        parse_comma_separated_wire_points(char_prop, wc.from_switchpoint_set);
+    }
 
     // get the destination wire point
-    char_prop = get_attribute(node, "to_switchpoint", loc_data).value();
-    parse_comma_separated_wire_points(char_prop, wc.to_switchpoint_set);
+    char_prop = get_attribute(node, "to_switchpoint", loc_data, from_to_required).as_string();
+    if (*char_prop) {
+        parse_comma_separated_wire_points(char_prop, wc.to_switchpoint_set);
+    }
 
     char_prop = get_attribute(node, "from_order", loc_data, ReqOpt::OPTIONAL).value();
     parse_switchpoint_order(char_prop, wc.from_switchpoint_order);
@@ -263,13 +282,13 @@ static t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, cons
     return wire_switchpoints;
 }
 
-static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order) {
-    if (order == std::string("")) {
-        switchpoint_order = SwitchPointOrder::SHUFFLED; //Default
-    } else if (order == std::string("fixed")) {
-        switchpoint_order = SwitchPointOrder::FIXED;
-    } else if (order == std::string("shuffled")) {
-        switchpoint_order = SwitchPointOrder::SHUFFLED;
+static void parse_switchpoint_order(std::string_view order, e_switch_point_order& switchpoint_order) {
+    if (order == "") {
+        switchpoint_order = e_switch_point_order::SHUFFLED; //Default
+    } else if (order == "fixed") {
+        switchpoint_order = e_switch_point_order::FIXED;
+    } else if (order == "shuffled") {
+        switchpoint_order = e_switch_point_order::SHUFFLED;
     } else {
         archfpga_throw(__FILE__, __LINE__, "Unrecognized switchpoint order '%s'", order);
     }
@@ -309,72 +328,30 @@ static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire
 }
 
 static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
-    //num_conns is now interpretted as a formula and processed in build_switchblocks
+    // num_conns is now interpreted as a formula and processed in build_switchblocks
     wireconn.num_conns_formula = num_conns;
 }
 
-//set sides for a specific conn for custom switch block pattern
-static void set_switch_func_type(SBSideConnection& conn, const char* func_type) {
-    if (0 == strcmp(func_type, "lt")) {
-        conn.set_sides(LEFT, TOP);
-    } else if (0 == strcmp(func_type, "lr")) {
-        conn.set_sides(LEFT, RIGHT);
-    } else if (0 == strcmp(func_type, "lb")) {
-        conn.set_sides(LEFT, BOTTOM);
-    } else if (0 == strcmp(func_type, "la")) {
-        conn.set_sides(LEFT, ABOVE);
-    } else if (0 == strcmp(func_type, "lu")) {
-        conn.set_sides(LEFT, UNDER);
-    } else if (0 == strcmp(func_type, "tl")) {
-        conn.set_sides(TOP, LEFT);
-    } else if (0 == strcmp(func_type, "tb")) {
-        conn.set_sides(TOP, BOTTOM);
-    } else if (0 == strcmp(func_type, "tr")) {
-        conn.set_sides(TOP, RIGHT);
-    } else if (0 == strcmp(func_type, "ta")) {
-        conn.set_sides(TOP, ABOVE);
-    } else if (0 == strcmp(func_type, "tu")) {
-        conn.set_sides(TOP, UNDER);
-    } else if (0 == strcmp(func_type, "rt")) {
-        conn.set_sides(RIGHT, TOP);
-    } else if (0 == strcmp(func_type, "rl")) {
-        conn.set_sides(RIGHT, LEFT);
-    } else if (0 == strcmp(func_type, "rb")) {
-        conn.set_sides(RIGHT, BOTTOM);
-    } else if (0 == strcmp(func_type, "ra")) {
-        conn.set_sides(RIGHT, ABOVE);
-    } else if (0 == strcmp(func_type, "ru")) {
-        conn.set_sides(RIGHT, UNDER);
-    } else if (0 == strcmp(func_type, "bl")) {
-        conn.set_sides(BOTTOM, LEFT);
-    } else if (0 == strcmp(func_type, "bt")) {
-        conn.set_sides(BOTTOM, TOP);
-    } else if (0 == strcmp(func_type, "br")) {
-        conn.set_sides(BOTTOM, RIGHT);
-    } else if (0 == strcmp(func_type, "ba")) {
-        conn.set_sides(BOTTOM, ABOVE);
-    } else if (0 == strcmp(func_type, "bu")) {
-        conn.set_sides(BOTTOM, UNDER);
-    } else if (0 == strcmp(func_type, "al")) {
-        conn.set_sides(ABOVE, LEFT);
-    } else if (0 == strcmp(func_type, "at")) {
-        conn.set_sides(ABOVE, TOP);
-    } else if (0 == strcmp(func_type, "ar")) {
-        conn.set_sides(ABOVE, RIGHT);
-    } else if (0 == strcmp(func_type, "ab")) {
-        conn.set_sides(ABOVE, BOTTOM);
-    } else if (0 == strcmp(func_type, "ul")) {
-        conn.set_sides(UNDER, LEFT);
-    } else if (0 == strcmp(func_type, "ut")) {
-        conn.set_sides(UNDER, TOP);
-    } else if (0 == strcmp(func_type, "ur")) {
-        conn.set_sides(UNDER, RIGHT);
-    } else if (0 == strcmp(func_type, "ub")) {
-        conn.set_sides(UNDER, BOTTOM);
-    } else {
-        /* unknown permutation function */
-        archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified: %s\n", func_type);
+static void set_switch_func_type(SBSideConnection& conn, std::string_view func_type) {
+
+    if (func_type.length() != 2) {
+        archfpga_throw(__FILE__, __LINE__, "Custom switchblock func type must be 2 characters long: %s\n", func_type);
     }
+
+    // Only valid sides are right, top, left, bottom
+    if (func_type.find_first_not_of("rtlbRTLB") != std::string::npos) {
+        archfpga_throw(__FILE__, __LINE__, "Unknown direction specified: %s\n", func_type);
+    }
+
+    e_side from_side = CHAR_SIDE_MAP.at(func_type[0]);
+    e_side to_side = CHAR_SIDE_MAP.at(func_type[1]);
+
+    // Can't go from side to same side
+    if (to_side == from_side) {
+        archfpga_throw(__FILE__, __LINE__, "Unknown permutation function specified, cannot go from side to same side: %s\n", func_type);
+    }
+
+    conn.set_sides(from_side, to_side);
 }
 
 void read_sb_switchfuncs(pugi::xml_node node, t_switchblock_inf& sb, const pugiutil::loc_data& loc_data) {

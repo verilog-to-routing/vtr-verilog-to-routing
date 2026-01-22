@@ -84,7 +84,7 @@ std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_
         t_trace* curr = alloc_trace_data();
         curr->index = size_t(node.inode);
         curr->net_pin_index = node.net_pin_index;
-        curr->iswitch = OPEN;
+        curr->iswitch = UNDEFINED;
         curr->next = nullptr;
 
         if (tail) {
@@ -123,11 +123,11 @@ void print_traceback(const t_trace* trace) {
         RRNodeId inode(trace->index);
         VTR_LOG("%d (%s)", inode, rr_node_typename[rr_graph.node_type(inode)]);
 
-        if (trace->iswitch == OPEN) {
+        if (trace->iswitch == UNDEFINED) {
             VTR_LOG(" !"); //End of branch
         }
 
-        if (prev && prev->iswitch != OPEN && !rr_graph.rr_switch_inf(RRSwitchId(prev->iswitch)).configurable()) {
+        if (prev && prev->iswitch != UNDEFINED && !rr_graph.rr_switch_inf(RRSwitchId(prev->iswitch)).configurable()) {
             VTR_LOG("*"); //Reached non-configurably
         }
 
@@ -160,7 +160,7 @@ bool validate_and_update_traceback(t_trace* trace, bool verify_switch_id /* = tr
             continue;
         }
 
-        if (trace->iswitch == OPEN) { // End of a branch
+        if (trace->iswitch == UNDEFINED) { // End of a branch
             // Verify that the next element (branch point) has been already seen in the traceback so far
             if (!seen_rr_nodes.count(next->index)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback branch point %d not found", next->index);

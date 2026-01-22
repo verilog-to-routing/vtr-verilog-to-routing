@@ -103,10 +103,10 @@ void time_on_fanout_analysis() {
             entire_net_rerouted, entire_tree_pruned, part_tree_preserved);
     VTR_LOG("%d connections marked for forced reroute, %d forced reroutes performed\n", connections_forced_to_reroute, connections_rerouted_due_to_forcing);
     // using the global time_on_fanout and itry_on_fanout
-    VTR_LOG("fanout low      time (s)        attemps  rebuild tree time (s)   finished sinks   rerouted sinks\n");
+    VTR_LOG("fanout low      time (s)        attempts  rebuild tree time (s)   finished sinks   rerouted sinks\n");
     for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
         if (itry_on_fanout[bin]) { // avoid printing the many 0 bins
-            VTR_LOG("%4d      %14.3f   %12d     %14.3f   %12d  %12d\n",
+            VTR_LOG("%4d      %14.3f   %12d      %14.3f   %12d  %12d\n",
                     bin * fanout_per_bin,
                     time_on_fanout[bin],
                     itry_on_fanout[bin],
@@ -124,7 +124,7 @@ void time_on_fanout_analysis() {
 }
 
 void time_on_criticality_analysis() {
-    VTR_LOG("criticality low           time (s)        attemps\n");
+    VTR_LOG("criticality low           time (s)        attempts\n");
     for (size_t bin = 0; bin < time_on_criticality.size(); ++bin) {
         if (itry_on_criticality[bin]) { // avoid printing the many 0 bins
             VTR_LOG("%4f           %14.3f   %12d\n", bin * criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);

@@ -6,6 +6,7 @@
 #include "argparse.hpp"
 
 #include "ap_flow_enums.h"
+#include "vpr_types.h"
 #include "vtr_log.h"
 #include "vtr_path.h"
 #include "vtr_util.h"
@@ -137,7 +138,9 @@ struct ParseCircuitFormat {
 struct ParseAPAnalyticalSolver {
     ConvertedValue<e_ap_analytical_solver> from_str(const std::string& str) {
         ConvertedValue<e_ap_analytical_solver> conv_value;
-        if (str == "qp-hybrid")
+        if (str == "identity")
+            conv_value.set_value(e_ap_analytical_solver::Identity);
+        else if (str == "qp-hybrid")
             conv_value.set_value(e_ap_analytical_solver::QP_Hybrid);
         else if (str == "lp-b2b")
             conv_value.set_value(e_ap_analytical_solver::LP_B2B);
@@ -152,6 +155,9 @@ struct ParseAPAnalyticalSolver {
     ConvertedValue<std::string> to_str(e_ap_analytical_solver val) {
         ConvertedValue<std::string> conv_value;
         switch (val) {
+            case e_ap_analytical_solver::Identity:
+                conv_value.set_value("identity");
+                break;
             case e_ap_analytical_solver::QP_Hybrid:
                 conv_value.set_value("qp-hybrid");
                 break;
@@ -165,14 +171,16 @@ struct ParseAPAnalyticalSolver {
     }
 
     std::vector<std::string> default_choices() {
-        return {"qp-hybrid", "lp-b2b"};
+        return {"identity", "qp-hybrid", "lp-b2b"};
     }
 };
 
 struct ParseAPPartialLegalizer {
     ConvertedValue<e_ap_partial_legalizer> from_str(const std::string& str) {
         ConvertedValue<e_ap_partial_legalizer> conv_value;
-        if (str == "bipartitioning")
+        if (str == "none")
+            conv_value.set_value(e_ap_partial_legalizer::Identity);
+        else if (str == "bipartitioning")
             conv_value.set_value(e_ap_partial_legalizer::BiPartitioning);
         else if (str == "flow-based")
             conv_value.set_value(e_ap_partial_legalizer::FlowBased);
@@ -187,6 +195,9 @@ struct ParseAPPartialLegalizer {
     ConvertedValue<std::string> to_str(e_ap_partial_legalizer val) {
         ConvertedValue<std::string> conv_value;
         switch (val) {
+            case e_ap_partial_legalizer::Identity:
+                conv_value.set_value("none");
+                break;
             case e_ap_partial_legalizer::BiPartitioning:
                 conv_value.set_value("bipartitioning");
                 break;
@@ -200,7 +211,7 @@ struct ParseAPPartialLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"bipartitioning", "flow-based"};
+        return {"none", "bipartitioning", "flow-based"};
     }
 };
 
@@ -211,8 +222,8 @@ struct ParseAPFullLegalizer {
             conv_value.set_value(e_ap_full_legalizer::Naive);
         else if (str == "appack")
             conv_value.set_value(e_ap_full_legalizer::APPack);
-        else if (str == "basic-min-disturbance")
-            conv_value.set_value(e_ap_full_legalizer::Basic_Min_Disturbance);
+        else if (str == "flat-recon")
+            conv_value.set_value(e_ap_full_legalizer::FlatRecon);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_full_legalizer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -230,8 +241,8 @@ struct ParseAPFullLegalizer {
             case e_ap_full_legalizer::APPack:
                 conv_value.set_value("appack");
                 break;
-            case e_ap_full_legalizer::Basic_Min_Disturbance:
-                conv_value.set_value("basic-min-disturbance");
+            case e_ap_full_legalizer::FlatRecon:
+                conv_value.set_value("flat-recon");
             default:
                 VTR_ASSERT(false);
         }
@@ -239,7 +250,7 @@ struct ParseAPFullLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"naive", "appack", "basic-min-disturbance"};
+        return {"naive", "appack", "flat-recon"};
     }
 };
 
@@ -711,6 +722,44 @@ struct ParsePlaceAgentSpace {
     }
 };
 
+struct ParsePlaceInitTEstimator {
+    ConvertedValue<e_anneal_init_t_estimator> from_str(const std::string& str) {
+        ConvertedValue<e_anneal_init_t_estimator> conv_value;
+        if (str == "cost_variance")
+            conv_value.set_value(e_anneal_init_t_estimator::COST_VARIANCE);
+        else if (str == "equilibrium")
+            conv_value.set_value(e_anneal_init_t_estimator::EQUILIBRIUM);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_anneal_init_t_estimator (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_anneal_init_t_estimator val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_anneal_init_t_estimator::COST_VARIANCE:
+                conv_value.set_value("cost_variance");
+                break;
+            case e_anneal_init_t_estimator::EQUILIBRIUM:
+                conv_value.set_value("equilibrium");
+                break;
+            default: {
+                std::stringstream msg;
+                msg << "Unknown e_anneal_init_t_estimator type.";
+                conv_value.set_error(msg.str());
+            }
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"cost_variance", "equilibrium"};
+    }
+};
+
 struct ParseFixPins {
     ConvertedValue<e_pad_loc_type> from_str(const std::string& str) {
         ConvertedValue<e_pad_loc_type> conv_value;
@@ -1086,7 +1135,7 @@ struct ParseRouteBBUpdate {
 
 struct ParseRouterLookahead {
     ConvertedValue<e_router_lookahead> from_str(std::string str) {
-        std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+        std::ranges::transform(str, str.begin(), ::tolower);
         ConvertedValue<e_router_lookahead> conv_value;
         if (str == "classic")
             conv_value.set_value(e_router_lookahead::CLASSIC);
@@ -1096,6 +1145,8 @@ struct ParseRouterLookahead {
             conv_value.set_value(e_router_lookahead::COMPRESSED_MAP);
         else if (str == "extended_map")
             conv_value.set_value(e_router_lookahead::EXTENDED_MAP);
+        else if (str == "simple")
+            conv_value.set_value(e_router_lookahead::SIMPLE);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -1115,6 +1166,8 @@ struct ParseRouterLookahead {
             conv_value.set_value("map");
         } else if (val == e_router_lookahead::COMPRESSED_MAP) {
             conv_value.set_value("compressed_map");
+        } else if (val == e_router_lookahead::SIMPLE) {
+            conv_value.set_value("simple");
         } else {
             VTR_ASSERT(val == e_router_lookahead::EXTENDED_MAP);
             conv_value.set_value("extended_map");
@@ -1123,7 +1176,7 @@ struct ParseRouterLookahead {
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "compressed_map", "extended_map"};
+        return {"classic", "map", "compressed_map", "extended_map", "simple"};
     }
 };
 
@@ -1547,7 +1600,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
         .help(
-            "A set of semi-colon seperated graphics commands. \n"
+            "A set of semi-colon separated graphics commands. \n"
             "Commands must be surrounded by quotation marks (e.g. --graphics_commands \"save_graphics place.png\")\n"
             "   Commands:\n"
             "      * save_graphics <file>\n"
@@ -1864,7 +1917,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     file_grp.add_argument(args.write_flat_place_file, "--write_flat_place")
         .help(
-            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists cluster and intra-cluster placement coordinates for each atom and can be used to reconstruct a clustering and placement solution.")
+            "VPR's (or reconstructed external) placement solution in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_legalized_flat_place_file, "--write_legalized_flat_place")
+        .help(
+            "VPR's (or reconstructed external) placement solution after legalization and before anneal in flat placement file format; this file lists (x, y, layer) coordinates and subtile for each atom and can be used to reconstruct a clustering and placement solution.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
@@ -1954,7 +2012,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     ap_grp.add_argument<e_ap_analytical_solver, ParseAPAnalyticalSolver>(args.ap_analytical_solver, "--ap_analytical_solver")
         .help(
             "Controls which Analytical Solver the Global Placer will use in the AP Flow.\n"
-            " * qp-hybrid: olves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
+            " * identity: Does not formulate any equations and just passes the last legalized solution through. This solver is only used for testing and debugging.\n"
+            " * qp-hybrid: Solves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
             " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
         .default_value("lp-b2b")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -1962,6 +2021,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     ap_grp.add_argument<e_ap_partial_legalizer, ParseAPPartialLegalizer>(args.ap_partial_legalizer, "--ap_partial_legalizer")
         .help(
             "Controls which Partial Legalizer the Global Placer will use in the AP Flow.\n"
+            " * none: Does not perform any partial legalization. This is used for testing and debugging the AP flow and is not intended to be used as part of a real AP flow.\n"
             " * bipartitioning: Creates minimum windows around over-dense regions of the device bi-partitions the atoms in these windows such that the region is no longer over-dense and the atoms are in tiles that they can be placed into.\n"
             " * flow-based: Flows atoms from regions that are overfilled to regions that are underfilled.")
         .default_value("bipartitioning")
@@ -1972,7 +2032,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls which Full Legalizer to use in the AP Flow.\n"
             " * naive: Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.\n"
             " * appack: Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.\n"
-            " * basic-min-disturbance: Use the Basic Min. Disturbance Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.")
+            " * flat-recon: Use the Flat Placement Reconstruction Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.")
         .default_value("appack")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2006,7 +2066,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "is used as a guide, the legalizer may not follow this if it must fill "
             "the tile more."
             "\n"
-            "When this option is set ot auto, VPR will select good values for the "
+            "When this option is set to auto, VPR will select good values for the "
             "target density of tiles."
             "\n"
             "This option is similar to appack_max_dist_th, where a regex string "
@@ -2037,6 +2097,32 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "When multiple strings are provided, the thresholds are set from left to right,"
             "and any logical block types which have been unset will be set to their auto"
             "values.")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument(args.appack_unrelated_clustering_args, "--appack_unrelated_clustering_args")
+        .help(
+            "Sets parameters used for unrelated clustering (the max search distance and max attempts) "
+            "used by APPack. "
+            "APPack uses the primitive-level placement produced by the "
+            "global placer to cluster primitives together. APPack uses this information "
+            "to help increase the density of clusters (if needed) by searching for "
+            "unrelated molecules to pack together. It does this by searching out from "
+            "the centroid of the cluster being created until it finds a valid molecule. "
+            "If a valid molecule is found, but it fails, the packer may do another attempt "
+            "(up to a maximum number of attempts). "
+            "This argument allows the user to select the maximum distance the code will "
+            "search and how many attempts it will try to search for each cluster."
+            "\n"
+            "When this option is set to auto, VPR will select good values for these "
+            "parameters based on the primitives contained within each logical block type."
+            "\n"
+            "This option is similar to the appack_max_dist_th argument, where the "
+            "parameters are passed by the user in the form <regex>:<float>,<float> where "
+            "regex is used to match the name of the logical block type to set, the "
+            "first float is the max unrelated tile distance, and the second float "
+            "is the max unrelated clustering attempts.")
         .nargs('+')
         .default_value({"auto"})
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2087,7 +2173,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     pack_grp.add_argument(args.connection_gain_weight, "--connection_gain_weight")
         .help(
             "Parameter that weights the absorption of small nets vs signal sharing."
-            " 0.0 focuses solely on sharing, 1.0 solely on small net absoprtion."
+            " 0.0 focuses solely on sharing, 1.0 solely on small net absorption."
             " Only meaningful if --connection_driven_clustering=on")
         .default_value("0.9")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2255,6 +2341,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "of the initial placement, this may improve or hurt the quality of the final "
             "placement.")
         .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_anneal_init_t_estimator, ParsePlaceInitTEstimator>(args.place_init_t_estimator, "--anneal_auto_init_t_estimator")
+        .help(
+            "Controls which estimation method is used when selecting the starting temperature "
+            "for the automatic annealing schedule.\n"
+            "\n"
+            "The options for estimators are:\n"
+            "\tcost_variance: Estimates the initial temperature using the variance "
+            "of cost after a set of trial swaps.\n"
+            "\tequilibrium: Estimates the initial temperature by trying to "
+            "predict the equilibrium temperature for the initial placement "
+            "(i.e. the temperature that would result in no change in cost).")
+        .default_value("equilibrium")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_init_t, "--init_t")
@@ -2602,7 +2702,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_timing_grp.add_argument(args.place_tsu_abs_margin, "--place_tsu_abs_margin")
         .help(
-            "Specifies an absolute offest added to cell setup times used by the placer."
+            "Specifies an absolute offset added to cell setup times used by the placer."
             " This effectively controls whether the placer should try to achieve extra margin on setup paths."
             " For example a value of 500e-12 corresponds to requesting an extra 500ps of setup margin.")
         .default_value("0.0")
@@ -2785,19 +2885,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Controls the verbosity of routing's output. Higher values produce more output (useful for debugging routing problems)")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
-    route_grp.add_argument(args.custom_3d_sb_fanin_fanout, "--custom_3d_sb_fanin_fanout")
-        .help(
-            "Specifies the number of tracks that can drive a 3D switch block connection"
-            "and the number of tracks that can be driven by a 3D switch block connection")
-        .default_value("1")
-        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")
         .help(
             "Controls the directedness of the timing-driven router's exploration."
-            " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
+            " Values between 1 and 2 are reasonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2805,7 +2899,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Controls the directedness of the timing-driven router's exploration."
             " It is a subtractive adjustment to the lookahead heuristic."
-            " Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.")
+            " Values between 0 and 1e-9 are reasonable; higher values may increase quality at the expense of run-time.")
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2814,7 +2908,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls the directedness of the timing-driven router's exploration"
             " when doing router delay profiling of an architecture."
             " The router delay profiling step is currently used to calculate the place delay matrix lookup."
-            " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
+            " Values between 1 and 2 are reasonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2975,6 +3069,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " to reduce the run-time to build the router lookahead and also its memory footprint\n"
             " * extended_map: A more advanced and extended lookahead which accounts for a more\n"
             "                 exhaustive node sampling method\n"
+            " * simple: A purely distance-based lookahead loaded from an external file\n"
             "\n"
             " The extended map differs from the map lookahead in the lookahead computation.\n"
             " It is better suited for architectures that have specialized routing for specific\n"
@@ -3167,7 +3262,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "'--echo_file on' is set:\n"
             " * -1: All nodes are dumped into the DOT file\n"
             " * >= 0: Only the transitive fanin/fanout of the node is dumped (easier to view)\n"
-            " * a string: Interpretted as a VPR pin name which is converted to a node id, and dumped as above\n")
+            " * a string: Interpreted as a VPR pin name which is converted to a node id, and dumped as above\n")
         .default_value("-1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -3220,6 +3315,43 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "for every routed connection in the design.\n"
             "The report is saved as 'report_net_timing.csv'.")
         .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    auto& crr_grp = parser.add_argument_group("CRR options");
+
+    crr_grp.add_argument(args.sb_maps, "--sb_maps")
+        .help("Switch block map file that specifies the switch block template used for each location")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument(args.sb_templates, "--sb_templates")
+        .help("Directory containing the switch block templates")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument<bool, ParseOnOff>(args.preserve_input_pin_connections, "--preserve_input_pin_connections")
+        .help("If it set to on, the input pin connections will be generated by the default flow and not from the CRR template")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument<bool, ParseOnOff>(args.preserve_output_pin_connections, "--preserve_output_pin_connections")
+        .help("If it set to on, the output pin connections will be generated by the default flow and not from the CRR template")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument<bool, ParseOnOff>(args.annotated_rr_graph, "--annotated_rr_graph")
+        .help("Whether the generated CRR should be annotated with delay")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument<bool, ParseOnOff>(args.remove_dangling_nodes, "--remove_dangling_nodes")
+        .help("Whether the generated CRR should remove CHANX and CHANY nodes that have no fan-in")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    crr_grp.add_argument(args.sb_count_dir, "--sb_count_dir")
+        .help("Directory to store csv files showing how many times each switch specified in the switch block templates is used")
+        .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");

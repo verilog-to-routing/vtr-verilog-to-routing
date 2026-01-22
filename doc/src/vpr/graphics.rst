@@ -2,7 +2,7 @@
 
 Graphics
 ========
-VPR includes easy-to-use graphics for visualizing both the targetted FPGA architecture, and the circuit VPR has implemented on the architecture.
+VPR includes easy-to-use graphics for visualizing both the targeted FPGA architecture, and the circuit VPR has implemented on the architecture.
 
 .. image:: https://www.verilogtorouting.org/img/des90_routing_util.gif
     :align: center
@@ -41,22 +41,22 @@ A graphical window will now pop up when you run VPR.
 
 Navigation
 ----------
-* Click on the **Zoom-Fit** button to get an over-encompassing view of the FPGA architecture.
+* Click on the **Zoom Fit** button to get an over-encompassing view of the FPGA architecture.
 * Click and drag with the left mouse button to pan the view, or scroll the mouse wheel to zoom in and out.
-* Click on the **Window** button, then on the diagonally opposite corners of a box, to zoom in on a particular area.
+* Click on the **Zoom Select** button, then on the diagonally opposite corners of a box, to zoom in on a particular area.
 * Click on **Save** under the **Misc.** tab to save the image on screen to PDF, PNG, or SVG file.
-* **Done** tells VPR to continue with the next step in placing and routing the circuit.
+* **Next Step** tells VPR to continue with the next step in placing and routing the circuit.
 
 
 .. note:: Menu buttons will be greyed out when they are not selectable (e.g. VPR is working).
 
-Visualizing Placement
+Placement
 --------------------------------
 By default VPR's graphics displays the FPGA floorplan (block grid) and current placement.
 
 .. figure:: ../Images/Overall_view.png
     :align: center 
-    :height: 300
+    :width: 50%
 
     FPGA floorplan (block grid)    
 
@@ -64,84 +64,124 @@ If the **Placement Macros** drop down is set, any placement macros (e.g. carry c
 
 .. figure:: https://www.verilogtorouting.org/img/neuron_placement_macros.gif
     :align: center
+    :width: 50%
 
     Placement with macros (carry chains) highlighted
 
-Visualizing Netlist Connectivity
---------------------------------
-The **Toggle Nets** drop-down list under the **Net Settings** tab toggles the nets in the circuit to be visible/invisible. Options include **Cluster Nets** and **Primitive Nets**.
+Nets
+----------------
+To visualize nets, first enable the **Display Nets** switch under the **Net** Tab.
+
+The user can choose between drawing nets as **Flylines** (direct connections between sources and sinks) or as **Routing** (the actual routed path of the net).
+Only the **Flylines** option is available during placement, as routing has not yet been performed.
+
+The Inter-Cluster Nets and Intra-Cluster Nets options allow the user to choose whether to visualize nets between clbs or within a clb, respectively. The Intra-Cluster Routed Nets option is currently only available when **flat routing is enabled**.
 
 .. figure:: ../Images/Net_Settings.png
     :align: center 
-    :height: 200
+    :width: 25%
 
-    Toggle Nets drop-down under Net Settings tab
+    Net Tab
 
-When a placement is being displayed, routing information is not yet known so nets are simply drawn as a “star;” that is, a straight line is drawn from the net source to each of its sinks.
-Click on any clb in the display, and it will be highlighted in green, while its fanin and fanout are highlighted in blue and red, respectively.
-Once a circuit has been routed the true path of each net will be shown.
-
-.. figure:: https://www.verilogtorouting.org/img/des90_nets.gif
-    :align: center
-
-    Logical net connectivity during placement
-
-If the nets routing are shown, click on a clb or pad to highlight its fanins and fanouts, or click on a pin or channel wire to highlight a whole net in magenta.
+If routing is shown, clicking on a pin or channel wire will highlight the whole net in magenta.
 Multiple nets can be highlighted by pressing ctrl + mouse click.
 
-Visualizing the Critical Path
+.. figure:: ../Images/show_nets.gif
+    :align: center
+    :width: 100%
+
+    Visualizing Nets
+
+When the **Highlight Block Fan-in and Fan-out** option is enabled, clicking on an internal block will draw its fan-in, fan-out, and internal flylines in blue, red, and yellow, respectively. 
+
+.. figure:: ../Images/highlight_flylines.png
+    :align: center
+    :width: 50%
+
+    Highlight Block Fan-in and Fan-out Flylines
+
+Clicking on a clb (not the internal physical blocks) will also highlight all the fan-in and fan-out routed nets in blue and red, respectively.
+
+Critical Path
 -----------------------------
-During placement and routing you can click on the **Crit. Path** drop-down menu under the **Misc.** tab to visualize the critical path.
+During placement and routing you can click on the **Display Critical Path** switch under the **Net** tab to visualize the critical path.
 Each stage between primitive pins is shown in a different colour.
 
 .. figure:: ../Images/crit_path.png
     :align: center 
-    :height: 200
+    :width: 100%
 
-    Crit. Path drop-down list under the Misc. tab
-
-The **Crit. Path** drop-down will toggle through the various visualizations:
+    Critical Path with all options enabled.
 
 * During placement the critical path is shown only as flylines.
 * During routing the critical path can be shown as both flylines and routed net connections.
 
 .. figure:: https://www.verilogtorouting.org/img/des90_cpd.gif
     :align: center
+    :width: 50%
 
     Critical Path flylines during placement and routing
 
-Visualizing Routing Architecture
+Routing Architecture
 --------------------------------
 
-When a routing is on screen, the **Routing Options** tab provides various options to gain more visual information.
+During the route stage, the **Route** tab provides various options to visualize router resources and statistics.
 
 .. figure:: ../Images/Routing_Options.png
     :align: center 
-    :height: 300
+    :width: 25%
 
     Routing Options
 
-Clicking on **Toggle RR** lets you to choose between various views of the routing resources available in the FPGA.
+To visualize routing architecture, first enable the **Display Routing Resources** switch under the Route tab. Then, click on the checkboxes below to show/hide the types of nodes and edges you want to visualize. 
 
-.. figure:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/raw/master/img/routing_arch.gif
+The intra-cluster options are currently only available when **flat routing is enabled**. 
+
+The **Highlight Fan-In Fan-Out Edges** option will highlight the fan-in and fan-out edges of the selected routing resource in blue and red, respectively. 
+
+Multiple routing resources can be highlighted by pressing ctrl + mouse click.
+
+.. figure:: ../Images/show_rr_graph.gif
     :align: center
+    :width: 100%
 
-    Routing Architecture Views
+    Visualizing Routing Architecture
 
-The routing resource view can be very useful in ensuring that you have correctly described your FPGA in the architecture description file -- if you see switches where they shouldn’t be or pins on the wrong side of a clb, your architecture description needs to be revised.
+**Node Colors**:
 
-Wiring segments are drawn in black, input pins are drawn in sky blue, and output pins are drawn in pink.
-Sinks are drawn in dark slate blue, and sources in plum.
-Direct connections between output and input pins are shown in medium purple.
-Connections from wiring segments to input pins are shown in sky blue, connections from output pins to wiring segments are shown in pink, and connections between wiring segments are shown in green.
++------------+--------+
+| Node Type  | Color  |
++============+========+
+| Channel    | Black  |
++------------+--------+
+| Input Pin  | Purple |
++------------+--------+
+| Output Pin | Pink   |
++------------+--------+
+
+**Edge Colors**:
+
++-----------------------+---------------+
+| Edge Type             | Color         |
++=======================+===============+
+| Pin to Output Pin     | Light Pink    |
++-----------------------+---------------+
+| Pin to Input Pin      | Medium Purple |
++-----------------------+---------------+
+| Output Pin to Channel | Pink          |
++-----------------------+---------------+
+| Channel to Input Pin  | Purple        |
++-----------------------+---------------+
+| Channel to Channel    | Dark Green    |
++-----------------------+---------------+
+| Non-Configurable Edge | Dark Grey     |
++-----------------------+---------------+
+
 The points at which wiring segments connect to clb pins (connection box switches) are marked with an ``x``.
 
 Switch box connections will have buffers (triangles) or pass transistors (circles) drawn on top of them, depending on the type of switch each connection uses.
-Clicking on a clb or pad will overlay the routing of all nets connected to that block on top of the drawing of the FPGA routing resources, and will label each of the pins on that block with its pin number.
-Clicking on a routing resource will highlight it in magenta, and its fanouts will be highlighted in red and fanins in blue.
-Multiple routing resources can be highlighted by pressing ctrl + mouse click.
 
-Visualizing Routing Congestion
+Routing Congestion
 ------------------------------
 When a routing is shown on-screen, clicking on the **Congestion** drop-down menu under the **Routing Options** tab will show a heat map of any overused routing resources (wires or pins).
 Lighter colours (e.g. yellow) correspond to highly overused resources, while darker colours (e.g. blue) correspond to lower overuse.
@@ -149,44 +189,43 @@ The overuse range shown at the bottom of the window.
 
 .. figure:: https://www.verilogtorouting.org/img/bitcoin_congestion.gif
     :align: center
+    :width: 50%
 
     Routing Congestion during placement and routing
 
-Visualizing Routing Utilization
+Routing Utilization
 -------------------------------
 When a routing is shown on-screen, clicking on the **Routing Util** drop-down menu will show a heat map of routing wire utilization (i.e. fraction of wires used in each channel).
 Lighter colours (e.g. yellow) correspond to highly utilized channels, while darker colours (e.g. blue) correspond to lower utilization.
 
 .. figure:: https://www.verilogtorouting.org/img/bitcoin_routing_util.gif
     :align: center
+    :width: 50%
 
     Routing Utilization during placement and routing
 
-Toggle Block Internal
+Block Internals
 -------------------------------
-During placement and routing you can adjust the level of block detail you visualize by using the **Toggle Block Internal** option under the **Block Settings** tab. 
+During placement and routing you can adjust the level of block detail you visualize by using the **Block Internal** option under the **Block** tab. 
 
 .. figure:: ../Images/Block_Settings.png
     :align: center 
-    :height: 300
+    :width: 100%
 
     Block Settings 
 
 Each block can contain a number of flip flops (ff), look up tables (lut), and other primitives. The higher the number, the deeper into the hierarchy within the cluster level block you see. 
+The format of the internal block names is <block_type_name>[<placement_index>]:<mode_name>.
 
-.. figure:: https://www.verilogtorouting.org/img/ToggleBlockInternal.gif
-    :align: center
-
-    Visualizing Block Internals
-
-View Menu
+Layers Dropdown
 -----------------------------
 .. figure:: ../Images/view_menu.png
     :align: center 
+    :width: 50%
 
-    Items under view menu
+    Items under the layers dropdown
 
-The view menu is displayed when vpr is targeting a stacked multi-die architecture (more than 1 layer).
+The layers dropdown is displayed when vpr is targeting a stacked multi-die architecture (more than 1 layer).
 Layers are drawn in ascending order for many drawing features (e.g. blocks); that is layer 0 is drawn first, and (if visible), layer 1 is drawn on top of it etc.
 The visibility and transparency of a layer can be changed, which will affect blocks, nets, routing, and critical path.
 Cross-layer connections refer to connections that are in different layers. 
@@ -214,7 +253,7 @@ Button Description Table
 |                   |                   |                              | pin utilization              |
 +-------------------+-------------------+------------------------------+------------------------------+
 | Cong. Cost        | Routing           | Visualizes the congestion    |                              |
-|                   |                   | costs of routing resouces    |                              |
+|                   |                   | costs of routing resources   |                              |
 |                   |                   |                              |                              |
 |                   |                   |                              |                              |
 +-------------------+-------------------+------------------------------+------------------------------+
@@ -269,9 +308,10 @@ Manual Moves
 
 The manual moves feature allows the user to specify the next move in placement. If the move is legal, blocks are swapped and the new move is shown on the architecture. 
 
+.. _fig-misc-tab:
 .. figure:: ../Images/manual_move.png
     :align: center
-    :height: 200
+    :width: 25%
 
     Misc. Tab
 
@@ -279,18 +319,32 @@ To enable the feature, activate the **Manual Move** toggle button under the **Mi
 
 .. figure:: https://www.verilogtorouting.org/img/draw_manual_moves_window.png
    :align: center
+   :width: 50%
 
 On the manual move window, the user can specify the Block ID/Block name of the block to move and the To location, with the x position, y position and subtile position. For the manual move to be valid:
 
 - The To location requested by the user should be within the grid's dimensions.
 - The block to be moved is found, valid and not fixed.
 - The blocks to be swapped are compatible.
-- The location choosen by the user is different from the block's current location.
+- The location chosen by the user is different from the block's current location.
   
 If the manual move is legal, the cost summary window will display the delta cost, delta timing, delta bounding box cost and the placer's annealing decision that would result from this move. 
 
 .. figure:: https://www.verilogtorouting.org/img/manual_move_cost_dialog.png
    :align: center
+   :width: 50%
 
 The user can Accept or Reject the manual move based on the values provided. If accepted the block's new location is shown. 
 
+Pause Button
+------------
+
+The pause button allows the user to temporarily stop the program during placement or routing.
+When clicked during the placement stage, the program will pause at the next temperature update.
+When clicked during the routing stage, it will pause at the next router iteration.
+
+The button can be pressed at any time while the program is running. To enable the feature, click the **Pause** button under the **Misc.** tab (see :ref:`fig-misc-tab`).
+Once the program reaches the next temperature update or router iteration after the button is pressed, it will automatically pause.
+
+After the program has paused, clicking **Next Step** allows the user to resume execution from the point where the program was paused.
+This can be continuing from the current temperature in placement or from the current router iteration in routing.

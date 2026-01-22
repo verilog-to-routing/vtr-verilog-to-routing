@@ -10,8 +10,7 @@ RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
                          const std::vector<t_rr_rc_data>& rr_rc_data,
                          const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                          const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-                         const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges,
-                         const vtr::vector<RRNodeId, std::vector<short>>& node_tileable_track_nums)
+                         const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges)
     : node_storage_(node_storage)
     , node_lookup_(node_lookup)
     , rr_node_metadata_(rr_node_metadata)
@@ -20,9 +19,7 @@ RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
     , rr_rc_data_(rr_rc_data)
     , rr_segments_(rr_segments)
     , rr_switch_inf_(rr_switch_inf) 
-    , node_in_edges_(node_in_edges)
-    , node_tileable_track_nums_(node_tileable_track_nums) {
-}
+    , node_in_edges_(node_in_edges) {}
 
 std::vector<RREdgeId> RRGraphView::node_in_edges(RRNodeId node) const {
     VTR_ASSERT(size_t(node) < node_storage_.size());
@@ -64,9 +61,10 @@ std::vector<RREdgeId> RRGraphView::node_non_configurable_in_edges(RRNodeId node)
 
 std::vector<RREdgeId> RRGraphView::find_edges(RRNodeId src_node, RRNodeId des_node) const {
     std::vector<RREdgeId> edge_list;
-    for (auto iedge : node_out_edges(src_node)) {
-        if (edge_sink_node(RREdgeId(iedge)) == des_node) {
-            edge_list.push_back(RREdgeId(iedge));
+    for (auto iedge: node_out_edges(src_node)) {
+        RREdgeId edge = node_storage_.edge_id(src_node, iedge);
+        if (edge_sink_node(edge) == des_node) {
+            edge_list.push_back(edge);
         }
     }
     return edge_list;
@@ -129,5 +127,3 @@ bool RRGraphView::validate_in_edges() const {
     }
     return true;
 }
-
-

@@ -2,7 +2,7 @@ include(GNUInstallDirs)
 
 if(NOT MSCV)
     # These flags generate noisy but non-bug warnings when using lib kj,
-    # supress them.
+    # suppress them.
     set(WARN_FLAGS_TO_DISABLE
         -Wno-undef
         -Wno-non-virtual-dtor
@@ -32,7 +32,7 @@ capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
 )
 
 if (VPR_ENABLE_INTERCHANGE)
-    set(IC_DIR ${CMAKE_SOURCE_DIR}/libs/EXTERNAL/libinterchange/interchange)
+    set(IC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../EXTERNAL/libinterchange/interchange)
     set(CAPNPC_SRC_PREFIX ${IC_DIR})
 
     find_program(WGET wget REQUIRED)

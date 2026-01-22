@@ -34,6 +34,10 @@ class SwitchblockLookupKey {
         this->set_coords(set_x, set_y, set_layer, set_from, set_to);
     }
 
+    SwitchblockLookupKey(const t_physical_tile_loc& set_loc, e_side set_from, e_side set_to) {
+        this->set_coords(set_loc.x, set_loc.y, set_loc.layer_num, set_from, set_to);
+    }
+
     /// @brief Constructor for initializing member variables with default layer number (0), used for single die FPGA
     SwitchblockLookupKey(int set_x, int set_y, e_side set_from, e_side set_to) {
         this->set_coords(set_x, set_y, 0, set_from, set_to);
@@ -73,9 +77,7 @@ struct t_hash_Switchblock_Lookup {
     }
 };
 
-/**
- * @brief Contains the required information to build an RR graph edge for a switch block connection
- */
+/// @brief Contains the required information to build an RR graph edge for a switch block connection.
 struct t_switchblock_edge {
     /// Source wire ptc_num index in a channel
     short from_wire;
@@ -83,17 +85,8 @@ struct t_switchblock_edge {
     /// Destination wire ptc_num index in a channel
     short to_wire;
 
-    /// RR graph switch index that connects the source wire to the destination wire that connect two tracks in same layer
+    /// RR graph switch index that connects the source wire to the destination wire that connect two tracks
     short switch_ind;
-
-    /// RR graph switch index that connects two tracks in different layers
-    short switch_ind_between_layers;
-
-    /// The layer index that the source wire is located at
-    short from_wire_layer;
-
-    /// The layer index that the destination wire is located at
-    short to_wire_layer;
 };
 
 /**
@@ -120,7 +113,7 @@ typedef std::unordered_map<SwitchblockLookupKey, std::vector<t_switchblock_edge>
  *   @param switchblocks switch block information extracted from the architecture file
  *   @param nodes_per_chan number of track in each channel (x,y)
  *   @param directionality specifies the switch block edges direction (unidirectional or bidirectional)
- *   @param rand_state initialize the random number generator (RNG)
+ *   @param rng the random number generator (RNG)
  *
  *   @return creates a map between switch blocks (key) and their corresponding edges (value).
  */
@@ -130,7 +123,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                                                              const std::vector<bool>& inter_cluster_rr,
                                                              const std::vector<t_switchblock_inf>& switchblocks,
                                                              const t_chan_width& nodes_per_chan,
-                                                             enum e_directionality directionality,
+                                                             e_directionality directionality,
                                                              vtr::RngContainer& rng);
 
 /**

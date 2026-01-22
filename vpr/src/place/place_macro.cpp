@@ -163,7 +163,7 @@ PlaceMacros::PlaceMacros(const std::vector<t_direct_inf>& directs,
 
 ClusterBlockId PlaceMacros::macro_head(ClusterBlockId blk) const {
     int macro_index = get_imacro_from_iblk(blk);
-    if (macro_index == OPEN) {
+    if (macro_index == UNDEFINED) {
         return ClusterBlockId::INVALID();
     } else {
         return pl_macros_[macro_index].members[0].blk_index;
@@ -211,7 +211,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
             // Note that the restriction that constant nets are not driven from another direct ensures that
             // blocks in the middle of a chain with internal constant signals are not detected as potential
             // head blocks.
-            if (to_src_or_sink == RECEIVER && to_idirect != OPEN
+            if (to_src_or_sink == e_pin_type::RECEIVER && to_idirect != UNDEFINED
                 && (to_net_id == ClusterNetId::INVALID() || (is_constant_clb_net(to_net_id, atom_lookup, atom_nlist) && !net_is_driven_by_direct_(to_net_id, clb_nlist)))) {
                 for (int from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
                     int from_physical_pin = get_physical_pin(physical_tile, logical_block, from_iblk_pin);
@@ -224,7 +224,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                     //
                     // The output SOURCE (from_pin) of a true head macro will:
                     //  * drive another block with the same direct connection
-                    if (from_src_or_sink == DRIVER && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
+                    if (from_src_or_sink == e_pin_type::DRIVER && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
                         // Mark down that this is the first block in the macro
                         pl_macro_member_blk_num_of_this_blk[0] = blk_id;
                         pl_macro_idirect[num_macro] = to_idirect;
@@ -249,7 +249,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
 
                             // Assume that the from_iblk_pin index is the same for the next block
                             VTR_ASSERT(idirect_from_blk_pin_[physical_tile->index][from_physical_pin] == from_idirect
-                                       && direct_type_from_blk_pin_[physical_tile->index][from_physical_pin] == DRIVER);
+                                       && direct_type_from_blk_pin_[physical_tile->index][from_physical_pin] == e_pin_type::DRIVER);
                             next_net_id = clb_nlist.block_net(next_blk_id, from_iblk_pin);
 
                             // Mark down this block as a member of the macro
@@ -351,10 +351,10 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
 
     // Step 1) find the staring point of the matching
     auto new_macro_it = new_macro_blocks.begin();
-    auto old_macro_it = std::find(old_macro_blocks.begin(), old_macro_blocks.end(), *new_macro_it);
+    auto old_macro_it = std::ranges::find(old_macro_blocks, *new_macro_it);
     if (old_macro_it == old_macro_blocks.end()) {
         old_macro_it = old_macro_blocks.begin();
-        new_macro_it = std::find(new_macro_blocks.begin(), new_macro_blocks.end(), *old_macro_it);
+        new_macro_it = std::ranges::find(new_macro_blocks, *old_macro_it);
         // if matching is from the middle of the two macros, then combining macros is not possible
         if (new_macro_it == new_macro_blocks.end()) {
             return false;
@@ -409,7 +409,7 @@ int PlaceMacros::get_imacro_from_iblk(ClusterBlockId iblk) const {
         // Return the imacro for the block.
         imacro = imacro_from_iblk_[iblk];
     } else {
-        imacro = OPEN; //No valid block, so no valid macro
+        imacro = UNDEFINED; //No valid block, so no valid macro
     }
 
     return imacro;
@@ -417,7 +417,7 @@ int PlaceMacros::get_imacro_from_iblk(ClusterBlockId iblk) const {
 
 void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs,
                                                        const std::vector<t_physical_tile_type>& physical_tile_types) {
-    // Allocate and initialize the values to OPEN (-1).
+    // Allocate and initialize the values to UNDEFINED (-1).
     idirect_from_blk_pin_.resize(physical_tile_types.size());
     direct_type_from_blk_pin_.resize(physical_tile_types.size());
     for (const t_physical_tile_type& type : physical_tile_types) {
@@ -425,8 +425,8 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
             continue;
         }
 
-        idirect_from_blk_pin_[type.index].resize(type.num_pins, OPEN);
-        direct_type_from_blk_pin_[type.index].resize(type.num_pins, OPEN);
+        idirect_from_blk_pin_[type.index].resize(type.num_pins, UNDEFINED);
+        direct_type_from_blk_pin_[type.index].resize(type.num_pins, e_pin_type::OPEN);
     }
 
     const PortPinToBlockPinConverter port_pin_to_block_pin;
@@ -448,7 +448,7 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
          * to and whether it is a source or a sink of the direct connection. */
 
         // Find blocks with the same name as from_pb_type_name and from_port_name
-        mark_direct_of_ports(idirect, DRIVER, from_pb_type_name, from_port_name,
+        mark_direct_of_ports(idirect, e_pin_type::DRIVER, from_pb_type_name, from_port_name,
                              from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
@@ -456,7 +456,7 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
                              port_pin_to_block_pin);
 
         // Then, find blocks with the same name as to_pb_type_name and from_port_name
-        mark_direct_of_ports(idirect, RECEIVER, to_pb_type_name, to_port_name,
+        mark_direct_of_ports(idirect, e_pin_type::RECEIVER, to_pb_type_name, to_port_name,
                              to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
@@ -563,10 +563,10 @@ static void mark_direct_of_pins(int start_pin_index,
             idirect_from_blk_pin[itype][iblk_pin] = idirect;
 
             // Check whether the pins are marked, errors out if so
-            if (direct_type_from_blk_pin[itype][iblk_pin] != OPEN) {
+            if (direct_type_from_blk_pin[itype][iblk_pin] != e_pin_type::OPEN) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "[LINE %d] Invalid pin - %s, this pin is in more than one direct connection.\n",
-                                line, src_string);
+                                line, src_string.data());
             } else {
                 direct_type_from_blk_pin[itype][iblk_pin] = direct_type;
             }
@@ -581,7 +581,7 @@ void PlaceMacros::alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>
 
     /* Allocate and initialize the values to OPEN (-1). */
     for (auto blk_id : clb_nlist.blocks()) {
-        imacro_from_iblk_.insert(blk_id, OPEN);
+        imacro_from_iblk_.insert(blk_id, UNDEFINED);
     }
 
     /* Load the values */
@@ -596,7 +596,7 @@ void PlaceMacros::alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>
 void PlaceMacros::write_place_macros_(std::string filename,
                                       const std::vector<t_pl_macro>& macros,
                                       const std::vector<t_physical_tile_type>& physical_tile_types,
-                                      const ClusteredNetlist& clb_nlist) {
+                                      const ClusteredNetlist& clb_nlist) const {
     FILE* f = vtr::fopen(filename.c_str(), "w");
 
     fprintf(f, "#Identified Placement macros\n");
@@ -629,15 +629,15 @@ void PlaceMacros::write_place_macros_(std::string filename,
 
         int itype = type.index;
         for (int ipin = 0; ipin < type.num_pins; ++ipin) {
-            if (idirect_from_blk_pin_[itype][ipin] != OPEN) {
-                if (direct_type_from_blk_pin_[itype][ipin] == DRIVER) {
+            if (idirect_from_blk_pin_[itype][ipin] != UNDEFINED) {
+                if (direct_type_from_blk_pin_[itype][ipin] == e_pin_type::DRIVER) {
                     fprintf(f, "%-9s %-9d true      SOURCE    \n", type.name.c_str(), ipin);
                 } else {
-                    VTR_ASSERT(direct_type_from_blk_pin_[itype][ipin] == RECEIVER);
+                    VTR_ASSERT(direct_type_from_blk_pin_[itype][ipin] == e_pin_type::RECEIVER);
                     fprintf(f, "%-9s %-9d true      SINK      \n", type.name.c_str(), ipin);
                 }
             } else {
-                VTR_ASSERT(direct_type_from_blk_pin_[itype][ipin] == OPEN);
+                VTR_ASSERT(direct_type_from_blk_pin_[itype][ipin] == e_pin_type::OPEN);
             }
         }
     }
@@ -664,7 +664,7 @@ bool PlaceMacros::net_is_driven_by_direct_(ClusterNetId clb_net,
 
     auto direct = idirect_from_blk_pin_[physical_tile->index][physical_pin];
 
-    return direct != OPEN;
+    return direct != UNDEFINED;
 }
 
 const t_pl_macro& PlaceMacros::operator[](int idx) const {
