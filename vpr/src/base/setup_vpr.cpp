@@ -254,8 +254,7 @@ void SetupVPR(const t_options* options,
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
     }
 
-    //Setup the default flow, if no specific stages specified
-    //do all
+    // Setup the default flow, if no specific stages specified do all
     if (!options->do_packing
         && !options->do_legalize
         && !options->do_placement
@@ -264,40 +263,40 @@ void SetupVPR(const t_options* options,
         && !options->do_analysis) {
         //run all stages if none specified
         packerOpts->doPacking = e_stage_action::DO;
-        placerOpts->doPlacement = e_stage_action::DO;
+        placerOpts->do_placement = e_stage_action::DO;
         apOpts->doAP = e_stage_action::SKIP; // AP not default.
         routerOpts->doRouting = e_stage_action::DO;
         analysisOpts->doAnalysis = e_stage_action::SKIP_IF_PRIOR_FAIL; //Deferred until implementation status known
     } else {
-        //We run all stages up to the specified stage
-        //Note that by checking in reverse order (i.e. analysis to packing)
-        //we ensure that earlier stages override the default 'LOAD' action
-        //set by later stages
+        // We run all stages up to the specified stage
+        // Note that by checking in reverse order (i.e. analysis to packing)
+        // we ensure that earlier stages override the default 'LOAD' action
+        // set by later stages
 
         if (options->do_analysis) {
             packerOpts->doPacking = e_stage_action::LOAD;
-            placerOpts->doPlacement = e_stage_action::LOAD;
+            placerOpts->do_placement = e_stage_action::LOAD;
             routerOpts->doRouting = e_stage_action::LOAD;
             analysisOpts->doAnalysis = e_stage_action::DO;
         }
 
         if (options->do_routing) {
             packerOpts->doPacking = e_stage_action::LOAD;
-            placerOpts->doPlacement = e_stage_action::LOAD;
+            placerOpts->do_placement = e_stage_action::LOAD;
             routerOpts->doRouting = e_stage_action::DO;
             analysisOpts->doAnalysis = ((options->do_analysis) ? e_stage_action::DO : e_stage_action::SKIP_IF_PRIOR_FAIL); //Always run analysis after routing
         }
 
         if (options->do_placement) {
             packerOpts->doPacking = e_stage_action::LOAD;
-            placerOpts->doPlacement = e_stage_action::DO;
+            placerOpts->do_placement = e_stage_action::DO;
         }
 
         if (options->do_analytical_placement) {
             // In the Analytical Placement flow, packing and placement are
             // integrated. Thus, these stages are skipped.
             packerOpts->doPacking = e_stage_action::SKIP;
-            placerOpts->doPlacement = e_stage_action::SKIP;
+            placerOpts->do_placement = e_stage_action::SKIP;
             apOpts->doAP = e_stage_action::DO;
         }
 
@@ -650,7 +649,7 @@ static void setup_netlist_opts(const t_options& Options, t_netlist_opts& Netlist
  */
 static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpts) {
     if (Options.do_placement) {
-        PlacerOpts->doPlacement = e_stage_action::DO;
+        PlacerOpts->do_placement = e_stage_action::DO;
     }
 
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;

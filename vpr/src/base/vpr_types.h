@@ -372,7 +372,7 @@ enum class e_timing_update_type {
  * Placement and routing data types
  ****************************************************************************/
 
-/// Total number of available move types for placment engine.
+/// Total number of available move types for placement engine.
 constexpr int NUM_PL_MOVE_TYPES = 7;
 /// Total number of non-timing move types.
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
@@ -986,6 +986,8 @@ enum class e_move_type;
 /**
  * @brief Various options for the placer.
  *
+ * TODO: move member variable doxygen comments to where the variable are defined.
+ *
  *   @param place_algorithm
  *              Controls which placement algorithm is used.
  *   @param place_quench_algorithm
@@ -1025,9 +1027,6 @@ enum class e_move_type;
  *              with worse slacks more critical.
  *   @param td_place_exp_last
  *              Value that the crit_exponent will be at the end.
- *   @param doPlacement
- *              True if placement is supposed to be done in the CAD flow.
- *              False if otherwise.
  *   @param place_constraint_expand
  *              Integer value that specifies how far to expand the floorplan
  *              region when printing out floorplan constraints based on
@@ -1059,7 +1058,8 @@ struct t_placer_opts {
     float td_place_exp_first;
     int seed;
     float td_place_exp_last;
-    e_stage_action doPlacement;
+    /// True if placement is supposed to be done in the CAD flow. False if otherwise.
+    e_stage_action do_placement;
     float rlim_escape_fraction;
     std::string move_stats_file;
     int placement_saves_per_temperature;
