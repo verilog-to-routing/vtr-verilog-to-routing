@@ -77,7 +77,7 @@ class SdcParseCallback : public sdcparse::Callback {
 
         // We should create a class which manages how objects correspond with
         // internal netlist primitives.
-        std::set<AtomPinId> ports;
+        std::unordered_set<AtomPinId> ports;
         for (const auto& p : netlist_primary_ios_) {
             sdcparse::PortDirection port_dir;
             switch (netlist_.pin_type(p.second)) {
@@ -98,9 +98,15 @@ class SdcParseCallback : public sdcparse::Callback {
 
         for (AtomPinId pin : netlist_.pins()) {
             // Ports are not pins.
-            // TODO: Clean this up and verify that this is correct.
             if (ports.count(pin) != 0)
                 continue;
+            // TODO: The pin names need to be investigated in detail. The pin names will
+            //       have the form:
+            //              <block_name>.<port_name>[<pin_port_bit>]
+            //       We need to decide if this is what we want.
+            //       We also need to take into account net aliases since some blocks will
+            //       be optimized away during the flow. We may want to consider upgrading
+            //       how this is handled.
             const std::string& pin_name = netlist_.pin_name(pin);
             sdcparse::PinObjectId pin_id = obj_database.create_pin_object(pin_name);
             object_to_pin_id_[pin_id] = pin;
@@ -115,16 +121,28 @@ class SdcParseCallback : public sdcparse::Callback {
 
     //Individual commands
     void create_clock(const sdcparse::CreateClock& cmd) override {
-        ++num_commands_;
+        num_commands_++;
 
         if (cmd.add) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "-add option not supported for create_clock");
         }
 
+        if (cmd.targets.strings.size() > 1 && !cmd.name.empty()) {
+            // NOTE: The reason this is not supported is because we currently
+            //       create unique clock domains for each target. This may not
+            //       be standard and they cannot all be named the same thing.
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "named clocks with more than 1 targets are not supported for create_clock");
+        }
+
         if (cmd.is_virtual) {
+            if (cmd.name.empty()) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "clocks with no targets must have a name");
+            }
+
             //Create a virtual clock
-            //TODO: Make this a method.
             tatum::DomainId virtual_clk = tc_.create_clock_domain(cmd.name);
             auto clock_obj_id = obj_database.create_clock_object(cmd.name);
             object_to_clock_id_[clock_obj_id] = virtual_clk;
@@ -144,97 +162,71 @@ class SdcParseCallback : public sdcparse::Callback {
             //Save the mapping to the sdc clock info
             sdc_clocks_[virtual_clk] = cmd;
         } else {
-            //Create a netlist clock for every matching netlist clock
-            if (cmd.targets.type == sdcparse::StringGroupType::OBJECT) {
-                for (const auto& object_id_str : cmd.targets.strings) {
-                    sdcparse::PortObjectId object_id = sdcparse::PortObjectId(object_id_str);
-                    // TODO: Ensure that this is a port object.
-                    // TODO: Ensure that the lookup exists.
-                    AtomPinId clock_pin = object_to_port_id_[object_id];
-
-                    // TODO: This should really produce a warning.
-                    if (netlist_clock_drivers_.count(clock_pin) != 1) {
-                        continue;
-                    }
-                    VTR_ASSERT(netlist_clock_drivers_.count(clock_pin) == 1);
-
-                    // FIXME: How should we handle net aliases?
-                    AtomNetId clock_net = netlist_.pin_net(clock_pin);
-                    const auto& clock_name = netlist_.net_name(clock_net);
-
-                    auto net_aliases = netlist_.net_aliases(clock_name);
-
-                    //Create netlist clock
-                    // FIXME: Shouldn't this use the name of the clock?
-                    tatum::DomainId netlist_clk = tc_.create_clock_domain(clock_name);
-                    auto clock_obj_id = obj_database.create_clock_object(clock_name);
-                    object_to_clock_id_[clock_obj_id] = netlist_clk;
-
-                    if (sdc_clocks_.count(netlist_clk)) {
-                        vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                                  "Found duplicate netlist clock definition for clock '%s'",
-                                  clock_name.c_str());
-                    }
-
-                    //Set the clock source
-                    AtomPinId clock_driver = netlist_.net_driver(clock_net);
-                    tatum::NodeId clock_source = lookup_.atom_pin_tnode(clock_driver);
-                    VTR_ASSERT(clock_source);
-                    tc_.set_clock_domain_source(clock_source, netlist_clk);
-
-                    //Save the mapping to the clock info
-                    sdc_clocks_[netlist_clk] = cmd;
-                }
-
-            } else {
-            for (const std::string& clock_name_glob_pattern : cmd.targets.strings) {
-                bool found = false;
-
-                //We interpret each SDC target as glob-style pattern matches, which we
-                //convert to a regex
-                auto clock_name_regex = glob_pattern_to_regex(clock_name_glob_pattern);
-
-                //Look for matching netlist clocks
-                for (AtomPinId clock_pin : netlist_clock_drivers_) {
-                    AtomNetId clock_net = netlist_.pin_net(clock_pin);
-                    const auto& clock_name = netlist_.net_name(clock_net);
-
-                    auto net_aliases = netlist_.net_aliases(clock_name);
-
-                    for (const auto& alias : net_aliases) {
-                        if (std::regex_match(alias, clock_name_regex)) {
-                            found = true;
-                            //Create netlist clock
-                            tatum::DomainId netlist_clk = tc_.create_clock_domain(clock_name);
-
-                            if (sdc_clocks_.count(netlist_clk)) {
-                                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                                          "Found duplicate netlist clock definition for clock '%s' matching target pattern '%s'",
-                                          clock_name.c_str(), clock_name_glob_pattern.c_str());
-                            }
-
-                            //Set the clock source
-                            AtomPinId clock_driver = netlist_.net_driver(clock_net);
-                            tatum::NodeId clock_source = lookup_.atom_pin_tnode(clock_driver);
-                            VTR_ASSERT(clock_source);
-                            tc_.set_clock_domain_source(clock_source, netlist_clk);
-
-                            //Save the mapping to the clock info
-                            sdc_clocks_[netlist_clk] = cmd;
-
-                            // Exit the inner loop as the net is already being constrained
-                            break;
-                        }
-                    }
-                }
-
-                if (!found) {
+            //Create a netlist clock for every matching port / pin
+            VTR_ASSERT(cmd.targets.type == sdcparse::StringGroupType::OBJECT);
+            for (const auto& object_id_str : cmd.targets.strings) {
+                // Get the type of this object.
+                sdcparse::ObjectType object_type = obj_database.get_object_type(object_id_str);
+                if (object_type != sdcparse::ObjectType::Port && object_type != sdcparse::ObjectType::Pin) {
                     vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                              "Clock name or pattern '%s' does not correspond to any nets."
-                              " To create a virtual clock, use the '-name' option.",
-                              clock_name_glob_pattern.c_str());
+                              "create_clock command only supports ports and pins");
                 }
-            }
+
+                // Get the atom pin associated with this port / pin.
+                AtomPinId clock_pin;
+                if (object_type == sdcparse::ObjectType::Port) {
+                    sdcparse::PortObjectId object_id = sdcparse::PortObjectId(object_id_str);
+                    VTR_ASSERT_SAFE(object_to_port_id_.find(object_id) != object_to_port_id_.end());
+                    clock_pin = object_to_port_id_[object_id];
+                } else {
+                    VTR_ASSERT(object_type == sdcparse::ObjectType::Pin);
+                    sdcparse::PinObjectId object_id = sdcparse::PinObjectId(object_id_str);
+                    VTR_ASSERT_SAFE(object_to_pin_id_.find(object_id) != object_to_pin_id_.end());
+                    clock_pin = object_to_pin_id_[object_id];
+                }
+
+                // Ensure that the pin is a driver of a clock. This may be necessary for setting
+                // the source of the clock.
+                if (netlist_clock_drivers_.count(clock_pin) != 1) {
+                    // FIXME: This should really produce a warning or even better an error; however,
+                    //        VTR's use of wildcards for the create_clocks targets causes this to
+                    //        become rediculous. Need to fix this on the parser side. For now, we will
+                    //        just ignore any targets which are not clock drivers (which matches VTR's)
+                    //        original functionality.
+                    continue;
+                }
+                VTR_ASSERT(netlist_clock_drivers_.count(clock_pin) == 1);
+
+                // Get the name of the clock. If no name is provided, the name of the port/pin is used.
+                std::string clock_name;
+                if (cmd.name.empty()) {
+                    clock_name = obj_database.get_object_name(sdcparse::ObjectId(object_id_str));
+                } else {
+                    VTR_ASSERT(cmd.targets.strings.size() == 1);
+                    clock_name = cmd.name;
+                }
+
+                // Create netlist clock
+                tatum::DomainId netlist_clk = tc_.create_clock_domain(clock_name);
+                if (sdc_clocks_.count(netlist_clk) != 0) {
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                                "Found duplicate netlist clock definition for clock '%s'",
+                                clock_name.c_str());
+                }
+
+                // Set the clock source
+                AtomNetId clock_net = netlist_.pin_net(clock_pin);
+                AtomPinId clock_driver = netlist_.net_driver(clock_net);
+                tatum::NodeId clock_source = lookup_.atom_pin_tnode(clock_driver);
+                VTR_ASSERT(clock_source);
+                tc_.set_clock_domain_source(clock_source, netlist_clk);
+
+                // Update the object database
+                auto clock_obj_id = obj_database.create_clock_object(clock_name);
+                object_to_clock_id_[clock_obj_id] = netlist_clk;
+
+                //Save the mapping to the clock info
+                sdc_clocks_[netlist_clk] = cmd;
             }
         }
     }
