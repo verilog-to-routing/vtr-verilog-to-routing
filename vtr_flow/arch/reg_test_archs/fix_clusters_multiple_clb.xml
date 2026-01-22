@@ -2,6 +2,10 @@
  Architecture file translated from ifar repository N04K04L01.FC15FO25.AREA1DELAY1.CMOS90NM.BPTM
 
  Simple architecture file consisting of clusters of 4 BLEs, each BLE contains a 4-LUT+FF pair.  Delay models from 90nm PTM.
+
+ This architecture has two logical block types for CLBs. It has a fixed layout where half of the device has one type of CLB (clbA),
+ and the other half has the other type of CLB (clbB). This is to test that VPR is able to handle architectures with multiple CLB
+ types.
 -->
 <architecture>
   <!--

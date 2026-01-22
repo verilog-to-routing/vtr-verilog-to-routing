@@ -122,6 +122,10 @@ class UserPlaceConstraints {
      * @brief Return the set of logical block types a partition is constrained to
      *
      *   @param part_id The id of the partition whose type constraints are needed
+     * 
+     *   @return The set of logical block types. If the part is not constrained, it will return an empty set.
+     *           Use is_part_constrained_to_lb_types function before calling this function to check if a part
+     *           is constrained or not.
      */
     const std::unordered_set<t_logical_block_type_ptr>& get_part_lb_type_constraints(PartitionId part_id) const;
 
@@ -140,6 +144,12 @@ class UserPlaceConstraints {
      * Store all partitions
      */
     vtr::vector<PartitionId, Partition> partitions;
+
+    /**
+     * This is an empty set that is returned as a reference by the get_part_lb_type_constraints
+     * function. This is to allow that function to return all results by reference.
+     */
+    std::unordered_set<t_logical_block_type_ptr> EMPTY_SET_;
 };
 
 ///@brief used to print floorplanning constraints data from a VprConstraints object

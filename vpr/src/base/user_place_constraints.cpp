@@ -85,8 +85,10 @@ bool UserPlaceConstraints::is_part_constrained_to_lb_types(PartitionId part_id) 
 
 const std::unordered_set<t_logical_block_type_ptr>& UserPlaceConstraints::get_part_lb_type_constraints(PartitionId part_id) const {
     auto it = constrained_part_lb_types_.find(part_id);
-
-    VTR_ASSERT_SAFE(it != constrained_part_lb_types_.end());
+    if (it == constrained_part_lb_types_.end()) {
+        VTR_ASSERT_SAFE(EMPTY_SET_.empty());
+        return EMPTY_SET_;
+    }
 
     return it->second;
 }

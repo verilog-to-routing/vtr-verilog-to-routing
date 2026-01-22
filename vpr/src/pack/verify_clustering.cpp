@@ -398,7 +398,8 @@ static unsigned check_clustering_floorplanning_consistency(
                     if (!atom_lb_type_constraints.contains(clb_block_type)) {
                         VTR_LOG_ERROR(
                             "Cluster block %zu contains an atom %zu which is constrained "
-                            "to be unable to implement the logical block type of the cluster: %s\n",
+                            "to a set of logical block types that do not contain the "
+                            "logical block type of its cluster: %s\n",
                             size_t(clb_blk_id),
                             size_t(atom_blk_id),
                             clb_block_type->name.c_str());

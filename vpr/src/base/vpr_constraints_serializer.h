@@ -56,7 +56,9 @@
 struct partition_info {
     Partition part;
     std::vector<AtomBlockId> atoms;
-    // NOTE: This needs to be a vector for writing to make sense since an order needs to exist.
+    // NOTE: Although lb_types is stored in a set throughout VPR, this needs to be stored in a
+    //       vector here. This struct is only used when writing the constraints to a file,
+    //       and when this happens this information needs a strict order.
     std::vector<t_logical_block_type_ptr> lb_types;
     PartitionId part_id;
 };
