@@ -386,7 +386,7 @@ static unsigned check_clustering_floorplanning_consistency(
                 }
             }
 
-            // Check that each atom in the cluster can implement this logical block type.
+            // Check that each atom in the cluster can be implemented in this logical block type.
             for (AtomBlockId atom_blk_id : atoms_in_clb) {
                 PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
                 if (atom_part_id.is_valid() && constraints.is_part_constrained_to_lb_types(atom_part_id)) {

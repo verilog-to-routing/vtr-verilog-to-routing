@@ -105,7 +105,7 @@ class UserPlaceConstraints {
      * @brief Constrain the atoms in the given partition to be within blocks of a specific type
      *
      *   @param part_id   The id of the partition being constrained
-     *   @param lb_type   The logical block type the partition is constrained to
+     *   @param lb_type   The logical block type (i.e. cluster type) the partition is constrained to
      */
     void constrain_part_lb_type(PartitionId part_id, t_logical_block_type_ptr lb_type);
 
@@ -147,7 +147,9 @@ class UserPlaceConstraints {
 
     /**
      * This is an empty set that is returned as a reference by the get_part_lb_type_constraints
-     * function. This is to allow that function to return all results by reference.
+     * function if a partition does not have a constraint on the logical block types into which
+     * its primitives can be packed into. This is to allow that function to return all results
+     * by reference.
      */
     std::unordered_set<t_logical_block_type_ptr> EMPTY_SET_;
 };
