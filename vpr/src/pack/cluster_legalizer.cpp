@@ -139,6 +139,7 @@ static void free_pb_stats_recursive(t_pb* pb) {
  */
 static bool check_cluster_floorplanning(AtomBlockId atom_blk_id,
                                         PartitionRegion& cluster_pr,
+                                        t_logical_block_type_ptr cluster_type,
                                         const UserPlaceConstraints& constraints,
                                         int log_verbosity,
                                         bool& cluster_pr_needs_update) {
@@ -153,6 +154,18 @@ static bool check_cluster_floorplanning(AtomBlockId atom_blk_id,
                  atom_blk_id);
         cluster_pr_needs_update = false;
         return true;
+    }
+
+    // Check if the partition is constrained to any specific logical block types.
+    if (constraints.is_part_constrained_to_lb_types(part_id)) {
+        // If it is, check if this cluster's type is valid.
+        const auto& constrained_block_types = constraints.get_part_lb_type_constraints(part_id);
+        if (!constrained_block_types.contains(cluster_type)) {
+            VTR_LOGV(log_verbosity > 3,
+                     "\t\t\t Intersect: Atom block %d failed lb-type constraint for cluster type %s\n",
+                     atom_blk_id, cluster_type->name.c_str());
+            return false;
+        }
     }
 
     // Get the Atom and Cluster Partition Regions
@@ -1173,6 +1186,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         bool cluster_pr_needs_update = false;
         bool block_pack_floorplan_status = check_cluster_floorplanning(atom_blk_id,
                                                                        new_cluster_pr,
+                                                                       cluster.type,
                                                                        floorplanning_ctx.constraints,
                                                                        log_verbosity_,
                                                                        cluster_pr_needs_update);
