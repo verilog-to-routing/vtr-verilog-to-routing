@@ -217,20 +217,20 @@ def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_
     max_circuit_len = len("circuit")
     for job in config_jobs:
         work_dir = job.work_dir(get_active_run_dir(find_task_dir(config, alt_tasks_dir)))
-        job.parse_command()[0] = work_dir
-        # job.second_parse_command()[0] = work_dir
-        job.qor_parse_command()[0] = work_dir
         if job.parse_command():
+            job.parse_command()[0] = work_dir
             parse_filepath = str(PurePath(work_dir) / flow_metrics_basename)
             with open(parse_filepath, "w+", encoding="utf-8") as parse_file:
                 with redirect_stdout(parse_file):
                     parse_vtr_flow(job.parse_command())
         if job.second_parse_command():
+            job.second_parse_command()[0] = work_dir
             parse_filepath = str(PurePath(work_dir) / SECOND_PARSE_FILE)
             with open(parse_filepath, "w+", encoding="utf-8") as parse_file:
                 with redirect_stdout(parse_file):
                     parse_vtr_flow(job.second_parse_command())
         if job.qor_parse_command():
+            job.qor_parse_command()[0] = work_dir
             parse_filepath = str(PurePath(work_dir) / QOR_PARSE_FILE)
             with open(parse_filepath, "w+", encoding="utf-8") as parse_file:
                 with redirect_stdout(parse_file):
