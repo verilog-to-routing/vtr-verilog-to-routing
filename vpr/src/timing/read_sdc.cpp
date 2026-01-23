@@ -240,6 +240,12 @@ class SdcParseCallback : public sdcparse::Callback {
     void set_io_delay(const sdcparse::SetIoDelay& cmd) override {
         num_commands_++;
 
+        if (cmd.clock_name.empty()) {
+            // TODO: This should be relaxed.
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "set_io_delay currently requires the clock name to be specified");
+        }
+
         tatum::DomainId domain;
 
         // TODO: This should be handled by the parser.
@@ -270,7 +276,22 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         //Find all matching I/Os
-        auto io_pins = get_ports(cmd.target_ports);
+        // FIXME: Add a checker function which checks that only certain types of objects
+        //        are passed in. Then make it so get_ports ignores all other types of objects.
+        VTR_ASSERT(cmd.target_ports.type == sdcparse::StringGroupType::OBJECT);
+        std::set<AtomPinId> io_pins;
+        for (const auto& object_id_str : cmd.target_ports.strings) {
+            sdcparse::ObjectType object_type = obj_database.get_object_type(object_id_str);
+            // TODO: We may be able to support pins as well. Need to verify.
+            if (object_type != sdcparse::ObjectType::Port) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "set_io_delay command only supports ports currently");
+            }
+
+            sdcparse::PortObjectId object_id = sdcparse::PortObjectId(object_id_str);
+            VTR_ASSERT_SAFE(object_to_port_id_.find(object_id) != object_to_port_id_.end());
+            io_pins.insert(object_to_port_id_[object_id]);
+        }
 
         if (io_pins.empty()) {
             //We treat this as a warning, since the primary I/Os in the target may have been swept away
