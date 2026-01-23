@@ -733,7 +733,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
-    /* Ensure we have a clean start with void net remapping information */
+    // Ensure we have a clean start with void net remapping information
     cluster_ctx.post_routing_clb_pin_nets.clear();
     cluster_ctx.pre_routing_net_pin_mapping.clear();
 
@@ -742,7 +742,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
                                          vpr_setup.FileNameOpts.verify_file_digests,
                                          vpr_setup.PackerOpts.pack_verbosity);
 
-    /* Load the mapping between clusters and their atoms */
+    // Load the mapping between clusters and their atoms
     init_clb_atoms_lookup(cluster_ctx.atoms_lookup, atom_ctx, cluster_ctx.clb_nlist);
 
     process_constant_nets(g_vpr_ctx.mutable_atom().mutable_netlist(),
@@ -756,14 +756,14 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
         report_packing_pin_usage(ofs, g_vpr_ctx);
     }
 
-    // Ater the clustered netlist has been loaded, update the floorplanning
+    // After the clustered netlist has been loaded, update the floorplanning
     // constraints with the new information.
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_post_pack();
 
-    /* Sanity check the resulting netlist */
+    // Sanity check the resulting netlist
     check_netlist(vpr_setup.PackerOpts.pack_verbosity);
 
-    // Independently verify the clusterings to ensure the clustering can be
+    // Independently verify the clustering to ensure the clustering can be
     // used for the rest of the VPR flow.
     unsigned num_errors = verify_clustering(g_vpr_ctx);
     if (num_errors == 0) {
@@ -775,7 +775,7 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
                   num_errors);
     }
 
-    /* Output the netlist stats to console and optionally to file. */
+    // Output the netlist stats to console and optionally to file.
     writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
 
     // print the total number of used physical blocks for each
@@ -810,7 +810,7 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     device_ctx.grid.clear();
 
     // if running placement, use the fix clusters file produced by the legalizer
-    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::SKIP) {
+    if (vpr_setup.PlacerOpts.do_placement != e_stage_action::SKIP) {
         vpr_setup.PlacerOpts.constraints_file = vpr_setup.FileNameOpts.write_constraints_file;
     }
     return true;
@@ -820,17 +820,28 @@ bool vpr_place_flow(const Netlist<>& net_list,
                     t_vpr_setup& vpr_setup,
                     const t_arch& arch) {
     VTR_LOG("\n");
-    const auto& placer_opts = vpr_setup.PlacerOpts;
-    const auto& filename_opts = vpr_setup.FileNameOpts;
-    if (placer_opts.doPlacement == e_stage_action::SKIP) {
+    const t_placer_opts& placer_opts = vpr_setup.PlacerOpts;
+    const t_file_name_opts& filename_opts = vpr_setup.FileNameOpts;
+    const t_router_opts& router_opts = vpr_setup.RouterOpts;
+
+    bool min_w_search_with_re_placement = false;
+    // If performing a min-width search with re-placement, we skip the placement here.
+    // The binary search function will manage its own placement.
+    if (router_opts.doRouting == e_stage_action::DO
+        && router_opts.fixed_channel_width < 0
+        && placer_opts.place_freq == e_place_freq::ALWAYS) {
+        min_w_search_with_re_placement = true;
+    }
+
+    if (placer_opts.do_placement == e_stage_action::SKIP || min_w_search_with_re_placement) {
         //pass
     } else {
-        if (placer_opts.doPlacement == e_stage_action::DO) {
+        if (placer_opts.do_placement == e_stage_action::DO) {
             //Do the actual placement
             vpr_place(net_list, vpr_setup, arch);
 
         } else {
-            VTR_ASSERT(placer_opts.doPlacement == e_stage_action::LOAD);
+            VTR_ASSERT(placer_opts.do_placement == e_stage_action::LOAD);
 
             //Load a previous placement
             vpr_load_placement(vpr_setup, arch.directs);
@@ -1318,7 +1329,7 @@ static void free_noc() {}
 
 static bool is_pack_only(const t_vpr_setup& vpr_setup) {
     return vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP
-           && vpr_setup.PlacerOpts.doPlacement == e_stage_action::SKIP
+           && vpr_setup.PlacerOpts.do_placement == e_stage_action::SKIP
            && vpr_setup.APOpts.doAP == e_stage_action::SKIP
            && vpr_setup.RouterOpts.doRouting == e_stage_action::SKIP
            && vpr_setup.AnalysisOpts.doAnalysis == e_stage_action::SKIP;

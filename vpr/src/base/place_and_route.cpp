@@ -168,7 +168,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             break;
         }
 
-        if (placer_opts.place_freq == PLACE_ALWAYS) {
+        if (placer_opts.place_freq == e_place_freq::ALWAYS) {
             placer_opts.place_chan_width = current;
             try_place(placement_net_list,
                       placer_opts,
@@ -315,7 +315,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             fflush(stdout);
             if (current < 1)
                 break;
-            if (placer_opts.place_freq == PLACE_ALWAYS) {
+            if (placer_opts.place_freq == e_place_freq::ALWAYS) {
                 placer_opts.place_chan_width = current;
                 try_place(placement_net_list, placer_opts, router_opts, crr_opts, analysis_opts, noc_opts,
                           arch->Chans, det_routing_arch, segment_inf,
@@ -345,7 +345,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                              route_ctx.clb_opins_used_locally,
                              saved_clb_opins_used_locally);
 
-                if (placer_opts.place_freq == PLACE_ALWAYS) {
+                if (placer_opts.place_freq == e_place_freq::ALWAYS) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
                     // Cluster-based net_list is used for placement
                     std::string placement_id = print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
@@ -422,7 +422,7 @@ t_chan_width setup_chan_width(const t_router_opts& router_opts,
     if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
         auto& device_ctx = g_vpr_ctx.device();
 
-        auto type = find_most_common_tile_type(device_ctx.grid);
+        t_physical_tile_type_ptr type = find_most_common_tile_type(device_ctx.grid);
 
         width_fac = 4 * type->num_pins;
         // this is 2x the value that binary search starts
