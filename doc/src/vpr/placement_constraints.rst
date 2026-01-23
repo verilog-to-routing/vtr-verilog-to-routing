@@ -127,6 +127,9 @@ Partitions, Atoms, Regions, and Logical Block Types
 
 		An ``<add_logical_block>`` tag is used to constrain the atoms in the partition to specific logical block types. This tag is optional and can be repeated multiple times within a partition to specify multiple allowed logical block types.
 		When logical block type constraints are specified, atoms in the partition will only be packed into clusters of the specified logical block types.
+		
+		Logical blocks are the types of complex blocks found in the FPGA architecture. They are defined as top-level ``pb_type`` elements in the complex block list of the architecture description file and correspond to the equivalent sites available in sub-tiles across the chip.
+		
 		The ``<add_logical_block>`` tag has the following attribute:
 
 		:req_param name_pattern:
@@ -134,5 +137,7 @@ Partitions, Atoms, Regions, and Logical Block Types
 			VPR first searches the architecture for an exact match.
 			If no exact match is found, it then assumes that the given name is a regex pattern and searches for logical block types whose names match the pattern.
 			For example, to constrain atoms to both ``clbA`` and ``clbB`` logical block types, the user can add two ``<add_logical_block>`` tags with ``name_pattern`` values of ``clbA`` and ``clbB`` respectively, or use a single tag with ``name_pattern="clb[AB]"``.
+
+		**Use Case Example:** Architectures such as Stratix-IV contain multiple types of RAM blocks (e.g., M9K and M144K). This tag can be used to constrain certain RAM slices to specific RAM logical block types. For instance, if certain memory operations require the larger M144K blocks, you can add ``<add_logical_block name_pattern="M144K"/>`` to ensure those atoms are mapped only to the appropriate RAM block type.
 
 		**Note:** If no ``<add_logical_block>`` tags are specified for a partition, atoms in the partition are not constrained to any particular logical block type and can be mapped to any available type.
