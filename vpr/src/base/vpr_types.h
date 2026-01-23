@@ -1567,18 +1567,6 @@ struct t_power_opts {
     bool do_power; ///<Perform power estimation?
 };
 
-/** @brief Channel width data
- * @param max= Maximum channel width between x_max and y_max.
- * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
- * @param y_min= Same as above but for vertical channels.
- * @param x_max= Maximum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
- * @param y_max= Same as above but for vertical channels.
- * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()]
- * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
- * @param y_list= Stores the channel width of all vertical channels and thus goes from [0..grid.width()]
- * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
- */
-
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
 /// @brief Stores settings for VPR server mode
