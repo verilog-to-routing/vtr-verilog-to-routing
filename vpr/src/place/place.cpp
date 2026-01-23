@@ -43,15 +43,17 @@ void try_place(const Netlist<>& net_list,
     // receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
     // if is_flat is false, even if is_flat is set to true from the command line
     VTR_ASSERT(!is_flat);
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& atom_ctx = g_vpr_ctx.atom();
-    auto& mutable_placement = g_vpr_ctx.mutable_placement();
-    auto& mutable_floorplanning = g_vpr_ctx.mutable_floorplanning();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    PlacementContext& mutable_placement = g_vpr_ctx.mutable_placement();
+    FloorplanningContext& mutable_floorplanning = g_vpr_ctx.mutable_floorplanning();
 
     // Initialize the variables in the placement context.
     mutable_placement.init_placement_context(placer_opts, directs);
 
+    // Re-initialize cluster constraints if erased by a previous placement run.
+    // This ensures constraints are available when iterating to find the minimum channel width.
     if (mutable_floorplanning.cluster_constraints.empty()) {
         mutable_floorplanning.update_floorplanning_context_post_pack();
     }

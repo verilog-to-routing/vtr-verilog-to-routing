@@ -810,7 +810,7 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     device_ctx.grid.clear();
 
     // if running placement, use the fix clusters file produced by the legalizer
-    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::SKIP) {
+    if (vpr_setup.PlacerOpts.do_placement != e_stage_action::SKIP) {
         vpr_setup.PlacerOpts.constraints_file = vpr_setup.FileNameOpts.write_constraints_file;
     }
     return true;
@@ -820,17 +820,28 @@ bool vpr_place_flow(const Netlist<>& net_list,
                     t_vpr_setup& vpr_setup,
                     const t_arch& arch) {
     VTR_LOG("\n");
-    const auto& placer_opts = vpr_setup.PlacerOpts;
-    const auto& filename_opts = vpr_setup.FileNameOpts;
-    if (placer_opts.doPlacement == e_stage_action::SKIP) {
+    const t_placer_opts& placer_opts = vpr_setup.PlacerOpts;
+    const t_file_name_opts& filename_opts = vpr_setup.FileNameOpts;
+    const t_router_opts& router_opts = vpr_setup.RouterOpts;
+
+    bool min_w_search_with_re_placement = false;
+    // If performing a min-width search with re-placement, we skip the placement here.
+    // The binary search function will manage its own placement.
+    if (router_opts.doRouting == e_stage_action::DO
+        && router_opts.fixed_channel_width < 0
+        && placer_opts.place_freq == e_place_freq::ALWAYS) {
+        min_w_search_with_re_placement = true;
+    }
+
+    if (placer_opts.do_placement == e_stage_action::SKIP || min_w_search_with_re_placement) {
         //pass
     } else {
-        if (placer_opts.doPlacement == e_stage_action::DO) {
+        if (placer_opts.do_placement == e_stage_action::DO) {
             //Do the actual placement
             vpr_place(net_list, vpr_setup, arch);
 
         } else {
-            VTR_ASSERT(placer_opts.doPlacement == e_stage_action::LOAD);
+            VTR_ASSERT(placer_opts.do_placement == e_stage_action::LOAD);
 
             //Load a previous placement
             vpr_load_placement(vpr_setup, arch.directs);
@@ -1318,7 +1329,7 @@ static void free_noc() {}
 
 static bool is_pack_only(const t_vpr_setup& vpr_setup) {
     return vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP
-           && vpr_setup.PlacerOpts.doPlacement == e_stage_action::SKIP
+           && vpr_setup.PlacerOpts.do_placement == e_stage_action::SKIP
            && vpr_setup.APOpts.doAP == e_stage_action::SKIP
            && vpr_setup.RouterOpts.doRouting == e_stage_action::SKIP
            && vpr_setup.AnalysisOpts.doAnalysis == e_stage_action::SKIP;

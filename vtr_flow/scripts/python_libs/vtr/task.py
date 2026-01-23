@@ -804,7 +804,7 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
 
 def resolve_vtr_source_file(config, filename, base_dir=""):
     """
-    Resolves an filename with a base_dir
+    Resolves a filename with a base_dir
 
     Checks the following in order:
         1) filename as absolute path

@@ -39,7 +39,7 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     VTR_LOG("\n");
 
     VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
-    VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.doPlacement]);
+    VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.do_placement]);
     VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
     VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
     VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
@@ -52,7 +52,7 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
         ShowPackerOpts(vpr_setup.PackerOpts);
     }
-    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::SKIP) {
+    if (vpr_setup.PlacerOpts.do_placement != e_stage_action::SKIP) {
         ShowPlacerOpts(vpr_setup.PlacerOpts);
     }
     if (vpr_setup.APOpts.doAP != e_stage_action::SKIP) {

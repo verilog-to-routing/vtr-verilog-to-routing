@@ -372,16 +372,17 @@ enum class e_timing_update_type {
  * Placement and routing data types
  ****************************************************************************/
 
-/* Values of number of placement available move types */
+/// Total number of available move types for placement engine.
 constexpr int NUM_PL_MOVE_TYPES = 7;
+/// Total number of non-timing move types.
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
 
-// Annealing schedule
+/// Annealing schedule enumeration
 enum class e_sched_type {
-    AUTO_SCHED,
-    USER_SCHED
+    AUTO_SCHED, ///< Computes initial temperature, exit criterion and temperature update rate from statistics computed during the annealing.
+    USER_SCHED  ///< The user has specified explicit numbers for the key annealing schedule parameters
 };
 
 /// Specifies what is shown on screen
@@ -392,13 +393,16 @@ enum class e_pic_type {
     ROUTING
 };
 
+/// Determines if placement is re-run during the binary search for minimum channel width.
 enum class e_place_freq {
+    /// Use a single placement for all channel widths; significantly faster.
     ONCE,
+
+    /// Re-place the netlist from scratch for every channel width iteration in the binary search.
     ALWAYS
 };
 
 ///@brief  Power data for t_netlist structure
-
 struct t_net_power {
     ///@brief Signal probability - long term probability that signal is logic-high
     float probability;
@@ -1041,7 +1045,7 @@ struct t_placer_opts {
     float td_place_exp_last;
 
     /// True if placement is supposed to be done in the CAD flow. False if otherwise.
-    e_stage_action doPlacement;
+    e_stage_action do_placement;
 
     float rlim_escape_fraction;
 
