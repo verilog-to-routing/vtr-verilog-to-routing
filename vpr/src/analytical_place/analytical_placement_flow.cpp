@@ -248,7 +248,6 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                          device_ctx.arch->models,
                          device_ctx.logical_block_types,
                          pre_cluster_timing_manager);
-    prepacker.set_ram_mapper(std::move(ram_mapper));
 
     // Pre-compute the place delay model. This will be passed into the global
     // placer to create a more accurate timing model.
@@ -289,6 +288,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                                         atom_nlist,
                                                                         prepacker,
                                                                         pre_cluster_timing_manager,
+                                                                        ram_mapper,
                                                                         vpr_setup,
                                                                         *device_ctx.arch,
                                                                         device_ctx.grid);

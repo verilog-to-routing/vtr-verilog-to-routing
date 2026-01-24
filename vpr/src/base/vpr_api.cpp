@@ -455,7 +455,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     tbb::global_control c(tbb::global_control::max_allowed_parallelism, vpr_setup.num_workers);
 #endif
 
-    // vpr_create_device(vpr_setup, arch);
     { //Pack
         bool pack_success = vpr_pack_flow(vpr_setup, arch);
 
@@ -733,13 +732,13 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                          arch.models,
                          g_vpr_ctx.device().logical_block_types,
                          pre_cluster_timing_manager);
-    prepacker.set_ram_mapper(std::move(ram_mapper));
 
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
                     arch,
                     vpr_setup.PackerRRGraph,
                     prepacker,
                     pre_cluster_timing_manager,
+                    ram_mapper,
                     g_vpr_ctx.atom().flat_placement_info());
 }
 

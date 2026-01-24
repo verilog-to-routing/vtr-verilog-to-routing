@@ -21,9 +21,7 @@
 #include <vector>
 
 #include "atom_netlist.h"
-#include "cluster_util.h"
 #include "echo_files.h"
-#include "globals.h"
 #include "logic_types.h"
 #include "physical_types.h"
 #include "vpr_error.h"
@@ -34,7 +32,6 @@
 #include "vtr_time.h"
 #include "vtr_util.h"
 #include "vtr_vector.h"
-#include "vtr_math.h"
 
 /*****************************************/
 /*Local Function Declaration			 */
@@ -85,9 +82,6 @@ static void print_pack_molecules(const char* fname,
                                  const int num_pack_patterns,
                                  const vtr::vector_map<PackMoleculeId, t_pack_molecule>& pack_molecules,
                                  const AtomNetlist& atom_nlist);
-
-// t_pb_graph_node* Prepacker::get_expected_lowest_cost_primitive_for_atom_block(const AtomBlockId blk_id,
-//                                                                               const std::vector<t_logical_block_type>& logical_block_types);
 
 static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(const AtomBlockId blk_id, t_pb_graph_node* curr_pb_graph_node, float* cost);
 

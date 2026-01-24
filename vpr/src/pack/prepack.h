@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <map>
+#include <unordered_set>
 #include "atom_netlist_fwd.h"
 #include "pack_patterns.h"
 #include "vtr_assert.h"
@@ -17,7 +18,6 @@
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
-#include "logical_ram_infer.h"
 
 // Forward declarations
 class t_pack_molecule;
@@ -310,43 +310,6 @@ class Prepacker {
         return list_of_pack_patterns;
     }
 
-    // TODO: Move below RamMapper instances to its own class. The prepacker might be free of Ram Mapping.
-
-    // Attach a RamMapper AFTER it has been built externally
-    void set_ram_mapper(RamMapper&& mapper) {
-        ram_mapper_ = std::move(mapper);
-    }
-
-    // Accessor so packer code can use it
-    const RamMapper& ram_mapper() const { return ram_mapper_; }
-
-    // The old APIs
-    size_t group_id_of(AtomBlockId blk) const {
-        return ram_mapper_.group_id_of(blk);
-    }
-
-    LogicalRamGroup& group_by_id_mut(size_t gid) const {
-        return ram_mapper_.group_by_id_mut(gid);
-    }
-
-    const LogicalRamGroup& group_by_id(size_t gid) const {
-        return ram_mapper_.group_by_id(gid);
-    }
-
-    LogicalRamStats get_overall_logical_ram_stats() const {
-        return ram_mapper_.get_overall_logical_ram_stats();
-    }
-
-    std::vector<LogicalRamGroup>& get_mutable_logical_rams() const {
-        return ram_mapper_.get_mutable_logical_rams();
-    }
-
-    const std::unordered_map<t_logical_block_type_ptr, int>
-    get_final_candidate_usages() const {
-        return ram_mapper_.get_final_candidate_usages();
-    }
-
-
   private:
     /**
      * Pre-pack atoms in netlist to molecules
@@ -412,10 +375,4 @@ class Prepacker {
      *        that chain.
      */
     vtr::vector<MoleculeChainId, t_chain_info> chain_info_;
-
-    // mutable std::vector<LogicalRamGroup> logical_ram_groups_;
-    // vtr::vector<AtomBlockId, size_t> atom_to_group_;
-    // LogicalRamStats logical_ram_stats_;
-    // std::unordered_map<t_logical_block_type_ptr, int> candidate_usages_final_;
-    RamMapper ram_mapper_;  // new member
 };

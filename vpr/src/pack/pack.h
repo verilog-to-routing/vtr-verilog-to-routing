@@ -9,6 +9,7 @@ class AtomNetId;
 class FlatPlacementInfo;
 class PreClusterTimingManager;
 class Prepacker;
+class RamMapper;
 struct t_analysis_opts;
 struct t_ap_opts;
 struct t_arch;
@@ -46,6 +47,7 @@ bool try_pack(const t_packer_opts& packer_opts,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
+              const RamMapper& ram_mapper,
               const FlatPlacementInfo& flat_placement_info);
 
 /**

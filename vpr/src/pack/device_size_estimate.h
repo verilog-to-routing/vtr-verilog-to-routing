@@ -4,6 +4,7 @@
 #include "physical_types.h"   // for t_logical_block_type_ptr
 #include "vpr_context.h"      // for g_vpr_ctx
 #include "prepack.h"
+#include "logical_ram_infer.h"
 
 class DeviceSizeEstimator {
   public:

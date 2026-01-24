@@ -233,6 +233,7 @@ bool try_pack(const t_packer_opts& packer_opts,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const Prepacker& prepacker,
               const PreClusterTimingManager& pre_cluster_timing_manager,
+              const RamMapper& ram_mapper,
               const FlatPlacementInfo& flat_placement_info) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -354,6 +355,7 @@ bool try_pack(const t_packer_opts& packer_opts,
         std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
         num_used_type_instances = clusterer.do_clustering(cluster_legalizer,
                                                           prepacker,
+                                                          ram_mapper,
                                                           allow_unrelated_clustering,
                                                           balance_block_type_util,
                                                           attraction_groups,

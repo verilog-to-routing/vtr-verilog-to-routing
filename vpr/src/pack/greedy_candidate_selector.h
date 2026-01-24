@@ -254,6 +254,7 @@ class GreedyCandidateSelector {
      */
     GreedyCandidateSelector(const AtomNetlist& atom_netlist,
                             const Prepacker& prepacker,
+                            const RamMapper& ram_mapper,
                             const t_packer_opts& packer_opts,
                             bool allow_unrelated_clustering,
                             const t_molecule_stats& max_molecule_stats,
@@ -554,6 +555,8 @@ class GreedyCandidateSelector {
 
     /// @brief The prepacker used to pack atoms into molecule pack patterns.
     const Prepacker& prepacker_;
+
+    const RamMapper& ram_mapper_;
 
     /// @brief The packer options used to configure the clusterer.
     const t_packer_opts& packer_opts_;

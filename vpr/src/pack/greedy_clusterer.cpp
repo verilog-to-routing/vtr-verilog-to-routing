@@ -52,6 +52,7 @@
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "logical_ram_infer.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
 
@@ -98,6 +99,7 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
 std::map<t_logical_block_type_ptr, size_t>
 GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                const Prepacker& prepacker,
+                               const RamMapper& ram_mapper,
                                bool allow_unrelated_clustering,
                                bool balance_block_type_utilization,
                                AttractionInfo& attraction_groups,
@@ -122,6 +124,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
     // candidate molecules to add to the clusters.
     GreedyCandidateSelector candidate_selector(atom_netlist_,
                                                prepacker,
+                                               ram_mapper,
                                                packer_opts_,
                                                allow_unrelated_clustering,
                                                max_molecule_stats,
@@ -172,6 +175,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                                                 ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                                                 cluster_legalizer,
                                                                 prepacker,
+                                                                ram_mapper,
                                                                 balance_block_type_utilization,
                                                                 attraction_groups,
                                                                 num_used_type_instances,
@@ -186,6 +190,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                               ClusterLegalizationStrategy::FULL,
                                               cluster_legalizer,
                                               prepacker,
+                                              ram_mapper,
                                               balance_block_type_utilization,
                                               attraction_groups,
                                               num_used_type_instances,
@@ -226,6 +231,7 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
                                                         ClusterLegalizationStrategy strategy,
                                                         ClusterLegalizer& cluster_legalizer,
                                                         const Prepacker& prepacker,
+                                                        const RamMapper& ram_mapper,
                                                         bool balance_block_type_utilization,
                                                         AttractionInfo& attraction_groups,
                                                         std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
@@ -241,6 +247,7 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_
     LegalizationClusterId legalization_cluster_id = start_new_cluster(seed_mol_id,
                                                                       cluster_legalizer,
                                                                       prepacker,
+                                                                      ram_mapper,
                                                                       balance_block_type_utilization,
                                                                       num_used_type_instances,
                                                                       mutable_device_ctx);
@@ -356,6 +363,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     PackMoleculeId seed_mol_id,
     ClusterLegalizer& cluster_legalizer,
     const Prepacker& prepacker,
+    const RamMapper& ram_mapper,
     bool balance_block_type_utilization,
     std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
     DeviceContext& mutable_device_ctx) {
@@ -398,9 +406,9 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     // const LogicalRamStats logica_ram_stats = prepacker.get_overall_logical_ram_stats();
     if (prim->pb_type->is_primitive() && prim->pb_type->class_type == MEMORY_CLASS) {
         is_memory = true;
-        const size_t gid = prepacker.group_id_of(root_atom);
+        const size_t gid = ram_mapper.group_id_of(root_atom);
         VTR_ASSERT_MSG(gid != SIZE_MAX, "root_atom not mapped to any LogicalRamGroup");
-        auto& logical_ram = prepacker.group_by_id_mut(gid);
+        auto& logical_ram = ram_mapper.group_by_id_mut(gid);
         
         // VTR_LOG("Seed selected from logical ram groups (selected atom %zu):\n", root_atom);
         // VTR_LOG("\tRepresentative atom id: %zu\n", logical_ram.rep_blk);
@@ -459,9 +467,9 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             block_type = type;
 
             if (is_memory) {
-                const size_t gid = prepacker.group_id_of(root_atom);
+                const size_t gid = ram_mapper.group_id_of(root_atom);
                 VTR_ASSERT_MSG(gid != SIZE_MAX, "root_atom not mapped to any LogicalRamGroup");
-                auto& logical_ram = prepacker.group_by_id_mut(gid);
+                auto& logical_ram = ram_mapper.group_by_id_mut(gid);
                 logical_ram.remaining_memory_slices -= std::min(logical_ram.remaining_memory_slices, logical_ram.candidate_capacity[type]);
                 logical_ram.last_selected_type = type;
                 // VTR_LOG("\tSelected candidate type: %s\n", type->name.c_str());

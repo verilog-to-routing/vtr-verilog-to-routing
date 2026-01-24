@@ -24,6 +24,7 @@
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "logical_ram_infer.h"
 #include "timing_info.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
@@ -86,6 +87,7 @@ static t_flat_pl_loc get_molecule_pos(PackMoleculeId molecule_id,
 GreedyCandidateSelector::GreedyCandidateSelector(
     const AtomNetlist& atom_netlist,
     const Prepacker& prepacker,
+    const RamMapper& ram_mapper,
     const t_packer_opts& packer_opts,
     bool allow_unrelated_clustering,
     const t_molecule_stats& max_molecule_stats,
@@ -100,6 +102,7 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     int log_verbosity)
     : atom_netlist_(atom_netlist)
     , prepacker_(prepacker)
+    , ram_mapper_(ram_mapper)
     , packer_opts_(packer_opts)
     , allow_unrelated_clustering_(allow_unrelated_clustering)
     , log_verbosity_(log_verbosity)
@@ -258,7 +261,7 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     cluster_gain_stats.is_memory = seed_pb->pb_graph_node->pb_type->class_type == MEMORY_CLASS;
     
     if (cluster_gain_stats.is_memory) {
-        cluster_gain_stats.logical_ram_id = prepacker_.group_id_of(seed_atom);
+        cluster_gain_stats.logical_ram_id = ram_mapper_.group_id_of(seed_atom);
         // VTR_LOG("Cluster Gain Stats: Current cluster id of %zu is a memory cluster and part of a logical ram of %zu.\n", cluster_id, cluster_gain_stats.logical_ram_id);
     }
 
@@ -810,7 +813,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_an
     for (AtomBlockId blk_id : cluster_gain_stats.marked_blocks) {
         // If this is memory cluster and block is not in the same logical
         // memory, do not add this block as candidate.
-        if (cluster_gain_stats.is_memory && prepacker_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
+        if (cluster_gain_stats.is_memory && ram_mapper_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
             continue;
         }
         // Get the molecule that contains this block.
@@ -847,7 +850,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
     for (const auto& transitive_candidate : cluster_gain_stats.transitive_fanout_candidates) {
         // If this is memory cluster and block is not in the same logical
         // memory, do not add this block as candidate.
-        if (cluster_gain_stats.is_memory && prepacker_.group_id_of(transitive_candidate.first) != cluster_gain_stats.logical_ram_id) {
+        if (cluster_gain_stats.is_memory && ram_mapper_.group_id_of(transitive_candidate.first) != cluster_gain_stats.logical_ram_id) {
             continue;
         }
         PackMoleculeId molecule_id = transitive_candidate.second;
@@ -884,7 +887,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
         // If this is memory cluster and block is not in the same logical
         // memory, do not add this block as candidate.
-        if (cluster_gain_stats.is_memory && prepacker_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
+        if (cluster_gain_stats.is_memory && ram_mapper_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
             continue;
         }
 
@@ -949,7 +952,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
         for (AtomBlockId atom_id : available_atoms) {
             // If this is memory cluster and block is not in the same logical
             // memory, do not add this block as candidate.
-            if (cluster_gain_stats.is_memory && prepacker_.group_id_of(atom_id) != cluster_gain_stats.logical_ram_id) {
+            if (cluster_gain_stats.is_memory && ram_mapper_.group_id_of(atom_id) != cluster_gain_stats.logical_ram_id) {
                 continue;
             }
             //Only consider molecules that are unpacked and of the correct type
@@ -975,7 +978,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
 
         // If this is memory cluster and block is not in the same logical
         // memory, do not add this block as candidate.
-        if (cluster_gain_stats.is_memory && prepacker_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
+        if (cluster_gain_stats.is_memory && ram_mapper_.group_id_of(blk_id) != cluster_gain_stats.logical_ram_id) {
             continue;
         }
 

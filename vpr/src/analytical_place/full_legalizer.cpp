@@ -68,6 +68,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const AtomNetlist& atom_netlist,
                                                    const Prepacker& prepacker,
                                                    const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                   const RamMapper& ram_mapper,
                                                    const t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
                                                    const DeviceGrid& device_grid) {
@@ -77,6 +78,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                         atom_netlist,
                                                         prepacker,
                                                         pre_cluster_timing_manager,
+                                                        ram_mapper,
                                                         vpr_setup,
                                                         arch,
                                                         device_grid);
@@ -85,6 +87,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                             atom_netlist,
                                             prepacker,
                                             pre_cluster_timing_manager,
+                                            ram_mapper,
                                             vpr_setup,
                                             arch,
                                             device_grid);
@@ -93,6 +96,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                atom_netlist,
                                                prepacker,
                                                pre_cluster_timing_manager,
+                                               ram_mapper,
                                                vpr_setup,
                                                arch,
                                                device_grid);
@@ -1251,6 +1255,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
              vpr_setup_.PackerRRGraph,
              prepacker_,
              pre_cluster_timing_manager_,
+             ram_mapper_,
              flat_placement_info);
 
     // The Packer stores the clusters into a .net file. Load the packing file.
