@@ -267,6 +267,7 @@ jobs:
         key: ${{ github.job }}
 
     - name: 'Test with VTR_ASSERT_LEVEL 4'
+      timeout-minutes: 120
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVTR_ASSERT_LEVEL=4"
@@ -278,6 +279,7 @@ jobs:
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: 'Test with NO_GRAPHICS'
+      timeout-minutes: 60
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVPR_USE_EZGL=off"
@@ -289,6 +291,7 @@ jobs:
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: 'Test with NO_SERVER'
+      timeout-minutes: 60
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVPR_USE_SERVER=off"
@@ -300,6 +303,7 @@ jobs:
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: 'Test with CAPNPROTO disabled'
+      timeout-minutes: 60
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVTR_ENABLE_CAPNPROTO=off"
@@ -311,6 +315,7 @@ jobs:
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: 'Test with serial VPR_EXECUTION_ENGINE'
+      timeout-minutes: 60
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVPR_EXECUTION_ENGINE=serial -DTATUM_EXECUTION_ENGINE=serial"
@@ -322,6 +327,7 @@ jobs:
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: 'Test with VTR_ENABLE_DEBUG_LOGGING enabled'
+      timeout-minutes: 60
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVTR_ENABLE_DEBUG_LOGGING=on"
@@ -400,6 +406,7 @@ jobs:
         tar -xvzf build.tar.gz
 
     - name: Test
+      timeout-minutes: 30
       run: |
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
@@ -487,6 +494,7 @@ jobs:
         tar -xvzf build.tar.gz
 
     - name: Test
+      timeout-minutes: 15
       run: |
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
@@ -553,6 +561,7 @@ jobs:
         key: ${{ github.job }}-${{ matrix.suite }}
 
     - name: Test
+      timeout-minutes: 60
       env:
         CMAKE_PARAMS: ${{ matrix.params }}
         BUILD_TYPE: RelWithDebInfo
@@ -606,6 +615,7 @@ jobs:
           tar -xvzf build.tar.gz
 
       - name: Test
+        timeout-minutes: 30
         run: |
           ./run_reg_test.py parmys_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count }}
 
@@ -645,6 +655,7 @@ jobs:
         tar -xvzf build.tar.gz
 
     - name: Test
+      timeout-minutes: 15
       run: |
         sudo sysctl -w vm.mmap_rnd_bits=28
         ./run_reg_test.py odin_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count }}
