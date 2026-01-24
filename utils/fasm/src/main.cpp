@@ -74,7 +74,7 @@ int main(int argc, const char **argv) {
         vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
 
         vpr_setup.PackerOpts.doPacking             = e_stage_action::LOAD;
-        vpr_setup.PlacerOpts.doPlacement           = e_stage_action::LOAD;
+        vpr_setup.PlacerOpts.do_placement          = e_stage_action::LOAD;
         vpr_setup.APOpts.doAP                      = e_stage_action::SKIP;
         vpr_setup.RouterOpts.doRouting             = e_stage_action::LOAD;
         vpr_setup.RouterOpts.read_rr_edge_metadata = true;

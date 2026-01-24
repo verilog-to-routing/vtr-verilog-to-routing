@@ -385,6 +385,28 @@ static unsigned check_clustering_floorplanning_consistency(
                     break;
                 }
             }
+
+            // Check that each atom in the cluster can be implemented in this logical block type.
+            for (AtomBlockId atom_blk_id : atoms_in_clb) {
+                PartitionId atom_part_id = constraints.get_atom_partition(atom_blk_id);
+                if (atom_part_id.is_valid() && constraints.is_part_constrained_to_lb_types(atom_part_id)) {
+                    // If the atom partition exists and is constrained to some lb types,
+                    // check that the cluster's logical block type is one of the types
+                    // that this atom can implement.
+                    const auto& atom_lb_type_constraints = constraints.get_part_lb_type_constraints(atom_part_id);
+                    t_logical_block_type_ptr clb_block_type = clb_nlist.block_type(clb_blk_id);
+                    if (!atom_lb_type_constraints.contains(clb_block_type)) {
+                        VTR_LOG_ERROR(
+                            "Cluster block %zu contains an atom %zu which is constrained "
+                            "to a set of logical block types that do not contain the "
+                            "logical block type of its cluster: %s\n",
+                            size_t(clb_blk_id),
+                            size_t(atom_blk_id),
+                            clb_block_type->name.c_str());
+                        num_errors++;
+                    }
+                }
+            }
         }
     }
     return num_errors;

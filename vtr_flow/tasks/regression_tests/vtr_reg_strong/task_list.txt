@@ -133,3 +133,4 @@ regression_tests/vtr_reg_strong/strong_3d/3d_sb
 regression_tests/vtr_reg_strong/strong_xilinx_simple
 regression_tests/vtr_reg_strong/strong_xilinx_flagship
 regression_tests/vtr_reg_strong/strong_interposer
+regression_tests/vtr_reg_strong/strong_lb_constr_floorplan

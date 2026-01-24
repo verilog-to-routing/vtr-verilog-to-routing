@@ -109,6 +109,14 @@ def run_relax_w(
     vpr_args["route"] = True  # Re-route only
     vpr_args["route_chan_width"] = relaxed_w  # At a fixed channel width
 
+    # Check if place_frequency is "always", then remove the key and set 'place'
+    if vpr_args.pop("place_frequency", None) == "always":
+        vpr_args["place"] = True
+
+    # Remove arguments related to minimum channel width binary search
+    vpr_args.pop("min_route_chan_width_hint", None)
+    vpr_args.pop("verify_binary_search", None)
+
     if write_rr_graph:  # Write out rr_graph with known W
         vpr_args["write_rr_graph"] = write_rr_graph
 

@@ -1,0 +1,23 @@
+<!--
+Regression test placement constraint file. The purpose of this file
+is to verify that we are able to constrain atoms to different logical
+block types (even though the atoms can implement either one).
+
+This was implemented to fix an issue where the packer was implementing
+atoms into a logical block type that could not feasibly be placed in
+the partition region.
+-->
+<vpr_constraints tool_name="vpr">
+<partition_list>
+    <partition name="clbA_part">
+        <add_atom name_pattern="\[.*\]"/>
+        <add_region x_low="1" y_low="1" x_high="22" y_high="44"/>
+        <add_logical_block name_pattern="clbA"/>
+    </partition>
+    <partition name="clbB_part">
+        <add_atom name_pattern="n_n[0-9]+"/>
+        <add_region x_low="23" y_low="1" x_high="44" y_high="44"/>
+        <add_logical_block name_pattern="clbB"/>
+    </partition>
+</partition_list>
+</vpr_constraints>

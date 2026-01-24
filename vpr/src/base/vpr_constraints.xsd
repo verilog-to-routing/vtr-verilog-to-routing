@@ -38,6 +38,10 @@
     <xs:attribute name="subtile" type="xs:int"/>
   </xs:complexType>
 
+  <xs:complexType name="add_logical_block">
+    <xs:attribute name="name_pattern" type="xs:string" use="required"/>
+  </xs:complexType>
+
   <!--If an element can occur multiple times, the attribute maxOccurs can be set to 
   unbounded for this element. When elements occur between <xs:sequence> tags, they are required
   to appear in the order they are listed in the tag. For example, in "partition" below, add_atom
@@ -48,6 +52,7 @@
        <xs:choice maxOccurs="unbounded">
            <xs:element name="add_atom" type="add_atom"/>
            <xs:element name="add_region" type="add_region"/>
+           <xs:element name="add_logical_block" type="add_logical_block"/>
        </xs:choice>
     </xs:sequence>
 

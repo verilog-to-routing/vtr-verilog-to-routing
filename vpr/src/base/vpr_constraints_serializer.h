@@ -42,6 +42,7 @@
 #include "vpr_constraints.h"
 #include "partition.h"
 #include "partition_region.h"
+#include "vpr_context.h"
 #include "vtr_log.h"
 #include "globals.h" //for the g_vpr_ctx
 #include "clock_modeling.h"
@@ -55,6 +56,10 @@
 struct partition_info {
     Partition part;
     std::vector<AtomBlockId> atoms;
+    // NOTE: Although lb_types is stored in a set throughout VPR, this needs to be stored in a
+    //       vector here. This struct is only used when writing the constraints to a file,
+    //       and when this happens this information needs a strict order.
+    std::vector<t_logical_block_type_ptr> lb_types;
     PartitionId part_id;
 };
 
@@ -65,6 +70,7 @@ struct partition_info {
 struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTypes {
     using AddAtomReadContext = AtomBlockId;
     using AddRegionReadContext = Region;
+    using AddLogicalBlockReadContext = t_logical_block_type_ptr;
     using PartitionReadContext = partition_info;
     using PartitionListReadContext = void*;
     using SetGlobalSignalReadContext = std::pair<std::string, RoutingScheme>;
@@ -72,6 +78,7 @@ struct VprConstraintsContextTypes : public uxsd::DefaultVprConstraintsContextTyp
     using VprConstraintsReadContext = void*;
     using AddAtomWriteContext = void*;
     using AddRegionWriteContext = void*;
+    using AddLogicalBlockWriteContext = void*;
     using PartitionWriteContext = void*;
     using PartitionListWriteContext = void*;
     using SetGlobalSignalWriteContext = void*;
@@ -223,11 +230,53 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return r.get_rect().ymin();
     }
 
+    /** Generated for complex type "add_logical_block":
+     * <xs:complexType name="add_logical_block">
+     *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline const char* get_add_logical_block_name_pattern(t_logical_block_type_ptr& logical_block_type) final {
+        return logical_block_type->name.c_str();
+    }
+
+    virtual inline void set_add_logical_block_name_pattern(const char* name_pattern, void*& /*ctx*/) final {
+        const DeviceContext& device_ctx = g_vpr_ctx.device();
+        std::regex logical_block_name_regex = std::regex(name_pattern);
+
+        // Clear the temporary data for this partition.
+        lb_types_.clear();
+
+        // Try to look for an exact match for the name pattern.
+        for (const t_logical_block_type& logical_block_type : device_ctx.logical_block_types) {
+            if (logical_block_type.name == name_pattern) {
+                lb_types_.insert(&logical_block_type);
+            }
+        }
+
+        // If an exact match for the name pattern cannot be found, assume that this is a regex pattern.
+        if (lb_types_.empty()) {
+            // Use regex to pattern match for all of the logical blocks matching this pattern.
+            for (const t_logical_block_type& logical_block_type : device_ctx.logical_block_types) {
+                if (std::regex_search(logical_block_type.name, logical_block_name_regex)) {
+                    lb_types_.insert(&logical_block_type);
+                }
+            }
+        }
+
+        // If the pattern cannot be found, raise a warning.
+        if (lb_types_.empty()) {
+            VTR_LOG_WARN("Logical block type %s was not found, skipping logical block type.\n", name_pattern);
+        }
+    }
+
     /** Generated for complex type "partition":
      * <xs:complexType name="partition">
      *   <xs:sequence>
-     *     <xs:element maxOccurs="unbounded" name="add_atom" type="add_atom" />
-     *     <xs:element maxOccurs="unbounded" name="add_region" type="add_region" />
+     *      <xs:choice maxOccurs="unbounded">
+     *          <xs:element name="add_atom" type="add_atom" />
+     *          <xs:element name="add_region" type="add_region" />
+     *          <xs:element name="add_logical_block" type="add_logical_block" />
+     *      </xs:choice>
      *   </xs:sequence>
      *   <xs:attribute name="name" type="xs:string" use="required" />
      * </xs:complexType>
@@ -305,6 +354,28 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return regions[n];
     }
 
+    virtual inline void preallocate_partition_add_logical_block(void*& /*ctx*/, size_t /*size*/) final {}
+
+    virtual inline void* add_partition_add_logical_block(void*& /*ctx*/) final {
+        return nullptr;
+    }
+
+    virtual inline void finish_partition_add_logical_block(void*& /*ctx*/) final {
+        PartitionId part_id(num_partitions_);
+
+        for (t_logical_block_type_ptr lb_type : lb_types_) {
+            constraints_.mutable_place_constraints().constrain_part_lb_type(part_id, lb_type);
+        }
+    }
+
+    virtual inline size_t num_partition_add_logical_block(partition_info& part_info) final {
+        return part_info.lb_types.size();
+    }
+
+    virtual inline t_logical_block_type_ptr get_partition_add_logical_block(int n, partition_info& part_info) final {
+        return part_info.lb_types[n];
+    }
+
     /** Generated for complex type "partition_list":
      * <xs:complexType name="partition_list">
      *   <xs:sequence>
@@ -346,6 +417,10 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         part_info.part = part;
         part_info.part_id = partid;
         part_info.atoms = atoms;
+        if (constraints_.place_constraints().is_part_constrained_to_lb_types(partid)) {
+            const std::unordered_set<t_logical_block_type_ptr>& lb_types_set = constraints_.place_constraints().get_part_lb_type_constraints(partid);
+            part_info.lb_types.assign(lb_types_set.begin(), lb_types_set.end());
+        }
 
         return part_info;
     }
@@ -523,4 +598,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     //used when reading in atom names and regular expressions for atoms
     AtomBlockId atom_id_;
     std::vector<AtomBlockId> atoms_;
+
+    // Used when reading in regex LB type constraints for a partition.
+    std::unordered_set<t_logical_block_type_ptr> lb_types_;
 };

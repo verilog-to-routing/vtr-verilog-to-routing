@@ -372,16 +372,18 @@ enum class e_timing_update_type {
  * Placement and routing data types
  ****************************************************************************/
 
-/* Values of number of placement available move types */
+/// Total number of available move types for placement engine.
 constexpr int NUM_PL_MOVE_TYPES = 7;
+/// Total number of non-timing move types.
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
+
+/// Annealing schedule enumeration
 enum class e_sched_type {
-    AUTO_SCHED,
-    USER_SCHED
+    AUTO_SCHED, ///< Computes initial temperature, exit criterion and temperature update rate from statistics computed during the annealing.
+    USER_SCHED  ///< The user has specified explicit numbers for the key annealing schedule parameters
 };
-/* Annealing schedule */
 
 /// Specifies what is shown on screen
 enum class e_pic_type {
@@ -391,14 +393,16 @@ enum class e_pic_type {
     ROUTING
 };
 
-enum pfreq {
-    PLACE_NEVER,
-    PLACE_ONCE,
-    PLACE_ALWAYS
+/// Determines if placement is re-run during the binary search for minimum channel width.
+enum class e_place_freq {
+    /// Use a single placement for all channel widths; significantly faster.
+    ONCE,
+
+    /// Re-place the netlist from scratch for every channel width iteration in the binary search.
+    ALWAYS
 };
 
 ///@brief  Power data for t_netlist structure
-
 struct t_net_power {
     ///@brief Signal probability - long term probability that signal is logic-high
     float probability;
@@ -982,6 +986,8 @@ enum class e_move_type;
 /**
  * @brief Various options for the placer.
  *
+ * TODO: move member variable doxygen comments to where the variable are defined.
+ *
  *   @param place_algorithm
  *              Controls which placement algorithm is used.
  *   @param place_quench_algorithm
@@ -1021,9 +1027,6 @@ enum class e_move_type;
  *              with worse slacks more critical.
  *   @param td_place_exp_last
  *              Value that the crit_exponent will be at the end.
- *   @param doPlacement
- *              True if placement is supposed to be done in the CAD flow.
- *              False if otherwise.
  *   @param place_constraint_expand
  *              Integer value that specifies how far to expand the floorplan
  *              region when printing out floorplan constraints based on
@@ -1048,14 +1051,15 @@ struct t_placer_opts {
     std::string constraints_file;
     std::string write_initial_place_file;
     std::string read_initial_place_file;
-    enum pfreq place_freq;
+    e_place_freq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
     int quench_recompute_divider;
     float td_place_exp_first;
     int seed;
     float td_place_exp_last;
-    e_stage_action doPlacement;
+    /// True if placement is supposed to be done in the CAD flow. False if otherwise.
+    e_stage_action do_placement;
     float rlim_escape_fraction;
     std::string move_stats_file;
     int placement_saves_per_temperature;

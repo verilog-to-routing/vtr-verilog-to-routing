@@ -254,8 +254,7 @@ void SetupVPR(const t_options* options,
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
     }
 
-    //Setup the default flow, if no specific stages specified
-    //do all
+    // Setup the default flow, if no specific stages specified do all
     if (!options->do_packing
         && !options->do_legalize
         && !options->do_placement
@@ -264,40 +263,40 @@ void SetupVPR(const t_options* options,
         && !options->do_analysis) {
         //run all stages if none specified
         packerOpts->doPacking = e_stage_action::DO;
-        placerOpts->doPlacement = e_stage_action::DO;
+        placerOpts->do_placement = e_stage_action::DO;
         apOpts->doAP = e_stage_action::SKIP; // AP not default.
         routerOpts->doRouting = e_stage_action::DO;
         analysisOpts->doAnalysis = e_stage_action::SKIP_IF_PRIOR_FAIL; //Deferred until implementation status known
     } else {
-        //We run all stages up to the specified stage
-        //Note that by checking in reverse order (i.e. analysis to packing)
-        //we ensure that earlier stages override the default 'LOAD' action
-        //set by later stages
+        // We run all stages up to the specified stage
+        // Note that by checking in reverse order (i.e. analysis to packing)
+        // we ensure that earlier stages override the default 'LOAD' action
+        // set by later stages
 
         if (options->do_analysis) {
             packerOpts->doPacking = e_stage_action::LOAD;
-            placerOpts->doPlacement = e_stage_action::LOAD;
+            placerOpts->do_placement = e_stage_action::LOAD;
             routerOpts->doRouting = e_stage_action::LOAD;
             analysisOpts->doAnalysis = e_stage_action::DO;
         }
 
         if (options->do_routing) {
             packerOpts->doPacking = e_stage_action::LOAD;
-            placerOpts->doPlacement = e_stage_action::LOAD;
+            placerOpts->do_placement = e_stage_action::LOAD;
             routerOpts->doRouting = e_stage_action::DO;
             analysisOpts->doAnalysis = ((options->do_analysis) ? e_stage_action::DO : e_stage_action::SKIP_IF_PRIOR_FAIL); //Always run analysis after routing
         }
 
         if (options->do_placement) {
             packerOpts->doPacking = e_stage_action::LOAD;
-            placerOpts->doPlacement = e_stage_action::DO;
+            placerOpts->do_placement = e_stage_action::DO;
         }
 
         if (options->do_analytical_placement) {
             // In the Analytical Placement flow, packing and placement are
             // integrated. Thus, these stages are skipped.
             packerOpts->doPacking = e_stage_action::SKIP;
-            placerOpts->doPlacement = e_stage_action::SKIP;
+            placerOpts->do_placement = e_stage_action::SKIP;
             apOpts->doAP = e_stage_action::DO;
         }
 
@@ -544,17 +543,17 @@ static void setup_router_opts(const t_options& Options, t_router_opts* RouterOpt
 
 static void setup_anneal_sched(const t_options& Options,
                                t_annealing_sched* AnnealSched) {
-    AnnealSched->alpha_t = Options.PlaceAlphaT;
+    AnnealSched->alpha_t = Options.place_alpha_t;
     if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_t must be between 0 and 1 exclusive.\n");
     }
 
-    AnnealSched->exit_t = Options.PlaceExitT;
+    AnnealSched->exit_t = Options.place_exit_t;
     if (AnnealSched->exit_t <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "exit_t must be greater than 0.\n");
     }
 
-    AnnealSched->init_t = Options.PlaceInitT;
+    AnnealSched->init_t = Options.place_init_t;
     if (AnnealSched->init_t <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater than 0.\n");
     }
@@ -563,7 +562,7 @@ static void setup_anneal_sched(const t_options& Options,
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater or equal to than exit_t.\n");
     }
 
-    AnnealSched->inner_num = Options.PlaceInnerNum;
+    AnnealSched->inner_num = Options.place_inner_num;
     if (AnnealSched->inner_num <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n");
     }
@@ -650,7 +649,7 @@ static void setup_netlist_opts(const t_options& Options, t_netlist_opts& Netlist
  */
 static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpts) {
     if (Options.do_placement) {
-        PlacerOpts->doPlacement = e_stage_action::DO;
+        PlacerOpts->do_placement = e_stage_action::DO;
     }
 
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
@@ -660,8 +659,8 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
 
     PlacerOpts->td_place_exp_last = Options.place_exp_last;
 
-    PlacerOpts->place_algorithm = Options.PlaceAlgorithm;
-    PlacerOpts->place_quench_algorithm = Options.PlaceQuenchAlgorithm;
+    PlacerOpts->place_algorithm = Options.place_algorithm;
+    PlacerOpts->place_quench_algorithm = Options.place_quench_algorithm;
 
     PlacerOpts->constraints_file = Options.constraints_file;
 
@@ -671,11 +670,11 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
 
     PlacerOpts->pad_loc_type = Options.pad_loc_type;
 
-    PlacerOpts->place_chan_width = Options.PlaceChanWidth;
+    PlacerOpts->place_chan_width = Options.place_chan_width;
 
-    PlacerOpts->recompute_crit_iter = Options.RecomputeCritIter;
+    PlacerOpts->recompute_crit_iter = Options.recompute_crit_iter;
 
-    PlacerOpts->timing_tradeoff = Options.PlaceTimingTradeoff;
+    PlacerOpts->timing_tradeoff = Options.place_timing_tradeoff;
 
     /* Depends on PlacerOpts->place_algorithm */
     PlacerOpts->delay_offset = Options.place_delay_offset;
@@ -686,7 +685,7 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->delay_model_type = Options.place_delay_model;
     PlacerOpts->delay_model_reducer = Options.place_delay_model_reducer;
 
-    PlacerOpts->place_freq = PLACE_ONCE; /* DEFAULT */
+    PlacerOpts->place_freq = Options.place_placement_freq;
 
     PlacerOpts->post_place_timing_report_file = Options.post_place_timing_report_file;
 
@@ -724,7 +723,7 @@ static void setup_placer_opts(const t_options& Options, t_placer_opts* PlacerOpt
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
     PlacerOpts->place_quench_only = Options.place_quench_only;
 
-    PlacerOpts->seed = Options.Seed;
+    PlacerOpts->seed = Options.seed;
 
     PlacerOpts->placer_debug_block = Options.placer_debug_block;
     PlacerOpts->placer_debug_net = Options.placer_debug_net;
