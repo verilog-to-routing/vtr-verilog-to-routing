@@ -35,6 +35,8 @@ class CRRConnectionBuilder {
      */
     void initialize(int fpga_grid_x,
                     int fpga_grid_y,
+                    bool preserve_ipin_connections,
+                    bool preserve_opin_connections,
                     bool is_annotated);
 
     /**
@@ -49,6 +51,8 @@ class CRRConnectionBuilder {
     // Info from config
     int fpga_grid_x_;
     int fpga_grid_y_;
+    bool preserve_ipin_connections_;
+    bool preserve_opin_connections_;
     bool is_annotated_;
 
     // Dependencies

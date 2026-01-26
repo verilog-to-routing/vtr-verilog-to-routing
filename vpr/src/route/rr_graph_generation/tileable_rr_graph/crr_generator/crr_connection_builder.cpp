@@ -36,10 +36,14 @@ CRRConnectionBuilder::CRRConnectionBuilder(const RRGraphView& rr_graph,
 
 void CRRConnectionBuilder::initialize(int fpga_grid_x,
                                       int fpga_grid_y,
+                                      bool preserve_ipin_connections,
+                                      bool preserve_opin_connections,
                                       bool is_annotated) {
 
     fpga_grid_x_ = fpga_grid_x;
     fpga_grid_y_ = fpga_grid_y;
+    preserve_ipin_connections_ = preserve_ipin_connections;
+    preserve_opin_connections_ = preserve_opin_connections;
     is_annotated_ = is_annotated;
 }
 
@@ -101,6 +105,17 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
             e_rr_type source_node_type = rr_graph_.node_type(source_node);
             RRNodeId sink_node = sink_it->second;
             e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
+            if (preserve_ipin_connections_) {
+                if (source_node_type == e_rr_type::IPIN || sink_node_type == e_rr_type::IPIN) {
+                    continue;
+                }
+            }
+
+            if (preserve_opin_connections_) {
+                if (source_node_type == e_rr_type::OPIN || sink_node_type == e_rr_type::OPIN) {
+                    continue;
+                }
+            }
             std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
             // If the source node is an IPIN, then it should be considered as
             // a sink of the connection.
