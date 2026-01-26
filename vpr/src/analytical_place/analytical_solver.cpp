@@ -652,6 +652,7 @@ void B2BSolver::initialize_placement_least_dense(PartialPlacement& p_placement) 
     size_t num_tiles_per_layer = device_grid_width_ * device_grid_height_;
     VTR_ASSERT_SAFE(device_grid_num_layers_ > 0);
     unsigned num_blocks_per_layer = num_moveable_blocks_ / device_grid_num_layers_;
+    num_blocks_per_layer = std::max<size_t>(1, num_blocks_per_layer);
     double gap = std::sqrt(num_tiles_per_layer / static_cast<double>(num_blocks_per_layer));
 
     // Assuming this gap, get how many columns/rows of blocks there will be.
