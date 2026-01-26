@@ -57,10 +57,6 @@ class CRRConnectionBuilder {
     const SwitchBlockManager& sb_manager_;
     int verbosity_;
 
-    // Processing state
-    std::atomic<size_t> processed_locations_{0};
-    size_t total_locations_{0};
-
     // Connection building methods
     std::vector<Connection> build_connections_for_location(size_t x,
                                                            size_t y) const;

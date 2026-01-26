@@ -41,12 +41,6 @@ void CRRConnectionBuilder::initialize(int fpga_grid_x,
     fpga_grid_x_ = fpga_grid_x;
     fpga_grid_y_ = fpga_grid_y;
     is_annotated_ = is_annotated;
-
-    // Total locations is the number of locations on the FPGA grid minus the 4
-    // corner locations.
-    int number_of_tiles = fpga_grid_x_ * fpga_grid_y_;
-    total_locations_ = static_cast<size_t>(number_of_tiles);
-    processed_locations_ = 0;
 }
 
 std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(size_t x,
