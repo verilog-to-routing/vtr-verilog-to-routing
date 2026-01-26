@@ -19,7 +19,6 @@
 #include "atom_netlist_fwd.h"
 #include "device_grid.h"
 #include "flat_placement_types.h"
-#include "net_cost_handler.h"
 #include "partial_placement.h"
 #include "ap_netlist.h"
 #include "place_delay_model.h"
@@ -1192,7 +1191,7 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         //       The intuition is that moving a block in one dimension may be
         //       cheaper than moving it in another. For example, moving a block
         //       in the z dimension should be more expensive than the x/y.
-        double wl_net_w = (1.0f - ap_timing_tradeoff_) * net_weights_[net_id] * wirelength_crossing_count(num_pins);
+        double wl_net_w = (1.0f - ap_timing_tradeoff_) * net_weights_[net_id];
 
         // Find the bounding blocks
         APNetBounds net_bounds = get_unique_net_bounds(net_id, p_placement, netlist_);
