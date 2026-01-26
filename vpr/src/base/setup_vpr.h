@@ -5,6 +5,12 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 
+/**
+ * @brief Sets VPR parameters and defaults.
+ *
+ * Does not do any error checking as this should have been done by
+ * the various input checkers
+ */
 void SetupVPR(const t_options* Options,
               const bool TimingEnabled,
               const bool readArchFile,

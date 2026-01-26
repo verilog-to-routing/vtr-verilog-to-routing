@@ -428,6 +428,7 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
         // Return here since this error can cause serious issues below.
         return num_errors;
     }
+
     // Check consistency between which clusters the atom's think they are in and
     // which atoms the clusters think they have.
     num_errors += check_clustering_atom_consistency(clb_nlist,

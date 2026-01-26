@@ -94,6 +94,7 @@ struct ParseArchFormat {
         return {"vtr", "fpga-interchange"};
     }
 };
+
 struct ParseCircuitFormat {
     ConvertedValue<e_circuit_format> from_str(const std::string& str) {
         ConvertedValue<e_circuit_format> conv_value;
@@ -2626,6 +2627,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " 0.0 focuses completely on wirelength, 1.0 completely on timing")
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
+        .help("Weighting factor for congestion cost during placement. "
+              "Higher values prioritize congestion avoidance over bounding box and timing costs. "
+              "When set to zero, congestion modeling and optimization is disabled in the placement stage.")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_congestion_rlim_trigger_ratio, "--congestion_rlim_trigger_ratio")
+        .help("Enables congestion modeling when the ratio of the current range limit to the initial range limit falls below this threshold, "
+              "provided the congestion weighting factor is non-zero.")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_congestion_chan_util_threshold, "--congestion_chan_util_threshold")
+        .help("Penalizes nets in placement whose average routing channel utilization within their bounding boxes exceeds this threshold.");
 
     place_timing_grp.add_argument(args.recompute_crit_iter, "--recompute_crit_iter")
         .help("Controls how many temperature updates occur between timing analysis during placement")

@@ -138,6 +138,7 @@ struct t_options {
     argparse::ArgValue<float> place_exit_t;
     argparse::ArgValue<float> place_alpha_t;
     argparse::ArgValue<e_anneal_init_t_estimator> place_init_t_estimator;
+
     argparse::ArgValue<e_sched_type> anneal_sched_type;
     argparse::ArgValue<e_place_algorithm> place_algorithm;
     argparse::ArgValue<e_place_algorithm> place_quench_algorithm;
@@ -191,6 +192,9 @@ struct t_options {
     argparse::ArgValue<std::string> noc_placement_file_name;
 
     // Timing-driven placement options only
+    argparse::ArgValue<float> place_congestion_factor;
+    argparse::ArgValue<float> place_congestion_rlim_trigger_ratio;
+    argparse::ArgValue<float> place_congestion_chan_util_threshold;
     argparse::ArgValue<float> place_timing_tradeoff;
     argparse::ArgValue<int> recompute_crit_iter;
     argparse::ArgValue<int> inner_loop_recompute_divider;
