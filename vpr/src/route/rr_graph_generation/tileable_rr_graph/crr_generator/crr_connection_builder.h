@@ -142,9 +142,6 @@ class CRRConnectionBuilder {
                                 RRNodeId source_node,
                                 RRNodeId sink_node,
                                 int segment_length = -1) const;
-
-    // Progress tracking
-    void update_progress();
 };
 
 } // namespace crrgenerator

@@ -528,14 +528,4 @@ int CRRConnectionBuilder::get_connection_delay_ps(const std::string& cell_value,
     }
 }
 
-void CRRConnectionBuilder::update_progress() {
-    size_t current = processed_locations_.fetch_add(1) + 1;
-    if (current % std::max(size_t(1), total_locations_ / 20) == 0 || current == total_locations_) {
-        double percentage =
-            (static_cast<double>(current) / total_locations_) * 100.0;
-        VTR_LOGV(verbosity_ > 1, "Connection building progress: %zu/%zu (%.1f%%)\n", current,
-                 total_locations_, percentage);
-    }
-}
-
 } // namespace crrgenerator
