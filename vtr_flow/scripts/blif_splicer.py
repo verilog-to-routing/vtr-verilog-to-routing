@@ -48,7 +48,6 @@ for tupleIndex, nTuple in enumerate(
         reverse=True,
     )
 ):
-
     # Parse each input blif into the following strings, which represent
     # different sections of the output file.
 

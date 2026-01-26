@@ -559,7 +559,6 @@ struct t_physical_tile_type {
     int primitive_class_starting_idx = -1;
     std::unordered_map<int, t_class> primitive_class_inf; // [primitive_class_num] -> primitive_class_inf
 
-    std::vector<int> pin_layer_offset;                // [0..num_pins-1]
     std::vector<int> pin_width_offset;                // [0..num_pins-1]
     std::vector<int> pin_height_offset;               // [0..num_pins-1]
     std::vector<int> pin_class;                       // [0..num_pins-1]
@@ -1609,14 +1608,6 @@ struct t_segment_inf {
     short arch_opin_switch_dec = ARCH_FPGA_UNDEFINED_VAL;
 
     /**
-     * @brief Index of the switch type that connects output pins (OPINs) to this
-     * segment from another die (layer). Note that this index is in relation to
-     * the switches from the architecture file, not the expanded list of switches
-     * that is built at the end of build_rr_graph.
-     */
-    short arch_inter_die_switch = ARCH_FPGA_UNDEFINED_VAL;
-
-    /**
      * @brief The fraction of logic blocks along its length to which this segment can connect.
      * (i.e. internal population).
      */
@@ -1798,6 +1789,12 @@ struct t_arch_switch_inf {
     float buf_size = 0.;
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
     float power_buffer_size = 0.;
+
+    // The template ID of the switch. This is metadata stored for each switch to
+    // simplify certain analyses. For example, when generating the CRR graph, the
+    // template ID is used to determine which switch in the template is used most
+    // or least frequently.
+    std::string template_id = "";
 
     bool intra_tile = false;
 
@@ -2049,11 +2046,8 @@ struct t_arch {
     std::vector<t_lut_cell> lut_cells;
     std::unordered_map<std::string, std::vector<t_lut_element>> lut_elements;
 
-    // The name of the switch used for the input connection block (i.e. to
-    // connect routing tracks to block pins). tracks can be connected to
-    // ipins through the same die or from other dice, each of these
-    // types of connections requires a different switch, all names should correspond to a switch in Switches.
-    std::vector<std::string> ipin_cblock_switch_name;
+    // The name of the switch used for the input connection block (i.e. to connect routing tracks to block pins).
+    std::string ipin_cblock_switch_name;
 
     /// Set of potential device layouts
     std::vector<t_grid_def> grid_layouts;
@@ -2061,10 +2055,13 @@ struct t_arch {
     /// @brief Returns the grid layout specified by the --device command-line option.
     const t_grid_def& grid_layout() const;
 
-    // the layout that is chosen to be used with command line options
-    // It is used to generate custom SB for a specific locations within the device
-    // If the layout is not specified in the command line options, this variable will be set to "auto"
+    /// The layout that is chosen to be used with command line options
+    /// It is used to generate custom SB for a specific locations within the device
+    /// If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout;
+
+    /// Specifies how OPINs are connected to CHANZ wires.
+    e_3d_opin_connectivity_type opin_chanz_connectivity_type = e_3d_opin_connectivity_type::UNDEFINED;
 
     t_clock_arch_spec clock_arch; // Clock related data types
 

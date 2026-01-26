@@ -10,9 +10,7 @@
 #include <memory>
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
-#include "chan_cost_handler.h"
 #include "device_grid.h"
-#include "globals.h"
 #include "place_delay_model.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
@@ -547,11 +545,7 @@ class B2BSolver : public AnalyticalSolver {
                            ap_timing_tradeoff,
                            log_verbosity)
         , pre_cluster_timing_manager_(pre_cluster_timing_manager)
-        , place_delay_model_(place_delay_model)
-        , chan_cost_handler_(g_vpr_ctx.device().rr_chanx_width,
-                             g_vpr_ctx.device().rr_chany_width,
-                             g_vpr_ctx.device().rr_graph,
-                             device_grid) {}
+        , place_delay_model_(place_delay_model) {}
 
     /**
      * @brief Perform an iteration of the B2B solver, storing the result into
@@ -800,9 +794,6 @@ class B2BSolver : public AnalyticalSolver {
     /// @brief The place delay model used for calculating the delay between
     ///        two tiles on the FPGA. Used for computing the timing terms.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
-
-    /// @brief Manager class for getting the cost factors in the x, y, and z dimensions.
-    ChanCostHandler chan_cost_handler_;
 };
 
 #endif // EIGEN_INSTALLED

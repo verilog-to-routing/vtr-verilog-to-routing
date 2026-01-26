@@ -1,3 +1,5 @@
+.. _vpr_command_line_usage:
+
 Command-line Options
 ====================
 .. program:: vpr
@@ -920,6 +922,16 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     ``per_layer_bb``: ``per_layer_bb`` bounding box is used to estimate the wirelength
 
     **Default:** ``auto_bb``
+
+.. option:: --place_frequency {once | always}
+
+    Specifies how often placement is performed during the minimum channel width search.
+
+    ``once``: Placement is run only once at the beginning of the channel width search. This reduces runtime but may not benefit from congestion-aware optimizations.
+
+    ``always``: Placement is rerun for each channel width trial. This might improve routability at the cost of increased runtime.
+
+    **Default:** ``once``
 
 .. option:: --place_chan_width <int>
 
@@ -1936,6 +1948,7 @@ The following options are only valid when the router is in timing-driven mode (t
     **Default:** ``0.5``
 
 .. option:: --router_initial_acc_cost_chan_congestion_weight <float>
+
     Weight applied to the excess channel utilization (above threshold) when computing the initial accumulated cost (acc_cost)of routing resources.
 
     Higher values make the router more sensitive to early congestion.
@@ -1974,7 +1987,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
 .. option:: --router_first_iter_timing_report <file>
 
-    Name of the timing report file to generate after the first routing iteration completes (not generated if unspecfied).
+    Name of the timing report file to generate after the first routing iteration completes (not generated if unspecified).
 
 .. option:: --router_debug_net <int>
 

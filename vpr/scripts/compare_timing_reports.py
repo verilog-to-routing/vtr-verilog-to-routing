@@ -18,7 +18,6 @@ class TimingPath:
 
 
 def parse_args():
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument("first_report")
@@ -30,7 +29,6 @@ def parse_args():
 
 
 def main():
-
     args = parse_args()
 
     print("Parsing {}".format(args.first_report))
@@ -43,7 +41,6 @@ def main():
 
 
 def parse_timing_report(args, filename):
-
     regex = re.compile(r".*?Endpoint  : (?P<end>\S+).*?", re.DOTALL)
 
     start_regex = re.compile(r"Startpoint: (?P<start>\S+)")
@@ -60,7 +57,6 @@ def parse_timing_report(args, filename):
 
     paths = OrderedDict()
     for path_lines in paths_lines:
-
         distance = None
         startpoint = None
         endpoint = None
@@ -112,7 +108,6 @@ def parse_timing_report(args, filename):
 
 
 def correlate_paths(first_paths, second_paths):
-
     first_keys = set(first_paths.keys())
     second_keys = set(second_paths.keys())
 
@@ -137,7 +132,6 @@ def correlate_paths(first_paths, second_paths):
 
 
 def plot_correlation(first_paths, second_paths, first_name, second_name):
-
     correlated_paths, first_only, second_only = correlate_paths(first_paths, second_paths)
 
     print("Correlated {} paths".format(len(correlated_paths)))

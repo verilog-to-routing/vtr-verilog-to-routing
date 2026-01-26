@@ -1,0 +1,27 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif
+
+# Path to directory of architectures to use
+archs_dir=arch/reg_test_archs
+
+# Add circuits to list to sweep
+circuit_list_add=apex2.blif
+
+# Add architectures to list to sweep
+arch_list_add=fix_clusters_multiple_clb.xml
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_fixed_chan_width.txt
+
+# Script parameters
+script_params =-starting_stage vpr --device fixed_device --route_chan_width 64 --read_vpr_constraints ../../../../placement_constraints.xml

@@ -121,6 +121,7 @@ t_annealing_state::t_annealing_state(float first_t,
 }
 
 bool t_annealing_state::outer_loop_update(float success_rate,
+                                          bool congestion_modeling_enabled,
                                           const t_placer_costs& costs,
                                           const t_placer_opts& placer_opts) {
 #ifndef NO_GRAPHICS
@@ -142,8 +143,11 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     }
 
     // Automatically determine exit temperature.
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
+    if (congestion_modeling_enabled) {
+        t_exit *= (1. + placer_opts.congestion_factor);
+    }
 
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
     // Automatically adjust alpha according to success rate.
@@ -231,7 +235,8 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , move_stats_file_(nullptr, vtr::fclose)
     , outer_crit_iter_count_(1)
     , blocks_affected_(placer_state.block_locs().size())
-    , quench_started_(false) {
+    , quench_started_(false)
+    , congestion_modeling_started_(false) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     float first_crit_exponent;
@@ -506,14 +511,13 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
     MoveOutcomeStats move_outcome_stats;
 
-    /* I'm using negative values of proposed_net_cost as a flag,
-     * so DO NOT use cost functions that can go negative. */
-    double delta_c = 0;        //Change in cost due to this swap.
-    double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
-    double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
+    double delta_c = 0.;            // Change in cost due to this swap.
+    double bb_delta_c = 0.;         // Change in the bounding box (wiring) cost.
+    double timing_delta_c = 0.;     // Change in the timing cost (delay * criticality).
+    double congestion_delta_c = 0.; // Change in the congestion cost
 
-    /* Allow some fraction of moves to not be restricted by rlim,
-     * in the hopes of better escaping local minima. */
+    // Allow some fraction of moves to not be restricted by rlim,
+    // in the hopes of better escaping local minima.
     float rlim;
     if (placer_opts_.rlim_escape_fraction > 0. && rng_.frand() < placer_opts_.rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
@@ -529,19 +533,19 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         router_block_move = check_for_router_swap(noc_opts_.noc_swap_percentage, rng_);
     }
 
-    //When manual move toggle button is active, the manual move window asks the user for input.
+    // When manual move toggle button is active, the manual move window asks the user for input.
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator_, blocks_affected_,
                                                               proposed_action.move_type, rlim,
                                                               placer_opts_, criticalities_);
-#endif //NO_GRAPHICS
+#endif // NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
         create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry, place_macros_, rng_);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
-        //Generate a new move (perturbation) used to explore the space of possible placements
+        // Generate a new move (perturbation) used to explore the space of possible placements
         create_move_outcome = move_generator.propose_move(blocks_affected_, proposed_action, rlim, placer_opts_, criticalities_);
     }
 
@@ -588,7 +592,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
          * delays and timing costs and store them in proposed_* data structures.
          */
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
-                                                              bb_delta_c, timing_delta_c);
+                                                              bb_delta_c, timing_delta_c, congestion_delta_c);
 
         if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
@@ -605,7 +609,8 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            timing_delta_c,
                            costs_.timing_cost_norm);
             delta_c = (1 - placer_opts_.timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
-                      + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm;
+                      + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
+                      + placer_opts_.congestion_factor * congestion_delta_c * costs_.congestion_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -672,6 +677,7 @@ t_swap_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         if (move_outcome == e_move_result::ACCEPTED) {
             costs_.cost += delta_c;
             costs_.bb_cost += bb_delta_c;
+            costs_.congestion_cost += congestion_delta_c;
 
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
@@ -810,6 +816,26 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
         outer_crit_iter_count_++;
     }
 
+    // Congestion modeling is enabled when the ratio of the current range limit to the initial range limit
+    // drops below a user-specified threshold, and the congestion cost weighting factor is non-zero.
+    // Once enabled, congestion modeling continues even if the range limit increases and the ratio
+    // rises above the threshold.
+    //
+    // This logic is motivated by the observation that enabling congestion modeling too early in the
+    // anneal increases computational overhead and introduces noise into the placement cost function,
+    // as early placements are typically highly congested and unstable. So, we delay congestion modeling
+    // until the placement is more settled and wirelength has been reasonably optimized.
+    if ((annealing_state_.rlim / MoveGenerator::first_rlim < placer_opts_.congestion_rlim_trigger_ratio
+         && placer_opts_.congestion_factor != 0.)
+        || congestion_modeling_started_) {
+        costs_.congestion_cost = net_cost_handler_.estimate_routing_chan_util();
+
+        if (!congestion_modeling_started_) {
+            VTR_LOG("Congestion modeling started.\n");
+            congestion_modeling_started_ = true;
+        }
+    }
+
     // Update the cost normalization factors
     costs_.update_norm_factors();
 
@@ -933,7 +959,7 @@ const t_annealing_state& PlacementAnnealer::get_annealing_state() const {
 }
 
 bool PlacementAnnealer::outer_loop_update_state() {
-    return annealing_state_.outer_loop_update(placer_stats_.success_rate, costs_, placer_opts_);
+    return annealing_state_.outer_loop_update(placer_stats_.success_rate, congestion_modeling_started_, costs_, placer_opts_);
 }
 
 void PlacementAnnealer::start_quench() {

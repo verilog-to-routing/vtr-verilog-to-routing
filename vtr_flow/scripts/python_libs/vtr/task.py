@@ -400,12 +400,10 @@ def find_longest_task_description(configs):
             if config.script_params_list_add:
                 for param in config.script_params_list_add:
                     arch_circuit_len = len(str(PurePath(arch) / circuit / "common_" / param))
-                    if arch_circuit_len > longest:
-                        longest = arch_circuit_len
+                    longest = max(longest, arch_circuit_len)
             else:
                 arch_circuit_len = len(str(PurePath(arch) / circuit / "common"))
-                if arch_circuit_len > longest:
-                    longest = arch_circuit_len
+                longest = max(longest, arch_circuit_len)
     return longest
 
 
@@ -806,7 +804,7 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
 
 def resolve_vtr_source_file(config, filename, base_dir=""):
     """
-    Resolves an filename with a base_dir
+    Resolves a filename with a base_dir
 
     Checks the following in order:
         1) filename as absolute path

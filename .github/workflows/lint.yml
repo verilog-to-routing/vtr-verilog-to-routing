@@ -26,3 +26,20 @@ jobs:
 
       - name: Check Spelling
         run: codespell
+
+  PythonLint:
+    name: Python Lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v6
+
+      - name: Install Requirements
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint Python Files Using Pylint
+        run: ./dev/pylint_check.py

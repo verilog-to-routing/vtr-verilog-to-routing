@@ -3,6 +3,8 @@
 #include <map>
 #include <rr_graph_fwd.h>
 #include <vector>
+#include <string_view>
+
 #include "netlist.h"
 #include "rr_graph_type.h"
 
@@ -22,6 +24,17 @@ void routing_stats(const Netlist<>& net_list,
                    float grid_logic_tile_area,
                    e_directionality directionality,
                    bool is_flat);
+
+/**
+ * @brief Writes the number of times each switch in template file is used to
+ * a file with the same name as the template file in the given directory.
+ * @param net_list The netlist
+ * @param sb_map_dir The directory containing switch block template files
+ * @param sb_count_dir The directory to write the switchbox count statistics to
+ */
+void write_sb_count_stats(const Netlist<>& net_list,
+                          const std::string& sb_map_dir,
+                          const std::string& sb_count_dir);
 
 void print_wirelen_prob_dist(bool is_flat);
 
@@ -49,3 +62,22 @@ void print_resource_usage();
  * @param target_device_utilization The target device utilization set by the user
  */
 void print_device_utilization(const float target_device_utilization);
+
+/**
+ * @brief Writes channel occupancy data to a file.
+ *
+ * Each row contains:
+ *   - (x, y) coordinate
+ *   - Occupancy count
+ *   - Occupancy percentage (occupancy / capacity)
+ *   - Channel capacity
+ *
+ *   TODO: extend to 3D
+ *
+ * @param filename      Output file path.
+ * @param occupancy     Matrix of occupancy counts.
+ * @param capacity_list List of channel capacities (per y for chanx, per x for chany).
+ */
+void write_channel_occupancy_table(const std::string_view filename,
+                                   const vtr::Matrix<int>& occupancy,
+                                   const std::vector<int>& capacity_list);

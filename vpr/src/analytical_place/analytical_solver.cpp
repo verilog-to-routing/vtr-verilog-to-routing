@@ -1176,22 +1176,6 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         triplet_list_z.reserve(total_num_pins_in_netlist);
     }
 
-    // Compute a normalization term for the per-dimension channel factors. This
-    // is simply the inverse of the average of the per-dimension channel factors
-    // for a bounding box the size of the device. This resolves to being the
-    // average channel width of the entire device.
-    // TODO: This can be moved to the constructor.
-    t_bb device_bb;
-    device_bb.xmin = 0;
-    device_bb.xmax = device_grid_width_ - 1;
-    device_bb.ymin = 0;
-    device_bb.ymax = device_grid_height_ - 1;
-    device_bb.layer_min = 0;
-    device_bb.layer_max = device_grid_num_layers_ - 1;
-    double chan_fac_norm_x = 1.0 / chan_cost_handler_.get_chanx_cost_fac(device_bb);
-    double chan_fac_norm_y = 1.0 / chan_cost_handler_.get_chany_cost_fac(device_bb);
-    double chan_fac_norm = (chan_fac_norm_x + chan_fac_norm_y) / 2.0;
-
     for (APNetId net_id : netlist_.nets()) {
         if (netlist_.net_is_ignored(net_id))
             continue;
@@ -1203,36 +1187,14 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         // ====================================================================
         // In the objective there is are wirelength connections and timing
         // connections, trade-off between the weight of each type of connection.
+        // TODO: Investigate having different wirelength factors per dimension.
+        //       The intuition is that moving a block in one dimension may be
+        //       cheaper than moving it in another. For example, moving a block
+        //       in the z dimension should be more expensive than the x/y.
         double wl_net_w = (1.0f - ap_timing_tradeoff_) * net_weights_[net_id] * wirelength_crossing_count(num_pins);
 
         // Find the bounding blocks
         APNetBounds net_bounds = get_unique_net_bounds(net_id, p_placement, netlist_);
-
-        // Create a bounding box around the net using the net bounds. This is
-        // used to get the per-dimension cost terms.
-        // TODO: Investigate using the legalized solution from the prior iteration.
-        t_bb net_bb;
-        net_bb.xmin = std::clamp<int>(p_placement.block_x_locs[net_bounds.min_x_blk], 0, device_grid_width_ - 1);
-        net_bb.xmax = std::clamp<int>(p_placement.block_x_locs[net_bounds.max_x_blk], 0, device_grid_width_ - 1);
-        net_bb.ymin = std::clamp<int>(p_placement.block_y_locs[net_bounds.min_y_blk], 0, device_grid_height_ - 1);
-        net_bb.ymax = std::clamp<int>(p_placement.block_y_locs[net_bounds.max_y_blk], 0, device_grid_height_ - 1);
-        net_bb.layer_min = std::clamp<int>(p_placement.block_layer_nums[net_bounds.min_z_blk], 0, device_grid_num_layers_ - 1);
-        net_bb.layer_max = std::clamp<int>(p_placement.block_layer_nums[net_bounds.max_z_blk], 0, device_grid_num_layers_ - 1);
-        VTR_ASSERT_SAFE(net_bb.xmin <= net_bb.xmax);
-        VTR_ASSERT_SAFE(net_bb.ymin <= net_bb.ymax);
-        VTR_ASSERT_SAFE(net_bb.layer_min <= net_bb.layer_max);
-
-        // Compute the channel cost factors due to routing damand.
-        double chanx_cost_fac = chan_cost_handler_.get_chanx_cost_fac(net_bb) * chan_fac_norm;
-        double chany_cost_fac = chan_cost_handler_.get_chany_cost_fac(net_bb) * chan_fac_norm;
-        double chanz_cost_fac = 1.0;
-        if (is_multi_die())
-            chanz_cost_fac = chan_cost_handler_.get_chanz_cost_fac(net_bb) * chan_fac_norm;
-
-        // Get the per-dimension, wirelength net weights.
-        double wl_net_w_x = wl_net_w * chanx_cost_fac;
-        double wl_net_w_y = wl_net_w * chany_cost_fac;
-        double wl_net_w_z = wl_net_w * chanz_cost_fac;
 
         // Add an edge from every block to their bounds (ignoring the bounds
         // themselves for now).
@@ -1241,25 +1203,25 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         for (APPinId pin_id : netlist_.net_pins(net_id)) {
             APBlockId blk_id = netlist_.pin_block(pin_id);
             if (blk_id != net_bounds.max_x_blk && blk_id != net_bounds.min_x_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w_x, p_placement.block_x_locs, triplet_list_x, b_x);
-                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w_x, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
             }
             if (blk_id != net_bounds.max_y_blk && blk_id != net_bounds.min_y_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w_y, p_placement.block_y_locs, triplet_list_y, b_y);
-                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w_y, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
             }
             if (is_multi_die() && blk_id != net_bounds.max_z_blk && blk_id != net_bounds.min_z_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, wl_net_w_z, p_placement.block_layer_nums, triplet_list_z, b_z);
-                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, wl_net_w_z, p_placement.block_layer_nums, triplet_list_z, b_z);
+                add_connection_to_system(blk_id, net_bounds.max_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
+                add_connection_to_system(blk_id, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
             }
         }
 
         // Connect the bounds to each other. Its just easier to put these here
         // instead of in the for loop above.
-        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w_x, p_placement.block_x_locs, triplet_list_x, b_x);
-        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w_y, p_placement.block_y_locs, triplet_list_y, b_y);
+        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, wl_net_w, p_placement.block_x_locs, triplet_list_x, b_x);
+        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, wl_net_w, p_placement.block_y_locs, triplet_list_y, b_y);
         if (is_multi_die()) {
-            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, wl_net_w_z, p_placement.block_layer_nums, triplet_list_z, b_z);
+            add_connection_to_system(net_bounds.max_z_blk, net_bounds.min_z_blk, num_pins, wl_net_w, p_placement.block_layer_nums, triplet_list_z, b_z);
         }
 
         // ====================================================================
@@ -1320,11 +1282,11 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 double timing_net_w = ap_timing_tradeoff_ * net_weights_[net_id] * timing_slope_fac_ * (1.0 + crit);
 
                 add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_x * delay_x_norm * chanx_cost_fac,
+                                         2 /*num_pins*/, timing_net_w * d_delay_x * delay_x_norm,
                                          p_placement.block_x_locs, triplet_list_x, b_x);
 
                 add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm * chany_cost_fac,
+                                         2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm,
                                          p_placement.block_y_locs, triplet_list_y, b_y);
             }
         }
