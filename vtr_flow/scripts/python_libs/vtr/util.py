@@ -219,7 +219,7 @@ class CommandRunner:
                             proc.wait(timeout=5)
                         except subprocess.TimeoutExpired:
                             os.killpg(proc.pid, signal.SIGKILL)
-                        break;
+                        break
 
                 # Should now be finished (since we stopped reading from proc.stdout),
                 # sets the return code
