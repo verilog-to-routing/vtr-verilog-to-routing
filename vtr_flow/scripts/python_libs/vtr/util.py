@@ -214,7 +214,13 @@ class CommandRunner:
                     # Abort if over time limit
                     elapsed_time = time.time() - start_time
                     if self._timeout_sec and elapsed_time > self._timeout_sec:
+                        # Send SIGTERM command to all processes in the process
+                        # group. We need to do this since Popen may create a
+                        # process which has children. We want all of them to
+                        # receive this signal.
                         os.killpg(proc.pid, signal.SIGTERM)
+                        # Wait 5 seconds for the process to gracefully terminate.
+                        # If it still has not terminated, send SIGKILL.
                         try:
                             proc.wait(timeout=5)
                         except subprocess.TimeoutExpired:
