@@ -1394,6 +1394,7 @@ struct t_crr_opts {
     bool annotated_rr_graph;
     bool remove_dangling_nodes;
     std::string sb_count_dir;
+    int crr_num_threads;
 };
 
 /// Stores NoC specific options, when supplied as an input by the user
