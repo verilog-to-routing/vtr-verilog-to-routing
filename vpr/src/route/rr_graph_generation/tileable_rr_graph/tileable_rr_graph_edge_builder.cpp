@@ -345,6 +345,8 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                                                                       route_verbosity);
         crr_connection_builder->initialize(grids.width(),
                                            grids.height(),
+                                           crr_opts.preserve_input_pin_connections,
+                                           crr_opts.preserve_output_pin_connections,
                                            crr_opts.annotated_rr_graph);
     }
 

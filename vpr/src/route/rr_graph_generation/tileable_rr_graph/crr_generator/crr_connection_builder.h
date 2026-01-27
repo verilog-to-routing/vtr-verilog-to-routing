@@ -35,6 +35,8 @@ class CRRConnectionBuilder {
      */
     void initialize(int fpga_grid_x,
                     int fpga_grid_y,
+                    bool preserve_ipin_connections,
+                    bool preserve_opin_connections,
                     bool is_annotated);
 
     /**
@@ -49,6 +51,8 @@ class CRRConnectionBuilder {
     // Info from config
     int fpga_grid_x_;
     int fpga_grid_y_;
+    bool preserve_ipin_connections_;
+    bool preserve_opin_connections_;
     bool is_annotated_;
 
     // Dependencies
@@ -56,10 +60,6 @@ class CRRConnectionBuilder {
     const NodeLookupManager& node_lookup_;
     const SwitchBlockManager& sb_manager_;
     int verbosity_;
-
-    // Processing state
-    std::atomic<size_t> processed_locations_{0};
-    size_t total_locations_{0};
 
     // Connection building methods
     std::vector<Connection> build_connections_for_location(size_t x,
@@ -142,9 +142,6 @@ class CRRConnectionBuilder {
                                 RRNodeId source_node,
                                 RRNodeId sink_node,
                                 int segment_length = -1) const;
-
-    // Progress tracking
-    void update_progress();
 };
 
 } // namespace crrgenerator
