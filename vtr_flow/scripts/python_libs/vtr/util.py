@@ -9,6 +9,7 @@ import subprocess
 import argparse
 import csv
 import os
+import signal
 
 from collections import OrderedDict
 from pathlib import PurePath
@@ -189,6 +190,7 @@ class CommandRunner:
                 universal_newlines=True,  # Lines always end in \n
                 cwd=str(temp_dir),  # Where to run the command
                 env=modified_environ,
+                start_new_session=True,
             )
 
             # Read the output line-by-line and log it
@@ -212,7 +214,18 @@ class CommandRunner:
                     # Abort if over time limit
                     elapsed_time = time.time() - start_time
                     if self._timeout_sec and elapsed_time > self._timeout_sec:
-                        proc.terminate()
+                        # Send SIGTERM command to all processes in the process
+                        # group. We need to do this since Popen may create a
+                        # process which has children. We want all of them to
+                        # receive this signal.
+                        os.killpg(proc.pid, signal.SIGTERM)
+                        # Wait 5 seconds for the process to gracefully terminate.
+                        # If it still has not terminated, send SIGKILL.
+                        try:
+                            proc.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            os.killpg(proc.pid, signal.SIGKILL)
+                        break
 
                 # Should now be finished (since we stopped reading from proc.stdout),
                 # sets the return code
