@@ -1,6 +1,8 @@
 #include "crr_edge_builder.h"
 #include "globals.h"
 
+#include <unordered_map>
+
 #include "physical_types.h"
 #include "crr_connection_builder.h"
 
@@ -52,6 +54,14 @@ static t_arch_switch_inf create_crr_switch(const int delay_ps, const std::string
 static RRSwitchId find_or_create_crr_switch_id(const int delay_ps,
                                                const std::string& sw_template_id,
                                                const int verbosity) {
+    // Cache template_id -> switch_id for O(1) lookup instead of
+    // iterating over the entire all_sw_inf map (O(n)) on every call.
+    static std::unordered_map<std::string, int> template_id_cache;
+
+    auto cache_it = template_id_cache.find(sw_template_id);
+    if (cache_it != template_id_cache.end()) {
+        return RRSwitchId(cache_it->second);
+    }
 
     std::map<int, t_arch_switch_inf>& all_sw_inf = g_vpr_ctx.mutable_device().all_sw_inf;
 
@@ -74,6 +84,7 @@ static RRSwitchId find_or_create_crr_switch_id(const int delay_ps,
         VTR_LOGV(verbosity > 1, "Created new CRR switch: delay=%d ps, template id=%s\n", delay_ps, sw_template_id.c_str());
     }
 
+    template_id_cache[sw_template_id] = found_sw_id;
     return RRSwitchId(found_sw_id);
 }
 
