@@ -142,93 +142,50 @@ class SdcParseCallback : public sdcparse::Callback {
                           "clocks with no targets must have a name");
             }
 
-            //Create a virtual clock
-            tatum::DomainId virtual_clk = tc_.create_clock_domain(cmd.name);
-            auto clock_obj_id = obj_database.create_clock_object(cmd.name);
-            object_to_clock_id_[clock_obj_id] = virtual_clk;
-
-            if (sdc_clocks_.count(virtual_clk)) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                          "Found duplicate virtual clock definition for clock '%s'",
-                          cmd.name.c_str());
-            }
-
-            //Virtual clocks should have no targets
+            // Virtual clocks should have no targets
             if (!cmd.targets.strings.empty()) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                           "Virtual clock definition (i.e. with '-name') should not have targets");
             }
-
-            //Save the mapping to the sdc clock info
-            sdc_clocks_[virtual_clk] = cmd;
         } else {
-            //Create a netlist clock for every matching port / pin
-            VTR_ASSERT(cmd.targets.type == sdcparse::StringGroupType::OBJECT);
-            for (const auto& object_id_str : cmd.targets.strings) {
-                // Get the type of this object.
-                sdcparse::ObjectType object_type = obj_database.get_object_type(object_id_str);
-                if (object_type != sdcparse::ObjectType::Port && object_type != sdcparse::ObjectType::Pin) {
-                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                              "create_clock command only supports ports and pins");
-                }
-
-                // Get the atom pin associated with this port / pin.
-                AtomPinId clock_pin;
-                if (object_type == sdcparse::ObjectType::Port) {
-                    sdcparse::PortObjectId object_id = sdcparse::PortObjectId(object_id_str);
-                    VTR_ASSERT_SAFE(object_to_port_id_.find(object_id) != object_to_port_id_.end());
-                    clock_pin = object_to_port_id_[object_id];
-                } else {
-                    VTR_ASSERT(object_type == sdcparse::ObjectType::Pin);
-                    sdcparse::PinObjectId object_id = sdcparse::PinObjectId(object_id_str);
-                    VTR_ASSERT_SAFE(object_to_pin_id_.find(object_id) != object_to_pin_id_.end());
-                    clock_pin = object_to_pin_id_[object_id];
-                }
-
-                // Ensure that the pin is a driver of a clock. This may be necessary for setting
-                // the source of the clock.
-                if (netlist_clock_drivers_.count(clock_pin) != 1) {
-                    // FIXME: This should really produce a warning or even better an error; however,
-                    //        VTR's use of wildcards for the create_clocks targets causes this to
-                    //        become rediculous. Need to fix this on the parser side. For now, we will
-                    //        just ignore any targets which are not clock drivers (which matches VTR's)
-                    //        original functionality.
-                    // FIXME: This also may need to take into account aliases. To confirm.
-                    continue;
-                }
-                VTR_ASSERT(netlist_clock_drivers_.count(clock_pin) == 1);
-
-                // Get the name of the clock. If no name is provided, the name of the port/pin is used.
-                std::string clock_name;
-                if (cmd.name.empty()) {
-                    clock_name = obj_database.get_object_name(sdcparse::ObjectId(object_id_str));
-                } else {
-                    VTR_ASSERT(cmd.targets.strings.size() == 1);
-                    clock_name = cmd.name;
-                }
-
-                // Create netlist clock
-                tatum::DomainId netlist_clk = tc_.create_clock_domain(clock_name);
-                if (sdc_clocks_.count(netlist_clk) != 0) {
-                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                                "Found duplicate netlist clock definition for clock '%s'",
-                                clock_name.c_str());
-                }
-
-                // Set the clock source
-                AtomNetId clock_net = netlist_.pin_net(clock_pin);
-                AtomPinId clock_driver = netlist_.net_driver(clock_net);
-                tatum::NodeId clock_source = lookup_.atom_pin_tnode(clock_driver);
-                VTR_ASSERT(clock_source);
-                tc_.set_clock_domain_source(clock_source, netlist_clk);
-
-                // Update the object database
-                auto clock_obj_id = obj_database.create_clock_object(clock_name);
-                object_to_clock_id_[clock_obj_id] = netlist_clk;
-
-                //Save the mapping to the clock info
-                sdc_clocks_[netlist_clk] = cmd;
+            // Check that all of the objects are valid types.
+            bool targets_valid = check_objects(cmd.targets,
+                {sdcparse::ObjectType::Port, sdcparse::ObjectType::Pin}
+            );
+            if (!targets_valid) {
+                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                          "create_clock command only supports ports and pins");
             }
+        }
+
+        if (cmd.is_virtual) {
+            // Create a virtual clock
+            create_clock_object(cmd.name, tatum::NodeId::INVALID(), cmd);
+            return;
+        }
+
+        // Create a netlist clock for every matching port / pin
+        VTR_ASSERT(cmd.targets.type == sdcparse::StringGroupType::OBJECT);
+        for (const auto& object_id_str : cmd.targets.strings) {
+            // Get the name of the clock. If no name is provided, the name of the port/pin is used.
+            std::string clock_name;
+            if (cmd.name.empty()) {
+                clock_name = obj_database.get_object_name(sdcparse::ObjectId(object_id_str));
+            } else {
+                VTR_ASSERT(cmd.targets.strings.size() == 1);
+                clock_name = cmd.name;
+            }
+
+            // Get the clock source associated with this pin.
+            AtomPinId clock_pin = get_port_or_pin(object_id_str);
+            tatum::NodeId clock_source = get_clock_source(clock_pin);
+            if (!clock_source.is_valid()) {
+                // FIXME: This should be an error. Bring into the get_clock_source method.
+                continue;
+            }
+
+            // Create netlist clock
+            create_clock_object(clock_name, clock_source, cmd);
         }
     }
 
@@ -980,8 +937,60 @@ class SdcParseCallback : public sdcparse::Callback {
         return setup_capture_cycle(from, to, to_pin) - hold_offset;
     }
 
+    // TODO: Document.
+    void create_clock_object(const std::string& clock_name,
+                             tatum::NodeId clock_source,
+                             const sdcparse::CreateClock& cmd) {
+
+        tatum::DomainId netlist_clock = tc_.create_clock_domain(clock_name);
+        // Set the clock domain source. If the clock source is invalid, this is
+        // a virtual clock.
+        if (clock_source.is_valid()) {
+            tc_.set_clock_domain_source(clock_source, netlist_clock);
+        }
+
+        // Update the object database.
+        auto clock_obj_id = obj_database.create_clock_object(clock_name);
+        object_to_clock_id_[clock_obj_id] = netlist_clock;
+
+        if (sdc_clocks_.count(netlist_clock) != 0) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "Found duplicate netlist clock definition for clock '%s'",
+                      clock_name.c_str());
+        }
+
+        // Save the mapping to the sdc clock info
+        sdc_clocks_[netlist_clock] = cmd;
+    }
+
+    // TODO: Document.
+    tatum::NodeId get_clock_source(AtomPinId clock_pin) {
+        VTR_ASSERT(clock_pin.is_valid());
+
+        // Ensure that the pin is a driver of a clock. This may be necessary for setting
+        // the source of the clock.
+        if (netlist_clock_drivers_.count(clock_pin) != 1) {
+            // FIXME: This should really produce a warning or even better an error; however,
+            //        VTR's use of wildcards for the create_clocks targets causes this to
+            //        become rediculous. Need to fix this on the parser side. For now, we will
+            //        just ignore any targets which are not clock drivers (which matches VTR's)
+            //        original functionality.
+            // FIXME: This also may need to take into account aliases. To confirm.
+            return tatum::NodeId::INVALID();
+        }
+        VTR_ASSERT(netlist_clock_drivers_.count(clock_pin) == 1);
+
+        // Get the clock source
+        AtomNetId clock_net = netlist_.pin_net(clock_pin);
+        AtomPinId clock_driver = netlist_.net_driver(clock_net);
+        tatum::NodeId clock_source = lookup_.atom_pin_tnode(clock_driver);
+        VTR_ASSERT(clock_source);
+
+        return clock_source;
+    }
+
     std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
-        assert(port_group.type == sdcparse::StringGroupType::OBJECT);
+        VTR_ASSERT(port_group.type == sdcparse::StringGroupType::OBJECT);
 
         std::set<AtomPinId> pins;
         for (const std::string& port_id_string : port_group.strings) {
@@ -992,7 +1001,7 @@ class SdcParseCallback : public sdcparse::Callback {
             // Get the pin associated with this port.
             sdcparse::PortObjectId port_id = sdcparse::PortObjectId(port_id_string);
             auto it = object_to_port_id_.find(port_id);
-            assert(it != object_to_port_id_.end());
+            VTR_ASSERT(it != object_to_port_id_.end());
 
             // Add this pin to the pin set.
             pins.insert(it->second);
@@ -1018,7 +1027,7 @@ class SdcParseCallback : public sdcparse::Callback {
                 }
                 sdcparse::ClockObjectId clock_id = sdcparse::ClockObjectId(clock_id_string);
                 auto it = object_to_clock_id_.find(clock_id);
-                assert(it != object_to_clock_id_.end());
+                VTR_ASSERT(it != object_to_clock_id_.end());
                 domains.insert(it->second);
             }
             return domains;
@@ -1087,9 +1096,11 @@ class SdcParseCallback : public sdcparse::Callback {
 
         if (pin_group.type == sdcparse::StringGroupType::OBJECT) {
             for (const std::string& pin_id_string : pin_group.strings) {
+                if (obj_database.get_object_type(pin_id_string) != sdcparse::ObjectType::Pin)
+                    continue;
                 sdcparse::PinObjectId pin_id = sdcparse::PinObjectId(pin_id_string);
                 auto it = object_to_pin_id_.find(pin_id);
-                assert(it != object_to_pin_id_.end());
+                VTR_ASSERT(it != object_to_pin_id_.end());
                 pins.insert(it->second);
             }
 
@@ -1123,6 +1134,25 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         return pins;
+    }
+
+    // TODO: Document.
+    AtomPinId get_port_or_pin(const std::string& object_id) {
+        sdcparse::ObjectType object_type = obj_database.get_object_type(object_id);
+
+        if (object_type == sdcparse::ObjectType::Port) {
+            sdcparse::PortObjectId port_id = sdcparse::PortObjectId(object_id);
+            auto it = object_to_port_id_.find(port_id);
+            VTR_ASSERT(it != object_to_port_id_.end());
+            return it->second;
+        } else if (object_type == sdcparse::ObjectType::Pin) {
+            sdcparse::PinObjectId pin_id = sdcparse::PinObjectId(object_id);
+            auto it = object_to_pin_id_.find(pin_id);
+            VTR_ASSERT(it != object_to_pin_id_.end());
+            return it->second;
+        } else {
+            return AtomPinId::INVALID();
+        }
     }
 
     std::set<tatum::DomainId> get_all_clocks() {
