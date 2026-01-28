@@ -158,11 +158,12 @@ std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x
     return tile_connections;
 }
 
-std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
+std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
                                                                        int y,
                                                                        const DataFrame& df,
-                                                                       const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
-    std::map<size_t, RRNodeId> source_nodes;
+                                                                       const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                                       const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
+    std::unordered_map<size_t, RRNodeId> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
     e_sw_template_dir prev_side = e_sw_template_dir::NUM_SIDES;
@@ -193,11 +194,12 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
     return source_nodes;
 }
 
-std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(int x,
+std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(int x,
                                                                      int y,
                                                                      const DataFrame& df,
-                                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
-    std::map<size_t, RRNodeId> sink_nodes;
+                                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
+    std::unordered_map<size_t, RRNodeId> sink_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
     e_sw_template_dir prev_side = e_sw_template_dir::NUM_SIDES;
