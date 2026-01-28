@@ -275,23 +275,18 @@ class SdcParseCallback : public sdcparse::Callback {
                       cmd.clock_name.c_str());
         }
 
-        //Find all matching I/Os
-        // FIXME: Add a checker function which checks that only certain types of objects
-        //        are passed in. Then make it so get_ports ignores all other types of objects.
-        VTR_ASSERT(cmd.target_ports.type == sdcparse::StringGroupType::OBJECT);
-        std::set<AtomPinId> io_pins;
-        for (const auto& object_id_str : cmd.target_ports.strings) {
-            sdcparse::ObjectType object_type = obj_database.get_object_type(object_id_str);
-            // TODO: We may be able to support pins as well. Need to verify.
-            if (object_type != sdcparse::ObjectType::Port) {
-                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                          "set_io_delay command only supports ports currently");
-            }
-
-            sdcparse::PortObjectId object_id = sdcparse::PortObjectId(object_id_str);
-            VTR_ASSERT_SAFE(object_to_port_id_.find(object_id) != object_to_port_id_.end());
-            io_pins.insert(object_to_port_id_[object_id]);
+        // Verify that the targets are the correct type.
+        // TODO: We may be able to support pins as well. Need to verify.
+        bool targets_valid = check_objects(cmd.target_ports,
+            {sdcparse::ObjectType::Port}
+        );
+        if (!targets_valid) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "set_io_delay command only supports ports currently");
         }
+
+        // Get the target ports
+        std::set<AtomPinId> io_pins = get_ports(cmd.target_ports);
 
         if (io_pins.empty()) {
             //We treat this as a warning, since the primary I/Os in the target may have been swept away
@@ -986,44 +981,23 @@ class SdcParseCallback : public sdcparse::Callback {
     }
 
     std::set<AtomPinId> get_ports(const sdcparse::StringGroup& port_group) {
+        assert(port_group.type == sdcparse::StringGroupType::OBJECT);
+
         std::set<AtomPinId> pins;
+        for (const std::string& port_id_string : port_group.strings) {
+            // If this object is not a port, just skip it.
+            if (obj_database.get_object_type(port_id_string) != sdcparse::ObjectType::Port)
+                continue;
 
-        if (port_group.type == sdcparse::StringGroupType::OBJECT) {
-            for (const std::string& port_id_string : port_group.strings) {
-                sdcparse::PortObjectId port_id = sdcparse::PortObjectId(port_id_string);
-                auto it = object_to_port_id_.find(port_id);
-                assert(it != object_to_port_id_.end());
-                pins.insert(it->second);
-            }
-            return pins;
+            // Get the pin associated with this port.
+            sdcparse::PortObjectId port_id = sdcparse::PortObjectId(port_id_string);
+            auto it = object_to_port_id_.find(port_id);
+            assert(it != object_to_port_id_.end());
+
+            // Add this pin to the pin set.
+            pins.insert(it->second);
         }
 
-        if (port_group.type != sdcparse::StringGroupType::PORT) {
-            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "Expected port collection via get_ports");
-        }
-
-        for (const auto& port_pattern : port_group.strings) {
-            std::regex port_regex = glob_pattern_to_regex(port_pattern);
-
-            bool found = false;
-            for (const auto& kv : netlist_primary_ios_) {
-                const std::string& io_name = kv.first;
-                if (std::regex_match(io_name, port_regex)) {
-                    found = true;
-
-                    AtomPinId pin = kv.second;
-
-                    pins.insert(pin);
-                }
-            }
-
-            if (!found) {
-                VTR_LOGF_WARN(fname_.c_str(), lineno_,
-                              "get_ports target name or pattern '%s' matched no ports\n",
-                              port_pattern.c_str());
-            }
-        }
         return pins;
     }
 
@@ -1154,6 +1128,21 @@ class SdcParseCallback : public sdcparse::Callback {
     std::set<tatum::DomainId> get_all_clocks() {
         auto domains = tc_.clock_domains();
         return std::set<tatum::DomainId>(domains.begin(), domains.end());
+    }
+
+    // TODO: Document.
+    bool check_objects(const sdcparse::StringGroup& object_string_group,
+                       const std::unordered_set<sdcparse::ObjectType>& expected_object_types) {
+        VTR_ASSERT(object_string_group.type == sdcparse::StringGroupType::OBJECT);
+
+        for (const std::string& object_id : object_string_group.strings) {
+            sdcparse::ObjectType object_type = obj_database.get_object_type(object_id);
+            if (!expected_object_types.contains(object_type)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     float sdc_units_to_seconds(float val) const {
