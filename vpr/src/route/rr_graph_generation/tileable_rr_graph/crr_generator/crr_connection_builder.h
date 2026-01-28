@@ -111,12 +111,14 @@ class CRRConnectionBuilder {
     RRNodeId process_opin_ipin_node(const SegmentInfo& info,
                                     int x,
                                     int y,
-                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
 
     RRNodeId process_channel_node(const SegmentInfo& info,
                                   int x,
                                   int y,
-                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
+                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
                                   int& prev_seg_index,
                                   e_sw_template_dir& prev_side,
                                   std::string& prev_seg_type,
