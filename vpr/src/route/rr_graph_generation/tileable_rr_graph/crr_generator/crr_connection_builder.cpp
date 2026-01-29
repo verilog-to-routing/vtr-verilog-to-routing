@@ -297,15 +297,17 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
                                     std::to_string(info.seg_index),
                                     x, x, y, y);
 
-    auto it = col_nodes.find(hash);
-    if (it == col_nodes.end()) {
-        it = row_nodes.find(hash);
-        if (it == row_nodes.end()) {
-            return RRNodeId::INVALID();
-        }
+    auto col_it = col_nodes.find(hash);
+    if (col_it != col_nodes.end()) {
+        return col_it->second;
     }
 
-    return it->second;
+    auto row_it = row_nodes.find(hash);
+    if (row_it != row_nodes.end()) {
+        return row_it->second;
+    }
+
+    return RRNodeId::INVALID();
 }
 
 RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
@@ -357,17 +359,21 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
                                     seg_sequence,
                                     x_low, x_high, y_low, y_high);
 
-    auto it = col_nodes.find(hash);
-    if (it == col_nodes.end()) {
-        it = row_nodes.find(hash);
-        if (it == row_nodes.end()) {
-            VTR_LOGV(verbosity_ > 1, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
-                     seg_sequence.c_str(), x_low, y_low, x_high, y_high);
-            return RRNodeId::INVALID();
-        }
+    auto col_it = col_nodes.find(hash);
+    if (col_it != col_nodes.end()) {
+        return col_it->second;
     }
 
-    return it->second;
+    auto row_it = row_nodes.find(hash);
+    if (row_it != row_nodes.end()) {
+        return row_it->second;
+    }
+
+    VTR_LOGV(verbosity_ > 1, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
+                    seg_sequence.c_str(), x_low, y_low, x_high, y_high);
+    return RRNodeId::INVALID();
+    
+    
 }
 
 void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info,
