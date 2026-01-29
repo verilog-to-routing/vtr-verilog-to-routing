@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <ranges>
+#include <unordered_map>
 
 void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_src_node_.reserve(num_edges);
@@ -226,8 +227,8 @@ size_t t_rr_graph_storage::count_rr_switches(const std::vector<t_arch_switch_inf
 
     // Collect the fan-in per switch type for each node in the graph
     // Record the unique switch type/fanin combinations
-    std::vector<int> arch_switch_counts;
-    arch_switch_counts.resize(arch_switch_inf.size(), 0);
+    std::vector<int> arch_switch_counts(arch_switch_inf.size(), 0);
+    std::vector<short> seen_switches;
     auto first_edge = edge_dest_node_.begin();
     do {
         RRNodeId node = *first_edge;
@@ -238,20 +239,19 @@ size_t t_rr_graph_storage::count_rr_switches(const std::vector<t_arch_switch_inf
         size_t first_edge_offset = first_edge - edge_dest_node_.begin();
         size_t last_edge_offset = last_edge - edge_dest_node_.begin();
 
-        std::fill(arch_switch_counts.begin(), arch_switch_counts.end(), 0);
+        seen_switches.clear();
         for (short edge_switch : vtr::Range<decltype(edge_switch_)::const_iterator>(
                  edge_switch_.begin() + first_edge_offset,
                  edge_switch_.begin() + last_edge_offset)) {
+            if (arch_switch_counts[edge_switch] == 0) {
+                seen_switches.push_back(edge_switch);
+            }
             arch_switch_counts[edge_switch] += 1;
         }
 
-        for (size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
-            if (arch_switch_counts[iswitch] == 0) {
-                continue;
-            }
-
+        for (short iswitch : seen_switches) {
             int fanin = arch_switch_counts[iswitch];
-            VTR_ASSERT_SAFE(iswitch < arch_switch_inf.size());
+            VTR_ASSERT_SAFE(static_cast<size_t>(iswitch) < arch_switch_inf.size());
 
             if (arch_switch_inf[iswitch].fixed_Tdel()) {
                 // If delay is independent of fanin drop the unique fanin info
@@ -262,6 +262,8 @@ size_t t_rr_graph_storage::count_rr_switches(const std::vector<t_arch_switch_inf
                 arch_switch_fanins[iswitch][fanin] = RRSwitchId(num_rr_switches); // Assign it a unique index
                 num_rr_switches++;
             }
+
+            arch_switch_counts[iswitch] = 0;
         }
 
         first_edge = last_edge;
