@@ -299,7 +299,6 @@ struct t_options {
     argparse::ArgValue<bool> annotated_rr_graph;
     argparse::ArgValue<bool> remove_dangling_nodes;
     argparse::ArgValue<std::string> sb_count_dir;
-    argparse::ArgValue<int> crr_num_threads;
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);

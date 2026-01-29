@@ -3366,11 +3366,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    crr_grp.add_argument<int>(args.crr_num_threads, "--crr_num_threads")
-        .help("Number of threads to use for CRR generation (default: 1). If set to 0, uses the number of hardware threads available.")
-        .default_value("1")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     crr_grp.add_argument(args.sb_count_dir, "--sb_count_dir")
         .help("Directory to store csv files showing how many times each switch specified in the switch block templates is used")
         .default_value("")
