@@ -59,7 +59,7 @@ template<typename... Conditions>
 bool exactly_k_conditions(int k, Conditions... conditions);
 
 template<typename Container>
-void uniquify(Container container);
+void uniquify(Container& container);
 
 constexpr size_t bufsize = 32768; /* Maximum line length for various parsing proc. */
 
