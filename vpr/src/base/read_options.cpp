@@ -3365,7 +3365,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Whether the generated CRR should remove CHANX and CHANY nodes that have no fan-in")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
-    
+
     crr_grp.add_argument<int>(args.crr_num_threads, "--crr_num_threads")
         .help("Number of threads to use for CRR generation (default: 1). If set to 0, uses the number of hardware threads available.")
         .default_value("1")
