@@ -370,10 +370,8 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
     }
 
     VTR_LOGV(verbosity_ > 1, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
-                    seg_sequence.c_str(), x_low, y_low, x_high, y_high);
+             seg_sequence.c_str(), x_low, y_low, x_high, y_high);
     return RRNodeId::INVALID();
-    
-    
 }
 
 void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info,
