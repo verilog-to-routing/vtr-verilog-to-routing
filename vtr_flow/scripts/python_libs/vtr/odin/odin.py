@@ -54,7 +54,7 @@ def init_config_file(
     # specify the input files type
     file_extension = os.path.splitext(circuit_list[0])[-1]
     if file_extension not in FILE_TYPES:
-        raise vtr.VtrError("Inavlid input file type '{}'".format(file_extension))
+        raise vtr.VtrError("Invalid input file type '{}'".format(file_extension))
     input_file_type = FILE_TYPES[file_extension]
 
     # Check if the user specifically requested for the UHDM parser

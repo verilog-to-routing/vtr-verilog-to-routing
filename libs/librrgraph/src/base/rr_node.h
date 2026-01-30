@@ -1,7 +1,8 @@
 #pragma once
 
 #include <limits>
-#include "physical_types.h"
+#include "switchblock_types.h"
+#include "librrgraph_types.h"
 #include "rr_node_fwd.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
@@ -10,7 +11,7 @@
 //
 // In general, new code should not use this object, but instead directly
 // use the t_rr_graph_storage object.  However this object remains for
-// backwards compability, as described below.
+// backwards compatibility, as described below.
 //
 // RR node and edges was original stored within the t_rr_node object, the
 // full RR graph was stored in a std::vector<t_rr_node>, which was effectively
@@ -19,7 +20,7 @@
 // The RR graph has since been refactored into the t_rr_graph_storage object.
 // To prevent requiring all callsites where the std::vector<t_rr_node> to be
 // changed at once, t_rr_graph_storage implements an interface that appears
-// similiar to std::vector<t_rr_node>, even though the underlying storage is
+// similar to std::vector<t_rr_node>, even though the underlying storage is
 // no longer a array of t_rr_node's.
 //
 // The t_rr_node class forwards all data accesses to t_rr_graph_storage, and
@@ -48,7 +49,7 @@
 // void t_rr_graph_storage::set_node_test(RRNodeId, t_type);
 //
 // The particular storage method within t_rr_graph_storage depends on the data.
-// See t_rr_graph_storage for the storage philosphy within philosophy.
+// See t_rr_graph_storage for the storage philosophy within philosophy.
 //
 // Second, add the proxy methods to t_rr_node.  Method prototypes should be
 // added in rr_node.h and method implementations should be added in
@@ -134,8 +135,8 @@ class t_rr_node {
 struct t_rr_indexed_data {
     float base_cost = std::numeric_limits<float>::quiet_NaN();
     float saved_base_cost = std::numeric_limits<float>::quiet_NaN();
-    int ortho_cost_index = OPEN;
-    int seg_index = OPEN;
+    int ortho_cost_index = LIBRRGRAPH_UNDEFINED_VAL;
+    int seg_index = LIBRRGRAPH_UNDEFINED_VAL;
     float inv_length = std::numeric_limits<float>::quiet_NaN();
     float T_linear = std::numeric_limits<float>::quiet_NaN();
     float T_quadratic = std::numeric_limits<float>::quiet_NaN();

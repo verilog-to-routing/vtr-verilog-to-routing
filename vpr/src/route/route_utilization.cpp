@@ -14,7 +14,7 @@ RoutingChanUtilEstimator::RoutingChanUtilEstimator(const BlkLocRegistry& blk_loc
     net_cost_handler_ = std::make_unique<NetCostHandler>(placer_opts_, *placer_state_, /*cube_bb=*/true);
 }
 
-ChannelData<vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing_chan_util() {
+ChannelMetric<vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing_chan_util() {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const auto& block_locs = placer_state_->block_locs();
 
@@ -31,7 +31,7 @@ ChannelData<vtr::NdMatrix<double, 3>> RoutingChanUtilEstimator::estimate_routing
     } else {
         const auto& device_ctx = g_vpr_ctx.device();
 
-        ChannelData<vtr::NdMatrix<double, 3>> chan_util;
+        ChannelMetric<vtr::NdMatrix<double, 3>> chan_util;
 
         chan_util.x = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
                                                  device_ctx.grid.width(),
@@ -76,7 +76,7 @@ vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool
 #ifndef NO_GRAPHICS
         if (!is_print) {
             t_draw_state* draw_state = get_draw_state_vars();
-            int layer_num = rr_graph.node_layer(rr_node);
+            int layer_num = rr_graph.node_layer_low(rr_node);
             if (!draw_state->draw_layer_display[layer_num].visible)
                 continue; // don't count usage if layer is not visible
         }

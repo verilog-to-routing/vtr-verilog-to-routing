@@ -45,7 +45,7 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
     // make sure the test result is not corrupted
     REQUIRE(list_of_routers.empty());
 
-    SECTION("All routers are seperated by one or more grid spaces") {
+    SECTION("All routers are separated by one or more grid spaces") {
         // in this test, the routers will be on the 4 corners of the FPGA
 
         // bottom left corner
@@ -129,7 +129,8 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         }
 
         // create a new device grid
-        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
+        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
+        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
 
         // call the test function
         list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
@@ -246,7 +247,8 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         }
 
         // create a new device grid
-        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
+        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
+        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
 
         // call the test function
         list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
@@ -363,7 +365,8 @@ TEST_CASE("test_identify_and_store_noc_router_tile_positions", "[vpr_setup_noc]"
         }
 
         // create a new device grid
-        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid);
+        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
+        DeviceGrid test_device = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
 
         // call the test function
         list_of_routers = identify_and_store_noc_router_tile_positions(test_device, router_tile_name);
@@ -404,7 +407,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
     /*
      * Setup:
      * - The router will take over a 2x3 grid area
-     * - The NoC will be a 3x3 Mesh topology and located at 
+     * - The NoC will be a 3x3 Mesh topology and located at
      * the following positions:
      * - router 1: (0,0)
      * - router 2: (4,0)
@@ -439,7 +442,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
 
     const vtr::vector<NocRouterId, NocRouter>* noc_routers = nullptr;
 
-    SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is less than whats on the FPGA.") {
+    SECTION("Test create routers when logical routers match to exactly one physical router. The number of routers is less than what's on the FPGA.") {
         // start by creating all the logical routers
         // this is similar to the user provided a config file
         temp_router = new t_router;
@@ -469,7 +472,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
 
         // now we got through the noc model and confirm that the correct
         for (int router_id = 1; router_id < 7; router_id++) {
-            // covert the router id
+            // convert the router id
             noc_router_id = noc_model.convert_router_id(router_id);
 
             // get the router that we are testing from the NoC
@@ -512,7 +515,7 @@ TEST_CASE("test_create_noc_routers", "[vpr_setup_noc]") {
 
         // now we got through the noc model and confirm that the correct
         for (int router_id = 1; router_id < 10; router_id++) {
-            // covert the router id
+            // convert the router id
             noc_router_id = noc_model.convert_router_id(router_id);
 
             // get the router that we are testing now from the NoC
@@ -590,7 +593,7 @@ TEST_CASE("test_create_noc_links", "[vpr_setup_noc]") {
     /*
      * Setup:
      * - The router will take over a 2x3 grid area
-     * - The NoC will be a 3x3 Mesh topology and located at 
+     * - The NoC will be a 3x3 Mesh topology and located at
      * the following positions:
      * - router 1: (0,0)
      * - router 2: (4,0)
@@ -738,7 +741,7 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
     /*
      * Setup:
      * - The router will take over a 2x3 grid area
-     * - The NoC will be a 3x3 Mesh topology and located at 
+     * - The NoC will be a 3x3 Mesh topology and located at
      * the following positions:
      * - router 1: (0,0)
      * - router 2: (4,0)
@@ -929,7 +932,8 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
             }
         }
 
-        device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
+        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
+        device_ctx.grid = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "The Provided NoC topology information in the architecture file has more number of routers than what is available in the FPGA device.");
     }
@@ -980,7 +984,8 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
 
         noc_info.router_list.clear();
 
-        device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
+        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
+        device_ctx.grid = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
 
         REQUIRE_THROWS_WITH(setup_noc(arch), "No physical NoC routers were found on the FPGA device. Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
     }
@@ -1215,7 +1220,8 @@ TEST_CASE("test_setup_noc", "[vpr_setup_noc]") {
             noc_info.link_bandwidth_overrides.insert({{noc_router_user_id, neighbor_router_user_id}, LINK_BANDWIDTH_OVERRIDE});
         }
 
-        device_ctx.grid = DeviceGrid(device_grid_name, test_grid);
+        std::vector<std::vector<int>> dummy_cuts0, dummy_cuts1;
+        device_ctx.grid = DeviceGrid(device_grid_name, test_grid, std::move(dummy_cuts0), std::move(dummy_cuts1));
 
         REQUIRE_NOTHROW(setup_noc(arch));
 

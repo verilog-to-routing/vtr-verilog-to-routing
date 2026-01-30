@@ -65,23 +65,19 @@ They will cause VPR to perform only :ref:`packing and placement <general_options
     # Using the Yosys conventional Verilog parser
     ./run_vtr_flow <path/to/Verilog/File> <path/to/arch/file>
 
-    # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
-    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -parser system-verilog
-
 Running the VTR flow with the default configuration using the Yosys standalone front-end.
 The parser for these runs is considered the Yosys conventional Verilog/SystemVerilog parser (i.e., ``read_verilog -sv``), as the parser is not explicitly specified.
 
 .. code-block:: bash
 
-    # Using the Synlig System_Verilog tool if installed, otherwise the Yosys conventional Verilog parser
-    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -parser system-verilog
+    # Using the Yosys-Slang plugin for Yosys, otherwise the Yosys conventional Verilog parser
+    ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -parser slang
 
-    # Using the Surelog plugin if installed, otherwise failure on the unsupported file type
-    ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -parser surelog
+Will run the VTR flow (default configuration) with Yosys-Slang plugin for Yosys frontend using Parmys plugin as partial mapper.
+The Yosys-Slang SystemVerilog parser supports the (i.e., ``read_slang``) command. Yosys-Slang builds on top of the slang library to provide comprehensive SystemVerilog support.
+Enable the Yosys-Slang plugin with the ``-DSLANG_SYSTEMVERILOG=ON`` compile flag while building the VTR project with yosys as a frontend.
 
-Running the default VTR flow using the Parmys standalone front-end.
-The Synlig HDL parser supports the (i.e., ``read_systemverilog``) and (i.e., ``read_uhdm``) commands. It utilizes Surelog for SystemVerilog 2017 processing and Yosys for synthesis.
-Enable Synlig tool with the ``-DSYNLIG_SYSTEMVERILOG=ON`` compile flag for the Parmys front-end.
+.. note:: Yosys-Slang is currently **experimental**.
 
 .. code-block:: bash
 
@@ -202,16 +198,16 @@ Detailed Command-line Options
 
 .. option:: -min_hard_mult_size <int>
 
-    Tells Parmys/ODIN II the minimum multiplier size that should be implemented
-    using hard multiplier (if available). Smaller multipliers will be
-    implemented using soft logic.
+    Tells Parmys/ODIN II the minimum multiplier size (in bits) that should be 
+    implemented using a hard multiplier (if available). Smaller multipliers will 
+    be implemented using soft logic.
 
     **Default:** 3
 
 .. option:: -min_hard_adder_size <int>
 
-    Tells Parmys/ODIN II the minimum adder size that should be implemented
-    using hard adders (if available). Smaller adders will be
+    Tells Parmys/ODIN II the minimum adder size (in bits) that should be 
+    implemented using hard adders (if available). Smaller adders will be
     implemented using soft logic.
 
     **Default:** 1
@@ -236,18 +232,6 @@ Detailed Command-line Options
     
     Tells ODIN II to run simulation.
 
-.. option:: -min_hard_mult_size <min_hard_mult_size>
-    
-    Tells Parmys/ODIN II the minimum multiplier size (in bits) to be implemented using hard multiplier.
-    
-    **Default:** 3
-
-.. option:: -min_hard_adder_size <MIN_HARD_ADDER_SIZE>
-    
-    Tells Parmys/ODIN II the minimum adder size (in bits) that should be implemented using hard adder.
-    
-    **Default:** 1
-
 .. option:: -top_module <TOP_MODULE>
     
     Specifies the name of the module in the design that should be considered as top
@@ -260,19 +244,24 @@ Detailed Command-line Options
 
 .. option:: -parser <PARSER>
 
-    Specify a parser for the Yosys synthesizer [default (Verilog-2005), surelog (UHDM), system-verilog].
+    Specify a parser for the Yosys synthesizer [default (Verilog-2005), slang (SystemVerilog)].
     The script uses the default conventional Verilog parser if this argument is not used.
     
     **Default:** default
 
 .. note::
 
-    Universal Hardware Data Model (UHDM) is a complete modeling of the IEEE SystemVerilog Object Model with VPI Interface, Elaborator, Serialization, Visitor and Listener.
-    UHDM is used as a compiled interchange format in between SystemVerilog tools. Typical inputs to the UHDM flow are files with ``.v`` or ``.sv`` extensions.
-    The ``system-verilog`` parser, which represents the ``read_systemverilog`` command, reads SystemVerilog files directly in Yosys.
-    It executes Surelog with provided filenames and converts them (in memory) into UHDM file. Then, this UHDM file is converted into Yosys AST. `[Yosys-SystemVerilog] <https://github.com/antmicro/yosys-systemverilog#usage>`_
-    On the other hand, the ``surelog`` parser, which uses the ``read_uhdm`` Yosys command, walks the design tree and converts its nodes into Yosys AST nodes using Surelog. `[UHDM-Yosys <https://github.com/chipsalliance/UHDM-integration-tests#uhdm-yosys>`_, `Surelog] <https://github.com/chipsalliance/Surelog#surelog>`_
+    Yosys-Slang is a Yosys plugin that is built on top of the slang library to provide comprehensive SystemVerilog support.
+    It supports the ``read_slang`` command, used with the ``-C`` command-line option to read include-files from a text file containing include-file names.
+    It is used to read SystemVerilog files directly in Yosys.
+    For more information on Yosys-Slang, see `[Yosys-Slang] <https://github.com/povik/yosys-slang.git>`_
 
 .. note::
 
-    Parmys is a Yosys plugin which provides intelligent partial mapping features (inference, binding, and hard/soft logic trade-offs) from Odin-II for Yosys. For more information on available paramters see the `Parmys <https://github.com/CAS-Atlantic/parmys-plugin.git>`_ plugin page.
+    Parmys is a Yosys plugin which provides intelligent partial mapping features (inference, binding, and hard/soft logic trade-offs) from Odin-II for Yosys. For more information on available parameters see the `Parmys <https://github.com/CAS-Atlantic/parmys-plugin.git>`_ plugin page.
+
+.. Universal Hardware Data Model (UHDM) is a complete modeling of the IEEE SystemVerilog Object Model with VPI Interface, Elaborator, Serialization, Visitor and Listener.
+..     UHDM is used as a compiled interchange format in between SystemVerilog tools. Typical inputs to the UHDM flow are files with ``.v`` or ``.sv`` extensions.
+..     The ``system-verilog`` parser, which represents the ``read_systemverilog`` command, reads SystemVerilog files directly in Yosys.
+..     It executes Surelog with provided filenames and converts them (in memory) into UHDM file. Then, this UHDM file is converted into Yosys AST. `[Yosys-SystemVerilog] <https://github.com/antmicro/yosys-systemverilog#usage>`_
+..     On the other hand, the ``surelog`` parser, which uses the ``read_uhdm`` Yosys command, walks the design tree and converts its nodes into Yosys AST nodes using Surelog. `[UHDM-Yosys <https://github.com/chipsalliance/UHDM-integration-tests#uhdm-yosys>`_, `Surelog] <https://github.com/chipsalliance/Surelog#surelog>`_

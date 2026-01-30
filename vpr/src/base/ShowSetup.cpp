@@ -3,6 +3,7 @@
 
 #include "ap_flow_enums.h"
 #include "globals.h"
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -38,7 +39,7 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     VTR_LOG("\n");
 
     VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
-    VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.doPlacement]);
+    VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.do_placement]);
     VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
     VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
     VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
@@ -51,7 +52,7 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
         ShowPackerOpts(vpr_setup.PackerOpts);
     }
-    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::SKIP) {
+    if (vpr_setup.PlacerOpts.do_placement != e_stage_action::SKIP) {
         ShowPlacerOpts(vpr_setup.PlacerOpts);
     }
     if (vpr_setup.APOpts.doAP != e_stage_action::SKIP) {
@@ -141,10 +142,10 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
 
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
                     auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
-                    if (pin_type == DRIVER) {
+                    if (pin_type == e_pin_type::DRIVER) {
                         L_num_p_inputs++;
                     } else {
-                        VTR_ASSERT(pin_type == RECEIVER);
+                        VTR_ASSERT(pin_type == e_pin_type::RECEIVER);
                         L_num_p_outputs++;
                     }
                 }
@@ -435,6 +436,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case e_router_lookahead::EXTENDED_MAP:
                 VTR_LOG("EXTENDED_MAP\n");
                 break;
+            case e_router_lookahead::SIMPLE:
+                VTR_LOG("SIMPLE\n");
+                break;
             case e_router_lookahead::NO_OP:
                 VTR_LOG("NO_OP\n");
                 break;
@@ -495,20 +499,16 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
     VTR_LOG("PlacerOpts.place_freq: ");
     switch (PlacerOpts.place_freq) {
-        case PLACE_ONCE:
-            VTR_LOG("PLACE_ONCE\n");
+        case e_place_freq::ONCE:
+            VTR_LOG("ONCE\n");
             break;
-        case PLACE_ALWAYS:
-            VTR_LOG("PLACE_ALWAYS\n");
-            break;
-        case PLACE_NEVER:
-            VTR_LOG("PLACE_NEVER\n");
+        case e_place_freq::ALWAYS:
+            VTR_LOG("ALWAYS\n");
             break;
         default:
             VTR_LOG_ERROR("Unknown Place Freq\n");
     }
-    if ((PLACE_ONCE == PlacerOpts.place_freq)
-        || (PLACE_ALWAYS == PlacerOpts.place_freq)) {
+    if (PlacerOpts.place_freq == e_place_freq::ONCE || PlacerOpts.place_freq == e_place_freq::ALWAYS) {
         VTR_LOG("PlacerOpts.place_algorithm: ");
         switch (PlacerOpts.place_algorithm.get()) {
             case e_place_algorithm::BOUNDING_BOX_PLACE:
@@ -608,6 +608,9 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
     VTR_LOG("AnalyticalPlacerOpts.analytical_solver_type: ");
     switch (APOpts.analytical_solver_type) {
+        case e_ap_analytical_solver::Identity:
+            VTR_LOG("identity\n");
+            break;
         case e_ap_analytical_solver::QP_Hybrid:
             VTR_LOG("qp-hybrid\n");
             break;
@@ -620,6 +623,9 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
 
     VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
     switch (APOpts.partial_legalizer_type) {
+        case e_ap_partial_legalizer::Identity:
+            VTR_LOG("none\n");
+            break;
         case e_ap_partial_legalizer::BiPartitioning:
             VTR_LOG("bipartitioning\n");
             break;
@@ -638,8 +644,8 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
         case e_ap_full_legalizer::APPack:
             VTR_LOG("appack\n");
             break;
-        case e_ap_full_legalizer::Basic_Min_Disturbance:
-            VTR_LOG("basic-min-disturbance\n");
+        case e_ap_full_legalizer::FlatRecon:
+            VTR_LOG("flat-recon\n");
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown full_legalizer_type\n");

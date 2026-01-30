@@ -65,7 +65,7 @@ std::string string_fmt(const char* fmt, ...) {
     // Initialize variable argument list
     va_start(va_args, fmt);
 
-    //Format string
+    // Format string
     std::string str = vstring_fmt(fmt, va_args);
 
     // Reset variable argument list
@@ -138,11 +138,11 @@ char* strdup(const char* str) {
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
 template<class T>
-T atoT(const std::string& value, std::string_view type_name) {
+T atoT(std::string_view value, std::string_view type_name) {
     //The c version of atof doesn't catch errors.
     //
     //This version uses stringstream to detect conversion errors
-    std::istringstream ss(value);
+    std::istringstream ss(value.data());
 
     T val;
     ss >> val;
@@ -157,19 +157,19 @@ T atoT(const std::string& value, std::string_view type_name) {
     return val;
 }
 
-int atoi(const std::string& value) {
+int atoi(std::string_view value) {
     return atoT<int>(value, "int");
 }
 
-double atod(const std::string& value) {
+double atod(std::string_view value) {
     return atoT<double>(value, "double");
 }
 
-float atof(const std::string& value) {
+float atof(std::string_view value) {
     return atoT<float>(value, "float");
 }
 
-unsigned atou(const std::string& value) {
+unsigned atou(std::string_view value) {
     return atoT<unsigned>(value, "unsigned int");
 }
 

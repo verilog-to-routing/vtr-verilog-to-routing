@@ -1,6 +1,8 @@
 include(ExternalProject)
 include(ProcessorCount)
 
+find_package(Git REQUIRED)
+
 #Manually synchronized external libraries
 add_subdirectory(libpugixml)
 
@@ -10,7 +12,16 @@ add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
-#add_subdirectory(synlig)
+
+add_subdirectory(yaml-cpp)
+# Treat yaml-cpp headers as system headers to suppress warnings
+if(TARGET yaml-cpp)
+    get_target_property(YAML_INCLUDE_DIRS yaml-cpp INTERFACE_INCLUDE_DIRECTORIES)
+    set_target_properties(yaml-cpp PROPERTIES
+        INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${YAML_INCLUDE_DIRS}"
+    )
+endif()
+
 #add_subdirectory(parmys)
 
 #Proc numbers
@@ -60,11 +71,11 @@ if (${WITH_PARMYS})
 
 	#Initialize yosys submodules
 	execute_process(
-	 COMMAND git submodule update --init
+	 COMMAND ${GIT_EXECUTABLE} submodule update --init
 	 WORKING_DIRECTORY ${YOSYS_SRC_DIR}
 	)
 	execute_process(
-	  COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive git\ submodule\ update\ --init
+	  COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive ${GIT_EXECUTABLE}\ submodule\ update\ --init
 	  WORKING_DIRECTORY ${YOSYS_SRC_DIR}
 	)
 
@@ -73,104 +84,56 @@ if (${WITH_PARMYS})
 		COMMAND ${MAKE_PROGRAM} -C ${YOSYS_SRC_DIR}
 		    ENABLE_ABC=0
 		    PREFIX=${CMAKE_BINARY_DIR}
-
+            > /dev/null 2>&1
 		 COMMAND ${MAKE_PROGRAM} 
 		    -C ${YOSYS_SRC_DIR}
 		    install
 		    ENABLE_ABC=0
 		    PREFIX=${CMAKE_BINARY_DIR}
-
+            > /dev/null 2>&1
 		WORKING_DIRECTORY ${YOSYS_SRC_DIR})
 
 	add_custom_target(yosys ALL DEPENDS ${YOSYS_BUILD_DIR})
 
-    if (${SYNLIG_SYSTEMVERILOG})
-
-        set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
-        set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build)
-        set(YOSYS_F4PGA_PLUGINS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-f4pga-plugins)
-
-        ExternalProject_Add(surelog
-                # root directory for Surelog project
-                PREFIX "surelog"
-
-                GIT_REPOSITORY https://github.com/chipsalliance/Surelog.git
-                GIT_TAG v1.71
-                GIT_PROGRESS TRUE
-                GIT_SHALLOW TRUE
-
-                # setting source, build and install directories
-                SOURCE_DIR "${SURELOG_SOURCE_DIR}"
-                BUILD_IN_SOURCE FALSE
-                INSTALL_DIR "${SURELOG_BINARY_DIR}"
-
-                # define Surelog cache values
-                CMAKE_CACHE_ARGS
-                "-DCMAKE_BUILD_TYPE:STRING=Release"
-                "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}"
-                "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON"
-                "-DCMAKE_WARN_DEPRECATED:BOOL=OFF"
-
-                # redirect logs to a logfile
-                LOG_BUILD ON
-                LOG_UPDATE ON
-                LOG_INSTALL ON
-                LOG_CONFIGURE OFF
-                LOG_OUTPUT_ON_FAILURE ON
-
-                # dependency
-                DEPENDS  yosys
-                )
-
-     # Synlig integration (manages Surelog and UHDM internally)                
-
-        # Synlig integration (manages Surelog and UHDM internally)
-        set(SYNLIG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/synlig)
-
-        # Clone Synlig repository and ensure submodules are synced before building
-        ExternalProject_Add(synlig
-            PREFIX "synlig"
-
-            # Clone the Synlig repository
-            GIT_REPOSITORY https://github.com/chipsalliance/synlig.git
-            GIT_TAG main
-            GIT_PROGRESS TRUE
-            GIT_SHALLOW TRUE
-
-            # Set source and build directories
-            SOURCE_DIR "${SYNLIG_SOURCE_DIR}"
-            BUILD_IN_SOURCE FALSE
-            INSTALL_DIR " "
-            
-            # Sync submodules after cloning
-            
-            
-            UPDATE_COMMAND git submodule update --init --recursive third_party/surelog
-            WORKING_DIRECTORY ${SYNLIG_SOURCE_DIR}
-            
-            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j${PROCESSOR_COUNT}
-            INSTALL_COMMAND ""
+    if (${SLANG_SYSTEMVERILOG})
+        set(SLANG_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-slang)
+        set(SLANG_BUILD_DIR ${CMAKE_BINARY_DIR}/yosys-slang)
+        #Initialize yosys-slang submodules
+        execute_process(
+	        COMMAND ${GIT_EXECUTABLE} submodule update --init
+	        WORKING_DIRECTORY ${SLANG_SRC_DIR}
+	    )
+	    execute_process(
+	        COMMAND ${GIT_EXECUTABLE} submodule foreach --recursive ${GIT_EXECUTABLE}\ submodule\ update\ --init
+	        WORKING_DIRECTORY ${SLANG_SRC_DIR}
+	    )
+        set(SLANG_FE "${SLANG_SRC_DIR}/src/slang_frontend.cc")
+        ExternalProject_Add(
+            yosys-slang
+            SOURCE_DIR ${SLANG_SRC_DIR}
+            BINARY_DIR ${SLANG_BUILD_DIR}
+                
             CONFIGURE_COMMAND ""
             
-            # Pass necessary paths and set environment variables
-            CMAKE_CACHE_ARGS
-                "-DCMAKE_BUILD_TYPE:STRING=Release"
-                "-DSURELOG_PATH=${CMAKE_BINARY_DIR}/surelog"
-                "-DYOSYS_PATH=${CMAKE_BINARY_DIR}/yosys"
-                "-DUHDM_INSTALL_DIR=${CMAKE_BINARY_DIR}"
-                "-DBUILD_DIR=${CMAKE_BINARY_DIR}/synlig-build"
-                "-DEXPORT_PATH=${CMAKE_BINARY_DIR}/synlig_install/usr/local/bin:$ENV{PATH}"
-            
-            LOG_BUILD ON
+            # Sets location of yosys-config required by slang and suppresses warnings
+            BUILD_COMMAND 
+                ${CMAKE_COMMAND} -E env
+                    YOSYS_PREFIX=${CMAKE_BINARY_DIR}/bin/
+                ${MAKE_PROGRAM} -C ${SLANG_SRC_DIR}
+                    CMAKE_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS=-w"
+                install
+
+            INSTALL_COMMAND ""
+
+            DEPENDS yosys
+
+            LOG_BUILD OFF
             LOG_UPDATE ON
             LOG_INSTALL ON
             LOG_CONFIGURE OFF
             LOG_OUTPUT_ON_FAILURE ON
-
-            # Ensure dependencies like Yosys are built first
-            DEPENDS yosys  # Ensure submodule sync runs before synlig build
+            
         )
-
     endif ()
 endif ()
 

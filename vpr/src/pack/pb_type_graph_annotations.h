@@ -2,7 +2,7 @@
 /**
  * Jason Luu
  * April 15, 2011
- * pb_type_graph_annotations loads statistical information onto the different nodes/edges of a pb_type_graph.  These statistical informations include delays, capacitance, etc.
+ * pb_type_graph_annotations loads statistical information onto the different nodes/edges of a pb_type_graph.  These statistical information include delays, capacitance, etc.
  */
 
 class t_pb_graph_node;

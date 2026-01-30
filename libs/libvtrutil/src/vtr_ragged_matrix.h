@@ -31,7 +31,7 @@ namespace vtr {
  * where all elements are laid out contiguiously (one row
  * after another).
  * 
- * Expects Index0 and Index1 to be convertable to size_t.
+ * Expects Index0 and Index1 to be convertible to size_t.
  */
 template<typename T, typename Index0 = size_t, typename Index1 = size_t>
 class FlatRaggedMatrix {

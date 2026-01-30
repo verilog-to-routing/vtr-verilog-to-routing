@@ -56,7 +56,7 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
 option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
-option(SYNLIG_SYSTEMVERILOG "Enable building and installing Synlig SystemVerilog and UHDM plugins" OFF)
+option(SLANG_SYSTEMVERILOG "Enable building and installing Yosys-Slang plugin for parsing SystemVerilog" ON)
 
 set(VTR_VERSION_MAJOR 9)
 set(VTR_VERSION_MINOR 0)
@@ -369,6 +369,14 @@ add_custom_target(get_zeroasic_rr_graphs
     COMMENT "Downloading (~2MB) and extracting Zero ASIC RR graphs (~0.1GB) into VTR source tree.")
 
 #
+# Flat Placement Files
+#
+add_custom_target(get_flat_placements
+    COMMAND ./vtr_flow/scripts/get_flat_placement_files.py --vtr_flow_dir ./vtr_flow
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Downloading (~5MB) and extracting Flat Placement Files (~0.1GB) into VTR source tree.")
+
+#
 # Unit Testing
 #
 enable_testing()
@@ -437,11 +445,12 @@ if(${WITH_ODIN})
     endif()
 endif()
 
-# handle cmake params to compile Yosys SystemVerilog/UHDM plugins
-if(${SYNLIG_SYSTEMVERILOG})
-    # avoid compiling plugins in case the Parmys frontend is not active
+# handle cmake params to compile yosys-slang plugin for Yosys
+if(${SLANG_SYSTEMVERILOG})
+    # avoid compiling yosys-slang plugin in case the Parmys frontend is not active
     if(NOT ${WITH_PARMYS})
-        message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Parmys frontend. Please set WITH_PARMYS.")
+        message(WARNING "Parmys is not enabled, disabling Yosys-Slang as well.")
+        set(SLANG_SYSTEMVERILOG OFF)
     endif()
 endif()
 

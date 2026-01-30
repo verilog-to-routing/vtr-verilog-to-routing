@@ -121,7 +121,6 @@ def insert_decimal(value_map, key, input_str):
 
 
 def parse_line(benchmarks, line):
-
     line.strip()
     line = " ".join(line.split())
 

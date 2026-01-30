@@ -8,7 +8,11 @@ if [ $clean -ne 0 ]; then
 else
     echo "Code Formatting Check"
     echo "====================="
-    make format"$1" > /dev/null 2>&1
+    make format"$1" > /dev/null
+    if [ $? -ne 0 ]; then
+        echo "make format failed!"
+        exit 1
+    fi
 
     valid_format=$(git diff | wc -l)
 

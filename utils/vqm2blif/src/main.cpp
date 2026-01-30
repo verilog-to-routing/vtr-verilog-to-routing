@@ -3,7 +3,7 @@
 * The purpose of this program is to generate a valid .blif netlist by 
 * parsing and interpreting a .vqm file. 
 *
-*				VQM to BLIF Convertor V.1.2
+*				VQM to BLIF Converter V.1.2
 *
 * Author:	S. Whitty
 *		June 6, 2011
@@ -129,7 +129,7 @@ t_boolean elaborate_ram_clocks; //user-set flag which controls whether rams have
 
 t_boolean single_clock_primitives; //user-set flag which controls whether multiclock blocks have
                                    // their extra clocks dropped.  This is a work around for
-                                   // VPR's limitaiton of one clock per primitive.
+                                   // VPR's limitation of one clock per primitive.
 
 t_boolean split_carry_chain_logic; //user-set flag which controls whether to decompose carry chain
                                    //logic cells into their constituent logic (LUT) and arithmetic 
@@ -274,7 +274,7 @@ int main(int argc, char* argv[])
 	// a list which stores all the user supplied custom hard block type names
 	std::vector<std::string> hard_block_type_name_list;
 
-	// indicates the type of device the circuit is targetting
+	// indicates the type of device the circuit is targeting
 	// we set the default value to the stratix 4 device
 	string device = "stratixiv";
 
@@ -282,7 +282,7 @@ int main(int argc, char* argv[])
 //	Begin Conversion
 //*************************************************************************************************
 
-	cout << "********************\nVQM to BLIF Convertor\nS. Whitty 2011\n********************\n" ;
+	cout << "********************\nVQM to BLIF Converter\nS. Whitty 2011\n********************\n" ;
 	cout << "This parser reads a .vqm file and converts it to .blif format.\n\n" ;
 	
 	//verify command-line is correct, populate input variables and global mode flags.
@@ -650,7 +650,7 @@ void cmd_line_parse (int argc, char** argv, string* sourcefile, string* archfile
 						{
 							// When we come here, we need to finish processing further command line arguments for hard block type names. Since we have a different command-line option.
 
-							// case one below is when the user didnt provide any hard block type names and just provided the next command-line option
+							// case one below is when the user didn't provide any hard block type names and just provided the next command-line option
 							if (!insert_custom_hard_blocks)
 							{
 								// since no hard block type names were supplied, we throw an error
@@ -816,7 +816,7 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch,
 				exit(1);
 				break;
 			default:
-				//PIN_WIREs don't need to be declared independantly for proper
+				//PIN_WIREs don't need to be declared independently for proper
 				//BLIF format, they'll appear again in the array_of_assignments.
 				;	
 		}
@@ -1200,7 +1200,7 @@ void find_and_map (portmap* map, t_model_ports* to_be_mapped, t_node* node,
 			//map the port to its connectivity data
 			map->insert(portpair(temp_name, node->array_of_ports[i]));
 
-			//indicate that the port has been successfuly mapped to
+			//indicate that the port has been successfully mapped to
 			vqm_ports_found->at(i) = T_TRUE;
 			break;
 		}
@@ -1275,14 +1275,14 @@ void push_lut (t_node* vqm_node, lutvec* blif_luts){
 				portName = get_wire_name(vqm_node->array_of_ports[i]->associated_net, vqm_node->array_of_ports[i]->wire_index);
 				if (which_port < 6){
 					if (verbose_mode) {
-						cout << "\t\t  Assigning inport " << i << " to " << portName << endl;
+						cout << "\t\t  Assigning in-port " << i << " to " << portName << endl;
 					}
-					temp_lut.set_inport ( which_port, portName.c_str() );
+					temp_lut.set_in_port ( which_port, portName.c_str() );
 				} else {
 					if (verbose_mode) {
-						cout << "\t\t  Assigning outport to " << portName << endl;
+						cout << "\t\t  Assigning out-port to " << portName << endl;
 					}
-					temp_lut.set_outport( get_wire_name(vqm_node->array_of_ports[i]->associated_net, vqm_node->array_of_ports[i]->wire_index).c_str() );
+					temp_lut.set_out_port( get_wire_name(vqm_node->array_of_ports[i]->associated_net, vqm_node->array_of_ports[i]->wire_index).c_str() );
 				}
 			}
 		}
@@ -1407,7 +1407,7 @@ void dump_portlist (ofstream& outfile, pinvec ports, t_boolean /*debug*/){
  *
  *  NOTE: In VQM/Verilog syntax, buses are declared as
  *			{input, output, clock, wire} [ left : right ] <name>
- *  where left and right are indeces that describe the
+ *  where left and right are indices that describe the
  *  bus width.
  *
  *	ARGUMENTS
@@ -1508,7 +1508,7 @@ void dump_assignments(ofstream& outfile, t_blif_model* model, t_boolean eblif_fo
 							(temp_assign->target->left > temp_assign->target->right)? -1:1,
 							temp_assign->value,
 							debug, temp_assign->inversion);
-				//dump_bus_assign() calls dump_wire_assign() repeatedly based on the indeces
+				//dump_bus_assign() calls dump_wire_assign() repeatedly based on the indices
 				//of the target and whether the right or left index is larger. 
 			} else {
 #else
@@ -1580,7 +1580,7 @@ void dump_bus_assign(ofstream& outfile, string target_name, int target_left, int
  *  A bus assignment only occurs when the following is in the VQM:
  *   "	wire [X:Y] a;
  *  		wire [X:Y] b;
- *		assign a = b; " <-- NOTE: no indeces in the assign statement.
+ *		assign a = b; " <-- NOTE: no indices in the assign statement.
  *
  *	ARGUMENTS
  *  outfile:
@@ -1588,17 +1588,17 @@ void dump_bus_assign(ofstream& outfile, string target_name, int target_left, int
  *  target_name:
  *	Name of the wire being driven by the assign (on the left of the assign). 
  *  target_left, target_right:
- *	Left and right indeces of the target bus, as declared (Left = X, Right = Y)
+ *	Left and right indices of the target bus, as declared (Left = X, Right = Y)
  *  target_dir:
- *	Directionality of the indeces. +1 if Y > X, -1 if Y < X.
+ *	Directionality of the indices. +1 if Y > X, -1 if Y < X.
  *  is_constant:
  *	Flag indicating whether the assignment is being driven by a constant generator.
  *  source_name:
  *	Name of the driver wire (on the right of the assign).
  *  source_left, source_right:
- *	Left and right indeces of the driver bus, as declared (Left = X, Right = Y)
+ *	Left and right indices of the driver bus, as declared (Left = X, Right = Y)
  *  source_dir:
- *	Directionality of the indeces. +1 if Y > X, -1 if Y < X.
+ *	Directionality of the indices. +1 if Y > X, -1 if Y < X.
  *  value:
  *	If the assign is constant, holds the value of the generator.
  *  debug:
@@ -1953,7 +1953,7 @@ void dump_subckt_models(const LogicalModels& models, ofstream& outfile, t_boolea
 //============================================================================================
 
 void dump_subckt_portlist(ofstream& outfile, t_model_ports* port, std::string indent, t_boolean debug){
-/*  Dumps the portlist of a subcircuit model at the end of a BLIF, flattening busses as necessary.
+/*  Dumps the portlist of a subcircuit model at the end of a BLIF, flattening buses as necessary.
  *
  *	ARGUMENTS
  *  outfile:
@@ -1995,7 +1995,7 @@ void dump_subckt_portlist(ofstream& outfile, t_model_ports* port, std::string in
 //============================================================================================
 
 void all_data_cleanup(){
-/* Frees all allocated memory from the parser and convertor.
+/* Frees all allocated memory from the parser and converter.
  */
 	vqm_data_cleanup();//found in ../LIB/vqm_dll.h, frees parser-allocated memory
 
@@ -2013,7 +2013,7 @@ void echo_module (char* echo_file, const char* vqm_filename, t_module* my_module
 *
  * 		PIN INFORMATION
  *	All inputs, outputs, inouts, and wires declared in the circuit
- *	and their indeces, if applicable. Equivalent to the beginning
+ *	and their indices, if applicable. Equivalent to the beginning
  *	declarations in the VQM Module. ("input [31:0] ACCout", "wire gnd", etc.)
  *
  *		ASSIGNMENT INFORMATION
@@ -2062,7 +2062,7 @@ void echo_module_pins (ofstream& outfile, t_module* module){
 /* Print all pin information from the VQM module.
  *	Each pin has:
  *	- a name
- *	- right and left indeces
+ *	- right and left indices
  *	- a type (direction)
  * 
  *	ARGUMENTS

@@ -34,7 +34,7 @@
  * Note: Multiplexers are the most common type
  *
  * The switch information are categorized in the rr_switch_inf of RRGraph class.
- * rr_switch_inf is created to minimize memory footprint of RRGraph classs
+ * rr_switch_inf is created to minimize memory footprint of RRGraph class
  * While the RRG could contain millions (even much larger) of edges, there are only
  * a limited number of types of switches.
  * Hence, we use a flyweight pattern to store switch-related information that differs
@@ -47,7 +47,7 @@
  * If you wish to create a new data structure to represent switches between routing resources,
  * please follow the flyweight pattern by linking your switch ids to edges only!
  *
- * Guidlines on using the RRGraph data structure 
+ * Guidelines on using the RRGraph data structure 
  * =============================================
  *
  * For those want to access data from RRGraph
@@ -86,9 +86,9 @@
  * outside the rr_graph header and source files
  *
  * After build/modify a RRGraph, please do run a fundamental check, a public accessor.
- * to ensure that your RRGraph does not include invalid nodes/edges/switches/segements 
+ * to ensure that your RRGraph does not include invalid nodes/edges/switches/segments 
  * as well as connections.
- * The validate() function gurantees the consistency between internal data structures, 
+ * The validate() function guarantees the consistency between internal data structures, 
  * such as the id cross-reference between nodes and edges etc.,
  * so failing it indicates a fatal bug!
  * This is a must-do check! 
@@ -190,7 +190,7 @@
 
 /*
  * Notes in include header files in a head file 
- * Only include the neccessary header files 
+ * Only include the necessary header files
  * that is required by the data types in the function/class declarations!
  */
 /* Header files should be included in a sequence */
@@ -206,6 +206,7 @@
 /* VPR header files go third */
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
+#include "rr_switch.h"
 
 class RRGraph {
   public: /* Types */
@@ -264,7 +265,7 @@ class RRGraph {
      *   This is still the case when a logic block has a height > 1
      *   For CHANX/CHANY, (xlow, ylow) and (xhigh, yhigh) represent
      *   where the routing segment starts and ends.
-     *   Note that our convention alway keeps
+     *   Note that our convention always keeps
      *   xlow <= xhigh and ylow <= yhigh
      *   Therefore, (xlow, ylow) is a starting point for a CHANX/CHANY in Direction::INC
      *   (xhigh, yhigh) is a starting point for a CHANX/CHANY in Direction::DEC
@@ -566,7 +567,7 @@ class RRGraph {
     /* Reserve the lists of nodes, edges, switches etc. to be memory efficient. 
      * This function is mainly used to reserve memory space inside RRGraph,
      * when adding a large number of nodes/edge/switches/segments,
-     * in order to avoid memory fragements
+     * in order to avoid memory fragments
      * For example: 
      *    RRGraph rr_graph;
      *    // Add 1000 CHANX nodes to the RRGraph object

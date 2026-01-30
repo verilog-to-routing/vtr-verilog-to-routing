@@ -11,6 +11,7 @@
  * externally to the Packer in VPR.
  */
 
+#include <string>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "noc_data_types.h"
@@ -143,7 +144,7 @@ struct LegalizationCluster {
  *  2) FULL
  *
  * 1) SKIP_INTRA_LB_ROUTE Legalization Strategy Example:
- * This strategy will not fully route the interal connections of the clusters
+ * This strategy will not fully route the internal connections of the clusters
  * until when the user specifies. An example of how to use this strategy would
  * look something like this. Note, this example is simplified and the result
  * of the packings should be checked and handled.
@@ -165,7 +166,7 @@ struct LegalizationCluster {
  * if (!legalizer.check_cluster_legality(new_cluster_id))
  *      // Destroy the illegal cluster.
  *      legalizer.destroy_cluster(new_cluster_id);
- *      // Clean-up the internal bookeeping of the class (required after
+ *      // Clean-up the internal bookkeeping of the class (required after
  *      // destroying a cluster).
  *      legalizer.compress();
  *      // Handle how to try again (maybe use FULL strategy).
@@ -371,7 +372,7 @@ class ClusterLegalizer {
     bool check_cluster_legality(LegalizationClusterId cluster_id);
 
     /*
-     * @brief Cleans the cluster of unnessary data, reducing the memory footprint.
+     * @brief Cleans the cluster of unnecessary data, reducing the memory footprint.
      *
      * After this function is called, no more molecules can be added to the
      * cluster. This method will ensure that the cluster has enough information
@@ -416,7 +417,7 @@ class ClusterLegalizer {
      *
      * A molecule is compatible with a cluster if there exists a free primitive
      * (a primitive that is not currently occupied by other atoms) of the correct
-     * type to accomodate each type of atom in the molecule.
+     * type to accommodate each type of atom in the molecule.
      *
      * This is a quick check to see if a molecule can go in the given cluster.
      * "This is a necessary but not sufficient test for a molecule to be able to
@@ -431,6 +432,13 @@ class ClusterLegalizer {
         VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
         const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
         return cluster.pb;
+    }
+
+    /// @brief Gets the name of the given cluster.
+    inline std::string get_cluster_name(LegalizationClusterId cluster_id) const {
+        VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+        const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+        return cluster.pb->name;
     }
 
     /// @brief Gets the logical block type of the given cluster.

@@ -93,9 +93,9 @@ constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
 
 #define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
-#ifndef UNDEFINED
-#define UNDEFINED (-1)
-#endif
+
+// Used for illegal/undefined values of indices, where legal values should be greater or equal to zero
+constexpr int UNDEFINED = -1;
 
 ///@brief Router lookahead types.
 enum class e_router_lookahead {
@@ -107,6 +107,8 @@ enum class e_router_lookahead {
     COMPRESSED_MAP,
     ///@brief Lookahead with a more extensive node sampling method
     EXTENDED_MAP,
+    ///@brief Simple distance-based lookahead
+    SIMPLE,
     ///@brief A no-operation lookahead which always returns zero
     NO_OP
 };
@@ -206,7 +208,7 @@ class t_pack_high_fanout_thresholds {
     explicit t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
     t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
-    ///@brief Returns the high fanout threshold of the specifi  ed block
+    ///@brief Returns the high fanout threshold of the specified block
     int get_threshold(std::string_view block_type_name) const;
 
     ///@brief Returns a string describing high fanout thresholds for different block types
@@ -340,7 +342,7 @@ class t_pb {
 ///@brief Representation of intra-logic block routing
 struct t_pb_route {
     AtomNetId atom_net_id;                        ///<which net in the atom netlist uses this pin
-    int driver_pb_pin_id = OPEN;                  ///<The pb_pin id of the pb_pin that drives this pin
+    int driver_pb_pin_id = UNDEFINED;             ///<The pb_pin id of the pb_pin that drives this pin
     std::vector<int> sink_pb_pin_ids;             ///<The pb_pin id's of the pb_pins driven by this node
     const t_pb_graph_pin* pb_graph_pin = nullptr; ///<The graph pin associated with this node
 };
@@ -370,32 +372,37 @@ enum class e_timing_update_type {
  * Placement and routing data types
  ****************************************************************************/
 
-/* Values of number of placement available move types */
+/// Total number of available move types for placement engine.
 constexpr int NUM_PL_MOVE_TYPES = 7;
+/// Total number of non-timing move types.
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
-enum class e_sched_type {
-    AUTO_SCHED,
-    USER_SCHED
-};
-/* Annealing schedule */
 
-enum pic_type {
+/// Annealing schedule enumeration
+enum class e_sched_type {
+    AUTO_SCHED, ///< Computes initial temperature, exit criterion and temperature update rate from statistics computed during the annealing.
+    USER_SCHED  ///< The user has specified explicit numbers for the key annealing schedule parameters
+};
+
+/// Specifies what is shown on screen
+enum class e_pic_type {
     NO_PICTURE,
     PLACEMENT,
+    ANALYTICAL_PLACEMENT,
     ROUTING
 };
-/* What's on screen? */
 
-enum pfreq {
-    PLACE_NEVER,
-    PLACE_ONCE,
-    PLACE_ALWAYS
+/// Determines if placement is re-run during the binary search for minimum channel width.
+enum class e_place_freq {
+    /// Use a single placement for all channel widths; significantly faster.
+    ONCE,
+
+    /// Re-place the netlist from scratch for every channel width iteration in the binary search.
+    ALWAYS
 };
 
 ///@brief  Power data for t_netlist structure
-
 struct t_net_power {
     ///@brief Signal probability - long term probability that signal is logic-high
     float probability;
@@ -432,12 +439,12 @@ struct t_bb {
         VTR_ASSERT(ymax_ >= ymin_);
         VTR_ASSERT(layer_max_ >= layer_min_);
     }
-    int xmin = OPEN;
-    int xmax = OPEN;
-    int ymin = OPEN;
-    int ymax = OPEN;
-    int layer_min = OPEN;
-    int layer_max = OPEN;
+    int xmin = UNDEFINED;
+    int xmax = UNDEFINED;
+    int ymin = UNDEFINED;
+    int ymax = UNDEFINED;
+    int layer_min = UNDEFINED;
+    int layer_max = UNDEFINED;
 };
 
 /**
@@ -457,11 +464,11 @@ struct t_2D_bb {
         VTR_ASSERT(layer_num_ >= 0);
     }
 
-    int xmin = OPEN;
-    int xmax = OPEN;
-    int ymin = OPEN;
-    int ymax = OPEN;
-    int layer_num = OPEN;
+    int xmin = UNDEFINED;
+    int xmax = UNDEFINED;
+    int ymin = UNDEFINED;
+    int ymax = UNDEFINED;
+    int layer_num = UNDEFINED;
 };
 
 /**
@@ -571,10 +578,10 @@ struct t_pl_loc {
         , sub_tile(sub_tile_loc)
         , layer(phy_loc.layer_num) {}
 
-    int x = OPEN;
-    int y = OPEN;
-    int sub_tile = OPEN;
-    int layer = OPEN;
+    int x = UNDEFINED;
+    int y = UNDEFINED;
+    int sub_tile = UNDEFINED;
+    int layer = UNDEFINED;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
         layer += rhs.layer;
@@ -675,6 +682,7 @@ struct t_file_name_opts {
     std::string write_constraints_file;
     std::string read_flat_place_file;
     std::string write_flat_place_file;
+    std::string write_legalized_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
 };
@@ -782,7 +790,7 @@ struct t_packer_opts {
     std::string sdc_file_name;
     std::string output_file;
     bool timing_driven;
-    enum e_cluster_seed cluster_seed_type;
+    e_cluster_seed cluster_seed_type;
     float timing_gain_weight;
     float connection_gain_weight;
     float target_device_utilization;
@@ -856,7 +864,7 @@ enum class e_place_bounding_box_mode {
  *
  * Supports the method is_timing_driven(), which allows flexible updates
  * to the placer algorithms if more timing driven placement strategies
- * are added in tht future. This method is used across various placement
+ * are added in the future. This method is used across various placement
  * setup files, and it can be useful for major placer routines as well.
  *
  * More methods can be added to this class if the placement strategies
@@ -964,11 +972,18 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+/**
+ * @brief Enumeration of the different initial temperature estimators available
+ *        for the placer.
+ */
+enum class e_anneal_init_t_estimator {
+    COST_VARIANCE, ///<Estimate the initial temperature using the variance in cost of a set of trial swaps.
+    EQUILIBRIUM,   ///<Estimate the initial temperature by predicting the equilibrium temperature for the initial placement.
+};
+
 enum class e_move_type;
 
-/**
- * @brief Various options for the placer.
- */
+/// @brief Various options for the placer.
 struct t_placer_opts {
     /// Controls which placement algorithm is used.
     t_place_algorithm place_algorithm;
@@ -991,7 +1006,7 @@ struct t_placer_opts {
 
     /// Start using congestion cost when (current rlim / initial rlim) drops below this value.
     float congestion_rlim_trigger_ratio;
-    /// Nets with average channel usage (withing their bounding box) above this threshold
+    /// Nets with average channel usage (within their bounding box) above this threshold
     /// are predicted to face some congestion in the routing stage.
     float congestion_chan_util_threshold;
 
@@ -1001,7 +1016,7 @@ struct t_placer_opts {
     int place_chan_width;
 
     /// Are pins FREE or fixed randomly.
-    enum e_pad_loc_type pad_loc_type;
+    e_pad_loc_type pad_loc_type;
 
     /// File that specifies locations of locked down (constrained) blocks for placement. Empty string means no constraints file.
     std::string constraints_file;
@@ -1012,7 +1027,7 @@ struct t_placer_opts {
     std::string read_initial_place_file;
 
     /// Should the placement be skipped, done once, or done for each channel width in the binary search. (Default: ONCE)
-    enum pfreq place_freq;
+    e_place_freq place_freq;
 
     /// How many temperature stages pass before we recompute criticalities
     /// based on the current placement and its estimated point-to-point delays.
@@ -1036,7 +1051,7 @@ struct t_placer_opts {
     float td_place_exp_last;
 
     /// True if placement is supposed to be done in the CAD flow. False if otherwise.
-    e_stage_action doPlacement;
+    e_stage_action do_placement;
 
     float rlim_escape_fraction;
 
@@ -1114,6 +1129,8 @@ struct t_placer_opts {
 
     /// When the annealer is using the automatic schedule, this option scales the initial temperature selected.
     float place_auto_init_t_scale;
+
+    e_anneal_init_t_estimator anneal_init_t_estimator;
 };
 
 /******************************************************************
@@ -1150,6 +1167,9 @@ struct t_ap_opts {
 
     /// Array of string passed by the user to configure the max candidate distance thresholds.
     std::vector<std::string> appack_max_dist_th;
+
+    /// Array of strings passed by the user to configure the unrelated clustering parameters used by APPack
+    std::vector<std::string> appack_unrelated_clustering_args;
 
     /// The number of threads the AP flow can use.
     unsigned num_threads;
@@ -1252,19 +1272,20 @@ struct t_router_opts {
     /// Linear distance a route can go outside the net bounding box.
     int bb_factor;
     /// GLOBAL or DETAILED.
-    enum e_route_type route_type;
+    e_route_type route_type;
     /// Only attempt to route the design once, with the channel width given.
     /// If this variable is == NO_FIXED_CHANNEL_WIDTH, do a binary search on channel width.
     int fixed_channel_width;
+
     /// Hint to binary search of what the minimum channel width is
     int min_channel_width_hint;
     /// TIMING_DRIVEN or PARALLEL.  Selects the desired routing algorithm.
-    enum e_router_algorithm router_algorithm;
+    e_router_algorithm router_algorithm;
 
     /// Specifies how to compute the base cost of each type of rr_node.
     /// DELAY_NORMALIZED -> base_cost = "demand" x average delay to route past 1 CLB.
     /// DEMAND_ONLY -> expected demand of this node (old breadth-first costs).
-    enum e_base_cost_type base_cost_type;
+    e_base_cost_type base_cost_type;
 
     /// Factor (alpha) used to weight expected future costs to target in the timing_driven router.
     /// astar_fac = 0 leads to an essentially breadth-first search,
@@ -1294,13 +1315,13 @@ struct t_router_opts {
     e_stage_action doRouting;
     /// the configuration to be used by the routing failure predictor,
     /// how aggressive the threshold used to judge and abort routings deemed unroutable
-    enum e_routing_failure_predictor routing_failure_predictor;
-    enum e_routing_budgets_algorithm routing_budgets_algorithm;
+    e_routing_failure_predictor routing_failure_predictor;
+    e_routing_budgets_algorithm routing_budgets_algorithm;
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
-    enum e_clock_modeling clock_modeling; ///<How clock pins and nets should be handled
-    bool two_stage_clock_routing;         ///<How clock nets on dedicated networks should be routed
+    e_clock_modeling clock_modeling; ///<How clock pins and nets should be handled
+    bool two_stage_clock_routing;    ///<How clock nets on dedicated networks should be routed
     int high_fanout_threshold;
     float high_fanout_max_slope;
     int router_debug_net;
@@ -1336,8 +1357,6 @@ struct t_router_opts {
     bool flat_routing;
     bool has_choke_point;
 
-    int custom_3d_sb_fanin_fanout = 1;
-
     bool with_timing_analysis;
 
     /// Whether to verify the switch IDs in the route file with the RR Graph.
@@ -1372,6 +1391,17 @@ struct t_analysis_opts {
     bool skip_sync_clustering_and_routing_results;
 };
 
+/// Stores CRR specific options
+struct t_crr_opts {
+    std::string sb_maps;
+    std::string sb_templates;
+    bool preserve_input_pin_connections;
+    bool preserve_output_pin_connections;
+    bool annotated_rr_graph;
+    bool remove_dangling_nodes;
+    std::string sb_count_dir;
+};
+
 /// Stores NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
     bool noc;                                      ///<options to turn on hard NoC modeling & optimization
@@ -1399,11 +1429,11 @@ struct t_noc_opts {
  */
 struct t_det_routing_arch {
     /// Should the tracks be uni-directional or bi-directional?
-    enum e_directionality directionality;
+    e_directionality directionality;
     int Fs;
 
     /// Pattern of switches at each switch block. I assume Fs is always 3.
-    enum e_switch_block_type switch_block_type;
+    e_switch_block_type switch_block_type;
 
     /// A vector of custom switch block descriptions that is used with
     /// the CUSTOM switch block type. See comment at top of SRC/route/build_switchblocks.c
@@ -1418,7 +1448,7 @@ struct t_det_routing_arch {
     int sub_fs;
 
     /// Subtype of switch blocks.
-    enum e_switch_block_type switch_block_subtype;
+    e_switch_block_type switch_block_subtype;
 
     /// Allow connection blocks to appear around the perimeter programmable block (mainly I/Os)
     bool perimeter_cb;
@@ -1450,18 +1480,6 @@ struct t_det_routing_arch {
 
     /// Keeps track of the type of architecture switch that connects wires to ipins
     int wire_to_arch_ipin_switch;
-
-    /// Keeps track of the type of architecture switch that connects
-    /// wires from another die to ipins in different die
-    int wire_to_arch_ipin_switch_between_dice = -1;
-
-    /// keeps track of the type of RR graph switch
-    /// that connects wires to ipins in the RR graph
-    int wire_to_rr_ipin_switch;
-
-    /// keeps track of the type of RR graph switch that connects wires
-    /// from another die to ipins in different die in the RR graph
-    int wire_to_rr_ipin_switch_between_dice = -1;
 
     /// Resistance (in Ohms) of a minimum width nmos transistor.
     /// Used only in the FPGA area model.
@@ -1555,18 +1573,6 @@ struct t_power_opts {
     bool do_power; ///<Perform power estimation?
 };
 
-/** @brief Channel width data
- * @param max= Maximum channel width between x_max and y_max.
- * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
- * @param y_min= Same as above but for vertical channels.
- * @param x_max= Maximum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
- * @param y_max= Same as above but for vertical channels.
- * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()]
- * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
- * @param y_list= Stores the channel width of all vertical channels and thus goes from [0..grid.width()]
- * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
- */
-
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
 /// @brief Stores settings for VPR server mode
@@ -1585,6 +1591,7 @@ struct t_vpr_setup {
     t_ap_opts APOpts;               ///<Options for analytical placer
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
+    t_crr_opts CRROpts;             ///<CRR options
     t_noc_opts NocOpts;             ///<Options for the NoC
     t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture
@@ -1625,5 +1632,3 @@ class RouteStatus {
 };
 
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
-
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;

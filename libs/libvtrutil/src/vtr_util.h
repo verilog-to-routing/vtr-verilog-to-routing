@@ -15,7 +15,7 @@ std::string replace_first(std::string_view input, std::string_view search, std::
 ///@brief Returns 'input' with all instances of 'search' replaced with 'replace'
 std::string replace_all(std::string_view input, std::string_view search, std::string_view replace);
 
-///@brief Retruns true if str starts with prefix
+///@brief Returns true if str starts with prefix
 bool starts_with(const std::string& str, std::string_view prefix);
 
 ///@brief Returns a std::string formatted using a printf-style format string
@@ -25,7 +25,7 @@ std::string string_fmt(const char* fmt, ...);
 std::string vstring_fmt(const char* fmt, va_list args);
 
 /**
- * @brief Joins a sequence by a specified delimeter
+ * @brief Joins a sequence by a specified delimiter
  *
  *  For example the sequence {"home", "user", "my_files", "test.blif"} with delim="/"
  *  would return "home/user/my_files/test.blif"
@@ -115,34 +115,34 @@ char* getline(char*& _lineptr, FILE* _stream);
 /**
  * @brief Legacy c-style function replacements.
  *
- * Typically these add extra error checking
+ * Typically, these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-int atoi(const std::string& value);
+int atoi(std::string_view value);
 
 /**
  * @brief Legacy c-style function replacements.
  *
- * Typically these add extra error checking
+ * Typically, these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-unsigned atou(const std::string& value);
+unsigned atou(std::string_view value);
 
 /**
  * @brief Legacy c-style function replacements.
  *
- * Typically these add extra error checking
+ * Typically, these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-float atof(const std::string& value);
+float atof(std::string_view value);
 
 /**
  * @brief Legacy c-style function replacements.
  *
- * Typically these add extra error checking
+ * Typically, these add extra error checking
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
-double atod(const std::string& value);
+double atod(std::string_view value);
 
 /**
  * @brief File utilities
@@ -252,7 +252,7 @@ class StringToken {
     std::vector<std::string> split(const std::vector<char>& delim) const;
     std::vector<std::string> split();
     /** 
-     * @brief Find the position (i-th charactor) in a string for a given
+     * @brief Find the position (i-th character) in a string for a given
      * delimiter, it will return a list of positions For example, to find the
      * position of all quotes (") in a string: "we" are good The following code is
      * suggested: StringToken tokenizer("\"we\" are good"); std::vector<size_t>
@@ -263,10 +263,10 @@ class StringToken {
 
     /** 
      * @brief split the string for each chunk. This is useful where there are
-     * chunks of substring should not be splitted by the given delimiter For
+     * chunks of substring should not be split by the given delimiter For
      * example, to split the string with quotes (") in a string: source "cmdA
      * --opt1 val1;cmdB --opt2 val2" --verbose where the string between the two
-     * quotes should not be splitted The following code is suggested: StringToken
+     * quotes should not be split. The following code is suggested: StringToken
      * tokenizer("source \"cmdA --opt1 val1;cmdB --opt2 val2\" --verbose");
      *   std::vector<std::string> tokenizer.split_by_chunks('\"', true);
      * The following vector will be returned:
@@ -303,7 +303,7 @@ class StringToken {
     void add_default_delim();
 
   private:             /* Internal data */
-    std::string data_; /* Lines to be splited */
+    std::string data_; /* Lines to be split */
     std::vector<char> delims_;
 };
 

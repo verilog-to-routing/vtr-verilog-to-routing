@@ -15,7 +15,7 @@
 // Forward declarations.
 class AtomLookup;
 class AtomNetlist;
-class PartialPlacement;
+struct PartialPlacement;
 class PlaceDelayModel;
 class PreClusterDelayCalculator;
 class Prepacker;

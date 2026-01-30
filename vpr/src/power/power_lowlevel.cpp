@@ -482,14 +482,14 @@ void power_usage_MUX2_transmission(t_power_usage* power_usage, float size, float
 }
 
 /**
- * Calucates the power of a static, single-level multiplexer
+ * Calculates the power of a static, single-level multiplexer
  * - power_usage: (Return value) power usage of the mux
  * - out_prob: (Return value) Signal probability of the output
  * - out_dens: (Return value) Transition density of the output
  * - num_inputs: Number of inputs of the mux
  * - selected_idx: The input index that is selected by the select lines
  * - in_prob: Array of input signal probabilities
- * - in_dens: Array of input tranistion densities
+ * - in_dens: Array of input transition densities
  * - v_in: Array of input max voltages
  * - transistor_size: Size of the NMOS transistors (must be 1.0)
  * - v_out_restored: Whether the output will be level restored to Vdd
@@ -520,7 +520,7 @@ void power_usage_mux_singlelevel_static(t_power_usage* power_usage,
         v_in_selected = v_in[selected_idx];
 
     } else {
-        /* In this case, the multiplexer is not symetrical.  The
+        /* In this case, the multiplexer is not symmetrical.  The
          * other branch of the mux has more inputs than this one,
          * and the selected input index is not a valid index for
          * this portion of the mux.  If the mux was actually built
@@ -585,10 +585,10 @@ void power_usage_mux_singlelevel_static(t_power_usage* power_usage,
 }
 
 /**
- * This function calcualtes the output voltage of a single-level multiplexer
+ * This function calculates the output voltage of a single-level multiplexer
  * - num_inputs: Number of inputs of the multiplexer
  * - transistor_size: The size of the NMOS transistors (must be 1.0)
- * - v_in: The input voltage of the selcted input
+ * - v_in: The input voltage of the selected input
  * - in_prob_avg: The average signal probabilities of the non-selected inputs
  */
 float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in, float in_prob_avg) {
@@ -690,7 +690,7 @@ float power_calc_mux_v_out(int num_inputs, float transistor_size, float v_in, fl
  * - out_prob: The signal probability of the output
  * - v_out: The output max voltage
  * - in_prob: Array of input signal probabilities
- * - in_dens: Array of input tranistion densities
+ * - in_dens: Array of input transition densities
  * - v_in: Array of input voltages
  * - sel_dens: Transition density of the select line
  * - sel_prob: Signal probability of the select line

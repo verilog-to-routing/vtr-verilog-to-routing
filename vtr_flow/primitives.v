@@ -7,13 +7,13 @@
 //If you wish to do back-annotated timing simulation you will need
 //to link with this file during simulation.
 //
-//To ensure currect result when performing back-annoatation with 
+//To ensure correct result when performing back-annoatation with 
 //Modelsim see the notes at the end of this comment.
 //
 //Specifying Timing Edges
 //=======================
 //To perform timing back-annotation the simulator must know the delay 
-//dependancies (timing edges) between the ports on each primitive.
+//dependencies (timing edges) between the ports on each primitive.
 //
 //During back-annotation the simulator will attempt to annotate SDF delay
 //values onto the timing edges.  It should give a warning if was unable
@@ -33,7 +33,7 @@
 //      (in[1] => out[1]) = "";
 //  endspecify
 //
-//This states that there are the following timing edges (dependancies):
+//This states that there are the following timing edges (dependencies):
 //  * from in[0] to out[0]
 //  * from in[1] to out[1]
 //
@@ -62,7 +62,7 @@
 //      (in *> out) = "";
 //  endspecify
 //
-//states that there are the following timing edges (dependancies):
+//states that there are the following timing edges (dependencies):
 //  * from in[0] to out[0]
 //  * from in[0] to out[1]
 //  * from in[0] to out[2]
@@ -91,11 +91,11 @@
 //This forces it to apply specify statements using multi-bit operands to
 //each bit of the operand (i.e. according to the Verilog standard).
 //
-//Confirming back-annotation is occuring correctly
+//Confirming back-annotation is occurring correctly
 //------------------------------------------------
 //
 //Another useful option is '+sdf_verbose' which produces extra output about
-//SDF annotation, which can be used to verify annotation occured correctly.
+//SDF annotation, which can be used to verify annotation occurred correctly.
 //
 //For example:
 //
@@ -266,9 +266,9 @@ module single_port_ram #(
    
     always@(posedge clk) begin
         if(we) begin
-            Mem[addr] = data;
+            Mem[addr] <= data;
         end
-    	out = Mem[addr]; //New data read-during write behaviour (blocking assignments)
+    	out <= Mem[addr]; //Old data read-first behaviour (non-blocking assignments)
     end
    
 endmodule // single_port_RAM
@@ -314,16 +314,16 @@ module dual_port_ram #(
    
     always@(posedge clk) begin //Port 1
         if(we1) begin
-            Mem[addr1] = data1;
+            Mem[addr1] <= data1;
         end
-        out1 = Mem[addr1]; //New data read-during write behaviour (blocking assignments)
+        out1 <= Mem[addr1]; //Old data read-first behaviour (non-blocking assignments)
     end
 
     always@(posedge clk) begin //Port 2
         if(we2) begin
-            Mem[addr2] = data2;
+            Mem[addr2] <= data2;
         end
-        out2 = Mem[addr2]; //New data read-during write behaviour (blocking assignments)
+        out2 <= Mem[addr2]; //Old data read-first behaviour (non-blocking assignments)
     end
    
 endmodule // dual_port_ram

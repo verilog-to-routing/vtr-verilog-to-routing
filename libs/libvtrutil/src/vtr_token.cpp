@@ -87,11 +87,11 @@ static e_token_type get_token_type_from_char(e_token_type cur_token_type, char c
     }
 }
 
-void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* instring) {
+void my_atof_2D(float** matrix, const int max_i, const int max_j, std::string_view instring) {
     int i, j;
     char *cur, *cur2, *copy, *final;
 
-    copy = vtr::strdup(instring);
+    copy = vtr::strdup(instring.data());
     final = copy;
     while (*final != '\0') {
         final++;
@@ -127,9 +127,9 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
     free(copy);
 }
 
-bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, int* num_entries) {
+bool check_my_atof_2D(const int max_i, const int max_j, std::string_view instring, int* num_entries) {
     /* Check if max_i * max_j matches number of entries in instring */
-    const char* cur = instring;
+    const char* cur = instring.data();
     bool in_str = false;
     int entry_count = 0;
 

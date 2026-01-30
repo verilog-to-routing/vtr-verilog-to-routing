@@ -66,7 +66,8 @@ class RouterLookahead {
     virtual void write_intra_cluster(const std::string& file) const = 0;
 
     /**
-     * @brief Retrieve the minimum delay to a point on the "to_layer," which is dx and dy away, across all the OPINs on the physical tile identified by "physical_tile_idx."
+     * @brief Retrieve the minimum delay to a point on the "to_layer," which is dx and dy away,
+     *        across all the OPINs on the physical tile identified by "physical_tile_idx".
      * @param physical_tile_idx The index of the physical tile from which the cost is calculated
      * @param from_layer The layer that the tile is located on
      * @param to_layer The layer on which the destination is located
@@ -89,7 +90,8 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
                                                        const std::string& write_lookahead,
                                                        const std::string& read_lookahead,
                                                        const std::vector<t_segment_inf>& segment_inf,
-                                                       bool is_flat);
+                                                       bool is_flat,
+                                                       int route_verbosity);
 
 /**
  * @brief Clear router lookahead cache (e.g. when changing or free rrgraph).
@@ -106,7 +108,8 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
                                                    const std::string& write_lookahead,
                                                    const std::string& read_lookahead,
                                                    const std::vector<t_segment_inf>& segment_inf,
-                                                   bool is_flat);
+                                                   bool is_flat,
+                                                   int route_verbosity);
 
 class ClassicLookahead : public RouterLookahead {
   public:

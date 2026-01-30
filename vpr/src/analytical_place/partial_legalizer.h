@@ -36,10 +36,10 @@ struct PartialPlacement;
 /**
  * @brief The Partial Legalizer base class
  *
- * This provied functionality that all Partial Legalizers will use.
+ * This provides functionality that all Partial Legalizers will use.
  *
  * It provides a standard interface that all Partial Legalizers must implement
- * so thet can be used interchangably. This makes it very easy to test and
+ * so they can be used interchangeably. This makes it very easy to test and
  * compare different solvers.
  */
 class PartialLegalizer {
@@ -49,7 +49,7 @@ class PartialLegalizer {
     /**
      * @brief Constructor of the base PartialLegalizer class
      *
-     * Currently just copies the parameters into the class as member varaibles.
+     * Currently just copies the parameters into the class as member variables.
      */
     PartialLegalizer(const APNetlist& netlist, int log_verbosity)
         : netlist_(netlist)
@@ -74,7 +74,7 @@ class PartialLegalizer {
      * @brief Print statistics on the Partial Legalizer.
      *
      * This is expected to be called at the end of Global Placement to provide
-     * cummulative information on how much work the partial legalizer performed.
+     * cumulative information on how much work the partial legalizer performed.
      */
     virtual void print_statistics() = 0;
 
@@ -99,6 +99,26 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
                                                          const Prepacker& prepacker,
                                                          const LogicalModels& models,
                                                          int log_verbosity);
+
+/**
+ * @brief A partial legalizer which does not legalize anything. This solver acts
+ *        like an identity matrix where it just passes the given solution along.
+ *        This partial legalizer should only be used for testing.
+ */
+class IdentityPartialLegalizer : public PartialLegalizer {
+  public:
+    IdentityPartialLegalizer(const APNetlist& netlist, int log_verbosity)
+        : PartialLegalizer(netlist, log_verbosity) {}
+
+    void legalize(PartialPlacement& p_placement) final {
+        (void)p_placement;
+        // Do nothing.
+    }
+
+    void print_statistics() final {
+        // Do nothing.
+    }
+};
 
 /**
  * @brief A multi-commodity flow-based spreading partial legalizer.
@@ -268,7 +288,7 @@ enum class e_partition_dir {
  * @brief Spatial window used to spread the blocks contained within.
  *
  * This window's region is identified and grown until it has enough space to
- * accomodate the blocks stored within. This window is then successivly
+ * accommodate the blocks stored within. This window is then successivly
  * partitioned until it is small enough (blocks are not too dense).
  */
 struct SpreadingWindow {
@@ -506,14 +526,14 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      * This process is split into 4 stages:
      *      1) Overfilled bins are identified and clustered.
      *      2) Grow windows around the overfilled bin clusters. These windows
-     *         will grow until there is just enough space to accomodate the blocks
+     *         will grow until there is just enough space to accommodate the blocks
      *         within the window (capacity of the window is larger than the utilization).
      *      3) Merge overlapping windows.
      *      4) Move the blocks within these window regions from their bins into
      *         their windows. This updates the current utilization of bins, making
      *         spreading easier.
      *
-     * We identify non-overlapping windows for different model groups independtly
+     * We identify non-overlapping windows for different model groups independently
      * for a few reasons:
      *  - Each model group, by design, can be spread independent of each other.
      *    This reduces the problem size by the number of groups.

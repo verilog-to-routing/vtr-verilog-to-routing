@@ -35,13 +35,6 @@ enum class e_cost_methods {
     CHECK
 };
 
-template<typename T>
-struct ChannelData {
-    T x;
-    T y;
-    // TODO: add Z dimension
-};
-
 class NetCostHandler {
   public:
     NetCostHandler() = delete;
@@ -157,7 +150,7 @@ class NetCostHandler {
      * @brief Returns the estimated routing channel usage for each location in the grid.
      *        The channel usage estimates are computed in estimate_routing_chan_util().
      */
-    const ChannelData<vtr::NdMatrix<double, 3>>& get_chan_util() const;
+    const ChannelMetric<vtr::NdMatrix<double, 3>>& get_chan_util() const;
 
   private:
     /// Indicates whether congestion cost modeling is enabled.
@@ -280,24 +273,21 @@ class NetCostHandler {
      * number of tracks in that direction; for other cost functions they
      * will never be used.
      */
-    ChannelData<vtr::PrefixSum1D<int>> acc_chan_width_;
+    ChannelMetric<vtr::PrefixSum1D<int>> acc_chan_width_;
 
     /**
      * @brief Estimated routing usage per channel segment,
      *        indexed by [layer][x][y]. Values represent normalized wire demand
      *        contribution from all nets distributed over their bounding boxes.
      */
-    ChannelData<vtr::NdMatrix<double, 3>> chan_util_;
+    ChannelMetric<vtr::NdMatrix<double, 3>> chan_util_;
 
     /**
      * @brief Accumulated (prefix sum) channel utilization in each direction (x/y),
      *        on the base layer. Enables fast computation of average utilization
      *        over a net’s bounding box during congestion cost estimation.
      */
-    ChannelData<vtr::PrefixSum2D<double>> acc_chan_util_;
-
-    /// Available channel width per grid location, indexed by [layer][x][y].
-    ChannelData<vtr::NdMatrix<int, 3>> chan_width_;
+    ChannelMetric<vtr::PrefixSum2D<double>> acc_chan_util_;
 
     /**
      * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 
@@ -357,14 +347,6 @@ class NetCostHandler {
      * call this routine before you do any placement cost determination.
      */
     void alloc_and_load_chan_w_factors_for_place_cost_();
-
-    /**
-     * @brief Allocates and loads acc_tile_num_inter_die_conn_ which contains the accumulative number of inter-die
-     * connections.
-     *
-     * @details This is only useful for multi-die FPGAs.
-     */
-    void alloc_and_load_for_fast_vertical_cost_update_();
 
     /**
      * @brief Calculate the new connection delay and timing cost of all the

@@ -9,7 +9,7 @@ namespace {
 /*
  * Delete all the blocks in the global clustered netlist.
  * Then create an empty clustered netlist and assign it
- * to the globabl clustered netlist.
+ * to the global clustered netlist.
  */
 void free_clustered_netlist(void) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
@@ -142,7 +142,7 @@ TEST_CASE("test_get_router_module_cluster_id", "[vpr_noc_traffic_flows_parser]")
     router_block_2.name = router_2;
     t_logical_block_type_ptr router_ref_2 = &router_block_2;
 
-    // add these two logical tyes as the equivalent sites of the subtile
+    // add these two logical types as the equivalent sites of the subtile
     router_tile.equivalent_sites.push_back(router_ref);
     router_tile.equivalent_sites.push_back(router_ref_2);
 
@@ -284,7 +284,7 @@ TEST_CASE("test_check_traffic_flow_router_module_type", "[vpr_noc_traffic_flows_
     router_block.name = router;
     t_logical_block_type_ptr router_ref = &router_block;
 
-    // add the logical tyes as the equivalent sites of the subtile
+    // add the logical types as the equivalent sites of the subtile
     router_tile.equivalent_sites.push_back(router_ref);
 
     // add the subtile to the physical noc router type
@@ -322,11 +322,11 @@ TEST_CASE("test_check_traffic_flow_router_module_type", "[vpr_noc_traffic_flows_
         // create a name for a IO block
         char io_block_one[] = "io_block_one";
 
-        // create a cluster blcok that represents a IO block
+        // create a cluster block that represents a IO block
         ClusterBlockId io_module_id = test_netlist->create_block(io_block_one, nullptr, i_o_ref);
 
-        // now run the test function to verify that the current IO module doesnt have a logical type of a router
-        // the function should faile since the module is of type IO
+        // now run the test function to verify that the current IO module doesn't have a logical type of a router
+        // the function should fail since the module is of type IO
         REQUIRE_THROWS_WITH(check_traffic_flow_router_module_type(io_block_one, io_module_id, test, test_location, cluster_ctx, noc_router_ref), "The supplied module name 'io_block_one' is not a NoC router.");
 
         // clear the global netlist data structure so other unit tests that rely on dont use a corrupted netlist
@@ -371,7 +371,7 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
     // create a single subtile
     t_sub_tile router_tile;
 
-    // add the logical tyes as the equivalent sites of the subtile
+    // add the logical types as the equivalent sites of the subtile
     router_tile.equivalent_sites.push_back(router_ref);
 
     // add the subtile to the physical noc router type
@@ -382,7 +382,7 @@ TEST_CASE("test_check_that_all_router_blocks_have_an_associated_traffic_flow", "
     // need to add the physical type of the router to the list of physical tiles that match to the router logical block
     router_block.equivalent_tiles.push_back(noc_router_ref);
 
-    // define arbritary values for traffic flow bandwidths, latency and priority
+    // define arbitrary values for traffic flow bandwidths, latency and priority
     double traffic_flow_bandwidth = 0.0;
     double traffic_flow_latency = 0.0;
     int traffic_flow_priority = 1;
@@ -463,7 +463,7 @@ TEST_CASE("test_get_cluster_blocks_compatible_with_noc_router_tiles", "[vpr_noc_
     // need to add the physical type of the router to the list of physical tiles that match to the router logical block
     router_block.equivalent_tiles.push_back(noc_router_ref);
 
-    // create a second tupe of router logical block
+    // create a second type of router logical block
     t_logical_block_type router_block_type_two;
     char router_two_name[] = "router_2";
     router_block_type_two.name = router_two_name;

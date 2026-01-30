@@ -46,7 +46,7 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--titan_version", default="2.0.0", help="Titan release version to download"
+        "--titan_version", default="2.1.0", help="Titan release version to download"
     )
     parser.add_argument(
         "--vtr_flow_dir",
@@ -59,7 +59,7 @@ def parse_args():
         "--force",
         default=False,
         action="store_true",
-        help="Run extraction step even if directores etc. already exist",
+        help="Run extraction step even if directories etc. already exist",
     )
     parser.add_argument(
         "--device_family",
@@ -79,7 +79,6 @@ def parse_args():
 
 
 def main():
-
     args = parse_args()
 
     try:
@@ -198,7 +197,7 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                     for filename in filenames:
                         src_file_path = os.path.join(dirpath, filename)
                         dst_file_path = None
-                        for benchmark_subdir in ["titan_new", "titan23", "other_benchmarks"]:
+                        for benchmark_subdir in get_benchmark_subdirs(args):
                             if compare_versions(args.titan_version, "2") >= 1:
                                 # if it is a 2.0.0 titan release or later use device family in the benchmark directory
                                 device_families = get_device_families(args)
@@ -252,7 +251,7 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
 
 
 def create_titan_blif_subdirs(titan_benchmarks_extract_dir, args):
-    for benchmark_subdir in ["titan_new", "titan23", "other_benchmarks"]:
+    for benchmark_subdir in get_benchmark_subdirs(args):
         titan_benchmark_subdir = os.path.join(titan_benchmarks_extract_dir, benchmark_subdir)
         if os.path.exists(titan_benchmark_subdir):
             shutil.rmtree(titan_benchmark_subdir)
@@ -286,8 +285,7 @@ def determine_sdc_name(dirpath):
 
 def extract_callback(members, args):
     for tarinfo in members:
-        for benchmark_subdir in ["titan_new", "titan23", "other_benchmarks"]:
-
+        for benchmark_subdir in get_benchmark_subdirs(args):
             if compare_versions(args.titan_version, "2") >= 1:
                 # if it is a 2.0.0 titan release or later use device family in the benchmark directory
                 device_families = get_device_families(args)
@@ -320,6 +318,17 @@ def extract_callback(members, args):
         if fnmatch.fnmatch(tarinfo.name, "titan_release*/arch/stratixiv*.xml"):
             print(tarinfo.name)
             yield tarinfo
+
+
+def get_benchmark_subdirs(args):
+    """
+    Decide which benchmark subdirectories to use depending on version
+    """
+    if compare_versions(args.titan_version, "2.1.0") >= 1:
+        # version is 2.1.0 or higher
+        return ["titanium", "titan23", "other_benchmarks"]
+    else:
+        return ["titan_new", "titan23", "other_benchmarks"]
 
 
 def compare_versions(version1, version2):

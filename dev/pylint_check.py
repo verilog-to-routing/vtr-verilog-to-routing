@@ -33,7 +33,6 @@ paths_to_lint = [
 # These python files existed before the linter.
 # At some point they should be cleaned up and removed from this list
 grandfathered_files = [
-    repo_path / "sweep_build_configs.py",
     repo_path / "dev/vtr_gdb_pretty_printers.py",
     repo_path / "dev/submit_slurm.py",
     repo_path / "dev/code_format_fixup.py",
@@ -149,9 +148,9 @@ def expand_paths():
             for glob_path in path.glob(glob_str):
                 paths.append(glob_path)
 
-        # Non-existant paths, and unhanlded file types error
+        # Non-existent paths, and unhanlded file types error
         elif not path.exists():
-            error("Non-existant path:", path)
+            error("Non-existent path:", path)
         else:
             error("Unhandled path:", path)
     return paths
@@ -209,9 +208,10 @@ def main():
         # Pylint checks to ignore
         ignore_list = []
 
-        # Ignore function argument indenting, which is currently incompabile with black
-        # https://github.com/psf/black/issues/48
-        ignore_list.append("C0330")
+        # Ignore consider-using-f-string.
+        # Many Python scripts in this repo use .format instead of f-strings.
+        # We should replace these in the future.
+        ignore_list.append("C0209")
 
         # Build pylint command
         cmd = ["pylint", path, "-s", "n"]
@@ -220,6 +220,12 @@ def main():
         # Don't object to single-letter variable names (that's not in PEP8)
         # see https://stackoverflow.com/q/21833872
         cmd.append("--variable-rgx=[a-z][a-z0-9_]{0,40}$")
+
+        # Increase the max number of positional arguments.
+        # Many legacy functions in this codebase use 25+ positional arguments.
+        # We should refactor these functions to use fewer parameters or
+        # configuration objects in the future.
+        cmd.append("--max-positional-arguments=30")
 
         # Run pylint and check output
         process = subprocess.run(cmd, check=False, stdout=subprocess.PIPE)

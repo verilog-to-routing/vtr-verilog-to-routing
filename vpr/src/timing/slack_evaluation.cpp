@@ -214,7 +214,7 @@ bool SetupSlackCrit::incr_update_max_req_and_worst_slack(const tatum::TimingGrap
      * number the incremental update can be more efficient.
      *
      * This is essentially the same calculation as recompute_max_req_and_worst_slack() (which iterates
-     * over *all* primary). By interating only over the modified nodes, this will produce the correct 
+     * over *all* primary). By interacting only over the modified nodes, this will produce the correct 
      * result *except* when the previous max-required/worst-slack have changed.
      *
      * In such as case, if the previously dominant node has had it's required time decreased (or worst 

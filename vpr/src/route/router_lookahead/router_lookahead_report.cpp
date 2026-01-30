@@ -35,7 +35,7 @@ namespace {
 /**
  * @brief Struct to hold overestimation information found while profiling
  *        sample routes. Here, overestimation is defined as the amount the
- *        router lookahead (heuristic_delay) overestimated the actualy delay
+ *        router lookahead (heuristic_delay) overestimated the actually delay
  *        of the path (path_delay).
  */
 struct t_overestimation_info {
@@ -126,7 +126,7 @@ static void profile_sample_routes(std::ofstream& os,
     RouteTree tree(sample_rr_node);
     e_rr_type sample_rr_node_type = rr_graph.node_type(sample_rr_node);
     RouterStats router_stats;
-    ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
+    ConnectionParameters conn_params(ParentNetId::INVALID(), UNDEFINED, false, std::unordered_map<RRNodeId, int>());
     vtr::vector<RRNodeId, RTExploredNode> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
                                                                                                                         cost_params,
                                                                                                                         bounding_box,
@@ -256,7 +256,7 @@ static void profile_lookahead_overestimation(std::ofstream& os,
     os << "Important metrics in the data below include the Mean Squared Error (MSE)\n";
     os << "between the estimated cost of the path and the actual cost of the path, and\n";
     os << "the worst overestimation of the cost of the path. The MSE measures how\n";
-    os << "acccurate the router lookahead is. The more accurate the router lookahead\n";
+    os << "accurate the router lookahead is. The more accurate the router lookahead\n";
     os << "is, the faster the router will be while maintaining good quality. The\n";
     os << "max overestimation is a measure of how admissible the router lookahead is\n";
     os << "as a heuristic in the router. The higher this number is, the worse the\n";
@@ -278,7 +278,8 @@ static void profile_lookahead_overestimation(std::ofstream& os,
     std::unique_ptr<RouterLookahead> temp_router_lookahead = make_router_lookahead(temp_det_routing_arch, e_router_lookahead::NO_OP,
                                                                                    /*write_lookahead=*/"", /*read_lookahead=*/"",
                                                                                    /*segment_inf=*/{},
-                                                                                   false /*is_flat*/);
+                                                                                   false /*is_flat*/,
+                                                                                   1 /*route_verbosity*/);
 
     // Create the router to perform the all-destination dijkstra search,
     // TODO: The parallel connection router would be ideal for this use case.
@@ -291,7 +292,8 @@ static void profile_lookahead_overestimation(std::ofstream& os,
         device_ctx.rr_rc_data,
         rr_graph.rr_switch(),
         route_ctx.rr_node_route_inf,
-        false /*is_flat*/);
+        false /*is_flat*/,
+        router_opts.route_verbosity);
 
     // Collect the sink RR nodes. Only sink RR nodes can be the target of the
     // heuristic, so they are the only ones that we care about.

@@ -234,7 +234,7 @@ can also be used with the ``<direct>`` tag in the same way, example:
     </direct>
 
 If multiple FASM features are required for a mux, they can be specified using
-comma's as a seperator.  Example:
+comma's as a separator.  Example:
 
 .. code-block:: xml
 
@@ -282,6 +282,6 @@ spelling of the metadata, and create tests that the mapping is working as
 expected.
 
 Also note that "genfasm" will not accept "x" (unknown/don't care) or "z"
-(high impedence) values in parameters.  Prior to emitting the eblif for place
+(high impedance) values in parameters.  Prior to emitting the eblif for place
 and route, ensure that all parameters that will be mapped to FASM have a
 valid "1" or "0".

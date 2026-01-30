@@ -1,3 +1,7 @@
+#include <sstream>
+#include <iostream>
+#include <string>
+
 #include "../src/base/partition_region.h"
 
 #include "catch2/catch_test_macros.hpp"

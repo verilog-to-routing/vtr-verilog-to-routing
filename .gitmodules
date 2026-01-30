@@ -13,3 +13,12 @@
 [submodule "libs/EXTERNAL/yosys"]
 	path = libs/EXTERNAL/yosys
 	url = https://github.com/YosysHQ/yosys.git
+[submodule "libs/EXTERNAL/yosys-slang"]
+	path = libs/EXTERNAL/yosys-slang
+	url = https://github.com/povik/yosys-slang.git
+[submodule "libs/EXTERNAL/yaml-cpp"]
+	path = libs/EXTERNAL/yaml-cpp
+	url = https://github.com/jbeder/yaml-cpp.git
+[submodule "libs/EXTERNAL/libsdcparse"]
+	path = libs/EXTERNAL/libsdcparse
+	url = https://github.com/verilog-to-routing/libsdcparse.git

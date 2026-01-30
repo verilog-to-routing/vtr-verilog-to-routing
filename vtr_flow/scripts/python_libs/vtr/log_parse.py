@@ -7,12 +7,7 @@ from collections import OrderedDict
 from pathlib import Path
 import abc
 
-try:
-    # Try for the fast c-based version first
-    import xml.etree.cElementTree as ET
-except ImportError:
-    # Fall back on python implementation
-    import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ET
 
 from vtr.error import InspectError
 from vtr import load_config_lines
@@ -54,7 +49,7 @@ class PassRequirement(abc.ABC):
         self._type = type
 
     def metric(self):
-        """Return pass matric"""
+        """Return pass metric"""
         return self._metric
 
     @abc.abstractmethod
@@ -283,7 +278,7 @@ class ParseResults:
         self._metrics[(arch, circuit, script_param)] = parse_result
 
     def metrics(self, arch, circuit, script_param=None):
-        """Return individual metric based on the architechure, circuit and script"""
+        """Return individual metric based on the architecture, circuit and script"""
         script_param = load_script_param(script_param)
         if (arch, circuit, script_param) in self._metrics:
             return self._metrics[(arch, circuit, script_param)]
@@ -314,18 +309,16 @@ def load_parse_patterns(parse_config_filepath):
     """
     Loads the parse patterns from the desired file.
     These parse patterns are later used to load in the results file
-    The lines of this file should be formated in either of the following ways:
+    The lines of this file should be formatted in either of the following ways:
         name;path;regex;[default value]
         name;path;regex
     """
     parse_patterns = OrderedDict()
 
     for line in load_config_lines(parse_config_filepath):
-
         components = line.split(";")
 
         if len(components) == 3 or len(components) == 4:
-
             name = components[0]
             filepath = components[1]
             regex_str = components[2]
@@ -431,7 +424,7 @@ def load_parse_results(parse_results_filepath):
     if not Path(parse_results_filepath).exists():
         return parse_results
 
-    with open(parse_results_filepath) as file:
+    with open(parse_results_filepath, "r", encoding="utf-8") as file:
         for lineno, row in enumerate(file):
             if row[0] == "+":
                 row = row[1:]
@@ -480,7 +473,7 @@ def determine_lut_size(architecture_file):
 
     lut_size = 0
     saw_blif_names = False
-    for elem in arch_xml.findall(".//pb_type"):  # Xpath recrusive search for 'pb_type'
+    for elem in arch_xml.findall(".//pb_type"):  # Xpath recursive search for 'pb_type'
         blif_model = elem.get("blif_model")
         if blif_model and blif_model == ".names":
             saw_blif_names = True
@@ -527,10 +520,10 @@ def determine_memory_addr_width(architecture_file):
 
 def determine_min_w(log_filename):
     """
-    determines the miniumum width.
+    determines the minimum width.
     """
     min_w_regex = re.compile(r"\s*Best routing used a channel width factor of (?P<min_w>\d+).")
-    with open(log_filename) as file:
+    with open(log_filename, "r", encoding="utf-8") as file:
         for line in file:
             match = min_w_regex.match(line)
             if match:

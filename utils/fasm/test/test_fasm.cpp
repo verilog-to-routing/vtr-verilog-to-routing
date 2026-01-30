@@ -179,7 +179,7 @@ equivalent port pins rotation.
 The output pin description format is:
 "PIN_<xlow>_<ylow>_<sub_tile_type>_<sub_tile_port>_<port_pin_index>"
 
-Pin decriptions returned by this functions are injected as FASM features to the
+Pin descriptions returned by this functions are injected as FASM features to the
 edges of a rr graph that are immediately connected with pins from "outside"
 (not to from/to a SOURCE or SINK). Then, after genfasm is run they are identified,
 and decoded to get all the pin information. This allows to get information
@@ -192,7 +192,7 @@ static std::string get_pin_feature (size_t inode) {
     // Get tile physical tile and the pin number
     int ilow = rr_graph.node_xlow(RRNodeId(inode));
     int jlow = rr_graph.node_ylow(RRNodeId(inode));
-    int layer_num = rr_graph.node_layer(RRNodeId(inode));
+    int layer_num = rr_graph.node_layer_low(RRNodeId(inode));
     auto physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_num});
     int pin_num = rr_graph.node_pin_num(RRNodeId(inode));
 
@@ -277,8 +277,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                                           (size_t)inode,
                                           sink_inode, 
                                           switch_id,
-                                          vtr::string_view("fasm_features"), 
-                                          vtr::string_view(value.data(), value.size()),
+                                          "fasm_features",
+                                          value,
                                           device_ctx.arch);
             }
         }
@@ -295,6 +295,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        kRrGraphFile,
                        echo_enabled,
                        echo_file_name,
+                       vpr_setup.RouterOpts.route_verbosity,
                        is_flat);
         vpr_free_all(arch, vpr_setup);
     }
@@ -316,7 +317,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
               &options, &vpr_setup, &arch);
 
     vpr_setup.PackerOpts.doPacking             = e_stage_action::LOAD;
-    vpr_setup.PlacerOpts.doPlacement           = e_stage_action::LOAD;
+    vpr_setup.PlacerOpts.do_placement          = e_stage_action::LOAD;
     vpr_setup.APOpts.doAP                      = e_stage_action::SKIP;
     vpr_setup.RouterOpts.doRouting             = e_stage_action::LOAD;
     vpr_setup.RouterOpts.read_rr_edge_metadata = true;

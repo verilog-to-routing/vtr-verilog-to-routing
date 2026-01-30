@@ -30,7 +30,7 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
     } else if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
         t_physical_tile_type_ptr type = grid.get_physical_type({rr_graph.node_xlow(inode),
                                                                 rr_graph.node_ylow(inode),
-                                                                rr_graph.node_layer(inode)});
+                                                                rr_graph.node_layer_low(inode)});
 
         std::string pin_name = block_type_pin_index_to_name(type, rr_graph.node_pin_num(inode), is_flat);
 

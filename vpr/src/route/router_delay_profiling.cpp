@@ -18,7 +18,8 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
           g_vpr_ctx.device().rr_rc_data,
           g_vpr_ctx.device().rr_graph.rr_switch(),
           g_vpr_ctx.mutable_routing().rr_node_route_inf,
-          is_flat)
+          is_flat,
+          /*route_verbosity=*/1)
     , is_flat_(is_flat) {
     const auto& grid = g_vpr_ctx.device().grid;
     int num_layers = grid.get_num_layers();
@@ -107,7 +108,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         VTR_ASSERT(cheapest.index == sink_node);
 
         vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, OPEN, nullptr, is_flat_);
+        std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&cheapest, UNDEFINED, nullptr, is_flat_);
 
         //find delay
         *net_delay = rt_node_of_sink->Tdel;
@@ -163,7 +164,8 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     auto router_lookahead = make_router_lookahead(det_routing_arch, e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
                                                   /*segment_inf=*/{},
-                                                  is_flat);
+                                                  is_flat,
+                                                  /*route_verbosity=*/1);
 
     SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
@@ -173,9 +175,10 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
         device_ctx.rr_rc_data,
         device_ctx.rr_graph.rr_switch(),
         route_ctx.rr_node_route_inf,
-        is_flat);
+        is_flat,
+        /*route_verbosity=*/1);
     RouterStats router_stats;
-    ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
+    ConnectionParameters conn_params(ParentNetId::INVALID(), UNDEFINED, false, std::unordered_map<RRNodeId, int>());
     vtr::vector<RRNodeId, RTExploredNode> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
                                                                                                                         cost_params,
                                                                                                                         bounding_box,
@@ -195,7 +198,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
             //Build the routing tree to get the delay
             tree = RouteTree(RRNodeId(src_rr_node));
             vtr::optional<const RouteTreeNode&> rt_node_of_sink;
-            std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&shortest_paths[sink_rr_node], OPEN, nullptr, router_opts.flat_routing);
+            std::tie(std::ignore, rt_node_of_sink) = tree.update_from_heap(&shortest_paths[sink_rr_node], UNDEFINED, nullptr, router_opts.flat_routing);
 
             VTR_ASSERT(rt_node_of_sink->inode == RRNodeId(sink_rr_node));
 
@@ -235,6 +238,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
 
 void alloc_routing_structs(const t_chan_width& chan_width,
                            const t_router_opts& router_opts,
+                           const t_crr_opts& crr_opts,
                            t_det_routing_arch& det_routing_arch,
                            const std::vector<t_segment_inf>& segment_inf,
                            const std::vector<t_direct_inf>& directs,
@@ -261,6 +265,7 @@ void alloc_routing_structs(const t_chan_width& chan_width,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
+                    crr_opts,
                     directs,
                     &warnings,
                     is_flat);

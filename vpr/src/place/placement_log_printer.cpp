@@ -98,7 +98,7 @@ void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
     sprintf(msg_.data(), "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
             costs.cost, costs.bb_cost, costs.timing_cost, annealing_state.t);
 
-    update_screen(ScreenUpdatePriority::MINOR, msg_.data(), PLACEMENT, timing_info);
+    update_screen(ScreenUpdatePriority::MINOR, msg_.data(), e_pic_type::PLACEMENT, timing_info);
 }
 
 void PlacementLogPrinter::print_resources_utilization() const {
@@ -213,11 +213,11 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     VTR_LOG("\n");
 
     sprintf(msg_.data(),
-            "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
+            "Initial Placement:  Cost=%g,  BB Cost=%g,  TD Cost=%g, Channel Factor=%d",
             costs.cost, costs.bb_cost, costs.timing_cost, placer_opts.place_chan_width);
 
     // Draw the initial placement
-    update_screen(ScreenUpdatePriority::MAJOR, msg_.data(), PLACEMENT, timing_info);
+    update_screen(ScreenUpdatePriority::MAJOR, msg_.data(), e_pic_type::PLACEMENT, timing_info);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0, 0);
@@ -266,11 +266,11 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     }
 
     sprintf(msg_.data(),
-            "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
+            "Placement Completed: Cost=%g,  bb_cost=%g, td_cost=%g, Channel Factor=%d",
             placer_.costs_.cost, placer_.costs_.bb_cost, placer_.costs_.timing_cost, placer_.placer_opts_.place_chan_width);
     VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n", placer_.costs_.cost,
             placer_.costs_.bb_cost, placer_.costs_.timing_cost);
-    update_screen(ScreenUpdatePriority::MAJOR, msg_.data(), PLACEMENT, placer_.timing_info_);
+    update_screen(ScreenUpdatePriority::MAJOR, msg_.data(), e_pic_type::PLACEMENT, placer_.timing_info_);
 
     // print the noc costs info
     if (placer_.noc_opts_.noc) {

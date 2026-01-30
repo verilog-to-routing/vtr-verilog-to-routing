@@ -127,10 +127,10 @@ struct ClusterGainStats {
     /// @brief Indicator for the initial search for feasible blocks.
     bool initial_search_for_feasible_blocks;
 
-    /// @brief Limit for the number of candiate proposed at each stage.
+    /// @brief Limit for the number of candidates proposed at each stage.
     unsigned candidates_propose_limit;
 
-    /// @brief Counter for the number of candiate proposed at each stage.
+    /// @brief Counter for the number of candidates proposed at each stage.
     unsigned num_candidates_proposed;
 
     /// @brief Check if the current stage candidates proposed limit is reached.
@@ -232,7 +232,7 @@ class GreedyCandidateSelector {
      *  @param is_global
      *              The set of global nets in the Atom Netlist. These will be
      *              routed on special dedicated networks, and hence are less
-     *              relavent to locality / attraction.
+     *              relevant to locality / attraction.
      *  @param net_output_feeds_driving_block_input
      *              The set of nets whose output feeds the block that drives
      *              itself. This may cause double-counting in the gain
@@ -596,14 +596,14 @@ class GreedyCandidateSelector {
     /// @brief Data pre-computed to help select unrelated molecules when APPack
     ///        is being used. This is the same data as unrelated_clustering_data_,
     ///        but it is spatially distributed over the device.
-    /// For each grid location on the device (x, y), this provides a list of
+    /// For each grid location on the device (layer, x, y), this provides a list of
     /// molecules sorted by their gain, where the first dimension is the number
     /// of external outputs of the molecule.
     /// When APPack is not used, this will be uninitialized.
-    ///     [0..flat_grid_width][0..flat_grid_height][0..max_num_used_ext_pins]
+    ///     [0..flat_grid_num_layers][0..flat_grid_width][0..flat_grid_height][0..max_num_used_ext_pins]
     /// Here, flat_grid width/height is the maximum x and y positions given in
     /// the flat placement.
-    vtr::NdMatrix<std::vector<std::vector<PackMoleculeId>>, 2> appack_unrelated_clustering_data_;
+    vtr::NdMatrix<std::vector<std::vector<PackMoleculeId>>, 3> appack_unrelated_clustering_data_;
 
     /// @brief The APPack state which contains the options used to configure
     ///        APPack and the flat placement.

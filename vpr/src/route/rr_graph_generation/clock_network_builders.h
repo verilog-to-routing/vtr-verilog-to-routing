@@ -8,6 +8,8 @@
 #include "rr_graph_clock.h"
 #include "rr_graph_type.h"
 
+#include "vpr_types.h"
+
 class t_rr_graph_storage;
 class ClockRRGraphBuilder;
 
@@ -24,44 +26,44 @@ struct MetalLayer {
 
 struct Wire {
     MetalLayer layer;
-    int start = OPEN;
-    int length = OPEN;
-    int position = OPEN;
+    int start = UNDEFINED;
+    int length = UNDEFINED;
+    int position = UNDEFINED;
 };
 
 struct WireRepeat {
-    int x = OPEN;
-    int y = OPEN;
+    int x = UNDEFINED;
+    int y = UNDEFINED;
 };
 
 struct RibDrive {
     std::string name;
-    int offset = OPEN;
-    int switch_idx = OPEN;
+    int offset = UNDEFINED;
+    int switch_idx = UNDEFINED;
 };
 
 struct RibTaps {
     std::string name;
-    int offset = OPEN;
-    int increment = OPEN;
+    int offset = UNDEFINED;
+    int increment = UNDEFINED;
 };
 
 struct SpineDrive {
     std::string name;
-    int offset = OPEN;
-    int switch_idx = OPEN;
+    int offset = UNDEFINED;
+    int switch_idx = UNDEFINED;
 };
 
 struct SpineTaps {
     std::string name;
-    int offset = OPEN;
-    int increment = OPEN;
+    int offset = UNDEFINED;
+    int increment = UNDEFINED;
 };
 
 struct HtreeDrive {
     std::string name;
     t_physical_tile_loc offset;
-    int switch_idx = OPEN;
+    int switch_idx = UNDEFINED;
 };
 
 struct HtreeTaps {
@@ -73,7 +75,7 @@ struct HtreeTaps {
 class ClockNetwork {
   protected:
     std::string clock_name_;
-    int num_inst_ = OPEN;
+    int num_inst_ = UNDEFINED;
 
   public:
     /*
@@ -95,7 +97,7 @@ class ClockNetwork {
     void set_num_instance(int num_inst);
 
     /*
-     * Member funtions
+     * Member functions
      */
     /* Creates the RR nodes for the clock network wires and adds them to the reverse lookup
      * in ClockRRGraphBuilder. The reverse lookup maps the nodes to their switch point locations */
@@ -117,28 +119,28 @@ class ClockNetwork {
 class ClockRib : public ClockNetwork {
   private:
     // start and end x and position in the y
-    Wire x_chan_wire;
-    WireRepeat repeat;
+    Wire x_chan_wire_;
+    WireRepeat repeat_;
 
     // offset in the x
-    RibDrive drive;
+    RibDrive drive_;
 
     // offset and incr in the x
-    RibTaps tap;
+    RibTaps tap_;
 
     // segment indices
-    int right_seg_idx = OPEN;
-    int left_seg_idx = OPEN;
-    int drive_seg_idx = OPEN;
+    int right_seg_idx_ = UNDEFINED;
+    int left_seg_idx_ = UNDEFINED;
+    int drive_seg_idx_ = UNDEFINED;
 
   public:
     /** Constructor**/
     ClockRib() {} // default
     ClockRib(Wire wire1, WireRepeat repeat1, RibDrive drive1, RibTaps tap1)
-        : x_chan_wire(wire1)
-        , repeat(repeat1)
-        , drive(drive1)
-        , tap(tap1) {}
+        : x_chan_wire_(wire1)
+        , repeat_(repeat1)
+        , drive_(drive1)
+        , tap_(tap1) {}
     /*
      * Getters
      */
@@ -201,12 +203,12 @@ class ClockSpine : public ClockNetwork {
     // segment indices
     /* AA:Initially, after loading up these values in device setup, the indices will be relative to the **unified** segment_inf vector which
      * is carried in the device.Arch; The sole purpose of these indices is for calculating the cost index when allocating the drive, left, and 
-     * right nodes for the network. We now use segment indices realtive to the **parallel** vector of segments to setup the cost index, so these
+     * right nodes for the network. We now use segment indices relative to the **parallel** vector of segments to setup the cost index, so these
      * will be remapped later in the map_relative_seg_indices.  */
 
-    int right_seg_idx = OPEN;
-    int left_seg_idx = OPEN;
-    int drive_seg_idx = OPEN;
+    int right_seg_idx = UNDEFINED;
+    int left_seg_idx = UNDEFINED;
+    int drive_seg_idx = UNDEFINED;
 
   public:
     /*

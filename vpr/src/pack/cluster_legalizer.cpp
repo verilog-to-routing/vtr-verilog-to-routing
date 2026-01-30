@@ -17,7 +17,6 @@
 #include <vector>
 #include "atom_lookup.h"
 #include "atom_netlist.h"
-#include "cad_types.h"
 #include "cluster_placement.h"
 #include "cluster_router.h"
 #include "globals.h"
@@ -140,6 +139,7 @@ static void free_pb_stats_recursive(t_pb* pb) {
  */
 static bool check_cluster_floorplanning(AtomBlockId atom_blk_id,
                                         PartitionRegion& cluster_pr,
+                                        t_logical_block_type_ptr cluster_type,
                                         const UserPlaceConstraints& constraints,
                                         int log_verbosity,
                                         bool& cluster_pr_needs_update) {
@@ -154,6 +154,18 @@ static bool check_cluster_floorplanning(AtomBlockId atom_blk_id,
                  atom_blk_id);
         cluster_pr_needs_update = false;
         return true;
+    }
+
+    // Check if the partition is constrained to any specific logical block types.
+    if (constraints.is_part_constrained_to_lb_types(part_id)) {
+        // If it is, check if this cluster's type is valid.
+        const auto& constrained_block_types = constraints.get_part_lb_type_constraints(part_id);
+        if (!constrained_block_types.contains(cluster_type)) {
+            VTR_LOGV(log_verbosity > 3,
+                     "\t\t\t Intersect: Atom block %d failed lb-type constraint for cluster type %s\n",
+                     atom_blk_id, cluster_type->name.c_str());
+            return false;
+        }
     }
 
     // Get the Atom and Cluster Partition Regions
@@ -315,7 +327,7 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
 /*
  * @brief Check that the two atom blocks blk_id and sibling_blk_id (which should
  *        both be memory slices) are feasible, in the sense that they have
- *        precicely the same net connections (with the exception of nets in data
+ *        precisely the same net connections (with the exception of nets in data
  *        port classes).
  *
  * Note that this routine does not check pin feasibility against the cur_pb_type; so
@@ -369,7 +381,7 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
                 //We can get the actual net provided the port exists
                 //
                 //Note that if the port did not exist, the net is left
-                //as invalid/disconneced
+                //as invalid/disconnected
                 if (blk_port_id) {
                     blk_net_id = atom_ctx.netlist().port_net(blk_port_id, ipin);
                 }
@@ -504,7 +516,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     }
     const t_pb_type* pb_type = pb_graph_node->pb_type;
 
-    /* Any pb_type under an mode, which is disabled for packing, should not be considerd for mapping
+    /* Any pb_type under an mode, which is disabled for packing, should not be considered for mapping
      * Early exit to flag failure
      */
     if (true == pb_type->parent_mode->disable_packing) {
@@ -673,7 +685,7 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* p
     for (auto cur_pb = primitive_pb->parent_pb; cur_pb; cur_pb = cur_pb->parent_pb) {
         const auto depth = cur_pb->pb_graph_node->pb_type->depth;
         const auto pin_class = pb_graph_pin->parent_pin_class[depth];
-        VTR_ASSERT(pin_class != OPEN);
+        VTR_ASSERT(pin_class != UNDEFINED);
 
         const auto driver_blk_id = atom_ctx.netlist().net_driver_block(net_id);
 
@@ -1174,6 +1186,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         bool cluster_pr_needs_update = false;
         bool block_pack_floorplan_status = check_cluster_floorplanning(atom_blk_id,
                                                                        new_cluster_pr,
+                                                                       cluster.type,
                                                                        floorplanning_ctx.constraints,
                                                                        log_verbosity_,
                                                                        cluster_pr_needs_update);

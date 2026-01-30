@@ -59,7 +59,7 @@ size_t sweep_constant_primary_outputs(AtomNetlist& netlist, int verbosity);
  */
 
 /**
- * @brief Deterimine whether a truth table encodes the logic functions 'On' set (returns true)
+ * @brief Determine whether a truth table encodes the logic functions 'On' set (returns true)
  *        or 'Off' set (returns false)
  */
 bool truth_table_encodes_on_set(const AtomNetlist::TruthTable& truth_table);
@@ -79,16 +79,16 @@ AtomNetlist::TruthTable expand_truth_table(const AtomNetlist::TruthTable& truth_
  *
  *   @param truth_table   The truth table to expand
  *   @param num_inputs    The number of inputs to use
- *   @param permutation   A vector indicies to permute, permutation[i] is the input pin where
+ *   @param permutation   A vector indices to permute, permutation[i] is the input pin where
  *                        the signal currently connected to input i should be placed
  */
 AtomNetlist::TruthTable permute_truth_table(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs, const std::vector<int>& permutation);
 
-///@brief Convers a truth table to a lut mask (sequence of binary values representing minterms)
+///@brief Converts a truth table to a lut mask (sequence of binary values representing minterms)
 std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs);
 
 /**
- * @brief Convers a logic cube (potnetially including don't cares) into
+ * @brief Converts a logic cube (potnetially including don't cares) into
  *        a sequence of minterm numbers
  */
 std::vector<size_t> cube_to_minterms(std::vector<vtr::LogicValue> cube);

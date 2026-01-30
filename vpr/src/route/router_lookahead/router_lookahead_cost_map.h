@@ -16,7 +16,7 @@
  *
  * Originally, the first dimension was used to differentiate the lookahead between CHANX and CHANY nodes. It turns out
  * that this distinction leads to worse results when using the extended map lookahead, therefore, this dimension of the cost map
- * has been collapsed, therefore this first dimention is virtually unused, but is kept to have the extended map lookahead as close
+ * has been collapsed, therefore this first dimension is virtually unused, but is kept to have the extended map lookahead as close
  * as possible to the original extended map.
  */
 class CostMap {

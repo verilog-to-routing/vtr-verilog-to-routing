@@ -304,7 +304,7 @@ Consider the following:
 
     .latch g h re clk 0
 
-The ``.names``' pin names are:
+The ``.names`` pin names are:
 
 - ``f.in[0]`` (driven by net ``a``)
 - ``f.in[1]`` (driven by net ``b``)
@@ -327,7 +327,7 @@ since the ``.names`` and ``.latch`` primitives are named ``f`` and ``h`` :ref:`b
 
 Extended BLIF (.eblif)
 ----------------------
-VPR also supports several extentions to :ref:`structural BLIF <vpr_blif_file>` to address some of its limitations.
+VPR also supports several extensions to :ref:`structural BLIF <vpr_blif_file>` to address some of its limitations.
 
 .. note:: By default VPR assumes file with ``.eblif`` are in extneded BLIF format. The format can be controlled with :option:`vpr --circuit_format`.
 
@@ -499,7 +499,7 @@ A ``block`` tag has the following attributes:
     In all other situations, the name is arbitrary.
 
  * ``instance``
-    The phyiscal block in the FPGA architecture that the current block represents.
+    The physical block in the FPGA architecture that the current block represents.
     Should be of format: architecture_instance_name[instance #].
     For example, the 5th index BLE in a CLB should have ``instance="ble[5]"``
 
@@ -515,7 +515,7 @@ The names of these connections use the following format:
 
 #. Unused pins are identified with the keyword open.
 #. The name of an input pin to a complex logic block is the same as the name of the net using that pin.
-#. The name of an output pin of a primitve (leaf block) is the same as the name of the net using that pin.
+#. The name of an output pin of a primitive (leaf block) is the same as the name of the net using that pin.
 #. The names of all other pins are specified by describing their immediate drivers.  This format is ``[name_of_immediate_driver_block].[port_name][pin#]->interconnect_name``.
 
 For primitives with equivalent inputs VPR may rotate the input pins.
@@ -540,9 +540,9 @@ For example, consider a netlist contains a 2-input LUT named ``c``, which is imp
     </block>
     ...
 
-In the original netlist the two LUT inputs were connected to pins at indicies 0 and 1 (the only input pins).
-However during clustering the inputs were rotated, and those nets now connect to the pins at indicies 2 and 4 (line 4).
-The ``<port_rotation_map>`` tag specified the port name it applies to (``name`` attribute), and its contents lists the pin indicies each pin in the port list is associated with in the original netlist (i.e. the pins ``lut5.in[2]->direct:lut5`` and ``lut5.in[4]->direct:lut5`` respectively correspond to indicies 1 and 0 in the original netlist).
+In the original netlist the two LUT inputs were connected to pins at indices 0 and 1 (the only input pins).
+However during clustering the inputs were rotated, and those nets now connect to the pins at indices 2 and 4 (line 4).
+The ``<port_rotation_map>`` tag specified the port name it applies to (``name`` attribute), and its contents lists the pin indices each pin in the port list is associated with in the original netlist (i.e. the pins ``lut5.in[2]->direct:lut5`` and ``lut5.in[4]->direct:lut5`` respectively correspond to indices 1 and 0 in the original netlist).
 
 .. note:: Use :option:`vpr --net_file` to override the default net file name.
 
@@ -647,7 +647,7 @@ The placement files output by VPR also include (as a comment) an extra field: th
 
 .. figure:: fpga_coordinate_system.*
 
-    FPGA co-ordinate system.
+    FPGA coordinate system.
 
 :numref:`fig_fpga_coord_system` shows the coordinate system used by VPR for a small 2 x 2 CLB FPGA.
 The number of CLBs in the x and y directions are denoted by ``nx`` and ``ny``, respectively.
@@ -695,6 +695,42 @@ Placement File Format Example
     out:xor5    0       2       0       1      #5
     xor5        1       2       0       0      #6
     [1]         1       1       0       1      #7
+
+.. _vpr_flat_place_file:
+
+Flat Placement File Format (.fplace)
+------------------------------------
+The flat placement file is a text file where each line describes the location of
+an atom. Each line in the flat placement file should have the following syntax:
+
+.. code-block:: none
+
+        <atom_name : str> <x : float> <y : float> <layer : float> <atom_sub_tile : int>
+
+For example:
+
+    .. code-block:: none
+
+        n523  6 8 0 0
+        n522  6 8 0 0
+        n520  6 9 0 0
+        n518  6 9 0 0
+
+The position of the atom on the FPGA is given by 3 floating point values
+(``x``, ``y``, ``layer``). We allow x and y locations to be off-grid since
+this flat placement will be fed into the packer and placer, which will snap
+the positions to grid locations. For 2D FPGA architectures, the ``layer`` should be 0.
+
+The ``sub_tile`` is a clustered placement construct: which cluster-level
+location at a given (x, y, layer) should these atoms go at (relevant when
+multiple clusters can be stacked there). A sub-tile of -1 may be used when
+the sub-tile of an atom is unknown (allowing the packing algorithm to choose
+any sub-tile at the given (x, y, layer) location).
+
+When used with ``flat-recon`` full legalizer (see :option:`vpr --ap_full_legalizer`),
+each atom in a molecule should have compatible location information. It is legal to
+leave some molecules unconstrained; the reconstruction phase will choose where
+to place them but does not attempt to optimize these locations.
 
 .. _vpr_route_file:
 
@@ -784,7 +820,7 @@ Each of these sections are separated into separate tags as described below.
 Top Level Tags
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The first tag in all rr graph files is the ``<rr_graph>`` tag that contains detailed subtags for each catagory in the rr graph.
+The first tag in all rr graph files is the ``<rr_graph>`` tag that contains detailed subtags for each category in the rr graph.
 Each tag has their subsequent subtags that describes one entity. For example, ``<segments>`` includes all the segments in the graph where each ``<segment>`` tag outlines one type of segment.
 
 The ``rr_graph`` tag contains the following tags:
@@ -854,7 +890,7 @@ A ``switches`` tag contains all the switches and its information within the FPGA
 
 .. rrgraph:tag:: <timing R="float" cin="float" Cout="float" Tdel="float/>
 
-        This optional subtag contains information used for timing analysis. Without it, the program assums all subtags to contain a value of 0.
+        This optional subtag contains information used for timing analysis. Without it, the program assumes all subtags to contain a value of 0.
 
     :opt_param R, Cin, Cout:
         The resistance, input capacitance and output capacitance of the switch.
@@ -958,7 +994,7 @@ The ``rr_nodes`` tag stores information about each node for the routing resource
         Valid inputs for class types are { ``CHANX`` | ``CHANY`` | ``SOURCE`` | ``SINK`` | ``OPIN`` | ``IPIN`` }.
         Where ``CHANX`` and ``CHANY`` describe a horizontal and vertical channel.
         Sources and sinks describes where nets begin and end.
-        ``OPIN`` represents an output pin and ``IPIN`` representd an input pin
+        ``OPIN`` represents an output pin and ``IPIN`` represented an input pin
 
     :opt_param direction:
         If the node represents a track (``CHANX`` or ``CHANY``), this field represents its direction as {``INC_DIR`` | ``DEC_DIR`` | ``BI_DIR``}.
@@ -1038,7 +1074,7 @@ An example of what a generated routing resource graph file would look like is sh
             <y_list index="2" info="5"/>
         </channels>
         <switches>
-            <switch id="0" name="my_switch" buffered="1">
+            <switch id="0" name="my_switch" type="mux">
                 <timing R="100" Cin="1233-12" Cout="123e-12" Tdel="1e-9"/>
                 <sizing mux_trans_size="2.32" buf_size="23.54"/>
             </switch>
@@ -1050,13 +1086,13 @@ An example of what a generated routing resource graph file would look like is sh
         </segments>
         <block_types>
             <block_type id="0" name="io" width="1" height="1">
-                <pin_class type="input">
+                <pin_class type="INPUT">
                     <pin ptc="0">DATIN[0]</pin>
                     <pin ptc="1">DATIN[1]</pin>
                     <pin ptc="2">DATIN[2]</pin>
                     <pin ptc="3">DATIN[3]</pin>
                 </pin_class>
-                <pin_class type="output">
+                <pin_class type="OUTPUT">
                     <pin ptc="4">DATOUT[0]</pin>
                     <pin ptc="5">DATOUT[1]</pin>
                     <pin ptc="6">DATOUT[2]</pin>
@@ -1064,10 +1100,10 @@ An example of what a generated routing resource graph file would look like is sh
                 </pin_class>
             </block_type>
             <block_type id="1" name="buf" width="1" height="1">
-                <pin_class type="input">
+                <pin_class type="INPUT">
                     <pin ptc="0">IN</pin>
                 </pin_class>
-                <pin_class type="output">
+                <pin_class type="OUTPUT">
                     <pin ptc="1">OUT</pin>
                 </pin_class>
             </block_type>
@@ -1129,7 +1165,7 @@ Network-on-Chip (NoC) Traffic Flows Format (.flows)
 In order to co-optimize for the NoC placement VPR needs expected performance metrics of the NoC.
 VPR defines the performance requirements of the NoC as traffic flows. A traffic flow is a one-way communication between two
 logical routers in a design. The traffic flows provide the communications bandwidth and Quality of
-Service (QoS) requirements. The traffic flows are application dependant and need to be supplied
+Service (QoS) requirements. The traffic flows are application dependent and need to be supplied
 externally by a user. The traffic flows file is an XML based file format which designers
 can use to describe the traffic flows in a given application.
 
@@ -1138,7 +1174,7 @@ can use to describe the traffic flows in a given application.
 Top Level Tags
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The first tag in all NoC traffic flow files is the ``<traffic_flows>`` tag that contains detailed subtags for each catagory in the NoC traffic flows.
+The first tag in all NoC traffic flow files is the ``<traffic_flows>`` tag that contains detailed subtags for each category in the NoC traffic flows.
 
 The ``traffic_flows`` tag contains the following tags:
 
@@ -1154,7 +1190,7 @@ Single Flow
 A given traffic flow information is contained within the ``single_flow`` tag. There can be 0 or more single flow tags.
 0 would indicate that an application does not have any traffic flows.
 
-.. rrgraph:tag:: <channel src="logical_router_name" dst="logical_router_name" bandwidth="float" latency_cons="float" priority="int"/>
+.. rrgraph:tag:: <single_flow src="logical_router_name" dst="logical_router_name" bandwidth="float" latency_cons="float" priority="int"/>
 
     :opt_param latency_cons:
         A floating point number which indicates the upper bound
@@ -1170,28 +1206,28 @@ A given traffic flow information is contained within the ``single_flow`` tag. Th
 
     :req_param src:
         A string which represents a logical router name in an application.
-        This logical router is the source endpoint for the traffic flow being described by the cor-
-        responding single flow tag. The logical router name must match the name of the router
+        This logical router is the source endpoint for the traffic flow being described by the corresponding 
+        single flow tag. The logical router name must match the name of the router
         as found in the clustered netlist; since this name assigned by the CAD tool, instead of
         having the designer go through the clustered netlist to retrieve the exact name we instead
-        allow designers to use regex patters in the logical router name. For example, instead of
-        ”noc_router_adapter_block:noc_router_layer1_mvm2:slave_tready_reg0” user could pro-
-        vide ”.*noc_router_layer1_mvm2.*”. This allows users to provide the instance name for a given logical router
+        allow designers to use regex patterns in the logical router name. For example, instead of
+        ``noc_router_adapter_block:noc_router_layer1_mvm2:slave_tready_reg0`` user could provide 
+        ``.*noc_router_layer1_mvm2.*``. This allows users to provide the instance name for a given logical router
         module in the design. This is a required attribute.
     
     :req_param dst:
         A string which represents a logical router name in an application.
-        This logical router is the deastination endpoint for the traffic flow being described by the cor-
-        responding single flow tag. The logical router name must match the name of the router
+        This logical router is the deastination endpoint for the traffic flow being described by the corresponding 
+        single flow tag. The logical router name must match the name of the router
         as found in the clustered netlist; since this name assigned by the CAD tool, instead of
         having the designer go through the clustered netlist to retrieve the exact name we instead
-        allow designers to use regex patters in the logical router name. For example, instead of
-        ”noc_router_adapter_block:noc_router_layer1_mvm3:slave_tready_reg0” user could pro-
-        vide ”.*noc_router_layer1_mvm3.*”. This allows users to provide the instance name for a given logical router
+        allow designers to use regex patterns in the logical router name. For example, instead of
+        ``noc_router_adapter_block:noc_router_layer1_mvm3:slave_tready_reg0`` user could provide 
+        ``.*noc_router_layer1_mvm3.*``. This allows users to provide the instance name for a given logical router
         module in the design. This is a required attribute.
 
     :req_param bandwidth:
-        A floating point number which indicates the data size in the
+        A floating point number which indicates the data bandwidth in the
         traffic flow communication. This is in units of bits-per-second (bps) and is a required
         attribute.
 
@@ -1217,9 +1253,9 @@ Block types usage summary (.txt .xml or .json)
 Block types usage summary is a file written in human or machine readable format.
 It describes types and the amount of cluster-level FPGA resources that are used
 by implemented design. This file is generated after the placement step with
-option: `--write_block_usage <filename>`. It can be saved as a human readable
+option: ``--write_block_usage <filename>``. It can be saved as a human readable
 text file or in XML or JSON file to provide machine readable output. Format is
-selected based on the extension of the `<filename>`.
+selected based on the extension of the ``<filename>``.
 
 The summary consists of 4 parameters:
 

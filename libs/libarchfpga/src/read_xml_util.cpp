@@ -174,8 +174,8 @@ t_metadata_dict process_meta_data(vtr::string_internment& strings,
             std::string key = get_attribute(meta_tag, "name", loc_data).as_string();
 
             std::string value = meta_tag.child_value();
-            data.add(strings.intern_string(vtr::string_view(key.c_str())),
-                     strings.intern_string(vtr::string_view(value.c_str())));
+            data.add(strings.intern_string(key),
+                     strings.intern_string(value));
             meta_tag = meta_tag.next_sibling(meta_tag.name());
         }
     }

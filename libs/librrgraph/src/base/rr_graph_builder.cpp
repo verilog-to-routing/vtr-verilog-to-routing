@@ -31,39 +31,35 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>>& RRGraphBuilder::node_in_edge_stora
     return node_in_edges_;
 }
 
-vtr::vector<RRNodeId, std::vector<short>>& RRGraphBuilder::node_ptc_storage() {
-    return node_tilable_track_nums_;
-}
-
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     e_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);
-    short node_layer = node_storage_.node_layer(node);
 
     for (int ix = node_storage_.node_xlow(node); ix <= node_storage_.node_xhigh(node); ix++) {
         for (int iy = node_storage_.node_ylow(node); iy <= node_storage_.node_yhigh(node); iy++) {
+            for (int iz = node_storage_.node_layer_low(node); iz <= node_storage_.node_layer_high(node); iz++) {
+                switch (node_type) {
+                    case e_rr_type::SOURCE:
+                    case e_rr_type::SINK:
+                    case e_rr_type::CHANZ:
+                    case e_rr_type::CHANY:
+                    case e_rr_type::CHANX:
+                        node_lookup_.add_node(node, iz, ix, iy, node_type, node_ptc_num, TOTAL_2D_SIDES[0]);
+                        break;
 
-            switch (node_type) {
-                case e_rr_type::SOURCE:
-                case e_rr_type::SINK:
-                case e_rr_type::CHANZ:
-                case e_rr_type::CHANY:
-                case e_rr_type::CHANX:
-                    node_lookup_.add_node(node, node_layer, ix, iy, node_type, node_ptc_num, TOTAL_2D_SIDES[0]);
-                    break;
-
-                case e_rr_type::OPIN:
-                case e_rr_type::IPIN:
-                    for (const e_side side : TOTAL_2D_SIDES) {
-                        if (node_storage_.is_node_on_specific_side(node, side)) {
-                            node_lookup_.add_node(node,node_layer, ix, iy, node_type, node_ptc_num, side);
+                    case e_rr_type::OPIN:
+                    case e_rr_type::IPIN:
+                        for (const e_side side : TOTAL_2D_SIDES) {
+                            if (node_storage_.is_node_on_specific_side(node, side)) {
+                                node_lookup_.add_node(node,iz, ix, iy, node_type, node_ptc_num, side);
+                            }
                         }
-                    }
-                    break;
+                        break;
 
-                default:
-                    VTR_LOG_ERROR("Invalid node type for node '%lu' in the routing resource graph file", size_t(node));
-                    break;
+                    default:
+                        VTR_LOG_ERROR("Invalid node type for node '%lu' in the routing resource graph file", size_t(node));
+                        break;
+                }
             }
         }
     }
@@ -76,9 +72,8 @@ RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, e_rr_type type, in
         node_side = side;
     }
     node_storage_.emplace_back();
-    node_tilable_track_nums_.emplace_back();
     RRNodeId new_node = RRNodeId(node_storage_.size() - 1);
-    node_storage_.set_node_layer(new_node, layer);
+    node_storage_.set_node_layer(new_node, layer, layer);
     node_storage_.set_node_type(new_node, type);
     node_storage_.set_node_coordinates(new_node, x, y, x, y);
     node_storage_.set_node_ptc_num(new_node, ptc);
@@ -102,7 +97,6 @@ void RRGraphBuilder::clear() {
     node_lookup_.clear();
     node_storage_.clear();
     node_in_edges_.clear();
-    node_tilable_track_nums_.clear();
     rr_node_metadata_.clear();
     rr_edge_metadata_.clear();
     rr_segments_.clear();
@@ -182,9 +176,18 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
     });
 }
 
-void RRGraphBuilder::create_edge_in_cache(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped) {
+void RRGraphBuilder::create_edge_in_cache(RRNodeId src,
+                                          RRNodeId dest,
+                                          RRSwitchId edge_switch,
+                                          bool remapped) {
     edges_to_build_.emplace_back(src, dest, size_t(edge_switch), remapped);
     is_edge_dirty_ = true; // Adding a new edge revokes the flag
+    is_incoming_edge_dirty_ = true;
+}
+
+void RRGraphBuilder::create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped) {
+    edges_to_build_.emplace_back(src, dest, size_t(edge_switch), remapped);
+    is_edge_dirty_ = true; /* Adding a new edge revokes the flag */
     is_incoming_edge_dirty_ = true;
 }
 
@@ -225,63 +228,22 @@ std::vector<RREdgeId> RRGraphBuilder::node_in_edges(RRNodeId node) const {
     return node_in_edges_[node];
 }
 
-void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::string& ptc_str) {
-    VTR_ASSERT(size_t(node) < node_storage_.size());
-    std::vector<std::string> ptc_tokens = vtr::StringToken(ptc_str).split(",");
-    VTR_ASSERT(ptc_tokens.size() >= 1);
-    set_node_ptc_num(node, std::stoi(ptc_tokens[0]));
-    if (ptc_tokens.size() > 1) {
-        VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
-        node_tilable_track_nums_[node].resize(ptc_tokens.size());
-        for (size_t iptc = 0; iptc < ptc_tokens.size(); iptc++) {
-          node_tilable_track_nums_[node][iptc] = std::stoi(ptc_tokens[iptc]);
-        }
-    }
-}
-
-std::string RRGraphBuilder::node_ptc_nums_to_string(RRNodeId node) const {
-    if (node_tilable_track_nums_.empty()) {
-        return std::to_string(size_t(node_storage_.node_ptc_num(node)));
-    }
-    VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
-    if (node_tilable_track_nums_[node].empty()) {
-        return std::to_string(size_t(node_storage_.node_ptc_num(node)));
-    }
-    std::string ret;
-    for (size_t iptc = 0; iptc < node_tilable_track_nums_[node].size(); iptc++) {
-        ret += std::to_string(size_t(node_tilable_track_nums_[node][iptc])) + ",";
-    }
-    // Remove the last comma
-    ret.pop_back();
-    return ret;
+void RRGraphBuilder::set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers) {
+    node_storage_.set_node_ptc_nums(node, ptc_numbers);
 }
 
 bool RRGraphBuilder::node_contain_multiple_ptc(RRNodeId node) const {
-    if (node_tilable_track_nums_.empty()) {
-        return false;
-    }
-    return node_tilable_track_nums_[node].size() > 1;
+    return node_storage_.node_contain_multiple_ptc(node);
 }
 
 void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id) {
-    VTR_ASSERT(size_t(node) < node_storage_.size());
-    VTR_ASSERT(size_t(node) < node_tilable_track_nums_.size());
-    VTR_ASSERT_MSG(node_storage_.node_type(node) == e_rr_type::CHANX || node_storage_.node_type(node) == e_rr_type::CHANY, "Track number valid only for CHANX/CHANY RR nodes");
-
-    size_t node_length = std::abs(node_storage_.node_xhigh(node) - node_storage_.node_xlow(node))
-                       + std::abs(node_storage_.node_yhigh(node) - node_storage_.node_ylow(node));
-    if (node_length + 1 != node_tilable_track_nums_[node].size()) {
-        node_tilable_track_nums_[node].resize(node_length + 1);
-    }
-
-    size_t offset = node_offset.x() - node_storage_.node_xlow(node) + node_offset.y() - node_storage_.node_ylow(node);
-    VTR_ASSERT(offset < node_tilable_track_nums_[node].size());
-
-    node_tilable_track_nums_[node][offset] = track_id;
+    size_t node_offset_value = node_offset.x() - node_storage_.node_xlow(node) + node_offset.y() - node_storage_.node_ylow(node);
+    node_storage_.add_node_tilable_track_num(node, node_offset_value, track_id);
 }
 
 void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
-    VTR_ASSERT_MSG(node_storage_.node_type(node) == e_rr_type::CHANX || node_storage_.node_type(node) == e_rr_type::CHANY, "Update track node look-up is only valid to CHANX/CHANY nodes");
+    VTR_ASSERT_MSG(node_storage_.node_type(node) == e_rr_type::CHANX || node_storage_.node_type(node) == e_rr_type::CHANY,
+                   "Update track node look-up is only valid to CHANX/CHANY nodes");
 
     // Compute the track id based on the (x, y) coordinate
     size_t x_start = std::min(node_storage_.node_xlow(node), node_storage_.node_xhigh(node));
@@ -302,9 +264,14 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
             // Routing channel nodes may have different ptc num 
             // Find the track ids using the x/y offset  
             if (e_rr_type::CHANX == node_type || e_rr_type::CHANY == node_type) {
-                ptc = (node_type == e_rr_type::CHANX) ? node_tilable_track_nums_[node][x - node_storage_.node_xlow(node)] : 
-                    node_tilable_track_nums_[node][y - node_storage_.node_ylow(node)];
-                node_lookup_.add_node(node, node_storage_.node_layer(node), x, y, node_type, ptc); 
+                const std::vector<short>& track_nums = node_storage_.node_tilable_track_nums(node);
+                if (node_type == e_rr_type::CHANX) {
+                    ptc = track_nums[x - node_storage_.node_xlow(node)];
+                } else {
+                    VTR_ASSERT_DEBUG(node_type == e_rr_type::CHANY);
+                    ptc = track_nums[y - node_storage_.node_ylow(node)];
+                }
+                node_lookup_.add_node(node, node_storage_.node_layer_low(node), x, y, node_type, ptc);
             }
         }
     }

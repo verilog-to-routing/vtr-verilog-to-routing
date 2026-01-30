@@ -35,7 +35,7 @@ class AtomPBBimap {
     ///@brief Returns the atom block id associated with pb
     AtomBlockId pb_atom(const t_pb* pb) const;
 
-    ///@brief Conveneince wrapper around atom_pb to access the associated graph node
+    ///@brief Convenience wrapper around atom_pb to access the associated graph node
     const t_pb_graph_node* atom_pb_graph_node(const AtomBlockId blk_id) const;
 
     /**

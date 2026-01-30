@@ -42,7 +42,7 @@ int get_grid_pin_class_index(const DeviceGrid& grids,
     return phy_tile_type->pin_class[pin_index];
 }
 
-/* Deteremine the side of a io grid */
+/* Determine the side of a io grid */
 std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_size,
                                                const vtr::Point<size_t>& grid_coordinate,
                                                const bool perimeter_cb) {
@@ -92,7 +92,7 @@ std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_
     return pin_sides;
 }
 
-/* Deteremine the side of a pin of a grid */
+/* Determine the side of a pin of a grid */
 std::vector<e_side> find_grid_pin_sides(const DeviceGrid& grids,
                                         const size_t layer,
                                         const size_t x,
@@ -238,7 +238,7 @@ bool is_chanx_exist(const DeviceGrid& grids,
 }
 
 /************************************************************************
- * Idenfity if a Y-direction routing channel exist in the fabric
+ * Identify if a Y-direction routing channel exist in the fabric
  * This could be entirely possible that a routig channel
  * is in the middle of a multi-width and multi-height grid
  *

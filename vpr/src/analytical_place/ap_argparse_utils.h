@@ -3,7 +3,7 @@
  * @file
  * @author  Alex Singer
  * @date    June 2025
- * @brief   Delcarations of utility functions used to parse AP options.
+ * @brief   Declarations of utility functions used to parse AP options.
  */
 
 #include <string>
