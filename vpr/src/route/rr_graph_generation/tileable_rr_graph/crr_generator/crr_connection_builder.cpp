@@ -73,12 +73,12 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
     VTR_LOGV(verbosity_ > 1, "Processing switch block with pattern '%s' at (%zu, %zu)\n",
              pattern.c_str(), x, y);
 
-    // Get combined nodes for this location
-    auto combined_nodes = node_lookup_.get_combined_nodes(x, y);
+    const auto& col_nodes = node_lookup_.get_column_nodes(x);
+    const auto& row_nodes = node_lookup_.get_row_nodes(y);
 
     // Get vertical and horizontal nodes
-    auto source_nodes = get_tile_source_nodes(x, y, *df, combined_nodes);
-    auto sink_nodes = get_tile_sink_nodes(x, y, *df, combined_nodes);
+    auto source_nodes = get_tile_source_nodes(x, y, *df, col_nodes, row_nodes);
+    auto sink_nodes = get_tile_sink_nodes(x, y, *df, col_nodes, row_nodes);
 
     // Build connections based on dataframe
     for (auto row_iter = df->begin(); row_iter != df->end(); ++row_iter) {
@@ -158,11 +158,12 @@ std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x
     return tile_connections;
 }
 
-std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
-                                                                       int y,
-                                                                       const DataFrame& df,
-                                                                       const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
-    std::map<size_t, RRNodeId> source_nodes;
+std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
+                                                                                 int y,
+                                                                                 const DataFrame& df,
+                                                                                 const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                                                 const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
+    std::unordered_map<size_t, RRNodeId> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
     e_sw_template_dir prev_side = e_sw_template_dir::NUM_SIDES;
@@ -176,9 +177,9 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
 
         RRNodeId node_id;
         if (info.side == e_sw_template_dir::IPIN || info.side == e_sw_template_dir::OPIN) {
-            node_id = process_opin_ipin_node(info, x, y, node_lookup);
+            node_id = process_opin_ipin_node(info, x, y, col_nodes, row_nodes);
         } else if (info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT || info.side == e_sw_template_dir::TOP || info.side == e_sw_template_dir::BOTTOM) {
-            node_id = process_channel_node(info, x, y, node_lookup, prev_seg_index,
+            node_id = process_channel_node(info, x, y, col_nodes, row_nodes, prev_seg_index,
                                            prev_side, prev_seg_type, prev_ptc_number, true);
         }
 
@@ -193,11 +194,12 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
     return source_nodes;
 }
 
-std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(int x,
-                                                                     int y,
-                                                                     const DataFrame& df,
-                                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
-    std::map<size_t, RRNodeId> sink_nodes;
+std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(int x,
+                                                                               int y,
+                                                                               const DataFrame& df,
+                                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
+    std::unordered_map<size_t, RRNodeId> sink_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
     e_sw_template_dir prev_side = e_sw_template_dir::NUM_SIDES;
@@ -211,9 +213,9 @@ std::map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_sink_nodes(int x,
         RRNodeId node_id;
 
         if (info.side == e_sw_template_dir::IPIN) {
-            node_id = process_opin_ipin_node(info, x, y, node_lookup);
+            node_id = process_opin_ipin_node(info, x, y, col_nodes, row_nodes);
         } else if (info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT || info.side == e_sw_template_dir::TOP || info.side == e_sw_template_dir::BOTTOM) {
-            node_id = process_channel_node(info, x, y, node_lookup, prev_seg_index,
+            node_id = process_channel_node(info, x, y, col_nodes, row_nodes, prev_seg_index,
                                            prev_side, prev_seg_type, prev_ptc_number,
                                            false);
         }
@@ -287,16 +289,22 @@ CRRConnectionBuilder::SegmentInfo CRRConnectionBuilder::parse_segment_info(const
 RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
                                                       int x,
                                                       int y,
-                                                      const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const {
+                                                      const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                      const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
     VTR_ASSERT(info.side == e_sw_template_dir::OPIN || info.side == e_sw_template_dir::IPIN);
     e_rr_type node_type = (info.side == e_sw_template_dir::OPIN) ? e_rr_type::OPIN : e_rr_type::IPIN;
     NodeHash hash = std::make_tuple(node_type,
                                     std::to_string(info.seg_index),
                                     x, x, y, y);
 
-    auto it = node_lookup.find(hash);
-    if (it != node_lookup.end()) {
-        return it->second;
+    auto col_it = col_nodes.find(hash);
+    if (col_it != col_nodes.end()) {
+        return col_it->second;
+    }
+
+    auto row_it = row_nodes.find(hash);
+    if (row_it != row_nodes.end()) {
+        return row_it->second;
     }
 
     return RRNodeId::INVALID();
@@ -305,7 +313,8 @@ RRNodeId CRRConnectionBuilder::process_opin_ipin_node(const SegmentInfo& info,
 RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
                                                     int x,
                                                     int y,
-                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
+                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
                                                     int& prev_seg_index,
                                                     e_sw_template_dir& prev_side,
                                                     std::string& prev_seg_type,
@@ -349,15 +358,20 @@ RRNodeId CRRConnectionBuilder::process_channel_node(const SegmentInfo& info,
     NodeHash hash = std::make_tuple(get_rr_type(seg_type_label),
                                     seg_sequence,
                                     x_low, x_high, y_low, y_high);
-    auto it = node_lookup.find(hash);
 
-    if (it != node_lookup.end()) {
-        return it->second;
-    } else {
-        VTR_LOGV(verbosity_ > 1, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
-                 seg_sequence.c_str(), x_low, y_low, x_high, y_high);
-        return RRNodeId::INVALID();
+    auto col_it = col_nodes.find(hash);
+    if (col_it != col_nodes.end()) {
+        return col_it->second;
     }
+
+    auto row_it = row_nodes.find(hash);
+    if (row_it != row_nodes.end()) {
+        return row_it->second;
+    }
+
+    VTR_LOGV(verbosity_ > 1, "Node not found: %s [%s] (%d,%d) -> (%d,%d)\n", seg_type_label.c_str(),
+             seg_sequence.c_str(), x_low, y_low, x_high, y_high);
+    return RRNodeId::INVALID();
 }
 
 void CRRConnectionBuilder::calculate_segment_coordinates(const SegmentInfo& info,
