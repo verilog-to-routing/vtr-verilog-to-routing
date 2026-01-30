@@ -126,14 +126,9 @@ class CRRPatternMatcher {
             return name == pattern;
         }
 
-        // Cache compiled regex objects to avoid recompilation on every call.
-        static std::unordered_map<std::string, std::regex> regex_cache;
-        auto cache_it = regex_cache.find(pattern);
-        if (cache_it == regex_cache.end()) {
-            std::string regex_str = pattern_to_regex(pattern);
-            cache_it = regex_cache.emplace(pattern, std::regex(regex_str)).first;
-        }
-        const std::regex& compiled_regex = cache_it->second;
+        // Compile regex for this pattern
+        std::string regex_str = pattern_to_regex(pattern);
+        std::regex compiled_regex(regex_str);
 
         std::smatch matches;
         if (!std::regex_match(name, matches, compiled_regex)) {
