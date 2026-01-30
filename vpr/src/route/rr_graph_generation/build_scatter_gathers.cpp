@@ -52,6 +52,39 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
                                                         bool is_dest,
                                                         vtr::RngContainer& rng);
 
+static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link) {
+    t_wireconn_inf mirrored_pattern = sg_pattern;
+
+    // Clear the sides to rebuild them mirrored
+    mirrored_pattern.sides.clear();
+
+    for (e_side side : sg_pattern.sides) {
+        e_side new_side = side;
+
+        // Mirror along the Y-axis (Vertical flip)
+        if (sg_link.y_offset != 0) {
+            if (side == e_side::TOP) {
+                new_side = e_side::BOTTOM;
+            } else if (side == e_side::BOTTOM) {
+                new_side = e_side::TOP;
+            }
+        }
+        // Mirror along the X-axis (Horizontal flip)
+        else if (sg_link.x_offset != 0) {
+            if (side == e_side::LEFT) {
+                new_side = e_side::RIGHT;
+            } else if (side == e_side::RIGHT) {
+                new_side = e_side::LEFT;
+            }
+        }
+        // z_offset != 0: do nothing (new_side remains side)
+
+        mirrored_pattern.sides.insert(new_side);
+    }
+
+    return mirrored_pattern;
+}
+
 //
 // Static Function Definitions
 //
