@@ -368,14 +368,12 @@ void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
         int xlow, xhigh, ylow, yhigh;
         Direction direction;
         e_rr_type chan_type;
-        const t_physical_tile_loc& src_loc = link.gather_loc;
-        const t_physical_tile_loc& dst_loc = link.scatter_loc;
 
         // Step 1: Determine the link’s direction and its spatial span.
         // SG links are confined to one layer (non-3D), but can run in X or Y.
-        VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
-        const int layer = src_loc.layer_num;
-        compute_non_3d_sg_link_geometry(src_loc, dst_loc, chan_type, xlow, xhigh, ylow, yhigh, direction);
+        VTR_ASSERT_SAFE(link.gather_loc.layer_num == link.scatter_loc.layer_num);
+        const int layer = link.gather_loc.layer_num;
+        compute_non_3d_sg_link_geometry(link, chan_type, xlow, xhigh, ylow, yhigh, direction);
 
         // Retrieve the node ID and track number allocated earlier
         const RRNodeId node_id = sg_node_indices[i].first;

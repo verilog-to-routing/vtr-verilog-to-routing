@@ -36,6 +36,7 @@ struct t_bottleneck_link {
     float R_metal;
     float C_metal;
     e_rr_type chan_type;
+    bool bidir;
     std::vector<t_sg_candidate> gather_fanin_connections;   ///< Wires driving the bottleneck link at  `gather_loc`
     std::vector<t_sg_candidate> scatter_fanout_connections; ///< Wires driven by the bottleneck link at `scatter_loc`
 };
@@ -81,8 +82,7 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
  * @brief Computes the channel type, direction, and coordinate span between two locations
  *        on the same layer. Used by SG link construction routines to determine geometry.
  */
-void compute_non_3d_sg_link_geometry(const t_physical_tile_loc& src_loc,
-                                     const t_physical_tile_loc& dst_loc,
+void compute_non_3d_sg_link_geometry(const t_bottleneck_link& link,
                                      e_rr_type& chan_type,
                                      int& xlow,
                                      int& xhigh,

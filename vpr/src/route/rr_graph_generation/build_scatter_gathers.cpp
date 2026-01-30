@@ -367,6 +367,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     bottleneck_link.scatter_loc = scatter_loc;
                     bottleneck_link.gather_fanin_connections.reserve(fwd_bottleneck_fanin);
                     bottleneck_link.scatter_fanout_connections.reserve(fwd_bottleneck_fanout);
+                    bottleneck_link.bidir = (sg_pattern.type == e_scatter_gather_type::BIDIR);
 
                     for (int i = 0; i < fwd_bottleneck_fanin; i++) {
                         bottleneck_link.gather_fanin_connections.push_back(fwd_gather_wire_candidates[i_g]);
@@ -470,14 +471,15 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
     }
 }
 
-void compute_non_3d_sg_link_geometry(const t_physical_tile_loc& src_loc,
-                                     const t_physical_tile_loc& dst_loc,
+void compute_non_3d_sg_link_geometry(const t_bottleneck_link& link,
                                      e_rr_type& chan_type,
                                      int& xlow,
                                      int& xhigh,
                                      int& ylow,
                                      int& yhigh,
                                      Direction& direction) {
+    const t_physical_tile_loc& src_loc = link.gather_loc;
+    const t_physical_tile_loc& dst_loc = link.scatter_loc;
     VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
 
     if (dst_loc.x > src_loc.x) {
@@ -505,6 +507,10 @@ void compute_non_3d_sg_link_geometry(const t_physical_tile_loc& src_loc,
         yhigh = src_loc.y;
         direction = Direction::DEC;
     } else {
-        VTR_ASSERT_MSG(false, "Source and destination locations cannot be identical");
+        VTR_ASSERT_MSG(false, "Source and destination locations cannot be identical.");
+    }
+
+    if (link.bidir) {
+        direction = Direction::BIDIR;
     }
 }
