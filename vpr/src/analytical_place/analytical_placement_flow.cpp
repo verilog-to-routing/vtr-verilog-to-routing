@@ -77,7 +77,7 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
  *  @param flat_placement_info    The flat placement information to be read.
  *  @param ap_netlist             The APNetlist that used to iterate over its blocks.
  *  @param prepacker              The Prepacker to get molecule of blocks in the ap_netlist.
- *  @param p_placement            The partial placement to be updated which is assumend
+ *  @param p_placement            The partial placement to be updated which is assumed
  * to be generated on ap_netlist or have the same blocks.
  */
 static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, const Prepacker& prepacker, PartialPlacement& p_placement) {
@@ -238,6 +238,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     if (pre_cluster_timing_manager.is_valid()) {
         place_delay_model = PlacementDelayModelCreator::create_delay_model(vpr_setup.PlacerOpts,
                                                                            vpr_setup.RouterOpts,
+                                                                           vpr_setup.CRROpts,
                                                                            (const Netlist<>&)atom_nlist,
                                                                            vpr_setup.RoutingArch,
                                                                            vpr_setup.Segments,

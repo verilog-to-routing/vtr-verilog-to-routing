@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 040903603053940a1b24392c38663b59
+ * Cmdline: uxsdcxx/uxsdcxx.py /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 45774433f1b54981c349fecadf578b11
  */
 
 #include <functional>
@@ -188,6 +188,8 @@ template <class T, typename Context>
 inline void write_rr_graph_xml(T &in, Context &context, std::ostream &os){
 	in.start_write();
 	os << "<rr_graph";
+	if((bool)in.get_rr_graph_schema_file_id(context))
+		os << " schema_file_id=\"" << in.get_rr_graph_schema_file_id(context) << "\"";
 	if((bool)in.get_rr_graph_tool_comment(context))
 		os << " tool_comment=\"" << in.get_rr_graph_tool_comment(context) << "\"";
 	if((bool)in.get_rr_graph_tool_name(context))
@@ -236,8 +238,8 @@ constexpr const char *atok_lookup_t_sizing[] = {"buf_size", "mux_trans_size"};
 
 enum class gtok_t_switch {TIMING, SIZING};
 constexpr const char *gtok_lookup_t_switch[] = {"timing", "sizing"};
-enum class atok_t_switch {ID, NAME, TYPE};
-constexpr const char *atok_lookup_t_switch[] = {"id", "name", "type"};
+enum class atok_t_switch {ID, NAME, TEMPLATE_ID, TYPE};
+constexpr const char *atok_lookup_t_switch[] = {"id", "name", "template_id", "type"};
 
 enum class gtok_t_switches {SWITCH};
 constexpr const char *gtok_lookup_t_switches[] = {"switch"};
@@ -308,8 +310,8 @@ enum class gtok_t_rr_edges {EDGE};
 constexpr const char *gtok_lookup_t_rr_edges[] = {"edge"};
 enum class gtok_t_rr_graph {CHANNELS, SWITCHES, SEGMENTS, BLOCK_TYPES, GRID, RR_NODES, RR_EDGES};
 constexpr const char *gtok_lookup_t_rr_graph[] = {"channels", "switches", "segments", "block_types", "grid", "rr_nodes", "rr_edges"};
-enum class atok_t_rr_graph {TOOL_COMMENT, TOOL_NAME, TOOL_VERSION};
-constexpr const char *atok_lookup_t_rr_graph[] = {"tool_comment", "tool_name", "tool_version"};
+enum class atok_t_rr_graph {SCHEMA_FILE_ID, TOOL_COMMENT, TOOL_NAME, TOOL_VERSION};
+constexpr const char *atok_lookup_t_rr_graph[] = {"schema_file_id", "tool_comment", "tool_name", "tool_version"};
 
 
 /* Internal lexers. These convert the PugiXML node names to input tokens. */
@@ -659,6 +661,29 @@ inline atok_t_switch lex_attr_t_switch(const char *in, const std::function<void(
 		break;
 		case onechar('t', 0, 32) | onechar('y', 8, 32) | onechar('p', 16, 32) | onechar('e', 24, 32):
 			return atok_t_switch::TYPE;
+		break;
+		default: break;
+		}
+		break;
+	case 11:
+		switch(*((triehash_uu64*)&in[0])){
+		case onechar('t', 0, 64) | onechar('e', 8, 64) | onechar('m', 16, 64) | onechar('p', 24, 64) | onechar('l', 32, 64) | onechar('a', 40, 64) | onechar('t', 48, 64) | onechar('e', 56, 64):
+			switch(in[8]){
+			case onechar('_', 0, 8):
+				switch(in[9]){
+				case onechar('i', 0, 8):
+					switch(in[10]){
+					case onechar('d', 0, 8):
+						return atok_t_switch::TEMPLATE_ID;
+					break;
+					default: break;
+					}
+				break;
+				default: break;
+				}
+			break;
+			default: break;
+			}
 		break;
 		default: break;
 		}
@@ -1607,6 +1632,29 @@ inline atok_t_rr_graph lex_attr_t_rr_graph(const char *in, const std::function<v
 		default: break;
 		}
 		break;
+	case 14:
+		switch(*((triehash_uu64*)&in[0])){
+		case onechar('s', 0, 64) | onechar('c', 8, 64) | onechar('h', 16, 64) | onechar('e', 24, 64) | onechar('m', 32, 64) | onechar('a', 40, 64) | onechar('_', 48, 64) | onechar('f', 56, 64):
+			switch(*((triehash_uu32*)&in[8])){
+			case onechar('i', 0, 32) | onechar('l', 8, 32) | onechar('e', 16, 32) | onechar('_', 24, 32):
+				switch(in[12]){
+				case onechar('i', 0, 8):
+					switch(in[13]){
+					case onechar('d', 0, 8):
+						return atok_t_rr_graph::SCHEMA_FILE_ID;
+					break;
+					default: break;
+					}
+				break;
+				default: break;
+				}
+			break;
+			default: break;
+			}
+		break;
+		default: break;
+		}
+		break;
 	default: break;
 	}
 	noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <rr_graph>.").c_str());
@@ -2251,6 +2299,14 @@ inline enum_loc_side lex_enum_loc_side(const char *in, bool throw_on_invalid, co
 
 
 /* Internal loading functions, which validate and load a PugiXML DOM tree into memory. */
+inline unsigned long load_unsigned_long(const char *in, const std::function<void(const char *)> * report_error){
+	unsigned long out;
+	out = std::strtoull(in, NULL, 10);
+	if(errno != 0)
+		noreturn_report(report_error, ("Invalid value `" + std::string(in) + "` when loading into a unsigned long.").c_str());
+	return out;
+}
+
 inline int load_int(const char *in, const std::function<void(const char *)> * report_error){
 	int out;
 	out = std::strtol(in, NULL, 10);
@@ -2364,7 +2420,7 @@ inline void load_sizing_required_attributes(const pugi::xml_node &root, float * 
 }
 
 inline void load_switch_required_attributes(const pugi::xml_node &root, int * id, const std::function<void(const char *)> * report_error){
-	std::bitset<3> astate = 0;
+	std::bitset<4> astate = 0;
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_switch in = lex_attr_t_switch(attr.name(), report_error);
 		if(astate[(int)in] == 0) astate[(int)in] = 1;
@@ -2376,13 +2432,16 @@ inline void load_switch_required_attributes(const pugi::xml_node &root, int * id
 		case atok_t_switch::NAME:
 			/* Attribute name set after element init */
 			break;
+		case atok_t_switch::TEMPLATE_ID:
+			/* Attribute template_id set after element init */
+			break;
 		case atok_t_switch::TYPE:
 			/* Attribute type set after element init */
 			break;
 		default: break; /* Not possible. */
 		}
 	}
-	std::bitset<3> test_astate = astate | std::bitset<3>(0b100);
+	std::bitset<4> test_astate = astate | std::bitset<4>(0b1100);
 	if(!test_astate.all()) attr_error(test_astate, atok_lookup_t_switch, report_error);
 }
 
@@ -2852,6 +2911,9 @@ inline void load_switch(const pugi::xml_node &root, T &out, Context &context, co
 			break;
 		case atok_t_switch::NAME:
 			out.set_switch_name(attr.value(), context);
+			break;
+		case atok_t_switch::TEMPLATE_ID:
+			out.set_switch_template_id(attr.value(), context);
 			break;
 		case atok_t_switch::TYPE:
 			out.set_switch_type(lex_enum_switch_type(attr.value(), true, report_error), context);
@@ -3879,6 +3941,9 @@ inline void load_rr_graph(const pugi::xml_node &root, T &out, Context &context, 
 	for(pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()){
 		atok_t_rr_graph in = lex_attr_t_rr_graph(attr.name(), report_error);
 		switch(in){
+		case atok_t_rr_graph::SCHEMA_FILE_ID:
+			out.set_rr_graph_schema_file_id(load_unsigned_long(attr.value(), report_error), context);
+			break;
 		case atok_t_rr_graph::TOOL_COMMENT:
 			out.set_rr_graph_tool_comment(attr.value(), context);
 			break;
@@ -4035,6 +4100,8 @@ inline void write_switches(T &in, std::ostream &os, Context &context){
 			os << "<switch";
 			os << " id=\"" << in.get_switch_id(child_context) << "\"";
 			os << " name=\"" << in.get_switch_name(child_context) << "\"";
+			if((bool)in.get_switch_template_id(child_context))
+				os << " template_id=\"" << in.get_switch_template_id(child_context) << "\"";
 			if((bool)in.get_switch_type(child_context))
 				os << " type=\"" << lookup_switch_type[(int)in.get_switch_type(child_context)] << "\"";
 			os << ">";

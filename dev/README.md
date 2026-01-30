@@ -1,1 +1,1 @@
-This folder contains addtional development related tools and documentation
+This folder contains additional development related tools and documentation

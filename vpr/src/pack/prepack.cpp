@@ -169,7 +169,6 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
 
     std::vector<t_pack_patterns> packing_patterns = alloc_and_init_pattern_list_from_hash(pattern_names);
 
-
     /* load packing patterns by traversing the edges to find edges belonging to pattern */
     for (size_t i = 0; i < pattern_names.size(); i++) {
         for (const t_logical_block_type& type : logical_block_types) {
@@ -1503,7 +1502,7 @@ static void expand_search(const t_pb_graph_pin* input_pin, std::queue<t_pb_graph
     // iterate over all output edges at this pin
     for (int iedge = 0; iedge < input_pin->num_output_edges; iedge++) {
         const auto& pin_edge = input_pin->output_edges[iedge];
-        // if this edge is not anotated with this pattern and its pattern cannot be inferred, ignore it.
+        // if this edge is not annotated with this pattern and its pattern cannot be inferred, ignore it.
         if (!pin_edge->annotated_with_pattern(pattern_index) && !pin_edge->infer_pattern) {
             continue;
         }

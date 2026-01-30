@@ -15,10 +15,13 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <vector>
 #include "draw.h"
 
 #include "draw_interposer.h"
 #include "draw_types.h"
+#include "rr_graph_fwd.h"
+#include "rr_node_types.h"
 #include "timing_info.h"
 #include "physical_types.h"
 
@@ -493,17 +496,53 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
         }
     }
 
+    std::vector<int> max_chanx_ptc_nums(grid.height() - 1);
+    std::vector<int> max_chany_ptc_nums(grid.width() - 1);
+
+    // Normally you could use device_ctx.rr_chany_width to get the device's channel width but in some cases
+    // like devices with interposer cuts, you have situations where there are 100 segments in a channel,
+    // but the maximum ptc_num is 120. If we only reserve enough space for 100 segments, the segments with
+    // ptc_num > 100 would be drawn over the tiles. This loop explicitly calculates the maximum ptc_num in
+    // each routing row/column to avoid that issue.
+    for (size_t layer = 0; layer < grid.get_num_layers(); layer++) {
+        for (size_t x_loc = 0; x_loc < grid.width() - 1; x_loc++) {
+            for (size_t y_loc = 0; y_loc < grid.height() - 1; y_loc++) {
+
+                // Get all chanx nodes at location (x_loc, y_loc), find largest ptc_num across all nodes
+                std::vector<RRNodeId> chanx_nodes = rr_graph.node_lookup().find_channel_nodes(layer, x_loc, y_loc, e_rr_type::CHANX);
+                int max_chanx_ptc_num = 0;
+                if (!chanx_nodes.empty()) {
+                    // Must explicitly check for emptiness, since std::ranges::max will crash if chanx_nodes is empty
+                    RRNodeId max_chanx_ptc_node = std::ranges::max(chanx_nodes, {}, [&rr_graph](RRNodeId node) { return rr_graph.node_ptc_num(node); });
+                    max_chanx_ptc_num = rr_graph.node_ptc_num(max_chanx_ptc_node);
+                }
+
+                // Do the same for chany
+                std::vector<RRNodeId> chany_nodes = rr_graph.node_lookup().find_channel_nodes(layer, x_loc, y_loc, e_rr_type::CHANY);
+                int max_chany_ptc_num = 0;
+                if (!chany_nodes.empty()) {
+                    RRNodeId max_chany_ptc_node = std::ranges::max(chany_nodes, {}, [&rr_graph](RRNodeId node) { return rr_graph.node_ptc_num(node); });
+                    max_chany_ptc_num = rr_graph.node_ptc_num(max_chany_ptc_node);
+                }
+
+                // Update maximum ptc_num for each routing channel row/column
+                max_chany_ptc_nums[x_loc] = std::max(max_chany_ptc_num, max_chany_ptc_nums[x_loc]);
+                max_chanx_ptc_nums[y_loc] = std::max(max_chanx_ptc_num, max_chanx_ptc_nums[y_loc]);
+            }
+        }
+    }
+
     size_t j = 0;
     for (size_t i = 0; i < grid.width() - 1; i++) {
         draw_coords->tile_x[i] = i * draw_coords->get_tile_width() + j;
-        j += device_ctx.rr_chany_width[i] + 1; // N wires need N+1 units of space
+        j += max_chany_ptc_nums[i] + 2; // N wires need N + 1 units of space, plus one more since max ptc_num of 0 means 1 wire in the channel
     }
     draw_coords->tile_x[grid.width() - 1] = (grid.width() - 1) * draw_coords->get_tile_width() + j;
 
     j = 0;
     for (size_t i = 0; i < grid.height() - 1; ++i) {
         draw_coords->tile_y[i] = i * draw_coords->get_tile_width() + j;
-        j += device_ctx.rr_chanx_width[i] + 1;
+        j += max_chanx_ptc_nums[i] + 2;
     }
     draw_coords->tile_y[grid.height() - 1] = (grid.height() - 1) * draw_coords->get_tile_width() + j;
 
@@ -1334,7 +1373,7 @@ ezgl::color get_block_type_color(t_physical_tile_type_ptr type) {
     return color;
 }
 
-//Lightens a color's luminance [0, 1] by an aboslute 'amount'
+//Lightens a color's luminance [0, 1] by an absolute 'amount'
 ezgl::color lighten_color(ezgl::color color, float amount) {
     constexpr double MAX_LUMINANCE = 0.95; //Clip luminance so it doesn't go full white
     auto hsl = color2hsl(color);

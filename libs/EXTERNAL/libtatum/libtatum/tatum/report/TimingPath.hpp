@@ -39,7 +39,7 @@ class TimingPathInfo {
         DomainId capture_domain() const { return capture_domain_; }
 
     private:
-        TimingType path_type_ = TimingType::UNKOWN;
+        TimingType path_type_ = TimingType::UNKNOWN;
 
         Time delay_;
         Time slack_;

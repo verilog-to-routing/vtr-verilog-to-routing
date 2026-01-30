@@ -21,7 +21,7 @@ It is tested against the default compilers of all Debian and Ubuntu releases wit
 * GCC/G++: 9, 10, 11, 12
 * Clang/Clang++: 11, 12, 13, 14
 
-Other compilers may work but are untested (your milage may vary).
+Other compilers may work but are untested (your mileage may vary).
 
 ### Package Dependencies
 
@@ -118,7 +118,7 @@ $ make
 ## Other platforms
 
 CMake supports a variety of operating systems and can generate project files for a variety of build systems and IDEs.
-While VTR is developed primarily on Linux, it should be possible to build on different platforms (your milage may vary).
+While VTR is developed primarily on Linux, it should be possible to build on different platforms (your mileage may vary).
 See the [CMake documentation](https://cmake.org) for more details about using cmake and generating project files on other platforms and build systems (e.g. Eclipse, Microsoft Visual Studio).
 
 
@@ -182,10 +182,10 @@ These are usually found under /usr/lib/gcc on the Linux host machine.
 See the [toolchain file](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/cmake/toolchains/mingw-linux-cross-compile-to-windows.cmake) for more details.
 
 #### Microsoft Visual Studio ####
-CMake can generate a Microsft Visual Studio project, enabling VTR to be built with the Microsoft Visual C++ (MSVC) compiler.
+CMake can generate a Microsoft Visual Studio project, enabling VTR to be built with the Microsoft Visual C++ (MSVC) compiler.
 
 ##### Installing additional tools #####
-VTR depends on some external unix-style tools during it's buid process; in particular the `flex` and `bison` parser generators.
+VTR depends on some external unix-style tools during it's build process; in particular the `flex` and `bison` parser generators.
 
 One approach is to install these tools using [MSYS2](http://www.msys2.org/), which provides up-to-date versions of many unix tools for MS Windows.
 

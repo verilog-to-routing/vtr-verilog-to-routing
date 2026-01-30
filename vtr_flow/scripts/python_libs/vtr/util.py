@@ -9,6 +9,7 @@ import subprocess
 import argparse
 import csv
 import os
+import signal
 
 from collections import OrderedDict
 from pathlib import PurePath
@@ -114,7 +115,7 @@ class CommandRunner:
         Arguments
         =========
             cmd: list of tokens that form the command to be run
-            log_filename: the log fiel name for the command's output. Default: derived from command
+            log_filename: the log filename for the command's output. Default: derived from command
             temp_dir: The directory to run the command in. Default: None (uses object default).
             expected_return_code: The expected return code from the command.
             If the actula return code does not match, will generate an exception. Default: 0
@@ -181,6 +182,7 @@ class CommandRunner:
             modified_environ = os.environ.copy()
             modified_environ["PWD"] = str(temp_dir)
 
+            # pylint: disable-next=consider-using-with
             proc = subprocess.Popen(
                 cmd,
                 stdout=subprocess.PIPE,  # We grab stdout
@@ -188,6 +190,7 @@ class CommandRunner:
                 universal_newlines=True,  # Lines always end in \n
                 cwd=str(temp_dir),  # Where to run the command
                 env=modified_environ,
+                start_new_session=True,
             )
 
             # Read the output line-by-line and log it
@@ -202,7 +205,6 @@ class CommandRunner:
 
                 # Read from subprocess output
                 for line in proc.stdout:
-
                     # Send to log file
                     log_f.write(line)
 
@@ -212,7 +214,18 @@ class CommandRunner:
                     # Abort if over time limit
                     elapsed_time = time.time() - start_time
                     if self._timeout_sec and elapsed_time > self._timeout_sec:
-                        proc.terminate()
+                        # Send SIGTERM command to all processes in the process
+                        # group. We need to do this since Popen may create a
+                        # process which has children. We want all of them to
+                        # receive this signal.
+                        os.killpg(proc.pid, signal.SIGTERM)
+                        # Wait 5 seconds for the process to gracefully terminate.
+                        # If it still has not terminated, send SIGKILL.
+                        try:
+                            proc.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            os.killpg(proc.pid, signal.SIGKILL)
+                        break
 
                 # Should now be finished (since we stopped reading from proc.stdout),
                 # sets the return code
@@ -263,7 +276,7 @@ def pretty_print_table(file, border=False):
     table = PrettyTable()
     table.border = border
     reader = None
-    with open(file, "r") as csv_file:
+    with open(file, "r", encoding="utf-8") as csv_file:
         reader = csv.reader(csv_file, delimiter="\t")
         first = True
         for row in reader:
@@ -277,13 +290,13 @@ def pretty_print_table(file, border=False):
                 first = False
             else:
                 table.add_row(row)
-    with open(file, "w+") as out_file:
+    with open(file, "w+", encoding="utf-8") as out_file:
         print(table, file=out_file)
 
 
 def write_tab_delimitted_csv(filepath, rows):
     """
-    Write out the data provied in a tab-delimited CSV format
+    Write out the data provided in a tab-delimited CSV format
 
     filepath: The filepath to write the data to
     rows: An iterable of dictionary-like elements; each element
@@ -294,14 +307,13 @@ def write_tab_delimitted_csv(filepath, rows):
     columns = OrderedDict()
     for row in rows:
         for key, value in row.items():
-
             if key not in columns:
                 columns[key] = max(len(key), len(str(value)))
             else:
                 columns[key] = max(columns[key], len(str(value)))
 
     # Write the elements
-    with open(filepath, "w+") as file:
+    with open(filepath, "w+", encoding="utf-8") as file:
         writer = csv.writer(file, delimiter="\t")
 
         # Write out the header
@@ -320,10 +332,10 @@ def write_tab_delimitted_csv(filepath, rows):
 
 def load_tab_delimited_csv(filepath):
     """
-    loads a tab delimted csv as a list of ordered dictionaries
+    loads a tab delimited csv as a list of ordered dictionaries
     """
     data = []
-    with open(filepath) as file:
+    with open(filepath, "r", encoding="utf-8") as file:
         reader = csv.reader(file, delimiter="\t")
 
         header = []
@@ -359,10 +371,10 @@ def file_replace(filename, search_replace_dict):
     searches file for specified values and replaces them with specified values.
     """
     lines = []
-    with open(filename, "r") as file:
+    with open(filename, "r", encoding="utf-8") as file:
         lines = file.readlines()
 
-    with open(filename, "w") as file:
+    with open(filename, "w", encoding="utf-8") as file:
         for line in lines:
             for search, replace in search_replace_dict.items():
                 line = line.replace(search, str(replace))
@@ -383,7 +395,7 @@ def load_list_file(list_file: str) -> List[str]:
     potentially with '#' comments
     """
     values = []
-    with open(list_file) as file:
+    with open(list_file, "r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()
             # Handle comments
@@ -404,7 +416,7 @@ def load_config_lines(filepath, allow_includes=True):
         @include "another_file.txt"
 
     will cause the specified file to be included in-line.
-    The @included filename is interpretted as relative to the directory
+    The @included filename is interpreted as relative to the directory
     containing filepath.
 
     Returns a list of lines
@@ -413,7 +425,7 @@ def load_config_lines(filepath, allow_includes=True):
 
     blank_regex = re.compile(r"^\s*$")
     try:
-        with open(filepath) as file:
+        with open(filepath, "r", encoding="utf-8") as file:
             for line in file:
                 # Trim '\n'
                 line = line.strip()
@@ -457,7 +469,7 @@ def verify_file(file, file_type, should_exist=True):
     if not isinstance(file, Path):
         file = Path(file)
     if should_exist and not file.is_file():
-        raise Exception(
+        raise FileNotFoundError(
             "{file_type} file does not exist: {file} ".format(file_type=file_type, file=file)
         )
 

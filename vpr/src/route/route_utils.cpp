@@ -493,6 +493,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
 /** Wrapper for create_rr_graph() with extra checks */
 void try_graph(int width_fac,
                const t_router_opts& router_opts,
+               const t_crr_opts& crr_opts,
                t_det_routing_arch& det_routing_arch,
                const std::vector<t_segment_inf>& segment_inf,
                const t_chan_width_dist& chan_width_dist,
@@ -525,6 +526,7 @@ void try_graph(int width_fac,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
+                    crr_opts,
                     directs,
                     &warning_count,
                     is_flat);

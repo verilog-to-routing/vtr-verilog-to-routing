@@ -7,7 +7,7 @@
  * 2) Robustness issue.  During packing, we have a limited size queue to store candidates to try to pack.  A good filter helps keep that queue filled with candidates likely to pass.
  *
  * 1st major filter: Pin counting based on pin classes
- * Rationale: If the number of a particular gruop of pins supplied by the pb_graph_node in the architecture is insufficient to meet a candidate packing solution's demand for that group of pins, then that
+ * Rationale: If the number of a particular group of pins supplied by the pb_graph_node in the architecture is insufficient to meet a candidate packing solution's demand for that group of pins, then that
  * candidate solution is for sure invalid without any further legalization checks.  For example, if a candidate solution requires 2 clock pins but the architecture only has one clock, then that solution
  * can't be legal.
  *

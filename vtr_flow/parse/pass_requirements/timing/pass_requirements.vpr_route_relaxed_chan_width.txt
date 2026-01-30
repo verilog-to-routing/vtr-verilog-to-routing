@@ -1,4 +1,4 @@
-#VPR metrix at relaxed (relative to minimum) channel width with timing
+#VPR metrics at relaxed (relative to minimum) channel width with timing
 %include "../common/pass_requirements.vpr_route_relaxed_chan_width.txt"
 
 #Routing Metrics

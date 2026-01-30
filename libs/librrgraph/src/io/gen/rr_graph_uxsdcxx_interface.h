@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * Input file: /home/soheil/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
- * md5sum of input file: 040903603053940a1b24392c38663b59
+ * Cmdline: uxsdcxx/uxsdcxx.py /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * Input file: /dsoft/amohaghegh/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+ * md5sum of input file: 45774433f1b54981c349fecadf578b11
  */
 
 #include <functional>
@@ -200,11 +200,14 @@ public:
 	 *   <xs:attribute name="name" type="xs:string" use="required" />
 	 *   
 	 *   <xs:attribute name="type" type="switch_type" />
+	 *   <xs:attribute name="template_id" type="xs:string" />
 	 * </xs:complexType>
 	*/
 	virtual inline int get_switch_id(typename ContextTypes::SwitchReadContext &ctx) = 0;
 	virtual inline const char * get_switch_name(typename ContextTypes::SwitchReadContext &ctx) = 0;
 	virtual inline void set_switch_name(const char * name, typename ContextTypes::SwitchWriteContext &ctx) = 0;
+	virtual inline const char * get_switch_template_id(typename ContextTypes::SwitchReadContext &ctx) = 0;
+	virtual inline void set_switch_template_id(const char * template_id, typename ContextTypes::SwitchWriteContext &ctx) = 0;
 	virtual inline enum_switch_type get_switch_type(typename ContextTypes::SwitchReadContext &ctx) = 0;
 	virtual inline void set_switch_type(enum_switch_type type, typename ContextTypes::SwitchWriteContext &ctx) = 0;
 	virtual inline typename ContextTypes::TimingWriteContext init_switch_timing(typename ContextTypes::SwitchWriteContext &ctx) = 0;
@@ -536,8 +539,11 @@ public:
 	 *     <xs:attribute name="tool_name" type="xs:string" />
 	 *     <xs:attribute name="tool_version" type="xs:string" />
 	 *     <xs:attribute name="tool_comment" type="xs:string" />
+	 *     <xs:attribute name="schema_file_id" type="xs:unsignedLong" />
 	 *   </xs:complexType>
 	*/
+	virtual inline unsigned long get_rr_graph_schema_file_id(typename ContextTypes::RrGraphReadContext &ctx) = 0;
+	virtual inline void set_rr_graph_schema_file_id(unsigned long schema_file_id, typename ContextTypes::RrGraphWriteContext &ctx) = 0;
 	virtual inline const char * get_rr_graph_tool_comment(typename ContextTypes::RrGraphReadContext &ctx) = 0;
 	virtual inline void set_rr_graph_tool_comment(const char * tool_comment, typename ContextTypes::RrGraphWriteContext &ctx) = 0;
 	virtual inline const char * get_rr_graph_tool_name(typename ContextTypes::RrGraphReadContext &ctx) = 0;

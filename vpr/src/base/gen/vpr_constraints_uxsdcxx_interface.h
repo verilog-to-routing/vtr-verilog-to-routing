@@ -4,9 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx.py ../vpr_repos/vpr/src/base/vpr_constraints.xsd
- * Input file: /home/soheil/vpr_repos/vpr/src/base/vpr_constraints.xsd
- * md5sum of input file: ea99cd05d67036ef541872d9d77a83c5
+ * Cmdline: /home/alex/uxsdcxx/uxsdcxx.py /home/alex/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * Input file: /home/alex/vtr-verilog-to-routing/vpr/src/base/vpr_constraints.xsd
+ * md5sum of input file: 87f4c65e2d6ec30e990956a8a1808d8c
  */
 
 #include <functional>
@@ -29,6 +29,7 @@ enum class enum_route_model_type { UXSD_INVALID = 0,
 struct DefaultVprConstraintsContextTypes {
     using AddAtomReadContext = void*;
     using AddRegionReadContext = void*;
+    using AddLogicalBlockReadContext = void*;
     using PartitionReadContext = void*;
     using PartitionListReadContext = void*;
     using SetGlobalSignalReadContext = void*;
@@ -36,6 +37,7 @@ struct DefaultVprConstraintsContextTypes {
     using VprConstraintsReadContext = void*;
     using AddAtomWriteContext = void*;
     using AddRegionWriteContext = void*;
+    using AddLogicalBlockWriteContext = void*;
     using PartitionWriteContext = void*;
     using PartitionListWriteContext = void*;
     using SetGlobalSignalWriteContext = void*;
@@ -72,7 +74,9 @@ class VprConstraintsBase {
      * </xs:complexType>
      */
     virtual inline int get_add_region_layer_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
+    virtual inline void set_add_region_layer_high(int layer_high, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline int get_add_region_layer_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
+    virtual inline void set_add_region_layer_low(int layer_low, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline int get_add_region_subtile(typename ContextTypes::AddRegionReadContext& ctx) = 0;
     virtual inline void set_add_region_subtile(int subtile, typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline int get_add_region_x_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
@@ -80,12 +84,21 @@ class VprConstraintsBase {
     virtual inline int get_add_region_y_high(typename ContextTypes::AddRegionReadContext& ctx) = 0;
     virtual inline int get_add_region_y_low(typename ContextTypes::AddRegionReadContext& ctx) = 0;
 
+    /** Generated for complex type "add_logical_block":
+     * <xs:complexType name="add_logical_block">
+     *   <xs:attribute name="name_pattern" type="xs:string" use="required" />
+     * </xs:complexType>
+     */
+    virtual inline const char* get_add_logical_block_name_pattern(typename ContextTypes::AddLogicalBlockReadContext& ctx) = 0;
+    virtual inline void set_add_logical_block_name_pattern(const char* name_pattern, typename ContextTypes::AddLogicalBlockWriteContext& ctx) = 0;
+
     /** Generated for complex type "partition":
      * <xs:complexType name="partition">
      *   <xs:sequence>
      *      <xs:choice maxOccurs="unbounded">
      *          <xs:element name="add_atom" type="add_atom" />
      *          <xs:element name="add_region" type="add_region" />
+     *          <xs:element name="add_logical_block" type="add_logical_block" />
      *      </xs:choice>
      *   </xs:sequence>
      *   <xs:attribute name="name" type="xs:string" use="required" />
@@ -103,6 +116,11 @@ class VprConstraintsBase {
     virtual inline void finish_partition_add_region(typename ContextTypes::AddRegionWriteContext& ctx) = 0;
     virtual inline size_t num_partition_add_region(typename ContextTypes::PartitionReadContext& ctx) = 0;
     virtual inline typename ContextTypes::AddRegionReadContext get_partition_add_region(int n, typename ContextTypes::PartitionReadContext& ctx) = 0;
+    virtual inline void preallocate_partition_add_logical_block(typename ContextTypes::PartitionWriteContext& ctx, size_t size) = 0;
+    virtual inline typename ContextTypes::AddLogicalBlockWriteContext add_partition_add_logical_block(typename ContextTypes::PartitionWriteContext& ctx) = 0;
+    virtual inline void finish_partition_add_logical_block(typename ContextTypes::AddLogicalBlockWriteContext& ctx) = 0;
+    virtual inline size_t num_partition_add_logical_block(typename ContextTypes::PartitionReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::AddLogicalBlockReadContext get_partition_add_logical_block(int n, typename ContextTypes::PartitionReadContext& ctx) = 0;
 
     /** Generated for complex type "partition_list":
      * <xs:complexType name="partition_list">

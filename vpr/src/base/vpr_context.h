@@ -48,6 +48,13 @@ class PostClusterDelayCalculator;
 
 struct t_rr_node_route_inf;
 
+template<typename T>
+struct ChannelMetric {
+    T x;
+    T y;
+    T z;
+};
+
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
  *
@@ -237,8 +244,7 @@ struct DeviceContext : public Context {
                          rr_rc_data,
                          rr_graph_builder.rr_segments(),
                          rr_graph_builder.rr_switch(),
-                         rr_graph_builder.node_in_edge_storage(),
-                         rr_graph_builder.node_ptc_storage()};
+                         rr_graph_builder.node_in_edge_storage()};
 
     ///@brief Track ids for each rr_node in the rr_graph. This is used by drawer for tileable routing resource graph
     std::map<RRNodeId, std::vector<size_t>> rr_node_track_ids;
@@ -249,22 +255,15 @@ struct DeviceContext : public Context {
 
     int delayless_switch_idx = UNDEFINED;
 
-    /// Stores the number of CHANX wire segments in each routing channel segment at [layer][x][y]
-    vtr::NdMatrix<int, 3> rr_chanx_segment_width;
-    /// Stores the number of CHANY wire segments in each routing channel segment at [layer][x][y]
-    vtr::NdMatrix<int, 3> rr_chany_segment_width;
+    /// Stores the number of wire segments in each routing channel segment at [layer][x][y]
+    ChannelMetric<vtr::NdMatrix<int, 3>> rr_chan_segment_width;
 
-    /// Stores the maximum channel segment width in each horizontal channel
-    std::vector<int> rr_chanx_width;
-    /// Stores the maximum channel segment width in each vertical channel
-    std::vector<int> rr_chany_width;
+    /// Stores the maximum channel segment width in each horizontal/vertical channel
+    ChannelMetric<std::vector<int>> rr_chan_width;
 
     bool rr_graph_is_flat = false;
 
-    /*
-     * Clock Networks
-     */
-
+    // Clock Networks
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
     std::vector<std::unique_ptr<ClockConnection>> clock_connections;
 
@@ -502,7 +501,7 @@ struct PlacementContext : public Context {
     bool f_placer_debug = false;
 
     /**
-     * Set this variable to ture if the type of the bounding box used in placement is of the type cube. If it is false,
+     * Set this variable to true if the type of the bounding box used in placement is of the type cube. If it is false,
      * it would mean that per-layer bounding box is used. For the 2D architecture, the cube bounding box would be used.
      */
     bool cube_bb = false;

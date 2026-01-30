@@ -400,12 +400,10 @@ def find_longest_task_description(configs):
             if config.script_params_list_add:
                 for param in config.script_params_list_add:
                     arch_circuit_len = len(str(PurePath(arch) / circuit / "common_" / param))
-                    if arch_circuit_len > longest:
-                        longest = arch_circuit_len
+                    longest = max(longest, arch_circuit_len)
             else:
                 arch_circuit_len = len(str(PurePath(arch) / circuit / "common"))
-                if arch_circuit_len > longest:
-                    longest = arch_circuit_len
+                longest = max(longest, arch_circuit_len)
     return longest
 
 
@@ -760,7 +758,7 @@ def create_job(
 
 def ret_expected_min_w(circuit, arch, golden_results, script_params=None):
     """
-    Retrive the expected minimum channel width from the golden results.
+    Retrieve the expected minimum channel width from the golden results.
     """
     script_params = load_script_param(script_params)
     golden_metrics = golden_results.metrics(arch, circuit, script_params)
@@ -771,7 +769,7 @@ def ret_expected_min_w(circuit, arch, golden_results, script_params=None):
 
 def ret_expected_vpr_status(arch, circuit, golden_results, script_params=None):
     """
-    Retrive the expected VPR status from the golden_results.
+    Retrieve the expected VPR status from the golden_results.
     """
     script_params = load_script_param(script_params)
     golden_metrics = golden_results.metrics(arch, circuit, script_params)
@@ -806,7 +804,7 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
 
 def resolve_vtr_source_file(config, filename, base_dir=""):
     """
-    Resolves an filename with a base_dir
+    Resolves a filename with a base_dir
 
     Checks the following in order:
         1) filename as absolute path
@@ -851,7 +849,7 @@ def find_task_config_file(task_name):
 
     base_dirs = []
     if PurePath(task_name).is_absolute():
-        # Only check the root path since the path is aboslute
+        # Only check the root path since the path is absolute
         base_dirs.append("/")
     else:
         # Not absolute path, so check from the current directory first

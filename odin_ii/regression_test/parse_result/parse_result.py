@@ -224,7 +224,6 @@ def sanitize_toml(toml_dict):
     if _HOOK_HDR in toml_dict:
         global HOOK_FILES
         if _K_FILE in toml_dict[_HOOK_HDR]:
-
             # we append the filenames and strip the .py extension
             if not isinstance(toml_dict[_HOOK_HDR][_K_FILE], list):
                 HOOK_FILES.append(toml_dict[_HOOK_HDR][_K_FILE][:-3])
@@ -407,7 +406,6 @@ def load_csv_into_tbl(toml_dict, csv_file_name):
 
 
 def load_json_into_tbl(toml_dict, file_name):
-
     file_dict = OrderedDict()
     with open(file_name, newline="") as json_file:
         file_dict = json.load(json_file, object_pairs_hook=OrderedDict)
@@ -431,7 +429,6 @@ def load_json_into_tbl(toml_dict, file_name):
 
 
 def load_log_into_tbl(toml_dict, log_file_name):
-
     # load the hooks if there are any
     # run.py
     pre_hooks = []
@@ -455,7 +452,6 @@ def load_log_into_tbl(toml_dict, log_file_name):
         input_values = create_tbl(toml_dict, _K_DFLT)
 
         for line in log:
-
             # boostrap the preprocessor here
             for fn in pre_hooks:
                 line = fn(line)
@@ -577,7 +573,6 @@ def compare_instances(header, toml_dict, tbl_entry, golden_tbl_entry):
 
 
 def regex_line(toml_dict, header, line):
-
     # compile the regex entries
     entry_list = []
 
@@ -628,7 +623,6 @@ def _compare(toml_file_name, golden_result_file_name, result_file_name, diff_fil
     for key in golden_tbl:
         error_str = []
         for header in toml_dict:
-
             if key not in tbl:
                 if header in golden_tbl[key]:
                     # if we are only running partial tests, key will not be existing
@@ -649,7 +643,6 @@ def _compare(toml_file_name, golden_result_file_name, result_file_name, diff_fil
                     pass
 
                 elif header not in golden_tbl[key] and header in tbl[key]:
-
                     error_str.append(mismatch_str(header, "null", tbl[key][header]))
                     diff[key][header] = tbl[key][header]
 
@@ -658,7 +651,6 @@ def _compare(toml_file_name, golden_result_file_name, result_file_name, diff_fil
                     # don't create the entry
 
                 else:
-
                     if compare_instances(header, toml_dict, tbl[key], golden_tbl[key]):
                         # use the golden value since it is within range and we don't wanna trigger a diff
                         diff[key][header] = golden_tbl[key][header]
@@ -768,7 +760,6 @@ def parse_shared_args(args):
 
 
 def main():
-
     this_exec = sys.argv[0]
     if len(sys.argv) < 2:
         print("expected: display, parse, join or compare")

@@ -39,7 +39,7 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     VTR_LOG("\n");
 
     VTR_LOG("Packer: %s\n", stage_action_strings[vpr_setup.PackerOpts.doPacking]);
-    VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.doPlacement]);
+    VTR_LOG("Placer: %s\n", stage_action_strings[vpr_setup.PlacerOpts.do_placement]);
     VTR_LOG("Analytical Placer: %s\n", stage_action_strings[vpr_setup.APOpts.doAP]);
     VTR_LOG("Router: %s\n", stage_action_strings[vpr_setup.RouterOpts.doRouting]);
     VTR_LOG("Analysis: %s\n", stage_action_strings[vpr_setup.AnalysisOpts.doAnalysis]);
@@ -52,7 +52,7 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
     if (vpr_setup.PackerOpts.doPacking != e_stage_action::SKIP) {
         ShowPackerOpts(vpr_setup.PackerOpts);
     }
-    if (vpr_setup.PlacerOpts.doPlacement != e_stage_action::SKIP) {
+    if (vpr_setup.PlacerOpts.do_placement != e_stage_action::SKIP) {
         ShowPlacerOpts(vpr_setup.PlacerOpts);
     }
     if (vpr_setup.APOpts.doAP != e_stage_action::SKIP) {
@@ -499,20 +499,16 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
     VTR_LOG("PlacerOpts.place_freq: ");
     switch (PlacerOpts.place_freq) {
-        case PLACE_ONCE:
-            VTR_LOG("PLACE_ONCE\n");
+        case e_place_freq::ONCE:
+            VTR_LOG("ONCE\n");
             break;
-        case PLACE_ALWAYS:
-            VTR_LOG("PLACE_ALWAYS\n");
-            break;
-        case PLACE_NEVER:
-            VTR_LOG("PLACE_NEVER\n");
+        case e_place_freq::ALWAYS:
+            VTR_LOG("ALWAYS\n");
             break;
         default:
             VTR_LOG_ERROR("Unknown Place Freq\n");
     }
-    if ((PLACE_ONCE == PlacerOpts.place_freq)
-        || (PLACE_ALWAYS == PlacerOpts.place_freq)) {
+    if (PlacerOpts.place_freq == e_place_freq::ONCE || PlacerOpts.place_freq == e_place_freq::ALWAYS) {
         VTR_LOG("PlacerOpts.place_algorithm: ");
         switch (PlacerOpts.place_algorithm.get()) {
             case e_place_algorithm::BOUNDING_BOX_PLACE:

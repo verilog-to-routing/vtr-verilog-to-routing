@@ -22,6 +22,7 @@ A Placement Constraints File Example
 					<add_atom name_pattern="n877"/>
 					<add_region x_low="3" y_low="1" x_high="7" y_high="2"/> <!-- Two rectangular regions are specified, together describing an L-shaped region -->
 					<add_region x_low="7" y_low="3" x_high="7" y_high="6"/>
+					<add_logical_block name_pattern="clbA"/> <!-- Constrain atoms to clbA logical block type -->
 			</partition>
 			<partition name="Part1">
 					<add_region x_low="3" y_low="7" x_high="3" y_high="7" subtile="0"/> <!-- One specific location is specified -->
@@ -48,17 +49,18 @@ VPR has a specific XML format which must be used when creating a placement const
 
 #. Which primitives are to have placement constraints
 #. The regions on the FPGA chip to which those primitives must be constrained
+#. Which logical block types the primitives can be mapped to (optional)
 
 The file is passed as an input to VPR when running with placement constraints. When the file is read in, its information is used during the packing and placement stages of VPR. The hierarchy of the file is set up as follows.
 
 The top level tag is the ``<vpr_constraints>`` tag. This tag can contain one ``<partition_list>`` tag. The ``<partition_list>`` tag can be made up of an unbounded number of ``<partition>`` tags. The ``<partition>`` tags contains all of the detailed information of the placement constraints, and is described in detail below.
 
-Partitions, Atoms, and Regions
-------------------------------
+Partitions, Atoms, Regions, and Logical Block Types
+----------------------------------------------------
 
 .. arch:tag:: <partition name="string">
 
-	A partition is made up of two components - a group of primitives (a.k.a. atoms) that must be constrained to the same area on the chip, and a set of one or more regions specifying where those primitives must be constrained. The information for each partition is contained within a ``<partition>`` tag, and the number of ``partition`` tags that the partition_list tag can contain is unbounded. 
+	A partition is made up of three components - a group of primitives (a.k.a. atoms) that must be constrained to the same area on the chip, a set of one or more regions specifying where those primitives must be constrained, and optionally a set of logical block types that those primitives can be mapped to. The information for each partition is contained within a ``<partition>`` tag, and the number of ``partition`` tags that the partition_list tag can contain is unbounded. 
 
 	:req_param name:
 		A name for the partition.
@@ -107,7 +109,6 @@ Partitions, Atoms, and Regions
 			The highest layer number that the region covers.
 			**Default:** ``0``
 
-
 		In 2D architectures, ``layer_low`` and ``layer_high`` can be safely ignored as their default value is 0.
 		In 3D architectures, a region can span across multiple layers or be assigned to a specific layer.
 		For assigning a region to a specific non-zero layer, the user should set both ``layer_low`` and ``layer_high`` to the
@@ -121,3 +122,22 @@ Partitions, Atoms, and Regions
 		blocks and the number of physical blocks in a region to decide if it should pack atoms inside a partition more aggressively when
 		there are not enough resources in a partition. Overlapping partitions cause some physical blocks to be counted in more
 		than one partition, which will degrade the packing algorithm's ability to create a clustering that can be placed given the floorplan constraints.
+
+	.. arch:tag:: <add_logical_block name_pattern="string">
+
+		An ``<add_logical_block>`` tag is used to constrain the atoms in the partition to specific logical block types. This tag is optional and can be repeated multiple times within a partition to specify multiple allowed logical block types.
+		When logical block type constraints are specified, atoms in the partition will only be packed into clusters of the specified logical block types.
+		
+		Logical blocks are the types of complex blocks found in the FPGA architecture. They are defined as top-level ``pb_type`` elements in the complex block list of the architecture description file and correspond to the equivalent sites available in sub-tiles across the chip.
+		
+		The ``<add_logical_block>`` tag has the following attribute:
+
+		:req_param name_pattern:
+			The name of the logical block type that atoms in this partition are allowed to be mapped to. This can be the exact name of a logical block type from the device architecture, or a regular expression pattern matching one or more logical block type names.
+			VPR first searches the architecture for an exact match.
+			If no exact match is found, it then assumes that the given name is a regex pattern and searches for logical block types whose names match the pattern.
+			For example, to constrain atoms to both ``clbA`` and ``clbB`` logical block types, the user can add two ``<add_logical_block>`` tags with ``name_pattern`` values of ``clbA`` and ``clbB`` respectively, or use a single tag with ``name_pattern="clb[AB]"``.
+
+		**Use Case Example:** Architectures such as Stratix-IV contain multiple types of RAM blocks (e.g., M9K and M144K). This tag can be used to constrain certain RAM slices to specific RAM logical block types. For instance, if certain memory operations require the larger M144K blocks, you can add ``<add_logical_block name_pattern="M144K"/>`` to ensure those atoms are mapped only to the appropriate RAM block type.
+
+		**Note:** If no ``<add_logical_block>`` tags are specified for a partition, atoms in the partition are not constrained to any particular logical block type and can be mapped to any available type.

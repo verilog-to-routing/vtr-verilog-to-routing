@@ -9,7 +9,7 @@
 #include "argparse.hpp"
 
 struct t_options {
-    /* File names */
+    // File names
     argparse::ArgValue<std::string> ArchFile;
     argparse::ArgValue<std::string> CircuitName;
     argparse::ArgValue<std::string> NetFile;
@@ -50,7 +50,7 @@ struct t_options {
 
     argparse::ArgValue<std::string> write_block_usage;
 
-    /* Stage Options */
+    // Stage Options
     argparse::ArgValue<bool> do_packing;
     argparse::ArgValue<bool> do_legalize;
     argparse::ArgValue<bool> do_placement;
@@ -59,13 +59,13 @@ struct t_options {
     argparse::ArgValue<bool> do_analysis;
     argparse::ArgValue<bool> do_power;
 
-    /* Graphics Options */
+    // Graphics Options
     argparse::ArgValue<bool> show_graphics; ///<Enable argparse::ArgValue<int>eractive graphics?
     argparse::ArgValue<int> GraphPause;
     argparse::ArgValue<bool> save_graphics;
     argparse::ArgValue<std::string> graphics_commands;
 
-    /* General options */
+    // General options
     argparse::ArgValue<bool> show_help;
     argparse::ArgValue<bool> show_version;
     argparse::ArgValue<bool> show_arch_resources;
@@ -87,11 +87,11 @@ struct t_options {
     argparse::ArgValue<bool> allow_dangling_combinational_nodes;
     argparse::ArgValue<bool> terminate_if_timing_fails;
 
-    /* Server options */
+    // Server options
     argparse::ArgValue<bool> is_server_mode_enabled;
     argparse::ArgValue<int> server_port_num;
 
-    /* Atom netlist options */
+    // Atom netlist options
     argparse::ArgValue<bool> absorb_buffer_luts;
     argparse::ArgValue<e_const_gen_inference> const_gen_inference;
     argparse::ArgValue<bool> sweep_dangling_primary_ios;
@@ -100,7 +100,7 @@ struct t_options {
     argparse::ArgValue<bool> sweep_constant_primary_outputs;
     argparse::ArgValue<int> netlist_verbosity;
 
-    /* Analytical Placement options */
+    // Analytical Placement options
     argparse::ArgValue<e_ap_analytical_solver> ap_analytical_solver;
     argparse::ArgValue<e_ap_partial_legalizer> ap_partial_legalizer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
@@ -113,7 +113,7 @@ struct t_options {
     argparse::ArgValue<int> ap_high_fanout_threshold;
     argparse::ArgValue<bool> ap_generate_mass_report;
 
-    /* Clustering options */
+    // Clustering options
     argparse::ArgValue<bool> connection_driven_clustering;
     argparse::ArgValue<e_unrelated_clustering> allow_unrelated_clustering;
     argparse::ArgValue<float> timing_gain_weight;
@@ -128,20 +128,22 @@ struct t_options {
     argparse::ArgValue<int> pack_feasible_block_array_size;
     argparse::ArgValue<std::vector<std::string>> pack_high_fanout_threshold;
     argparse::ArgValue<int> pack_verbosity;
-    /* Placement options */
-    argparse::ArgValue<int> Seed;
-    argparse::ArgValue<bool> ShowPlaceTiming;
-    argparse::ArgValue<float> PlaceInnerNum;
+
+    // Placement options
+    argparse::ArgValue<int> seed;
+    argparse::ArgValue<bool> show_place_timing;
+    argparse::ArgValue<float> place_inner_num;
     argparse::ArgValue<float> place_auto_init_t_scale;
+    argparse::ArgValue<float> place_init_t;
+    argparse::ArgValue<float> place_exit_t;
+    argparse::ArgValue<float> place_alpha_t;
     argparse::ArgValue<e_anneal_init_t_estimator> place_init_t_estimator;
-    argparse::ArgValue<float> PlaceInitT;
-    argparse::ArgValue<float> PlaceExitT;
-    argparse::ArgValue<float> PlaceAlphaT;
+
     argparse::ArgValue<e_sched_type> anneal_sched_type;
-    argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
-    argparse::ArgValue<e_place_algorithm> PlaceQuenchAlgorithm;
+    argparse::ArgValue<e_place_algorithm> place_algorithm;
+    argparse::ArgValue<e_place_algorithm> place_quench_algorithm;
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;
-    argparse::ArgValue<int> PlaceChanWidth;
+    argparse::ArgValue<int> place_chan_width;
     argparse::ArgValue<float> place_rlim_escape_fraction;
     argparse::ArgValue<std::string> place_move_stats_file;
     argparse::ArgValue<int> placement_saves_per_temperature;
@@ -150,6 +152,7 @@ struct t_options {
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
     argparse::ArgValue<int> place_high_fanout_net;
     argparse::ArgValue<e_place_bounding_box_mode> place_bounding_box_mode;
+    argparse::ArgValue<e_place_freq> place_placement_freq;
 
     argparse::ArgValue<bool> RL_agent_placement;
     argparse::ArgValue<bool> place_agent_multistate;
@@ -170,7 +173,7 @@ struct t_options {
     argparse::ArgValue<int> placer_debug_block;
     argparse::ArgValue<int> placer_debug_net;
 
-    /*NoC Options*/
+    // NoC Options
     argparse::ArgValue<bool> noc;
     argparse::ArgValue<std::string> noc_flows_file;
     argparse::ArgValue<std::string> noc_routing_algorithm;
@@ -188,9 +191,12 @@ struct t_options {
     argparse::ArgValue<bool> noc_sat_routing_log_search_progress;
     argparse::ArgValue<std::string> noc_placement_file_name;
 
-    /* Timing-driven placement options only */
-    argparse::ArgValue<float> PlaceTimingTradeoff;
-    argparse::ArgValue<int> RecomputeCritIter;
+    // Timing-driven placement options only
+    argparse::ArgValue<float> place_congestion_factor;
+    argparse::ArgValue<float> place_congestion_rlim_trigger_ratio;
+    argparse::ArgValue<float> place_congestion_chan_util_threshold;
+    argparse::ArgValue<float> place_timing_tradeoff;
+    argparse::ArgValue<int> recompute_crit_iter;
     argparse::ArgValue<int> inner_loop_recompute_divider;
     argparse::ArgValue<int> quench_recompute_divider;
     argparse::ArgValue<float> place_exp_first;
@@ -205,7 +211,7 @@ struct t_options {
     argparse::ArgValue<e_reducer> place_delay_model_reducer;
     argparse::ArgValue<std::string> allowed_tiles_for_delay_model;
 
-    /* Router Options */
+    // Router Options
     argparse::ArgValue<bool> check_rr_graph;
     argparse::ArgValue<int> max_router_iterations;
     argparse::ArgValue<float> first_iter_pres_fac;
@@ -234,7 +240,7 @@ struct t_options {
     argparse::ArgValue<bool> router_opt_choke_points;
     argparse::ArgValue<int> route_verbosity;
 
-    /* Timing-driven router options only */
+    // Timing-driven router options only
     argparse::ArgValue<float> astar_fac;
     argparse::ArgValue<float> astar_offset;
     argparse::ArgValue<float> router_profiler_astar_fac;
@@ -269,7 +275,7 @@ struct t_options {
     argparse::ArgValue<e_router_initial_timing> router_initial_timing;
     argparse::ArgValue<e_heap_type> router_heap;
 
-    /* Analysis options */
+    // Analysis options
     argparse::ArgValue<bool> full_stats;
     argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
     argparse::ArgValue<bool> Generate_Post_Implementation_Merged_Netlist;
@@ -284,6 +290,15 @@ struct t_options {
     argparse::ArgValue<std::string> write_timing_summary;
     argparse::ArgValue<bool> skip_sync_clustering_and_routing_results;
     argparse::ArgValue<bool> generate_net_timing_report;
+
+    /* CRR options */
+    argparse::ArgValue<std::string> sb_maps;
+    argparse::ArgValue<std::string> sb_templates;
+    argparse::ArgValue<bool> preserve_input_pin_connections;
+    argparse::ArgValue<bool> preserve_output_pin_connections;
+    argparse::ArgValue<bool> annotated_rr_graph;
+    argparse::ArgValue<bool> remove_dangling_nodes;
+    argparse::ArgValue<std::string> sb_count_dir;
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);

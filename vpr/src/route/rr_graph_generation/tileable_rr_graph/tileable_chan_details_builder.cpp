@@ -17,11 +17,11 @@
 /************************************************************************
  * Generate the number of tracks for each types of routing segments
  * w.r.t. the frequency of each of segments and channel width
- * Note that if we dertermine the number of tracks per type using
+ * Note that if we determine the number of tracks per type using
  *     chan_width * segment_frequency / total_freq may cause
  * The total track num may not match the chan_width,
  * therefore, we assign tracks one by one until we meet the frequency requirement
- * In this way, we can assign the number of tracks with repect to frequency
+ * In this way, we can assign the number of tracks with respect to frequency
  ***********************************************************************/
 std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
                                                 const std::vector<t_segment_inf>& segment_inf,
@@ -185,7 +185,7 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
     size_t bend_num = 0; // The index for bend segments
     for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
         if (!segment_inf[iseg].is_bend) {
-            /* segment length will be set to maxium segment length if this is a longwire */
+            /* segment length will be set to maximum segment length if this is a longwire */
             size_t seg_len = segment_inf[iseg].length;
             if (true == segment_inf[iseg].longline) {
                 seg_len = max_seg_length;
@@ -314,7 +314,7 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
              * }*/
         }
     }
-    /* Check if all the tracks have been satisified */
+    /* Check if all the tracks have been satisfied */
     VTR_ASSERT(cur_track == actual_chan_width);
 
     /* If this is on the border of a device/heterogeneous blocks, segments should start/end */

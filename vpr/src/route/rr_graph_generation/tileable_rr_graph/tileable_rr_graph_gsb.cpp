@@ -395,7 +395,7 @@ static void build_gsb_one_group_track_to_track_map(const RRGraphView& rr_graph,
  * Build the track_to_track_map[from_side][0..chan_width-1][to_side][track_indices]
  * based on the existing routing resources in the General Switch Block (GSB)
  * The track_indices is the indices of tracks that the node at from_side and [0..chan_width-1] will drive
- * IMPORTANT: the track_indices are the indicies in the GSB context, but not the rr_graph!!!
+ * IMPORTANT: the track_indices are the indices in the GSB context, but not the rr_graph!!!
  * We separate the connections into two groups:
  * Group 1: the routing tracks start from this GSB
  *          We will apply switch block patterns (SUBSET, UNIVERSAL, WILTON)
@@ -564,7 +564,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
         std::vector<RRNodeId> rr_nodes;
         switch (side) {
             case TOP: /* TOP = 0 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.y() == grids.height() - 2) {
 
                     break;
@@ -600,7 +600,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 
                 break;
             case RIGHT: /* RIGHT = 1 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.x() == grids.width() - 2) {
 
                     break;
@@ -635,7 +635,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 }
                 break;
             case BOTTOM: /* BOTTOM = 2 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.y() == 0) {
 
                     break;
@@ -670,7 +670,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 }
                 break;
             case LEFT: /* BOTTOM = 2 */
-                /* For the bording, we should take special care */
+                /* For the border, we should take special care */
                 if (gsb_coordinate.x() == 0) {
 
                     break;
@@ -1190,15 +1190,17 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         enum e_side gsb_side = side_manager.get_side();
 
         /* Find OPINs */
-        for (size_t inode = 0; inode < rr_gsb.get_num_opin_nodes(gsb_side); ++inode) {
-            const RRNodeId& opin_node = rr_gsb.get_opin_node(gsb_side, inode);
+        if (opin2track_map.size() > 0) {
+            for (size_t inode = 0; inode < rr_gsb.get_num_opin_nodes(gsb_side); ++inode) {
+                const RRNodeId& opin_node = rr_gsb.get_opin_node(gsb_side, inode);
 
-            for (size_t to_side = 0; to_side < opin2track_map[gsb_side][inode].size(); ++to_side) {
-                /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
-                /* add edges to the opin_node */
-                for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side]) {
-                    rr_graph_builder.create_edge_in_cache(opin_node, track_node, rr_node_driver_switches[track_node], false);
-                    edge_count++;
+                for (size_t to_side = 0; to_side < opin2track_map[gsb_side][inode].size(); ++to_side) {
+                    /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
+                    /* add edges to the opin_node */
+                    for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side]) {
+                        rr_graph_builder.create_edge_in_cache(opin_node, track_node, rr_node_driver_switches[track_node], false);
+                        edge_count++;
+                    }
                 }
             }
         }
@@ -1207,24 +1209,28 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         /* For TRACKs to IPINs, we only care LEFT and TOP sides
          * Skip RIGHT and BOTTOM for the ipin2track_map since they should be handled in other GSBs
          */
-        if ((side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANX))
-            || (side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANY))) {
-            /* 2. create edges between CHANX|CHANY and IPINs, using ipin2track_map */
-            for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
-                const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
-                for (const RRNodeId& ipin_node : track2ipin_map[gsb_side][inode]) {
-                    rr_graph_builder.create_edge_in_cache(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
-                    edge_count++;
+        if (track2ipin_map.size() > 0) {
+            if ((side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANX))
+                || (side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANY))) {
+                /* 2. create edges between CHANX|CHANY and IPINs, using ipin2track_map */
+                for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
+                    const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
+                    for (const RRNodeId& ipin_node : track2ipin_map[gsb_side][inode]) {
+                        rr_graph_builder.create_edge_in_cache(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
+                        edge_count++;
+                    }
                 }
             }
         }
 
         /* 3. create edges between CHANX|CHANY and CHANX|CHANY, using track2track_map */
-        for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
-            const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
-            for (const RRNodeId& track_node : track2track_map[gsb_side][inode]) {
-                rr_graph_builder.create_edge_in_cache(chan_node, track_node, rr_node_driver_switches[track_node], false);
-                edge_count++;
+        if (track2track_map.size() > 0) {
+            for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
+                const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
+                for (const RRNodeId& track_node : track2track_map[gsb_side][inode]) {
+                    rr_graph_builder.create_edge_in_cache(chan_node, track_node, rr_node_driver_switches[track_node], false);
+                    edge_count++;
+                }
             }
         }
     }
@@ -1544,7 +1550,7 @@ t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
 
             int grid_type_index = grids.get_physical_type(ipin_node_phy_tile_loc)->index;
             /* Get Fc of the ipin */
-            /* skip Fc = 0 or unintialized, those pins are in the <directlist> */
+            /* skip Fc = 0 or uninitialized, those pins are in the <directlist> */
             bool skip_conn2track = true;
             std::vector<int> ipin_Fc_out;
             for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
@@ -1625,7 +1631,7 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
             int grid_type_index = grids.get_physical_type(opin_node_phy_tile_loc)->index;
 
             /* Get Fc of the ipin */
-            /* skip Fc = 0 or unintialized, those pins are in the <directlist> */
+            /* skip Fc = 0 or uninitialized, those pins are in the <directlist> */
             bool skip_conn2track = true;
             std::vector<int> opin_Fc_out;
             for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
@@ -1835,11 +1841,11 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     VTR_ASSERT(vib->get_pbtype_name() == phy_type->name);
     const std::vector<t_first_stage_mux_inf> first_stages = vib->get_first_stages();
     for (size_t i_first_stage = 0; i_first_stage < first_stages.size(); i_first_stage++) {
-        std::vector<t_from_or_to_inf> froms = first_stages[i_first_stage].froms;
+        const std::vector<t_from_or_to_inf>& from_infos = first_stages[i_first_stage].from_infos;
         RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MUX, i_first_stage);
         VTR_ASSERT(to_node.is_valid());
         VTR_ASSERT(rr_gsb.is_mux_node(to_node));
-        for (auto from : froms) {
+        for (auto from : from_infos) {
             RRNodeId from_node;
             if (from.from_type == e_multistage_mux_from_or_to_type::PB) {
 
@@ -1937,8 +1943,8 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     /* Second stages*/
     const std::vector<t_second_stage_mux_inf> second_stages = vib->get_second_stages();
     for (size_t i_second_stage = 0; i_second_stage < second_stages.size(); i_second_stage++) {
-        std::vector<t_from_or_to_inf> froms = second_stages[i_second_stage].froms;
-        std::vector<t_from_or_to_inf> tos = second_stages[i_second_stage].to;
+        const std::vector<t_from_or_to_inf>& from_infos = second_stages[i_second_stage].from_infos;
+        const std::vector<t_from_or_to_inf>& tos = second_stages[i_second_stage].to;
 
         std::vector<RRNodeId> to_nodes;
         for (auto to : tos) {
@@ -2023,7 +2029,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
         }
 
         std::vector<RRNodeId> from_nodes;
-        for (auto from : froms) {
+        for (auto from : from_infos) {
             RRNodeId from_node;
             if (from.from_type == e_multistage_mux_from_or_to_type::PB) {
 

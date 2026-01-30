@@ -520,13 +520,13 @@ void draw_routing_bb(ezgl::renderer* g) {
     //
     //In the graphics we represent this by drawing the BB so that legal RR node start/end points
     //are contained within the drawn box. Since VPR associates each x/y channel location to
-    //the right/top of the tile with the same x/y cordinates, this means we draw the box so that:
+    //the right/top of the tile with the same x/y coordinates, this means we draw the box so that:
     //  * The left edge is to the left of the channel at bb xmin (including the channel at xmin)
     //  * The bottom edge is to the below of the channel at bb ymin (including the channel at ymin)
     //  * The right edge is to the right of the channel at bb xmax (including the channel at xmax)
     //  * The top edge is to the right of the channel at bb ymax (including the channel at ymax)
     //Since tile_x/tile_y correspond to the drawing coordinates the block at grid x/y's bottom-left corner
-    //this means we need to shift the top/right drawn co-ordinate one tile + channel width right/up so
+    //this means we need to shift the top/right drawn coordinate one tile + channel width right/up so
     //the drawn box contains the top/right channels
     double draw_xlow = draw_coords->tile_x[bb->xmin];
     double draw_ylow = draw_coords->tile_y[bb->ymin];
@@ -617,7 +617,7 @@ void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
             draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
         }
 
-        // When drawing a new branch, add the parent node to the vector to ensure that the conenction is drawn.
+        // When drawing a new branch, add the parent node to the vector to ensure that the connection is drawn.
         if (rr_nodes_to_draw.empty() && rt_node.parent().has_value()) {
             rr_nodes_to_draw.push_back(rt_node.parent().value().inode);
         }

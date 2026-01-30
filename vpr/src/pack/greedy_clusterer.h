@@ -76,7 +76,7 @@ class GreedyClusterer {
      *  @param is_global
      *              The set of global nets in the Atom Netlist. These will be
      *              routed on special dedicated networks, and hence are less
-     *              relavent to locality / attraction.
+     *              relevant to locality / attraction.
      *  @param pre_cluster_timing_manager
      *              Timing manager class which holds the timing information of
      *              the primitive netlist. Used by the seed selector to select
@@ -151,7 +151,7 @@ class GreedyClusterer {
      *
      * If the strategy is set to SKIP_INTRA_LB_ROUTE, the cluster will grow
      * without performing intra-lb route every time a molecule is added to the
-     * cluster. It will perfrom intra-lb route at the end, after all molecules
+     * cluster. It will perform intra-lb route at the end, after all molecules
      * have been added. If this final intra-lb route fails, the cluster will be
      * destroyed and an invalid cluster ID will be returned.
      *
@@ -180,7 +180,7 @@ class GreedyClusterer {
      * to balance logical block type utilization.
      *
      * If the device is to be auto-sized, this method will try to grow the
-     * device grid if it find thats more clusters of specific logical block
+     * device grid if it finds that more clusters of specific logical block
      * types have been created than the device can support.
      */
     LegalizationClusterId start_new_cluster(PackMoleculeId seed_mol_id,

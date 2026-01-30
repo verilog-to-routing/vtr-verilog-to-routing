@@ -7,7 +7,7 @@ namespace vtr {
  * @brief The vtr::Range template models a range defined by two iterators of type T.
  *
  * It allows conveniently returning a range from a single function call
- * without having to explicity expose the underlying container, or make two
+ * without having to explicitly expose the underlying container, or make two
  * explicit calls to retrieve the associated begin and end iterators.
  * It also enables the easy use of range-based-for loops.
  *
@@ -15,7 +15,7 @@ namespace vtr {
  *
  *      class My Data {
  *          public:
- *              typdef std::vector<int>::const_iterator my_iter;
+ *              typedef std::vector<int>::const_iterator my_iter;
  *              vtr::Range<my_iter> data();
  *          ...
  *          private:

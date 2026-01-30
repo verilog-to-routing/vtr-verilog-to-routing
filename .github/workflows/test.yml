@@ -38,7 +38,7 @@ jobs:
     name: 'B: Building VTR Release'
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -68,7 +68,7 @@ jobs:
         tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
 
     - name: Store Build Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: build-release.tar.gz
         path: build.tar.gz
@@ -79,7 +79,7 @@ jobs:
     name: 'B: Building VTR Release With Odin'
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -115,7 +115,7 @@ jobs:
         tar -czvf build.tar.gz --exclude='CMakeFiles' --exclude='*.a' --exclude='*.cmake' build/
 
     - name: Store Build Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: build-release-with-odin.tar.gz
         path: build.tar.gz
@@ -128,20 +128,32 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - { name: 'C/C++',       script: 'check-format.sh'   , with_python: 'no', pkgs: 'clang-format-18' }
-        - { name: 'Python',      script: 'check-format-py.sh', with_python: 'yes', pkgs: '' }
-        - { name: 'Python Lint', script: 'pylint_check.py'   , with_python: 'yes', pkgs: '' }
+        - { name: 'C/C++',       script: 'check-format.sh'   , with_python: 'yes', with_submodules: 'true', all_vtr_pkgs: 'yes', pkgs: 'clang-format-18' }
+        - { name: 'Python',      script: 'check-format-py.sh', with_python: 'yes', with_submodules: 'true', all_vtr_pkgs: 'yes', pkgs: '' }
     name: 'F: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/checkout@v4
-      # NOTE: We do not need sub-modules. We do not check sub-modules for formatting.
+    - uses: actions/checkout@v6
+      with:
+        submodules: ${{ matrix.with_submodules }}
+      # NOTE: We usually do not need sub-modules. We do not check sub-modules
+      #       for formatting. However we may need to build make-format which
+      #       requires building VTR which will not build without submodules.
+      # TODO: We should relax this requirement.
+
+      # In order to perform a cpp format of VTR, make format is used which requires
+      # all of the vpr dependencies to be installed.
+      # TODO: This should be fixed so this test is not as heavy. We do not need
+      #       these dependencies to perform a simple format.
+    - name: Install dependencies
+      if: ${{ matrix.all_vtr_pkgs == 'yes' }}
+      run: ./install_apt_packages.sh
 
     # TODO: This should be on the same version of Python as would be found on
     #       Ubuntu 24.04 (3.12.3); however that version has some linting errors.
     #         - The version of Pylint in requirements.txt is not compatible with
     #           python version 3.12.3. Pylint needs to be updated to move to this version.
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       if: ${{ matrix.with_python == 'yes' }}
       with:
         python-version: 3.10.10
@@ -171,11 +183,11 @@ jobs:
     name: 'Verify Test Suites'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       # NOTE: We do not need sub-modules. This only verifies the tests, does not run them.
 
     - name: 'Run test suite verification'
@@ -191,7 +203,7 @@ jobs:
     needs: [BuildVTR]
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -203,7 +215,7 @@ jobs:
       run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release.tar.gz
 
@@ -230,11 +242,11 @@ jobs:
       COMMON_CMAKE_PARAMS: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -255,6 +267,7 @@ jobs:
         key: ${{ github.job }}
 
     - name: 'Test with VTR_ASSERT_LEVEL 4'
+      timeout-minutes: 120
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVTR_ASSERT_LEVEL=4"
@@ -266,6 +279,7 @@ jobs:
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: 'Test with NO_GRAPHICS'
+      timeout-minutes: 60
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVPR_USE_EZGL=off"
@@ -277,6 +291,7 @@ jobs:
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: 'Test with NO_SERVER'
+      timeout-minutes: 60
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVPR_USE_SERVER=off"
@@ -288,6 +303,7 @@ jobs:
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: 'Test with CAPNPROTO disabled'
+      timeout-minutes: 60
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVTR_ENABLE_CAPNPROTO=off"
@@ -299,6 +315,7 @@ jobs:
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: 'Test with serial VPR_EXECUTION_ENGINE'
+      timeout-minutes: 60
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVPR_EXECUTION_ENGINE=serial -DTATUM_EXECUTION_ENGINE=serial"
@@ -310,6 +327,7 @@ jobs:
         ./run_reg_test.py vtr_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: 'Test with VTR_ENABLE_DEBUG_LOGGING enabled'
+      timeout-minutes: 60
       if: success() || failure()
       env:
         CMAKE_PARAMS: "${{ env.COMMON_CMAKE_PARAMS }} -DVTR_ENABLE_DEBUG_LOGGING=on"
@@ -352,11 +370,11 @@ jobs:
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -378,7 +396,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release.tar.gz
 
@@ -388,12 +406,13 @@ jobs:
         tar -xvzf build.tar.gz
 
     - name: Test
+      timeout-minutes: 30
       run: |
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: Upload regression run files
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{matrix.name}}_run_files
         path: |
@@ -405,7 +424,7 @@ jobs:
 
     - name: Upload regression results
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -439,11 +458,11 @@ jobs:
     name: 'R: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -465,7 +484,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release-with-odin.tar.gz
 
@@ -475,12 +494,13 @@ jobs:
         tar -xvzf build.tar.gz
 
     - name: Test
+      timeout-minutes: 15
       run: |
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
     - name: Upload regression run files
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{matrix.name}}_run_files
         path: |
@@ -492,7 +512,7 @@ jobs:
 
     - name: Upload regression results
       if: ${{ !cancelled() }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{matrix.name}}_results
         path: |
@@ -518,10 +538,10 @@ jobs:
     name: 'S: ${{ matrix.name }}'
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -541,6 +561,7 @@ jobs:
         key: ${{ github.job }}-${{ matrix.suite }}
 
     - name: Test
+      timeout-minutes: 60
       env:
         CMAKE_PARAMS: ${{ matrix.params }}
         BUILD_TYPE: RelWithDebInfo
@@ -565,10 +586,10 @@ jobs:
     needs: [BuildVTR]
     steps:
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: 3.12.3
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: 'true'
 
@@ -584,7 +605,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Download Build Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: build-release.tar.gz
 
@@ -594,6 +615,7 @@ jobs:
           tar -xvzf build.tar.gz
 
       - name: Test
+        timeout-minutes: 30
         run: |
           ./run_reg_test.py parmys_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count }}
 
@@ -604,10 +626,10 @@ jobs:
     needs: [BuildVTRWithOdin]
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -623,7 +645,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release-with-odin.tar.gz
 
@@ -633,6 +655,7 @@ jobs:
         tar -xvzf build.tar.gz
 
     - name: Test
+      timeout-minutes: 15
       run: |
         sudo sysctl -w vm.mmap_rnd_bits=28
         ./run_reg_test.py odin_reg_basic -show_failures -j${{ steps.cpu-cores.outputs.count }}
@@ -644,10 +667,10 @@ jobs:
     needs: [BuildVTR]
     steps:
 
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: 3.12.3
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -659,7 +682,7 @@ jobs:
       run: ./install_apt_packages.sh
 
     - name: Download Build Artifact
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v7
       with:
         name: build-release.tar.gz
 
@@ -692,7 +715,7 @@ jobs:
       CXX: ${{ matrix.CXX }}
     steps:
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 
@@ -723,7 +746,7 @@ jobs:
       CC: gcc-11
       CXX: g++-11
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         submodules: 'true'
 

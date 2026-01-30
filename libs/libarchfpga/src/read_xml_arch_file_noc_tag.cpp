@@ -82,7 +82,7 @@ static void verify_noc_topology(const std::map<int, std::pair<int, int>>& router
 /**
  * @brief Parses the connections field in <router> tag under <topology> tag.
  * The user provides the list of routers any given router is connected to
- * by the router ids seperated by spaces. For example:
+ * by the router ids separated by spaces. For example:
  * connections="1 2 3 4 5"
  * Go through the connections here and store them. Also make sure the list is legal.
  *
@@ -281,7 +281,7 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
      *
      * - if we instead used 2 in the distance calculation, the resulting positions would result in
      * having 2 routers positioned on the start and end of the region.
-     * This is beacuse we now specified 2 spaces between the region and this allows us to place 2 routers
+     * This is because we now specified 2 spaces between the region and this allows us to place 2 routers
      * on the regions edges and one router in the center.
      *
      * start        end
@@ -310,7 +310,7 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
 
                 // calculate router position
                 /* The first and last router of each column or row will be located on the mesh region boundary,
-                 * the remaining routers will be placed within the region and seperated from other routers
+                 * the remaining routers will be placed within the region and separated from other routers
                  * using the distance calculated previously.
                  */
                 temp_router.device_x_position = (i * horizontal_router_separation) + mesh_region.start_x;
@@ -449,7 +449,7 @@ static void process_router(pugi::xml_node router_tag,
         // check if the user provided a legal router connection list
         if (!router_connection_list_result) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
-                           "The 'connections' attribute for the router must be a list of integers seperated by spaces, "
+                           "The 'connections' attribute for the router must be a list of integers separated by spaces, "
                            "where each integer represents a router id that the current router is connected to.");
         }
 
@@ -500,8 +500,8 @@ static bool parse_noc_router_connection_list(pugi::xml_node router_tag,
                                              std::vector<int>& connection_list,
                                              const std::string& connection_list_attribute_value,
                                              std::map<int, std::pair<int, int>>& routers_in_arch_info) {
-    // we wil be modifying the string so store it in a temporary variable
-    // additionally, we process substrings seperated by spaces,
+    // we will be modifying the string so store it in a temporary variable
+    // additionally, we process substrings separated by spaces,
     // so we add a space at the end of the string to be able to process the last sub-string
     std::string modified_attribute_value = connection_list_attribute_value + " ";
     const std::string delimiter = " ";
@@ -520,7 +520,7 @@ static bool parse_noc_router_connection_list(pugi::xml_node router_tag,
         // convert the connection to an integer
         single_connection >> converted_connection;
 
-        /* we expect the connection list to be a string of integers seperated by spaces,
+        /* we expect the connection list to be a string of integers separated by spaces,
          * where each integer represents a router id that the current router is connected to.
          * So we make sure that the router id was an integer.
          */

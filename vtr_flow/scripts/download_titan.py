@@ -59,7 +59,7 @@ def parse_args():
         "--force",
         default=False,
         action="store_true",
-        help="Run extraction step even if directores etc. already exist",
+        help="Run extraction step even if directories etc. already exist",
     )
     parser.add_argument(
         "--device_family",
@@ -79,7 +79,6 @@ def parse_args():
 
 
 def main():
-
     args = parse_args()
 
     try:
@@ -287,7 +286,6 @@ def determine_sdc_name(dirpath):
 def extract_callback(members, args):
     for tarinfo in members:
         for benchmark_subdir in get_benchmark_subdirs(args):
-
             if compare_versions(args.titan_version, "2") >= 1:
                 # if it is a 2.0.0 titan release or later use device family in the benchmark directory
                 device_families = get_device_families(args)
@@ -321,6 +319,7 @@ def extract_callback(members, args):
             print(tarinfo.name)
             yield tarinfo
 
+
 def get_benchmark_subdirs(args):
     """
     Decide which benchmark subdirectories to use depending on version
@@ -330,6 +329,7 @@ def get_benchmark_subdirs(args):
         return ["titanium", "titan23", "other_benchmarks"]
     else:
         return ["titan_new", "titan23", "other_benchmarks"]
+
 
 def compare_versions(version1, version2):
     """

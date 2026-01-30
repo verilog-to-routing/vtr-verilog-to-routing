@@ -9,7 +9,8 @@ circuits_dir=benchmarks/blif/4
 archs_dir=arch/multi_die/simple_arch
 
 # Add architectures to list to sweep
-arch_list_add=3d_k4_N4_90nm.xml
+arch_list_add=3d_k4_N4_90nm_opin_per_side.xml
+arch_list_add=3d_k4_N4_90nm_opin_per_block.xml
 
 # Add circuits to list to sweep
 # This is a sweep of blif files which pack to a density between 50% and 90% of
@@ -27,6 +28,12 @@ circuit_list_add=mm9b.blif
 circuit_list_add=styr.blif
 circuit_list_add=s953.blif
 
+# Constrain the IOs
+# TODO: Should create a unique config file that tests fixed blocks for 3D AP.
+#       - For now, just add one so we can test the solver effectively.
+circuit_constraint_list_add=(mm9a.blif, constraints=../../../../constraints/mm9a_io_constraint.xml)
+circuit_constraint_list_add=(mm9a.blif, arch=3d_k4_N4_90nm_opin_per_side.xml)
+
 # Parse info and how to parse
 parse_file=vpr_fixed_chan_width.txt
 
@@ -42,4 +49,6 @@ script_params_common=-starting_stage vpr -track_memory_usage --analytical_place 
 script_params_list_add=--ap_analytical_solver identity --ap_partial_legalizer none
 # Force unrelated clustering on.
 script_params_list_add=--ap_analytical_solver identity --ap_partial_legalizer none --allow_unrelated_clustering on
+# Test that the solver will work with 3D
+script_params_list_add=--ap_partial_legalizer none --allow_unrelated_clustering on
 

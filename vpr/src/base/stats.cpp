@@ -1,10 +1,14 @@
 
 #include "stats.h"
 
-#include <set>
 #include <fstream>
+#include <sstream>
+#include <vector>
+#include <algorithm>
+#include <filesystem>
 #include <string>
 #include <iomanip>
+#include <tuple>
 
 #include "physical_types.h"
 #include "physical_types_util.h"
@@ -23,7 +27,92 @@
 #include "segment_stats.h"
 #include "channel_stats.h"
 
+#include "crr_common.h"
+
+namespace fs = std::filesystem;
+
 /********************** Subroutines local to this module *********************/
+
+// Helper struct to parse the sb_id keys
+// Using anonymous namespace to avoid polluting the global namespace
+namespace {
+struct SBKeyParts {
+    std::string filename;
+    int row;
+    int col;
+};
+} // namespace
+
+// Parse the key to extract filename, row, and column
+static SBKeyParts parse_sb_key(const std::string& key) {
+    SBKeyParts parts;
+
+    // Find the last two underscores
+    size_t last_underscore = key.rfind('_');
+    size_t second_last_underscore = key.rfind('_', last_underscore - 1);
+
+    parts.filename = key.substr(0, second_last_underscore);
+    parts.row = std::stoi(key.substr(second_last_underscore + 1, last_underscore - second_last_underscore - 1));
+    parts.col = std::stoi(key.substr(last_underscore + 1));
+
+    return parts;
+}
+
+// Read CSV file and keep first NUM_EMPTY_ROWS rows completely and first NUM_EMPTY_COLS columns of all other rows
+static std::vector<std::vector<std::string>> read_and_trim_csv(const std::string& filepath) {
+    std::vector<std::vector<std::string>> data;
+    std::ifstream file(filepath);
+
+    if (!file.is_open()) {
+        VTR_LOG_ERROR("Failed to open file: %s\n", filepath.c_str());
+        return data;
+    }
+
+    std::string line;
+    int row_count = 0;
+    while (std::getline(file, line)) {
+        std::vector<std::string> row;
+        std::stringstream ss(line);
+        std::string cell;
+        int col_count = 0;
+
+        if (row_count < crrgenerator::NUM_EMPTY_ROWS) {
+            // Keep entire row for first NUM_EMPTY_ROWS rows
+            while (std::getline(ss, cell, ',')) {
+                row.push_back(cell);
+            }
+        } else {
+            // Keep only first NUM_EMPTY_COLS columns for other rows
+            while (std::getline(ss, cell, ',') && col_count < crrgenerator::NUM_EMPTY_COLS) {
+                row.push_back(cell);
+                col_count++;
+            }
+        }
+
+        data.push_back(row);
+        row_count++;
+    }
+
+    file.close();
+    return data;
+}
+
+// Write 2D vector to CSV file
+static void write_csv(const std::string& filepath, const std::vector<std::vector<std::string>>& data) {
+    std::ofstream file(filepath);
+
+    for (size_t i = 0; i < data.size(); ++i) {
+        for (size_t j = 0; j < data[i].size(); ++j) {
+            file << data[i][j];
+            if (j < data[i].size() - 1) {
+                file << ",";
+            }
+        }
+        file << "\n";
+    }
+
+    file.close();
+}
 
 /**
  * @brief Loads the two arrays passed in with the total occupancy at each of the
@@ -69,7 +158,6 @@ void routing_stats(const Netlist<>& net_list,
                    float R_minW_pmos,
                    float grid_logic_tile_area,
                    e_directionality directionality,
-                   RRSwitchId wire_to_ipin_switch,
                    bool is_flat) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
@@ -116,13 +204,131 @@ void routing_stats(const Netlist<>& net_list,
     VTR_LOG("\tTotal used logic block area: %g\n", used_area);
 
     if (route_type == e_route_type::DETAILED) {
-        count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch,
-                                  segment_inf, R_minW_nmos, R_minW_pmos, is_flat);
+        count_routing_transistors(directionality,
+                                  num_rr_switch,
+                                  segment_inf,
+                                  R_minW_nmos,
+                                  R_minW_pmos,
+                                  is_flat);
         get_segment_usage_stats(segment_inf);
     }
 
     if (full_stats) {
         print_wirelen_prob_dist(is_flat);
+    }
+}
+
+void write_sb_count_stats(const Netlist<>& net_list,
+                          const std::string& sb_map_dir,
+                          const std::string& sb_count_dir) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+    std::unordered_map<std::string, int> sb_count;
+
+    // Check if the sb_count_dir exists and is a director
+    // If not, create it
+    if (!fs::exists(sb_count_dir)) {
+        fs::create_directories(sb_count_dir);
+    }
+    if (!fs::is_directory(sb_count_dir)) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "sb_count_dir is not a directory: %s\n", sb_count_dir.c_str());
+    }
+
+    for (ParentNetId net_id : net_list.nets()) {
+        if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) {
+            const vtr::optional<RouteTree>& tree = route_ctx.route_trees[net_id];
+            if (!tree) {
+                continue;
+            }
+
+            for (const RouteTreeNode& rt_node : tree.value().all_nodes()) {
+                auto parent = rt_node.parent();
+                // Skip the root node
+                if (!parent) {
+                    continue;
+                }
+
+                const RouteTreeNode& parent_rt_node = parent.value();
+
+                RRNodeId src_node = parent_rt_node.inode;
+                RRNodeId sink_node = rt_node.inode;
+                std::vector<RREdgeId> edges = rr_graph.find_edges(src_node, sink_node);
+                VTR_ASSERT(edges.size() == 1);
+                RRSwitchId switch_id = RRSwitchId(rr_graph.edge_switch(edges[0]));
+                const std::string& sw_template_id = rr_graph.rr_switch_inf(switch_id).template_id;
+                if (sw_template_id.empty()) {
+                    continue;
+                }
+                if (sb_count.find(sw_template_id) == sb_count.end()) {
+                    sb_count[sw_template_id] = 0;
+                }
+                sb_count[sw_template_id]++;
+            }
+        }
+    }
+
+    // Write the sb_count to a file
+    // First, read all CSV files from directory and trim them
+    std::unordered_map<std::string, std::vector<std::vector<std::string>>> csv_data;
+
+    for (const auto& entry : fs::directory_iterator(sb_map_dir)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".csv") {
+            std::string filename = entry.path().filename().string();
+            csv_data[filename] = read_and_trim_csv(entry.path().string());
+        }
+    }
+
+    // Group sb_count entries by filename
+    std::unordered_map<std::string, std::vector<std::tuple<int, int, int>>> file_groups;
+
+    for (const auto& [sb_id, count] : sb_count) {
+        SBKeyParts parts = parse_sb_key(sb_id);
+        file_groups[parts.filename].push_back({parts.row, parts.col, count});
+    }
+
+    // Process each file
+    for (auto& [filename, data] : csv_data) {
+        // Check if this file has updates from sb_count
+        if (file_groups.find(filename) == file_groups.end()) {
+            // No updates for this file, just write trimmed version
+            std::string output_path = sb_count_dir + "/" + filename;
+            write_csv(output_path, data);
+            VTR_LOG("Written trimmed CSV: %s\n", filename.c_str());
+            continue;
+        }
+
+        const auto& entries = file_groups[filename];
+
+        // Find maximum row and column needed
+        int max_row = 0, max_col = 0;
+        for (const auto& entry : entries) {
+            max_row = std::max(max_row, std::get<0>(entry));
+            max_col = std::max(max_col, std::get<1>(entry));
+        }
+
+        // Expand data structure if needed
+        while (data.size() <= static_cast<size_t>(max_row)) {
+            data.push_back(std::vector<std::string>());
+        }
+
+        for (auto& row : data) {
+            while (row.size() <= static_cast<size_t>(max_col)) {
+                row.push_back("");
+            }
+        }
+
+        // Update values from sb_count
+        for (const auto& entry : entries) {
+            int row = std::get<0>(entry);
+            int col = std::get<1>(entry);
+            int count = std::get<2>(entry);
+            data[row][col] = std::to_string(count);
+        }
+
+        // Write updated file
+        std::string output_path = sb_count_dir + "/" + filename;
+        write_csv(output_path, data);
+        VTR_LOG("Written switchbox counts to: %s\n", filename.c_str());
     }
 }
 
@@ -137,7 +343,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int num_clb_opins_reserved = 0;
     int num_absorbed_nets = 0;
 
-    for (auto net_id : net_list.nets()) {
+    for (ParentNetId net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) { /* Globals don't count. */
             int bends, length, segments;
             bool is_absorbed;
@@ -204,8 +410,8 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
 
     load_channel_occupancies(net_list, chanx_occ, chany_occ);
 
-    write_channel_occupancy_table("chanx_occupancy.txt", chanx_occ, device_ctx.rr_chanx_segment_width);
-    write_channel_occupancy_table("chany_occupancy.txt", chany_occ, device_ctx.rr_chany_segment_width);
+    write_channel_occupancy_table("chanx_occupancy.txt", chanx_occ, device_ctx.rr_chan_segment_width.x);
+    write_channel_occupancy_table("chany_occupancy.txt", chany_occ, device_ctx.rr_chan_segment_width.y);
 
     int total_cap_x = 0;
     int total_used_x = 0;
@@ -226,7 +432,7 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
             for (size_t x = 1; x < device_ctx.grid.width(); x++) {
                 max_occ = std::max(chanx_occ[layer][x][y], max_occ);
                 ave_occ += chanx_occ[layer][x][y];
-                ave_cap += device_ctx.rr_chanx_segment_width[layer][x][y];
+                ave_cap += device_ctx.rr_chan_segment_width.x[layer][x][y];
 
                 total_cap_x += chanx_occ[layer][x][y];
                 total_used_x += chanx_occ[layer][x][y];
@@ -251,7 +457,7 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list) {
             for (size_t y = 1; y < device_ctx.grid.height(); y++) {
                 max_occ = std::max(chany_occ[layer][x][y], max_occ);
                 ave_occ += chany_occ[layer][x][y];
-                ave_cap += device_ctx.rr_chany_segment_width[layer][x][y];
+                ave_cap += device_ctx.rr_chan_segment_width.y[layer][x][y];
 
                 total_cap_y += chany_occ[layer][x][y];
                 total_used_y += chany_occ[layer][x][y];
@@ -473,7 +679,7 @@ void print_wirelen_prob_dist(bool is_flat) {
     VTR_LOG("\n");
     VTR_LOG("Probability distribution of 2-pin net lengths:\n");
     VTR_LOG("\n");
-    VTR_LOG("Length    p(Lenth)\n");
+    VTR_LOG("Length    p(Length)\n");
 
     av_length = 0;
 

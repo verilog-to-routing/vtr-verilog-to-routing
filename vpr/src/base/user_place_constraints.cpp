@@ -1,4 +1,7 @@
 #include "user_place_constraints.h"
+#include <unordered_set>
+#include "physical_types.h"
+#include "vtr_assert.h"
 
 void UserPlaceConstraints::add_constrained_atom(AtomBlockId blk_id, PartitionId part_id) {
     auto got = constrained_atoms.find(blk_id);
@@ -59,6 +62,35 @@ const PartitionRegion& UserPlaceConstraints::get_partition_pr(PartitionId part_i
 
 PartitionRegion& UserPlaceConstraints::get_mutable_partition_pr(PartitionId part_id) {
     return partitions[part_id].get_mutable_part_region();
+}
+
+void UserPlaceConstraints::constrain_part_lb_type(PartitionId part_id, t_logical_block_type_ptr lb_type) {
+    VTR_ASSERT_SAFE(part_id.is_valid());
+    VTR_ASSERT_SAFE(lb_type != nullptr);
+
+    auto it = constrained_part_lb_types_.find(part_id);
+    if (it == constrained_part_lb_types_.end()) {
+        // If this partition is not already constrained, create a new entry.
+        constrained_part_lb_types_.insert({part_id, {lb_type}});
+    } else {
+        // If this partition is already constrained to a block type, add it
+        // to the set.
+        it->second.insert(lb_type);
+    }
+}
+
+bool UserPlaceConstraints::is_part_constrained_to_lb_types(PartitionId part_id) const {
+    return constrained_part_lb_types_.contains(part_id);
+}
+
+const std::unordered_set<t_logical_block_type_ptr>& UserPlaceConstraints::get_part_lb_type_constraints(PartitionId part_id) const {
+    auto it = constrained_part_lb_types_.find(part_id);
+    if (it == constrained_part_lb_types_.end()) {
+        VTR_ASSERT_SAFE(EMPTY_SET_.empty());
+        return EMPTY_SET_;
+    }
+
+    return it->second;
 }
 
 void print_placement_constraints(FILE* fp, const UserPlaceConstraints& constraints) {

@@ -63,11 +63,14 @@
  */
 
 #include "metadata_storage.h"
+#include "rr_graph_fwd.h"
 #include "rr_node.h"
 #include "physical_types.h"
+#include "rr_node_types.h"
 #include "rr_spatial_lookup.h"
 #include "vtr_geometry.h"
 #include "rr_graph_utils.h"
+#include "vtr_range.h"
 
 class RRGraphView {
     /* -- Constructors -- */
@@ -81,8 +84,7 @@ class RRGraphView {
                 const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                 const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-                const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges,
-                const vtr::vector<RRNodeId, std::vector<short>>& node_ptc_nums);
+                const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the
@@ -94,7 +96,7 @@ class RRGraphView {
     void operator=(const RRGraphView&) = delete;
 
     /* -- Accessors -- */
-    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin'
+    /* TODO: The accessors may be turned into private later if they are replaceable by 'questionin'
      * kind of accessors
      */
   public:
@@ -584,18 +586,29 @@ class RRGraphView {
      * @example
      * RRGraphView rr_graph; // A dummy rr_graph for a short example
      * RRNodeId node; // A dummy node for a short example
-     * for (RREdgeId edge : rr_graph.edges(node)) {
+     * for (t_edge_size edge : rr_graph.edges(node)) {
      *     // Do something with the edge
      * }
+     *
+     * @note Iterating on the range returned by this function will not give you an RREdgeId, but instead gives you the index among a node's outgoing edges
      */
-    inline edge_idx_range edges(const RRNodeId& id) const {
+    inline edge_idx_range edges(RRNodeId id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
+
+    /** @brief Returns a range of all edges in the RR Graph.
+     * This method does not depend on the edges begin correctly
+     * sorted and can be used before partition_edges is called.
+     */
+    inline vtr::StrongIdRange<RREdgeId> all_edges() const {
+        return node_storage_.all_edges();
+    }
+
 
     /**
      * @brief Return ID range for outgoing edges.
      */
-    inline edge_idx_range node_out_edges(const RRNodeId& id) const {
+    inline edge_idx_range node_out_edges(RRNodeId id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
@@ -812,8 +825,4 @@ class RRGraphView {
     /// A list of incoming edges for each routing resource node. This can be built optionally, as required by applications.
     /// By default, it is empty. Call build_in_edges() to construct it.
     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& node_in_edges_;
-
-    /// A list of extra ptc numbers for each routing resource node. This is only used for tileable architecture.
-    /// See details in RRGraphBuilder class
-    const vtr::vector<RRNodeId, std::vector<short>>& node_tileable_track_nums_;
 };

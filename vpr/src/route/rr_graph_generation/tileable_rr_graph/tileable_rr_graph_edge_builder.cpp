@@ -15,6 +15,8 @@
 #include "tileable_rr_graph_gsb.h"
 #include "tileable_rr_graph_edge_builder.h"
 
+#include "crr_edge_builder.h"
+
 /************************************************************************
  * Build the edges for all the SOURCE and SINKs nodes:
  * 1. create edges between SOURCE and OPINs
@@ -104,6 +106,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
 void build_rr_graph_edges(const RRGraphView& rr_graph,
                           RRGraphBuilder& rr_graph_builder,
                           vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                          const t_crr_opts& crr_opts,
                           const DeviceGrid& grids,
                           const VibDeviceGrid& vib_grid,
                           const size_t& layer,
@@ -121,7 +124,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const bool& opin2all_sides,
                           const bool& concat_wire,
                           const bool& wire_opposite_side,
-                          const RRSwitchId& delayless_switch) {
+                          const RRSwitchId& delayless_switch,
+                          const int route_verbosity) {
 
     if (!vib_grid.is_empty()) {
         build_rr_graph_vib_edges(rr_graph,
@@ -140,6 +144,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
         build_rr_graph_regular_edges(rr_graph,
                                      rr_graph_builder,
                                      rr_node_driver_switches,
+                                     crr_opts,
                                      grids,
                                      layer,
                                      device_chan_width,
@@ -155,7 +160,8 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                      perimeter_cb,
                                      opin2all_sides,
                                      concat_wire,
-                                     wire_opposite_side);
+                                     wire_opposite_side,
+                                     route_verbosity);
     }
 }
 
@@ -294,7 +300,8 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
 
 void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   RRGraphBuilder& rr_graph_builder,
-                                  vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                  const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                  const t_crr_opts& crr_opts,
                                   const DeviceGrid& grids,
                                   const size_t& layer,
                                   const vtr::Point<size_t>& device_chan_width,
@@ -310,7 +317,10 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                   const bool& perimeter_cb,
                                   const bool& opin2all_sides,
                                   const bool& concat_wire,
-                                  const bool& wire_opposite_side) {
+                                  const bool& wire_opposite_side,
+                                  const int route_verbosity) {
+    vtr::ScopedStartFinishTimer timer("Build RR Graph Edges");
+    bool build_crr_edges = !crr_opts.sb_templates.empty();
     size_t num_edges_to_create = 0;
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
     build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
@@ -318,10 +328,32 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
 
     vtr::Point<size_t> gsb_range(grids.width() - 1, grids.height() - 1);
 
+    // Building CRR Graph
+    std::unique_ptr<crrgenerator::CRRConnectionBuilder> crr_connection_builder;
+    std::unique_ptr<crrgenerator::SwitchBlockManager> sb_manager;
+    std::unique_ptr<crrgenerator::NodeLookupManager> node_lookup;
+    if (build_crr_edges) {
+        sb_manager = std::make_unique<crrgenerator::SwitchBlockManager>(crr_opts.sb_maps,
+                                                                        crr_opts.sb_templates,
+                                                                        route_verbosity);
+        node_lookup = std::make_unique<crrgenerator::NodeLookupManager>(rr_graph,
+                                                                        grids.width(),
+                                                                        grids.height());
+        crr_connection_builder = std::make_unique<crrgenerator::CRRConnectionBuilder>(rr_graph,
+                                                                                      *node_lookup,
+                                                                                      *sb_manager,
+                                                                                      route_verbosity);
+        crr_connection_builder->initialize(grids.width(),
+                                           grids.height(),
+                                           crr_opts.preserve_input_pin_connections,
+                                           crr_opts.preserve_output_pin_connections,
+                                           crr_opts.annotated_rr_graph);
+    }
+
     /* Go Switch Block by Switch Block */
     for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
         for (size_t iy = 0; iy <= gsb_range.y(); ++iy) {
-            //vpr_printf(TIO_MESSAGE_INFO, "Building edges for GSB[%lu][%lu]\n", ix, iy);
+            VTR_LOGV(route_verbosity > 1, "Building edges for GSB[%lu][%lu]\n", ix, iy);
 
             vtr::Point<size_t> gsb_coord(ix, iy);
             /* Create a GSB object */
@@ -329,25 +361,49 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
                                                             layer, gsb_coord, perimeter_cb);
 
-            /* adapt the track_to_ipin_lookup for the GSB nodes */
             t_track2pin_map track2ipin_map; /* [0..track_gsb_side][0..num_tracks][ipin_indices] */
-            track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
+            t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
+
+            /* adapt the track_to_ipin_lookup for the GSB nodes */
+            if (!build_crr_edges || crr_opts.preserve_input_pin_connections) {
+                track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
+            }
 
             /* adapt the opin_to_track_map for the GSB nodes */
-            t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
-            opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
+            if (!build_crr_edges || crr_opts.preserve_output_pin_connections) {
+                opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
+            }
 
             /* adapt the switch_block_conn for the GSB nodes */
             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
-            sb_conn = build_gsb_track_to_track_map(rr_graph, rr_gsb,
-                                                   sb_type, Fs, sb_subtype, sub_fs, concat_wire, wire_opposite_side,
-                                                   segment_inf);
+            if (build_crr_edges) {
+                build_crr_gsb_edges(rr_graph_builder,
+                                    num_edges_to_create,
+                                    rr_node_driver_switches,
+                                    rr_gsb,
+                                    *crr_connection_builder,
+                                    route_verbosity);
+            } else {
+                sb_conn = build_gsb_track_to_track_map(rr_graph,
+                                                       rr_gsb,
+                                                       sb_type,
+                                                       Fs,
+                                                       sb_subtype,
+                                                       sub_fs,
+                                                       concat_wire,
+                                                       wire_opposite_side,
+                                                       segment_inf);
+            }
 
             /* Build edges for a GSB */
-            /* Build edges for a GSB */
-            build_edges_for_one_tileable_rr_gsb(rr_graph_builder, rr_gsb,
-                                                track2ipin_map, opin2track_map,
-                                                sb_conn, rr_node_driver_switches, num_edges_to_create);
+            build_edges_for_one_tileable_rr_gsb(rr_graph_builder,
+                                                rr_gsb,
+                                                track2ipin_map,
+                                                opin2track_map,
+                                                sb_conn,
+                                                rr_node_driver_switches,
+                                                num_edges_to_create);
+
             /* Finish this GSB, go to the next*/
             rr_graph_builder.build_edges(true);
         }

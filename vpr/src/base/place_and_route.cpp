@@ -42,6 +42,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   const Netlist<>& router_net_list,
                                   const t_placer_opts& placer_opts_ref,
                                   const t_router_opts& router_opts,
+                                  const t_crr_opts& crr_opts,
                                   const t_analysis_opts& analysis_opts,
                                   const t_noc_opts& noc_opts,
                                   const t_file_name_opts& filename_opts,
@@ -102,7 +103,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         current = router_opts.fixed_channel_width + 5 * udsd_multiplier;
         low = router_opts.fixed_channel_width - 1 * udsd_multiplier;
     } else {
-        // Initialize binary serach guess
+        // Initialize binary search guess
 
         if (min_chan_width_hint > 0) {
             // If the user provided a hint use it as the initial guess
@@ -167,11 +168,12 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             break;
         }
 
-        if (placer_opts.place_freq == PLACE_ALWAYS) {
+        if (placer_opts.place_freq == e_place_freq::ALWAYS) {
             placer_opts.place_chan_width = current;
             try_place(placement_net_list,
                       placer_opts,
                       router_opts,
+                      crr_opts,
                       analysis_opts,
                       noc_opts,
                       arch->Chans,
@@ -184,6 +186,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         success = route(router_net_list,
                         current,
                         router_opts,
+                        crr_opts,
                         analysis_opts,
                         det_routing_arch, segment_inf,
                         net_delay,
@@ -288,7 +291,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
     // The binary search above occasionally does not find the minimum routeable channel width.
     // Sometimes a circuit that will not route in 19 channels will route in 18, due to router flukiness.
     // If verify_binary_search is set, the code below will ensure that FPGAs with channel widths of
-    // final-2 and final-3 wil not route successfully.
+    // final-2 and final-3 will not route successfully.
     // If one does route successfully, the router keeps trying smaller channel widths until two in a
     // row (e.g. 8 and 9) fail.
 
@@ -312,9 +315,9 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             fflush(stdout);
             if (current < 1)
                 break;
-            if (placer_opts.place_freq == PLACE_ALWAYS) {
+            if (placer_opts.place_freq == e_place_freq::ALWAYS) {
                 placer_opts.place_chan_width = current;
-                try_place(placement_net_list, placer_opts, router_opts, analysis_opts, noc_opts,
+                try_place(placement_net_list, placer_opts, router_opts, crr_opts, analysis_opts, noc_opts,
                           arch->Chans, det_routing_arch, segment_inf,
                           arch->directs,
                           FlatPlacementInfo(), // Pass empty flat placement info.
@@ -324,6 +327,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             success = route(router_net_list,
                             current,
                             router_opts,
+                            crr_opts,
                             analysis_opts,
                             det_routing_arch,
                             segment_inf,
@@ -341,7 +345,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                              route_ctx.clb_opins_used_locally,
                              saved_clb_opins_used_locally);
 
-                if (placer_opts.place_freq == PLACE_ALWAYS) {
+                if (placer_opts.place_freq == e_place_freq::ALWAYS) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
                     // Cluster-based net_list is used for placement
                     std::string placement_id = print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
@@ -374,6 +378,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
+                    crr_opts,
                     arch->directs,
                     &warnings,
                     is_flat);
@@ -417,7 +422,7 @@ t_chan_width setup_chan_width(const t_router_opts& router_opts,
     if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
         auto& device_ctx = g_vpr_ctx.device();
 
-        auto type = find_most_common_tile_type(device_ctx.grid);
+        t_physical_tile_type_ptr type = find_most_common_tile_type(device_ctx.grid);
 
         width_fac = 4 * type->num_pins;
         // this is 2x the value that binary search starts

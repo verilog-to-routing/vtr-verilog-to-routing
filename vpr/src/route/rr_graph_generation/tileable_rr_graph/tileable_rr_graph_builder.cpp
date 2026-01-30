@@ -7,6 +7,8 @@
  *  producing large FPGA fabrics.
  ***********************************************************************/
 /* Headers from vtrutil library */
+#include <fstream>
+
 #include "vtr_assert.h"
 #include "vtr_time.h"
 #include "vtr_log.h"
@@ -27,6 +29,16 @@
 #include "tileable_rr_graph_builder.h"
 
 #include "globals.h"
+
+/**
+ * @brief Remove dangling chan nodes (chan nodes with no incoming edges) from the rr_graph
+ * @param grid The device grid
+ * @param rr_graph_builder The rr_graph builder
+ * 
+ * @note This is a very expensive operation, so it should be called only when necessary
+ */
+static void remove_dangling_chan_nodes(const DeviceGrid& grid,
+                                       RRGraphBuilder& rr_graph_builder);
 
 /************************************************************************
  * Main function of this file
@@ -71,6 +83,7 @@
 void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& types,
                                     const DeviceGrid& grids,
                                     const t_chan_width& chan_width,
+                                    const t_crr_opts& crr_opts,
                                     const e_switch_block_type& sb_type,
                                     const int& Fs,
                                     const e_switch_block_type& sb_subtype,
@@ -82,13 +95,13 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const float R_minW_pmos,
                                     const e_base_cost_type& base_cost_type,
                                     const std::vector<t_direct_inf>& directs,
-                                    RRSwitchId& wire_to_rr_ipin_switch,
                                     const bool& shrink_boundary,
                                     const bool& perimeter_cb,
                                     const bool& through_channel,
                                     const bool& opin2all_sides,
                                     const bool& concat_wire,
                                     const bool& wire_opposite_side,
+                                    const int route_verbosity,
                                     int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build tileable routing resource graph");
 
@@ -108,7 +121,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Set the tileable flag to true
     device_ctx.rr_graph_builder.set_tileable(true);
 
-    // Annotate the device grid on the boundry
+    // Annotate the device grid on the boundary
     DeviceGridAnnotation device_grid_annotation(device_ctx.grid, perimeter_cb);
 
     // The number of segments are in general small, reserve segments may not bring
@@ -223,7 +236,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     bool Fc_clipped = false;
     // [0..num_types-1][0..num_pins-1]
     std::vector<vtr::Matrix<int>> Fc_in;
-    Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*)&chan_width,
+    Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type,
                                      e_fc_type::IN, UNI_DIRECTIONAL, &Fc_clipped, false);
     if (Fc_clipped) {
         *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -232,7 +245,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     Fc_clipped = false;
     // [0..num_types-1][0..num_pins-1]
     std::vector<vtr::Matrix<int>> Fc_out;
-    Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, (const t_chan_width*)&chan_width,
+    Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type,
                                       e_fc_type::OUT, UNI_DIRECTIONAL, &Fc_clipped, false);
 
     if (Fc_clipped) {
@@ -249,6 +262,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     build_rr_graph_edges(device_ctx.rr_graph,
                          device_ctx.rr_graph_builder,
                          rr_node_driver_switches,
+                         crr_opts,
                          grids, vib_grid, 0,
                          device_chan_width,
                          segment_inf, segment_inf_x, segment_inf_y,
@@ -257,7 +271,8 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          perimeter_cb,
                          opin2all_sides, concat_wire,
                          wire_opposite_side,
-                         delayless_rr_switch);
+                         delayless_rr_switch,
+                         route_verbosity);
 
     // Build direction connection lists
     // TODO: use tile direct builder
@@ -276,7 +291,18 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Allocate and load routing resource switches, which are derived from the switches from the architecture file,
     // based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches
     device_ctx.rr_graph_builder.init_fan_in();
-    alloc_and_load_rr_switch_inf(device_ctx.rr_graph_builder, device_ctx.switch_fanin_remap, device_ctx.all_sw_inf, R_minW_nmos, R_minW_pmos, wire_to_arch_ipin_switch, wire_to_rr_ipin_switch);
+    // If requested, remove dangling chan nodes from the rr graph. This is done
+    // before allocating and loading routing resource switches since removing these nodes
+    // may affect the fanin of the switches.
+    if (crr_opts.remove_dangling_nodes) {
+        remove_dangling_chan_nodes(device_ctx.grid,
+                                   device_ctx.rr_graph_builder);
+    }
+    alloc_and_load_rr_switch_inf(device_ctx.rr_graph_builder,
+                                 device_ctx.switch_fanin_remap,
+                                 device_ctx.all_sw_inf,
+                                 R_minW_nmos,
+                                 R_minW_pmos);
 
     // Save the channel widths for the newly constructed graph
     device_ctx.chan_width = chan_width;
@@ -291,7 +317,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // Allocate external data structures
     //  a. cost_index
     //  b. RC tree
-    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, wire_to_rr_ipin_switch, base_cost_type);
+    rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, segment_inf_z, base_cost_type);
 
     // Sanitizer for the rr_graph, check connectivities of rr_nodes
     // Essential check for rr_graph, build look-up and
@@ -306,4 +332,51 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
     // No clock network support yet; Does not support flatten rr_graph yet
 
     check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, vib_grid, device_ctx.chan_width, e_graph_type::UNIDIR_TILEABLE, false);
+}
+
+static void remove_dangling_chan_nodes(const DeviceGrid& grid,
+                                       RRGraphBuilder& rr_graph_builder) {
+    t_rr_graph_storage& rr_nodes = rr_graph_builder.rr_nodes();
+    RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
+    std::vector<RRNodeId> dangling_nodes;
+
+    // Iterate over chan nodes and find dangling ones
+    for (size_t node_index = 0; node_index < rr_nodes.size(); ++node_index) {
+        RRNodeId node = RRNodeId(node_index);
+        if (rr_nodes.node_type(node) == e_rr_type::CHANX || rr_nodes.node_type(node) == e_rr_type::CHANY) {
+            if (rr_nodes.fan_in(node) == 0) {
+                dangling_nodes.push_back(node);
+            }
+        }
+    }
+    rr_nodes.remove_nodes(dangling_nodes);
+
+    // After removing dangling chan nodes, we need to update the node lookup
+    // since some nodes may have been removed, and the node ids have changed
+    node_lookup.clear();
+    // Alloc the lookup table
+    for (e_rr_type rr_type : RR_TYPES) {
+        node_lookup.resize_nodes(grid.get_num_layers(),
+                                 grid.width(),
+                                 grid.height(),
+                                 rr_type,
+                                 NUM_2D_SIDES);
+    }
+
+    // Update other data structures related to lookup after removing dangling chan nodes
+    for (size_t node_index = 0; node_index < rr_nodes.size(); ++node_index) {
+        RRNodeId node = RRNodeId(node_index);
+        // Set track numbers as a node may have multiple ptc
+        if (rr_graph_builder.node_contain_multiple_ptc(node)) {
+            if (rr_nodes.node_type(node) == e_rr_type::CHANX || rr_nodes.node_type(node) == e_rr_type::CHANY) {
+                rr_graph_builder.add_track_node_to_lookup(node);
+            }
+        } else {
+            rr_graph_builder.add_node_to_all_locs(node);
+        }
+    }
+
+    // Initialize the fanin of the rr graph since the fan-in of nodes connected to
+    // remove nodes is changed
+    rr_graph_builder.init_fan_in();
 }

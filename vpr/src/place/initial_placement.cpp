@@ -372,11 +372,11 @@ static bool is_loc_legal(const t_pl_loc& loc,
     return legal;
 }
 
-bool find_subtile_in_location(t_pl_loc& centroid,
-                              t_logical_block_type_ptr block_type,
-                              const BlkLocRegistry& blk_loc_registry,
-                              const PartitionRegion& pr,
-                              vtr::RngContainer& rng) {
+static bool find_subtile_in_location(t_pl_loc& centroid,
+                                     t_logical_block_type_ptr block_type,
+                                     const BlkLocRegistry& blk_loc_registry,
+                                     const PartitionRegion& pr,
+                                     vtr::RngContainer& rng) {
     //check if the location is on chip and legal, if yes try to update subtile
     if (is_loc_on_chip({centroid.x, centroid.y, centroid.layer}) && is_loc_legal(centroid, pr, block_type)) {
         //find the compatible subtiles
@@ -653,8 +653,6 @@ static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_
         // and save the closest of all regions.
         t_flat_pl_loc best_projected_pos = centroid;
         float best_distance = std::numeric_limits<float>::max();
-        VTR_ASSERT_MSG(centroid.layer == 0,
-                       "3D FPGAs not supported for this part of the code yet");
         for (const Region& region : head_pr.get_regions()) {
             const vtr::Rect<int>& rect = region.get_rect();
             // Note: We add 0.999 here since the partition region is in grid
@@ -662,12 +660,16 @@ static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_
             //       they really are 1x1.
             float proj_x = std::clamp<float>(centroid.x, rect.xmin(), rect.xmax() + 0.999);
             float proj_y = std::clamp<float>(centroid.y, rect.ymin(), rect.ymax() + 0.999);
+            float proj_layer = std::clamp<float>(centroid.layer, region.get_layer_range().first,
+                                                 region.get_layer_range().second + 0.999);
             float dx = std::abs(proj_x - centroid.x);
             float dy = std::abs(proj_y - centroid.y);
-            float dist = dx + dy;
+            float dlayer = std::abs(proj_layer - centroid.layer);
+            float dist = dx + dy + dlayer;
             if (dist < best_distance) {
                 best_projected_pos.x = proj_x;
                 best_projected_pos.y = proj_y;
+                best_projected_pos.layer = proj_layer;
                 best_distance = dist;
             }
         }
@@ -1711,7 +1713,7 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
         // Normalize the macro size to be a number between 0 and 1.
         float normalized_macro_size = macro_size / static_cast<float>(max_macro_size);
 
-        // Compute the cost. Clusters wth a higher cost will be placed first.
+        // Compute the cost. Clusters with a higher cost will be placed first.
         // Cost is proportional to macro size since larger macros are more
         // challenging to place and should be placed earlier if possible.
         // Cost is inversly proportional to standard deviation, since clusters
@@ -1723,7 +1725,7 @@ static inline std::vector<ClusterBlockId> get_sorted_clusters_to_place(
         // If the cluster is constrained, compute how much area its constrained
         // region takes up. This will be used to place "more constrained" blocks
         // first.
-        // TODO: The cluster constrained area can be incorperated into the cost
+        // TODO: The cluster constrained area can be incorporated into the cost
         //       somehow.
         ClusterBlockId macro_head_blk = pl_macro.members[0].blk_index;
         if (is_cluster_constrained(macro_head_blk)) {
@@ -1838,7 +1840,7 @@ static inline bool place_blocks_min_displacement(std::vector<ClusterBlockId>& cl
             }
 
             // The find_nearest_compatible_loc function above should only return
-            // a location which can legally accomodate the macro (if it found a
+            // a location which can legally accommodate the macro (if it found a
             // location). Double check these to be safe.
             VTR_ASSERT_SAFE(!blk_loc_registry.grid_blocks().block_at_location(centroid_loc));
             VTR_ASSERT_SAFE(macro_can_be_placed(pl_macro, centroid_loc, false, blk_loc_registry));

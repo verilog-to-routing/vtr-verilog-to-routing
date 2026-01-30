@@ -309,8 +309,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
     int num_adj = 0;
 
-    auto from_rr = RRNodeId(from_node);
-    auto to_rr = RRNodeId(to_node);
+    RRNodeId from_rr = from_node;
+    RRNodeId to_rr = to_node;
     e_rr_type from_type = rr_graph.node_type(from_rr);
     int from_layer = rr_graph.node_layer_low(from_rr);
     int from_xlow = rr_graph.node_xlow(from_rr);
@@ -345,7 +345,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
         case e_rr_type::SOURCE:
             VTR_ASSERT(to_type == e_rr_type::OPIN);
 
-            //The OPIN should be contained within the bounding box of it's connected source
+            // The OPIN should be contained within the bounding box of it's connected source
             if (from_xlow <= to_xlow && from_ylow <= to_ylow && from_xhigh >= to_xhigh && from_yhigh >= to_yhigh) {
                 from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
                 to_grid_type = device_ctx.grid.get_physical_type({to_xlow, to_ylow, to_layer});
@@ -358,19 +358,19 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             break;
 
         case e_rr_type::SINK:
-            /* SINKS are adjacent to not connected */
+            // SINKS are adjacent to not connected
             break;
 
         case e_rr_type::OPIN:
             from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
-            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::MUX) {
-                num_adj += 1; //adjacent
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY || to_type == e_rr_type::CHANZ || to_type == e_rr_type::MUX) {
+                num_adj += 1; // adjacent
             } else if (is_flat) {
                 VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN); // If pin is located inside a cluster
                 return true;
             } else {
-                VTR_ASSERT(to_type == e_rr_type::IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
-                return true;                            /* Special case, direct OPIN to IPIN connections need not be adjacent */
+                VTR_ASSERT(to_type == e_rr_type::IPIN); // direct OPIN to IPIN connections not necessarily adjacent
+                return true;                            // Special case, direct OPIN to IPIN connections need not be adjacent
             }
 
             break;
@@ -383,7 +383,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 VTR_ASSERT(to_type == e_rr_type::SINK);
             }
 
-            //An IPIN should be contained within the bounding box of its connected sink's tile
+            // An IPIN should be contained within the bounding box of its connected sink's tile
             if (to_type == e_rr_type::SINK) {
                 if (from_xlow >= to_xlow
                     && from_ylow >= to_ylow
@@ -740,23 +740,23 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
             //forward/reverse edge is used.
             std::vector<t_node_edge> dedupped_difference;
             std::ranges::copy_if(difference,
-                         std::back_inserter(dedupped_difference),
-                         [&](t_node_edge forward_edge) {
-                             VTR_ASSERT_MSG(!routing_edges.contains(forward_edge), "Difference should not contain used routing edges");
+                                 std::back_inserter(dedupped_difference),
+                                 [&](t_node_edge forward_edge) {
+                                     VTR_ASSERT_MSG(!routing_edges.contains(forward_edge), "Difference should not contain used routing edges");
 
-                             t_node_edge reverse_edge = {forward_edge.to_node, forward_edge.from_node};
+                                     t_node_edge reverse_edge = {forward_edge.to_node, forward_edge.from_node};
 
-                             //Check whether the reverse edge was used
-                             if (rr_edges.contains(reverse_edge) && routing_edges.contains(reverse_edge)) {
-                                 //The reverse edge exists in the set of rr_edges, and was used
-                                 //by the routing.
-                                 //
-                                 //We can therefore safely ignore the fact that this (forward) edge is un-used
-                                 return false; //Drop from difference
-                             } else {
-                                 return true; //Keep, this edge should have been used
-                             }
-                         });
+                                     //Check whether the reverse edge was used
+                                     if (rr_edges.contains(reverse_edge) && routing_edges.contains(reverse_edge)) {
+                                         //The reverse edge exists in the set of rr_edges, and was used
+                                         //by the routing.
+                                         //
+                                         //We can therefore safely ignore the fact that this (forward) edge is un-used
+                                         return false; //Drop from difference
+                                     } else {
+                                         return true; //Keep, this edge should have been used
+                                     }
+                                 });
 
             //At this point only valid missing node pairs are in the set
             if (!dedupped_difference.empty()) {

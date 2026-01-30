@@ -20,6 +20,7 @@
 #include <numeric>
 #include <optional>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 /* Main structure describing one routing resource node.  Everything in       *
@@ -92,7 +93,7 @@ struct alignas(16) t_rr_node_data {
 static_assert(sizeof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 
-/* t_rr_node_ptc_data is cold data is therefore kept seperate from
+/* t_rr_node_ptc_data is cold data is therefore kept separate from
  * t_rr_node_data.
  *
  * ptc_num:  Pin, track or class number, depending on rr_node type.          *
@@ -400,6 +401,14 @@ class t_rr_graph_storage {
         return vtr::StrongIdRange<RREdgeId>(first_edge(id), last_edge(id));
     }
 
+    /** @brief Returns a range of all edges in the RR Graph.
+     * This method does not depend on the edges being correctly
+     * sorted and can be used before partition_edges is called.
+     */
+    inline vtr::StrongIdRange<RREdgeId> all_edges() const {
+        return vtr::StrongIdRange<RREdgeId>(RREdgeId(0), RREdgeId(edge_src_node_.size()));
+    }
+
     /** @brief Retrieve the RREdgeId for iedge'th edge in RRNodeId.
      *
      * This method should generally not be used, and instead first_edge and
@@ -556,6 +565,9 @@ class t_rr_graph_storage {
 
             node_bend_end_.reserve(node_storage_.capacity());
             node_bend_end_.resize(node_storage_.size());
+
+            node_tilable_track_nums_.reserve(node_storage_.capacity());
+            node_tilable_track_nums_.resize(node_storage_.size());
         }
     }
 
@@ -569,6 +581,7 @@ class t_rr_graph_storage {
         if (is_tileable_) {
             node_bend_start_.reserve(size);
             node_bend_end_.reserve(size);
+            node_tilable_track_nums_.reserve(size);
         }
     }
 
@@ -582,6 +595,7 @@ class t_rr_graph_storage {
         if (is_tileable_) {
             node_bend_start_.resize(size);
             node_bend_end_.resize(size);
+            node_tilable_track_nums_.resize(size);
         }
     }
 
@@ -606,6 +620,7 @@ class t_rr_graph_storage {
         node_layer_.clear();
         node_bend_start_.clear();
         node_bend_end_.clear();
+        node_tilable_track_nums_.clear();
         node_name_.clear();
         virtual_clock_network_root_idx_.clear();
         edge_src_node_.clear();
@@ -615,7 +630,6 @@ class t_rr_graph_storage {
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
-        is_tileable_ = false;
     }
 
     /** @brief
@@ -644,7 +658,7 @@ class t_rr_graph_storage {
         node_layer_.shrink_to_fit();
         node_bend_start_.shrink_to_fit();
         node_bend_end_.shrink_to_fit();
-
+        node_tilable_track_nums_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
@@ -661,6 +675,7 @@ class t_rr_graph_storage {
         if (is_tileable_) {
             node_bend_start_.emplace_back();
             node_bend_end_.emplace_back();
+            node_tilable_track_nums_.emplace_back();
         }
     }
 
@@ -691,6 +706,33 @@ class t_rr_graph_storage {
     void set_node_capacity(RRNodeId, short new_capacity);
     void set_node_direction(RRNodeId, Direction new_direction);
 
+    /**
+     * @brief Set the ptc numbers for a node.
+     * @param node The node id
+     * @param ptc_numbers The ptc numbers vector to be set for the node.
+     */
+    void set_node_ptc_nums(RRNodeId node, const std::vector<int>& ptc_numbers);
+
+    /**
+     * @brief Add a track number to a node.
+     * @param node The node id
+     * @param node_offset The offset of the node from the beginning of the node.
+     * @param track_id The track number (ptc number) of the node at the given offset.
+     */
+    void add_node_tilable_track_num(RRNodeId node, size_t node_offset, short track_id);
+
+    bool node_contain_multiple_ptc(RRNodeId node) const {
+        if (node_tilable_track_nums_.empty()) {
+            return false;
+        } else {
+            return node_tilable_track_nums_[node].size() > 1;
+        }
+    }
+
+    const std::vector<short>& node_tilable_track_nums(RRNodeId node) const {
+        return node_tilable_track_nums_[node];
+    }
+
     /** @brief
      * Add a side to the node attributes
      * This is the function to use when you just add a new side WITHOUT resetting side attributes
@@ -704,6 +746,20 @@ class t_rr_graph_storage {
      */
     void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx);
 
+    /**
+     * @brief Removes a given list of RRNodes from the RR Graph
+     * This method should be called before partition_edges has been called.
+     * If init_fan_in has been called, you need to call it again after removing the nodes.
+     * @note This a very expensive method, so should be called only when necessary. It is better
+     * to not add nodes in the first place, instead of relying on this method to remove nodes.
+     * 
+     * @note This operation is O(|V| + |E|·log k), where k is the number of nodes to remove,
+     * and should not be called frequently.
+     *
+     * @param nodes_to_remove list of RRNodes to be removed
+     */
+    void remove_nodes(std::vector<RRNodeId> nodes_to_remove);
+
     /****************
      * Edge methods *
      ****************/
@@ -713,16 +769,16 @@ class t_rr_graph_storage {
     //     initialize edges.  All edges must be added prior to calling any
     //     methods that read edge data.
     //
-    //     Note: Either arch_switch_inf indicies or rr_switch_inf should be
+    //     Note: Either arch_switch_inf indices or rr_switch_inf should be
     //     used with emplace_back_edge and alloc_and_load_edges.  Do not mix
-    //     indicies, otherwise things will be break.
+    //     indices, otherwise things will be break.
     //
     //     The rr_switch_inf switches are remapped versions of the
     //     arch_switch_inf switch indices that are used when we have
     //     different delays and hence different indices based on the fanout
     //     of a switch.  Because fanout of the switch can only be computed
     //     after the graph is built, the graph is initially built using
-    //     arch_switch_inf indicies, and then remapped once fanout is
+    //     arch_switch_inf indices, and then remapped once fanout is
     //     determined.
     //
     //  2. The following methods read from the edge data, and lock out the
@@ -733,7 +789,7 @@ class t_rr_graph_storage {
     //       - remap_rr_node_switch_indices
     //       - mark_edges_as_rr_switch_ids
     //
-    //  3. If edge_switch values are arch_switch_inf indicies,
+    //  3. If edge_switch values are arch_switch_inf indices,
     //     remap_rr_node_switch_indices must be called prior to calling
     //     partition_edges.
     //
@@ -771,10 +827,23 @@ class t_rr_graph_storage {
      * of the node. Also, the information about switches is fly-weighted and are accessible with IDs. Thus,
      * the number of rr switch types can be higher than the number of arch switch types.
      */
-    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch, bool remapped);
+    void emplace_back_edge(RRNodeId src,
+                           RRNodeId dest,
+                           short edge_switch,
+                           bool remapped);
 
     /** @brief Adds a batch of edges.*/
     void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
+
+    /** @brief Removes a given list of RREdgeIds from the RR Graph.
+     * This method does not preserve the order of edges. If you're
+     * calling it after partition_edges has been called, you will
+     * need to call partition_edges again.
+     * This operation is O(#Edges to be removed) and should not be called frequently.
+     *
+     * @param rr_edges_to_remove list of RREdgeIds to be removed
+     */
+    void remove_edges(std::vector<RREdgeId>& rr_edges_to_remove);
 
     /* Edge finalization methods */
 
@@ -786,17 +855,17 @@ class t_rr_graph_storage {
      size_t count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
                               t_arch_switch_fanin& arch_switch_fanins);
 
-    /** @brief Maps arch_switch_inf indicies to rr_switch_inf indicies.
+    /** @brief Maps arch_switch_inf indices to rr_switch_inf indices.
      *
      * This must be called before partition_edges if edges were created with
-     * arch_switch_inf indicies.
+     * arch_switch_inf indices.
      */
     void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin);
 
-    /** @brief Marks that edge switch values are rr switch indicies.
+    /** @brief Marks that edge switch values are rr switch indices.
      *
      * This must be called before partition_edges if edges were created with
-     * rr_switch_inf indicies.
+     * rr_switch_inf indices.
      */
     void mark_edges_as_rr_switch_ids();
 
@@ -838,9 +907,9 @@ class t_rr_graph_storage {
         std::stable_sort(edge_indices.begin(), edge_indices.end(), comparison_function);
         
         // Generic lambda that allocates a 'vec'-sized new vector with all elements set to default value,
-        // then builds the new vector to have rearranged elements from 'vec' and finaly move the new vector
+        // then builds the new vector to have rearranged elements from 'vec' and finally move the new vector
         // to replace vec. Essentially does a permutation on vec based on edge_indices.
-        auto array_rearrage = [&edge_indices] (auto& vec, auto default_value) {
+        auto array_rearrange = [&edge_indices] (auto& vec, auto default_value) {
 
             // Since vec could have any type, we need to figure out it's type to allocate new_vec.
             // The scary std::remove_reference stuff does exactly that. This does nothing other than building a new 'vec' sized vector.
@@ -858,10 +927,10 @@ class t_rr_graph_storage {
             vec = std::move(new_vec);
         };
 
-        array_rearrage(edge_src_node_, RRNodeId::INVALID());
-        array_rearrage(edge_dest_node_, RRNodeId::INVALID());
-        array_rearrage(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
-        array_rearrage(edge_remapped_, false);
+        array_rearrange(edge_src_node_, RRNodeId::INVALID());
+        array_rearrange(edge_dest_node_, RRNodeId::INVALID());
+        array_rearrange(edge_switch_, LIBRRGRAPH_UNDEFINED_VAL);
+        array_rearrange(edge_remapped_, false);
     }
 
     /******************
@@ -943,6 +1012,29 @@ class t_rr_graph_storage {
      * loop of either the placer or router.
      */
     vtr::vector<RRNodeId, t_rr_node_ptc_data> node_ptc_;
+
+    /** 
+     * @brief Extra ptc number for each routing resource node. 
+     * @note This is required by tileable routing resource graphs. The first index is the node id, and
+     * the second index is is the relative distance from the starting point of the node.
+     * @details 
+     * In a tileable routing architecture, routing tracks, e.g., CHANX and CHANY, follow a staggered organization.
+     * Hence, a routing track may appear in different routing channels, representing different ptc/track id.
+     * Here is an illustrative example of a X-direction routing track (CHANX) in INC direction, which is organized in staggered way.
+     *    
+     *  Coord(x,y) (1,0)   (2,0)   (3,0)     (4,0)       Another track (node)
+     *  ptc=0     ------>                              ------>
+     *                   \                            /
+     *  ptc=1             ------>                    /
+     *                           \                  /
+     *  ptc=2                     ------>          / 
+     *                                   \        /
+     *  ptc=3                             ------->
+     *           ^                               ^
+     *           |                               |
+     *     starting point                   ending point
+     */
+    vtr::vector<RRNodeId, std::vector<short>> node_tilable_track_nums_;
 
     /** @brief
      * This array stores the first edge of each RRNodeId.  Not that the length

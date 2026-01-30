@@ -130,7 +130,7 @@ void prune_unused_non_configurable_nets(CBRR& connections_inf,
 
 /** If flat_routing and router_opt_choke_points are true, there are some choke points inside the cluster which would increase the convergence time of routing.
  * To address this issue, the congestion cost of those choke points needs to decrease. This function identify those choke points for each net,
- * and since the amount of congestion reduction is dependant on the number sinks reachable from that choke point, it also store the number of reachable sinks
+ * and since the amount of congestion reduction is dependent on the number sinks reachable from that choke point, it also store the number of reachable sinks
  * for each choke point.
  * @param net_list
  * @param net_terminal_groups [Net_id][group_id] -> rr_node_id of the pins in the group
@@ -149,6 +149,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
 /** Wrapper for create_rr_graph() with extra checks */
 void try_graph(int width_fac,
                const t_router_opts& router_opts,
+               const t_crr_opts& crr_opts,
                t_det_routing_arch& det_routing_arch,
                const std::vector<t_segment_inf>& segment_inf,
                const t_chan_width_dist& chan_width_dist,

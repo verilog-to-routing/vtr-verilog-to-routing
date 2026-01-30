@@ -10,3 +10,11 @@ updates:
 
     # Update all submodules
     directory: /
+
+  # This will create a PR if there are any updates to the actions used in the CI.
+  - package-ecosystem: "github-actions"
+    # Workflow files stored in the default location of `.github/workflows`
+    directory: "/"
+    # Check for updates once a week
+    schedule:
+      interval: "weekly"

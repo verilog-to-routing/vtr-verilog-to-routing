@@ -208,7 +208,7 @@ class t_pack_high_fanout_thresholds {
     explicit t_pack_high_fanout_thresholds(const std::vector<std::string>& specs);
     t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
-    ///@brief Returns the high fanout threshold of the specifi  ed block
+    ///@brief Returns the high fanout threshold of the specified block
     int get_threshold(std::string_view block_type_name) const;
 
     ///@brief Returns a string describing high fanout thresholds for different block types
@@ -372,16 +372,18 @@ enum class e_timing_update_type {
  * Placement and routing data types
  ****************************************************************************/
 
-/* Values of number of placement available move types */
+/// Total number of available move types for placement engine.
 constexpr int NUM_PL_MOVE_TYPES = 7;
+/// Total number of non-timing move types.
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
+
+/// Annealing schedule enumeration
 enum class e_sched_type {
-    AUTO_SCHED,
-    USER_SCHED
+    AUTO_SCHED, ///< Computes initial temperature, exit criterion and temperature update rate from statistics computed during the annealing.
+    USER_SCHED  ///< The user has specified explicit numbers for the key annealing schedule parameters
 };
-/* Annealing schedule */
 
 /// Specifies what is shown on screen
 enum class e_pic_type {
@@ -391,14 +393,16 @@ enum class e_pic_type {
     ROUTING
 };
 
-enum pfreq {
-    PLACE_NEVER,
-    PLACE_ONCE,
-    PLACE_ALWAYS
+/// Determines if placement is re-run during the binary search for minimum channel width.
+enum class e_place_freq {
+    /// Use a single placement for all channel widths; significantly faster.
+    ONCE,
+
+    /// Re-place the netlist from scratch for every channel width iteration in the binary search.
+    ALWAYS
 };
 
 ///@brief  Power data for t_netlist structure
-
 struct t_net_power {
     ///@brief Signal probability - long term probability that signal is logic-high
     float probability;
@@ -786,7 +790,7 @@ struct t_packer_opts {
     std::string sdc_file_name;
     std::string output_file;
     bool timing_driven;
-    enum e_cluster_seed cluster_seed_type;
+    e_cluster_seed cluster_seed_type;
     float timing_gain_weight;
     float connection_gain_weight;
     float target_device_utilization;
@@ -860,7 +864,7 @@ enum class e_place_bounding_box_mode {
  *
  * Supports the method is_timing_driven(), which allows flexible updates
  * to the placer algorithms if more timing driven placement strategies
- * are added in tht future. This method is used across various placement
+ * are added in the future. This method is used across various placement
  * setup files, and it can be useful for major placer routines as well.
  *
  * More methods can be added to this class if the placement strategies
@@ -979,90 +983,82 @@ enum class e_anneal_init_t_estimator {
 
 enum class e_move_type;
 
-/**
- * @brief Various options for the placer.
- *
- *   @param place_algorithm
- *              Controls which placement algorithm is used.
- *   @param place_quench_algorithm
- *              Controls which placement algorithm is used
- *              during placement quench.
- *   @param timing_tradeoff
- *              When in CRITICALITY_TIMING_PLACE mode, what is the
- *              tradeoff between timing and wiring costs.
- *   @param place_chan_width
- *              The channel width assumed if only one placement is performed.
- *   @param pad_loc_type
- *              Are pins FREE or fixed randomly.
- *   @param constraints_file
- *              File that specifies locations of locked down (constrained)
- *              blocks for placement. Empty string means no constraints file.
- *   @param write_initial_place_file
- *              Write the initial placement into this file. Empty string means
- *              the initial placement is not written.
- *   @param pad_loc_file
- *              File to read pad locations from if pad_loc_type is USER.
- *   @param place_freq
- *              Should the placement be skipped, done once, or done
- *              for each channel width in the binary search. (Default: ONCE)
- *   @param recompute_crit_iter
- *              How many temperature stages pass before we recompute
- *              criticalities based on the current placement and its
- *              estimated point-to-point delays.
- *   @param inner_loop_crit_divider
- *              (move_lim/inner_loop_crit_divider) determines how
- *              many inner_loop iterations pass before a recompute
- *              of criticalities is done.
- *   @param td_place_exp_first
- *              Exponent that is used in the CRITICALITY_TIMING_PLACE
- *              mode to specify the initial value of `crit_exponent`.
- *              After we map the slacks to criticalities, this value
- *              is used to `sharpen` the criticalities, making connections
- *              with worse slacks more critical.
- *   @param td_place_exp_last
- *              Value that the crit_exponent will be at the end.
- *   @param doPlacement
- *              True if placement is supposed to be done in the CAD flow.
- *              False if otherwise.
- *   @param place_constraint_expand
- *              Integer value that specifies how far to expand the floorplan
- *              region when printing out floorplan constraints based on
- *              current placement.
- *   @param place_constraint_subtile
- *              True if subtiles should be specified when printing floorplan
- *              constraints. False if not.
- *   @param place_auto_init_t_scale
- *              When the annealer is using the automatic schedule, this option
- *              scales the initial temperature selected.
- *   @param anneal_init_t_estimator
- *              When the annealer is using the automatic schedule, this option
- *              selects which estimator is used to select an initial temperature.
- */
+/// @brief Various options for the placer.
 struct t_placer_opts {
+    /// Controls which placement algorithm is used.
     t_place_algorithm place_algorithm;
+
+    /// Controls which placement algorithm is used during placement quench.
     t_place_algorithm place_quench_algorithm;
-    t_annealing_sched anneal_sched; ///<Placement option annealing schedule
+
+    /// Placement option annealing schedule
+    t_annealing_sched anneal_sched;
+
+    /// When in CRITICALITY_TIMING_PLACE mode, what is the tradeoff between timing and wiring costs.
     float timing_tradeoff;
+
+    /// Weight for how much congestion affects placement cost.
+    /// Higher means congestion is more important.
+    float congestion_factor;
+    /// Start using congestion cost when (current rlim / initial rlim) drops below this value.
+    float congestion_rlim_trigger_ratio;
+    /// Nets with average channel usage (within their bounding box) above this threshold
+    /// are predicted to face some congestion in the routing stage.
+    float congestion_chan_util_threshold;
+
+    /// The channel width assumed if only one placement is performed.
     int place_chan_width;
-    enum e_pad_loc_type pad_loc_type;
+
+    /// Are pins FREE or fixed randomly.
+    e_pad_loc_type pad_loc_type;
+
+    /// File that specifies locations of locked down (constrained) blocks for placement. Empty string means no constraints file.
     std::string constraints_file;
+
+    /// Write the initial placement into this file. Empty string means the initial placement is not written.
     std::string write_initial_place_file;
+
     std::string read_initial_place_file;
-    enum pfreq place_freq;
+
+    /// Should the placement be skipped, done once, or done for each channel width in the binary search. (Default: ONCE)
+    e_place_freq place_freq;
+
+    /// How many temperature stages pass before we recompute criticalities
+    /// based on the current placement and its estimated point-to-point delays.
     int recompute_crit_iter;
+
+    /// (move_lim/inner_loop_crit_divider) determines how many inner_loop iterations pass before a recompute of criticalities is done.
     int inner_loop_recompute_divider;
+
     int quench_recompute_divider;
+
+    /**
+     * Exponent that is used in the CRITICALITY_TIMING_PLACE mode to specify the initial value of `crit_exponent`.
+     * After we map the slacks to criticalities, this value is used to `sharpen` the criticalities, making
+     * connections with worse slacks more critical.
+     */
     float td_place_exp_first;
+
     int seed;
+
+    /// Value that the crit_exponent will be at the end.
     float td_place_exp_last;
-    e_stage_action doPlacement;
+
+    /// True if placement is supposed to be done in the CAD flow. False if otherwise.
+    e_stage_action do_placement;
+
     float rlim_escape_fraction;
+
     std::string move_stats_file;
+
     int placement_saves_per_temperature;
+
     e_place_effort_scaling effort_scaling;
+
     e_timing_update_type timing_update_type;
 
     PlaceDelayModelType delay_model_type;
+
     e_reducer delay_model_reducer;
 
     float delay_offset;
@@ -1077,23 +1073,39 @@ struct t_placer_opts {
 
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
+
     vtr::vector<e_move_type, float> place_static_move_prob;
+
     bool RL_agent_placement;
     bool place_agent_multistate;
     bool place_checkpointing;
+
     int place_high_fanout_net;
+
     e_place_bounding_box_mode place_bounding_box_mode;
+
     e_agent_algorithm place_agent_algorithm;
+
     float place_agent_epsilon;
     float place_agent_gamma;
     float place_dm_rlim;
+
     e_agent_space place_agent_space;
+
     std::string place_reward_fun;
+
     float place_crit_limit;
+
+    /// Integer value that specifies how far to expand the floorplan region when
+    /// printing out floorplan constraints based on current placement.
     int place_constraint_expand;
+
+    /// True if subtiles should be specified when printing floorplan constraints. False if not.
     bool place_constraint_subtile;
+
     int floorplan_num_horizontal_partitions;
     int floorplan_num_vertical_partitions;
+
     bool place_quench_only;
 
     int placer_debug_block;
@@ -1109,6 +1121,7 @@ struct t_placer_opts {
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
 
+    /// When the annealer is using the automatic schedule, this option scales the initial temperature selected.
     float place_auto_init_t_scale;
 
     e_anneal_init_t_estimator anneal_init_t_estimator;
@@ -1120,124 +1133,51 @@ struct t_placer_opts {
 
 /**
  * @brief Various options for the Analytical Placer.
- *
- *   @param doAnalyticalPlacement
- *              True if analytical placement is supposed to be done in the CAD
- *              flow. False if otherwise.
- *   @param analytical_solver_type
- *              The type of analytical solver the Global Placer in the AP flow
- *              will use.
- *   @param partial_legalizer_type
- *              The type of partial legalizer the Global Placer in the AP flow
- *              will use.
- *   @param full_legalizer_type
- *              The type of full legalizer the AP flow will use.
- *   @param detailed_placer_type
- *              The type of detailed placter the AP flow will use.
- *   @param ap_timing_tradeoff
- *              A trade-off parameter used to decide how focused the AP flow
- *              should be on optimizing timing over wirelength.
- *   @param ap_high_fanout_threshold;
- *              The threshold to ignore nets with higher fanout than that
- *              value while constructing the solver.
- *   @param ap_partial_legalizer_target_density
- *              Vector of strings passed by the user to configure the target
- *              density of different physical tiles on the device.
- *   @param appack_max_dist_th
- *              Array of string passed by the user to configure the max candidate
- *              distance thresholds.
- *   @param appack_unrelated_clustering_args
- *              Array of strings passed by the user to configure the unrelated
- *              clustering parameters used by APPack.
- *   @param num_threads
- *              The number of threads the AP flow can use.
- *   @param log_verbosity
- *              The verbosity level of log messages in the AP flow, with higher
- *              values leading to more verbose messages.
- *   @param generate_mass_report
- *              Whether to generate a mass report during global placement or not.
  */
 struct t_ap_opts {
+    /// True if analytical placement is supposed to be done in the CAD flow. False if otherwise.
     e_stage_action doAP;
 
+    /// The type of analytical solver the Global Placer in the AP flow will use.
     e_ap_analytical_solver analytical_solver_type;
 
+    /// The type of partial legalizer the Global Placer in the AP flow will use.
     e_ap_partial_legalizer partial_legalizer_type;
 
+    /// The type of full legalizer the AP flow will use.
     e_ap_full_legalizer full_legalizer_type;
 
+    /// The type of detailed placer the AP flow will use.
     e_ap_detailed_placer detailed_placer_type;
 
+    /// A trade-off parameter used to decide how focused the AP flow should be on optimizing timing over wirelength.
     float ap_timing_tradeoff;
 
+    /// The threshold to ignore nets with higher fanout than that value while constructing the solver.
     int ap_high_fanout_threshold;
 
+    /// Vector of strings passed by the user to configure the target density of different physical tiles on the device.
     std::vector<std::string> ap_partial_legalizer_target_density;
 
+    /// Array of string passed by the user to configure the max candidate distance thresholds.
     std::vector<std::string> appack_max_dist_th;
 
+    /// Array of strings passed by the user to configure the unrelated clustering parameters used by APPack
     std::vector<std::string> appack_unrelated_clustering_args;
 
+    /// The number of threads the AP flow can use.
     unsigned num_threads;
 
+    /// The verbosity level of log messages in the AP flow, with higher values leading to more verbose messages.
     int log_verbosity;
 
+    /// Whether to generate a mass report during global placement or not.
     bool generate_mass_report;
 };
 
 /******************************************************************
  * Router data types
  *******************************************************************/
-
-/* All the parameters controlling the router's operation are in this        *
- * structure.                                                               *
- * first_iter_pres_fac:  Present sharing penalty factor used for the        *
- *                 very first (congestion mapping) Pathfinder iteration.    *
- * initial_pres_fac:  Initial present sharing penalty factor for            *
- *                    Pathfinder; used to set pres_fac on 2nd iteration.    *
- * pres_fac_mult:  Amount by which pres_fac is multiplied each              *
- *                 routing iteration.                                       *
- * acc_fac:  Historical congestion cost multiplier.  Used unchanged         *
- *           for all iterations.                                            *
- * bend_cost:  Cost of a bend (usually non-zero only for global routing).   *
- * max_router_iterations:  Maximum number of iterations before giving       *
- *                up.                                                       *
- * min_incremental_reroute_fanout: Minimum fanout a net needs to have       *
- *              for incremental reroute to be applied to it through route   *
- *              tree pruning. Larger circuits should get larger thresholds  *
- * bb_factor:  Linear distance a route can go outside the net bounding      *
- *             box.                                                         *
- * route_type:  GLOBAL or DETAILED.                                         *
- * fixed_channel_width:  Only attempt to route the design once, with the    *
- *                       channel width given.  If this variable is          *
- *                       == NO_FIXED_CHANNEL_WIDTH, do a binary search      *
- *                       on channel width.                                  *
- * router_algorithm:  TIMING_DRIVEN or PARALLEL.  Selects the desired       *
- * routing algorithm.                                                       *
- * base_cost_type: Specifies how to compute the base cost of each type of   *
- *                 rr_node.  DELAY_NORMALIZED -> base_cost = "demand"       *
- *                 x average delay to route past 1 CLB.  DEMAND_ONLY ->     *
- *                 expected demand of this node (old breadth-first costs).  *
- *                                                                          *
- * The following parameters are used only by the timing-driven router.      *
- *                                                                          *
- * astar_fac:  Factor (alpha) used to weight expected future costs to       *
- *             target in the timing_driven router.  astar_fac = 0 leads to  *
- *             an essentially breadth-first search, astar_fac = 1 is near   *
- *             the usual astar algorithm and astar_fac > 1 are more         *
- *             aggressive.                                                  *
- * astar_offset: Offset that is subtracted from the lookahead (expected     *
- *               future costs) in the timing-driven router.                 *
- * max_criticality: The maximum criticality factor (from 0 to 1) any sink   *
- *                  will ever have (i.e. clip criticality to this number).  *
- * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
- *                  criticality_exp (then clip to max_criticality).         *
- * doRouting: true if routing is supposed to be done, false otherwise       *
- * routing_failure_predictor: sets the configuration to be used by the      *
- * routing failure predictor, how aggressive the threshold used to judge    *
- * and abort routings deemed unroutable                                     *
- * write_rr_graph_name: stores the file name of the output rr graph         *
- * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
 
 enum e_router_algorithm {
     NESTED,
@@ -1298,25 +1238,55 @@ enum class e_incr_reroute_delay_ripup {
 
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
+/**
+ * @brief Parameters controlling the router's operation.
+ */
 struct t_router_opts {
     bool read_rr_edge_metadata = false;
     bool do_check_rr_graph = true;
+
+    /// Present sharing penalty factor used for the very first (congestion mapping) Pathfinder iteration.
     float first_iter_pres_fac;
+    /// Initial present sharing penalty factor for Pathfinder; used to set pres_fac on 2nd iteration.
     float initial_pres_fac;
+    /// Amount by which pres_fac is multiplied each routing iteration.
     float pres_fac_mult;
     float max_pres_fac;
+
+    /// Historical congestion cost multiplier. Used unchanged for all iterations.
     float acc_fac;
+    /// Cost of a bend (usually non-zero only for global routing).
     float bend_cost;
+    /// Maximum number of iterations before giving up.
     int max_router_iterations;
+    /// Minimum fanout a net needs to have for incremental reroute to be applied to it through route tree pruning.
+    /// Larger circuits should get larger thresholds
     int min_incremental_reroute_fanout;
     e_incr_reroute_delay_ripup incr_reroute_delay_ripup;
+    /// Linear distance a route can go outside the net bounding box.
     int bb_factor;
-    enum e_route_type route_type;
+    /// GLOBAL or DETAILED.
+    e_route_type route_type;
+    /// Only attempt to route the design once, with the channel width given.
+    /// If this variable is == NO_FIXED_CHANNEL_WIDTH, do a binary search on channel width.
     int fixed_channel_width;
-    int min_channel_width_hint; ///<Hint to binary search of what the minimum channel width is
+
+    /// Hint to binary search of what the minimum channel width is
+    int min_channel_width_hint;
+    /// TIMING_DRIVEN or PARALLEL.  Selects the desired routing algorithm.
     e_router_algorithm router_algorithm;
+
+    /// Specifies how to compute the base cost of each type of rr_node.
+    /// DELAY_NORMALIZED -> base_cost = "demand" x average delay to route past 1 CLB.
+    /// DEMAND_ONLY -> expected demand of this node (old breadth-first costs).
     e_base_cost_type base_cost_type;
+
+    /// Factor (alpha) used to weight expected future costs to target in the timing_driven router.
+    /// astar_fac = 0 leads to an essentially breadth-first search,
+    /// astar_fac = 1 is near the usual astar algorithm and astar_fac > 1 are more aggressive.
     float astar_fac;
+
+    /// Offset that is subtracted from the lookahead (expected future costs) in the timing-driven router.
     float astar_offset;
     float router_profiler_astar_fac;
     bool enable_parallel_connection_router;
@@ -1325,7 +1295,9 @@ struct t_router_opts {
     int multi_queue_num_threads;
     int multi_queue_num_queues;
     bool multi_queue_direct_draining;
+    /// The maximum criticality factor (from 0 to 1) any sink will ever have (i.e. clip criticality to this number).
     float max_criticality;
+    /// Set criticality to (path_length(sink) / longest_path) ^ criticality_exp (then clip to max_criticality).
     float criticality_exp;
     float init_wirelength_abort_threshold;
     bool verify_binary_search;
@@ -1333,14 +1305,17 @@ struct t_router_opts {
     bool congestion_analysis;
     bool fanout_analysis;
     bool switch_usage_analysis;
+    /// true if routing is supposed to be done, false otherwise
     e_stage_action doRouting;
-    enum e_routing_failure_predictor routing_failure_predictor;
-    enum e_routing_budgets_algorithm routing_budgets_algorithm;
+    /// the configuration to be used by the routing failure predictor,
+    /// how aggressive the threshold used to judge and abort routings deemed unroutable
+    e_routing_failure_predictor routing_failure_predictor;
+    e_routing_budgets_algorithm routing_budgets_algorithm;
     bool save_routing_per_iteration;
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
-    enum e_clock_modeling clock_modeling; ///<How clock pins and nets should be handled
-    bool two_stage_clock_routing;         ///<How clock nets on dedicated networks should be routed
+    e_clock_modeling clock_modeling; ///<How clock pins and nets should be handled
+    bool two_stage_clock_routing;    ///<How clock nets on dedicated networks should be routed
     int high_fanout_threshold;
     float high_fanout_max_slope;
     int router_debug_net;
@@ -1410,6 +1385,17 @@ struct t_analysis_opts {
     bool skip_sync_clustering_and_routing_results;
 };
 
+/// Stores CRR specific options
+struct t_crr_opts {
+    std::string sb_maps;
+    std::string sb_templates;
+    bool preserve_input_pin_connections;
+    bool preserve_output_pin_connections;
+    bool annotated_rr_graph;
+    bool remove_dangling_nodes;
+    std::string sb_count_dir;
+};
+
 /// Stores NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
     bool noc;                                      ///<options to turn on hard NoC modeling & optimization
@@ -1437,11 +1423,11 @@ struct t_noc_opts {
  */
 struct t_det_routing_arch {
     /// Should the tracks be uni-directional or bi-directional?
-    enum e_directionality directionality;
+    e_directionality directionality;
     int Fs;
 
     /// Pattern of switches at each switch block. I assume Fs is always 3.
-    enum e_switch_block_type switch_block_type;
+    e_switch_block_type switch_block_type;
 
     /// A vector of custom switch block descriptions that is used with
     /// the CUSTOM switch block type. See comment at top of SRC/route/build_switchblocks.c
@@ -1456,7 +1442,7 @@ struct t_det_routing_arch {
     int sub_fs;
 
     /// Subtype of switch blocks.
-    enum e_switch_block_type switch_block_subtype;
+    e_switch_block_type switch_block_subtype;
 
     /// Allow connection blocks to appear around the perimeter programmable block (mainly I/Os)
     bool perimeter_cb;
@@ -1488,18 +1474,6 @@ struct t_det_routing_arch {
 
     /// Keeps track of the type of architecture switch that connects wires to ipins
     int wire_to_arch_ipin_switch;
-
-    /// Keeps track of the type of architecture switch that connects
-    /// wires from another die to ipins in different die
-    int wire_to_arch_ipin_switch_between_dice = -1;
-
-    /// keeps track of the type of RR graph switch
-    /// that connects wires to ipins in the RR graph
-    RRSwitchId wire_to_rr_ipin_switch;
-
-    /// keeps track of the type of RR graph switch that connects wires
-    /// from another die to ipins in different die in the RR graph
-    int wire_to_rr_ipin_switch_between_dice = -1;
 
     /// Resistance (in Ohms) of a minimum width nmos transistor.
     /// Used only in the FPGA area model.
@@ -1593,18 +1567,6 @@ struct t_power_opts {
     bool do_power; ///<Perform power estimation?
 };
 
-/** @brief Channel width data
- * @param max= Maximum channel width between x_max and y_max.
- * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
- * @param y_min= Same as above but for vertical channels.
- * @param x_max= Maximum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
- * @param y_max= Same as above but for vertical channels.
- * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()]
- * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
- * @param y_list= Stores the channel width of all vertical channels and thus goes from [0..grid.width()]
- * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
- */
-
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
 /// @brief Stores settings for VPR server mode
@@ -1623,6 +1585,7 @@ struct t_vpr_setup {
     t_ap_opts APOpts;               ///<Options for analytical placer
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
+    t_crr_opts CRROpts;             ///<CRR options
     t_noc_opts NocOpts;             ///<Options for the NoC
     t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture

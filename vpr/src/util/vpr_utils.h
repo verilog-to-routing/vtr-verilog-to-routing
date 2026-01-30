@@ -176,7 +176,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const s
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id);
 
 /**
- * @brief Retrieves the atom pin associated with a specific CLB and pb_graph_pin. Warning: Not all pb_graph_pins are associated with an atom pin! Only pb_graph_pins on primatives are associated with an AtomPinId. Returns AtomPinId::INVALID() if no atom pin is found.
+ * @brief Retrieves the atom pin associated with a specific CLB and pb_graph_pin. Warning: Not all pb_graph_pins are associated with an atom pin! Only pb_graph_pins on primitives are associated with an AtomPinId. Returns AtomPinId::INVALID() if no atom pin is found.
  */
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
@@ -328,10 +328,6 @@ std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const t_physical_til
                                                             const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
                                                             const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                             t_physical_tile_type_ptr physical_type);
-
-std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
-                                        ClusterBlockId cluster_blk_id,
-                                        int abs_cap);
 
 t_arch_switch_inf create_internal_arch_sw(float delay);
 

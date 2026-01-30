@@ -2304,7 +2304,7 @@ struct ArchReader {
         /*
          * The generic architecture data is not currently available in the interchange format
          * therefore, for a very initial implementation, the values are taken from the ones
-         * used primarly in the Xilinx series7 devices, generated using SymbiFlow.
+         * used primarily in the Xilinx series7 devices, generated using SymbiFlow.
          *
          * As the interchange format develops further, with possibly more details, this function can
          * become dynamic, allowing for different parameters for the different architectures.
@@ -2325,7 +2325,7 @@ struct ArchReader {
         arch_->Chans.chan_y_dist.width = 0;
         arch_->Chans.chan_y_dist.xpeak = 0;
         arch_->Chans.chan_y_dist.dc = 0;
-        arch_->ipin_cblock_switch_name.push_back(std::string("generic"));
+        arch_->ipin_cblock_switch_name = "generic";
         arch_->sb_type = e_switch_block_type::WILTON;
         arch_->Fs = 3;
         default_fc_.specified = true;

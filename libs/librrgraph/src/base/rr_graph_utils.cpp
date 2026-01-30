@@ -240,19 +240,17 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
 }
 
 bool inter_layer_connections_limited_to_opin(const RRGraphView& rr_graph) {
-    // TODO: once OPINs are connected to CHANZ nodes, this function should be reworked.
     bool limited_to_opin = true;
+
     for (const RRNodeId from_node : rr_graph.nodes()) {
+        e_rr_type from_type = rr_graph.node_type(from_node);
         for (t_edge_size edge : rr_graph.edges(from_node)) {
             RRNodeId to_node = rr_graph.edge_sink_node(from_node, edge);
-            int from_layer = rr_graph.node_layer_low(from_node);
-            int to_layer = rr_graph.node_layer_low(to_node);
+            e_rr_type to_type = rr_graph.node_type(to_node);
 
-            if (from_layer != to_layer) {
-                if (rr_graph.node_type(from_node) != e_rr_type::OPIN) {
-                    limited_to_opin = false;
-                    break;
-                }
+            if (to_type == e_rr_type::CHANZ && from_type != e_rr_type::OPIN) {
+                limited_to_opin = false;
+                break;
             }
         }
         if (!limited_to_opin) {
@@ -390,4 +388,30 @@ bool chan_same_type_are_adjacent(const RRGraphView& rr_graph, RRNodeId node1, RR
     }
 
     return false; // unreachable
+}
+
+std::vector<int> parse_ptc_numbers(const std::string& ptc_str) {
+    std::vector<int> ptc_numbers;
+    std::vector<std::string> ptc_tokens = vtr::StringToken(ptc_str).split(",");
+    for (const std::string& ptc_token : ptc_tokens) {
+        ptc_numbers.push_back(std::stoi(ptc_token));
+    }
+    return ptc_numbers;
+}
+
+std::string node_ptc_number_to_string(const RRGraphView& rr_graph, RRNodeId node) {
+    const t_rr_graph_storage& node_storage = rr_graph.rr_nodes();
+
+    if (!node_storage.node_contain_multiple_ptc(node)) {
+        return std::to_string(size_t(node_storage.node_ptc_num(node)));
+    }
+
+    std::string ret;
+    const std::vector<short>& track_nums = node_storage.node_tilable_track_nums(node);
+    for (size_t iptc = 0; iptc < track_nums.size(); iptc++) {
+        ret += std::to_string(track_nums[iptc]) + ",";
+    }
+    // Remove the last comma
+    ret.pop_back();
+    return ret;
 }

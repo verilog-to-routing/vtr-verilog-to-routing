@@ -26,6 +26,7 @@
 #include "pugixml_util.hpp"
 
 #ifdef VTR_ENABLE_CAPNPROTO
+#    include <capnp/schema.h>
 #    include "rr_graph_uxsdcxx_capnp.h"
 #    include "mmap_file.h"
 #endif
@@ -65,15 +66,14 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   e_graph_type graph_type,
                   const t_arch* arch,
                   t_chan_width* chan_width,
-                  const e_base_cost_type base_cost_type,
-                  RRSwitchId* wire_to_rr_ipin_switch,
-                  int* wire_to_rr_ipin_switch_between_dice,
+                  e_base_cost_type base_cost_type,
                   const char* read_rr_graph_name,
                   std::string* loaded_rr_graph_filename,
                   bool read_edge_metadata,
                   bool do_check_rr_graph,
                   bool echo_enabled,
                   const char* echo_file_name,
+                  int route_verbosity,
                   bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
@@ -83,11 +83,27 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         rr_graph_builder->add_rr_segment(segment_inf[(iseg)]);
     }
 
+    if (graph_type == e_graph_type::UNIDIR_TILEABLE) {
+        rr_graph_builder->set_tileable(true);
+    }
+
+    // If Cap'n Proto is enabled, a unique ID is assigned to the schema used to serialize the RR graph.
+    // This ID is used to verify that the schema used to serialize the RR graph matches the
+    // schema being used to deserialize it.
+    // If Cap'n Proto is not enabled, the schema ID is 0 and no schema ID check is performed.
+    unsigned long schema_file_id = 0;
+#ifdef VTR_ENABLE_CAPNPROTO
+    ::capnp::Schema schema = ::capnp::Schema::from<ucap::RrGraph>();
+    schema_file_id = schema.getProto().getScopeId();
+    VTR_LOGV(route_verbosity > 1, "Schema file ID: 0x%016lx\n", schema_file_id);
+#else
+    // Suppress the warning about unused variable 'route_verbosity'
+    (void)route_verbosity;
+#endif
+
     RrGraphSerializer reader(
         graph_type,
         base_cost_type,
-        wire_to_rr_ipin_switch,
-        wire_to_rr_ipin_switch_between_dice,
         do_check_rr_graph,
         read_rr_graph_name,
         loaded_rr_graph_filename,
@@ -108,6 +124,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         &rr_graph_builder->rr_node_metadata(),
         &rr_graph_builder->rr_edge_metadata(),
         &arch->strings,
+        schema_file_id,
         is_flat);
 
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml")) {

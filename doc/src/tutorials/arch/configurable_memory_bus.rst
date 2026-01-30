@@ -13,7 +13,7 @@ Configurable memories are found in today's commercial FPGAs for two primary reas
 #. Implementing memories in soft logic (LUTs and flip-flops) is very costly in terms of area.
 
 Thus it is important for modern FPGA architects be able to describe the specific properties of the configurable memory that they want to investigate.
-The following is an example on how to use the langauge to describe a configurable memory block.
+The following is an example on how to use the language to describe a configurable memory block.
 First we provide a step-by-step explanation on how to construct the memory block.
 Afterwards, we present the complete code for the memory block.
 

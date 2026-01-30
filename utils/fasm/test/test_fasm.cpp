@@ -179,7 +179,7 @@ equivalent port pins rotation.
 The output pin description format is:
 "PIN_<xlow>_<ylow>_<sub_tile_type>_<sub_tile_port>_<port_pin_index>"
 
-Pin decriptions returned by this functions are injected as FASM features to the
+Pin descriptions returned by this functions are injected as FASM features to the
 edges of a rr graph that are immediately connected with pins from "outside"
 (not to from/to a SOURCE or SINK). Then, after genfasm is run they are identified,
 and decoded to get all the pin information. This allows to get information
@@ -295,6 +295,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                        kRrGraphFile,
                        echo_enabled,
                        echo_file_name,
+                       vpr_setup.RouterOpts.route_verbosity,
                        is_flat);
         vpr_free_all(arch, vpr_setup);
     }
@@ -316,7 +317,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
               &options, &vpr_setup, &arch);
 
     vpr_setup.PackerOpts.doPacking             = e_stage_action::LOAD;
-    vpr_setup.PlacerOpts.doPlacement           = e_stage_action::LOAD;
+    vpr_setup.PlacerOpts.do_placement          = e_stage_action::LOAD;
     vpr_setup.APOpts.doAP                      = e_stage_action::SKIP;
     vpr_setup.RouterOpts.doRouting             = e_stage_action::LOAD;
     vpr_setup.RouterOpts.read_rr_edge_metadata = true;

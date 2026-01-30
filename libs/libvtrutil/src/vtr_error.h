@@ -26,7 +26,7 @@ namespace vtr {
  * 
  * Example Usage:
  * 
- *      // creating and throwing an exception with a VtrError container that has an error occuring in file "error_file.txt" at line number 1
+ *      // creating and throwing an exception with a VtrError container that has an error occurring in file "error_file.txt" at line number 1
  *       
  *      throw vtr::VtrError("This is a program terminating error!", "error_file.txt", 1);
  * 

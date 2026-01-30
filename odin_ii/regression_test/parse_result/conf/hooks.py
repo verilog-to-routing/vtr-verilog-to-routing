@@ -89,7 +89,6 @@ def patch_logs(values):
 
 
 def inverse_result_from_expectation(values):
-
     should_fail = False
     if "expectation" in values:
         for log in values["expectation"]:
