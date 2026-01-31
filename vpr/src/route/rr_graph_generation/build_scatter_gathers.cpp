@@ -302,8 +302,8 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
 
                 std::vector<t_sg_candidate> rev_gather_wire_candidates;
                 std::vector<t_sg_candidate> rev_scatter_wire_candidates;
-                int rev_bottleneck_fanin;
-                int rev_bottleneck_fanout;
+                int rev_bottleneck_fanin = 0;
+                int rev_bottleneck_fanout = 0;
                 if (sg_pattern.type == e_scatter_gather_type::BIDIR) {
 
                     rev_gather_wire_candidates = find_candidate_wires(rev_gather_channels,
@@ -360,7 +360,7 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     bottleneck_links.reserve(bottleneck_links.size() + sg_loc_info.num);
                 }
 
-                for (int i_bottleneck = 0, i_s = 0, i_g = 0; i_bottleneck < sg_loc_info.num; i_bottleneck++) {
+                for (int i_bottleneck = 0; i_bottleneck < sg_loc_info.num; i_bottleneck++) {
 
                     t_bottleneck_link bottleneck_link;
                     bottleneck_link.gather_loc = gather_loc;
@@ -370,13 +370,23 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     bottleneck_link.bidir = (sg_pattern.type == e_scatter_gather_type::BIDIR);
 
                     for (int i = 0; i < fwd_bottleneck_fanin; i++) {
+                        int i_g = i % fwd_bottleneck_fanin;
                         bottleneck_link.gather_fanin_connections.push_back(fwd_gather_wire_candidates[i_g]);
-                        i_g = (i_g + 1) % fwd_bottleneck_fanin;
+                    }
+
+                    for (int i = 0; i < rev_bottleneck_fanin; i++) {
+                        int i_g = i % rev_bottleneck_fanin;
+                        bottleneck_link.gather_fanin_connections.push_back(rev_gather_wire_candidates[i_g]);
                     }
 
                     for (int i = 0; i < fwd_bottleneck_fanout; i++) {
+                        int i_s = i % fwd_bottleneck_fanout;
                         bottleneck_link.scatter_fanout_connections.push_back(fwd_scatter_wire_candidates[i_s]);
-                        i_s = (i_s + 1) % fwd_bottleneck_fanout;
+                    }
+
+                    for (int i = 0; i < rev_bottleneck_fanout; i++) {
+                        int i_s = i % rev_bottleneck_fanout;
+                        bottleneck_link.scatter_fanout_connections.push_back(rev_scatter_wire_candidates[i_s]);
                     }
 
                     bottleneck_link.chan_type = chan_type;
