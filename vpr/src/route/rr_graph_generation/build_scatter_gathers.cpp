@@ -250,8 +250,9 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
-    std::vector<t_chan_loc> gather_channels;
-    std::vector<t_chan_loc> scatter_channels;
+    std::vector<t_chan_loc> gather_channels, scatter_channels;
+    std::vector<t_sg_candidate> fwd_gather_wire_candidates, fwd_scatter_wire_candidates;
+    std::vector<t_sg_candidate> rev_gather_wire_candidates, rev_scatter_wire_candidates;
 
     vtr::FormulaParser formula_parser;
     vtr::t_formula_data formula_data;
@@ -300,8 +301,6 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 VTR_ASSERT(seg_it != segment_inf.end());
                 const t_segment_inf& wire_segment = *seg_it;
 
-                std::vector<t_sg_candidate> fwd_gather_wire_candidates;
-                std::vector<t_sg_candidate> fwd_scatter_wire_candidates;
                 int fwd_bottleneck_fanin = 0;
                 int fwd_bottleneck_fanout = 0;
                 collect_sg_wire_candidates(sg_pattern.gather_pattern, sg_pattern.scatter_pattern,
@@ -311,9 +310,6 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                            fwd_gather_wire_candidates, fwd_scatter_wire_candidates,
                                            fwd_bottleneck_fanin, fwd_bottleneck_fanout);
 
-
-                std::vector<t_sg_candidate> rev_gather_wire_candidates;
-                std::vector<t_sg_candidate> rev_scatter_wire_candidates;
                 int rev_bottleneck_fanin = 0;
                 int rev_bottleneck_fanout = 0;
                 if (sg_pattern.type == e_scatter_gather_type::BIDIR) {
