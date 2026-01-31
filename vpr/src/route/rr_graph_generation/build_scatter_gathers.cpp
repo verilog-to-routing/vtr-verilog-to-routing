@@ -41,16 +41,17 @@ static void index_to_correct_sg_channels(const t_wireconn_inf& pattern,
  * @param wire_type_sizes_y Stores the number of wires of each wire segment type and their starting index for vertical routing channels.
  * @param is_dest True if searching for destination (scatter) wires, false for source (gather).
  * @param rng Random number generator used to shuffle wire candidates.
- * @return Vector of candidate wires that satisfy the switchpoint and direction constraints.
+ * @param candidates Candidate wires that satisfy the switchpoint and direction constraints. To be populated bt this function.
  */
-static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan_loc>& channels,
-                                                        const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
-                                                        const t_chan_details& chan_details_x,
-                                                        const t_chan_details& chan_details_y,
-                                                        const t_wire_type_sizes& wire_type_sizes_x,
-                                                        const t_wire_type_sizes& wire_type_sizes_y,
-                                                        bool is_dest,
-                                                        vtr::RngContainer& rng);
+static void find_candidate_wires(const std::vector<t_chan_loc>& channels,
+                                 const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
+                                 const t_chan_details& chan_details_x,
+                                 const t_chan_details& chan_details_y,
+                                 const t_wire_type_sizes& wire_type_sizes_x,
+                                 const t_wire_type_sizes& wire_type_sizes_y,
+                                 bool is_dest,
+                                 vtr::RngContainer& rng,
+                                 std::vector<t_sg_candidate>& candidates);
 
 static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link) {
     t_wireconn_inf mirrored_pattern = sg_pattern;
@@ -108,17 +109,16 @@ static void index_to_correct_sg_channels(const t_wireconn_inf& pattern,
     }
 }
 
-static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan_loc>& channels,
-                                                        const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
-                                                        const t_chan_details& chan_details_x,
-                                                        const t_chan_details& chan_details_y,
-                                                        const t_wire_type_sizes& wire_type_sizes_x,
-                                                        const t_wire_type_sizes& wire_type_sizes_y,
-                                                        bool is_dest,
-                                                        vtr::RngContainer& rng) {
-
-    // TODO: reuse
-    std::vector<t_sg_candidate> candidates;
+static void find_candidate_wires(const std::vector<t_chan_loc>& channels,
+                                 const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
+                                 const t_chan_details& chan_details_x,
+                                 const t_chan_details& chan_details_y,
+                                 const t_wire_type_sizes& wire_type_sizes_x,
+                                 const t_wire_type_sizes& wire_type_sizes_y,
+                                 bool is_dest,
+                                 vtr::RngContainer& rng,
+                                 std::vector<t_sg_candidate>& candidates) {
+    candidates.clear();
 
     for (const auto [chan_loc, chan_type, chan_side] : channels) {
         int seg_coord = (chan_type == e_rr_type::CHANY) ? chan_loc.y : chan_loc.x;
@@ -184,8 +184,6 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
 
     // TODO: Whether we shuffle candidates or not should be determined by switch point order type.
     vtr::shuffle(candidates.begin(), candidates.end(), rng);
-
-    return candidates;
 }
 
 static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
@@ -204,9 +202,7 @@ static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
                                        std::vector<t_sg_candidate>& gather_wire_candidates,
                                        std::vector<t_sg_candidate>& scatter_wire_candidates,
                                        int& bottleneck_fanin,
-                                       int& bottleneck_fanout
-                                       ) {
-
+                                       int& bottleneck_fanout) {
     index_to_correct_sg_channels(gather_pattern, gather_loc, chan_details_x, chan_details_y, gather_channels);
     index_to_correct_sg_channels(scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
 
@@ -218,29 +214,21 @@ static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
         return;
     }
 
-    gather_wire_candidates = find_candidate_wires(gather_channels,
-                                                  gather_pattern.from_switchpoint_set,
-                                                  chan_details_x, chan_details_y,
-                                                  wire_type_sizes_x, wire_type_sizes_y,
-                                                  /*is_dest=*/false, rng);
+      find_candidate_wires(gather_channels, gather_pattern.from_switchpoint_set,
+                           chan_details_x, chan_details_y,
+                           wire_type_sizes_x, wire_type_sizes_y,
+                           /*is_dest=*/false, rng, gather_wire_candidates);
 
-    scatter_wire_candidates = find_candidate_wires(scatter_channels,
-                                                   scatter_pattern.to_switchpoint_set,
-                                                   chan_details_x, chan_details_y,
-                                                   wire_type_sizes_x, wire_type_sizes_y,
-                                                   /*is_dest=*/true, rng);
+     find_candidate_wires(scatter_channels, scatter_pattern.to_switchpoint_set,
+                          chan_details_x, chan_details_y,
+                          wire_type_sizes_x, wire_type_sizes_y,
+                          /*is_dest=*/true, rng, scatter_wire_candidates);
 
-    bottleneck_fanin = evaluate_num_conns_formula(formula_parser,
-                                                     formula_data,
-                                                        gather_pattern.num_conns_formula,
-                                                                  gather_wire_candidates.size(),
-                                                        scatter_wire_candidates.size());
+    bottleneck_fanin = evaluate_num_conns_formula(formula_parser, formula_data, gather_pattern.num_conns_formula,
+                                     gather_wire_candidates.size(), scatter_wire_candidates.size());
 
-    bottleneck_fanout = evaluate_num_conns_formula(formula_parser,
-                                                       formula_data,
-                                                       scatter_pattern.num_conns_formula,
-                                                       gather_wire_candidates.size(),
-                                                       scatter_wire_candidates.size());
+    bottleneck_fanout = evaluate_num_conns_formula(formula_parser, formula_data, scatter_pattern.num_conns_formula,
+                                       gather_wire_candidates.size(), scatter_wire_candidates.size());
 
     bottleneck_fanin = std::min<int>(bottleneck_fanin, gather_wire_candidates.size());
     bottleneck_fanout = std::min<int>(bottleneck_fanout, scatter_wire_candidates.size());
