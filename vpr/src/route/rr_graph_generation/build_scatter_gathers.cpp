@@ -214,21 +214,21 @@ static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
         return;
     }
 
-      find_candidate_wires(gather_channels, gather_pattern.from_switchpoint_set,
-                           chan_details_x, chan_details_y,
-                           wire_type_sizes_x, wire_type_sizes_y,
-                           /*is_dest=*/false, rng, gather_wire_candidates);
+    find_candidate_wires(gather_channels, gather_pattern.from_switchpoint_set,
+                         chan_details_x, chan_details_y,
+                         wire_type_sizes_x, wire_type_sizes_y,
+                         /*is_dest=*/false, rng, gather_wire_candidates);
 
-     find_candidate_wires(scatter_channels, scatter_pattern.to_switchpoint_set,
-                          chan_details_x, chan_details_y,
-                          wire_type_sizes_x, wire_type_sizes_y,
-                          /*is_dest=*/true, rng, scatter_wire_candidates);
+    find_candidate_wires(scatter_channels, scatter_pattern.to_switchpoint_set,
+                         chan_details_x, chan_details_y,
+                         wire_type_sizes_x, wire_type_sizes_y,
+                         /*is_dest=*/true, rng, scatter_wire_candidates);
 
     bottleneck_fanin = evaluate_num_conns_formula(formula_parser, formula_data, gather_pattern.num_conns_formula,
-                                     gather_wire_candidates.size(), scatter_wire_candidates.size());
+                                                  gather_wire_candidates.size(), scatter_wire_candidates.size());
 
     bottleneck_fanout = evaluate_num_conns_formula(formula_parser, formula_data, scatter_pattern.num_conns_formula,
-                                       gather_wire_candidates.size(), scatter_wire_candidates.size());
+                                                   gather_wire_candidates.size(), scatter_wire_candidates.size());
 
     bottleneck_fanin = std::min<int>(bottleneck_fanin, gather_wire_candidates.size());
     bottleneck_fanout = std::min<int>(bottleneck_fanout, scatter_wire_candidates.size());
@@ -317,13 +317,12 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     t_wireconn_inf rev_scatter_pattern = mirror_sg_pattern(sg_pattern.scatter_pattern, sg_link);
 
                     collect_sg_wire_candidates(rev_gather_pattern, rev_scatter_pattern,
-                                           scatter_loc, gather_loc, chan_details_x, chan_details_y,
-                                           wire_type_sizes_x, wire_type_sizes_y, formula_parser, formula_data,
-                                           gather_channels, scatter_channels, rng,
-                                           rev_gather_wire_candidates, rev_scatter_wire_candidates,
-                                           rev_bottleneck_fanin, rev_bottleneck_fanout);
+                                               scatter_loc, gather_loc, chan_details_x, chan_details_y,
+                                               wire_type_sizes_x, wire_type_sizes_y, formula_parser, formula_data,
+                                               gather_channels, scatter_channels, rng,
+                                               rev_gather_wire_candidates, rev_scatter_wire_candidates,
+                                               rev_bottleneck_fanin, rev_bottleneck_fanout);
                 }
-
 
                 if (fwd_bottleneck_fanin == 0 || fwd_bottleneck_fanout == 0) {
 
