@@ -1111,8 +1111,8 @@ void add_chan_chan_edges(RRGraphBuilder& rr_graph_builder,
     t_rr_edge_info_set rr_edges_to_create;
     t_rr_edge_info_set interdie_3d_rr_edges_to_create;
 
-    for (size_t i = 0; i < grid.width() - 1; ++i) {
-        for (size_t j = 0; j < grid.height() - 1; ++j) {
+    for (size_t i = 0; i < grid.width(); ++i) {
+        for (size_t j = 0; j < grid.height(); ++j) {
 
             // In multi-die FPGAs with track-to-track connections between layers, we need to load CHANZ nodes
             // These extra nodes can be driven from many tracks in the source layer and can drive multiple tracks in the destination layer,
