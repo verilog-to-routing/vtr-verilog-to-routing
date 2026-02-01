@@ -280,10 +280,9 @@ typedef typename std::vector<FlatPlacementBinId> FlatPlacementBinCluster;
  * @brief Enum for the direction of a partition.
  */
 enum class e_partition_dir {
-    VERTICAL,
-    HORIZONTAL,
-    // TODO: Add docs.
-    PLANAR,
+    HORIZONTAL, ///< Horizontal cut along the x-axis.
+    VERTICAL,   ///< Vertical cut along the y-axis.
+    PLANAR,     ///< Planar cut along the z-axis.
 };
 
 /**
@@ -300,9 +299,17 @@ struct SpreadingWindow {
     /// @brief The 2D region of space that this window covers.
     vtr::Rect<double> region;
 
+    /// @brief The range of layers that this window covers. Along with the region,
+    ///        this describes a 3D rectangular prism for the spreading window.
+    ///        For 2D architectures, layer_low = layer_high = 0.
     size_t layer_low;
     size_t layer_high;
 
+    /**
+     * @brief Returns true if this window strictly overlaps with another window.
+     *
+     * This is used to decide if two windows should be merged or not.
+     */
     inline bool overlaps(const SpreadingWindow& other_window) const {
         // If the regions do not overlap, return false.
         if (!region.strictly_overlaps(other_window.region))
@@ -317,10 +324,19 @@ struct SpreadingWindow {
         return true;
     }
 
+    /**
+     * @brief Get the volume of the 3D rectangular prism that this window covers.
+     */
     inline double window_area() const {
         return region.width() * region.height() * (double)(layer_high - layer_low + 1);
     }
 
+    /**
+     * @brief Merge the given window into this window such that they occupy the
+     *        same volume.
+     *
+     * NOTE: This does NOT merge the blocks in the window.
+     */
     inline void merge_window_area(const SpreadingWindow& other_window) {
         region = vtr::bounding_box(region, other_window.region);
         layer_low = std::min(layer_low, other_window.layer_low);
@@ -397,10 +413,9 @@ class PerPrimitiveDimPrefixSum2D {
                             size_t layer) const;
 
   private:
-    /// @brief Per-Dim Prefix Sums. These are stored as fixed-point numbers to
-    ///        prevent error accumulations due to numerical imprecisions.
+    /// @brief Per-layer, Per-Dim Prefix Sums. These are stored as fixed-point
+    ///        numbers to prevent error accumulations due to numerical imprecisions.
     ///         [layer][vector_dim] -> 2d_prefix_sum
-    ///        TODO: Update docs.
     std::vector<vtr::vector<PrimitiveVectorDim, vtr::PrefixSum2D<uint64_t>>> layer_dim_prefix_sum_;
 };
 

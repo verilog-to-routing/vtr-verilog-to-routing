@@ -1204,7 +1204,9 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
             double new_xmax = std::clamp<double>(region.xmax() + 1.0, 0.0, width);
             double new_ymin = std::clamp<double>(region.ymin() - 1.0, 0.0, height);
             double new_ymax = std::clamp<double>(region.ymax() + 1.0, 0.0, height);
-            // TODO: This may not be the best idea for layers.
+            // TODO: This may not be the best idea for layers. We may want to
+            //       heuristically grow the layers only if we think that growing
+            //       the region would not be beneficial.
             size_t new_layer_low = new_window.layer_low == 0 ? 0 : new_window.layer_low - 1;
             VTR_ASSERT_SAFE(num_layers > 0);
             size_t new_layer_high = std::clamp<size_t>(new_window.layer_high + 1, 0, num_layers - 1);
@@ -1556,7 +1558,6 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
         // TODO: We should do a proper search here to find a good partition line.
         double pivot = (window.layer_high - window.layer_low) / 2.0;
 
-        // TODO: Make helper method for partitioning windows.
         partitioned_window.partition_dir = e_partition_dir::PLANAR;
         partitioned_window.pivot_pos = pivot;
         partitioned_window.lower_window.region = window.region;

@@ -391,17 +391,19 @@ bool FlatPlacementDensityManager::verify() const {
 }
 
 void FlatPlacementDensityManager::print_bin_grid() const {
+    size_t num_layers = bin_spatial_lookup_.dim_size(0);
     size_t width = bin_spatial_lookup_.dim_size(1);
     size_t height = bin_spatial_lookup_.dim_size(2);
-    // FIXME: We should handle layers for this print method.
-    //  - At least add an assert.
-    for (size_t y = 0; y < height; y++) {
-        for (size_t x = 0; x < width; x++) {
-            FlatPlacementBinId bin_id = get_bin(x, y, 0.0);
-            VTR_LOG("%3zu ",
-                    bins_.bin_contained_blocks(bin_id).size());
+    for (size_t layer = 0; layer < num_layers; layer++) {
+        VTR_LOG("Layer %zu:\n", layer);
+        for (size_t y = 0; y < height; y++) {
+            for (size_t x = 0; x < width; x++) {
+                FlatPlacementBinId bin_id = get_bin(x, y, layer);
+                VTR_LOG("%3zu ",
+                        bins_.bin_contained_blocks(bin_id).size());
+            }
+            VTR_LOG("\n");
         }
-        VTR_LOG("\n");
     }
     VTR_LOG("\n");
 }

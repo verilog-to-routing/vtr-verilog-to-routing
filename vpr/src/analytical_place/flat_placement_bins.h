@@ -61,7 +61,9 @@ class FlatPlacementBins {
      *  @param bin_region
      *      The rectangular region of the FPGA device that this bin will
      *      represent.
-     *  FIXME: Update doc.
+     *  @param bin_layer
+     *      The layer that the bin is on. We currently assume that bins do not
+     *      cross layers.
      */
     inline FlatPlacementBinId create_bin(const vtr::Rect<double>& bin_region,
                                          size_t bin_layer) {
@@ -112,7 +114,9 @@ class FlatPlacementBins {
         return bin_region_[bin_id];
     }
 
-    // TODO: Document.
+    /**
+     * @brief Get the layer of the FPGA that the given bin covers.
+     */
     inline size_t bin_layer(FlatPlacementBinId bin_id) const {
         VTR_ASSERT(bin_id.is_valid());
         return bin_layer_[bin_id];
@@ -199,11 +203,9 @@ class FlatPlacementBins {
     /// @brief The bin that contains each AP block.
     vtr::vector<APBlockId, FlatPlacementBinId> block_bin_;
 
-    /// @brief The region that each bin represents on the FPGA grid.
-    // TODO: For 3D FPGAs, this should be a 3D rectangle.
-    //  - Not quite, we can assume that bins do not cross dies for now.
+    /// @brief The 2D region that each bin represents on a layer of the FPGA grid.
     vtr::vector_map<FlatPlacementBinId, vtr::Rect<double>> bin_region_;
 
-    // TODO: Document.
+    /// @brief The layer of the FPGA that the bin occupies.
     vtr::vector_map<FlatPlacementBinId, size_t> bin_layer_;
 };

@@ -38,7 +38,7 @@ double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
         //       Vaughn thinks these may make sense in the objective HPWL, but
         //       not the in the estimated post-placement wirelength.
         VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y && max_z >= min_z);
-        // FIXME: Should dz be added here? Or should we add a penalty?
+        // TODO: Should dz be added here? Or should we add a penalty?
         hpwl += max_x - min_x + max_y - min_y + max_z - min_z;
     }
     return hpwl;
@@ -88,7 +88,8 @@ double PartialPlacement::estimate_post_placement_wirelength(const APNetlist& net
         double tile_dy = std::floor(max_y) - std::floor(min_y);
         double tile_dz = std::floor(max_z) - std::floor(min_z);
 
-        // FIXME: Do we just add dz here? Is a wire in the third dimension worth more?
+        // TODO: Do we just add dz here? Should a wire in the third dimension
+        //       be worth more?
         total_hpwl += (tile_dx + tile_dy + tile_dz) * crossing;
     }
 
