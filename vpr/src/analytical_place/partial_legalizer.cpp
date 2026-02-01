@@ -1213,13 +1213,7 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
 
             // If the region did not grow, exit. This is a maximal bin.
             // TODO: Maybe print warning.
-            if (new_xmin == region.xmin() &&
-                new_xmax == region.xmax() &&
-                new_ymin == region.ymin() &&
-                new_ymax == region.ymax() &&
-                new_layer_low == new_window.layer_low &&
-                new_layer_high == new_window.layer_high)
-            {
+            if (new_xmin == region.xmin() && new_xmax == region.xmax() && new_ymin == region.ymin() && new_ymax == region.ymax() && new_layer_low == new_window.layer_low && new_layer_high == new_window.layer_high) {
                 break;
             }
 
@@ -1850,7 +1844,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
                                           return value < p_placement.block_x_locs[blk_id];
                                       });
         pivot = std::distance(window.contained_blocks.begin(), upper);
-    } else if (partitioned_window.partition_dir == e_partition_dir::HORIZONTAL)  {
+    } else if (partitioned_window.partition_dir == e_partition_dir::HORIZONTAL) {
         // Sort the blocks in the window by the y coordinate.
         std::stable_sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
             return p_placement.block_y_locs[a] < p_placement.block_y_locs[b];
