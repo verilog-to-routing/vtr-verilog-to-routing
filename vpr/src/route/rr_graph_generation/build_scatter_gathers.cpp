@@ -89,7 +89,6 @@ static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
  */
 static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link);
 
-
 //                             //
 // Static Function Definitions //
 //                             //
