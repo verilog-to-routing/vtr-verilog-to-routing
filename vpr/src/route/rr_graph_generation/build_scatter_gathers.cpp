@@ -7,6 +7,7 @@
 #include "scatter_gather_types.h"
 #include "rr_types.h"
 #include "globals.h"
+#include "place_util.h"
 #include "rr_graph_uxsdcxx_interface.h"
 #include "vtr_assert.h"
 #include "vtr_random.h"
@@ -322,6 +323,10 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 scatter_loc.x = gather_loc.x + sg_link.x_offset;
                 scatter_loc.y = gather_loc.y + sg_link.y_offset;
                 scatter_loc.layer_num = gather_loc.layer_num + sg_link.z_offset;
+
+                if (!is_loc_on_chip(scatter_loc)) {
+                    continue;
+                }
 
                 const std::vector<t_segment_inf>& segment_inf = (sg_link.x_offset != 0) ? segment_inf_x : (sg_link.y_offset != 0) ? segment_inf_y
                                                                                                                                   : segment_inf_z;
