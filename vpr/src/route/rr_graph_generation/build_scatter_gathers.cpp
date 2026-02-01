@@ -52,6 +52,46 @@ static void find_candidate_wires(const std::vector<t_chan_loc>& channels,
                                  bool is_dest,
                                  vtr::RngContainer& rng,
                                  std::vector<t_sg_candidate>& candidates);
+/**
+ * @brief Identifies wire candidates for a scatter-gather (SG) connection and determines the bottleneck fan-in/fan-out.
+ *
+ * This function maps SG pattern and location to routing channels, finds valid wire segments matching the
+ * specified switchpoints, and evaluates the connection formulas to determine the actual number of
+ * physical links to be created.
+ */
+static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
+                                       const t_wireconn_inf& scatter_pattern,
+                                       const t_physical_tile_loc& gather_loc,
+                                       const t_physical_tile_loc& scatter_loc,
+                                       const t_chan_details& chan_details_x,
+                                       const t_chan_details& chan_details_y,
+                                       const t_wire_type_sizes& wire_type_sizes_x,
+                                       const t_wire_type_sizes& wire_type_sizes_y,
+                                       vtr::FormulaParser& formula_parser,
+                                       vtr::t_formula_data& formula_data,
+                                       std::vector<t_chan_loc>& gather_channels,
+                                       std::vector<t_chan_loc>& scatter_channels,
+                                       vtr::RngContainer& rng,
+                                       std::vector<t_sg_candidate>& gather_wire_candidates,
+                                       std::vector<t_sg_candidate>& scatter_wire_candidates,
+                                       int& bottleneck_fanin,
+                                       int& bottleneck_fanout);
+
+/**
+ * @brief Mirrors a scatter-gather (SG) pattern's switch block sides based on the link's displacement.
+ *
+ * This function is used primarily for bidirectional links to ensure that the "reverse" path
+ * looks into the correct routing channels. It performs a spatial flip of the source sides:
+ * - If the link moves vertically (y_offset != 0), TOP and BOTTOM sides are swapped.
+ * - If the link moves horizontally (x_offset != 0), LEFT and RIGHT sides are swapped.
+ * - For 3D links (z-offset), the relative planar sides remain unchanged.
+ */
+static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link);
+
+
+//                             //
+// Static Function Definitions //
+//                             //
 
 static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link) {
     t_wireconn_inf mirrored_pattern = sg_pattern;
@@ -85,10 +125,6 @@ static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const 
 
     return mirrored_pattern;
 }
-
-//
-// Static Function Definitions
-//
 
 static void index_to_correct_sg_channels(const t_wireconn_inf& pattern,
                                          const t_physical_tile_loc& loc,
