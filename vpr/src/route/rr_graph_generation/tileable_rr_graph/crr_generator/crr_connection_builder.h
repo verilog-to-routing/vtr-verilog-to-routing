@@ -66,15 +66,17 @@ class CRRConnectionBuilder {
                                                            size_t y) const;
 
     // Node processing methods
-    std::map<size_t, RRNodeId> get_tile_source_nodes(int x,
-                                                     int y,
-                                                     const DataFrame& df,
-                                                     const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+    std::unordered_map<size_t, RRNodeId> get_tile_source_nodes(int x,
+                                                               int y,
+                                                               const DataFrame& df,
+                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                               const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
 
-    std::map<size_t, RRNodeId> get_tile_sink_nodes(int x,
-                                                   int y,
-                                                   const DataFrame& df,
-                                                   const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+    std::unordered_map<size_t, RRNodeId> get_tile_sink_nodes(int x,
+                                                             int y,
+                                                             const DataFrame& df,
+                                                             const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                             const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
 
     // PTC sequence calculation
     std::string get_ptc_sequence(int seg_index,
@@ -109,12 +111,14 @@ class CRRConnectionBuilder {
     RRNodeId process_opin_ipin_node(const SegmentInfo& info,
                                     int x,
                                     int y,
-                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup) const;
+                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                    const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const;
 
     RRNodeId process_channel_node(const SegmentInfo& info,
                                   int x,
                                   int y,
-                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& node_lookup,
+                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes,
                                   int& prev_seg_index,
                                   e_sw_template_dir& prev_side,
                                   std::string& prev_seg_type,

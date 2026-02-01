@@ -27,4 +27,5 @@ void build_crr_gsb_edges(RRGraphBuilder& rr_graph_builder,
                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                          const RRGSB& rr_gsb,
                          const crrgenerator::CRRConnectionBuilder& connection_builder,
+                         std::unordered_map<std::string, int>& template_id_cache,
                          const int verbosity);

@@ -350,6 +350,9 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                            crr_opts.annotated_rr_graph);
     }
 
+    // template cache id to store switch id for already seen templates. This
+    // is used to speed up CRR generation
+    std::unordered_map<std::string, int> template_id_cache;
     /* Go Switch Block by Switch Block */
     for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
         for (size_t iy = 0; iy <= gsb_range.y(); ++iy) {
@@ -382,6 +385,7 @@ void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
                                     rr_node_driver_switches,
                                     rr_gsb,
                                     *crr_connection_builder,
+                                    template_id_cache,
                                     route_verbosity);
             } else {
                 sb_conn = build_gsb_track_to_track_map(rr_graph,

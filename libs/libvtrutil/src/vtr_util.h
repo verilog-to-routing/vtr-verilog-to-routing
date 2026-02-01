@@ -59,7 +59,7 @@ template<typename... Conditions>
 bool exactly_k_conditions(int k, Conditions... conditions);
 
 template<typename Container>
-void uniquify(Container container);
+void uniquify(Container& container);
 
 constexpr size_t bufsize = 32768; /* Maximum line length for various parsing proc. */
 
@@ -199,7 +199,7 @@ std::string join(std::initializer_list<T> list, std::string_view delim) {
  * Removes repeated elements in the container
  */
 template<typename Container>
-void uniquify(Container container) {
+void uniquify(Container& container) {
     std::sort(container.begin(), container.end());
     container.erase(std::unique(container.begin(), container.end()),
                     container.end());
