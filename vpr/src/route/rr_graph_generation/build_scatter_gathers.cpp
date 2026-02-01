@@ -240,9 +240,12 @@ static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
                                        std::vector<t_sg_candidate>& scatter_wire_candidates,
                                        int& bottleneck_fanin,
                                        int& bottleneck_fanout) {
+    // Determine which routing channels are adjacent to the specified sides of the source and destination switch blocks
     index_to_correct_sg_channels(gather_pattern, gather_loc, chan_details_x, chan_details_y, gather_channels);
     index_to_correct_sg_channels(scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
 
+    // If either side is missing valid channels (e.g., at the edge of the FPGA grid),
+    // no connections can be formed. Early exit to avoid redundant candidate searches.
     if (gather_channels.empty() || scatter_channels.empty()) {
         bottleneck_fanin = 0;
         bottleneck_fanout = 0;
@@ -251,6 +254,7 @@ static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
         return;
     }
 
+    // Filter all wires in the identified channels to find segments that match the given switchpoints
     find_candidate_wires(gather_channels, gather_pattern.from_switchpoint_set,
                          chan_details_x, chan_details_y,
                          wire_type_sizes_x, wire_type_sizes_y,
@@ -261,12 +265,17 @@ static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
                          wire_type_sizes_x, wire_type_sizes_y,
                          /*is_dest=*/true, rng, scatter_wire_candidates);
 
+    // Evaluate the number of connections formulas
+    // These formulas determine how many links should ideally be created given the
+    // number of available source and destination candidates.
     bottleneck_fanin = evaluate_num_conns_formula(formula_parser, formula_data, gather_pattern.num_conns_formula,
                                                   gather_wire_candidates.size(), scatter_wire_candidates.size());
 
     bottleneck_fanout = evaluate_num_conns_formula(formula_parser, formula_data, scatter_pattern.num_conns_formula,
                                                    gather_wire_candidates.size(), scatter_wire_candidates.size());
 
+    // Ensure the requested connection count does not exceed the physical number
+    // of available wires to prevent out-of-bounds indexing.
     bottleneck_fanin = std::min<int>(bottleneck_fanin, gather_wire_candidates.size());
     bottleneck_fanout = std::min<int>(bottleneck_fanout, scatter_wire_candidates.size());
 }
