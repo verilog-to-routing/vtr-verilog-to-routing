@@ -13,6 +13,12 @@ sudo dnf install -y \
     flex \
     python3-devel \
     tbb-devel
+
+# Required for parsing SDC files (see LibSDCParse)
+sudo dnf install -y \
+    tcl-devel \
+    swig
+
 # Required for graphics
 sudo dnf install -y \
     gtk3-devel \

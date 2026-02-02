@@ -346,8 +346,7 @@ class SdcParseCallback : public sdcparse::Callback {
     void set_clock_groups(const sdcparse::SetClockGroups& cmd) override {
         num_commands_++;
 
-        if (cmd.type != sdcparse::ClockGroupsType::ASYNCHRONOUS
-            && cmd.type != sdcparse::ClockGroupsType::EXCLUSIVE) {
+        if (cmd.type != sdcparse::ClockGroupsType::ASYNCHRONOUS) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "set_clock_groups only supports -asynchronous groups");
         }
@@ -723,7 +722,7 @@ class SdcParseCallback : public sdcparse::Callback {
     void log_error_msg(const std::string& msg) override {
         // Here, we are using VTR_LOG since we want the error message to be
         // organized nicely in the log file.
-        VTR_LOG(msg.c_str());
+        VTR_LOG("%s", msg.c_str());
     }
 
   public:
@@ -1074,7 +1073,6 @@ class SdcParseCallback : public sdcparse::Callback {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "clock pin is currently expected to be a source of a clock.");
         }
-        VTR_ASSERT(netlist_clock_drivers_.count(clock_pin) == 1);
 
         // Get the clock source
         AtomNetId clock_net = netlist_.pin_net(clock_pin);
