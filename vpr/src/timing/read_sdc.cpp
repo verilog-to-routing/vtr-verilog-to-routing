@@ -3,7 +3,6 @@
 #include <limits>
 #include <regex>
 #include <unordered_map>
-#include <variant>
 
 #include "tatum/TimingGraphFwd.hpp"
 #include "vtr_log.h"
@@ -75,6 +74,7 @@ class SdcParseCallback : public sdcparse::Callback {
         netlist_clock_drivers_ = find_netlist_logical_clock_drivers(netlist_, models_);
         netlist_primary_ios_ = find_netlist_primary_ios(netlist_);
 
+        // Create the port objects in the object database.
         std::unordered_set<AtomPinId> ports;
         for (const auto& p : netlist_primary_ios_) {
             sdcparse::PortDirection port_dir;
@@ -99,18 +99,12 @@ class SdcParseCallback : public sdcparse::Callback {
             ports.insert(p.second);
         }
 
+        // Create the pin objects in the object database.
         for (AtomPinId pin : netlist_.pins()) {
             // Ports are not pins.
             if (ports.count(pin) != 0)
                 continue;
 
-            // TODO: The pin names need to be investigated in detail. The pin names will
-            //       have the form:
-            //              <block_name>.<port_name>[<pin_port_bit>]
-            //       We need to decide if this is what we want.
-            //       We also need to take into account net aliases since some blocks will
-            //       be optimized away during the flow. We may want to consider upgrading
-            //       how this is handled.
             const std::string& pin_name = netlist_.pin_name(pin);
 
             bool is_clock_driver = false;
@@ -121,6 +115,7 @@ class SdcParseCallback : public sdcparse::Callback {
             object_to_pin_id_[pin_id] = pin;
         }
 
+        // Create the net objects in the object database.
         for (AtomNetId net : netlist_.nets()) {
             const std::string& net_name = netlist_.net_name(net);
             for (const std::string& net_alias : netlist_.net_aliases(net_name)) {
@@ -1047,7 +1042,12 @@ class SdcParseCallback : public sdcparse::Callback {
         return setup_capture_cycle(from, to, to_pin) - hold_offset;
     }
 
-    // TODO: Document.
+    /**
+     * @brief Create a clock object with the given name, source, and create_clock command.
+     *
+     * This function handles creating the clock domain in Tatum and creating the clock
+     * object in the object database.
+     */
     void create_clock_object(const std::string& clock_name,
                              tatum::NodeId clock_source,
                              const sdcparse::CreateClock& cmd) {
@@ -1073,16 +1073,18 @@ class SdcParseCallback : public sdcparse::Callback {
         sdc_clocks_[netlist_clock] = cmd;
     }
 
-    // TODO: Document.
+    /**
+     * @brief Get the clock source for the given pin.
+     *
+     * In Tatum, there are some constraints on what pins can be clock sources,
+     * this method helps enforce that.
+     */
     tatum::NodeId get_clock_source(AtomPinId clock_pin) {
         VTR_ASSERT(clock_pin.is_valid());
 
         // Ensure that the pin is a driver of a clock. This may be necessary for setting
         // the source of the clock.
-        // TODO: We should really trace the netlist to get the clock driver. It should not
-        //       be on the user to do this.
         if (netlist_clock_drivers_.count(clock_pin) != 1) {
-            // FIXME: This also may need to take into account aliases. To confirm.
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "clock pin is currently expected to be a source of a clock.");
         }
@@ -1180,7 +1182,11 @@ class SdcParseCallback : public sdcparse::Callback {
         return it->second;
     }
 
-    // TODO: Document.
+    /**
+     * @brief Get the Atom Pin associated with the given object.
+     *
+     * If the given object is not a port or pin, an invalid ID is returned.
+     */
     AtomPinId get_port_or_pin(const std::string& object_id) {
         sdcparse::ObjectType object_type = obj_database.get_object_type(object_id);
 
@@ -1215,7 +1221,11 @@ class SdcParseCallback : public sdcparse::Callback {
         return std::set<tatum::DomainId>(domains.begin(), domains.end());
     }
 
-    // TODO: Document.
+    /**
+     * @brief Checks that the given string group only contains objects of the given types.
+     *
+     * This is used for checking the target objects of the SDC commands.
+     */
     bool check_objects(const sdcparse::StringGroup& object_string_group,
                        const std::unordered_set<sdcparse::ObjectType>& expected_object_types) {
         VTR_ASSERT(object_string_group.type == sdcparse::StringGroupType::OBJECT);
@@ -1280,31 +1290,11 @@ class SdcParseCallback : public sdcparse::Callback {
     std::map<tatum::DomainId, sdcparse::CreateClock> sdc_clocks_;
     std::set<AtomPinId> netlist_clock_drivers_;
     std::map<std::string, AtomPinId> netlist_primary_ios_;
-    // FIXME: Create an accessor method using std::variant to get the port/pin/clock
-    //        from the given object id String.
-    // TODO: The Port/Pin/Clock objects are not useful. Should just combine into base class.
+
     std::unordered_map<sdcparse::PortObjectId, AtomPinId> object_to_port_id_;
     std::unordered_map<sdcparse::PinObjectId, AtomPinId> object_to_pin_id_;
     std::unordered_map<sdcparse::ClockObjectId, tatum::DomainId> object_to_clock_id_;
     std::unordered_map<sdcparse::NetObjectId, AtomNetId> object_to_net_id_;
-
-    std::variant<AtomPinId, tatum::DomainId> get_object_ref_(const std::string& object_id_string) {
-        // TODO: Need a method to get the type of an ID.
-        auto port_id = sdcparse::PortObjectId(object_id_string);
-        if (auto it = object_to_port_id_.find(port_id); it != object_to_port_id_.end()) {
-            return std::variant<AtomPinId, tatum::DomainId>(it->second);
-        }
-        auto pin_id = sdcparse::PinObjectId(object_id_string);
-        if (auto it = object_to_pin_id_.find(pin_id); it != object_to_pin_id_.end()) {
-            return std::variant<AtomPinId, tatum::DomainId>(it->second);
-        }
-        auto clock_id = sdcparse::ClockObjectId(object_id_string);
-        if (auto it = object_to_clock_id_.find(clock_id); it != object_to_clock_id_.end()) {
-            return std::variant<AtomPinId, tatum::DomainId>(it->second);
-        }
-        // FIXME: Make this a proper error.
-        VTR_ASSERT(false);
-    }
 
     std::set<std::pair<tatum::DomainId, tatum::DomainId>> disabled_domain_pairs_;
     std::map<std::pair<tatum::DomainId, tatum::DomainId>, float> setup_override_constraints_;
@@ -1337,7 +1327,6 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc(const t_timing_inf& timing_in
 
             //Parse the file
             SdcParseCallback callback(netlist, lookup, models, *timing_constraints, timing_graph);
-            // sdc_parse_file(sdc_file, callback, timing_inf.SDCFile.c_str());
             fclose(sdc_file);
             sdcparse::sdc_parse_filename(timing_inf.SDCFile.c_str(), callback);
 
