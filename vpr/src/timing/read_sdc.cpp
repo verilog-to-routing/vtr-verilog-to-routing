@@ -75,8 +75,6 @@ class SdcParseCallback : public sdcparse::Callback {
         netlist_clock_drivers_ = find_netlist_logical_clock_drivers(netlist_, models_);
         netlist_primary_ios_ = find_netlist_primary_ios(netlist_);
 
-        // We should create a class which manages how objects correspond with
-        // internal netlist primitives.
         std::unordered_set<AtomPinId> ports;
         for (const auto& p : netlist_primary_ios_) {
             sdcparse::PortDirection port_dir;
@@ -91,7 +89,12 @@ class SdcParseCallback : public sdcparse::Callback {
                     port_dir = sdcparse::PortDirection::UNKNOWN;
                     break;
             }
-            sdcparse::PortObjectId port_id = obj_database.create_port_object(p.first, port_dir);
+
+            bool is_clock_driver = false;
+            if (netlist_clock_drivers_.contains(p.second))
+                is_clock_driver = true;
+
+            sdcparse::PortObjectId port_id = obj_database.create_port_object(p.first, port_dir, is_clock_driver);
             object_to_port_id_[port_id] = p.second;
             ports.insert(p.second);
         }
@@ -100,6 +103,7 @@ class SdcParseCallback : public sdcparse::Callback {
             // Ports are not pins.
             if (ports.count(pin) != 0)
                 continue;
+
             // TODO: The pin names need to be investigated in detail. The pin names will
             //       have the form:
             //              <block_name>.<port_name>[<pin_port_bit>]
@@ -108,8 +112,21 @@ class SdcParseCallback : public sdcparse::Callback {
             //       be optimized away during the flow. We may want to consider upgrading
             //       how this is handled.
             const std::string& pin_name = netlist_.pin_name(pin);
-            sdcparse::PinObjectId pin_id = obj_database.create_pin_object(pin_name);
+
+            bool is_clock_driver = false;
+            if (netlist_clock_drivers_.contains(pin))
+                is_clock_driver = true;
+
+            sdcparse::PinObjectId pin_id = obj_database.create_pin_object(pin_name, is_clock_driver);
             object_to_pin_id_[pin_id] = pin;
+        }
+
+        for (AtomNetId net : netlist_.nets()) {
+            const std::string& net_name = netlist_.net_name(net);
+            for (const std::string& net_alias : netlist_.net_aliases(net_name)) {
+                sdcparse::NetObjectId net_id = obj_database.create_net_object(net_alias);
+                object_to_net_id_[net_id] = net;
+            }
         }
     }
 
@@ -150,7 +167,7 @@ class SdcParseCallback : public sdcparse::Callback {
         } else {
             // Check that all of the objects are valid types.
             bool targets_valid = check_objects(cmd.targets,
-                {sdcparse::ObjectType::Port, sdcparse::ObjectType::Pin}
+                {sdcparse::ObjectType::Port, sdcparse::ObjectType::Pin, sdcparse::ObjectType::Net}
             );
             if (!targets_valid) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
@@ -164,25 +181,49 @@ class SdcParseCallback : public sdcparse::Callback {
             return;
         }
 
-        // Create a netlist clock for every matching port / pin
+        // Collect all of the target pins and their names. The names of the objects
+        // are used for the names of the clocks when no name is provided.
+        std::map<AtomPinId, std::string> target_pins;
         VTR_ASSERT(cmd.targets.type == sdcparse::StringGroupType::OBJECT);
         for (const auto& object_id_str : cmd.targets.strings) {
+            sdcparse::ObjectType object_type = obj_database.get_object_type(object_id_str);
+            AtomPinId clock_pin;
+            if (object_type == sdcparse::ObjectType::Port || object_type == sdcparse::ObjectType::Pin) {
+                clock_pin = get_port_or_pin(object_id_str);
+            } else {
+                VTR_ASSERT(object_type == sdcparse::ObjectType::Net);
+                // When the target of the create_clock command is a net, we implicitly are targetting
+                // the driver of that net.
+                AtomNetId target_net = get_net(object_id_str);
+                VTR_ASSERT(target_net.is_valid());
+                clock_pin = netlist_.net_driver(target_net);
+            }
+            VTR_ASSERT(clock_pin.is_valid());
+
+            if (!target_pins.contains(clock_pin)) {
+                std::string object_name = obj_database.get_object_name(sdcparse::ObjectId(object_id_str));
+                target_pins.insert(std::make_pair(clock_pin, object_name));
+            }
+        }
+
+        // Create a netlist clock for every target pin.
+        VTR_ASSERT(cmd.targets.type == sdcparse::StringGroupType::OBJECT);
+        for (const auto& p : target_pins) {
+            AtomPinId clock_pin = p.first;
+            const std::string& object_name = p.second;
+
             // Get the name of the clock. If no name is provided, the name of the port/pin is used.
             std::string clock_name;
             if (cmd.name.empty()) {
-                clock_name = obj_database.get_object_name(sdcparse::ObjectId(object_id_str));
+                clock_name = object_name;
             } else {
                 VTR_ASSERT(cmd.targets.strings.size() == 1);
                 clock_name = cmd.name;
             }
 
             // Get the clock source associated with this pin.
-            AtomPinId clock_pin = get_port_or_pin(object_id_str);
             tatum::NodeId clock_source = get_clock_source(clock_pin);
-            if (!clock_source.is_valid()) {
-                // FIXME: This should be an error. Bring into the get_clock_source method.
-                continue;
-            }
+            VTR_ASSERT(clock_source.is_valid());
 
             // Create netlist clock
             create_clock_object(clock_name, clock_source, cmd);
@@ -697,6 +738,13 @@ class SdcParseCallback : public sdcparse::Callback {
                       msg.c_str());
     }
 
+    // Log error messages produced while parsing.
+    void log_error_msg(const std::string& msg) override {
+        // Here, we are using VTR_LOG since we want the error message to be
+        // organized nicely in the log file.
+        VTR_LOG(msg.c_str());
+    }
+
   public:
     size_t num_commands() { return num_commands_; }
 
@@ -1031,14 +1079,12 @@ class SdcParseCallback : public sdcparse::Callback {
 
         // Ensure that the pin is a driver of a clock. This may be necessary for setting
         // the source of the clock.
+        // TODO: We should really trace the netlist to get the clock driver. It should not
+        //       be on the user to do this.
         if (netlist_clock_drivers_.count(clock_pin) != 1) {
-            // FIXME: This should really produce a warning or even better an error; however,
-            //        VTR's use of wildcards for the create_clocks targets causes this to
-            //        become rediculous. Need to fix this on the parser side. For now, we will
-            //        just ignore any targets which are not clock drivers (which matches VTR's)
-            //        original functionality.
             // FIXME: This also may need to take into account aliases. To confirm.
-            return tatum::NodeId::INVALID();
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                      "clock pin is currently expected to be a source of a clock.");
         }
         VTR_ASSERT(netlist_clock_drivers_.count(clock_pin) == 1);
 
@@ -1102,6 +1148,36 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         return pins;
+    }
+
+    std::set<AtomNetId> get_nets(const sdcparse::StringGroup& net_group) {
+        std::set<AtomNetId> nets;
+
+        if (net_group.strings.empty()) {
+            return nets;
+        }
+
+        VTR_ASSERT(net_group.type == sdcparse::StringGroupType::OBJECT);
+        for (const std::string& net_id_string : net_group.strings) {
+            if (obj_database.get_object_type(net_id_string) != sdcparse::ObjectType::Net)
+                continue;
+
+            AtomNetId net = get_net(net_id_string);
+            nets.insert(net);
+        }
+
+        return nets;
+    }
+
+    AtomNetId get_net(const std::string& net_object_id) {
+        if (obj_database.get_object_type(net_object_id) != sdcparse::ObjectType::Net) {
+            return AtomNetId::INVALID();
+        }
+
+        sdcparse::NetObjectId net_id = sdcparse::NetObjectId(net_object_id);
+        auto it = object_to_net_id_.find(net_id);
+        VTR_ASSERT(it != object_to_net_id_.end());
+        return it->second;
     }
 
     // TODO: Document.
@@ -1210,6 +1286,7 @@ class SdcParseCallback : public sdcparse::Callback {
     std::unordered_map<sdcparse::PortObjectId, AtomPinId> object_to_port_id_;
     std::unordered_map<sdcparse::PinObjectId, AtomPinId> object_to_pin_id_;
     std::unordered_map<sdcparse::ClockObjectId, tatum::DomainId> object_to_clock_id_;
+    std::unordered_map<sdcparse::NetObjectId, AtomNetId> object_to_net_id_;
 
     std::variant<AtomPinId, tatum::DomainId> get_object_ref_(const std::string& object_id_string) {
         // TODO: Need a method to get the type of an ID.
