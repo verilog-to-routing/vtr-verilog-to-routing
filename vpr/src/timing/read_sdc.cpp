@@ -165,7 +165,7 @@ class SdcParseCallback : public sdcparse::Callback {
                                                {sdcparse::ObjectType::Port, sdcparse::ObjectType::Pin, sdcparse::ObjectType::Net});
             if (!targets_valid) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                          "create_clock command only supports ports and pins");
+                          "create_clock command only supports ports, pins, and nets");
             }
         }
 
@@ -191,6 +191,12 @@ class SdcParseCallback : public sdcparse::Callback {
                 AtomNetId target_net = get_net(object_id_str);
                 VTR_ASSERT(target_net.is_valid());
                 clock_pin = netlist_.net_driver(target_net);
+                if (!clock_pin.is_valid()) {
+                    std::string net_name = netlist_.net_name(target_net);
+                    vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                              "Net '%s' has no driver and cannot be used as a clock target",
+                              net_name.c_str());
+                }
             }
             VTR_ASSERT(clock_pin.is_valid());
 
@@ -1070,8 +1076,10 @@ class SdcParseCallback : public sdcparse::Callback {
         // Ensure that the pin is a driver of a clock. This may be necessary for setting
         // the source of the clock.
         if (netlist_clock_drivers_.count(clock_pin) != 1) {
+            std::string pin_name = netlist_.pin_name(clock_pin);
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                      "clock pin is currently expected to be a source of a clock.");
+                      "Pin '%s' is not a valid clock source. Clock pins currently must drive a clock net.",
+                      pin_name.c_str());
         }
 
         // Get the clock source
@@ -1134,25 +1142,6 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         return pins;
-    }
-
-    std::set<AtomNetId> get_nets(const sdcparse::StringGroup& net_group) {
-        std::set<AtomNetId> nets;
-
-        if (net_group.strings.empty()) {
-            return nets;
-        }
-
-        VTR_ASSERT(net_group.type == sdcparse::StringGroupType::OBJECT);
-        for (const std::string& net_id_string : net_group.strings) {
-            if (obj_database.get_object_type(net_id_string) != sdcparse::ObjectType::Net)
-                continue;
-
-            AtomNetId net = get_net(net_id_string);
-            nets.insert(net);
-        }
-
-        return nets;
     }
 
     AtomNetId get_net(const std::string& net_object_id) {
