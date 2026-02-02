@@ -1194,7 +1194,7 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
             region = vtr::bounding_box(region,
                                        density_manager_->flat_placement_bins().bin_region(overfilled_bin_cluster[i]));
             new_window.layer_low = std::min(new_window.layer_low, density_manager_->flat_placement_bins().bin_layer(overfilled_bin_cluster[i]));
-            new_window.layer_high = std::min(new_window.layer_high, density_manager_->flat_placement_bins().bin_layer(overfilled_bin_cluster[i]));
+            new_window.layer_high = std::max(new_window.layer_high, density_manager_->flat_placement_bins().bin_layer(overfilled_bin_cluster[i]));
         }
 
         // Grow the region until it is just large enough to not overfill
@@ -1550,7 +1550,8 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     if (window.layer_low != window.layer_high) {
         // Set the pivot to be the middle of the layer.
         // TODO: We should do a proper search here to find a good partition line.
-        double pivot = (window.layer_high - window.layer_low) / 2.0;
+        size_t pivot_layer = window.layer_low + (window.layer_high - window.layer_low) / 2;
+        double pivot = static_cast<double>(pivot_layer) + 0.5;
 
         partitioned_window.partition_dir = e_partition_dir::PLANAR;
         partitioned_window.pivot_pos = pivot;
@@ -1558,8 +1559,8 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
         partitioned_window.upper_window.region = window.region;
 
         partitioned_window.lower_window.layer_low = window.layer_low;
-        partitioned_window.lower_window.layer_high = pivot;
-        partitioned_window.upper_window.layer_low = pivot + 1;
+        partitioned_window.lower_window.layer_high = pivot_layer;
+        partitioned_window.upper_window.layer_low = pivot_layer + 1;
         partitioned_window.upper_window.layer_high = window.layer_high;
 
         return partitioned_window;

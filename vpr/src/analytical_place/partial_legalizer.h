@@ -340,7 +340,7 @@ struct SpreadingWindow {
     inline void merge_window_area(const SpreadingWindow& other_window) {
         region = vtr::bounding_box(region, other_window.region);
         layer_low = std::min(layer_low, other_window.layer_low);
-        layer_high = std::min(layer_high, other_window.layer_high);
+        layer_high = std::max(layer_high, other_window.layer_high);
     }
 };
 
