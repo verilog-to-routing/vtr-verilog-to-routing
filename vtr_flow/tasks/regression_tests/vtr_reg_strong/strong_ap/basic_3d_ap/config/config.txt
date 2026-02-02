@@ -53,4 +53,6 @@ script_params_list_add=--ap_analytical_solver identity --ap_partial_legalizer no
 script_params_list_add=--ap_partial_legalizer none
 # Test that the full flow will work with 3D in WL-driven
 script_params_list_add=--timing_analysis off
+# Test that the full flow will work with default arguments
+script_params_list_add=
 
