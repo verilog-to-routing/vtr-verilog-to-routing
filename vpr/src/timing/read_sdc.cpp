@@ -162,8 +162,7 @@ class SdcParseCallback : public sdcparse::Callback {
         } else {
             // Check that all of the objects are valid types.
             bool targets_valid = check_objects(cmd.targets,
-                {sdcparse::ObjectType::Port, sdcparse::ObjectType::Pin, sdcparse::ObjectType::Net}
-            );
+                                               {sdcparse::ObjectType::Port, sdcparse::ObjectType::Pin, sdcparse::ObjectType::Net});
             if (!targets_valid) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                           "create_clock command only supports ports and pins");
@@ -187,7 +186,7 @@ class SdcParseCallback : public sdcparse::Callback {
                 clock_pin = get_port_or_pin(object_id_str);
             } else {
                 VTR_ASSERT(object_type == sdcparse::ObjectType::Net);
-                // When the target of the create_clock command is a net, we implicitly are targetting
+                // When the target of the create_clock command is a net, we implicitly are targeting
                 // the driver of that net.
                 AtomNetId target_net = get_net(object_id_str);
                 VTR_ASSERT(target_net.is_valid());
@@ -271,8 +270,7 @@ class SdcParseCallback : public sdcparse::Callback {
         // Verify that the targets are the correct type.
         // TODO: We may be able to support pins as well. Need to verify.
         bool targets_valid = check_objects(cmd.target_ports,
-            {sdcparse::ObjectType::Port}
-        );
+                                           {sdcparse::ObjectType::Port});
         if (!targets_valid) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "set_io_delay command only supports ports currently");
@@ -357,11 +355,10 @@ class SdcParseCallback : public sdcparse::Callback {
         for (const auto& clock_group : cmd.clock_groups) {
             VTR_ASSERT(clock_group.type == sdcparse::StringGroupType::OBJECT);
             bool clock_group_valid = check_objects(clock_group,
-                {sdcparse::ObjectType::Clock}
-            );
+                                                   {sdcparse::ObjectType::Clock});
             if (!clock_group_valid) {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                        "set_clock_groups only supports clock targets");
+                          "set_clock_groups only supports clock targets");
             }
         }
 
@@ -390,11 +387,9 @@ class SdcParseCallback : public sdcparse::Callback {
         num_commands_++;
 
         bool from_targets_valid = check_objects(cmd.from,
-            {sdcparse::ObjectType::Clock}
-        );
+                                                {sdcparse::ObjectType::Clock});
         bool to_targets_valid = check_objects(cmd.to,
-            {sdcparse::ObjectType::Clock}
-        );
+                                              {sdcparse::ObjectType::Clock});
         if (!(from_targets_valid && to_targets_valid)) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "set_false_path: False paths are currently only supported between entire clock domains");
@@ -428,11 +423,9 @@ class SdcParseCallback : public sdcparse::Callback {
         num_commands_++;
 
         bool from_targets_valid = check_objects(cmd.from,
-            {sdcparse::ObjectType::Clock}
-        );
+                                                {sdcparse::ObjectType::Clock});
         bool to_targets_valid = check_objects(cmd.to,
-            {sdcparse::ObjectType::Clock}
-        );
+                                              {sdcparse::ObjectType::Clock});
         if (!(from_targets_valid && to_targets_valid)) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "set_min/max_delay: Max/Min delays are currently only supported between entire clock domains");
@@ -480,16 +473,14 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         bool from_targets_valid = check_objects(cmd.from,
-            {sdcparse::ObjectType::Clock}
-        );
+                                                {sdcparse::ObjectType::Clock});
         if (!from_targets_valid) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "set_multicycle_path only supports specifying clocks for -from");
         }
 
         bool to_targets_valid = check_objects(cmd.to,
-            {sdcparse::ObjectType::Clock, sdcparse::ObjectType::Pin}
-        );
+                                              {sdcparse::ObjectType::Clock, sdcparse::ObjectType::Pin});
         if (!to_targets_valid) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "set_multicycle_path only supports specifying clocks or pins for -to");
@@ -554,11 +545,9 @@ class SdcParseCallback : public sdcparse::Callback {
         num_commands_++;
 
         bool from_targets_valid = check_objects(cmd.from,
-            {sdcparse::ObjectType::Clock}
-        );
+                                                {sdcparse::ObjectType::Clock});
         bool to_targets_valid = check_objects(cmd.to,
-            {sdcparse::ObjectType::Clock}
-        );
+                                              {sdcparse::ObjectType::Clock});
         if (!(from_targets_valid && to_targets_valid)) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "set_clock_uncertainty only supported between entire clock domains");
@@ -606,8 +595,7 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         bool targets_valid = check_objects(cmd.target_clocks,
-            {sdcparse::ObjectType::Clock}
-        );
+                                           {sdcparse::ObjectType::Clock});
         if (!targets_valid) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "set_clock_latency only supported for clock domain targets");
@@ -642,11 +630,9 @@ class SdcParseCallback : public sdcparse::Callback {
         num_commands_++;
 
         bool from_targets_valid = check_objects(cmd.from,
-            {sdcparse::ObjectType::Pin}
-        );
+                                                {sdcparse::ObjectType::Pin});
         bool to_targets_valid = check_objects(cmd.to,
-            {sdcparse::ObjectType::Pin}
-        );
+                                              {sdcparse::ObjectType::Pin});
         if (!(from_targets_valid && to_targets_valid)) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
                       "set_disable_timing only supported between pins");

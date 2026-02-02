@@ -11,7 +11,7 @@ set_output_delay -clock output_clk -min 1 [get_ports {out*}]
 set_max_delay 17 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
 set_min_delay 2 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
 set_multicycle_path -setup -from [get_clocks {clk}] -to [get_clocks {clk2}] 3 
-#For multicycle_path, if setup is specified then hold is also implicity specified
+#For multicycle_path, if setup is specified then hold is also implicitly specified
 set_clock_uncertainty -from [get_clocks {clk}] -to [get_clocks {clk2}] 0.75 
 #For set_clock_uncertainty, if neither setup nor hold is unspecified then uncertainty is applied to both
 set_disable_timing -from [get_pins {FFA.Q\[0\]}] -to [get_pins {to_FFD.in\[0\]}]
