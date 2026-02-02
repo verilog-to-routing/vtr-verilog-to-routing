@@ -1,5 +1,6 @@
 #include "read_sdc.h"
 
+#include <filesystem>
 #include <limits>
 #include <regex>
 #include <unordered_map>
@@ -1289,18 +1290,14 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc(const t_timing_inf& timing_in
         VTR_LOG("Timing analysis off\n");
         apply_default_timing_constraints(netlist, lookup, models, *timing_constraints);
     } else {
-        FILE* sdc_file = fopen(timing_inf.SDCFile.c_str(), "r");
-        if (sdc_file == nullptr) {
+        if (!std::filesystem::exists(timing_inf.SDCFile)) {
             //No SDC file
             VTR_LOG("\n");
             VTR_LOG("SDC file '%s' not found\n", timing_inf.SDCFile.c_str());
             apply_default_timing_constraints(netlist, lookup, models, *timing_constraints);
         } else {
-            VTR_ASSERT(sdc_file != nullptr);
-
             //Parse the file
             SdcParseCallback callback(netlist, lookup, models, *timing_constraints, timing_graph);
-            fclose(sdc_file);
             sdcparse::sdc_parse_filename(timing_inf.SDCFile.c_str(), callback);
 
             if (callback.num_commands() == 0) {
