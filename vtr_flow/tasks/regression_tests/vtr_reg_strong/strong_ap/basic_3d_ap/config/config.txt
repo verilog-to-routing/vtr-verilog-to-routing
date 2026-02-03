@@ -50,5 +50,7 @@ script_params_list_add=--ap_analytical_solver identity --ap_partial_legalizer no
 # Force unrelated clustering on.
 script_params_list_add=--ap_analytical_solver identity --ap_partial_legalizer none --allow_unrelated_clustering on
 # Test that the solver will work with 3D
-script_params_list_add=--ap_partial_legalizer none --allow_unrelated_clustering on
+script_params_list_add=--ap_partial_legalizer none
+# Test that the full flow will work with 3D in WL-driven
+script_params_list_add=--timing_analysis off
 
