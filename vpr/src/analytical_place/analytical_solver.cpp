@@ -1048,6 +1048,8 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
     t_physical_tile_loc lower_block_loc(sink_block_loc.x,
                                         sink_block_loc.y - 1,
                                         sink_block_loc.layer_num);
+    // For layers, we need to ensure that the layers do not go off device.
+    // The delay method does not check for out of bounds.
     int outer_sink_layer = sink_block_loc.layer_num + 1;
     int inner_sink_layer = sink_block_loc.layer_num - 1;
     if (outer_sink_layer >= (int)device_grid_num_layers_) {
@@ -1082,6 +1084,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
 
     float outer_edge_delay, inner_edge_delay;
     if (is_multi_die()) {
+        // Only compute these delays if the design has multiple dies.
         outer_edge_delay = place_delay_model_->delay(driver_block_loc,
                                                      0 /*from_pin*/,
                                                      outer_block_loc,
@@ -1141,8 +1144,25 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
     if (tile_dy == 0) {
         d_delay_y = forward_difference_y;
     }
-    if (tile_dlayer == 0) {
+
+    // The layer has some special cases that occure when we are close to a boundary.
+    // NOTE: This is not needed for x and y since the delay calculator uses the
+    //       magnitude of dx/dy.
+    if (outer_sink_layer == sink_block_loc.layer_num) {
+        // If the sink is pressed against the top layer, use the backward difference.
+        d_delay_z = backward_difference_z;
+    }
+    if (inner_sink_layer == sink_block_loc.layer_num) {
+        // If the sink is pressed against the bottom layer, use the forward difference.
         d_delay_z = forward_difference_z;
+    }
+    if (tile_dlayer == 0) {
+        // If the driver and sink are on the same layer, pick the forward/backward
+        // difference that is valid due to boundaries.
+        if (inner_sink_layer != sink_block_loc.layer_num)
+            d_delay_z = forward_difference_z;
+        else
+            d_delay_z = backward_difference_z;
     }
 
     return std::make_tuple(d_delay_x, d_delay_y, d_delay_z);
@@ -1171,6 +1191,8 @@ std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlo
                                                       0 /*to_pin*/);
     double norm_fac_inv_z;
     if (is_multi_die()) {
+        // Get the target layer. This will be either the layer above or below
+        // the driver block. We pick the layer such that we do not go off device.
         int target_layer = driver_block_loc.layer_num + 1;
         if (target_layer >= (int)device_grid_num_layers_) {
             target_layer = driver_block_loc.layer_num - 1;
