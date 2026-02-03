@@ -992,7 +992,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
         flat_dx = device_grid_width_ - 2;
     if ((int)flat_dy + 1 > (int)device_grid_height_ - 1)
         flat_dy = device_grid_height_ - 2;
-    if ((int)flat_dlayer + 1 > (int) device_grid_num_layers_ - 1)
+    if ((int)flat_dlayer + 1 > (int)device_grid_num_layers_ - 1)
         flat_dlayer = device_grid_num_layers_ - 1;
 
     // Get the physical tile location of the legalized driver block. The PlaceDelayModel
@@ -1145,7 +1145,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
         d_delay_y = forward_difference_y;
     }
 
-    // The layer has some special cases that occure when we are close to a boundary.
+    // The layer has some special cases that occur when we are close to a boundary.
     // NOTE: This is not needed for x and y since the delay calculator uses the
     //       magnitude of dx/dy.
     if (outer_sink_layer == sink_block_loc.layer_num) {
