@@ -1021,7 +1021,6 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
     // difference calculations below.
     VTR_ASSERT_SAFE(tile_dx + 1 < (int)device_grid_width_);
     VTR_ASSERT_SAFE(tile_dy + 1 < (int)device_grid_height_);
-    VTR_ASSERT_SAFE(tile_dlayer + 1 < (int)device_grid_num_layers_);
 
     // Get the delay of a wire going from the given driver block location to the
     // given sink block location. This should only use the physical tile type of
