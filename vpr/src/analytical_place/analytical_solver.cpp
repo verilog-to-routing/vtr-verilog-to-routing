@@ -992,8 +992,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
         flat_dx = device_grid_width_ - 2;
     if ((int)flat_dy + 1 > (int)device_grid_height_ - 1)
         flat_dy = device_grid_height_ - 2;
-    if ((int)flat_dlayer + 1 > (int)device_grid_num_layers_ - 1)
-        flat_dlayer = device_grid_num_layers_ - 1;
+    // NOTE: layers are directly checked for going off chip.
 
     // Get the physical tile location of the legalized driver block. The PlaceDelayModel
     // may use this position to determine the physical tile the wire is coming from.
@@ -1004,7 +1003,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
     // can be implemented, which it currently does).
     t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
                                          block_y_locs_legalized[driver_blk],
-                                         block_z_locs_legalized[driver_blk]);
+                                         is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
 
     // Get the physical tle location of the sink block, relative to the driver block.
     // Based on the current implementation of the PlaceDelayModel, the location of this
@@ -1013,7 +1012,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId dri
     // in x/y is not larger than the width/height of the device.
     t_physical_tile_loc sink_block_loc(driver_block_loc.x + flat_dx,
                                        driver_block_loc.y + flat_dy,
-                                       driver_block_loc.layer_num + flat_dlayer);
+                                       is_multi_die() ? driver_block_loc.layer_num + flat_dlayer : 0);
 
     int tile_dx = sink_block_loc.x - driver_block_loc.x;
     int tile_dy = sink_block_loc.y - driver_block_loc.y;
@@ -1178,7 +1177,7 @@ std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlo
     // of the driver block to try and estimate the delay from that block type.
     t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
                                          block_y_locs_legalized[driver_blk],
-                                         block_z_locs_legalized[driver_blk]);
+                                         is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
 
     // Get the delay of exiting the block.
     double norm_fac_inv_x = place_delay_model_->delay(driver_block_loc,
@@ -1363,9 +1362,11 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                                          2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm,
                                          p_placement.block_y_locs, triplet_list_y, b_y);
 
-                add_connection_to_system(driver_blk, sink_blk,
-                                         2 /*num_pins*/, timing_net_w * d_delay_z * delay_z_norm,
-                                         p_placement.block_layer_nums, triplet_list_z, b_z);
+                if (is_multi_die()) {
+                    add_connection_to_system(driver_blk, sink_blk,
+                                             2 /*num_pins*/, timing_net_w * d_delay_z * delay_z_norm,
+                                             p_placement.block_layer_nums, triplet_list_z, b_z);
+                }
             }
         }
     }
