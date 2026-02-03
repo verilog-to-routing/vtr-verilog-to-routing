@@ -306,6 +306,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
 
         //Must be a subckt
         subckt_models.insert(blk_model);
+        const t_model& model = models.get_model(blk_model);
 
         std::vector<AtomPortId> ports;
         for (auto port_id : netlist.block_ports(blk_id)) {
@@ -313,7 +314,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
             ports.push_back(port_id);
         }
 
-        fprintf(f, ".subckt %s \\\n", netlist.block_name(blk_id).c_str());
+        fprintf(f, ".subckt %s %s \\\n", model.name, netlist.block_name(blk_id).c_str());
         for (size_t i = 0; i < ports.size(); i++) {
             auto width = netlist.port_width(ports[i]);
             for (size_t j = 0; j < width; ++j) {
