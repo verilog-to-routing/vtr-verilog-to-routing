@@ -81,6 +81,13 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
 /**
  * @brief Computes the channel type, direction, and coordinate span between two locations
  *        on the same layer. Used by SG link construction routines to determine geometry.
+ *
+ * @param link The bottleneck link object containing the gather (source) and
+ * scatter (destination) physical tile locations.
+ * @param chan_type [out] Set to CHANX for horizontal links or CHANY for vertical links.
+ * @param xlow, xhigh, ylow, yhigh [out] The physical coordinates of the wire that physically
+ * represents this link on the FPGA grid.
+ * @param direction [out] The signal flow direction (INC, DEC, or BIDIR).
  */
 void compute_non_3d_sg_link_geometry(const t_bottleneck_link& link,
                                      e_rr_type& chan_type,
