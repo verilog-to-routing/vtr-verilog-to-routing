@@ -314,8 +314,8 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
             ports.push_back(port_id);
         }
 
-        fprintf(f, "# Subckt Model Name: %s\n", model.name);
-        fprintf(f, ".subckt %s \\\n", netlist.block_name(blk_id).c_str());
+        fprintf(f, "# Subckt %zu: %s\n", size_t(blk_id), netlist.block_name(blk_id).c_str());
+        fprintf(f, ".subckt %s \\\n", model.name);
         for (size_t i = 0; i < ports.size(); i++) {
             auto width = netlist.port_width(ports[i]);
             for (size_t j = 0; j < width; ++j) {
