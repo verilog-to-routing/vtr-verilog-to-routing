@@ -13,6 +13,7 @@ circuit_list_add=ch_intrinsics.v
 
 # Add architectures to list to sweep
 arch_list_add=k6_N10_40nm_interposer.xml
+arch_list_add=k6_N10_40nm_interposer_bidir.xml
 
 # Use a fixed size device
 circuit_constraint_list_add=(ch_intrinsics.v,    device=vtr_homogeneous_extra_small)

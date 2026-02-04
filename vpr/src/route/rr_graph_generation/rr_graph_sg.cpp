@@ -80,7 +80,6 @@ void add_inter_die_3d_edges(RRGraphBuilder& rr_graph_builder,
                             const t_chan_details& chan_details_y,
                             const std::vector<t_bottleneck_link>& interdie_3d_links,
                             t_rr_edge_info_set& interdie_3d_rr_edges_to_create) {
-
     const RRSpatialLookup& node_lookup = rr_graph_builder.node_lookup();
     const int num_tracks = interdie_3d_links.size();
 
@@ -166,7 +165,9 @@ void build_inter_die_3d_rr_chan(RRGraphBuilder& rr_graph_builder,
 
         rr_graph_builder.set_node_type(node, e_rr_type::CHANZ);
         rr_graph_builder.set_node_track_num(node, track_num);
-        if (link.scatter_loc.layer_num > link.gather_loc.layer_num) {
+        if (link.bidir) {
+            rr_graph_builder.set_node_direction(node, Direction::BIDIR);
+        } else if (link.scatter_loc.layer_num > link.gather_loc.layer_num) {
             rr_graph_builder.set_node_direction(node, Direction::INC);
         } else {
             VTR_ASSERT_SAFE(link.scatter_loc.layer_num < link.gather_loc.layer_num);
@@ -368,14 +369,12 @@ void add_and_connect_non_3d_sg_links(RRGraphBuilder& rr_graph_builder,
         int xlow, xhigh, ylow, yhigh;
         Direction direction;
         e_rr_type chan_type;
-        const t_physical_tile_loc& src_loc = link.gather_loc;
-        const t_physical_tile_loc& dst_loc = link.scatter_loc;
 
         // Step 1: Determine the link’s direction and its spatial span.
         // SG links are confined to one layer (non-3D), but can run in X or Y.
-        VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
-        const int layer = src_loc.layer_num;
-        compute_non_3d_sg_link_geometry(src_loc, dst_loc, chan_type, xlow, xhigh, ylow, yhigh, direction);
+        VTR_ASSERT_SAFE(link.gather_loc.layer_num == link.scatter_loc.layer_num);
+        const int layer = link.gather_loc.layer_num;
+        compute_non_3d_sg_link_geometry(link, chan_type, xlow, xhigh, ylow, yhigh, direction);
 
         // Retrieve the node ID and track number allocated earlier
         const RRNodeId node_id = sg_node_indices[i].first;

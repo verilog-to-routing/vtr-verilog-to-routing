@@ -7,6 +7,7 @@
 #include "scatter_gather_types.h"
 #include "rr_types.h"
 #include "globals.h"
+#include "place_util.h"
 #include "rr_graph_uxsdcxx_interface.h"
 #include "vtr_assert.h"
 #include "vtr_random.h"
@@ -41,20 +42,119 @@ static void index_to_correct_sg_channels(const t_wireconn_inf& pattern,
  * @param wire_type_sizes_y Stores the number of wires of each wire segment type and their starting index for vertical routing channels.
  * @param is_dest True if searching for destination (scatter) wires, false for source (gather).
  * @param rng Random number generator used to shuffle wire candidates.
- * @return Vector of candidate wires that satisfy the switchpoint and direction constraints.
+ * @param candidates Candidate wires that satisfy the switchpoint and direction constraints. To be populated by this function.
  */
-static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan_loc>& channels,
-                                                        const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
-                                                        const t_chan_details& chan_details_x,
-                                                        const t_chan_details& chan_details_y,
-                                                        const t_wire_type_sizes& wire_type_sizes_x,
-                                                        const t_wire_type_sizes& wire_type_sizes_y,
-                                                        bool is_dest,
-                                                        vtr::RngContainer& rng);
+static void find_candidate_wires(const std::vector<t_chan_loc>& channels,
+                                 const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
+                                 const t_chan_details& chan_details_x,
+                                 const t_chan_details& chan_details_y,
+                                 const t_wire_type_sizes& wire_type_sizes_x,
+                                 const t_wire_type_sizes& wire_type_sizes_y,
+                                 bool is_dest,
+                                 vtr::RngContainer& rng,
+                                 std::vector<t_sg_candidate>& candidates);
 
-//
-// Static Function Definitions
-//
+/**
+ * @brief Identifies wire candidates for a scatter-gather (SG) connection and determines the bottleneck fan-in/fan-out.
+ *
+ * This functions performs three main steps:
+ * 1. Channel Mapping: Translates the sides (TOP, BOTTOM, etc.) of the source and destination
+ * switch blocks into physical routing channel locations (CHANX/CHANY + xyz coordinates).
+ * 2. Wire Filtering: Searches the routing channels for wire segments that match the
+ * required segment type (e.g., L4, L16) and switchpoints specified in the architecture file.
+ * 3. Formula Evaluation: Applies the user-defined connectivity formulas (e.g., based on
+ * channel width or literal numbers) to determine the fanin and fanout of each SG connection.
+ *
+ * @param gather_pattern Architectural definition for the source (gather) side of the link.
+ * @param scatter_pattern Architectural definition for the destination (scatter) side of the link.
+ * @param gather_loc Physical grid location (x, y, layer) of the source switch block.
+ * @param scatter_loc Physical grid location (x, y, layer) of the destination switch block.
+ * @param chan_details_x Details of wire segment types in horizontal channels.
+ * @param chan_details_y Details of wire segment types in vertical channels.
+ * @param wire_type_sizes_x Indexing information for wire types in CHANX.
+ * @param wire_type_sizes_y Indexing information for wire types in CHANY.
+ * @param formula_parser Parser used to evaluate the `num_conns` math expressions.
+ * @param formula_data Context data (e.g. W) for the formula evaluation.
+ * @param gather_channels [out] Populated with the physical channel locations used by the source.
+ * @param scatter_channels [out] Populated with the physical channel locations used by the destination.
+ * @param rng Random number generator used to shuffle candidates for uniform distribution.
+ * @param gather_wire_candidates [out] The set of physical wire segments matching the gather pattern at the source.
+ * @param scatter_wire_candidates [out] The set of physical wire segments matching the scatter pattern at the destination.
+ * @param bottleneck_fanin [out] The fanin of each SG link capped by available candidates.
+ * @param bottleneck_fanout [out] The fanout of each SG link capped by available candidates.
+ */
+static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
+                                       const t_wireconn_inf& scatter_pattern,
+                                       const t_physical_tile_loc& gather_loc,
+                                       const t_physical_tile_loc& scatter_loc,
+                                       const t_chan_details& chan_details_x,
+                                       const t_chan_details& chan_details_y,
+                                       const t_wire_type_sizes& wire_type_sizes_x,
+                                       const t_wire_type_sizes& wire_type_sizes_y,
+                                       vtr::FormulaParser& formula_parser,
+                                       vtr::t_formula_data& formula_data,
+                                       std::vector<t_chan_loc>& gather_channels,
+                                       std::vector<t_chan_loc>& scatter_channels,
+                                       vtr::RngContainer& rng,
+                                       std::vector<t_sg_candidate>& gather_wire_candidates,
+                                       std::vector<t_sg_candidate>& scatter_wire_candidates,
+                                       int& bottleneck_fanin,
+                                       int& bottleneck_fanout);
+
+/**
+ * @brief Mirrors a scatter-gather (SG) pattern's switch block sides based on the link's displacement.
+ *
+ * This function is used primarily for bidirectional links to ensure that the "reverse" path
+ * looks into the correct routing channels. It performs a spatial flip of the source sides:
+ * - If the link moves vertically (y_offset != 0), TOP and BOTTOM sides are swapped.
+ * - If the link moves horizontally (x_offset != 0), LEFT and RIGHT sides are swapped.
+ * - For 3D links (z-offset), the relative planar sides (LEFT/RIGHT and BOTTOM/TOP) remain unchanged.
+ *
+ * @param sg_pattern The original pattern (gather or scatter) containing
+ * the set of sides to be mirrored.
+ * @param sg_link The link definition providing the displacement offsets (x, y, z)
+ * used to determine the axis of mirroring.
+ * @return t_wireconn_inf A copy of the input pattern with the `sides` set updated to
+ * reflect the mirrored spatial orientation.
+ */
+static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link);
+
+//                             //
+// Static Function Definitions //
+//                             //
+
+static t_wireconn_inf mirror_sg_pattern(const t_wireconn_inf& sg_pattern, const t_sg_link& sg_link) {
+    t_wireconn_inf mirrored_pattern = sg_pattern;
+
+    // Clear the sides to rebuild them mirrored
+    mirrored_pattern.sides.clear();
+
+    for (e_side side : sg_pattern.sides) {
+        e_side new_side = side;
+
+        // Mirror along the Y-axis (Vertical flip)
+        if (sg_link.y_offset != 0) {
+            if (side == e_side::TOP) {
+                new_side = e_side::BOTTOM;
+            } else if (side == e_side::BOTTOM) {
+                new_side = e_side::TOP;
+            }
+        }
+        // Mirror along the X-axis (Horizontal flip)
+        else if (sg_link.x_offset != 0) {
+            if (side == e_side::LEFT) {
+                new_side = e_side::RIGHT;
+            } else if (side == e_side::RIGHT) {
+                new_side = e_side::LEFT;
+            }
+        }
+        // z_offset != 0: do nothing (new_side remains side)
+
+        mirrored_pattern.sides.insert(new_side);
+    }
+
+    return mirrored_pattern;
+}
 
 static void index_to_correct_sg_channels(const t_wireconn_inf& pattern,
                                          const t_physical_tile_loc& loc,
@@ -75,17 +175,19 @@ static void index_to_correct_sg_channels(const t_wireconn_inf& pattern,
     }
 }
 
-static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan_loc>& channels,
-                                                        const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
-                                                        const t_chan_details& chan_details_x,
-                                                        const t_chan_details& chan_details_y,
-                                                        const t_wire_type_sizes& wire_type_sizes_x,
-                                                        const t_wire_type_sizes& wire_type_sizes_y,
-                                                        bool is_dest,
-                                                        vtr::RngContainer& rng) {
-
-    // TODO: reuse
-    std::vector<t_sg_candidate> candidates;
+static void find_candidate_wires(const std::vector<t_chan_loc>& channels,
+                                 const std::vector<t_wire_switchpoints>& wire_switchpoints_vec,
+                                 const t_chan_details& chan_details_x,
+                                 const t_chan_details& chan_details_y,
+                                 const t_wire_type_sizes& wire_type_sizes_x,
+                                 const t_wire_type_sizes& wire_type_sizes_y,
+                                 bool is_dest,
+                                 vtr::RngContainer& rng,
+                                 std::vector<t_sg_candidate>& candidates) {
+    // `candidates` is passed by reference to avoid memory re-allocation
+    // when this function is called many times. We clear the vector's content
+    // that was written to it by the previous call.
+    candidates.clear();
 
     for (const auto [chan_loc, chan_type, chan_side] : channels) {
         int seg_coord = (chan_type == e_rr_type::CHANY) ? chan_loc.y : chan_loc.x;
@@ -151,8 +253,63 @@ static std::vector<t_sg_candidate> find_candidate_wires(const std::vector<t_chan
 
     // TODO: Whether we shuffle candidates or not should be determined by switch point order type.
     vtr::shuffle(candidates.begin(), candidates.end(), rng);
+}
 
-    return candidates;
+static void collect_sg_wire_candidates(const t_wireconn_inf& gather_pattern,
+                                       const t_wireconn_inf& scatter_pattern,
+                                       const t_physical_tile_loc& gather_loc,
+                                       const t_physical_tile_loc& scatter_loc,
+                                       const t_chan_details& chan_details_x,
+                                       const t_chan_details& chan_details_y,
+                                       const t_wire_type_sizes& wire_type_sizes_x,
+                                       const t_wire_type_sizes& wire_type_sizes_y,
+                                       vtr::FormulaParser& formula_parser,
+                                       vtr::t_formula_data& formula_data,
+                                       std::vector<t_chan_loc>& gather_channels,
+                                       std::vector<t_chan_loc>& scatter_channels,
+                                       vtr::RngContainer& rng,
+                                       std::vector<t_sg_candidate>& gather_wire_candidates,
+                                       std::vector<t_sg_candidate>& scatter_wire_candidates,
+                                       int& bottleneck_fanin,
+                                       int& bottleneck_fanout) {
+    // Determine which routing channels are adjacent to the specified sides of the source and destination switch blocks
+    index_to_correct_sg_channels(gather_pattern, gather_loc, chan_details_x, chan_details_y, gather_channels);
+    index_to_correct_sg_channels(scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
+
+    // If either side is missing valid channels (e.g., at the edge of the FPGA grid),
+    // no connections can be formed. Early exit to avoid redundant candidate searches.
+    if (gather_channels.empty() || scatter_channels.empty()) {
+        bottleneck_fanin = 0;
+        bottleneck_fanout = 0;
+        gather_wire_candidates.clear();
+        scatter_wire_candidates.clear();
+        return;
+    }
+
+    // Filter all wires in the identified channels to find segments that match the given switchpoints
+    find_candidate_wires(gather_channels, gather_pattern.from_switchpoint_set,
+                         chan_details_x, chan_details_y,
+                         wire_type_sizes_x, wire_type_sizes_y,
+                         /*is_dest=*/false, rng, gather_wire_candidates);
+
+    find_candidate_wires(scatter_channels, scatter_pattern.to_switchpoint_set,
+                         chan_details_x, chan_details_y,
+                         wire_type_sizes_x, wire_type_sizes_y,
+                         /*is_dest=*/true, rng, scatter_wire_candidates);
+
+    // Evaluate the fanin/fanout of each SG link
+    // These formulas determine how many wires drive each SG link,
+    // and how many wires are driven by each SG link.
+    bottleneck_fanin = evaluate_num_conns_formula(formula_parser, formula_data, gather_pattern.num_conns_formula,
+                                                  gather_wire_candidates.size(), scatter_wire_candidates.size());
+
+    bottleneck_fanout = evaluate_num_conns_formula(formula_parser, formula_data, scatter_pattern.num_conns_formula,
+                                                   gather_wire_candidates.size(), scatter_wire_candidates.size());
+
+    // Ensure the requested connection count does not exceed the physical number
+    // of available wires to prevent out-of-bounds indexing.
+    bottleneck_fanin = std::min<int>(bottleneck_fanin, gather_wire_candidates.size());
+    bottleneck_fanout = std::min<int>(bottleneck_fanout, scatter_wire_candidates.size());
 }
 
 //
@@ -171,31 +328,46 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                                                                          vtr::NdMatrix<std::vector<t_bottleneck_link>, 2>& interdie_3d_links) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
 
-    std::vector<t_chan_loc> gather_channels;
-    std::vector<t_chan_loc> scatter_channels;
+    // Storage for identifying source/destination channels of an SG link.
+    // These vectors are re-used for SG links at all locations to avoid memory re-allocation.
+    std::vector<t_chan_loc> gather_channels, scatter_channels;
+
+    // Persistent storage for source (gather) and destination (scatter) wire candidates.
+    // Re-used across iterations to minimize memory re-allocations.
+    // In a "Forward" connection, signal flows from the gather location to the scatter location.
+    // For bidirectional (BIDIR) SG links, signal can also flow in the reverse direction:
+    // being driven by wires at the scatter location to drive wires at the gather location.
+    // These vectors store the physical wire segments identified for each endpoint and direction.
+    std::vector<t_sg_candidate> fwd_gather_wire_candidates, fwd_scatter_wire_candidates;
+    std::vector<t_sg_candidate> rev_gather_wire_candidates, rev_scatter_wire_candidates;
 
     vtr::FormulaParser formula_parser;
     vtr::t_formula_data formula_data;
 
     std::vector<t_bottleneck_link> bottleneck_links;
 
+    // Handle 3D storage: if we have a multi-layer device, we organize inter-layer links
+    // spatially (by X,Y) for easier lookup during RR graph construction.
     interdie_3d_links.clear();
     if (grid.get_num_layers() > 1) {
         interdie_3d_links.resize({grid.width(), grid.height()});
     }
 
+    // Pre-calculate the mapping of wire type names to their indices in the channel
+    // to avoid re-scanning the entire channel width.
     const auto [wire_type_sizes_x, wire_type_sizes_y] = count_wire_type_sizes(chan_details_x, chan_details_y, nodes_per_chan);
 
     for (const t_scatter_gather_pattern& sg_pattern : scatter_gather_patterns) {
-        VTR_ASSERT(sg_pattern.type == e_scatter_gather_type::UNIDIR);
-
         for (const t_sg_location& sg_loc_info : sg_pattern.sg_locations) {
 
+            // Sweep every location in the grid to find valid gather (source) points.
             for (const t_physical_tile_loc gather_loc : grid.all_locations()) {
+                // Skip locations that don't match the pattern's region.
                 if (sb_not_here(grid, inter_cluster_rr, gather_loc, sg_loc_info.type, sg_loc_info.region)) {
                     continue;
                 }
 
+                // Find the specific SG link definition to get X/Y/Z offsets and wire segment type.
                 auto sg_link_it = std::ranges::find_if(sg_pattern.sg_links,
                                                        [&](const t_sg_link& link) noexcept {
                                                            return link.name == sg_loc_info.sg_link_name;
@@ -205,11 +377,17 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 const t_sg_link& sg_link = *sg_link_it;
 
                 VTR_ASSERT(vtr::exactly_k_conditions(1, sg_link.x_offset != 0, sg_link.y_offset != 0, sg_link.z_offset != 0));
+                // Calculate where the scatter (destination) switch block is physically located.
                 t_physical_tile_loc scatter_loc;
                 scatter_loc.x = gather_loc.x + sg_link.x_offset;
                 scatter_loc.y = gather_loc.y + sg_link.y_offset;
                 scatter_loc.layer_num = gather_loc.layer_num + sg_link.z_offset;
 
+                if (!is_loc_on_chip(scatter_loc)) {
+                    continue;
+                }
+
+                // Determine the routing resources (CHANX/CHANY/CHANZ) involved based on the offset axis.
                 const std::vector<t_segment_inf>& segment_inf = (sg_link.x_offset != 0) ? segment_inf_x : (sg_link.y_offset != 0) ? segment_inf_y
                                                                                                                                   : segment_inf_z;
 
@@ -224,57 +402,46 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                 VTR_ASSERT(seg_it != segment_inf.end());
                 const t_segment_inf& wire_segment = *seg_it;
 
-                index_to_correct_sg_channels(sg_pattern.gather_pattern, gather_loc, chan_details_x, chan_details_y, gather_channels);
-                index_to_correct_sg_channels(sg_pattern.scatter_pattern, scatter_loc, chan_details_x, chan_details_y, scatter_channels);
+                // Collect wires for the forward path (gather -> scatter).
+                int fwd_bottleneck_fanin = 0;
+                int fwd_bottleneck_fanout = 0;
+                collect_sg_wire_candidates(sg_pattern.gather_pattern, sg_pattern.scatter_pattern,
+                                           gather_loc, scatter_loc, chan_details_x, chan_details_y,
+                                           wire_type_sizes_x, wire_type_sizes_y, formula_parser, formula_data,
+                                           gather_channels, scatter_channels, rng,
+                                           fwd_gather_wire_candidates, fwd_scatter_wire_candidates,
+                                           fwd_bottleneck_fanin, fwd_bottleneck_fanout);
 
-                if (gather_channels.empty() || scatter_channels.empty()) {
-                    continue;
+                // Collect wires for the reverse path if the link is bidirectional.
+                int rev_bottleneck_fanin = 0;
+                int rev_bottleneck_fanout = 0;
+                if (sg_pattern.type == e_scatter_gather_type::BIDIR) {
+                    t_wireconn_inf rev_gather_pattern = mirror_sg_pattern(sg_pattern.gather_pattern, sg_link);
+                    t_wireconn_inf rev_scatter_pattern = mirror_sg_pattern(sg_pattern.scatter_pattern, sg_link);
+
+                    collect_sg_wire_candidates(rev_gather_pattern, rev_scatter_pattern,
+                                               scatter_loc, gather_loc, chan_details_x, chan_details_y,
+                                               wire_type_sizes_x, wire_type_sizes_y, formula_parser, formula_data,
+                                               gather_channels, scatter_channels, rng,
+                                               rev_gather_wire_candidates, rev_scatter_wire_candidates,
+                                               rev_bottleneck_fanin, rev_bottleneck_fanout);
                 }
 
-                std::vector<t_sg_candidate> gather_wire_candidates;
-                gather_wire_candidates = find_candidate_wires(gather_channels,
-                                                              sg_pattern.gather_pattern.from_switchpoint_set,
-                                                              chan_details_x, chan_details_y,
-                                                              wire_type_sizes_x, wire_type_sizes_y,
-                                                              /*is_dest=*/false, rng);
+                if (fwd_bottleneck_fanin == 0 || fwd_bottleneck_fanout == 0) {
 
-                std::vector<t_sg_candidate> scatter_wire_candidates;
-                scatter_wire_candidates = find_candidate_wires(scatter_channels,
-                                                               sg_pattern.scatter_pattern.to_switchpoint_set,
-                                                               chan_details_x, chan_details_y,
-                                                               wire_type_sizes_x, wire_type_sizes_y,
-                                                               /*is_dest=*/true, rng);
-
-                int bottleneck_fanin = evaluate_num_conns_formula(formula_parser,
-                                                                  formula_data,
-                                                                  sg_pattern.gather_pattern.num_conns_formula,
-                                                                  gather_wire_candidates.size(),
-                                                                  scatter_wire_candidates.size());
-
-                int bottleneck_fanout = evaluate_num_conns_formula(formula_parser,
-                                                                   formula_data,
-                                                                   sg_pattern.scatter_pattern.num_conns_formula,
-                                                                   gather_wire_candidates.size(),
-                                                                   scatter_wire_candidates.size());
-
-                bottleneck_fanin = std::min<int>(bottleneck_fanin, gather_wire_candidates.size());
-                bottleneck_fanout = std::min<int>(bottleneck_fanout, scatter_wire_candidates.size());
-
-                if (bottleneck_fanin == 0 || bottleneck_fanout == 0) {
-
-                    VTR_LOGV_WARN(bottleneck_fanin == 0,
+                    VTR_LOGV_WARN(fwd_bottleneck_fanin == 0,
                                   "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
                                   "has zero gather fanin connections (candidates=%zu)\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   gather_loc.layer_num, gather_loc.x, gather_loc.y,
-                                  gather_wire_candidates.size());
+                                  fwd_gather_wire_candidates.size());
 
-                    VTR_LOGV_WARN(bottleneck_fanout == 0,
+                    VTR_LOGV_WARN(fwd_bottleneck_fanout == 0,
                                   "Scatter-gather pattern '%s' with SG link '%s' at location (layer=%i, x=%i, y=%i) "
                                   "has zero scatter fanout connections (candidates=%zu)\n",
                                   sg_pattern.name.c_str(), sg_link.name.c_str(),
                                   scatter_loc.layer_num, scatter_loc.x, scatter_loc.y,
-                                  scatter_wire_candidates.size());
+                                  fwd_scatter_wire_candidates.size());
 
                     // continue;
                 }
@@ -286,38 +453,59 @@ std::vector<t_bottleneck_link> alloc_and_load_scatter_gather_connections(const s
                     bottleneck_links.reserve(bottleneck_links.size() + sg_loc_info.num);
                 }
 
-                for (int i_bottleneck = 0, i_s = 0, i_g = 0; i_bottleneck < sg_loc_info.num; i_bottleneck++) {
+                // Populate the actual bottleneck links. 'sg_loc_info.num' allows the architect
+                // to specify multiple parallel links between the same two switch blocks.
+                for (int i_bottleneck = 0; i_bottleneck < sg_loc_info.num; i_bottleneck++) {
 
                     t_bottleneck_link bottleneck_link;
                     bottleneck_link.gather_loc = gather_loc;
                     bottleneck_link.scatter_loc = scatter_loc;
-                    bottleneck_link.gather_fanin_connections.reserve(bottleneck_fanin);
-                    bottleneck_link.scatter_fanout_connections.reserve(bottleneck_fanout);
+                    bottleneck_link.gather_fanin_connections.reserve(fwd_bottleneck_fanin);
+                    bottleneck_link.scatter_fanout_connections.reserve(fwd_bottleneck_fanout);
+                    bottleneck_link.bidir = (sg_pattern.type == e_scatter_gather_type::BIDIR);
 
-                    for (int i = 0; i < bottleneck_fanin; i++) {
-                        bottleneck_link.gather_fanin_connections.push_back(gather_wire_candidates[i_g]);
-                        i_g = (i_g + 1) % bottleneck_fanin;
+                    // Combine forward and reverse candidates into the final link object.
+                    // This allows the RR builder to know which physical wires can drive this link.
+                    for (int i = 0; i < fwd_bottleneck_fanin; i++) {
+                        int i_g = i % fwd_bottleneck_fanin;
+                        bottleneck_link.gather_fanin_connections.push_back(fwd_gather_wire_candidates[i_g]);
                     }
 
-                    for (int i = 0; i < bottleneck_fanout; i++) {
-                        bottleneck_link.scatter_fanout_connections.push_back(scatter_wire_candidates[i_s]);
-                        i_s = (i_s + 1) % bottleneck_fanout;
+                    for (int i = 0; i < rev_bottleneck_fanin; i++) {
+                        int i_g = i % rev_bottleneck_fanin;
+                        bottleneck_link.gather_fanin_connections.push_back(rev_gather_wire_candidates[i_g]);
                     }
 
+                    for (int i = 0; i < fwd_bottleneck_fanout; i++) {
+                        int i_s = i % fwd_bottleneck_fanout;
+                        bottleneck_link.scatter_fanout_connections.push_back(fwd_scatter_wire_candidates[i_s]);
+                    }
+
+                    for (int i = 0; i < rev_bottleneck_fanout; i++) {
+                        int i_s = i % rev_bottleneck_fanout;
+                        bottleneck_link.scatter_fanout_connections.push_back(rev_scatter_wire_candidates[i_s]);
+                    }
+
+                    // Assign electrical and architectural properties from the segment information.
                     bottleneck_link.chan_type = chan_type;
                     bottleneck_link.parallel_segment_index = std::distance(segment_inf.begin(), seg_it);
                     bottleneck_link.R_metal = seg_it->Rmetal;
                     bottleneck_link.C_metal = seg_it->Cmetal;
 
+                    // Choose the correct switch (INC vs DEC) based on the link's physical direction.
                     if (is_3d_link) {
-                        if (sg_link.z_offset < 0 && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL) {
+                        if (sg_link.z_offset < 0
+                            && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL
+                            && sg_pattern.type != e_scatter_gather_type::BIDIR) {
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch_dec;
                         } else {
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch;
                         }
                         interdie_3d_links[gather_loc.x][gather_loc.y].push_back(std::move(bottleneck_link));
                     } else {
-                        if ((sg_link.x_offset < 0 || sg_link.y_offset < 0) && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL) {
+                        if ((sg_link.x_offset < 0 || sg_link.y_offset < 0)
+                            && wire_segment.arch_wire_switch_dec != ARCH_FPGA_UNDEFINED_VAL
+                            && sg_pattern.type != e_scatter_gather_type::BIDIR) {
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch_dec;
                         } else {
                             bottleneck_link.arch_wire_switch = wire_segment.arch_wire_switch;
@@ -396,14 +584,15 @@ void convert_interposer_cuts_to_sg_patterns(const std::vector<t_layer_def>& inte
     }
 }
 
-void compute_non_3d_sg_link_geometry(const t_physical_tile_loc& src_loc,
-                                     const t_physical_tile_loc& dst_loc,
+void compute_non_3d_sg_link_geometry(const t_bottleneck_link& link,
                                      e_rr_type& chan_type,
                                      int& xlow,
                                      int& xhigh,
                                      int& ylow,
                                      int& yhigh,
                                      Direction& direction) {
+    const t_physical_tile_loc& src_loc = link.gather_loc;
+    const t_physical_tile_loc& dst_loc = link.scatter_loc;
     VTR_ASSERT_SAFE(src_loc.layer_num == dst_loc.layer_num);
 
     if (dst_loc.x > src_loc.x) {
@@ -431,6 +620,10 @@ void compute_non_3d_sg_link_geometry(const t_physical_tile_loc& src_loc,
         yhigh = src_loc.y;
         direction = Direction::DEC;
     } else {
-        VTR_ASSERT_MSG(false, "Source and destination locations cannot be identical");
+        VTR_ASSERT_MSG(false, "Source and destination locations cannot be identical.");
+    }
+
+    if (link.bidir) {
+        direction = Direction::BIDIR;
     }
 }
