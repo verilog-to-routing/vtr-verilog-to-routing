@@ -148,6 +148,9 @@ static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 ///@brief Determines how many tracks are used in each channel and prints out statistics
 static void get_channel_occupancy_stats(const Netlist<>& net_list);
 
+/// @brief Prints tap utilization statistics for routed wire segments.
+static void print_tap_utilization(const Netlist<>& net_list, const std::vector<t_segment_inf>& segment_inf);
+
 /************************* Subroutine definitions ****************************/
 
 void routing_stats(const Netlist<>& net_list,
@@ -215,6 +218,7 @@ void routing_stats(const Netlist<>& net_list,
 
     if (full_stats) {
         print_wirelen_prob_dist(is_flat);
+        print_tap_utilization(net_list, segment_inf);
     }
 }
 
