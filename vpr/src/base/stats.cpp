@@ -750,8 +750,8 @@ static int compute_tap(const RRGraphView& rr_graph, RRNodeId parent_node, RRNode
     if (rr_graph.node_type(child_node) == parent_type) {
         Direction child_dir = rr_graph.node_direction(child_node);
         connection_coord = (child_dir == Direction::INC)
-            ? (is_x ? rr_graph.node_xlow(child_node)  : rr_graph.node_ylow(child_node))
-            : (is_x ? rr_graph.node_xhigh(child_node) : rr_graph.node_yhigh(child_node));
+            ? (is_x ? rr_graph.node_xlow(child_node)  : rr_graph.node_ylow(child_node))-1
+            : (is_x ? rr_graph.node_xhigh(child_node) : rr_graph.node_yhigh(child_node))+1;
     } else {
         connection_coord = is_x ? rr_graph.node_xlow(child_node) : rr_graph.node_ylow(child_node);
     }
