@@ -3935,7 +3935,7 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
         if (0 == strcmp(tmp, "bidir")) {
             segs[i].directionality = BI_DIRECTIONAL;
 
-            //Bidir requires the following tags
+            // Bidir requires the following tags
             expected_subtags.emplace_back("wire_switch");
             expected_subtags.emplace_back("opin_switch");
         }
@@ -3943,13 +3943,12 @@ static std::vector<t_segment_inf> process_segments(pugi::xml_node parent,
         else if (0 == strcmp(tmp, "unidir")) {
             segs[i].directionality = UNI_DIRECTIONAL;
 
-            //Unidir requires the following tags
+            // Unidir requires the following tags
             expected_subtags.emplace_back("mux");
             expected_subtags.emplace_back("bend");
-            expected_subtags.emplace_back("mux_inter_die");
 
-            //with the following two tags, we can allow the architecture file to define
-            //different muxes with different delays for wires with different directions
+            // with the following two tags, we can allow the architecture file to define
+            // different muxes with different delays for wires with different directions
             expected_subtags.emplace_back("mux_inc");
             expected_subtags.emplace_back("mux_dec");
         }
