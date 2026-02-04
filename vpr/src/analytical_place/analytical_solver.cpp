@@ -12,6 +12,7 @@
 #include <limits>
 #include <memory>
 #include <thread>
+#include <tuple>
 #include <utility>
 #include <vector>
 #include "PreClusterTimingManager.h"
@@ -968,9 +969,9 @@ void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
 }
 
 // Use Finite Differences to compute derivative.
-std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
-                                                          APBlockId sink_blk,
-                                                          const PartialPlacement& p_placement) {
+std::tuple<double, double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
+                                                                   APBlockId sink_blk,
+                                                                   const PartialPlacement& p_placement) {
 
     // Get the flat distance from the driver block to the sink block.
     // NOTE: Here we take the magnitude of the difference since we assume that
@@ -979,11 +980,7 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     //       us only focus on the positive axis.
     float flat_dx = std::abs(p_placement.block_x_locs[sink_blk] - p_placement.block_x_locs[driver_blk]);
     float flat_dy = std::abs(p_placement.block_y_locs[sink_blk] - p_placement.block_y_locs[driver_blk]);
-
-    // TODO: Handle 3D FPGAs for this method.
-    int layer_num = 0;
-    VTR_ASSERT_SAFE_MSG(!is_multi_die(),
-                        "Timing-driven AP does not support 3D FPGAs yet");
+    float flat_dlayer = std::abs(p_placement.block_layer_nums[sink_blk] - p_placement.block_layer_nums[driver_blk]);
 
     // Special case: If the distance between the driver and sink is as large as
     // the device, we cannot take the forward difference (since it will go off
@@ -995,6 +992,7 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
         flat_dx = device_grid_width_ - 2;
     if ((int)flat_dy + 1 > (int)device_grid_height_ - 1)
         flat_dy = device_grid_height_ - 2;
+    // NOTE: layers are directly checked for going off chip.
 
     // Get the physical tile location of the legalized driver block. The PlaceDelayModel
     // may use this position to determine the physical tile the wire is coming from.
@@ -1005,7 +1003,7 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     // can be implemented, which it currently does).
     t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
                                          block_y_locs_legalized[driver_blk],
-                                         layer_num);
+                                         is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
 
     // Get the physical tle location of the sink block, relative to the driver block.
     // Based on the current implementation of the PlaceDelayModel, the location of this
@@ -1014,10 +1012,11 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     // in x/y is not larger than the width/height of the device.
     t_physical_tile_loc sink_block_loc(driver_block_loc.x + flat_dx,
                                        driver_block_loc.y + flat_dy,
-                                       layer_num);
+                                       is_multi_die() ? driver_block_loc.layer_num + flat_dlayer : 0);
 
     int tile_dx = sink_block_loc.x - driver_block_loc.x;
     int tile_dy = sink_block_loc.y - driver_block_loc.y;
+    int tile_dlayer = sink_block_loc.layer_num - driver_block_loc.layer_num;
     // The following asserts are to protect the "delay" calls used for the forward
     // difference calculations below.
     VTR_ASSERT_SAFE(tile_dx + 1 < (int)device_grid_width_);
@@ -1047,6 +1046,22 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     t_physical_tile_loc lower_block_loc(sink_block_loc.x,
                                         sink_block_loc.y - 1,
                                         sink_block_loc.layer_num);
+    // For layers, we need to ensure that the layers do not go off device.
+    // The delay method does not check for out of bounds.
+    int outer_sink_layer = sink_block_loc.layer_num + 1;
+    int inner_sink_layer = sink_block_loc.layer_num - 1;
+    if (outer_sink_layer >= (int)device_grid_num_layers_) {
+        outer_sink_layer = device_grid_num_layers_ - 1;
+    }
+    if (inner_sink_layer < 0) {
+        inner_sink_layer = 0;
+    }
+    t_physical_tile_loc outer_block_loc(sink_block_loc.x,
+                                        sink_block_loc.y,
+                                        outer_sink_layer);
+    t_physical_tile_loc inner_block_loc(sink_block_loc.x,
+                                        sink_block_loc.y,
+                                        inner_sink_layer);
 
     float right_edge_delay = place_delay_model_->delay(driver_block_loc,
                                                        0 /*from_pin*/,
@@ -1064,6 +1079,22 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
                                                        0 /*from_pin*/,
                                                        lower_block_loc,
                                                        0 /*to_pin*/);
+
+    float outer_edge_delay, inner_edge_delay;
+    if (is_multi_die()) {
+        // Only compute these delays if the design has multiple dies.
+        outer_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                     0 /*from_pin*/,
+                                                     outer_block_loc,
+                                                     0 /*to_pin*/);
+        inner_edge_delay = place_delay_model_->delay(driver_block_loc,
+                                                     0 /*from_pin*/,
+                                                     inner_block_loc,
+                                                     0 /*to_pin*/);
+    } else {
+        outer_edge_delay = current_edge_delay;
+        inner_edge_delay = current_edge_delay;
+    }
 
     // Use Finite Differences to compute the instantanious derivative of delay
     // with respect to tile position at this current distance from the driver
@@ -1085,9 +1116,14 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
     float backward_difference_y = current_edge_delay - lower_edge_delay;
     float central_difference_y = (forward_difference_y + backward_difference_y) / 2.0f;
 
+    float forward_difference_z = outer_edge_delay - current_edge_delay;
+    float backward_difference_z = current_edge_delay - inner_edge_delay;
+    float central_difference_z = (forward_difference_z + backward_difference_z) / 2.0f;
+
     // Set the resulting derivative to be equal to the central difference.
     float d_delay_x = central_difference_x;
     float d_delay_y = central_difference_y;
+    float d_delay_z = central_difference_z;
 
     // For approximating the derivative of our PlaceDelayModel, there is a special
     // case when the distance between the driver and sink are 0 in x or y. Since
@@ -1107,24 +1143,40 @@ std::pair<double, double> B2BSolver::get_delay_derivative(APBlockId driver_blk,
         d_delay_y = forward_difference_y;
     }
 
-    return std::make_pair(d_delay_x, d_delay_y);
+    // The layer has some special cases that occur when we are close to a boundary.
+    // NOTE: This is not needed for x and y since the delay calculator uses the
+    //       magnitude of dx/dy.
+    if (outer_sink_layer == sink_block_loc.layer_num) {
+        // If the sink is pressed against the top layer, use the backward difference.
+        d_delay_z = backward_difference_z;
+    }
+    if (inner_sink_layer == sink_block_loc.layer_num) {
+        // If the sink is pressed against the bottom layer, use the forward difference.
+        d_delay_z = forward_difference_z;
+    }
+    if (tile_dlayer == 0) {
+        // If the driver and sink are on the same layer, pick the forward/backward
+        // difference that is valid due to boundaries.
+        if (inner_sink_layer != sink_block_loc.layer_num)
+            d_delay_z = forward_difference_z;
+        else
+            d_delay_z = backward_difference_z;
+    }
+
+    return std::make_tuple(d_delay_x, d_delay_y, d_delay_z);
 }
 
-std::pair<double, double> B2BSolver::get_delay_normalization_facs(APBlockId driver_blk) {
+std::tuple<double, double, double> B2BSolver::get_delay_normalization_facs(APBlockId driver_blk) {
     // We want to find normalization factors for the delays along connections.
     // A simple normalization factor to use is 1 over the delay of leaving a
     // tile. This should be able to remove the units without changing the value
     // too much.
 
-    // TODO: Handle multi-die for this function.
-    VTR_ASSERT_SAFE_MSG(!is_multi_die(),
-                        "Timing-driven AP does not support 3D FPGAs yet");
-
     // Similar to calculating the derivative, we want to use the legalized position
     // of the driver block to try and estimate the delay from that block type.
     t_physical_tile_loc driver_block_loc(block_x_locs_legalized[driver_blk],
                                          block_y_locs_legalized[driver_blk],
-                                         0 /*layer_num*/);
+                                         is_multi_die() ? block_z_locs_legalized[driver_blk] : 0);
 
     // Get the delay of exiting the block.
     double norm_fac_inv_x = place_delay_model_->delay(driver_block_loc,
@@ -1135,10 +1187,29 @@ std::pair<double, double> B2BSolver::get_delay_normalization_facs(APBlockId driv
                                                       0 /*from_pin*/,
                                                       {driver_block_loc.x, driver_block_loc.y + 1, driver_block_loc.layer_num},
                                                       0 /*to_pin*/);
+    double norm_fac_inv_z;
+    if (is_multi_die()) {
+        // Get the target layer. This will be either the layer above or below
+        // the driver block. We pick the layer such that we do not go off device.
+        int target_layer = driver_block_loc.layer_num + 1;
+        if (target_layer >= (int)device_grid_num_layers_) {
+            target_layer = driver_block_loc.layer_num - 1;
+        }
+        if (target_layer < 0) {
+            target_layer = 0;
+        }
+        norm_fac_inv_z = place_delay_model_->delay(driver_block_loc,
+                                                   0 /*from_pin*/,
+                                                   {driver_block_loc.x, driver_block_loc.y, target_layer},
+                                                   0 /*to_pin*/);
+    } else {
+        norm_fac_inv_z = 1.0;
+    }
 
     // Normalization factors are expected to be non-negative.
     VTR_ASSERT_SAFE(norm_fac_inv_x >= 0.0);
     VTR_ASSERT_SAFE(norm_fac_inv_y >= 0.0);
+    VTR_ASSERT_SAFE(norm_fac_inv_z >= 0.0);
 
     // The normalization factors will become infinite if we divide by 0 delay.
     // If the normalization factor is near 0, just set it to 1e-9 (or on the order
@@ -1148,9 +1219,11 @@ std::pair<double, double> B2BSolver::get_delay_normalization_facs(APBlockId driv
         norm_fac_inv_x = 1e-9;
     if (vtr::isclose(norm_fac_inv_y, 0.0))
         norm_fac_inv_y = 1e-9;
+    if (vtr::isclose(norm_fac_inv_z, 0.0))
+        norm_fac_inv_z = 1e-9;
 
     // Return the normalization factors.
-    return std::make_pair(1.0 / norm_fac_inv_x, 1.0 / norm_fac_inv_y);
+    return std::make_tuple(1.0 / norm_fac_inv_x, 1.0 / norm_fac_inv_y, 1.0 / norm_fac_inv_z);
 }
 
 void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned iteration) {
@@ -1232,8 +1305,6 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
         // positions to compute the delay derivative, which do not exist until
         // the next iteration. Its fine to do one wirelength driven iteration first.
         if (pre_cluster_timing_manager_.is_valid() && iteration != 0) {
-            VTR_ASSERT_SAFE_MSG(!is_multi_die(),
-                                "Timing-driven AP does not support 3D FPGAs yet");
             // Create connections from each driver pin to each of it's sink pins.
             // This will incentivize shrinking the distance from drivers to sinks
             // of connections which would improve the timing.
@@ -1246,9 +1317,9 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 // from driver to sink. This will provide a value which is higher
                 // if the tradeoff between delay and wirelength is better, and
                 // lower when the tradeoff between delay and wirelength is worse.
-                auto [d_delay_x, d_delay_y] = get_delay_derivative(driver_blk,
-                                                                   sink_blk,
-                                                                   p_placement);
+                auto [d_delay_x, d_delay_y, d_delay_z] = get_delay_derivative(driver_blk,
+                                                                              sink_blk,
+                                                                              p_placement);
 
                 // Since the delay between two blocks may not monotonically increase
                 // (it may go down with distance due to different length wires), it
@@ -1260,12 +1331,13 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 //       sink away.
                 d_delay_x = std::max(d_delay_x, 0.0);
                 d_delay_y = std::max(d_delay_y, 0.0);
+                d_delay_z = std::max(d_delay_z, 0.0);
 
                 // The units for delay are in seconds; however the units for
                 // the wirelength term are in tiles. To ensure the units match,
                 // we need to normalize away the time units. Get normalization
                 // factors to remove the time units.
-                auto [delay_x_norm, delay_y_norm] = get_delay_normalization_facs(driver_blk);
+                auto [delay_x_norm, delay_y_norm, delay_z_norm] = get_delay_normalization_facs(driver_blk);
 
                 // Get the criticality of this timing edge from driver to sink.
                 double crit = pre_cluster_timing_manager_.get_timing_info().setup_pin_criticality(netlist_.pin_atom_pin(sink_pin));
@@ -1288,6 +1360,12 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement, unsigned itera
                 add_connection_to_system(driver_blk, sink_blk,
                                          2 /*num_pins*/, timing_net_w * d_delay_y * delay_y_norm,
                                          p_placement.block_y_locs, triplet_list_y, b_y);
+
+                if (is_multi_die()) {
+                    add_connection_to_system(driver_blk, sink_blk,
+                                             2 /*num_pins*/, timing_net_w * d_delay_z * delay_z_norm,
+                                             p_placement.block_layer_nums, triplet_list_z, b_z);
+                }
             }
         }
     }
