@@ -21,20 +21,25 @@ double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
         double max_x = std::numeric_limits<double>::lowest();
         double min_y = std::numeric_limits<double>::max();
         double max_y = std::numeric_limits<double>::lowest();
+        double min_z = std::numeric_limits<double>::max();
+        double max_z = std::numeric_limits<double>::lowest();
         for (APPinId pin_id : netlist.net_pins(net_id)) {
             APBlockId blk_id = netlist.pin_block(pin_id);
             min_x = std::min(min_x, block_x_locs[blk_id]);
             max_x = std::max(max_x, block_x_locs[blk_id]);
             min_y = std::min(min_y, block_y_locs[blk_id]);
             max_y = std::max(max_y, block_y_locs[blk_id]);
+            min_z = std::min(min_z, block_layer_nums[blk_id]);
+            max_z = std::max(max_z, block_layer_nums[blk_id]);
         }
         // TODO: In the placer, the x and y dimensions are multiplied by cost
         //       factors based on the channel width. Should somehow bring these
         //       in here.
         //       Vaughn thinks these may make sense in the objective HPWL, but
         //       not the in the estimated post-placement wirelength.
-        VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y);
-        hpwl += max_x - min_x + max_y - min_y;
+        VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y && max_z >= min_z);
+        // TODO: Should dz be added here? Or should we add a penalty?
+        hpwl += max_x - min_x + max_y - min_y + max_z - min_z;
     }
     return hpwl;
 }
@@ -64,21 +69,28 @@ double PartialPlacement::estimate_post_placement_wirelength(const APNetlist& net
         double max_x = std::numeric_limits<double>::lowest();
         double min_y = std::numeric_limits<double>::max();
         double max_y = std::numeric_limits<double>::lowest();
+        double min_z = std::numeric_limits<double>::max();
+        double max_z = std::numeric_limits<double>::lowest();
         for (APPinId pin_id : netlist.net_pins(net_id)) {
             APBlockId blk_id = netlist.pin_block(pin_id);
             min_x = std::min(min_x, block_x_locs[blk_id]);
             max_x = std::max(max_x, block_x_locs[blk_id]);
             min_y = std::min(min_y, block_y_locs[blk_id]);
             max_y = std::max(max_y, block_y_locs[blk_id]);
+            min_z = std::min(min_z, block_layer_nums[blk_id]);
+            max_z = std::max(max_z, block_layer_nums[blk_id]);
         }
-        VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y);
+        VTR_ASSERT_SAFE(max_x >= min_x && max_y >= min_y && max_z >= min_z);
 
         // Floor the positions to get the x and y coordinates of the tiles each
         // block belongs to.
         double tile_dx = std::floor(max_x) - std::floor(min_x);
         double tile_dy = std::floor(max_y) - std::floor(min_y);
+        double tile_dz = std::floor(max_z) - std::floor(min_z);
 
-        total_hpwl += (tile_dx + tile_dy) * crossing;
+        // TODO: Do we just add dz here? Should a wire in the third dimension
+        //       be worth more?
+        total_hpwl += (tile_dx + tile_dy + tile_dz) * crossing;
     }
 
     return total_hpwl;
@@ -128,7 +140,7 @@ bool PartialPlacement::verify_layer_nums(const APNetlist& netlist,
     // Make sure all layer_nums are on the device and fixed locs are correct.
     for (APBlockId blk_id : netlist.blocks()) {
         double layer_num = block_layer_nums[blk_id];
-        if (layer_num < 0.0 || layer_num >= static_cast<double>(grid_num_layers))
+        if (std::isnan(layer_num) || layer_num < 0.0 || layer_num >= static_cast<double>(grid_num_layers))
             return false;
         if (netlist.block_mobility(blk_id) == APBlockMobility::FIXED) {
             const APFixedBlockLoc& fixed_loc = netlist.block_loc(blk_id);
