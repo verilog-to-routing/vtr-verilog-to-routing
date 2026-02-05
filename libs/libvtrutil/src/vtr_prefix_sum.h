@@ -278,6 +278,36 @@ class PrefixSum2D {
         return prefix_sum_.empty();
     }
 
+    /**
+     * @brief Returns a 2D matrix with the contents of the prefix sum.
+     * Be aware that this function builds a new matrix and returns it,
+     * making it potentially expensive. Prefer to use the accessor methods in
+     * vtr::PrefixSum2D if possible.
+     * 
+     * @param include_zeros_row_and_col By default vtr::PrefixSum2D adds a row and column of zeroes to the
+     * internal representation. If you set this flag to true, you would be given a matrix including the
+     * zero row and column.
+     *
+     */
+    vtr::NdMatrix<T, 2> to_matrix(bool include_zeros_row_and_col = false) const {
+        if (include_zeros_row_and_col) {
+            return prefix_sum_;
+        } else {
+            size_t x_size = prefix_sum_.dim_size(0) - 1;
+            size_t y_size = prefix_sum_.dim_size(1) - 1;
+
+            vtr::NdMatrix<T, 2> prefix_sum_matrix({x_size, y_size});
+
+            for (size_t i = 1; i <= x_size; i++) {
+                for (size_t j = 1; j <= y_size; j++) {
+                    prefix_sum_matrix[i - 1][j - 1] = prefix_sum_[i][j];
+                }
+            }
+
+            return prefix_sum_matrix;
+        }
+    }
+
   private:
     /**
      * @brief The 2D prefix sum of the original grid of values.

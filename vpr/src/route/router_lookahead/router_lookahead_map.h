@@ -4,6 +4,7 @@
 #include "vtr_ndmatrix.h"
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
+#include "vtr_prefix_sum.h"
 
 /**
  * @brief Current VPR RouterLookahead implementation.
@@ -23,10 +24,12 @@ class MapLookahead : public RouterLookahead {
     // Lookup table to store the minimum cost for each dx and dy
     vtr::NdMatrix<util::Cost_Entry, 4> chann_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
     vtr::NdMatrix<util::Cost_Entry, 5> opin_distance_based_min_cost;  // [physical_tile_idx][from_layer_num][to_layer_num][dx][dy] -> cost
+    std::vector<vtr::NdMatrix<float, 2>> interposer_delay_costs_;
 
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
     int route_verbosity_;
+    bool has_interposer_cuts_;
 
   protected:
     float get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;

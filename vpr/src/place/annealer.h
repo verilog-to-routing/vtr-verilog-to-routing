@@ -5,6 +5,7 @@
 #include "move_generator.h" // movestats
 #include "net_cost_handler.h"
 #include "manual_move_generator.h"
+#include "vtr_ndmatrix.h"
 #include "vtr_random.h"
 
 #include <optional>
@@ -326,6 +327,8 @@ class PlacementAnnealer {
 
     /// Keep record of moved blocks and affected pins in a swap
     t_pl_blocks_to_be_moved blocks_affected_;
+
+    std::vector<vtr::NdMatrix<int, 2>> interposer_crossing_count_matrix_;
 
   private:
     /**

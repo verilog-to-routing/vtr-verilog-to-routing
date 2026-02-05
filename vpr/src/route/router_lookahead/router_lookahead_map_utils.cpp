@@ -22,6 +22,7 @@
 #include "vtr_time.h"
 #include "route_common.h"
 #include "route_debug.h"
+#include "vtr_util.h"
 
 /**
  * We will profile delay/congestion using this many tracks for each wire type.
@@ -62,14 +63,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq);
 
-/**
- * @brief Computes the adjusted position of an RR graph node.
- * This function does not modify the position of the given node.
- * It only returns the computed adjusted position.
- * @param rr The ID of the node whose adjusted position is desired.
- * @return The adjusted position (x, y).
- */
-static std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
 
 /**
  * @brief Computes the adjusted location of a pin to match the position of
@@ -541,6 +534,24 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
     return pin_delays;
 }
 
+std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    e_rr_type rr_type = rr_graph.node_type(rr);
+
+    if (is_chanxy(rr_type)) {
+        return get_adjusted_rr_wire_position(rr);
+    } else if (is_pin(rr_type)) {
+        return get_adjusted_rr_pin_position(rr);
+    } else if (is_src_sink(rr_type)) {
+        return get_adjusted_rr_src_sink_position(rr);
+    } else {
+        VTR_ASSERT_SAFE(is_chanz(rr_type));
+        return {rr_graph.node_xlow(rr), rr_graph.node_ylow(rr)};
+    }
+}
+
 RRNodeId get_chanxy_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -617,8 +628,8 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
 
     if (!is_chanxy(from_type) && !is_chanxy(to_type)) {
         //Alternate formulation for non-channel types
-        auto [from_x, from_y] = get_adjusted_rr_position(from_node);
-        auto [to_x, to_y] = get_adjusted_rr_position(to_node);
+        auto [from_x, from_y] = util::get_adjusted_rr_position(from_node);
+        auto [to_x, to_y] = util::get_adjusted_rr_position(to_node);
 
         delta_x = to_x - from_x;
         delta_y = to_y - from_y;
@@ -731,9 +742,8 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     // edge effects for shorter distances)
     std::vector<int> ref_increments{0, 1, longest_seg_length, longest_seg_length + 1};
 
-    // Uniquify the increments (avoid sampling the same locations repeatedly if they happen to overlap)
-    std::stable_sort(ref_increments.begin(), ref_increments.end());
-    ref_increments.erase(std::unique(ref_increments.begin(), ref_increments.end()), ref_increments.end());
+    // Uniquify the increments to avoid sampling the same locations repeatedly if they happen to overlap
+    vtr::uniquify(ref_increments);
 
     // Upper right non-corner
     const int target_x = device_ctx.grid.width() - 2;
@@ -1432,24 +1442,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         /* finally, record the cost with which the child was visited and put the child entry on the queue */
         node_visited_costs[child_node] = child_entry.cost;
         pq.push(child_entry);
-    }
-}
-
-static std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    e_rr_type rr_type = rr_graph.node_type(rr);
-
-    if (is_chanxy(rr_type)) {
-        return get_adjusted_rr_wire_position(rr);
-    } else if (is_pin(rr_type)) {
-        return get_adjusted_rr_pin_position(rr);
-    } else if (is_src_sink(rr_type)) {
-        return get_adjusted_rr_src_sink_position(rr);
-    } else {
-        VTR_ASSERT_SAFE(is_chanz(rr_type));
-        return {rr_graph.node_xlow(rr), rr_graph.node_ylow(rr)};
     }
 }
 
