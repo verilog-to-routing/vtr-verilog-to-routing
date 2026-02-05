@@ -118,7 +118,8 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
 e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                              ClusterBlockId b_from,
                                              t_pl_loc to,
-                                             const BlkLocRegistry& blk_loc_registry);
+                                             const BlkLocRegistry& blk_loc_registry,
+                                             const PlaceMacros& place_macros);
 
 e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        const int imacro_from,
@@ -164,7 +165,8 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
  */
 bool is_legal_swap_to_location(ClusterBlockId blk,
                                t_pl_loc to,
-                               const BlkLocRegistry& blk_loc_registry);
+                               const BlkLocRegistry& blk_loc_registry,
+                               const PlaceMacros& place_macros);
 
 /**
  * @brief Propose block for the RL agent based on required block type.
