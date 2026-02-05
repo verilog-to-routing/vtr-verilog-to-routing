@@ -1,0 +1,32 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/titan_blif/other_benchmarks/stratixiv
+
+# Path to directory of architectures to use
+archs_dir=arch/interposer/titan_interposer
+
+# Add architectures to list to sweep
+arch_list_add=stratixiv_arch.timing_interposer.xml
+
+# Path to directory of SDC files to use
+sdc_dir=benchmarks/titan_blif/other_benchmarks/stratixiv
+
+# Add circuits to list to sweep
+circuit_list_add=ucsb_152_tap_fir_stratixiv_arch_timing.blif
+
+# Use a fixed size device
+circuit_constraint_list_add=(ucsb_152_tap_fir_stratixiv_arch_timing.blif,    device=titan_extra_small_1x4)
+
+# Parse info and how to parse
+parse_file=vpr_titan.txt
+
+# How to parse QoR info
+qor_parse_file=qor_vpr_titan.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_vpr_titan.txt
+
+script_params=-starting_stage vpr -track_memory_usage --route_chan_width 300 --max_router_iterations 400
