@@ -731,7 +731,9 @@ struct TapAccumulator {
 static int compute_tap(const RRGraphView& rr_graph, RRNodeId parent_node, RRNodeId child_node) {
     e_rr_type parent_type = rr_graph.node_type(parent_node);
     VTR_ASSERT(parent_type == e_rr_type::CHANX || parent_type == e_rr_type::CHANY);
+    e_rr_type child_type = rr_graph.node_type(child_node);
     Direction parent_dir  = rr_graph.node_direction(parent_node);
+    Direction child_dir   = rr_graph.node_direction(child_node);
     bool      is_x        = (parent_type == e_rr_type::CHANX);
 
     int parent_low  = is_x ? rr_graph.node_xlow(parent_node)  : rr_graph.node_ylow(parent_node);
@@ -739,27 +741,47 @@ static int compute_tap(const RRGraphView& rr_graph, RRNodeId parent_node, RRNode
     int driver_coord = (parent_dir == Direction::INC) ? parent_low : parent_high;
 
     /*
-     * Connection coordinate along the parent's axis:
-     *   – Same-axis child wire: in a unidirectional architecture it is driven
-     *     at its own driver end (low for INC, high for DEC), which is the
-     *     shared switchbox point on the parent wire.
-     *   – All other children (perpendicular wire or pin): they occupy a single
-     *     grid point in the parent's axis; use low.
+     * Connection coordinate along the parent's axis. The ±1 offsets account
+     * for switchboxes sitting at tile boundaries.
+     *
+     *   – Pins (IPIN/OPIN) and CHANZ: single grid point, use child_low.
+     *
+     *   – Same-axis wires (CHANX→CHANX or CHANY→CHANY):
+     *       INC parent + INC child: child_low - 1
+     *       INC parent + DEC child: child_high
+     *       DEC parent + INC child: child_low
+     *       DEC parent + DEC child: child_high + 1
+     *
+     *   – Perpendicular wires (CHANX→CHANY or CHANY→CHANX):
+     *       child_dir is irrelevant; use child_low (+1 for DEC parent).
      */
+    int child_low  = is_x ? rr_graph.node_xlow(child_node)  : rr_graph.node_ylow(child_node);
+    int child_high = is_x ? rr_graph.node_xhigh(child_node) : rr_graph.node_yhigh(child_node);
+
     int connection_coord;
-    if (rr_graph.node_type(child_node) == parent_type) {
-        Direction child_dir = rr_graph.node_direction(child_node);
-        connection_coord = (child_dir == Direction::INC)
-            ? (is_x ? rr_graph.node_xlow(child_node)  : rr_graph.node_ylow(child_node))-1
-            : (is_x ? rr_graph.node_xhigh(child_node) : rr_graph.node_yhigh(child_node))+1;
+    if (child_type == e_rr_type::CHANZ || child_type == e_rr_type::IPIN || child_type == e_rr_type::OPIN) {
+        connection_coord = child_low;
     } else {
-        connection_coord = is_x ? rr_graph.node_xlow(child_node) : rr_graph.node_ylow(child_node);
+        VTR_ASSERT(child_type == e_rr_type::CHANX || child_type == e_rr_type::CHANY);
+        bool same_axis = (parent_type == child_type);
+
+        if (same_axis) {
+            if (parent_dir == Direction::INC) {
+                connection_coord = (child_dir == Direction::INC) ? child_low - 1 : child_high;
+            } else {
+                connection_coord = (child_dir == Direction::INC) ? child_low : child_high + 1;
+            }
+        } else {
+            // Perpendicular: child direction doesn't affect the coordinate
+            connection_coord = child_low + (parent_dir == Direction::DEC ? 1 : 0);
+        }
     }
 
-    /* Tap 1 at driver end; each grid step away adds 1 */
-    return (parent_dir == Direction::INC)
-        ? connection_coord - driver_coord + 1
-        : driver_coord - connection_coord + 1;
+    int tap = (parent_dir == Direction::INC)
+            ? connection_coord - driver_coord + 1
+            : driver_coord - connection_coord + 1;
+
+    return tap;
 }
 
 /** @brief Prints a single tap utilization table for the given category,
@@ -787,9 +809,13 @@ static void print_tap_stats(const std::string& label, const TapAccumulator& acc)
         if (!pin_map.empty())  max_tap = std::max(max_tap, pin_map.rbegin()->first);
         if (!wire_map.empty()) max_tap = std::max(max_tap, wire_map.rbegin()->first);
 
+        int min_tap = 0;
+        if (!pin_map.empty())  min_tap = std::min(min_tap, pin_map.begin()->first);
+        if (!wire_map.empty()) min_tap = std::min(min_tap, wire_map.begin()->first);
+
         VTR_LOG("  Wire length %d (%d wires, %d pin fanouts, %d wire fanouts):\n",
                 length, n_wires, total_pins, total_wires);
-        for (int tap = 1; tap <= max_tap; ++tap) {
+        for (int tap = min_tap; tap <= max_tap; ++tap) {
             int   pin_cnt  = pin_map.count(tap)  ? pin_map.at(tap)  : 0;
             int   wire_cnt = wire_map.count(tap) ? wire_map.at(tap) : 0;
             float pin_pct  = (total_pins  > 0) ? 100.0f * pin_cnt  / total_pins  : 0.0f;
