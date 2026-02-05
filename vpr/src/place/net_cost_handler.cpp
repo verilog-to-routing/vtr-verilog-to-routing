@@ -46,6 +46,8 @@
 #include "stats.h"
 
 #include <array>
+#include <fstream>
+#include <iomanip>
 
 static constexpr int MAX_FANOUT_CROSSING_COUNT = 50;
 
@@ -1677,6 +1679,9 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     const size_t num_layers = device_ctx.grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
+    auto rudy_chan_util_x = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
+    auto rudy_chan_util_y = vtr::NdMatrix<double, 3>({{num_layers, grid_width, grid_height}}, 0);
+
     // Congestion-related data members are allocated the first time this method is called
     // to enable congestion modeling. This lazy allocation helps save memory when congestion
     // modeling is not used.
@@ -1707,6 +1712,9 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
     chan_util_.x.fill(0.);
     chan_util_.y.fill(0.);
 
+    rudy_chan_util_x.fill(0.);
+    rudy_chan_util_y.fill(0.);
+
     // For each net, this function estimates routing channel utilization by distributing
     // the net's expected wirelength across its bounding box. The expected wirelength
     // for each dimension (x, y) is computed proportionally based on the bounding box size
@@ -1732,11 +1740,15 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
                 double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
                 double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
 
+                double rudy_contrib = expected_wirelength / (total_channel_segments * 2);
+
                 for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
                     for (int x = bb.xmin; x <= bb.xmax; x++) {
                         for (int y = bb.ymin; y <= bb.ymax; y++) {
                             chan_util_.x[layer][x][y] += expected_per_x_segment_wl;
                             chan_util_.y[layer][x][y] += expected_per_y_segment_wl;
+                            rudy_chan_util_x[layer][x][y] += rudy_contrib;
+                            rudy_chan_util_y[layer][x][y] += rudy_contrib;
                         }
                     }
                 }
@@ -1769,6 +1781,37 @@ double NetCostHandler::estimate_routing_chan_util(bool compute_congestion_cost /
                         }
                     }
                 }
+            }
+        }
+    }
+
+    std::ofstream fileX("rudy_chan_util_x.txt");
+    std::ofstream fileY("rudy_chan_util_y.txt");
+
+    // 2. Set precision for double values
+    fileX << std::fixed << std::setprecision(6);
+    fileY << std::fixed << std::setprecision(6);
+
+    // 3. Write headers
+    std::string header = "layer\tx\ty\toccupancy\n";
+    fileX << header;
+    fileY << header;
+
+    // 4. Single triple-nested loop for efficiency
+    for (int l = 0; l < device_ctx.grid.get_num_layers(); l++) {
+        for (int x = 0; x < device_ctx.grid.width(); x++) {
+            for (int y = 0; y < device_ctx.grid.height(); y++) {
+
+                // Common coordinate string to reduce repetitive formatting
+                std::string coords = std::to_string(l) + "\t" +
+                                     std::to_string(x) + "\t" +
+                                     std::to_string(y) + "\t";
+
+                // Write to X file
+                fileX << coords << rudy_chan_util_x[l][x][y] << "\n";
+
+                // Write to Y file
+                fileY << coords << rudy_chan_util_y[l][x][y] << "\n";
             }
         }
     }

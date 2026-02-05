@@ -13,6 +13,8 @@
 #include "route_utilization.h"
 
 #include <ranges>
+#include <fstream>
+#include <iomanip>
 
 #if defined(VPR_USE_TBB)
 #include <tbb/parallel_for_each.h>
@@ -486,6 +488,34 @@ void reset_rr_node_route_structs(const t_router_opts& route_opts) {
     // RoutingChanUtilEstimator assumes cube bounding box
     RoutingChanUtilEstimator routing_chan_util_estimator(blk_loc_registry);
     const ChannelMetric<vtr::NdMatrix<double, 3>> chan_util = routing_chan_util_estimator.estimate_routing_chan_util();
+
+    std::ofstream fileX("chan_est_util_x.txt");
+    std::ofstream fileY("chan_est_util_y.txt");
+
+    fileX << std::fixed << std::setprecision(6);
+    fileY << std::fixed << std::setprecision(6);
+
+    std::string header = "layer\tx\ty\toccupancy\n";
+    fileX << header;
+    fileY << header;
+
+    for (int l = 0; l < device_ctx.grid.get_num_layers(); l++) {
+        for (int x = 0; x < device_ctx.grid.width(); x++) {
+            for (int y = 0; y < device_ctx.grid.height(); y++) {
+
+                // Common coordinate string to reduce repetitive formatting
+                std::string coords = std::to_string(l) + "\t" +
+                                     std::to_string(x) + "\t" +
+                                     std::to_string(y) + "\t";
+
+                // Write to X file
+                fileX << coords << chan_util.x[l][x][y] << "\n";
+
+                // Write to Y file
+                fileY << coords << chan_util.y[l][x][y] << "\n";
+            }
+        }
+    }
 
     for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
         t_rr_node_route_inf& node_inf = route_ctx.rr_node_route_inf[rr_id];
