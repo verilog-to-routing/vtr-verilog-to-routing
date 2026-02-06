@@ -36,10 +36,10 @@ DeviceGrid::DeviceGrid(std::string_view grid_name,
             }
         }
         vtr::NdMatrix<DeviceDieId, 2> layer_die_id_matrix = get_device_sized_matrix_from_reduced(x_size,
-                                                                                         y_size,
-                                                                                         horizontal_interposers,
-                                                                                         vertical_interposers,
-                                                                                         layer_reduced_die_id_matrix);
+                                                                                                 y_size,
+                                                                                                 horizontal_interposers,
+                                                                                                 vertical_interposers,
+                                                                                                 layer_reduced_die_id_matrix);
         die_id_matrix_.push_back(std::move(layer_die_id_matrix));
     }
 }
