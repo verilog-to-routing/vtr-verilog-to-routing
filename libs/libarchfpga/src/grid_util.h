@@ -40,7 +40,7 @@ vtr::NdMatrix<T, 2> get_device_sized_matrix_from_reduced(size_t x_size,
             if (j != horizontal_lines.size()) {
                 y_end = horizontal_lines[j];
             }
-            
+
             for (int x = x_start + 1; x <= x_end; x++) {
                 for (int y = y_start + 1; y <= y_end; y++) {
                     device_matrix[x][y] = reduced_matrix[i][j];

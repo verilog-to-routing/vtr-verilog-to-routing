@@ -252,11 +252,6 @@ class DeviceGrid {
     /// Accessed as [layer][cut_idx]
     std::vector<std::vector<int>> vertical_interposer_cuts_;
 
-    /// 
-    /// 
-    /// 
-    /// 
-
     /**
      * @brief Vector of matrices that contain a unique ID for each die of the device per grid location
      * For example in a 4x4 grid, if you have an interposer cut at y = 2, the matrix would look like this:
