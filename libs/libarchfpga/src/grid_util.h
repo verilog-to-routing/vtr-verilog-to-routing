@@ -5,14 +5,13 @@
 #include "vtr_ndmatrix.h"
 
 template<typename T>
-    requires std::integral<T> || std::floating_point<T>
 vtr::NdMatrix<T, 2> get_device_sized_matrix_from_reduced(size_t x_size,
                                                          size_t y_size,
                                                          const std::vector<int>& horizontal_lines,
                                                          const std::vector<int>& vertical_lines,
                                                          const vtr::NdMatrix<T, 2>& reduced_matrix) {
     vtr::NdMatrix<T, 2> device_matrix({x_size, y_size});
-    device_matrix.fill(0);
+    device_matrix.fill(T());
 
     for (size_t i = 0; i < vertical_lines.size() + 1; i++) {
         for (size_t j = 0; j < horizontal_lines.size() + 1; j++) {

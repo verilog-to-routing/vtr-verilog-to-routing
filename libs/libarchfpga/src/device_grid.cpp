@@ -22,20 +22,20 @@ DeviceGrid::DeviceGrid(std::string_view grid_name,
     const size_t x_size = grid_.dim_size(1);
     const size_t y_size = grid_.dim_size(2);
 
-    int die_region_counter = 0;
+    short die_region_counter = 0;
     for (size_t layer = 0; layer < num_layers; layer++) {
         const std::vector<int>& horizontal_interposers = horizontal_interposer_cuts_[layer];
         const std::vector<int>& vertical_interposers = vertical_interposer_cuts_[layer];
 
-        vtr::NdMatrix<int, 2> layer_reduced_die_id_matrix({vertical_interposers.size() + 1, horizontal_interposers.size() + 1});
+        vtr::NdMatrix<DeviceDieId, 2> layer_reduced_die_id_matrix({vertical_interposers.size() + 1, horizontal_interposers.size() + 1});
 
         for (size_t i = 0; i < vertical_interposers.size() + 1; i++) {
             for (size_t j = 0; j < horizontal_interposers.size() + 1; j++) {
-                layer_reduced_die_id_matrix[i][j] = die_region_counter;
+                layer_reduced_die_id_matrix[i][j] = (DeviceDieId)die_region_counter;
                 die_region_counter++;
             }
         }
-        vtr::NdMatrix<int, 2> layer_die_id_matrix = get_device_sized_matrix_from_reduced(x_size,
+        vtr::NdMatrix<DeviceDieId, 2> layer_die_id_matrix = get_device_sized_matrix_from_reduced(x_size,
                                                                                          y_size,
                                                                                          horizontal_interposers,
                                                                                          vertical_interposers,
@@ -138,8 +138,8 @@ bool DeviceGrid::has_interposer_cuts() const {
 }
 
 bool DeviceGrid::are_locs_on_same_die(t_physical_tile_loc loc_a, t_physical_tile_loc loc_b) const {
-    const int first_id = die_id_matrix_[loc_a.layer_num][loc_a.x][loc_a.y];
-    const int second_id = die_id_matrix_[loc_b.layer_num][loc_b.x][loc_b.y];
+    const DeviceDieId first_id = die_id_matrix_[loc_a.layer_num][loc_a.x][loc_a.y];
+    const DeviceDieId second_id = die_id_matrix_[loc_b.layer_num][loc_b.x][loc_b.y];
 
     return first_id == second_id;
 }

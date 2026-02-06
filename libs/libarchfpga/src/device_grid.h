@@ -18,6 +18,11 @@ struct t_grid_tile {
     const t_metadata_dict* meta = nullptr;
 };
 
+// A unique identifier for a die on device
+// Used in multi-die 2.5D and 3D architectures
+struct general_die_id_tag {};
+typedef vtr::StrongId<struct general_die_id_tag, short> DeviceDieId;
+
 //TODO: All of the functions that use helper functions of this class should pass the layer_num to the functions, and the default value of layer_num should be deleted eventually.
 /**
  * @class DeviceGrid
@@ -262,5 +267,5 @@ class DeviceGrid {
      *
      * Accessed as [layer][x][y]. die_id_matrix_[layer][x][y] returns the ID of the die at location (x, y, layer)
      */
-    std::vector<vtr::NdMatrix<int, 2>> die_id_matrix_;
+    std::vector<vtr::NdMatrix<DeviceDieId, 2>> die_id_matrix_;
 };
