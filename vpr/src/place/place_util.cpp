@@ -9,6 +9,7 @@
 #include "physical_types_util.h"
 #include "place_constraints.h"
 #include "noc_place_utils.h"
+#include "vpr_types.h"
 
 void t_placer_costs::update_norm_factors() {
     const ClusteredNetlist& clustered_nlist = g_vpr_ctx.clustering().clb_nlist;
@@ -176,6 +177,8 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = blk_loc_registry.grid_blocks();
 
+    const bool device_has_interposers = device_ctx.grid.has_interposer_cuts();
+
     //Get block type of head member
     ClusterBlockId blk_id = pl_macro.members[0].blk_index;
     auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
@@ -227,15 +230,20 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
             && is_tile_compatible(device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer}), block_type)
             && grid_blocks.block_at_location(member_pos) == ClusterBlockId::INVALID()) {
-            // Can still accommodate blocks here, check the next position
-            continue;
         } else {
             // Can't be placed here - skip to the next try
             mac_can_be_placed = false;
             break;
         }
-    }
 
+        if (device_has_interposers) {
+            if (!device_ctx.grid.are_locs_on_same_die({head_pos.x, head_pos.y, head_pos.layer},
+                                                      {head_pos.x + pl_macro.members[imember].offset.x, head_pos.y + pl_macro.members[imember].offset.y, head_pos.layer + pl_macro.members[imember].offset.layer})) {
+                mac_can_be_placed = false;
+                break;
+            }
+        }
+    }
     return mac_can_be_placed;
 }
 
