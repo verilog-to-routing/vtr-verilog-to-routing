@@ -16,7 +16,7 @@
 /* Constructors/Destructors */
 t_lb_router_data* alloc_and_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_graph, t_logical_block_type_ptr type);
 void free_router_data(t_lb_router_data* router_data);
-void free_intra_lb_nets(std::vector<t_intra_lb_net>* intra_lb_nets);
+void free_intra_lb_nets(std::vector<t_intra_lb_net>& intra_lb_nets);
 
 /* Routing Functions */
 void add_atom_as_target(t_lb_router_data* router_data, const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb);

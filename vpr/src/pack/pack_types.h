@@ -5,8 +5,8 @@
  *
  * Defines core data structures used in packing
  */
-#include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "atom_netlist_fwd.h"
@@ -103,7 +103,7 @@ struct t_lb_rr_node_stats {
 
     int historical_usage; /* Historical usage of using this node */
 
-    t_lb_rr_node_stats() {
+    t_lb_rr_node_stats() noexcept {
         occ = 0;
         mode = -1;
         historical_usage = 0;
@@ -175,7 +175,7 @@ struct t_explored_node_tb {
     int enqueue_id;     /* ID used to determine if this node has been pushed on exploration priority queue */
     float enqueue_cost; /* cost of node pused on exploration priority queue */
 
-    t_explored_node_tb() {
+    t_explored_node_tb() noexcept {
         prev_index = UNDEFINED;
         explored_id = UNDEFINED;
         enqueue_id = UNDEFINED;
@@ -190,19 +190,18 @@ struct t_lb_router_data {
     std::vector<t_lb_type_rr_node>* lb_type_graph; /* Pointer to physical intra-logic cluster_ctx.blocks type rr graph */
 
     /* Logical Netlist Info */
-    std::vector<t_intra_lb_net>* intra_lb_nets; /* Pointer to vector of intra logic cluster_ctx.blocks nets and their connections */
+    std::vector<t_intra_lb_net> intra_lb_nets; /* Pointer to vector of intra logic cluster_ctx.blocks nets and their connections */
 
     /* Saved nets */
-    std::vector<t_intra_lb_net>* saved_lb_nets; /* Save vector of intra logic cluster_ctx.blocks nets and their connections */
+    std::vector<t_intra_lb_net> saved_lb_nets; /* Save vector of intra logic cluster_ctx.blocks nets and their connections */
 
-    std::map<AtomBlockId, bool>* atoms_added; /* map that records which atoms are added to cluster router */
+    std::unordered_set<AtomBlockId> atoms_added; /* map that records which atoms are added to cluster router */
 
     /* Logical-to-physical mapping info */
-    t_lb_rr_node_stats* lb_rr_node_stats; /* [0..lb_type_graph->size()-1] Stats for each logic cluster_ctx.blocks rr node instance */
-    bool is_routed;                       /* Stores whether or not the current logical-to-physical mapping has a routed solution */
+    std::vector<t_lb_rr_node_stats> lb_rr_node_stats; /* [0..lb_type_graph->size()-1] Stats for each logic cluster_ctx.blocks rr node instance */
 
     /* Stores state info during Pathfinder iterative routing */
-    t_explored_node_tb* explored_node_tb; /* [0..lb_type_graph->size()-1] Stores mode exploration and lb_traceback info for nodes */
+    std::vector<t_explored_node_tb> explored_node_tb; /* [0..lb_type_graph->size()-1] Stores mode exploration and lb_traceback info for nodes */
     int explore_id_index;                 /* used in conjunction with node_traceback to determine whether or not a location has been explored.  By using a unique identifier every route, I don't have to clear the previous route exploration */
 
     /* Current type */
@@ -216,13 +215,7 @@ struct t_lb_router_data {
 
     t_lb_router_data() {
         lb_type_graph = nullptr;
-        lb_rr_node_stats = nullptr;
-        intra_lb_nets = nullptr;
-        saved_lb_nets = nullptr;
-        is_routed = false;
         lb_type = nullptr;
-        atoms_added = nullptr;
-        explored_node_tb = nullptr;
         explore_id_index = 1;
 
         params.max_iterations = 50;
