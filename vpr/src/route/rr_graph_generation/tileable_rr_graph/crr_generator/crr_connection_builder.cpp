@@ -243,10 +243,10 @@ std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x
 }
 
 std::unordered_map<size_t, std::vector<RRNodeId>> CRRConnectionBuilder::get_tile_source_nodes(int x,
-                                                                                 int y,
-                                                                                 const DataFrame& df,
-                                                                                 const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
-                                                                                 const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
+                                                                                              int y,
+                                                                                              const DataFrame& df,
+                                                                                              const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
+                                                                                              const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
     std::unordered_map<size_t, std::vector<RRNodeId>> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
