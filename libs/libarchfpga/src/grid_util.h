@@ -1,6 +1,8 @@
+#include <algorithm>
 #include <concepts>
 #include <vector>
 
+#include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_ndmatrix.h"
 
@@ -23,8 +25,8 @@
  * 
  * @param device_width Width of the device
  * @param device_height Height of the device
- * @param horizontal_lines Horizontal lines defining blocks in the device
- * @param vertical_lines Vertical lines defining blocks in the device
+ * @param horizontal_lines Sorted list of horizontal lines defining blocks in the device
+ * @param vertical_lines Sorted list of vertical lines defining blocks in the device
  * @param reduced_matrix Reduced matrix with values for each block
  */
 template<typename T>
@@ -34,6 +36,14 @@ vtr::NdMatrix<T, 2> get_device_sized_matrix_from_reduced(size_t device_width,
                                                          const std::vector<int>& vertical_lines,
                                                          const vtr::NdMatrix<T, 2>& reduced_matrix) {
     vtr::NdMatrix<T, 2> device_matrix({device_width, device_height}, T());
+
+    // Reduced matrix size and the lines defining blocks in the device should match
+    VTR_ASSERT(horizontal_lines.size() == reduced_matrix.dim_size(1) - 1);
+    VTR_ASSERT(vertical_lines.size() == reduced_matrix.dim_size(0) - 1);
+
+    // Horizontal and vertical lines should be sorted
+    VTR_ASSERT(std::ranges::is_sorted(horizontal_lines));
+    VTR_ASSERT(std::ranges::is_sorted(vertical_lines));
 
     for (size_t i = 0; i < vertical_lines.size() + 1; i++) {
         for (size_t j = 0; j < horizontal_lines.size() + 1; j++) {
