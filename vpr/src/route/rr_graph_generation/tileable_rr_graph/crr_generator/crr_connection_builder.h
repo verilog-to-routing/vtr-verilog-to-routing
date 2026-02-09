@@ -75,12 +75,12 @@ class CRRConnectionBuilder {
      */
     std::vector<Connection> build_connections_from_dataframe(
         const DataFrame& df,
-        const std::unordered_map<size_t, RRNodeId>& source_nodes,
+        const std::unordered_map<size_t, std::vector<RRNodeId>>& source_nodes,
         const std::unordered_map<size_t, RRNodeId>& sink_nodes,
         const std::string& sw_block_file_name) const;
 
     // Node processing methods
-    std::unordered_map<size_t, RRNodeId> get_tile_source_nodes(int x,
+    std::unordered_map<size_t, std::vector<RRNodeId>> get_tile_source_nodes(int x,
                                                                int y,
                                                                const DataFrame& df,
                                                                const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,

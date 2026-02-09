@@ -13,6 +13,42 @@
 
 namespace crrgenerator {
 
+// Indices into the IPIN source node vector returned by get_tile_source_nodes.
+//
+// When an IPIN appears on a source row in the switch block dataframe, it
+// represents a tap-zero connection. The correct IPIN depends on the direction
+// of the channel wire (sink) being connected.
+//
+// Each tile contains a Functional Block (FB) with the Switch Block (SB) at
+// its top-right corner. Wires on the right and top sides of each FB belong
+// to the same tile.
+//
+//     +----------+------+   +----------+------+
+//     | Top wires| SB   |   | Top wires| SB   |
+//     |  (x,y)   |(x,y) |   | (x+1,y) |(x+1,y)|
+//     +----------+------+   +----------+------+
+//     |          | Right|   |          | Right|
+//     | FB(x,y)  | wires|   |FB(x+1,y) | wires|
+//     |          | (x,y)|   |          |(x+1,y)|
+//     +----------+------+   +----------+------+
+//       Tile (x, y)            Tile (x+1, y)
+//
+// INC CHANX -->  goes right from SB(x,y), uses wires on the right side
+//                of FB(x,y) --> tap-0 IPIN at (x, y)
+//
+// DEC CHANX <--  enters SB(x,y) from the right, originates from the
+//                right side of FB(x+1,y) --> tap-0 IPIN at (x+1, y)
+//
+// INC CHANY ^    goes up from SB(x,y), uses wires on the top side
+//                of FB(x,y) --> tap-0 IPIN at (x, y)
+//
+// DEC CHANY v    enters SB(x,y) from the top, originates from the
+//                top side of FB(x,y+1) --> tap-0 IPIN at (x, y+1)
+//
+static constexpr size_t IPIN_LOCAL = 0;
+static constexpr size_t IPIN_X_PLUS_1 = 1;
+static constexpr size_t IPIN_Y_PLUS_1 = 2;
+
 static bool is_integer(const std::string& s) {
     int value;
     auto [ptr, ec] = std::from_chars(s.data(), s.data() + s.size(), value);
@@ -94,7 +130,7 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_for_location(siz
 
 std::vector<Connection> CRRConnectionBuilder::build_connections_from_dataframe(
     const DataFrame& df,
-    const std::unordered_map<size_t, RRNodeId>& source_nodes,
+    const std::unordered_map<size_t, std::vector<RRNodeId>>& source_nodes,
     const std::unordered_map<size_t, RRNodeId>& sink_nodes,
     const std::string& sw_block_file_name) const {
     std::vector<Connection> connections;
@@ -119,36 +155,69 @@ std::vector<Connection> CRRConnectionBuilder::build_connections_from_dataframe(
                 continue;
             }
 
-            RRNodeId source_node = source_it->second;
-            e_rr_type source_node_type = rr_graph_.node_type(source_node);
+            const auto& source_node_vec = source_it->second;
+            RRNodeId source_node = source_node_vec[0];
             RRNodeId sink_node = sink_it->second;
             e_rr_type sink_node_type = rr_graph_.node_type(sink_node);
 
-            // Skip connections involving IPIN/OPIN nodes if preservation is enabled
-            if (preserve_ipin_connections_) {
-                if (source_node_type == e_rr_type::IPIN || sink_node_type == e_rr_type::IPIN) {
+            // IPIN source vectors have 3 slots (local, x+1, y+1) — any of
+            // which may be INVALID. We detect an IPIN row by checking size==3
+            // and resolve the correct node based on the sink direction.
+            bool is_ipin_source = (source_node_vec.size() == 3);
+
+            if (is_ipin_source) {
+                // Tap-zero IPIN connections: when an IPIN appears on a source row,
+                // the IPIN acts as a sink in the connection (source/sink are swapped).
+                // Select the correct IPIN based on the sink channel's direction:
+                //   - INC sinks    → IPIN at (x, y)
+                //   - DEC CHANX    → IPIN at (x+1, y)
+                //   - DEC CHANY    → IPIN at (x, y+1)
+                if (rr_graph_.node_direction(sink_node) == Direction::DEC) {
+                    if (sink_node_type == e_rr_type::CHANX) {
+                        source_node = source_node_vec[IPIN_X_PLUS_1];
+                    } else {
+                        VTR_ASSERT(sink_node_type == e_rr_type::CHANY);
+                        source_node = source_node_vec[IPIN_Y_PLUS_1];
+                    }
+                }
+
+                // The selected IPIN may not exist (e.g. at grid boundaries)
+                if (source_node == RRNodeId::INVALID()) {
                     continue;
                 }
-            }
 
-            if (preserve_opin_connections_) {
-                if (source_node_type == e_rr_type::OPIN || sink_node_type == e_rr_type::OPIN) {
+                if (preserve_ipin_connections_) {
                     continue;
                 }
-            }
 
-            std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
-
-            // If the source node is an IPIN, then it should be considered as
-            // a sink of the connection.
-            if (source_node_type == e_rr_type::IPIN) {
+                std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
                 int delay_ps = get_connection_delay_ps(cell.as_string(),
-                                                       rr_node_typename[source_node_type],
+                                                       rr_node_typename[e_rr_type::IPIN],
                                                        sink_node,
                                                        source_node);
 
                 connections.emplace_back(source_node, sink_node, delay_ps, sw_template_id);
             } else {
+                if (source_node == RRNodeId::INVALID()) {
+                    continue;
+                }
+
+                e_rr_type source_node_type = rr_graph_.node_type(source_node);
+
+                // Skip connections involving IPIN/OPIN nodes if preservation is enabled
+                if (preserve_ipin_connections_) {
+                    if (source_node_type == e_rr_type::IPIN || sink_node_type == e_rr_type::IPIN) {
+                        continue;
+                    }
+                }
+
+                if (preserve_opin_connections_) {
+                    if (source_node_type == e_rr_type::OPIN || sink_node_type == e_rr_type::OPIN) {
+                        continue;
+                    }
+                }
+
+                std::string sw_template_id = sw_block_file_name + "_" + std::to_string(row_idx) + "_" + std::to_string(col_idx);
                 int segment_length = -1;
                 if (sink_node_type == e_rr_type::CHANX || sink_node_type == e_rr_type::CHANY) {
                     segment_length = rr_graph_.node_length(sink_node);
@@ -173,12 +242,12 @@ std::vector<Connection> CRRConnectionBuilder::get_tile_connections(size_t tile_x
     return tile_connections;
 }
 
-std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes(int x,
+std::unordered_map<size_t, std::vector<RRNodeId>> CRRConnectionBuilder::get_tile_source_nodes(int x,
                                                                                  int y,
                                                                                  const DataFrame& df,
                                                                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& col_nodes,
                                                                                  const std::unordered_map<NodeHash, RRNodeId, NodeHasher>& row_nodes) const {
-    std::unordered_map<size_t, RRNodeId> source_nodes;
+    std::unordered_map<size_t, std::vector<RRNodeId>> source_nodes;
     std::string prev_seg_type = "";
     int prev_seg_index = -1;
     e_sw_template_dir prev_side = e_sw_template_dir::NUM_SIDES;
@@ -190,16 +259,30 @@ std::unordered_map<size_t, RRNodeId> CRRConnectionBuilder::get_tile_source_nodes
             continue;
         }
 
+        std::vector<RRNodeId> node_ids;
         RRNodeId node_id;
-        if (info.side == e_sw_template_dir::IPIN || info.side == e_sw_template_dir::OPIN) {
+        if (info.side == e_sw_template_dir::IPIN) {
+            // For IPIN source rows, look up the IPIN at the local tile and at
+            // neighboring tiles. Always push all 3 slots so that IPIN_LOCAL,
+            // IPIN_X_PLUS_1, and IPIN_Y_PLUS_1 indices remain valid.
+            node_ids.push_back(process_opin_ipin_node(info, x, y, col_nodes, row_nodes));
+            node_ids.push_back(process_opin_ipin_node(info, x + 1, y, col_nodes, row_nodes));
+            node_ids.push_back(process_opin_ipin_node(info, x, y + 1, col_nodes, row_nodes));
+        } else if (info.side == e_sw_template_dir::OPIN) {
             node_id = process_opin_ipin_node(info, x, y, col_nodes, row_nodes);
+            if (node_id != RRNodeId::INVALID()) {
+                node_ids.push_back(node_id);
+            }
         } else if (info.side == e_sw_template_dir::LEFT || info.side == e_sw_template_dir::RIGHT || info.side == e_sw_template_dir::TOP || info.side == e_sw_template_dir::BOTTOM) {
             node_id = process_channel_node(info, x, y, col_nodes, row_nodes, prev_seg_index,
                                            prev_side, prev_seg_type, prev_ptc_number, true);
+            if (node_id != RRNodeId::INVALID()) {
+                node_ids.push_back(node_id);
+            }
         }
 
-        if (node_id != RRNodeId::INVALID()) {
-            source_nodes[row] = node_id;
+        if (!node_ids.empty()) {
+            source_nodes[row] = node_ids;
         }
 
         prev_seg_type = info.seg_type;
