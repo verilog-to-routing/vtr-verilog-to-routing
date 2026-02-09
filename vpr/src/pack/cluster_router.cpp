@@ -1106,7 +1106,7 @@ static void expand_edges(t_lb_router_data* router_data,
 
         /* Determine incremental cost of using expansion node */
         int usage = lb_rr_node_stats[enode.node_index].occ + 1 - lb_type_graph[enode.node_index].capacity;
-        int incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
+        float incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
         incr_cost += lb_type_graph[cur_inode].outedges[mode][iedge].intrinsic_cost;
         incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;
         if (usage > 0) {
