@@ -22,6 +22,7 @@ DeviceGrid::DeviceGrid(std::string_view grid_name,
     const size_t x_size = grid_.dim_size(1);
     const size_t y_size = grid_.dim_size(2);
 
+    // Build the unique Ids for each die. In 2D architectures there's only a single die but this is not the case in 2.5D and 3D architectures.
     short die_region_counter = 0;
     for (size_t layer = 0; layer < num_layers; layer++) {
         const std::vector<int>& horizontal_interposers = horizontal_interposer_cuts_[layer];

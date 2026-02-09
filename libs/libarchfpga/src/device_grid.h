@@ -18,7 +18,7 @@ struct t_grid_tile {
     const t_metadata_dict* meta = nullptr;
 };
 
-// A unique identifier for a die on device
+// A unique identifier for a die on device (Including 3D stacked dice and interposer-connected dice)
 // Used in multi-die 2.5D and 3D architectures
 struct general_die_id_tag {};
 typedef vtr::StrongId<struct general_die_id_tag, short> DeviceDieId;
