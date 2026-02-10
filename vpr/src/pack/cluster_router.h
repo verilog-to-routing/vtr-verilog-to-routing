@@ -51,11 +51,11 @@ struct t_intra_lb_net {
     std::vector<int> terminals;        /* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
     std::vector<AtomPinId> atom_pins;  /* AtomPin's associated with each terminal */
     std::vector<bool> fixed_terminals; /* Marks a terminal as having a fixed target (i.e. a pin not a sink) */
-    t_lb_trace* rt_tree;               /* Route tree head */
+    t_lb_trace rt_tree;                /* Route tree head */
 
     t_intra_lb_net() noexcept {
         atom_net_id = AtomNetId::INVALID();
-        rt_tree = nullptr;
+        rt_tree.current_node = UNDEFINED;
     }
 };
 
@@ -154,8 +154,6 @@ class ClusterRouter {
     ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
                   t_logical_block_type_ptr type);
 
-    ~ClusterRouter();
-
     void add_atom_as_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb);
 
     void remove_atom_from_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb);
@@ -202,7 +200,7 @@ class ClusterRouter {
 
     void expand_rt_rec_(const t_lb_trace& rt, int prev_index, int irt_net);
 
-    bool add_to_rt_(t_lb_trace* rt, int node_index, int irt_net);
+    bool add_to_rt_(t_lb_trace& rt, int node_index, int irt_net);
 
     bool try_expand_nodes_(t_intra_lb_net* lb_net,
                            t_expansion_node* exp_node,
@@ -229,7 +227,7 @@ class ClusterRouter {
 
     std::string describe_congested_rr_nodes_(const std::vector<int>& congested_rr_nodes);
 
-    void print_trace_(FILE* fp, t_lb_trace* trace);
+    void print_trace_(FILE* fp, const t_lb_trace& trace);
 
     /* Physical Architecture Info */
     std::vector<t_lb_type_rr_node>* lb_type_graph_; /* Pointer to physical intra-logic cluster_ctx.blocks type rr graph */
