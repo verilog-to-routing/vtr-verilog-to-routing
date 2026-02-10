@@ -767,7 +767,7 @@ static int compute_tap(const RRGraphView& rr_graph, RRNodeId parent_node, RRNode
         VTR_ASSERT(child_type == e_rr_type::CHANX || child_type == e_rr_type::CHANY);
         bool same_axis = (parent_type == child_type);
         if (same_axis) {
-            connection_coord = (child_dir == Direction::INC) ? child_low-1 : child_high;
+            connection_coord = (child_dir == Direction::INC) ? child_low - 1 : child_high;
         } else {
             VTR_ASSERT(child_low == child_high); // Perpendicular wires should only span one grid point
             connection_coord = child_low;
