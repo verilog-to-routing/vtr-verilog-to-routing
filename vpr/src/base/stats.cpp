@@ -710,23 +710,23 @@ struct TapAccumulator {
  * @brief Computes the tap number at which child_node exits from parent_node.
  *
  * A routing wire segment spans a contiguous range of grid points along one
- * axis.  Each grid point is a tap.  Taps are numbered starting from 1 at the
- * driver end (the wire's start) and increase toward the far end (tap N).
+ * axis.  Each grid point is a tap.  Taps are numbered starting from 0 at the
+ * driving MUX location (inside the switch block that drives the wire) and
+ * increase toward the far end of the wire.
  *
- *   INC wire   xlow ──────────────►  xhigh
- *              tap1   tap2  ...  tapN
+ * The driving MUX sits in a switch block whose position depends on direction:
+ *   - INC wire: the MUX is in the switch block at tile (x_low - 1) or
+ *     (y_low - 1), i.e. one tile before the wire's start coordinate.
+ *   - DEC wire: the MUX is in the switch block at tile x_high or y_high,
+ *     i.e. at the same tile as the wire's start coordinate (recall the switch
+ *     block on the right side of a tile shares the tile's coordinates).
  *
- *   DEC wire   xlow  ◄──────────────  xhigh
- *              tapN  ...  tap2   tap1
- *
- * In a unidirectional architecture the driver end is always at the wire's
- * start: xlow/ylow for INC, xhigh/yhigh for DEC.  BIDIR wires are rejected
- * upstream in print_tap_utilization().
+ * BIDIR wires are rejected upstream in print_tap_utilization().
  *
  * @param rr_graph    The routing-resource graph.
  * @param parent_node A CHANX or CHANY node (the wire whose tap we measure).
  * @param child_node  A child of parent_node in the route tree (the fanout).
- * @return            Tap number (1 = driver end … N = far end).
+ * @return            Tap number (0 = MUX location, increasing toward far end).
  */
 static int compute_tap(const RRGraphView& rr_graph, RRNodeId parent_node, RRNodeId child_node) {
     e_rr_type parent_type = rr_graph.node_type(parent_node);
@@ -738,7 +738,9 @@ static int compute_tap(const RRGraphView& rr_graph, RRNodeId parent_node, RRNode
 
     int parent_low = is_x ? rr_graph.node_xlow(parent_node) : rr_graph.node_ylow(parent_node);
     int parent_high = is_x ? rr_graph.node_xhigh(parent_node) : rr_graph.node_yhigh(parent_node);
-    int driver_coord = (parent_dir == Direction::INC) ? parent_low : parent_high;
+    // MUX location: for INC wires the driving MUX is one tile before the wire
+    // start; for DEC wires it is at the wire start (same tile as x_high/y_high).
+    int mux_coord = (parent_dir == Direction::INC) ? parent_low - 1 : parent_high;
 
     /*
      * Connection coordinate along the parent's axis. The ±1 offsets account
@@ -764,22 +766,17 @@ static int compute_tap(const RRGraphView& rr_graph, RRNodeId parent_node, RRNode
     } else {
         VTR_ASSERT(child_type == e_rr_type::CHANX || child_type == e_rr_type::CHANY);
         bool same_axis = (parent_type == child_type);
-
         if (same_axis) {
-            if (parent_dir == Direction::INC) {
-                connection_coord = (child_dir == Direction::INC) ? child_low - 1 : child_high;
-            } else {
-                connection_coord = (child_dir == Direction::INC) ? child_low : child_high + 1;
-            }
+            connection_coord = (child_dir == Direction::INC) ? child_low-1 : child_high;
         } else {
-            // Perpendicular: child direction doesn't affect the coordinate
-            connection_coord = child_low + (parent_dir == Direction::DEC ? 1 : 0);
+            VTR_ASSERT(child_low == child_high); // Perpendicular wires should only span one grid point
+            connection_coord = child_low;
         }
     }
 
     int tap = (parent_dir == Direction::INC)
-                  ? connection_coord - driver_coord + 1
-                  : driver_coord - connection_coord + 1;
+                  ? connection_coord - mux_coord
+                  : mux_coord - connection_coord;
 
     return tap;
 }
@@ -834,9 +831,13 @@ static void print_tap_stats(const std::string& label, const TapAccumulator& acc)
  *
  * Assumes a unidirectional architecture; aborts with a warning if a BIDIR
  * wire is encountered.  For each CHANX/CHANY wire, every child node (fanout)
- * in the route tree is mapped to a tap number.  Tap 1 is at the driver end
- * (the wire's start); tap N is at the far end.  Statistics are broken out
- * into seven categories:
+ * in the route tree is mapped to a tap number.  Tap 0 is at the driving MUX
+ * location (switch block), and tap numbers increase toward the far end of
+ * the wire.  For INC wires the MUX is one tile before the wire start, so
+ * tap 0 is off the wire span and tap 1 is the first on-wire tap.  For DEC
+ * wires the MUX is at the wire start (same tile), so tap 0 is on the wire.
+ *
+ * Statistics are broken out into seven categories:
  *   - Overall        (INC + DEC, both axes)
  *   - CHANX          (INC + DEC)
  *   - CHANY          (INC + DEC)
