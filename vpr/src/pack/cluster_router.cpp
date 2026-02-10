@@ -44,7 +44,6 @@
  * Internal functions declarations
  ******************************************************************************************/
 static void free_lb_net_rt(t_lb_trace* lb_trace);
-static void free_lb_trace(t_lb_trace* lb_trace);
 
 static bool is_skip_route_net(const t_lb_trace& rt,
                               const std::vector<t_lb_type_rr_node>& lb_type_graph,
@@ -132,11 +131,11 @@ static bool route_has_conflict(const t_lb_trace& rt,
     int cur_mode = -1;
     for (size_t i = 0; i < rt.next_nodes.size(); i++) {
         int new_mode = get_lb_type_rr_graph_edge_mode(lb_type_graph,
-                                                      rt.current_node, rt.next_nodes[i]->current_node);
+                                                      rt.current_node, rt.next_nodes[i].current_node);
         if (cur_mode != -1 && cur_mode != new_mode) {
             return true;
         }
-        if (route_has_conflict(*rt.next_nodes[i], lb_type_graph) == true) {
+        if (route_has_conflict(rt.next_nodes[i], lb_type_graph) == true) {
             return true;
         }
         cur_mode = new_mode;
@@ -544,30 +543,13 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
         }
     }
     for (const auto& nxt_trace : trace.next_nodes) {
-        load_trace_to_pb_route(pb_route, net_id, cur_pin_id, *nxt_trace, logic_block_type, intra_lb_pb_pin_lookup);
+        load_trace_to_pb_route(pb_route, net_id, cur_pin_id, nxt_trace, logic_block_type, intra_lb_pb_pin_lookup);
     }
 }
 
 /* Free route tree for intra-logic block routing */
 static void free_lb_net_rt(t_lb_trace* lb_trace) {
     if (lb_trace != nullptr) {
-        for (unsigned int i = 0; i < lb_trace->next_nodes.size(); i++) {
-            free_lb_trace(lb_trace->next_nodes[i]);
-            // lb_trace->next_nodes[i] = nullptr;
-        }
-        lb_trace->next_nodes.clear();
-        delete lb_trace;
-    }
-}
-
-/* Free trace for intra-logic block routing */
-static void free_lb_trace(t_lb_trace* lb_trace) {
-    if (lb_trace != nullptr) {
-        for (unsigned int i = 0; i < lb_trace->next_nodes.size(); i++) {
-            free_lb_trace(lb_trace->next_nodes[i]);
-            // lb_trace->next_nodes[i] = nullptr;
-        }
-        lb_trace->next_nodes.clear();
         delete lb_trace;
     }
 }
@@ -950,7 +932,7 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
         // A conflict is present if there are differing modes between a pb_graph_node
         // and its children.
         if (op == RT_COMMIT && mode_status->try_expand_all_modes) {
-            auto& node = lb_type_graph[rt.next_nodes[i]->current_node];
+            auto& node = lb_type_graph[rt.next_nodes[i].current_node];
             auto* pin = node.pb_graph_pin;
 
             if (check_edge_for_route_conflicts(mode_map, driver_pin, pin)) {
@@ -958,7 +940,7 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
             }
         }
 
-        commit_remove_rt_(*rt.next_nodes[i], op, mode_map, mode_status);
+        commit_remove_rt_(rt.next_nodes[i], op, mode_map, mode_status);
     }
 }
 
@@ -976,7 +958,7 @@ static bool is_skip_route_net(const t_lb_trace& rt,
 
     /* Recursively check that rest of route tree does not have a conflict */
     for (size_t i = 0; i < rt.next_nodes.size(); i++) {
-        if (!is_skip_route_net(*rt.next_nodes[i], lb_type_graph, lb_rr_node_stats)) {
+        if (!is_skip_route_net(rt.next_nodes[i], lb_type_graph, lb_rr_node_stats)) {
             return false;
         }
     }
@@ -1016,7 +998,7 @@ void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, int prev_index, int irt
     explored_node_tb_[enode.node_index].prev_index = prev_index;
 
     for (unsigned int i = 0; i < rt.next_nodes.size(); i++) {
-        expand_rt_rec_(*rt.next_nodes[i], rt.current_node, irt_net);
+        expand_rt_rec_(rt.next_nodes[i], rt.current_node, irt_net);
     }
 }
 
@@ -1142,10 +1124,10 @@ bool ClusterRouter::add_to_rt_(t_lb_trace* rt, int node_index, int irt_net) {
     /* Add path to root tree */
     while (!trace_forward.empty()) {
         int trace_index = trace_forward.back();
-        t_lb_trace* curr_node = new t_lb_trace;
-        curr_node->current_node = trace_index;
+        t_lb_trace curr_node;
+        curr_node.current_node = trace_index;
         link_node->next_nodes.push_back(curr_node);
-        link_node = curr_node;
+        link_node = &link_node->next_nodes.back();
         trace_forward.pop_back();
     }
 
@@ -1171,7 +1153,7 @@ static t_lb_trace* find_node_in_rt(t_lb_trace* rt, int rt_index) {
         return rt;
     } else {
         for (unsigned int i = 0; i < rt->next_nodes.size(); i++) {
-            t_lb_trace* cur = find_node_in_rt(rt->next_nodes[i], rt_index);
+            t_lb_trace* cur = find_node_in_rt(&rt->next_nodes[i], rt_index);
             if (cur != nullptr) {
                 return cur;
             }
@@ -1220,13 +1202,13 @@ void ClusterRouter::print_trace_(FILE* fp, t_lb_trace* trace) {
     for (unsigned int ibranch = 0; ibranch < trace->next_nodes.size(); ibranch++) {
         auto current_node = trace->current_node;
         auto current_str = describe_lb_type_rr_node_(current_node);
-        auto next_node = trace->next_nodes[ibranch]->current_node;
+        auto next_node = trace->next_nodes[ibranch].current_node;
         auto next_str = describe_lb_type_rr_node_(next_node);
         if (trace->next_nodes.size() > 1) {
             fprintf(fp, "\n\tB");
         }
         fprintf(fp, "(%d:%s-->%d:%s) ", current_node, current_str.c_str(), next_node, next_str.c_str());
-        print_trace_(fp, trace->next_nodes[ibranch]);
+        print_trace_(fp, &trace->next_nodes[ibranch]);
     }
 }
 
@@ -1358,8 +1340,8 @@ std::string ClusterRouter::describe_congested_rr_nodes_(const std::vector<int>& 
             t_lb_trace curr = q.front();
             q.pop();
 
-            for (const t_lb_trace* next_trace : curr.next_nodes) {
-                q.push(*next_trace);
+            for (const t_lb_trace& next_trace : curr.next_nodes) {
+                q.push(next_trace);
             }
 
             int inode = curr.current_node;

@@ -42,8 +42,7 @@ struct t_lb_rr_node_stats {
  */
 struct t_lb_trace {
     int current_node;                   /* current t_lb_type_rr_node used by net */
-    // FIXME: Made these pointers to debug an issue. Should go back to raw.
-    std::vector<t_lb_trace*> next_nodes; /* index of previous edge that drives current node */
+    std::vector<t_lb_trace> next_nodes; /* index of previous edge that drives current node */
 };
 
 /* Represents a net used inside a logic cluster_ctx.blocks and the physical nodes used by the net */
