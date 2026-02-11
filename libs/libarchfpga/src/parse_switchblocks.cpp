@@ -55,7 +55,7 @@ static void parse_switchpoint_order(std::string_view order, e_switch_point_order
 static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
                                             const pugiutil::loc_data& loc_data,
                                             const std::vector<t_arch_switch_inf>& switches,
-                                            bool can_skip_from_or_to);
+                                            ReqOpt from_to_required);
 
 /**
  * @brief Parses a multi-node `<wireconn>` definition with `<from>` and `<to>` children.
@@ -70,7 +70,8 @@ static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
  */
 static t_wireconn_inf parse_wireconn_multinode(pugi::xml_node node,
                                                const pugiutil::loc_data& loc_data,
-                                               const std::vector<t_arch_switch_inf>& switches);
+                                               const std::vector<t_arch_switch_inf>& switches,
+                                               ReqOpt from_to_required);
 
 //Process a <from> or <to> sub-node of a multinode wireconn
 static t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiutil::loc_data& loc_data);
@@ -136,12 +137,14 @@ t_wireconn_inf parse_wireconn(pugi::xml_node node,
     size_t num_children = count_children(node, "from", loc_data, ReqOpt::OPTIONAL);
     num_children += count_children(node, "to", loc_data, ReqOpt::OPTIONAL);
 
+    ReqOpt from_to_required = can_skip_from_or_to ? ReqOpt::OPTIONAL : ReqOpt::REQUIRED;
+
     t_wireconn_inf wireconn;
     if (num_children == 0) {
-        wireconn = parse_wireconn_inline(node, loc_data, switches, can_skip_from_or_to);
+        wireconn = parse_wireconn_inline(node, loc_data, switches, from_to_required);
     } else {
         VTR_ASSERT(num_children > 0);
-        wireconn = parse_wireconn_multinode(node, loc_data, switches);
+        wireconn = parse_wireconn_multinode(node, loc_data, switches, from_to_required);
     }
 
     // Parse the optional "side" field of the <wireconn> tag
@@ -160,7 +163,7 @@ t_wireconn_inf parse_wireconn(pugi::xml_node node,
 static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
                                             const pugiutil::loc_data& loc_data,
                                             const std::vector<t_arch_switch_inf>& switches,
-                                            bool can_skip_from_or_to) {
+                                            ReqOpt from_to_required) {
 
     // Parse an inline wireconn definition, using attributes
     expect_only_attributes(node,
@@ -169,8 +172,6 @@ static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
                            loc_data);
 
     t_wireconn_inf wc;
-
-    ReqOpt from_to_required = can_skip_from_or_to ? ReqOpt::OPTIONAL : ReqOpt::REQUIRED;
 
     // get the connection style
     const char* char_prop = get_attribute(node, "num_conns", loc_data).value();
@@ -215,7 +216,8 @@ static t_wireconn_inf parse_wireconn_inline(pugi::xml_node node,
 
 static t_wireconn_inf parse_wireconn_multinode(pugi::xml_node node,
                                                const pugiutil::loc_data& loc_data,
-                                               const std::vector<t_arch_switch_inf>& switches) {
+                                               const std::vector<t_arch_switch_inf>& switches,
+                                               ReqOpt from_to_required) {
     expect_only_children(node, {"from", "to"}, loc_data);
 
     t_wireconn_inf wc;
@@ -233,11 +235,13 @@ static t_wireconn_inf parse_wireconn_multinode(pugi::xml_node node,
     char_prop = get_attribute(node, "switch_override", loc_data, ReqOpt::OPTIONAL).value();
     parse_switch_override(char_prop, wc, switches);
 
-    size_t num_from_children = count_children(node, "from", loc_data);
-    size_t num_to_children = count_children(node, "to", loc_data);
+    size_t num_from_children = count_children(node, "from", loc_data, from_to_required);
+    size_t num_to_children = count_children(node, "to", loc_data, from_to_required);
 
-    VTR_ASSERT(num_from_children > 0);
-    VTR_ASSERT(num_to_children > 0);
+    if (from_to_required == pugiutil::REQUIRED) {
+        VTR_ASSERT(num_from_children > 0);
+        VTR_ASSERT(num_to_children > 0);
+    }
 
     for (pugi::xml_node child : node.children()) {
         if (child.name() == std::string("from")) {

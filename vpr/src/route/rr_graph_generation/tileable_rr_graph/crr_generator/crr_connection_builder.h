@@ -65,6 +65,20 @@ class CRRConnectionBuilder {
     std::vector<Connection> build_connections_for_location(size_t x,
                                                            size_t y) const;
 
+    /**
+     * @brief Iterates over the switch block dataframe cells and creates connections
+     *        between matched source and sink routing nodes.
+     *
+     * For each non-empty cell in the dataframe, looks up the corresponding source
+     * and sink nodes, applies IPIN/OPIN preservation filters, computes the connection
+     * delay, and emits a Connection with the appropriate direction and switch template ID.
+     */
+    std::vector<Connection> build_connections_from_dataframe(
+        const DataFrame& df,
+        const std::unordered_map<size_t, RRNodeId>& source_nodes,
+        const std::unordered_map<size_t, RRNodeId>& sink_nodes,
+        const std::string& sw_block_file_name) const;
+
     // Node processing methods
     std::unordered_map<size_t, RRNodeId> get_tile_source_nodes(int x,
                                                                int y,
