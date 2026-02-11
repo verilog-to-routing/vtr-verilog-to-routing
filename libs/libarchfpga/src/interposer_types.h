@@ -25,12 +25,16 @@ struct t_interdie_wire_inf {
     /**
      * @brief 
      * Contains starting and ending point (both inclusive) of scatter-gather instantiations and the increment/distance between the instantiations.
-     * offset_definition.repeat_expr is not relevant for interdie wires and is not set to anything or used.
      * 
      * Locations defined by this offset definition define the starting point or the gathering point of the SG pattern.
      * The end or scatter point of the SG pattern is defined by the sg_link.
      */
-    t_grid_loc_spec offset_definition;
+    struct {
+        int start;
+        int end;
+        int increment;
+    } offset;
+
     int num; ///< Number of scatter-gather instantiations per switchblock location
 };
 

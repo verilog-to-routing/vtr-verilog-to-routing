@@ -116,12 +116,12 @@
 
       <interposer_cut y="4">
         <interdie_wire sg_name="interposer_sg" sg_link="L_UP" offset_start="-1" offset_end="-1" offset_increment="1" num="4"/>
-        <interdie_wire sg_name="interposer_sg" sg_link="L_DOWN" offset_start="1" offset_end="1" offset_increment="-1" num="4"/>
+        <interdie_wire sg_name="interposer_sg" sg_link="L_DOWN" offset_start="1" offset_end="1" offset_increment="1" num="4"/>
       </interposer_cut>
 
       <interposer_cut x="4">
         <interdie_wire sg_name="interposer_sg" sg_link="L_RIGHT" offset_start="-1" offset_end="-1" offset_increment="1" num="4"/>
-        <interdie_wire sg_name="interposer_sg" sg_link="L_LEFT" offset_start="1" offset_end="1" offset_increment="-1" num="4"/>
+        <interdie_wire sg_name="interposer_sg" sg_link="L_LEFT" offset_start="1" offset_end="1" offset_increment="1" num="4"/>
       </interposer_cut>
 
     </fixed_layout>
