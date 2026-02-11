@@ -116,7 +116,7 @@ struct t_mode_selection_status {
     bool try_expand_all_modes = false;
     bool expand_all_modes = false;
 
-    bool is_mode_issue() {
+    inline bool is_mode_issue() const {
         return is_mode_conflict || try_expand_all_modes;
     }
 };
@@ -307,7 +307,7 @@ class ClusterRouter {
     void add_source_to_rt_(int inet);
 
     /**
-     * @brief Expand all nodes foun in route tree into the priority queue.
+     * @brief Expand all nodes found in route tree into the priority queue.
      */
     void expand_rt_(int inet);
 

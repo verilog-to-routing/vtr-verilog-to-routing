@@ -418,8 +418,8 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
                     for (size_t id = 0; id < lb_type_graph_->size(); id++) {
                         explored_node_tb_[id].explored_id = UNDEFINED;
                         explored_node_tb_[id].enqueue_id = UNDEFINED;
-                        explore_id_index_ = 1;
                     }
+                    explore_id_index_ = 1;
                 }
             }
 
@@ -1129,6 +1129,10 @@ void ClusterRouter::print_route_(const char* filename) {
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
     fp = fopen(filename, "w");
+    if (fp == nullptr) {
+        VTR_LOG_WARN("Failed to open file '%s' for writing route.\n", filename);
+        return;
+    }
     for (unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
         fprintf(fp, "node %d occ %d cap %d\n", inode, lb_rr_node_stats_[inode].occ, lb_type_graph[inode].capacity);
     }
