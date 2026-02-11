@@ -58,13 +58,13 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
 
 LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
                                          int cluster_mode,
-                                         std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) :
-    pb(new t_pb),
-    type(cluster_type),
-    pr(PartitionRegion()),
-    noc_grp_id(NocGroupId::INVALID()),
-    cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type),
-    placement_stats(alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode)) {
+                                         std::vector<t_lb_type_rr_node>* lb_type_rr_graphs)
+    : pb(new t_pb)
+    , type(cluster_type)
+    , pr(PartitionRegion())
+    , noc_grp_id(NocGroupId::INVALID())
+    , cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type)
+    , placement_stats(alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode)) {
 
     pb->pb_graph_node = cluster_type->pb_graph_head;
     alloc_and_load_pb_stats(pb);
@@ -1443,10 +1443,9 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     // Create the new cluster
     // LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_);
     legalization_clusters_.emplace_back(
-            cluster_type,
-            cluster_mode,
-            lb_type_rr_graphs_
-            );
+        cluster_type,
+        cluster_mode,
+        lb_type_rr_graphs_);
     LegalizationCluster& new_cluster = *(legalization_clusters_.end() - 1);
 
     // Try to pack the molecule into the new_cluster.

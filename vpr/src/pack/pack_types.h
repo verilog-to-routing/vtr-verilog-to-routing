@@ -92,4 +92,3 @@ struct t_lb_traceback {
     int prev_lb_rr_node; /* index of previous node that drives current node */
     int prev_edge;       /* index of previous edge that drives current node */
 };
-
