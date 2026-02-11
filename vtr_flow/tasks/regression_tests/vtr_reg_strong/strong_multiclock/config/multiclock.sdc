@@ -18,7 +18,7 @@ create_clock -period 0 -name output_clk
 set_clock_uncertainty 0.025
 
 #Override uncertainty from input_clk
-set_clock_uncertainty 0.050 -from [get_clocks{clk}]
+set_clock_uncertainty 0.050 -from [get_clocks {clk}]
 
 #
 #Clock latencies
@@ -41,32 +41,32 @@ set_clock_latency -source 0.850 [get_clocks {output_clk}]
 set_clock_groups -exclusive -group [get_clocks {input_clk}] -group [get_clocks {clk2}]
 
 #No paths from clk to output_clk
-set_false_path -from [get_clocks{clk}] -to [get_clocks{output_clk}]
+set_false_path -from [get_clocks {clk}] -to [get_clocks {output_clk}]
 
 #
 # Multicycle paths
 #
 
 #Allow 3 cycles for transfers from clk to clk2
-set_multicycle_path -setup -from [get_clocks{clk}] -to [get_clocks{clk2}] 3
+set_multicycle_path -setup -from [get_clocks {clk}] -to [get_clocks {clk2}] 3
 
 #Keep the hold check at 0 cycles
-set_multicycle_path -hold -from [get_clocks{clk}] -to [get_clocks{clk2}] 2
+set_multicycle_path -hold -from [get_clocks {clk}] -to [get_clocks {clk2}] 2
 
 #
 # Delay overrides
 #
 
 #Override the default clock constraints from input_clk to output_clk
-set_max_delay 17.0 -from [get_clocks{input_clk}] -to [get_clocks{output_clk}]
-set_min_delay 3.14 -from [get_clocks{input_clk}] -to [get_clocks{output_clk}]
+set_max_delay 17.0 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
+set_min_delay 3.14 -from [get_clocks {input_clk}] -to [get_clocks {output_clk}]
 
 #
 # External Delays
 #
 
 #External delay on inputs
-set_input_delay -clock input_clk 0.250 [get_ports{in1 in2 in3}]
+set_input_delay -clock input_clk 0.250 [get_ports {in1 in2 in3}]
 
 #External delay on outputs
-set_output_delay -clock output_clk 1 [get_ports{out*}]
+set_output_delay -clock output_clk 1 [get_ports {out*}]
