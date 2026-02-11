@@ -99,7 +99,7 @@ struct t_explored_node_tb {
     int explored_id;    /* ID used to determine if this node has been explored */
     int inet;           /* net index of route tree */
     int enqueue_id;     /* ID used to determine if this node has been pushed on exploration priority queue */
-    float enqueue_cost; /* cost of node pused on exploration priority queue */
+    float enqueue_cost; /* cost of node pushed on exploration priority queue */
 
     t_explored_node_tb() noexcept {
         prev_index = UNDEFINED;

@@ -1180,22 +1180,14 @@ void ClusterRouter::reset_explored_node_tb_() {
 }
 
 void ClusterRouter::save_and_reset_lb_route_() {
-    /* Free old saved lb nets if exist */
-    if (!saved_lb_nets_.empty()) {
-        saved_lb_nets_.clear();
-    }
+    // Free old saved lb nets if exist.
+    saved_lb_nets_.clear();
 
-    /* Save current routed solution */
+    // Save current routed solution and reset the current routing tree data.
     saved_lb_nets_.resize(intra_lb_nets_.size());
     for (size_t inet = 0; inet < saved_lb_nets_.size(); inet++) {
-        /*
-         * Save and reset route tree data
-         */
         saved_lb_nets_[inet].atom_net_id = intra_lb_nets_[inet].atom_net_id;
-        saved_lb_nets_[inet].terminals.resize(intra_lb_nets_[inet].terminals.size());
-        for (int term_idx = 0; term_idx < (int)intra_lb_nets_[inet].terminals.size(); term_idx++) {
-            saved_lb_nets_[inet].terminals[term_idx] = intra_lb_nets_[inet].terminals[term_idx];
-        }
+        saved_lb_nets_[inet].terminals = intra_lb_nets_[inet].terminals;
         saved_lb_nets_[inet].rt_tree = std::move(intra_lb_nets_[inet].rt_tree);
         reset_lb_net_rt(intra_lb_nets_[inet].rt_tree);
     }
