@@ -1,7 +1,5 @@
-sudo dnf upgrade --refresh
-
 # Base packages to compile and run basic regression tests
-sudo dnf install -y \
+sudo dnf install --refresh -y \
     make \
     cmake \
     automake \
@@ -15,17 +13,17 @@ sudo dnf install -y \
     tbb-devel
 
 # Required for parsing SDC files (see LibSDCParse)
-sudo dnf install -y \
+sudo dnf install --refresh -y \
     tcl-devel \
     swig
 
 # Required for graphics
-sudo dnf install -y \
+sudo dnf install --refresh -y \
     gtk3-devel \
     libX11
 
 # Required for parmys front-end from https://github.com/YosysHQ/yosys
-sudo dnf install -y \
+sudo dnf install --refresh -y \
     make \
     automake \
     gcc \
@@ -49,5 +47,5 @@ sudo dnf install -y \
     zlib-ng-devel
 
 # Required to run the analytical placement flow
-sudo dnf install -y \
+sudo dnf install --refresh -y \
     eigen3-devel
