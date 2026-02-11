@@ -1441,19 +1441,13 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
     // Create the new cluster
-    // LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_);
-    legalization_clusters_.emplace_back(
-        cluster_type,
-        cluster_mode,
-        lb_type_rr_graphs_);
-    LegalizationCluster& new_cluster = *(legalization_clusters_.end() - 1);
+    LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_);
 
     // Try to pack the molecule into the new_cluster.
     // When starting a new cluster, we set the external pin utilization to full
     // (meaning all cluster pins are allowed to be used).
     const t_ext_pin_util FULL_EXTERNAL_PIN_UTIL(1., 1.);
     LegalizationClusterId new_cluster_id = LegalizationClusterId(legalization_cluster_ids_.size());
-    legalization_cluster_ids_.push_back(new_cluster_id);
     e_block_pack_status pack_status = try_pack_molecule(molecule_id,
                                                         new_cluster,
                                                         new_cluster_id,
@@ -1468,18 +1462,17 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
         if (new_cluster.pb->name != nullptr)
             free(new_cluster.pb->name);
         new_cluster.pb->name = vtr::strdup(root_atom_name.c_str());
+        // Move the cluster into the vector of clusters and ids.
+        legalization_cluster_ids_.push_back(new_cluster_id);
+        legalization_clusters_.push_back(std::move(new_cluster));
         // Update the molecule to cluster map.
         molecule_cluster_[molecule_id] = new_cluster_id;
     } else {
         // Delete the new_cluster.
         free_pb(new_cluster.pb, mutable_atom_pb_lookup());
         delete new_cluster.pb;
-        // TODO: This clean router data may not be necessary.
-        new_cluster.cluster_router.clean_router_data();
         free_cluster_placement_stats(new_cluster.placement_stats);
         new_cluster_id = LegalizationClusterId::INVALID();
-        legalization_clusters_.resize(legalization_clusters_.size() - 1);
-        legalization_cluster_ids_.resize(legalization_cluster_ids_.size() - 1);
     }
 
     return {pack_status, new_cluster_id};
@@ -1540,7 +1533,6 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
     free_pb(cluster.pb, mutable_atom_pb_lookup());
     delete cluster.pb;
     cluster.pb = nullptr;
-    // TODO: This clean router data may not be necessary.
     cluster.cluster_router.clean_router_data();
     cluster.pr = PartitionRegion();
     free_cluster_placement_stats(cluster.placement_stats);

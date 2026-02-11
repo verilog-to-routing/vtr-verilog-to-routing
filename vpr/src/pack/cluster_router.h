@@ -247,7 +247,7 @@ class ClusterRouter {
     void reset_intra_lb_route();
 
     /**
-     * @brief Creates an array [0..num_pb_graph_pins-1] for intra-logic block routing lookup. 
+     * @brief Creates an array [0..num_pb_graph_pins-1] for intra-logic block routing lookup.
      * Given a pb_graph_pin ID for a CLB, this lookup returns t_pb_route corresponding to that
      * pin.
      *

@@ -88,8 +88,20 @@ enum class e_block_pack_status {
  * This contains necessary information for legalizing a cluster.
  */
 struct LegalizationCluster {
-    LegalizationCluster() {}
+    /**
+     * @brief Default constructor for the LegalizationCluster class.
+     *
+     * This is needed to use this class within the vtr::vector_map class.
+     */
+    LegalizationCluster() = default;
 
+    /**
+     * @brief Constructor for the LegalizationCluster class.
+     *
+     *  @param cluster_type         The type of this cluster.
+     *  @param cluster_mode         The mode of this cluster.
+     *  @param lb_type_rr_graphs    The RR-graphs for each cluster type.
+     */
     LegalizationCluster(t_logical_block_type_ptr cluster_type,
                         int cluster_mode,
                         std::vector<t_lb_type_rr_node>* lb_type_rr_graphs);
