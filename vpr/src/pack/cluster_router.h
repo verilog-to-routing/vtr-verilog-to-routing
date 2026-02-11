@@ -202,7 +202,7 @@ class ClusterRouter {
 
     bool add_to_rt_(t_lb_trace& rt, int node_index, int irt_net);
 
-    bool try_expand_nodes_(t_intra_lb_net* lb_net,
+    bool try_expand_nodes_(const t_intra_lb_net& lb_net,
                            t_expansion_node* exp_node,
                            int itarget,
                            bool try_other_modes,
@@ -228,6 +228,8 @@ class ClusterRouter {
     std::string describe_congested_rr_nodes_(const std::vector<int>& congested_rr_nodes);
 
     void print_trace_(FILE* fp, const t_lb_trace& trace);
+
+    void print_route_(const char* filename);
 
     /* Physical Architecture Info */
     std::vector<t_lb_type_rr_node>* lb_type_graph_; /* Pointer to physical intra-logic cluster_ctx.blocks type rr graph */

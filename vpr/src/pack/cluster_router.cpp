@@ -37,8 +37,14 @@
 #include "cluster_router.h"
 #include "atom_pb_bimap.h"
 
-// FIXME: Turn this on and debug.
-/* #define PRINT_INTRA_LB_ROUTE */
+// #define PRINT_INTRA_LB_ROUTE
+
+#ifdef PRINT_INTRA_LB_ROUTE
+
+#include "echo_files.h"
+
+#endif
+
 
 /*****************************************************************************************
  * Internal functions declarations
@@ -71,13 +77,6 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
 static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_node>& lb_type_graph,
                                                 const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats);
 static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t_lb_type_rr_node>& lb_rr_graph);
-/*****************************************************************************************
- * Debug functions declarations
- ******************************************************************************************/
-#ifdef PRINT_INTRA_LB_ROUTE
-static void print_route(const char* filename, t_lb_router_data* router_data);
-static void print_route(FILE* fp, t_lb_router_data* router_data);
-#endif
 
 /*****************************************************************************************
  * Constructor/Destructor functions
@@ -283,7 +282,7 @@ void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
 }
 
 /* Expand all the nodes for a given lb_net */
-bool ClusterRouter::try_expand_nodes_(t_intra_lb_net* lb_net,
+bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
                                       t_expansion_node* exp_node,
                                       int itarget,
                                       bool try_other_modes,
@@ -298,11 +297,11 @@ bool ClusterRouter::try_expand_nodes_(t_intra_lb_net* lb_net,
             if (verbosity > 3) {
                 //Print detailed debug info
                 auto& atom_nlist = g_vpr_ctx.atom().netlist();
-                AtomNetId net_id = lb_net->atom_net_id;
-                AtomPinId driver_pin = lb_net->atom_pins[0];
-                AtomPinId sink_pin = lb_net->atom_pins[itarget];
-                int driver_rr_node = lb_net->terminals[0];
-                int sink_rr_node = lb_net->terminals[itarget];
+                AtomNetId net_id = lb_net.atom_net_id;
+                AtomPinId driver_pin = lb_net.atom_pins[0];
+                AtomPinId sink_pin = lb_net.atom_pins[itarget];
+                int driver_rr_node = lb_net.terminals[0];
+                int sink_rr_node = lb_net.terminals[itarget];
 
                 VTR_LOG("\t\t\tNo possible routing path from %s to %s: needed for net '%s' from net pin '%s'",
                         describe_lb_type_rr_node_(driver_rr_node).c_str(),
@@ -324,16 +323,16 @@ bool ClusterRouter::try_expand_nodes_(t_intra_lb_net* lb_net,
                  */
                 explored_node_tb_[exp_inode].explored_id = explore_id_index_;
                 explored_node_tb_[exp_inode].prev_index = exp_node->prev_index;
-                if (exp_inode != lb_net->terminals[itarget]) {
+                if (exp_inode != lb_net.terminals[itarget]) {
                     if (!try_other_modes) {
-                        expand_node_(*exp_node, lb_net->terminals.size() - 1);
+                        expand_node_(*exp_node, lb_net.terminals.size() - 1);
                     } else {
-                        expand_node_all_modes_(*exp_node, lb_net->terminals.size() - 1);
+                        expand_node_all_modes_(*exp_node, lb_net.terminals.size() - 1);
                     }
                 }
             }
         }
-    } while (exp_node->node_index != lb_net->terminals[itarget] && !is_impossible);
+    } while (exp_node->node_index != lb_net.terminals[itarget] && !is_impossible);
 
     return is_impossible;
 }
@@ -389,7 +388,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
 
                 expand_rt_(idx);
 
-                is_impossible = try_expand_nodes_(&intra_lb_nets_[idx], &exp_node, itarget, mode_status->expand_all_modes, verbosity);
+                is_impossible = try_expand_nodes_(intra_lb_nets_[idx], &exp_node, itarget, mode_status->expand_all_modes, verbosity);
 
                 if (is_impossible && !mode_status->expand_all_modes) {
                     mode_status->try_expand_all_modes = true;
@@ -455,7 +454,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
     } else {
         //Unroutable
 #ifdef PRINT_INTRA_LB_ROUTE
-        print_route(getEchoFileName(E_ECHO_INTRA_LB_FAILED_ROUTE), router_data);
+        print_route_(getEchoFileName(E_ECHO_INTRA_LB_FAILED_ROUTE));
 #endif
 
         if (verbosity > 3 && !is_impossible) {
@@ -1094,8 +1093,6 @@ bool ClusterRouter::add_to_rt_(t_lb_trace& rt, int node_index, int irt_net) {
     }
 
     /* Find rt_index on the route tree */
-    // FIXME: We should never get a pointer to an element in a vector.
-    //        This algorithm should be rethought. Maybe create a queue of references.
     t_lb_trace* link_node = find_node_in_rt(rt, rt_index);
     if (link_node == nullptr) {
         VTR_LOG("Link node is nullptr. Routing impossible");
@@ -1143,36 +1140,29 @@ static t_lb_trace* find_node_in_rt(t_lb_trace& rt, int rt_index) {
     return nullptr;
 }
 
-#ifdef PRINT_INTRA_LB_ROUTE
 /* Debug routine, print out current intra logic block route */
-static void print_route(const char* filename, t_lb_router_data* router_data) {
+void ClusterRouter::print_route_(const char* filename) {
     FILE* fp;
-    std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
+    std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
     fp = fopen(filename, "w");
     for (unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
-        fprintf(fp, "node %d occ %d cap %d\n", inode, router_data->lb_rr_node_stats[inode].occ, lb_type_graph[inode].capacity);
+        fprintf(fp, "node %d occ %d cap %d\n", inode, lb_rr_node_stats_[inode].occ, lb_type_graph[inode].capacity);
     }
 
-    print_route(fp, router_data);
-    fclose(fp);
-}
-
-static void print_route(FILE* fp, t_lb_router_data* router_data) {
-    std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
     fprintf(fp, "\n\n----------------------------------------------------\n\n");
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    for (unsigned int inet = 0; inet < lb_nets.size(); inet++) {
-        AtomNetId net_id = lb_nets[inet].atom_net_id;
-        fprintf(fp, "net %s num targets %d \n", atom_ctx.netlist().net_name(net_id).c_str(), (int)lb_nets[inet].terminals.size());
+    for (unsigned int inet = 0; inet < intra_lb_nets_.size(); inet++) {
+        AtomNetId net_id = intra_lb_nets_[inet].atom_net_id;
+        fprintf(fp, "net %s num targets %d \n", atom_ctx.netlist().net_name(net_id).c_str(), (int)intra_lb_nets_[inet].terminals.size());
         fprintf(fp, "\tS");
-        print_trace(fp, lb_nets[inet].rt_tree, router_data);
+        print_trace_(fp, intra_lb_nets_[inet].rt_tree);
         fprintf(fp, "\n\n");
     }
+    fclose(fp);
 }
-#endif
 
 /* Debug routine, print out trace of net */
 void ClusterRouter::print_trace_(FILE* fp, const t_lb_trace& trace) {
