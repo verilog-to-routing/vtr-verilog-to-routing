@@ -4,6 +4,8 @@
  *
  * Author: Jason Luu
  * Date: July 22, 2013
+ *
+ * Updated by Alex Singer, February 2026
  */
 
 #include <cstdio>
@@ -144,26 +146,104 @@ class reservable_pq : public std::priority_queue<T, U, V> {
     size_type cur_cap;
 };
 
+typedef reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> ClusterRouterPriorityQueue;
+
 enum e_commit_remove { RT_COMMIT,
                        RT_REMOVE };
 
+/**
+ * @brief Class for routing the connections within a cluster.
+ *
+ * This class manages all of the state needed to perform pathfinder within a
+ * cluster during clustering.
+ *
+ * Example usage:
+ *      // Construct the router object.
+ *      ClusterRouter cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type);
+ *
+ *      // Add atoms as targets for the router.
+ *      cluster_router.add_atom_as_target(blk_id1, atom_to_pb);
+ *      cluster_router.add_atom_as_target(blk_id2, atom_to_pb);
+ *      ...
+ *
+ *      // (optional) Remove atoms from target if necessary
+ *      cluster_router.remove_atom_from_target(blk_id1, atom_to_pb);
+ *      ...
+ *
+ *      // Perform a cluster route. success would be true if route is successful.
+ *      t_mode_selection_status mode_status;
+ *      bool success = cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
+ *
+ *      // Output the routing solution.
+ *      auto pb_route = cluster_router.alloc_and_load_pb_route(intra_lb_pb_pin_lookup_);
+ *
+ *      // (optional) Clean the router data to save space if this object will
+ *      //            have a long lifetime and no further routes will be performed.
+ *      cluster_router.clean_router_data();
+ *
+ */
 class ClusterRouter {
   public:
-    // TODO: Consider adding a move constructor.
+    /**
+     * @brief Default constructor for the ClusterRouter.
+     *
+     * This is needed to allow this object to be stored within the vtr::vector_map
+     * class. When this constructor is used, the cluster router will not be
+     * initialized properly and cannot be used.
+     */
     ClusterRouter() { is_valid_ = false; }
+
+    /**
+     * @brief Constructor for the ClusterRouter.
+     *
+     * Sets up the ClusterRouter for the given logical block type.
+     *
+     *  @param lb_type_graph    The RR graph for the given lb type.
+     *  @param type             The logical block type to route to.
+     */
     ClusterRouter(std::vector<t_lb_type_rr_node>* lb_type_graph,
                   t_logical_block_type_ptr type);
 
+    /**
+     * @brief Add pins of netlist atom to current routing drivers/targets.
+     */
     void add_atom_as_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb);
 
+    /**
+     * @brief Remove pins of netlist atom from current routing drivers/targets.
+     */
     void remove_atom_from_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb);
 
+    /**
+     * @brief Set/reset mode of rr nodes to the pb used.
+     *
+     * If set == true, then set all modes of the rr nodes affected by pb to the
+     * mode of the pb. Set all modes related to pb to 0 otherwise.
+     */
     void set_reset_pb_modes(const t_pb* pb, const bool set);
 
+    /**
+     * @brief Attempt to route routing driver/targets on the current architecture.
+     *
+     * Follows pathfinder negotiated congestion algorithm.
+     */
     bool try_intra_lb_route(int verbosity, t_mode_selection_status* mode_status);
 
+    /**
+     * @brief Clean and free all data within the router.
+     *
+     * This is used in the packer to keep the cluster router object around
+     * without a hit to memory footprint. The router can no longer be used after
+     * this function is called.
+     */
     void clean_router_data();
 
+    /**
+     * @brief Reset the routing state between calls to intra_lb_route for mode
+     *        changes.
+     *
+     * This is used to clean state associated with mode conflicts in routing.
+     */
     void reset_intra_lb_route();
 
     /**
@@ -176,94 +256,193 @@ class ClusterRouter {
      */
     t_pb_routes alloc_and_load_pb_route(const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
 
+    /**
+     * @brief Returns true if the router data has been cleaned.
+     */
     inline bool is_clean() const { return is_clean_; }
 
   private:
+    /**
+     * @brief Given a pin of a net, assign route tree terminals for it.
+     *
+     * This assumes that the pin is not already assigned.
+     */
     void add_pin_to_rt_terminals_(const AtomPinId pin_id,
                                   const AtomPBBimap& atom_to_pb);
 
+    /**
+     * @brief Given a pin of a net, remove route tree terminal from it.
+     */
     void remove_pin_from_rt_terminals_(const AtomPinId pin_id,
                                        const AtomPBBimap& atom_to_pb);
 
+    /**
+     * @brief Fixup duplicate connections to a net by a logically equivalent
+     *        set of primitive pins.
+     */
     void fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb);
 
+    /**
+     * @brief Reset the traceback information used in pathfinder.
+     */
     void reset_explored_node_tb_();
 
+    /**
+     * @brief Commit or remove route tree from currently routed solution.
+     */
     void commit_remove_rt_(const t_lb_trace& rt,
                            e_commit_remove op,
                            std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
                            t_mode_selection_status* mode_status);
 
+    /**
+     * @brief Add source node of net as the starting point to existing route tree.
+     */
     void add_source_to_rt_(int inet);
 
+    /**
+     * @brief Expand all nodes foun in route tree into the priority queue.
+     */
     void expand_rt_(int inet);
 
+    /**
+     * @brief Recursive function used by expand_rt_ to expand all nodes in a
+     *        route tree into the priority queue.
+     */
     void expand_rt_rec_(const t_lb_trace& rt, int prev_index, int irt_net);
 
+    /**
+     * @brief Add new path from existing route tree to target sink.
+     *
+     * This reads the result of the path search to traceback the path and then
+     * adds the path to the route tree.
+     */
     bool add_to_rt_(t_lb_trace& rt, int node_index, int irt_net);
 
+    /**
+     * @brief Expand all nodes for a given lb_net.
+     */
     bool try_expand_nodes_(const t_intra_lb_net& lb_net,
                            t_expansion_node* exp_node,
                            int itarget,
                            bool try_other_modes,
                            int verbosity);
 
+    /**
+     * @brief Expand all nodes found in a route tree into the priority queue.
+     */
     void expand_node_(const t_expansion_node& exp_node,
                       int net_fanout);
 
+    /**
+     * @brief Expand all nodes using all possible modes found in the route tree
+     *        into the priority queue.
+     */
     void expand_node_all_modes_(const t_expansion_node& exp_node,
                                 int net_fanout);
 
+    /**
+     * @brief Expand all edges of an expansion node.
+     */
     void expand_edges_(int mode,
                        int cur_inode,
                        float cur_cost,
                        int net_fanout);
 
+    /**
+     * @brief Determine if a completed route is valid.
+     *
+     * A successful route has no congestion (i.e. no routing resource is used by
+     * two nets).
+     */
     bool is_route_success_();
 
+    /**
+     * @brief Save the last successful intra-logic block route and reset current
+     *        lb_traceback.
+     */
     void save_and_reset_lb_route_();
 
+    /**
+     * @brief Debugging function, used to print the description of the given
+     *        lb-type RR node.
+     */
     std::string describe_lb_type_rr_node_(int inode);
 
+    /**
+     * @brief Debugging function, used to print the given congested RR.
+     */
     std::string describe_congested_rr_nodes_(const std::vector<int>& congested_rr_nodes);
 
+    /**
+     * @brief Debugging function, used to print out the trace of a net.
+     */
     void print_trace_(FILE* fp, const t_lb_trace& trace);
 
+    /**
+     * @brief Debugging function, print out current intra logic block route.
+     */
     void print_route_(const char* filename);
 
-    /* Physical Architecture Info */
-    std::vector<t_lb_type_rr_node>* lb_type_graph_; /* Pointer to physical intra-logic cluster_ctx.blocks type rr graph */
+  private:
+    // =========================================================================
+    // Physical Architecture Info
+    // =========================================================================
 
-    /* Logical Netlist Info */
-    std::vector<t_intra_lb_net> intra_lb_nets_; /* Pointer to vector of intra logic cluster_ctx.blocks nets and their connections */
+    /// @brief Pointer to physical intra-logic cluster_ctx.blocks type rr graph.
+    std::vector<t_lb_type_rr_node>* lb_type_graph_;
 
-    /* Saved nets */
-    std::vector<t_intra_lb_net> saved_lb_nets_; /* Save vector of intra logic cluster_ctx.blocks nets and their connections */
+    // =========================================================================
+    // Logical Netlist Info
+    // =========================================================================
 
-    std::unordered_set<AtomBlockId> atoms_added_; /* map that records which atoms are added to cluster router */
+    /// @brief Vector of intra logic cluster_ctx.blocks nets and their connections.
+    std::vector<t_intra_lb_net> intra_lb_nets_;
 
-    /* Logical-to-physical mapping info */
-    std::vector<t_lb_rr_node_stats> lb_rr_node_stats_; /* [0..lb_type_graph->size()-1] Stats for each logic cluster_ctx.blocks rr node instance */
+    /// @brief Save vector of intra logic cluster_ctx.blocks nets and their connections.
+    std::vector<t_intra_lb_net> saved_lb_nets_;
 
-    /* Stores state info during Pathfinder iterative routing */
-    std::vector<t_explored_node_tb> explored_node_tb_; /* [0..lb_type_graph->size()-1] Stores mode exploration and lb_traceback info for nodes */
-    int explore_id_index_;                 /* used in conjunction with node_traceback to determine whether or not a location has been explored.  By using a unique identifier every route, I don't have to clear the previous route exploration */
+    /// @brief Map that records which atoms are added to cluster router.
+    std::unordered_set<AtomBlockId> atoms_added_;
 
-    /* Current type */
+    // =========================================================================
+    // Logical-to-Physical Mapping Info
+    // =========================================================================
+
+    /// @brief [0..lb_type_graph->size()-1] Stats for each logic cluster_ctx.blocks rr node instance.
+    std::vector<t_lb_rr_node_stats> lb_rr_node_stats_;
+
+    // =========================================================================
+    // Stored State Info During Pathfinder Iterative Routing
+    // =========================================================================
+
+    /// @brief [0..lb_type_graph->size()-1] Stores mode exploration and lb_traceback info for nodes.
+    std::vector<t_explored_node_tb> explored_node_tb_;
+
+    /// @brief Used in conjunction with explored_node_tb_ to determine whether or not a location has been explored.
+    ///        By using a unique identifier every route, I don't have to clear the previous route exploration.
+    int explore_id_index_;
+
+    /// @brief The logical block type that is being routed.
     t_logical_block_type_ptr lb_type_;
 
-    /* Parameters used by router */
+    /// @brief Parameters used by the router.
     t_lb_router_params params_;
 
-    /* current congestion factor */
+    /// @brief Current congestion factor.
     float pres_con_fac_;
 
-    // TODO: make this a typedef.
-    reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> pq_;
+    /// @brief Priority queue used during path search.
+    ClusterRouterPriorityQueue pq_;
 
+    /// @brief Flag that indicates if this object has been cleaned or not.
     bool is_clean_;
 
+    /// @brief Flag that indicates if this object has been initialized or not.
     bool is_valid_;
 };
 
+/**
+ * @brief Free the given pb route object.
+ */
 void free_pb_route(t_pb_route* free_pb_route);

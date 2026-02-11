@@ -199,7 +199,6 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
  * Routing Functions
  ******************************************************************************************/
 
-/* Add pins of netlist atom to to current routing drivers/targets */
 void ClusterRouter::add_atom_as_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
@@ -222,7 +221,6 @@ void ClusterRouter::add_atom_as_target(const AtomBlockId blk_id, const AtomPBBim
     fix_duplicate_equivalent_pins_(atom_to_pb);
 }
 
-/* Remove pins of netlist atom from current routing drivers/targets */
 void ClusterRouter::remove_atom_from_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
@@ -240,8 +238,6 @@ void ClusterRouter::remove_atom_from_target(const AtomBlockId blk_id, const Atom
     atoms_added_.erase(blk_id);
 }
 
-/* Set/Reset mode of rr nodes to the pb used.  If set == true, then set all modes of the rr nodes affected by pb to the mode of the pb.
- * Set all modes related to pb to 0 otherwise */
 void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
     int mode = pb->mode;
     VTR_ASSERT(mode >= 0);
@@ -281,7 +277,6 @@ void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
     }
 }
 
-/* Expand all the nodes for a given lb_net */
 bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
                                       t_expansion_node* exp_node,
                                       int itarget,
@@ -337,9 +332,6 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
     return is_impossible;
 }
 
-/* Attempt to route routing driver/targets on the current architecture
- * Follows pathfinder negotiated congestion algorithm
- */
 bool ClusterRouter::try_intra_lb_route(int verbosity,
                                        t_mode_selection_status* mode_status) {
     VTR_ASSERT(is_valid_);
@@ -533,9 +525,6 @@ static void reset_lb_net_rt(t_lb_trace& lb_trace) {
     lb_trace.next_nodes.clear();
 }
 
-/* Given a pin of a net, assign route tree terminals for it
- * Assumes that pin is not already assigned
- */
 void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
                                              const AtomPBBimap& atom_to_pb) {
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
@@ -700,8 +689,6 @@ void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
 #endif
 }
 
-/* Given a pin of a net, remove route tree terminals from it
- */
 void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
                                                   const AtomPBBimap& atom_to_pb) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
@@ -818,14 +805,14 @@ void ClusterRouter::remove_pin_from_rt_terminals_(const AtomPinId pin_id,
     }
 }
 
-//It is possible that a net may connect multiple times to a logically equivalent set of primitive pins.
-//The cluster router will only route one connection for a particular net to the common sink of the
-//equivalent pins.
-//
-//To work around this, we fix all but one of these duplicate connections to route to specific pins,
-//(instead of the common sink). This ensures a legal routing is produced and that the duplicate pins
-//are not 'missing' in the clustered netlist.
 void ClusterRouter::fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb) {
+    // It is possible that a net may connect multiple times to a logically equivalent set of primitive pins.
+    // The cluster router will only route one connection for a particular net to the common sink of the
+    // equivalent pins.
+    //
+    // To work around this, we fix all but one of these duplicate connections to route to specific pins,
+    // (instead of the common sink). This ensures a legal routing is produced and that the duplicate pins
+    // are not 'missing' in the clustered netlist.
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
@@ -878,7 +865,6 @@ void ClusterRouter::fix_duplicate_equivalent_pins_(const AtomPBBimap& atom_to_pb
     }
 }
 
-/* Commit or remove route tree from currently routed solution */
 void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
                                       e_commit_remove op,
                                       std::unordered_map<const t_pb_graph_node*, const t_mode*>& mode_map,
@@ -946,13 +932,11 @@ static bool is_skip_route_net(const t_lb_trace& rt,
     return true;
 }
 
-/* At source mode as starting point to existing route tree */
 void ClusterRouter::add_source_to_rt_(int inet) {
     VTR_ASSERT(intra_lb_nets_[inet].rt_tree.current_node == UNDEFINED);
     intra_lb_nets_[inet].rt_tree.current_node = intra_lb_nets_[inet].terminals[0];
 }
 
-/* Expand all nodes found in route tree into priority queue */
 void ClusterRouter::expand_rt_(int inet) {
     VTR_ASSERT(pq_.empty());
 
@@ -960,7 +944,6 @@ void ClusterRouter::expand_rt_(int inet) {
     expand_rt_rec_(intra_lb_nets_[inet].rt_tree, UNDEFINED, inet);
 }
 
-/* Expand all nodes found in route tree into priority queue recursively */
 void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, int prev_index, int irt_net) {
     t_expansion_node enode;
 
@@ -980,7 +963,6 @@ void ClusterRouter::expand_rt_rec_(const t_lb_trace& rt, int prev_index, int irt
     }
 }
 
-/* Expand all edges of an expantion node */
 void ClusterRouter::expand_edges_(int mode,
                                   int cur_inode,
                                   float cur_cost,
@@ -1032,7 +1014,6 @@ void ClusterRouter::expand_edges_(int mode,
     }
 }
 
-/* Expand all nodes found in route tree into priority queue */
 void ClusterRouter::expand_node_(const t_expansion_node& exp_node, int net_fanout) {
     int cur_node = exp_node.node_index;
     float cur_cost = exp_node.cost;
@@ -1044,7 +1025,6 @@ void ClusterRouter::expand_node_(const t_expansion_node& exp_node, int net_fanou
     expand_edges_(mode, cur_node, cur_cost, net_fanout);
 }
 
-/* Expand all nodes using all possible modes found in route tree into priority queue */
 void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node, int net_fanout) {
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
@@ -1080,7 +1060,6 @@ void ClusterRouter::expand_node_all_modes_(const t_expansion_node& exp_node, int
     }
 }
 
-/* Add new path from existing route tree to target sink */
 bool ClusterRouter::add_to_rt_(t_lb_trace& rt, int node_index, int irt_net) {
     std::vector<int> trace_forward;
 
@@ -1112,7 +1091,6 @@ bool ClusterRouter::add_to_rt_(t_lb_trace& rt, int node_index, int irt_net) {
     return false;
 }
 
-/* Determine if a completed route is valid.  A successful route has no congestion (ie. no routing resource is used by two nets). */
 bool ClusterRouter::is_route_success_() {
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
 
@@ -1140,7 +1118,6 @@ static t_lb_trace* find_node_in_rt(t_lb_trace& rt, int rt_index) {
     return nullptr;
 }
 
-/* Debug routine, print out current intra logic block route */
 void ClusterRouter::print_route_(const char* filename) {
     FILE* fp;
     std::vector<t_lb_type_rr_node>& lb_type_graph = *lb_type_graph_;
@@ -1164,7 +1141,6 @@ void ClusterRouter::print_route_(const char* filename) {
     fclose(fp);
 }
 
-/* Debug routine, print out trace of net */
 void ClusterRouter::print_trace_(FILE* fp, const t_lb_trace& trace) {
     if (trace.current_node == UNDEFINED) {
         fprintf(fp, "NULL");
@@ -1193,7 +1169,6 @@ void ClusterRouter::reset_explored_node_tb_() {
     }
 }
 
-/* Save last successful intra-logic block route and reset current lb_traceback */
 void ClusterRouter::save_and_reset_lb_route_() {
     /* Free old saved lb nets if exist */
     if (!saved_lb_nets_.empty()) {
