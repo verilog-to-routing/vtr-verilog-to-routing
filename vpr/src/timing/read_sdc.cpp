@@ -1,3 +1,23 @@
+/**
+ * @file
+ * @author  Alex Singer
+ * @date    February 2026
+ * @brief   Functions for reading an SDC file and updating the timing constraints
+ *          on the netlist (in Tatum).
+ * 
+ * This file uses LibSDCParse to parse the SDC constraints provided. It uses a TCL
+ * interpreter to parse each of the commands in the SDC file. This file declares a
+ * callback object which provides callback functions which will be called when
+ * different SDC constraints are parsed.
+ * 
+ * Internally, LibSDCParse maintains a database of netlist objects which may be
+ * parsed. In the start_parse callback, we populate this internal database with
+ * all of the netlist objects that we expect users to refer to in their SDC files.
+ * 
+ * If no SDC file is provided, the parser is never invoked (the callback is never
+ * constructed), and default timing constraints are applied.
+ */
+
 #include "read_sdc.h"
 
 #include <filesystem>
@@ -226,7 +246,8 @@ class SdcParseCallback : public sdcparse::Callback {
             tatum::NodeId clock_source = get_clock_source(clock_pin);
             VTR_ASSERT(clock_source.is_valid());
 
-            // Create netlist clock
+            // Create netlist clock (a clock net which ultimately drives a
+            // clock pin on some block in the design netlist)
             create_clock_object(clock_name, clock_source, cmd);
         }
     }
@@ -1265,9 +1286,13 @@ class SdcParseCallback : public sdcparse::Callback {
     std::set<AtomPinId> netlist_clock_drivers_;
     std::map<std::string, AtomPinId> netlist_primary_ios_;
 
+    /// @brief A lookup between a LibSDCParse port object and its associated netlist pin.
     std::unordered_map<sdcparse::PortObjectId, AtomPinId> object_to_port_id_;
+    /// @brief A lookup between a LibSDCParse pin object and its associated netlist pin.
     std::unordered_map<sdcparse::PinObjectId, AtomPinId> object_to_pin_id_;
+    /// @brief A lookup between a LibSDCParse clock object and its associated Tatum timing domain.
     std::unordered_map<sdcparse::ClockObjectId, tatum::DomainId> object_to_clock_id_;
+    /// @brief A lookup between a LibSDCParse net object and its associated netlist net.
     std::unordered_map<sdcparse::NetObjectId, AtomNetId> object_to_net_id_;
 
     std::set<std::pair<tatum::DomainId, tatum::DomainId>> disabled_domain_pairs_;
