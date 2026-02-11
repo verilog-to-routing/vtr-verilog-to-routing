@@ -191,7 +191,13 @@ class ClusterRouter {
      * class. When this constructor is used, the cluster router will not be
      * initialized properly and cannot be used.
      */
-    ClusterRouter() { is_valid_ = false; }
+    ClusterRouter()
+        : lb_type_graph_(nullptr)
+        , explore_id_index_(0)
+        , lb_type_(nullptr)
+        , pres_con_fac_(0.0f)
+        , is_clean_(true)
+        , is_valid_(false) {}
 
     /**
      * @brief Constructor for the ClusterRouter.
@@ -438,7 +444,8 @@ class ClusterRouter {
     /// @brief Flag that indicates if this object has been cleaned or not.
     bool is_clean_;
 
-    /// @brief Flag that indicates if this object has been initialized or not.
+    /// @brief Flag that indicates if this object has valid state or not. If the
+    ///        router is invalid, none of the methods should be used.
     bool is_valid_;
 };
 

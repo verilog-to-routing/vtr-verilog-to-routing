@@ -93,7 +93,13 @@ struct LegalizationCluster {
      *
      * This is needed to use this class within the vtr::vector_map class.
      */
-    LegalizationCluster() = default;
+    LegalizationCluster()
+        : pb(nullptr)
+        , type(nullptr)
+        , pr(PartitionRegion())
+        , noc_grp_id(NocGroupId::INVALID())
+        , cluster_router()
+        , placement_stats(nullptr) {}
 
     /**
      * @brief Constructor for the LegalizationCluster class.
@@ -135,10 +141,9 @@ struct LegalizationCluster {
     ///        for optimization.
     NocGroupId noc_grp_id;
 
-    /// @brief The router data of the intra lb router used for this cluster.
+    /// @brief The intra lb router used for this cluster.
     ///        Contains information about the atoms in the cluster and how they
     ///        can be routed within.
-    ///        TODO: Update this comment.
     ClusterRouter cluster_router;
 
     /// @brief The stats on where the different atoms in the cluster are currently

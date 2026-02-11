@@ -115,6 +115,7 @@ void ClusterRouter::clean_router_data() {
     saved_lb_nets_.shrink_to_fit();
 
     is_clean_ = true;
+    is_valid_ = false;
 }
 
 static bool route_has_conflict(const t_lb_trace& rt,
@@ -199,6 +200,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
  ******************************************************************************************/
 
 void ClusterRouter::add_atom_as_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb) {
+    VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     if (atoms_added_.count(blk_id) > 0) {
@@ -221,6 +223,7 @@ void ClusterRouter::add_atom_as_target(const AtomBlockId blk_id, const AtomPBBim
 }
 
 void ClusterRouter::remove_atom_from_target(const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb) {
+    VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     if (atoms_added_.count(blk_id) == 0) {
@@ -238,6 +241,7 @@ void ClusterRouter::remove_atom_from_target(const AtomBlockId blk_id, const Atom
 }
 
 void ClusterRouter::set_reset_pb_modes(const t_pb* pb, const bool set) {
+    VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
     int mode = pb->mode;
     VTR_ASSERT(mode >= 0);
 
@@ -333,7 +337,7 @@ bool ClusterRouter::try_expand_nodes_(const t_intra_lb_net& lb_net,
 
 bool ClusterRouter::try_intra_lb_route(int verbosity,
                                        t_mode_selection_status* mode_status) {
-    VTR_ASSERT(is_valid_);
+    VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
     bool is_routed = false;
     bool is_impossible = false;
 
@@ -469,6 +473,7 @@ bool ClusterRouter::try_intra_lb_route(int verbosity,
  ******************************************************************************************/
 
 t_pb_routes ClusterRouter::alloc_and_load_pb_route(const IntraLbPbPinLookup& intra_lb_pb_pin_lookup) {
+    VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
     t_pb_routes pb_route;
 
     for (const auto& lb_net : saved_lb_nets_) {
@@ -640,6 +645,8 @@ void ClusterRouter::add_pin_to_rt_terminals_(const AtomPinId pin_id,
             /* If all sinks of net are all contained in the logic block, then the net does
              * not need to route out of the logic block, so can replace the external sink
              * with this last sink terminal */
+            VTR_ASSERT(intra_lb_nets_[ipos].terminals.size() > 1);
+            VTR_ASSERT(intra_lb_nets_[ipos].atom_pins.size() > 1);
             intra_lb_nets_[ipos].terminals[1] = sink_index;
             intra_lb_nets_[ipos].atom_pins[1] = pin_id;
         } else {
@@ -1321,6 +1328,7 @@ std::string ClusterRouter::describe_congested_rr_nodes_(const std::vector<int>& 
 }
 
 void ClusterRouter::reset_intra_lb_route() {
+    VTR_ASSERT_MSG(!is_clean_ && is_valid_, "Cannot operate on a cleaned / invalid router.");
     for (auto& node : *lb_type_graph_) {
         auto* pin = node.pb_graph_pin;
         if (pin == nullptr) {

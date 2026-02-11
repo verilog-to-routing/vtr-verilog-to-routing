@@ -6,14 +6,11 @@
  * Defines core data structures used in packing
  */
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #include "atom_netlist_fwd.h"
 #include "physical_types.h"
 #include "vpr_types.h"
-
-class t_pack_molecule;
 
 /**************************************************************************
  * Packing Algorithm Enumerations
@@ -77,18 +74,4 @@ struct t_lb_type_rr_node {
         pb_graph_pin = nullptr;
         intrinsic_cost = 0;
     }
-};
-
-/**************************************************************************
- * Intra-Logic Block Routing Data Structures (by instance)
- ***************************************************************************/
-
-/* A routing traceback data structure, provides a logic cluster_ctx.blocks instance specific trace lookup directly from the t_lb_type_rr_node array index
- * After packing, routing info for each CLB will have an array of t_lb_traceback to store routing info within the CLB
- */
-// FIXME: REMOVE THIS. THIS GOES UNUSED.
-struct t_lb_traceback {
-    int net;             /* net of flat, technology-mapped, netlist using this node */
-    int prev_lb_rr_node; /* index of previous node that drives current node */
-    int prev_edge;       /* index of previous edge that drives current node */
 };
