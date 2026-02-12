@@ -115,7 +115,7 @@ struct t_expansion_node {
 };
 
 /**
- * @brief Comparitor used by the priority queue to sort the expansion nodes.
+ * @brief Comparator used by the priority queue to sort the expansion nodes.
  */
 class compare_expansion_node {
   public:
@@ -207,7 +207,7 @@ typedef reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_e
 
 /**
  * @brief Enumeration used by the commit_remove_rt_ method below to decide if
- *        we are commiting or removing a route tree.
+ *        we are committing or removing a route tree.
  */
 enum e_commit_remove { RT_COMMIT,
                        RT_REMOVE };
