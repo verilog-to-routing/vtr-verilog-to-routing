@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <queue>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "atom_pb_bimap.h"
@@ -537,6 +538,18 @@ class ClusterRouter {
 
     /// @brief Priority queue used during path search.
     ClusterRouterPriorityQueue pq_;
+
+    /// @brief Set of nets which have been modified since the last successful
+    ///        route. This is used when hot-starting the next route, since these
+    ///        nets must be ignored due to being changed.
+    std::unordered_set<AtomNetId> dirty_nets_;
+
+    /// @brief A lookup between used RR nodes and the nets from the previous
+    ///        successful route which occupy them. This is used to populate the
+    ///        dirty nets.
+    ///        NOTE: This must be a multi-map since some nodes may be occupied
+    ///              by multiple nets.
+    std::unordered_multimap<size_t, AtomNetId> rr_node_to_saved_nets_;
 
     /// @brief Flag that indicates if this object has been cleaned or not.
     bool is_clean_;
