@@ -48,12 +48,25 @@
 /*****************************************************************************************
  * Internal functions declarations
  ******************************************************************************************/
+
+/**
+ * @brief Free route tree for intra-logic block routing
+ */
 static void reset_lb_net_rt(t_lb_trace& lb_trace);
 
+/**
+ * @brief Should net be skipped?
+ *
+ * If the net does not conflict with another net, then skip routing this net.
+ */
 static bool is_skip_route_net(const t_lb_trace& rt,
                               const std::vector<t_lb_type_rr_node>& lb_type_graph,
                               const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats);
 
+/**
+ * @brief Given a route tree and an index of a node on the route tree, return a
+ *        pointer to the trace corresponding to that index.
+ */
 static t_lb_trace* find_node_in_rt(t_lb_trace& rt, int rt_index);
 
 /**
@@ -73,8 +86,16 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
                                    t_logical_block_type_ptr logic_block_type,
                                    const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
 
+/**
+ * @brief Debugging function used to find congested RR nodes in the lb type
+ *        graph.
+ */
 static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_node>& lb_type_graph,
                                                 const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats);
+
+/**
+ * @brief Debugging function used to find incoming RR nodes for the given dst node.
+ */
 static std::vector<int> find_incoming_rr_nodes(int dst_node, const std::vector<t_lb_type_rr_node>& lb_rr_graph);
 
 /*****************************************************************************************
@@ -523,7 +544,6 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
     }
 }
 
-/* Free route tree for intra-logic block routing */
 static void reset_lb_net_rt(t_lb_trace& lb_trace) {
     lb_trace.current_node = UNDEFINED;
     lb_trace.next_nodes.clear();
@@ -915,10 +935,10 @@ void ClusterRouter::commit_remove_rt_(const t_lb_trace& rt,
     }
 }
 
-/* Should net be skipped?  If the net does not conflict with another net, then skip routing this net */
 static bool is_skip_route_net(const t_lb_trace& rt,
                               const std::vector<t_lb_type_rr_node>& lb_type_graph,
                               const std::vector<t_lb_rr_node_stats>& lb_rr_node_stats) {
+    /* Should net be skipped?  If the net does not conflict with another net, then skip routing this net */
     int inode = rt.current_node;
 
     /* Determine if node is overused */
@@ -1109,7 +1129,6 @@ bool ClusterRouter::is_route_success_() {
     return true;
 }
 
-/* Given a route tree and an index of a node on the route tree, return a pointer to the trace corresponding to that index */
 static t_lb_trace* find_node_in_rt(t_lb_trace& rt, int rt_index) {
     if (rt.current_node == rt_index) {
         return &rt;

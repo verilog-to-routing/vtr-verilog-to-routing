@@ -22,12 +22,19 @@
  * Intra-Logic Block Router Data Structures
  ***************************************************************************/
 
-/* Describes the status of a logic cluster_ctx.blocks routing resource node for a given logic cluster_ctx.blocks instance */
+/**
+ * @brief Describes the status of a logic cluster_ctx.blocks routing resource
+ *        node for a given logic cluster_ctx.blocks instance.
+ */
 struct t_lb_rr_node_stats {
-    int occ;  /* Number of nets currently using this lb_rr_node */
-    int mode; /* Mode that this rr_node is set to */
+    /// @brief The number of nets currently using this lb_rr_node.
+    int occ;
 
-    int historical_usage; /* Historical usage of using this node */
+    /// @brief The mode that this rr_node is set to.
+    int mode;
+
+    /// @brief The historical usage of using this node.
+    int historical_usage;
 
     t_lb_rr_node_stats() noexcept {
         occ = 0;
@@ -36,24 +43,41 @@ struct t_lb_rr_node_stats {
     }
 };
 
-/*
- * Data structure forming the route tree of a net within one logic cluster_ctx.blocks.
+/**
+ * @brief Data structure forming the route tree of a net within one logic
+ *        cluster_ctx.blocks.
  *
- * A net is implemented using routing resource nodes.  The t_lb_trace data structure records one of the nodes used by the net and the connections
- * to other nodes
+ * A net is implemented using routing resource nodes. The t_lb_trace data
+ * structure records one of the nodes used by the net and the connections
+ * to other nodes.
  */
 struct t_lb_trace {
-    int current_node;                   /* current t_lb_type_rr_node used by net */
-    std::vector<t_lb_trace> next_nodes; /* index of previous edge that drives current node */
+    /// @brief The current t_lb_type_rr_node used by net.
+    int current_node;
+
+    /// @brief The index of previous edge that drives current node.
+    std::vector<t_lb_trace> next_nodes;
 };
 
-/* Represents a net used inside a logic cluster_ctx.blocks and the physical nodes used by the net */
+/**
+ * @brief Represents a net used inside a logic cluster_ctx.blocks and the
+ *        physical nodes used by the net.
+ */
 struct t_intra_lb_net {
-    AtomNetId atom_net_id;             /* index of atom net this intra_lb_net represents */
-    std::vector<int> terminals;        /* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
-    std::vector<AtomPinId> atom_pins;  /* AtomPin's associated with each terminal */
-    std::vector<bool> fixed_terminals; /* Marks a terminal as having a fixed target (i.e. a pin not a sink) */
-    t_lb_trace rt_tree;                /* Route tree head */
+    /// @brief The index of atom net this intra_lb_net represents.
+    AtomNetId atom_net_id;
+
+    /// @brief The endpoints of the intra_lb_net, 0th position is the source, all others are sinks.
+    std::vector<int> terminals;
+
+    /// @brief The AtomPins associated with each terminal.
+    std::vector<AtomPinId> atom_pins;
+
+    /// @brief Marks a terminal as having a fixed target (i.e. a pin not a sink).
+    std::vector<bool> fixed_terminals;
+
+    /// @brief Route tree head.
+    t_lb_trace rt_tree;
 
     t_intra_lb_net() noexcept {
         atom_net_id = AtomNetId::INVALID();
@@ -61,7 +85,9 @@ struct t_intra_lb_net {
     }
 };
 
-/* Stores tuning parameters used by intra-logic cluster_ctx.blocks router */
+/**
+ * @brief Tuning parameters used by intra-logic cluster_ctx.blocks router.
+ */
 struct t_lb_router_params {
     int max_iterations;
     float pres_fac;
@@ -69,10 +95,16 @@ struct t_lb_router_params {
     float hist_fac;
 };
 
-/* Node expanded by router */
+/**
+ * @brief Node expanded by router.
+ */
 struct t_expansion_node {
-    int node_index; /* Index of logic cluster_ctx.blocks rr node this expansion node represents */
-    int prev_index; /* Index of logic cluster_ctx.blocks rr node that drives this expansion node */
+    /// @brief Index of logic cluster_ctx.blocks rr node this expansion node represents.
+    int node_index;
+
+    /// @brief Index of logic cluster_ctx.blocks rr node that drives this expansion node.
+    int prev_index;
+
     float cost;
 
     t_expansion_node() {
@@ -82,9 +114,20 @@ struct t_expansion_node {
     }
 };
 
+/**
+ * @brief Comparitor used by the priority queue to sort the expansion nodes.
+ */
 class compare_expansion_node {
   public:
-    bool operator()(t_expansion_node& e1, t_expansion_node& e2) // Returns true if t1 is earlier than t2
+    /**
+     * @brief Returns true if e1 comes before e2.
+     *
+     * Note that because a priority queue outputs the largest element first, the
+     * element that "comes before" are actually output last.
+     *
+     * TL;DR lowest cost is popped first.
+     */
+    bool operator()(t_expansion_node& e1, t_expansion_node& e2)
     {
         if (e1.cost > e2.cost) {
             return true;
@@ -93,13 +136,24 @@ class compare_expansion_node {
     }
 };
 
-/* Stores explored nodes by router */
+/**
+ * @brief Explored node by router (trace-back information).
+ */
 struct t_explored_node_tb {
-    int prev_index;     /* Previous node that drives this one */
-    int explored_id;    /* ID used to determine if this node has been explored */
-    int inet;           /* net index of route tree */
-    int enqueue_id;     /* ID used to determine if this node has been pushed on exploration priority queue */
-    float enqueue_cost; /* cost of node pushed on exploration priority queue */
+    /// @brief Previous node that drives this one.
+    int prev_index;
+
+    /// @brief ID used to determine if this node has been explored.
+    int explored_id;
+
+    /// @brief Net index of route tree.
+    int inet;
+
+    /// @brief ID used to determine if this node has been pushed on exploration priority queue.
+    int enqueue_id;
+
+    /// @brief Cost of node pushed on exploration priority queue.
+    float enqueue_cost;
 
     t_explored_node_tb() noexcept {
         prev_index = UNDEFINED;
@@ -110,7 +164,9 @@ struct t_explored_node_tb {
     }
 };
 
-/* Stores status of mode selection during clustering */
+/**
+ * @brief Stores status of mode selection during clustering.
+ */
 struct t_mode_selection_status {
     bool is_mode_conflict = false;
     bool try_expand_all_modes = false;
@@ -146,8 +202,13 @@ class reservable_pq : public std::priority_queue<T, U, V> {
     size_type cur_cap;
 };
 
+/// @brief The priority queue type used in the Cluster Router.
 typedef reservable_pq<t_expansion_node, std::vector<t_expansion_node>, compare_expansion_node> ClusterRouterPriorityQueue;
 
+/**
+ * @brief Enumeration used by the commit_remove_rt_ method below to decide if
+ *        we are commiting or removing a route tree.
+ */
 enum e_commit_remove { RT_COMMIT,
                        RT_REMOVE };
 
@@ -249,6 +310,9 @@ class ClusterRouter {
      *        changes.
      *
      * This is used to clean state associated with mode conflicts in routing.
+     * This state is stored within the pb_graph_pins.
+     *
+     * TODO: It may be safer to store this information internally.
      */
     void reset_intra_lb_route();
 
@@ -256,6 +320,9 @@ class ClusterRouter {
      * @brief Creates an array [0..num_pb_graph_pins-1] for intra-logic block routing lookup.
      * Given a pb_graph_pin ID for a CLB, this lookup returns t_pb_route corresponding to that
      * pin.
+     *
+     * t_pb_route describes a route for a given atom net in the pb graph. This
+     * function returns the t_pb_route for all atom nets within the cluster.
      *
      * @param intra_lb_pb_pin_lookup Intra-logic block pin lookup to get t_pb_graph_pin from a pin ID.
      * @return t_pb_routes An array [0..num_pb_graph_pins-1] for intra-logic block routing lookup.
@@ -308,6 +375,8 @@ class ClusterRouter {
 
     /**
      * @brief Expand all nodes found in route tree into the priority queue.
+     *
+     *  @param inet     Index into the intra_lb_nets_ to expand to route tree for.
      */
     void expand_rt_(int inet);
 
@@ -327,6 +396,9 @@ class ClusterRouter {
 
     /**
      * @brief Expand all nodes for a given lb_net.
+     *
+     * This method continuously pops from the priority queue to find the best
+     * path to the target.
      */
     bool try_expand_nodes_(const t_intra_lb_net& lb_net,
                            t_expansion_node* exp_node,
@@ -335,20 +407,36 @@ class ClusterRouter {
                            int verbosity);
 
     /**
-     * @brief Expand all nodes found in a route tree into the priority queue.
+     * @brief Explore the given node popped from the priority queue and explore
+     *        its edges.
+     *
+     *  @param exp_node     The node currently being explored.
+     *  @param net_fanout   The fanout of the net being routed.
      */
     void expand_node_(const t_expansion_node& exp_node,
                       int net_fanout);
 
     /**
-     * @brief Expand all nodes using all possible modes found in the route tree
-     *        into the priority queue.
+     * @brief Explore the given node popped from the priority queue using all
+     *        possible modes and explore their edges.
+     *
+     * This will explore every possible mode that the given node can be in and
+     * explore their edges.
+     *
+     *  @param exp_node     The node currently being explored.
+     *  @param net_fanout   The fanout of the net being routed.
      */
     void expand_node_all_modes_(const t_expansion_node& exp_node,
                                 int net_fanout);
 
     /**
-     * @brief Expand all edges of an expansion node.
+     * @brief Explore all edges of an expansion node and insert connected nodes
+     *        into the priority queue (i.e. connection routing).
+     *
+     *  @param mode         The mode the node that is being explored is in.
+     *  @param cur_inode    The node that is being explored.
+     *  @param cur_cost     The cost of the node that is being explored.
+     *  @param net_fanout   The fanout of the net being routed.
      */
     void expand_edges_(int mode,
                        int cur_inode,
@@ -406,9 +494,15 @@ class ClusterRouter {
     std::vector<t_intra_lb_net> intra_lb_nets_;
 
     /// @brief Save vector of intra logic cluster_ctx.blocks nets and their connections.
+    ///        This is used to save the solution for each successful route. This is used
+    ///        to allow for other routes to be attempted, while allowing us to roll-back
+    ///        to a known-legal routing. This is ultimately used by alloc_and_load_pb_route.
     std::vector<t_intra_lb_net> saved_lb_nets_;
 
-    /// @brief Map that records which atoms are added to cluster router.
+    /// @brief Set that records which atoms are added to cluster router.
+    ///        The cluster legalizer will be adding and removing atoms from the
+    ///        cluster. This set keeps track of which atoms the Cluster Router is
+    ///        aware of being currently in the cluster.
     std::unordered_set<AtomBlockId> atoms_added_;
 
     // =========================================================================
@@ -427,6 +521,10 @@ class ClusterRouter {
 
     /// @brief Used in conjunction with explored_node_tb_ to determine whether or not a location has been explored.
     ///        By using a unique identifier every route, I don't have to clear the previous route exploration.
+    ///        The idea is that for a given route, a specific explore_id is used.
+    ///        When exploring nodes, if the ID does not match, we know this is from
+    ///        another route. This is just an optimization to prevent clearing the
+    ///        global routing data each connection route.
     int explore_id_index_;
 
     /// @brief The logical block type that is being routed.
