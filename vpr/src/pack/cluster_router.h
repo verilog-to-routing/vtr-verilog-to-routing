@@ -127,8 +127,7 @@ class compare_expansion_node {
      *
      * TL;DR lowest cost is popped first.
      */
-    bool operator()(t_expansion_node& e1, t_expansion_node& e2)
-    {
+    bool operator()(t_expansion_node& e1, t_expansion_node& e2) {
         if (e1.cost > e2.cost) {
             return true;
         }
