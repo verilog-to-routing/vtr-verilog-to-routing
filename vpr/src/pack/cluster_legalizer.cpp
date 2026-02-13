@@ -56,6 +56,22 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
     pb->pb_stats->num_child_blocks_in_pb = 0;
 }
 
+LegalizationCluster::LegalizationCluster(t_logical_block_type_ptr cluster_type,
+                                         int cluster_mode,
+                                         std::vector<t_lb_type_rr_node>* lb_type_rr_graphs)
+    : pb(new t_pb)
+    , type(cluster_type)
+    , pr(PartitionRegion())
+    , noc_grp_id(NocGroupId::INVALID())
+    , cluster_router(&lb_type_rr_graphs[cluster_type->index], cluster_type)
+    , placement_stats(alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode)) {
+
+    pb->pb_graph_node = cluster_type->pb_graph_head;
+    alloc_and_load_pb_stats(pb);
+    pb->parent_pb = nullptr;
+    pb->mode = cluster_mode;
+}
+
 /*
  * @brief Check the atom blocks of a cluster pb. Used in the verify method.
  */
@@ -448,7 +464,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                          const LegalizationClusterId cluster_id,
                          vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
                          const PackMoleculeId molecule_id,
-                         t_lb_router_data* router_data,
+                         ClusterRouter& cluster_router,
                          int verbosity,
                          const Prepacker& prepacker,
                          const vtr::vector_map<MoleculeChainId, t_clustering_chain_info>& clustering_chain_info,
@@ -466,7 +482,8 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
         block_pack_status = try_place_atom_block_rec(pb_graph_node->parent_pb_graph_node, blk_id, cb,
                                                      &my_parent, cluster_id,
                                                      atom_cluster,
-                                                     molecule_id, router_data,
+                                                     molecule_id,
+                                                     cluster_router,
                                                      verbosity,
                                                      prepacker, clustering_chain_info, atom_to_pb);
         parent_pb = my_parent;
@@ -480,7 +497,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
         VTR_ASSERT(parent_pb->name == nullptr);
         parent_pb->name = vtr::strdup(atom_ctx.netlist().block_name(blk_id).c_str());
         parent_pb->mode = pb_graph_node->pb_type->parent_mode->index;
-        set_reset_pb_modes(router_data, parent_pb, true);
+        cluster_router.set_reset_pb_modes(parent_pb, true);
         const t_mode* mode = &parent_pb->pb_graph_node->pb_type->modes[parent_pb->mode];
         parent_pb->child_pbs = new t_pb*[mode->num_pb_type_children];
 
@@ -540,7 +557,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
         //       mistake.
         atom_to_pb.set_atom_pb(blk_id, pb);
 
-        add_atom_as_target(router_data, blk_id, atom_to_pb);
+        cluster_router.add_atom_as_target(blk_id, atom_to_pb);
         if (!primitive_feasible(blk_id, pb, atom_to_pb)) {
             /* failed location feasibility check, revert pack */
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
@@ -975,7 +992,7 @@ void ClusterLegalizer::reset_molecule_info(PackMoleculeId mol_id) {
  * @brief Revert trial atom block iblock and free up memory space accordingly.
  */
 static void revert_place_atom_block(const AtomBlockId blk_id,
-                                    t_lb_router_data* router_data,
+                                    ClusterRouter& cluster_router,
                                     vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
                                     AtomPBBimap& atom_to_pb) {
     //We cast away const here since we may free the pb, and it is
@@ -1002,7 +1019,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
 
             if (pb->child_pbs != nullptr && pb->pb_stats != nullptr
                 && pb->pb_stats->num_child_blocks_in_pb == 0) {
-                set_reset_pb_modes(router_data, pb, false);
+                cluster_router.set_reset_pb_modes(pb, false);
                 if (next != nullptr) {
                     /* If the code gets here, then that means that placing the initial seed molecule
                      * failed, don't free the actual complex block itself as the seed needs to find
@@ -1245,7 +1262,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                          cluster_id,
                                                          atom_cluster_,
                                                          molecule_id,
-                                                         cluster.router_data,
+                                                         cluster.cluster_router,
                                                          log_verbosity_,
                                                          prepacker_,
                                                          clustering_chain_info_,
@@ -1299,8 +1316,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             bool do_detailed_routing_stage = (cluster_legalization_strategy_ == ClusterLegalizationStrategy::FULL);
             if (do_detailed_routing_stage) {
                 do {
-                    reset_intra_lb_route(cluster.router_data);
-                    is_routed = try_intra_lb_route(cluster.router_data, log_verbosity_, &mode_status);
+                    cluster.cluster_router.reset_intra_lb_route();
+                    is_routed = cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
                 } while (do_detailed_routing_stage && mode_status.is_mode_issue());
             }
 
@@ -1381,13 +1398,13 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
             for (size_t i = 0; i < failed_location; i++) {
                 AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
                 if (atom_blk_id) {
-                    remove_atom_from_target(cluster.router_data, atom_blk_id, atom_pb_lookup());
+                    cluster.cluster_router.remove_atom_from_target(atom_blk_id, atom_pb_lookup());
                 }
             }
             for (size_t i = 0; i < failed_location; i++) {
                 AtomBlockId atom_blk_id = molecule.atom_block_ids[i];
                 if (atom_blk_id) {
-                    revert_place_atom_block(atom_blk_id, cluster.router_data, atom_cluster_, mutable_atom_pb_lookup());
+                    revert_place_atom_block(atom_blk_id, cluster.cluster_router, atom_cluster_, mutable_atom_pb_lookup());
                 }
             }
             reset_molecule_info(molecule_id);
@@ -1423,28 +1440,8 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
 
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
-    // Create the physical block for this cluster based on the type.
-    t_pb* cluster_pb = new t_pb;
-    cluster_pb->pb_graph_node = cluster_type->pb_graph_head;
-    alloc_and_load_pb_stats(cluster_pb);
-    cluster_pb->parent_pb = nullptr;
-    cluster_pb->mode = cluster_mode;
-
-    // Allocate and load the LB router data
-    t_lb_router_data* router_data = alloc_and_load_router_data(&lb_type_rr_graphs_[cluster_type->index],
-                                                               cluster_type);
-
-    // Allocate and load the cluster's placement stats
-    t_intra_cluster_placement_stats* cluster_placement_stats = alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode);
-
     // Create the new cluster
-    LegalizationCluster new_cluster;
-    new_cluster.pb = cluster_pb;
-    new_cluster.router_data = router_data;
-    new_cluster.pr = PartitionRegion();
-    new_cluster.noc_grp_id = NocGroupId::INVALID();
-    new_cluster.type = cluster_type;
-    new_cluster.placement_stats = cluster_placement_stats;
+    LegalizationCluster new_cluster(cluster_type, cluster_mode, lb_type_rr_graphs_);
 
     // Try to pack the molecule into the new_cluster.
     // When starting a new cluster, we set the external pin utilization to full
@@ -1474,7 +1471,6 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
         // Delete the new_cluster.
         free_pb(new_cluster.pb, mutable_atom_pb_lookup());
         delete new_cluster.pb;
-        free_router_data(new_cluster.router_data);
         free_cluster_placement_stats(new_cluster.placement_stats);
         new_cluster_id = LegalizationClusterId::INVALID();
     }
@@ -1494,7 +1490,7 @@ e_block_pack_status ClusterLegalizer::add_mol_to_cluster(PackMoleculeId molecule
 
     // Get the cluster.
     LegalizationCluster& cluster = legalization_clusters_[cluster_id];
-    VTR_ASSERT(cluster.router_data != nullptr && cluster.placement_stats != nullptr
+    VTR_ASSERT(!cluster.cluster_router.is_clean() && cluster.placement_stats != nullptr
                && "Cannot add molecule to cleaned cluster!");
     // Set the target_external_pin_util.
     t_ext_pin_util target_ext_pin_util = target_external_pin_util_.get_pin_util(cluster.type->name);
@@ -1525,7 +1521,7 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
         const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
         for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
             if (atom_blk_id) {
-                revert_place_atom_block(atom_blk_id, cluster.router_data, atom_cluster_, mutable_atom_pb_lookup());
+                revert_place_atom_block(atom_blk_id, cluster.cluster_router, atom_cluster_, mutable_atom_pb_lookup());
             }
         }
         reset_molecule_info(mol_id);
@@ -1537,8 +1533,7 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
     free_pb(cluster.pb, mutable_atom_pb_lookup());
     delete cluster.pb;
     cluster.pb = nullptr;
-    free_router_data(cluster.router_data);
-    cluster.router_data = nullptr;
+    cluster.cluster_router.clean_router_data();
     cluster.pr = PartitionRegion();
     free_cluster_placement_stats(cluster.placement_stats);
     cluster.placement_stats = nullptr;
@@ -1579,17 +1574,15 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
     VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
     // Get the cluster.
     LegalizationCluster& cluster = legalization_clusters_[cluster_id];
-    VTR_ASSERT(cluster.router_data != nullptr && cluster.placement_stats != nullptr
+    VTR_ASSERT(!cluster.cluster_router.is_clean() && cluster.placement_stats != nullptr
                && "Should not clean an already cleaned cluster!");
     // Free the pb stats.
     free_pb_stats_recursive(cluster.pb);
     // Load the pb_route so we can free the cluster router data.
     // The pb_route is used when creating a netlist from the legalized clusters.
-    std::vector<t_intra_lb_net>* saved_lb_nets = cluster.router_data->saved_lb_nets;
-    cluster.pb->pb_route = alloc_and_load_pb_route(saved_lb_nets, cluster.type, intra_lb_pb_pin_lookup_);
+    cluster.pb->pb_route = cluster.cluster_router.alloc_and_load_pb_route(intra_lb_pb_pin_lookup_);
     // Free the router data.
-    free_router_data(cluster.router_data);
-    cluster.router_data = nullptr;
+    cluster.cluster_router.clean_router_data();
     // Free the cluster placement stats.
     free_cluster_placement_stats(cluster.placement_stats);
     cluster.placement_stats = nullptr;
@@ -1605,7 +1598,7 @@ bool ClusterLegalizer::check_cluster_legality(LegalizationClusterId cluster_id) 
     // route on the cluster. If it succeeds, the cluster is fully legal.
     t_mode_selection_status mode_status;
     LegalizationCluster& cluster = legalization_clusters_[cluster_id];
-    return try_intra_lb_route(cluster.router_data, log_verbosity_, &mode_status);
+    return cluster.cluster_router.try_intra_lb_route(log_verbosity_, &mode_status);
 }
 
 ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
@@ -1782,7 +1775,7 @@ void ClusterLegalizer::finalize() {
         // If the cluster has not already been cleaned, clean it. This will
         // generate the pb_route necessary for generating a clustered netlist.
         const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
-        if (cluster.router_data != nullptr)
+        if (!cluster.cluster_router.is_clean())
             clean_cluster(cluster_id);
     }
 }

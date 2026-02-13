@@ -114,7 +114,7 @@ int get_lb_type_rr_graph_ext_sink_index(t_logical_block_type_ptr lb_type) {
     return lb_type->pb_graph_head->total_pb_pins + 1;
 }
 
-int get_lb_type_rr_graph_edge_mode(std::vector<t_lb_type_rr_node>& lb_type_rr_graph, int src_index, int dst_index) {
+int get_lb_type_rr_graph_edge_mode(const std::vector<t_lb_type_rr_node>& lb_type_rr_graph, int src_index, int dst_index) {
     auto& src = lb_type_rr_graph[src_index];
     for (int imode = 0; imode < src.num_modes; imode++) {
         for (int iedge = 0; iedge < src.num_fanout[imode]; iedge++) {
