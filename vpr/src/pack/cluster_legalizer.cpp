@@ -36,6 +36,8 @@
 #include "vtr_assert.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
+#include "lazy_pop_unique_priority_queue.h"
+#include "cluster_placement.h"
 
 /*
  * @brief Allocates the stats stored within the pb of a cluster.
@@ -1124,6 +1126,29 @@ static bool cleanup_pb(t_pb* pb) {
     return can_free;
 }
 
+static bool move_root_node_to_inflight(t_intra_cluster_placement_stats* stats,
+                                       t_pb_graph_node* root_node) {
+    for (int i = 0; i < stats->num_pb_types; ++i) {
+        auto& mm = stats->valid_primitives[i];
+        for (auto it = mm.begin(); it != mm.end(); /* no ++ here */) {
+            auto* prim = it->second;
+
+            if (!prim->valid) {
+                stats->invalidate_primitive_and_increment_iterator(i, it);
+                continue;
+            }
+
+            if (prim->pb_graph_node == root_node) {
+                stats->move_primitive_to_inflight(i, it);
+                return true;
+            }
+
+            ++it;
+        }
+    }
+    return false;
+}
+
 e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_id,
                                                         LegalizationCluster& cluster,
                                                         LegalizationClusterId cluster_id,
@@ -1217,15 +1242,46 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
 
     std::vector<t_pb_graph_node*> primitives_list(max_molecule_size_, nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
+    LazyPopUniquePriorityQueue<t_pb_graph_node*, float> primitives_alive;
+    get_next_primitive_list(cluster.placement_stats,
+                            molecule_id,
+                            primitives_list,
+                            primitives_alive,
+                            prepacker_);
+    // VTR_LOG("\tNumber of primitives active %zu\n", primitives_alive.size());
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
-        if (!get_next_primitive_list(cluster.placement_stats,
-                                     molecule_id,
-                                     primitives_list,
-                                     prepacker_)) {
+        if (primitives_alive.empty()) {
             VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
             break; /* no more candidate primitives available, this molecule will not pack, return fail */
         }
+
+        
+
+        auto popped = primitives_alive.pop();
+        // VTR_LOG("\tNumber of primitives active %zu\n", primitives_alive.size());
+        t_pb_graph_node* root = popped.first;
+
+        auto* root_prim = cluster.placement_stats->get_pb_graph_node_placement_primitive(root);
+        if (!root_prim->valid) {
+            // VTR_LOG("\tSkipped stale/invalid PQ entry.\n");
+            continue; // skip stale/invalid PQ entry
+        }
+
+        // Now move it from valid -> inflight
+        if (!move_root_node_to_inflight(cluster.placement_stats, root)) {
+            // root not in valid_primitives anymore (already moved/invalidated); skip
+            continue;
+        }
+
+        // IMPORTANT: primitives_list must correspond to this root.
+        float cost = try_place_molecule(cluster.placement_stats, molecule_id, root, primitives_list, prepacker_);
+        if (cost == std::numeric_limits<float>::max()) {
+            // This root cannot place molecule; mark it "tried" and continue
+            cluster.placement_stats->move_inflight_to_tried();  // or a "revert inflight" helper
+            continue;
+        }
+
 
         block_pack_status = e_block_pack_status::BLK_PASSED;
         size_t failed_location = 0;

@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include "physical_types.h"
 #include "prepack.h"
+#include "lazy_pop_unique_priority_queue.h"
 
 // Forward declarations
 class AtomBlockId;
@@ -154,6 +155,11 @@ t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logica
  */
 void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_placement_stats);
 
+float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                PackMoleculeId molecule_id,
+                                t_pb_graph_node* root,
+                                std::vector<t_pb_graph_node*>& primitives_list,
+                                const Prepacker& prepacker);
 /**
  * get next list of primitives for list of atom blocks
  *
@@ -176,6 +182,7 @@ bool get_next_primitive_list(
     t_intra_cluster_placement_stats* cluster_placement_stats,
     PackMoleculeId molecule_id,
     std::vector<t_pb_graph_node*>& primitives_list,
+    LazyPopUniquePriorityQueue<t_pb_graph_node*, float>& primitives_alive,
     const Prepacker& prepacker,
     int force_site = -1);
 

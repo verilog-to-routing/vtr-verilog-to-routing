@@ -23,6 +23,7 @@
 #include "prepack.h"
 #include "vpr_utils.h"
 #include "vtr_assert.h"
+#include "lazy_pop_unique_priority_queue.h"
 
 /****************************************/
 /*Local Function Declaration			*/
@@ -42,11 +43,11 @@ static void update_primitive_cost_or_status(t_intra_cluster_placement_stats* clu
                                             float incremental_cost,
                                             bool valid);
 
-static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
-                                PackMoleculeId molecule_id,
-                                t_pb_graph_node* root,
-                                std::vector<t_pb_graph_node*>& primitives_list,
-                                const Prepacker& prepacker);
+// static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
+//                                 PackMoleculeId molecule_id,
+//                                 t_pb_graph_node* root,
+//                                 std::vector<t_pb_graph_node*>& primitives_list,
+//                                 const Prepacker& prepacker);
 
 static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                   PackMoleculeId molecule_id,
@@ -177,6 +178,7 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
 bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_stats,
                              PackMoleculeId molecule_id,
                              std::vector<t_pb_graph_node*>& primitives_list,
+                             LazyPopUniquePriorityQueue<t_pb_graph_node*, float>& primitives_alive,
                              const Prepacker& prepacker,
                              int force_site) {
     std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator best;
@@ -211,6 +213,8 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
     bool found_best = false;
     lowest_cost = std::numeric_limits<float>::max();
 
+    // VTR_LOG("In get_next_primitive_list for molecule id %zu.\n", molecule_id);
+
     // Iterate over each primitive block type in the current cluster_placement_stats
     for (int i = 0; i < cluster_placement_stats->num_pb_types; i++) {
         if (!cluster_placement_stats->valid_primitives[i].empty()) {
@@ -227,11 +231,12 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
 
                     /* check for force site match, if applicable */
                     if (force_site > -1) {
+                        // VTR_LOG("ENCOUNTERED FORCE SITE in get_next_primitive_list!\n");
                         /* check that the forced site index is within the available range */
                         int max_site = it->second->pb_graph_node->total_primitive_count - 1;
                         if (force_site > max_site) {
-                            VTR_LOG("The specified primitive site (%d) is out of range (max %d)\n",
-                                    force_site, max_site);
+                            // VTR_LOG("The specified primitive site (%d) is out of range (max %d)\n",
+                            //         force_site, max_site);
                             break;
                         }
                         if (force_site == it->second->pb_graph_node->flat_site_index) {
@@ -258,6 +263,8 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                                               it->second->pb_graph_node,
                                               primitives_list,
                                               prepacker);
+                    // VTR_LOG("\tThe primitive %s has a cost of %f. The pb_type_index is %d. The primitives_list has %zu element.\n", it->second->pb_graph_node->hierarchical_type_name().c_str(), cost, i, primitives_list.size());
+                    primitives_alive.push(it->second->pb_graph_node, -cost);
 
                     // if the cost is lower than the best, or is equal to the best but this
                     // primitive is more available in the cluster mark it as the best primitive
@@ -271,6 +278,7 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                 }
             }
         }
+        // VTR_LOG("\tThe primitive index %d has a cost of %f\n", i, cost);
     }
 
     /* if force_site was specified but not found, fail */
@@ -284,6 +292,8 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
         for (size_t i = 0; i < molecule.atom_block_ids.size(); i++) {
             primitives_list[i] = nullptr;
         }
+        // VTR_LOG("\tNot found best for molecule id %zu.\n", molecule_id);
+        // VTR_LOG("\tNumber of primitives alive by priority queie %zu\n", primitives_alive.size());
     } else {
         /* populate primitive list with best */
         cost = try_place_molecule(cluster_placement_stats,
@@ -294,7 +304,9 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
         VTR_ASSERT(cost == lowest_cost);
 
         /* take out best node and put it in flight */
-        cluster_placement_stats->move_primitive_to_inflight(best_pb_type_index, best);
+        //cluster_placement_stats->move_primitive_to_inflight(best_pb_type_index, best);
+        // VTR_LOG("\tFound best for molecule id %zu with cost %f and name %s\n", molecule_id, cost, best->second->pb_graph_node->hierarchical_type_name().c_str());
+        // VTR_LOG("\tNumber of primitives alive by priority queue %zu\n", primitives_alive.size());
     }
 
     if (!found_best) {
@@ -475,7 +487,7 @@ static void update_primitive_cost_or_status(t_intra_cluster_placement_stats* clu
 /**
  * Try place molecule at root location, populate primitives list with locations of placement if successful
  */
-static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
+float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
                                 PackMoleculeId molecule_id,
                                 t_pb_graph_node* root,
                                 std::vector<t_pb_graph_node*>& primitives_list,
