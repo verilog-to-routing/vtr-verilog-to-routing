@@ -2288,6 +2288,15 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("30")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    pack_grp.add_argument<bool, ParseOnOff>(args.memoize_cluster_packings, "--memoize_cluster_packings")
+        .help("Enables memoization of previously seen clusters during packing.\n"
+              "\n"
+              "This can significantly reduce runtime for certain architectures\n"
+              "by skipping redundant intracluster routing calls made to test\n"
+              "for cluster legality.")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
         .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
         .default_value("2")
